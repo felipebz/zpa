@@ -15,6 +15,7 @@ public class PlSqlGrammarTest extends RuleTest {
     @Test
     public void ok() {
         assertThat(p).matches("begin null; end;");
+        assertThat(p).matches("BEGIN NULL; END;");
     }
     
     @Test

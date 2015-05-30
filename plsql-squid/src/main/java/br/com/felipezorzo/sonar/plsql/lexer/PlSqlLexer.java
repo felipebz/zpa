@@ -25,7 +25,7 @@ public class PlSqlLexer {
 
                 .withChannel(new BlackHoleChannel("\\s"))
 
-                .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), true, PlSqlKeyword.values()))
+                .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), false, PlSqlKeyword.values()))
 
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
 
