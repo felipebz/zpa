@@ -1,0 +1,100 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>br.com.felipezorzo.sonar.plsql</groupId>
+    <artifactId>plsql</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>sslr-plsql-toolkit</artifactId>
+
+  <name>PL/SQL :: SSLR Toolkit</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>plsql-squid</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.sonar.sslr</groupId>
+      <artifactId>sslr-toolkit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.easytesting</groupId>
+      <artifactId>fest-assert</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>obr.com.felipezorzo.sonar.plsql.PlSqlToolkit</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>jarjar-maven-plugin</artifactId>
+        <version>1.9</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>jarjar</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>${project.groupId}:plsql-squid</include>
+                <include>org.codehaus.sonar.sslr:sslr-core</include>
+                <include>org.codehaus.sonar.sslr:sslr-xpath</include>
+                <include>org.codehaus.sonar.sslr-squid-bridge:sslr-squid-bridge</include>
+                <include>jaxen:jaxen</include>
+                <include>org.codehaus.sonar.sslr:sslr-toolkit</include>
+                <include>org.codehaus.sonar:sonar-colorizer</include>
+                <include>org.codehaus.sonar:sonar-channel</include>
+                <include>org.slf4j:slf4j-api</include>
+                <include>org.slf4j:jcl-over-slf4j</include>
+                <include>ch.qos.logback:logback-classic</include>
+                <include>ch.qos.logback:logback-core</include>
+                <include>commons-io:commons-io</include>
+                <include>commons-lang:commons-lang</include>
+                <include>com.google.guava:guava</include>
+              </includes>
+              <rules>
+                <keep>
+                  <pattern>*.**</pattern>
+                </keep>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
