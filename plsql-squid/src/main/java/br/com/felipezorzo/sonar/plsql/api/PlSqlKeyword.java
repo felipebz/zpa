@@ -6,7 +6,11 @@ import com.sonar.sslr.api.TokenType;
 public enum PlSqlKeyword implements TokenType {
     BEGIN("begin"),
     NULL("null"),
-    END("end");
+    END("end"),
+    EXCEPTION("exception"),
+    OTHERS("others"),
+    THEN("then"),
+    WHEN("when");
 
     private final String value;
 
