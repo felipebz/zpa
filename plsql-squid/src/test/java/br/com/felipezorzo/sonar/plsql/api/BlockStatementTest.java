@@ -5,7 +5,7 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PlSqlGrammarTest extends RuleTest {
+public class BlockStatementTest extends RuleTest {
 
     @Before
     public void init() {
@@ -13,13 +13,23 @@ public class PlSqlGrammarTest extends RuleTest {
     }
 
     @Test
-    public void ok() {
+    public void matchesSimpleBlock() {
         assertThat(p).matches("begin null; end;");
         assertThat(p).matches("BEGIN NULL; END;");
     }
     
     @Test
-    public void fail() {
+    public void matchesNestedBlock() {
+        assertThat(p).matches("begin begin null; end; end;");
+    }
+    
+    @Test
+    public void matchesBlockWithMultipleStatements() {
+        assertThat(p).matches("begin null; null; end;");
+    }
+    
+    @Test
+    public void notMatchesBlockWithoutStatements() {
         assertThat(p).notMatches("begin end;");
     }
 }
