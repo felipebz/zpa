@@ -8,12 +8,18 @@ import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
 public enum PlSqlGrammar implements GrammarRuleKey {
+    
+    /* Data types */
+    DATATYPE,
+    NUMERIC_DATATYPE,
+    
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
     NULL_LITERAL,
     NULL_STATEMENT,
-    STATEMENT;
+    STATEMENT,
+    VARIABLE_DECLARATION;
 
     public static LexerfulGrammarBuilder create() {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
@@ -21,11 +27,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
 
+        createDatatypes(b);
         createStatements(b);
         return b;
     }
+    
+    private static void createDatatypes(LexerfulGrammarBuilder b) {
+        b.rule(NUMERIC_DATATYPE).is(NUMBER);
+        
+        b.rule(DATATYPE).is(NUMERIC_DATATYPE);
+    }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
+        b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME, DATATYPE, SEMICOLON);
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
         b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);

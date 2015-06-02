@@ -8,6 +8,7 @@ public enum PlSqlKeyword implements TokenType {
     NULL("null"),
     END("end"),
     EXCEPTION("exception"),
+    NUMBER("number"),
     OTHERS("others"),
     THEN("then"),
     WHEN("when");
