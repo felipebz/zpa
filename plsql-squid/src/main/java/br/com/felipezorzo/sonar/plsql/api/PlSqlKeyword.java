@@ -11,7 +11,10 @@ public enum PlSqlKeyword implements TokenType {
     NUMBER("number"),
     OTHERS("others"),
     THEN("then"),
-    WHEN("when");
+    WHEN("when"),
+    DEFAULT("default"),
+    NOT("not"),
+    CONSTANT("constant");
 
     private final String value;
 

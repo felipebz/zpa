@@ -40,7 +40,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
-        b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME, DATATYPE, SEMICOLON);
+        b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
+                                          b.optional(CONSTANT),
+                                          DATATYPE,
+                                          b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), NUMERIC_LITERAL),
+                                          SEMICOLON);
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
         b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);

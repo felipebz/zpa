@@ -28,17 +28,17 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number(1,1);");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesDeclarationWithInitialization() {
         assertThat(p).matches("var number := 1;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesDeclarationWithDefaultValue() {
         assertThat(p).matches("var number default 1;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesDeclarationWithNotNullConstraint() {
         assertThat(p).matches("var number not null := 1;");
         assertThat(p).matches("var number not null default 1;");
@@ -69,13 +69,13 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var ref custom;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesSimpleConstant() {
         assertThat(p).matches("var constant number := 1;");
         assertThat(p).matches("var constant number default 1;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesSimpleConstantWithConstraints() {
         assertThat(p).matches("var constant number not null := 1;");
         assertThat(p).matches("var constant number not null default 1;");
