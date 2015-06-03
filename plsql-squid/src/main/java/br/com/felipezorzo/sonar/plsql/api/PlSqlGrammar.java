@@ -2,6 +2,7 @@ package br.com.felipezorzo.sonar.plsql.api;
 
 import static br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword.*;
 import static br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator.*;
+import static br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType.*;
 import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 
 import org.sonar.sslr.grammar.GrammarRuleKey;
@@ -33,7 +34,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
-        b.rule(NUMERIC_DATATYPE).is(NUMBER);
+        b.rule(NUMERIC_DATATYPE).is(NUMBER, b.optional(LPARENTHESIS, NUMERIC_LITERAL, b.optional(COMMA, NUMERIC_LITERAL), RPARENTHESIS));
         
         b.rule(DATATYPE).is(NUMERIC_DATATYPE);
     }

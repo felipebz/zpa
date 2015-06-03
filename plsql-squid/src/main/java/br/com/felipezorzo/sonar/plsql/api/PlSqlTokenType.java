@@ -3,24 +3,15 @@ package br.com.felipezorzo.sonar.plsql.api;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.TokenType;
 
-public enum PlSqlPunctuator implements TokenType {
-    COMMA(","),
-    LPARENTHESIS("("),
-    RPARENTHESIS(")"),
-    SEMICOLON(";");
-
-    private final String value;
-
-    private PlSqlPunctuator(String word) {
-        this.value = word;
-    }
+public enum PlSqlTokenType implements TokenType {
+    NUMERIC_LITERAL;
 
     public String getName() {
         return name();
     }
 
     public String getValue() {
-        return value;
+        return name();
     }
 
     public boolean hasToBeSkippedFromAst(AstNode node) {

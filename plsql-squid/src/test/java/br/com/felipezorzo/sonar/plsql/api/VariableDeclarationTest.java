@@ -18,7 +18,12 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number;");
     }
     
-    @Test @Ignore
+    @Test
+    public void matchesDeclarationWithPrecision() {
+        assertThat(p).matches("var number(1);");
+    }
+    
+    @Test
     public void matchesDeclarationWithPrecisionAndScale() {
         assertThat(p).matches("var number(1,1);");
     }
