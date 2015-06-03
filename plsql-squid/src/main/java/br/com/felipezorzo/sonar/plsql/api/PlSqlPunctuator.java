@@ -4,10 +4,35 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.TokenType;
 
 public enum PlSqlPunctuator implements TokenType {
+    // Based on http://docs.oracle.com/cd/B19306_01/appdev.102/b14261/fundamentals.htm#sthref297
     COMMA(","),
+    PLUS("+"),
+    MOD("%"),
+    DOT("."),
+    DIVISION("/"),
     LPARENTHESIS("("),
     RPARENTHESIS(")"),
-    SEMICOLON(";");
+    COLON(":"),
+    SEMICOLON(";"),
+    MULTIPLICATION("*"),
+    EQUALS("="),
+    LESSTHAN("<"),
+    GREATERTHAN(">"),
+    REMOTE("@"),
+    SUBTRACTION("-"),
+    ASSIGNMENT(":="),
+    ASSOCIATION("=>"),
+    CONCATENATION("||"),
+    EXPONENTIATION("**"),
+    LLABEL("<<"),
+    RLABEL(">>"),
+    RANGE(".."),
+    NOTEQUALS("<>"),
+    NOTEQUALS2("!="),
+    NOTEQUALS3("~="),
+    NOTEQUALS4("^="),
+    LESSTHANOREQUAL("<="),
+    GREATERTHANOREQUAL(">=");
 
     private final String value;
 
