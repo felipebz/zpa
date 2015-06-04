@@ -1,6 +1,7 @@
 package br.com.felipezorzo.sonar.plsql.lexer;
 
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.and;
+import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.commentRegexp;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.o2n;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.regexp;
 import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
@@ -15,6 +16,10 @@ import com.sonar.sslr.impl.channel.PunctuatorChannel;
 import com.sonar.sslr.impl.channel.UnknownCharacterChannel;
 
 public class PlSqlLexer {
+    public static final String INLINE_COMMENT = "--[^\\n\\r]*+";
+    public static final String MULTILINE_COMMENT = "/\\*[\\s\\S]*?\\*\\/";
+    public static final String COMMENT = "(?:" + INLINE_COMMENT + "|" + MULTILINE_COMMENT + ")";
+    
     public static final String NUMERIC_LITERAL = "(?:[0-9]++)";
     
     private PlSqlLexer() {
@@ -27,6 +32,7 @@ public class PlSqlLexer {
                 .withCharset(conf.getCharset())
                 .withFailIfNoChannelToConsumeOneCharacter(true)
                 .withChannel(new BlackHoleChannel("\\s"))
+                .withChannel(commentRegexp(COMMENT))
                 .withChannel(regexp(PlSqlTokenType.NUMERIC_LITERAL, NUMERIC_LITERAL))
                 .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), false, PlSqlKeyword.values()))
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
