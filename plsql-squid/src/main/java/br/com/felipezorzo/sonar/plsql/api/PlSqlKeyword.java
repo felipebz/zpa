@@ -14,7 +14,9 @@ public enum PlSqlKeyword implements TokenType {
     WHEN("when"),
     DEFAULT("default"),
     NOT("not"),
-    CONSTANT("constant");
+    CONSTANT("constant"),
+    FALSE("false"),
+    TRUE("true");
 
     private final String value;
 
