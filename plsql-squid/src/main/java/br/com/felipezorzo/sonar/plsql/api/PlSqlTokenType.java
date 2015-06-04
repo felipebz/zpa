@@ -5,7 +5,9 @@ import com.sonar.sslr.api.TokenType;
 
 public enum PlSqlTokenType implements TokenType {
     STRING_LITERAL,
-    NUMERIC_LITERAL;
+    INTEGER_LITERAL,
+    SCIENTIFIC_LITERAL,
+    REAL_LITERAL;
 
     public String getName() {
         return name();

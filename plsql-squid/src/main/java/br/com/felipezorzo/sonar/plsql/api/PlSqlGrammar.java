@@ -18,6 +18,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     LITERAL,
     BOOLEAN_LITERAL,
     NULL_LITERAL,
+    NUMERIC_LITERAL,
     
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
@@ -40,12 +41,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createLiterals(LexerfulGrammarBuilder b) {
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
+        b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
         
         b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL));
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
-        b.rule(NUMERIC_DATATYPE).is(NUMBER, b.optional(LPARENTHESIS, NUMERIC_LITERAL, b.optional(COMMA, NUMERIC_LITERAL), RPARENTHESIS));
+        b.rule(NUMERIC_DATATYPE).is(NUMBER, b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
         
         b.rule(DATATYPE).is(NUMERIC_DATATYPE);
     }
