@@ -21,6 +21,7 @@ public class PlSqlLexer {
     public static final String COMMENT = "(?:" + INLINE_COMMENT + "|" + MULTILINE_COMMENT + ")";
     
     public static final String NUMERIC_LITERAL = "(?:[0-9]++)";
+    public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
     
     private PlSqlLexer() {
     }
@@ -34,6 +35,7 @@ public class PlSqlLexer {
                 .withChannel(new BlackHoleChannel("\\s"))
                 .withChannel(commentRegexp(COMMENT))
                 .withChannel(regexp(PlSqlTokenType.NUMERIC_LITERAL, NUMERIC_LITERAL))
+                .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
                 .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), false, PlSqlKeyword.values()))
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
                 .withChannel(new UnknownCharacterChannel())
