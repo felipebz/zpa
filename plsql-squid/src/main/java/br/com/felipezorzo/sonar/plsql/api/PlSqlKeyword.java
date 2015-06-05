@@ -39,7 +39,18 @@ public enum PlSqlKeyword implements TokenType {
     POSITIVEN("positiven"),
     REAL("real"),
     SIGNTYPE("signtype"),
-    SMALLINT("smallint");
+    SMALLINT("smallint"),
+    CHAR("char"),
+    CHARACTER("character"),
+    LONG("long"),
+    RAW("raw"),
+    NCHAR("nchar"),
+    NVARCHAR2("nvarchar2"),
+    ROWID("rowid"),
+    STRING("string"),
+    UROWID("urowid"),
+    VARCHAR("varchar"),
+    VARCHAR2("varchar2");
 
     private final String value;
 

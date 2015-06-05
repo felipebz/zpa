@@ -14,6 +14,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     DATATYPE,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
+    CHARACTER_DATAYPE,
     
     /* Literals */
     LITERAL,
@@ -70,7 +71,24 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         SIGNTYPE,
                         SMALLINT), 
                 b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
+        
         b.rule(LOB_DATATYPE).is(b.firstOf(BFILE, BLOB, CLOB, NCLOB));
+        
+        b.rule(CHARACTER_DATAYPE).is(
+                b.firstOf(
+                        CHAR,
+                        CHARACTER,
+                        LONG,
+                        b.sequence(LONG, RAW),
+                        NCHAR,
+                        NVARCHAR2,
+                        RAW,
+                        ROWID,
+                        STRING,
+                        UROWID,
+                        VARCHAR,
+                        VARCHAR2), 
+                b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS));
         
         b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE));
     }
