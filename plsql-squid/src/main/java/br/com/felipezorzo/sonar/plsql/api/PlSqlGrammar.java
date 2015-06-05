@@ -21,6 +21,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     BOOLEAN_LITERAL,
     NULL_LITERAL,
     NUMERIC_LITERAL,
+    CHARACTER_LITERAL,
     
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
@@ -44,8 +45,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
         b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
+        b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
         
-        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL));
+        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL));
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
@@ -90,14 +92,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         VARCHAR2), 
                 b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS));
         
-        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE));
+        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                                           b.optional(CONSTANT),
                                           DATATYPE,
-                                          b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), NUMERIC_LITERAL),
+                                          b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL),
                                           SEMICOLON);
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));

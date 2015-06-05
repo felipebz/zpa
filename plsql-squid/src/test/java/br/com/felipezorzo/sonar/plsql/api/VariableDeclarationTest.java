@@ -31,11 +31,13 @@ public class VariableDeclarationTest extends RuleTest {
     @Test
     public void matchesDeclarationWithInitialization() {
         assertThat(p).matches("var number := 1;");
+        assertThat(p).matches("var varchar2(1) := 'a';");
     }
     
     @Test
     public void matchesDeclarationWithDefaultValue() {
         assertThat(p).matches("var number default 1;");
+        assertThat(p).matches("var varchar2(1) default 'a';");
     }
     
     @Test
