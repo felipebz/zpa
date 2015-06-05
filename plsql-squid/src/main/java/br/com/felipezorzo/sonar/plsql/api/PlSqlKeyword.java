@@ -16,7 +16,11 @@ public enum PlSqlKeyword implements TokenType {
     NOT("not"),
     CONSTANT("constant"),
     FALSE("false"),
-    TRUE("true");
+    TRUE("true"),
+    BFILE("bfile"),
+    BLOB("blob"),
+    CLOB("clob"),
+    NCLOB("nclob");
 
     private final String value;
 
