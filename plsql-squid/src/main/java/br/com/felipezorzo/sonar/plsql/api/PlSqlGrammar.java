@@ -16,6 +16,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     LOB_DATATYPE,
     CHARACTER_DATAYPE,
     BOOLEAN_DATATYPE,
+    DATE_DATATYPE,
     
     /* Literals */
     LITERAL,
@@ -95,7 +96,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);
         
-        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE, BOOLEAN_DATATYPE));
+        b.rule(DATE_DATATYPE).is(DATE);
+        
+        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE, BOOLEAN_DATATYPE, DATE_DATATYPE));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
