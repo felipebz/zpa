@@ -48,7 +48,28 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
-        b.rule(NUMERIC_DATATYPE).is(NUMBER, b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
+        b.rule(NUMERIC_DATATYPE).is(
+                b.firstOf(
+                        BINARY_DOUBLE,
+                        BINARY_FLOAT,
+                        BINARY_INTEGER,
+                        DEC,
+                        DECIMAL,
+                        b.sequence(DOUBLE, PRECISION),
+                        FLOAT,
+                        INT,
+                        INTEGER,
+                        NATURAL,
+                        NATURALN,
+                        NUMBER,
+                        NUMERIC,
+                        PLS_INTEGER,
+                        POSITIVE,
+                        POSITIVEN,
+                        REAL,
+                        SIGNTYPE,
+                        SMALLINT), 
+                b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
         b.rule(LOB_DATATYPE).is(b.firstOf(BFILE, BLOB, CLOB, NCLOB));
         
         b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE));

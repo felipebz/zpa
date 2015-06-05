@@ -20,7 +20,26 @@ public enum PlSqlKeyword implements TokenType {
     BFILE("bfile"),
     BLOB("blob"),
     CLOB("clob"),
-    NCLOB("nclob");
+    NCLOB("nclob"),
+    BINARY_DOUBLE("binary_double"),
+    BINARY_FLOAT("binary_float"),
+    BINARY_INTEGER("binary_integer"),
+    DEC("dec"),
+    DECIMAL("DECIMAL"),
+    DOUBLE("double"),
+    PRECISION("precision"),
+    FLOAT("float"),
+    INT("int"),
+    INTEGER("integer"),
+    NATURAL("natural"),
+    NATURALN("naturaln"),
+    NUMERIC("numeric"),
+    PLS_INTEGER("pls_integer"),
+    POSITIVE("positive"),
+    POSITIVEN("positiven"),
+    REAL("real"),
+    SIGNTYPE("signtype"),
+    SMALLINT("smallint");
 
     private final String value;
 
