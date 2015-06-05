@@ -32,12 +32,14 @@ public class VariableDeclarationTest extends RuleTest {
     public void matchesDeclarationWithInitialization() {
         assertThat(p).matches("var number := 1;");
         assertThat(p).matches("var varchar2(1) := 'a';");
+        assertThat(p).matches("var boolean := true;");
     }
     
     @Test
     public void matchesDeclarationWithDefaultValue() {
         assertThat(p).matches("var number default 1;");
         assertThat(p).matches("var varchar2(1) default 'a';");
+        assertThat(p).matches("var boolean default true;");
     }
     
     @Test

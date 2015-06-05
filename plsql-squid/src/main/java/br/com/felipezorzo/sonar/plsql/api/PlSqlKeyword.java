@@ -50,7 +50,8 @@ public enum PlSqlKeyword implements TokenType {
     STRING("string"),
     UROWID("urowid"),
     VARCHAR("varchar"),
-    VARCHAR2("varchar2");
+    VARCHAR2("varchar2"),
+    BOOLEAN("boolean");
 
     private final String value;
 
