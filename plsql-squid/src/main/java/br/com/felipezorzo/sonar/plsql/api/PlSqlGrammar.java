@@ -25,6 +25,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NUMERIC_LITERAL,
     CHARACTER_LITERAL,
     
+    /* Expressions */
+    CHARACTER_EXPRESSION,
+    
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
@@ -40,6 +43,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createLiterals(b);
         createDatatypes(b);
         createStatements(b);
+        createExpressions(b);
         return b;
     }
     
@@ -111,5 +115,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
         b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT));
+    }
+    
+    private static void createExpressions(LexerfulGrammarBuilder b) {
+        // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
+        b.rule(CHARACTER_EXPRESSION).is(b.firstOf(STRING_LITERAL, IDENTIFIER_NAME), b.optional(CONCATENATION, CHARACTER_EXPRESSION));
     }
 }
