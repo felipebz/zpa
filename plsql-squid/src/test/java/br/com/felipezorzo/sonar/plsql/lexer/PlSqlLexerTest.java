@@ -12,6 +12,7 @@ import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType;
 
 import com.google.common.base.Charsets;
+import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlLexerTest {
@@ -36,86 +37,90 @@ public class PlSqlLexerTest {
     
     @Test
     public void simpleStringLiteral() {
-        assertThat(lexer.lex("'Test'"), hasToken("'Test'", PlSqlTokenType.STRING_LITERAL));
+        assertThatIsToken("'Test'", PlSqlTokenType.STRING_LITERAL);
     }
     
     @Test
     public void stringLiteralWithDoubleQuotationMarks() {
-        assertThat(lexer.lex("'I''m a string'"), hasToken("'I''m a string'", PlSqlTokenType.STRING_LITERAL));
+        assertThatIsToken("'I''m a string'", PlSqlTokenType.STRING_LITERAL);
     }
     
     @Test @Ignore
     public void stringLiteralWithUserDefinedDelimiters() {
-        assertThat(lexer.lex("q'!I'm a string!'"), hasToken("q'!I'm a string!'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("q'[I'm a string]'"), hasToken("q'[I'm a string]'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("q'{I'm a string}'"), hasToken("q'{I'm a string}'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("q'<I'm a string>'"), hasToken("q'<I'm a string>'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("q'(I'm a string)'"), hasToken("q'(I'm a string)'", PlSqlTokenType.STRING_LITERAL));
+        assertThatIsToken("q'!I'm a string!'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("q'[I'm a string]'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("q'{I'm a string}'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("q'<I'm a string>'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("q'(I'm a string)'", PlSqlTokenType.STRING_LITERAL);
         
-        assertThat(lexer.lex("nq'!I'm a string!'"), hasToken("nq'!I'm a string!'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("nq'[I'm a string]'"), hasToken("nq'[I'm a string]'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("nq'{I'm a string}'"), hasToken("nq'{I'm a string}'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("nq'<I'm a string>'"), hasToken("nq'<I'm a string>'", PlSqlTokenType.STRING_LITERAL));
-        assertThat(lexer.lex("nq'(I'm a string)'"), hasToken("nq'(I'm a string)'", PlSqlTokenType.STRING_LITERAL));
+        assertThatIsToken("nq'!I'm a string!'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("nq'[I'm a string]'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("nq'{I'm a string}'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("nq'<I'm a string>'", PlSqlTokenType.STRING_LITERAL);
+        assertThatIsToken("nq'(I'm a string)'", PlSqlTokenType.STRING_LITERAL);
     }
     
     @Test
     public void simpleIntegerLiteral() {
-        assertThat(lexer.lex("6"), hasToken("6", PlSqlTokenType.INTEGER_LITERAL));
+        assertThatIsToken("6", PlSqlTokenType.INTEGER_LITERAL);
     }
     
     @Test
     public void negativeIntegerLiteral() {
-        assertThat(lexer.lex("-14"), hasToken("-14", PlSqlTokenType.INTEGER_LITERAL));
+        assertThatIsToken("-14", PlSqlTokenType.INTEGER_LITERAL);
     }
     
     @Test
     public void positiveIntegerLiteral() {
-        assertThat(lexer.lex("+32767"), hasToken("+32767", PlSqlTokenType.INTEGER_LITERAL));
+        assertThatIsToken("+32767", PlSqlTokenType.INTEGER_LITERAL);
     }
     
     @Test
     public void simpleRealLiteral() {
-        assertThat(lexer.lex("3.14159"), hasToken("3.14159", PlSqlTokenType.REAL_LITERAL));
+        assertThatIsToken("3.14159", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
     public void negativeRealLiteral() {
-        assertThat(lexer.lex("-12.0"), hasToken("-12.0", PlSqlTokenType.REAL_LITERAL));
+        assertThatIsToken("-12.0", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
     public void positiveRealLiteral() {
-        assertThat(lexer.lex("+8300.00"), hasToken("+8300.00", PlSqlTokenType.REAL_LITERAL));
+        assertThatIsToken("+8300.00", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
     public void realLiteralWithDecimalPointOnly() {
-        assertThat(lexer.lex(".5"), hasToken(".5", PlSqlTokenType.REAL_LITERAL));
+        assertThatIsToken(".5", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
     public void realLiteralWithWholePartOnly() {
-        assertThat(lexer.lex("25."), hasToken("25.", PlSqlTokenType.REAL_LITERAL));
+        assertThatIsToken("25.", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
     public void simpleScientificNotationLiteral() {
-        assertThat(lexer.lex("2E5"), hasToken("2E5", PlSqlTokenType.SCIENTIFIC_LITERAL));
+        assertThatIsToken("2E5", PlSqlTokenType.SCIENTIFIC_LITERAL);
     }
     
     @Test
     public void scientificNotationLiteralWithNegativeExponent() {
-        assertThat(lexer.lex("1.0E-7"), hasToken("1.0E-7", PlSqlTokenType.SCIENTIFIC_LITERAL));
+        assertThatIsToken("1.0E-7", PlSqlTokenType.SCIENTIFIC_LITERAL);
     }
     
     @Test
     public void negativeScientificNotationLiteral() {
-        assertThat(lexer.lex("-1E38"), hasToken("-1E38", PlSqlTokenType.SCIENTIFIC_LITERAL));
+        assertThatIsToken("-1E38", PlSqlTokenType.SCIENTIFIC_LITERAL);
     }
     
     @Test
     public void scientificNotationWithLowercaseSuffix() {
-        assertThat(lexer.lex("9.5e-3"), hasToken("9.5e-3", PlSqlTokenType.SCIENTIFIC_LITERAL));
+        assertThatIsToken("9.5e-3", PlSqlTokenType.SCIENTIFIC_LITERAL);
+    }
+    
+    private void assertThatIsToken(String sourceCode, TokenType tokenType) {
+        assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType));
     }
 }
