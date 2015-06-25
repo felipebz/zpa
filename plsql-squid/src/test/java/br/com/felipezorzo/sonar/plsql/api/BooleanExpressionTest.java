@@ -3,6 +3,7 @@ package br.com.felipezorzo.sonar.plsql.api;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BooleanExpressionTest extends RuleTest {
@@ -14,27 +15,37 @@ public class BooleanExpressionTest extends RuleTest {
     
     @Test
     public void matchesSimpleAndExpression() {
-        assertThat(p).matches("TRUE AND TRUE");
+        assertThat(p).matches("true and true");
     }
     
     @Test
     public void matchesSimpleOrExpression() {
-        assertThat(p).matches("TRUE OR TRUE");
+        assertThat(p).matches("true or true");
     }
     
     @Test
     public void matchesSimpleNotExpression() {
-        assertThat(p).matches("NOT TRUE");
+        assertThat(p).matches("not true");
     }
     
     @Test
     public void matchesMultipleExpression() {
-        assertThat(p).matches("TRUE AND TRUE OR TRUE");
+        assertThat(p).matches("true and true or true");
     }
     
     @Test
     public void matchesMultipleExpressionWithNotOperator() {
-        assertThat(p).matches("TRUE AND NOT FALSE");
+        assertThat(p).matches("true and not false");
+    }
+    
+    @Test
+    public void matchesExpressionWithVariables() {
+        assertThat(p).matches("var and var");
+    }
+    
+    @Test @Ignore
+    public void matchesExpressionWithFunctionCall() {
+        assertThat(p).matches("func(var) and func(var)");
     }
     
 }

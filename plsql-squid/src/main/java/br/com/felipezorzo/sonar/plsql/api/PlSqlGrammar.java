@@ -108,10 +108,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
     private static void createStatements(LexerfulGrammarBuilder b) {
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
-                                          b.optional(CONSTANT),
-                                          DATATYPE,
-                                          b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL),
-                                          SEMICOLON);
+                                        b.optional(CONSTANT),
+                                        DATATYPE,
+                                        b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL),
+                                        SEMICOLON);
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
         b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);
@@ -120,8 +120,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
-        b.rule(CHARACTER_EXPRESSION).is(b.firstOf(STRING_LITERAL, IDENTIFIER_NAME), b.optional(CONCATENATION, CHARACTER_EXPRESSION));
+        b.rule(CHARACTER_EXPRESSION).is(
+               b.firstOf(STRING_LITERAL, IDENTIFIER_NAME),
+               b.optional(CONCATENATION, CHARACTER_EXPRESSION));
         
-        b.rule(BOOLEAN_EXPRESSION).is(b.optional(NOT), BOOLEAN_LITERAL, b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
+        b.rule(BOOLEAN_EXPRESSION).is(
+               b.optional(NOT),
+               b.firstOf(BOOLEAN_LITERAL, IDENTIFIER_NAME),
+               b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
     }
 }
