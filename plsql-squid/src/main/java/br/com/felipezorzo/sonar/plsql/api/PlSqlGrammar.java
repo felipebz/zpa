@@ -26,6 +26,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CHARACTER_LITERAL,
     
     /* Expressions */
+    EXPRESSION,
     CHARACTER_EXPRESSION,
     BOOLEAN_EXPRESSION,
     
@@ -128,5 +129,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.optional(NOT),
                b.firstOf(BOOLEAN_LITERAL, IDENTIFIER_NAME),
                b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
+        
+        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION));
     }
 }
