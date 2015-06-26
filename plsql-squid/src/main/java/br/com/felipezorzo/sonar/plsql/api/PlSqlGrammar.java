@@ -29,6 +29,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXPRESSION,
     CHARACTER_EXPRESSION,
     BOOLEAN_EXPRESSION,
+    DATE_EXPRESSION,
     
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
@@ -130,6 +131,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.firstOf(BOOLEAN_LITERAL, IDENTIFIER_NAME),
                b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
         
-        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION));
+     // TODO: change NUMERIC_LITERAL to NUMERIC_EXPRESSION
+        b.rule(DATE_EXPRESSION).is(
+               b.firstOf(DATE_LITERAL, IDENTIFIER_NAME),
+               b.optional(b.firstOf(PLUS, MINUS), NUMERIC_LITERAL));
+        
+        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION));
     }
 }

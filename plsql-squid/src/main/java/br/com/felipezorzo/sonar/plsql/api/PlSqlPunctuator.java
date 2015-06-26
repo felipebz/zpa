@@ -7,6 +7,7 @@ public enum PlSqlPunctuator implements TokenType {
     // Based on http://docs.oracle.com/cd/B19306_01/appdev.102/b14261/fundamentals.htm#sthref297
     COMMA(","),
     PLUS("+"),
+    MINUS("-"),
     MOD("%"),
     DOT("."),
     DIVISION("/"),
