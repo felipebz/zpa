@@ -120,6 +120,11 @@ public class PlSqlLexerTest {
         assertThatIsToken("9.5e-3", PlSqlTokenType.SCIENTIFIC_LITERAL);
     }
     
+    @Test
+    public void dateLiteral() {
+        assertThatIsToken("DATE '2015-01-01'", PlSqlTokenType.DATE_LITERAL);
+    }
+    
     private void assertThatIsToken(String sourceCode, TokenType tokenType) {
         assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType));
     }

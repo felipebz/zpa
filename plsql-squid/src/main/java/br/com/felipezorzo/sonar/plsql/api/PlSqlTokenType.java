@@ -7,7 +7,8 @@ public enum PlSqlTokenType implements TokenType {
     STRING_LITERAL,
     INTEGER_LITERAL,
     SCIENTIFIC_LITERAL,
-    REAL_LITERAL;
+    REAL_LITERAL,
+    DATE_LITERAL;
 
     public String getName() {
         return name();

@@ -20,12 +20,14 @@ public class PlSqlLexer {
     public static final String MULTILINE_COMMENT = "/\\*[\\s\\S]*?\\*\\/";
     public static final String COMMENT = "(?:" + INLINE_COMMENT + "|" + MULTILINE_COMMENT + ")";
     
+    // Literals reference: http://docs.oracle.com/cd/B19306_01/server.102/b14200/sql_elements003.htm
     // Unlike some other languages (like Python), in PL/SQL the sign of a number is a part of the literal.
     // So, -5 is a valid numeric literal, but --5 isn't.
     public static final String INTEGER_LITERAL = "(?:(\\+|-)?[0-9]++)";
     public static final String REAL_LITERAL = "(?:(\\+|-)?[0-9]*+\\.[0-9]*+)";
     public static final String SCIENTIFIC_LITERAL = "(?:(\\+|-)?[0-9]*+(\\.[0-9]*+)?[Ee](\\+|-)?[0-9]++)";
     public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
+    public static final String DATE_LITERAL = "(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
     
     private PlSqlLexer() {
     }
@@ -42,6 +44,7 @@ public class PlSqlLexer {
                 .withChannel(regexp(PlSqlTokenType.REAL_LITERAL, REAL_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
+                .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
                 .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), false, PlSqlKeyword.values()))
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
                 .withChannel(new UnknownCharacterChannel())
