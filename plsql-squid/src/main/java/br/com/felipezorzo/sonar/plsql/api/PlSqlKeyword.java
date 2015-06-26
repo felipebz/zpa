@@ -54,7 +54,16 @@ public enum PlSqlKeyword implements TokenType {
     VARCHAR("varchar"),
     VARCHAR2("varchar2"),
     BOOLEAN("boolean"),
-    DATE("date");
+    DATE("date"),
+    ROWCOUNT("rowcount"),
+    SQL("sql"),
+    BULK_ROWCOUNT("bulk_rowcount"),
+    COUNT("count"),
+    FIRST("first"),
+    LAST("last"),
+    LIMIT("limit"),
+    NEXT("next"),
+    PRIOR("prior");
 
     private final String value;
 

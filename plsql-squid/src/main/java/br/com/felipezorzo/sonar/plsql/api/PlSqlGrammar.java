@@ -30,6 +30,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CHARACTER_EXPRESSION,
     BOOLEAN_EXPRESSION,
     DATE_EXPRESSION,
+    NUMERIC_EXPRESSION,
     
     BLOCK_STATEMENT,
     EXCEPTION_HANDLER,
@@ -131,11 +132,31 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.firstOf(BOOLEAN_LITERAL, IDENTIFIER_NAME),
                b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
         
-     // TODO: change NUMERIC_LITERAL to NUMERIC_EXPRESSION
         b.rule(DATE_EXPRESSION).is(
                b.firstOf(DATE_LITERAL, IDENTIFIER_NAME),
-               b.optional(b.firstOf(PLUS, MINUS), NUMERIC_LITERAL));
+               b.optional(b.firstOf(PLUS, MINUS), NUMERIC_EXPRESSION));
         
-        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION));
+        b.rule(NUMERIC_EXPRESSION).is(
+               b.firstOf(NUMERIC_LITERAL,
+                         b.sequence(IDENTIFIER_NAME, 
+                             b.optional(
+                                 b.firstOf(b.sequence(MOD, ROWCOUNT),
+                                           // TODO: figure out why the DOT punctuator doesn't work here
+                                           b.sequence(".", b.firstOf(COUNT,
+                                                                     FIRST,
+                                                                     LAST,
+                                                                     LIMIT,
+                                                                     b.sequence(b.firstOf(NEXT, PRIOR),
+                                                                                LPARENTHESIS,
+                                                                                NUMERIC_EXPRESSION,
+                                                                                RPARENTHESIS)))
+                                              ))),
+                         b.sequence(SQL, MOD, b.firstOf(ROWCOUNT,
+                                                        b.sequence(BULK_ROWCOUNT, LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))
+                         ),
+               b.optional(EXPONENTIATION, NUMERIC_EXPRESSION),
+               b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
+        
+        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
     }
 }
