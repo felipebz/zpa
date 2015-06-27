@@ -14,27 +14,27 @@ public class AssignmentStatementTest extends RuleTest {
     
     @Test
     public void assignmentToVariable() {
-        assertThat(p).matches("var := 1");
+        assertThat(p).matches("var := 1;");
     }
     
     @Test
     public void assignmentToRecordAttribute() {
-        assertThat(p).matches("record.attribute := 1");
+        assertThat(p).matches("record.attribute := 1;");
     }
     
     @Test
     public void assignmentToCollectionElement() {
-        assertThat(p).matches("collection(1) := 1");
+        assertThat(p).matches("collection(1) := 1;");
     }
     
     @Test
     public void assignmentToHostVariable() {
-        assertThat(p).matches(":var := 1");
+        assertThat(p).matches(":var := 1;");
     }
     
     @Test
     public void assignmentToIndicatorVariable() {
-        assertThat(p).matches(":var:indicator := 1");
+        assertThat(p).matches(":var:indicator := 1;");
     }
 
 }

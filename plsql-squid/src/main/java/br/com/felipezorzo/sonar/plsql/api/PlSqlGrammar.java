@@ -132,7 +132,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                                           b.sequence(LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))),
                           HOST_AND_INDICATOR_VARIABLE),
                 ASSIGNMENT,
-                EXPRESSION);
+                EXPRESSION,
+                SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT));
     }
