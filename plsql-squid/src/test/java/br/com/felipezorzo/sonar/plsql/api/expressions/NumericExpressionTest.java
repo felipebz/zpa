@@ -46,7 +46,7 @@ public class NumericExpressionTest extends RuleTest {
         assertThat(p).matches("cur%rowcount + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesHostCursorRowcount() {
         assertThat(p).matches(":cur%rowcount + 1");
     }
@@ -61,12 +61,12 @@ public class NumericExpressionTest extends RuleTest {
         assertThat(p).matches("sql%bulk_rowcount(1) + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesHostVariableExpression() {
         assertThat(p).matches(":var + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesIndicatorVariableExpression() {
         assertThat(p).matches(":var:indicator + 1");
     }

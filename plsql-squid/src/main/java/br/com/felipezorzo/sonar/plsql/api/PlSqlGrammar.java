@@ -38,7 +38,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
     STATEMENT,
-    VARIABLE_DECLARATION;
+    VARIABLE_DECLARATION,
+    HOST_AND_INDICATOR_VARIABLE;
 
     public static LexerfulGrammarBuilder create() {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
@@ -111,6 +112,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
+        b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(b.sequence(COLON, IDENTIFIER_NAME)));
+        
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                                         b.optional(CONSTANT),
                                         DATATYPE,
@@ -127,7 +130,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(b.sequence(IDENTIFIER_NAME,
                                      b.optional(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
                                                           b.sequence(LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))),
-                          b.sequence(COLON, IDENTIFIER_NAME, b.optional(b.sequence(COLON, IDENTIFIER_NAME)))),
+                          HOST_AND_INDICATOR_VARIABLE),
                 ASSIGNMENT,
                 EXPRESSION);
         
@@ -137,7 +140,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         b.rule(CHARACTER_EXPRESSION).is(
-               b.firstOf(STRING_LITERAL, IDENTIFIER_NAME),
+               b.firstOf(STRING_LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE),
                b.optional(CONCATENATION, CHARACTER_EXPRESSION));
         
         b.rule(BOOLEAN_EXPRESSION).is(
@@ -146,12 +149,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
         
         b.rule(DATE_EXPRESSION).is(
-               b.firstOf(DATE_LITERAL, IDENTIFIER_NAME),
+               b.firstOf(DATE_LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE),
                b.optional(b.firstOf(PLUS, MINUS), NUMERIC_EXPRESSION));
         
         b.rule(NUMERIC_EXPRESSION).is(
                b.firstOf(NUMERIC_LITERAL,
-                         b.sequence(IDENTIFIER_NAME, 
+                         b.sequence(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE), 
                              b.optional(
                                  b.firstOf(b.sequence(MOD, ROWCOUNT),
                                            b.sequence(DOT, b.firstOf(COUNT,
@@ -164,8 +167,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                                                                 RPARENTHESIS)))
                                               ))),
                          b.sequence(SQL, MOD, b.firstOf(ROWCOUNT,
-                                                        b.sequence(BULK_ROWCOUNT, LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))
-                         ),
+                                                        b.sequence(BULK_ROWCOUNT, LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS))),
+                         HOST_AND_INDICATOR_VARIABLE),
                b.optional(EXPONENTIATION, NUMERIC_EXPRESSION),
                b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
         

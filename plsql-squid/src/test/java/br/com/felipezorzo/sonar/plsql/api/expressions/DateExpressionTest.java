@@ -36,12 +36,12 @@ public class DateExpressionTest extends RuleTest {
         assertThat(p).matches("func(var) + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesHostVariableExpression() {
         assertThat(p).matches(":var + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesIndicatorVariableExpression() {
         assertThat(p).matches(":var:indicator + 1");
     }

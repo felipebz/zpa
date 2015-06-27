@@ -36,12 +36,12 @@ public class CharacterExpressionTest extends RuleTest {
         assertThat(p).matches("func(var)||func(var)");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesHostVariableConcatenation() {
         assertThat(p).matches(":var||:var");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesIndicatorVariableConcatenation() {
         assertThat(p).matches(":var:indicator||:var:indicator");
     }
