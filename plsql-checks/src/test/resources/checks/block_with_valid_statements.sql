@@ -1,0 +1,5 @@
+DECLARE
+  VAR NUMBER;
+BEGIN
+  VAR := 1;
+END;
