@@ -141,8 +141,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                          b.sequence(IDENTIFIER_NAME, 
                              b.optional(
                                  b.firstOf(b.sequence(MOD, ROWCOUNT),
-                                           // TODO: figure out why the DOT punctuator doesn't work here
-                                           b.sequence(".", b.firstOf(COUNT,
+                                           b.sequence(DOT, b.firstOf(COUNT,
                                                                      FIRST,
                                                                      LAST,
                                                                      LIMIT,

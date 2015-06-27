@@ -24,7 +24,7 @@ public class PlSqlLexer {
     // Unlike some other languages (like Python), in PL/SQL the sign of a number is a part of the literal.
     // So, -5 is a valid numeric literal, but --5 isn't.
     public static final String INTEGER_LITERAL = "(?:(\\+|-)?[0-9]++)";
-    public static final String REAL_LITERAL = "(?:(\\+|-)?[0-9]*+\\.[0-9]*+)";
+    public static final String REAL_LITERAL = "(?:(\\+|-)?([0-9]*+\\.[0-9]++|[0-9]++\\.[0-9]*+))";
     public static final String SCIENTIFIC_LITERAL = "(?:(\\+|-)?[0-9]*+(\\.[0-9]*+)?[Ee](\\+|-)?[0-9]++)";
     public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
     public static final String DATE_LITERAL = "(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
