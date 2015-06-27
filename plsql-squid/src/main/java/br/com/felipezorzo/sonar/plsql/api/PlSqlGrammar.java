@@ -36,6 +36,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
     NULL_STATEMENT,
+    ASSIGNMENT_STATEMENT,
     STATEMENT,
     VARIABLE_DECLARATION;
 
@@ -115,10 +116,22 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                         DATATYPE,
                                         b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL),
                                         SEMICOLON);
+        
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
+        
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
+        
         b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);
-        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT));
+        
+        b.rule(ASSIGNMENT_STATEMENT).is(
+                b.firstOf(b.sequence(IDENTIFIER_NAME,
+                                     b.optional(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
+                                                          b.sequence(LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))),
+                          b.sequence(COLON, IDENTIFIER_NAME, b.optional(b.sequence(COLON, IDENTIFIER_NAME)))),
+                ASSIGNMENT,
+                EXPRESSION);
+        
+        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
