@@ -3,6 +3,7 @@ package br.com.felipezorzo.sonar.plsql.api;
 import static br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword.*;
 import static br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator.*;
 import static br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType.*;
+import static com.sonar.sslr.api.GenericTokenType.EOF;
 import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 
 import org.sonar.sslr.grammar.GrammarRuleKey;
@@ -39,17 +40,25 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ASSIGNMENT_STATEMENT,
     STATEMENT,
     VARIABLE_DECLARATION,
-    HOST_AND_INDICATOR_VARIABLE;
+    HOST_AND_INDICATOR_VARIABLE,
+    
+    // Top-level components
+    FILE_INPUT;
 
     public static LexerfulGrammarBuilder create() {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
+        b.rule(FILE_INPUT).is(BLOCK_STATEMENT, EOF);
 
         createLiterals(b);
         createDatatypes(b);
         createStatements(b);
         createExpressions(b);
+        
+        b.setRootRule(FILE_INPUT);
+        b.buildWithMemoizationOfMatchesForAllRules();
+        
         return b;
     }
     
