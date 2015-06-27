@@ -23,10 +23,23 @@ public class PlSqlLexer {
     // Literals reference: http://docs.oracle.com/cd/B19306_01/server.102/b14200/sql_elements003.htm
     // Unlike some other languages (like Python), in PL/SQL the sign of a number is a part of the literal.
     // So, -5 is a valid numeric literal, but --5 isn't.
-    public static final String INTEGER_LITERAL = "(?:(\\+|-)?[0-9]++)";
-    public static final String REAL_LITERAL = "(?:(\\+|-)?([0-9]*+\\.[0-9]++|[0-9]++\\.[0-9]*+))";
-    public static final String SCIENTIFIC_LITERAL = "(?:(\\+|-)?[0-9]*+(\\.[0-9]*+)?[Ee](\\+|-)?[0-9]++)";
+    public static final String INTEGER_LITERAL = "(?:"
+            + "(\\+|-)?\\d++"
+            + ")";
+    
+    public static final String REAL_LITERAL = "(?:"
+            + "(\\+|-)?("
+            + "\\d*+\\.\\d++"
+            + "|\\d++\\.\\d*+)"
+            + ")";
+    
+    public static final String SCIENTIFIC_LITERAL = "(?:"
+            + "(\\+|-)?"
+            + "\\d*+(\\.\\d*+)?[Ee](\\+|-)?\\d++"
+            + ")";
+    
     public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
+    
     public static final String DATE_LITERAL = "(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
     
     private PlSqlLexer() {
