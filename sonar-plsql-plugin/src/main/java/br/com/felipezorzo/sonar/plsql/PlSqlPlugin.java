@@ -21,8 +21,14 @@ public class PlSqlPlugin extends SonarPlugin {
           .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
           .category("PL/SQL")
           .onQualifiers(Qualifiers.PROJECT)
-          .defaultValue("sql")
-          .build());
+          .defaultValue("sql,pkg,pks,pkb")
+          .build(),
+        
+        PlSql.class,
+        PlSqlProfile.class,
+        PlSqlSquidSensor.class,
+        PlSqlRuleRepository.class,
+        PlSqlCpdMapping.class);
   }
 
 }

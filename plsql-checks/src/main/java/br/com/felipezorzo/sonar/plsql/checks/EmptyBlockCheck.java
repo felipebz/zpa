@@ -18,7 +18,8 @@ import com.sonar.sslr.api.Grammar;
     key = EmptyBlockCheck.CHECK_KEY,
     priority = Priority.INFO,
     name = "Empty blocks should be removed.",
-    tags = Tags.UNUSED
+    tags = Tags.UNUSED,
+    description = "Empty blocks should be removed."
 )
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("5min")
