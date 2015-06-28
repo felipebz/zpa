@@ -16,6 +16,7 @@ public class CheckList {
     @SuppressWarnings("rawtypes")
     public static List<Class> getChecks() {
         return ImmutableList.<Class>of(
-            EmptyBlockCheck.class);
+            EmptyBlockCheck.class,
+            ParsingErrorCheck.class);
     }
 }
