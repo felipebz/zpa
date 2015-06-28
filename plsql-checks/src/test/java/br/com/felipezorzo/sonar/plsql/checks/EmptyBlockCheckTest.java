@@ -16,8 +16,8 @@ public class EmptyBlockCheckTest {
         SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/checks/empty_block.sql"), check);
         String message = "Either remove or fill this block of code.";
         CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2)
-            .withMessage(message).noMore();
+            .next().atLine(2).withMessage(message)
+            .noMore();
     }
     
     @Test

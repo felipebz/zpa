@@ -3,3 +3,4 @@ DECLARE
 BEGIN
   VAR := 1;
 END;
+/

@@ -63,7 +63,8 @@ public enum PlSqlKeyword implements TokenType {
     LAST("last"),
     LIMIT("limit"),
     NEXT("next"),
-    PRIOR("prior");
+    PRIOR("prior"),
+    DECLARE("declare");
 
     private final String value;
 

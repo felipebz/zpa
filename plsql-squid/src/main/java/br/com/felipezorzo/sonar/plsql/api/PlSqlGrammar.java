@@ -41,6 +41,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     STATEMENT,
     VARIABLE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
+    EXECUTE_PLSQL_BUFFER,
+    
+    // Program units
+    ANONYMOUS_BLOCK,
     
     // Top-level components
     FILE_INPUT;
@@ -49,12 +53,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
-        b.rule(FILE_INPUT).is(BLOCK_STATEMENT, EOF);
+        b.rule(FILE_INPUT).is(b.oneOrMore(ANONYMOUS_BLOCK), EOF);
 
         createLiterals(b);
         createDatatypes(b);
         createStatements(b);
         createExpressions(b);
+        createProgramUnits(b);
         
         b.setRootRule(FILE_INPUT);
         b.buildWithMemoizationOfMatchesForAllRules();
@@ -183,5 +188,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
         
         b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
+    }
+    
+    private static void createProgramUnits(LexerfulGrammarBuilder b) {
+        b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
+        
+        b.rule(ANONYMOUS_BLOCK).is(
+                b.optional(b.sequence(DECLARE, b.oneOrMore(VARIABLE_DECLARATION))),
+                BLOCK_STATEMENT,
+                EXECUTE_PLSQL_BUFFER
+                );
     }
 }
