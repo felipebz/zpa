@@ -21,6 +21,7 @@ public class PlSqlTokenizer implements Tokenizer {
         this.charset = charset;
     }
 
+    @Override
     public final void tokenize(SourceCode source, Tokens cpdTokens) {
         Lexer lexer = PlSqlLexer.create(new PlSqlConfiguration(charset));
         String fileName = source.getFileName();
