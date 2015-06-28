@@ -1,6 +1,5 @@
 package br.com.felipezorzo.sonar.plsql.checks;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.sonar.api.server.rule.RulesDefinition;
@@ -31,7 +30,6 @@ public class ParsingErrorCheck extends SquidCheck<Grammar> implements AstScanner
     @Override
     public void processException(Exception e) {
       StringWriter exception = new StringWriter();
-      e.printStackTrace(new PrintWriter(exception));
       getContext().createFileViolation(this, exception.toString());
     }
 
