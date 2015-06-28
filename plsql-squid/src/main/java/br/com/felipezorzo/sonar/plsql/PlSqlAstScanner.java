@@ -16,6 +16,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
 import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
 
@@ -23,8 +24,12 @@ public class PlSqlAstScanner {
 
     private PlSqlAstScanner() {
     }
+    
+    public static SourceFile scanSingleFile(File file, SquidAstVisitor<Grammar> visitor) {
+        return scanSingleFile(file, ImmutableList.of(visitor));
+    }
 
-    public static SourceFile scanSingleFile(File file, SquidAstVisitor<Grammar>... visitors) {
+    public static SourceFile scanSingleFile(File file, Collection<SquidAstVisitor<Grammar>> visitors) {
         if (!file.isFile()) {
             throw new IllegalArgumentException("File '" + file + "' not found.");
         }
@@ -38,7 +43,7 @@ public class PlSqlAstScanner {
         return (SourceFile) sources.iterator().next();
     }
     
-    public static AstScanner<Grammar> create(PlSqlConfiguration conf, SquidAstVisitor<Grammar>... visitors) {
+    public static AstScanner<Grammar> create(PlSqlConfiguration conf, Collection<SquidAstVisitor<Grammar>> visitors) {
         final SquidAstVisitorContextImpl<Grammar> context = 
                 new SquidAstVisitorContextImpl<>(new SourceProject("PL/SQL Project"));
         final Parser<Grammar> parser = PlSqlParser.create(conf);

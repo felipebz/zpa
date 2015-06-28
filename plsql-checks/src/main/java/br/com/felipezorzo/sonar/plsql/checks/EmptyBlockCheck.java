@@ -39,7 +39,6 @@ public class EmptyBlockCheck extends SquidCheck<Grammar> {
       AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENT);
       if (stmtLists.size() != 1) return;
       
-      
       AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
       if (nullStatementSelect.isEmpty()) return;
       
