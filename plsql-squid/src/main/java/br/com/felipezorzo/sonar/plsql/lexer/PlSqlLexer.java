@@ -27,10 +27,11 @@ public class PlSqlLexer {
             + "(\\+|-)?\\d++"
             + ")";
     
+    // TODO: improve this regex
     public static final String REAL_LITERAL = "(?:"
             + "(\\+|-)?("
-            + "\\d*+\\.\\d++"
-            + "|\\d++\\.\\d*+)"
+            + "\\d*+(?!\\.\\.)\\.\\d++"
+            + "|\\d++(?!\\.\\.)\\.\\d*+)"
             + ")";
     
     public static final String SCIENTIFIC_LITERAL = "(?:"
