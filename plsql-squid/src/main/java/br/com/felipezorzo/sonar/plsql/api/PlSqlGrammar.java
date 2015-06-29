@@ -38,6 +38,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
     IF_STATEMENT,
+    LOOP_STATEMENT,
     STATEMENT,
     VARIABLE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
@@ -159,7 +160,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
                 END, IF, SEMICOLON);
         
-        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT, IF_STATEMENT));
+        b.rule(LOOP_STATEMENT).is(LOOP, b.oneOrMore(STATEMENT), END, LOOP, SEMICOLON);
+        
+        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT, IF_STATEMENT, LOOP_STATEMENT));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
