@@ -70,7 +70,10 @@ public enum PlSqlKeyword implements TokenType {
     ELSE("else"),
     LOOP("loop"),
     EXIT("exit"),
-    CONTINUE("continue");
+    CONTINUE("continue"),
+    FOR("for"),
+    IN("in"),
+    REVERSE("reverse");
 
     private final String value;
 
