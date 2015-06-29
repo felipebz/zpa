@@ -64,7 +64,10 @@ public enum PlSqlKeyword implements TokenType {
     LIMIT("limit"),
     NEXT("next"),
     PRIOR("prior"),
-    DECLARE("declare");
+    DECLARE("declare"),
+    IF("if"),
+    ELSIF("elsif"),
+    ELSE("else");
 
     private final String value;
 

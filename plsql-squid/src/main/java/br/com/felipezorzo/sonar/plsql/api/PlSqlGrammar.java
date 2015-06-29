@@ -33,14 +33,17 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     DATE_EXPRESSION,
     NUMERIC_EXPRESSION,
     
+    /* Statements */
     BLOCK_STATEMENT,
-    EXCEPTION_HANDLER,
-    IDENTIFIER_NAME,
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
+    IF_STATEMENT,
     STATEMENT,
     VARIABLE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
+    
+    EXCEPTION_HANDLER,
+    IDENTIFIER_NAME,
     EXECUTE_PLSQL_BUFFER,
     
     // Program units
@@ -149,7 +152,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 EXPRESSION,
                 SEMICOLON);
         
-        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT));
+        b.rule(IF_STATEMENT).is(
+                IF, BOOLEAN_EXPRESSION, THEN,
+                b.oneOrMore(STATEMENT),
+                b.optional(b.oneOrMore(ELSIF, BOOLEAN_EXPRESSION, THEN, b.oneOrMore(STATEMENT))),
+                b.optional(ELSE, b.oneOrMore(STATEMENT)),
+                END, IF, SEMICOLON);
+        
+        b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT, BLOCK_STATEMENT, ASSIGNMENT_STATEMENT, IF_STATEMENT));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
