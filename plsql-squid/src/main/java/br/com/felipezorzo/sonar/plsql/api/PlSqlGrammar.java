@@ -45,7 +45,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     WHILE_STATEMENT,
     RETURN_STATEMENT,
     STATEMENT,
+    
+    /* Declarations */
     VARIABLE_DECLARATION,
+    PARAMETER_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     EXCEPTION_HANDLER,
@@ -68,6 +71,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createDatatypes(b);
         createStatements(b);
         createExpressions(b);
+        createDeclarations(b);
         createProgramUnits(b);
         
         b.setRootRule(FILE_INPUT);
@@ -231,6 +235,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
         
         b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
+    }
+    
+    private static void createDeclarations(LexerfulGrammarBuilder b) {
+        b.rule(PARAMETER_DECLARATION).is(
+                IDENTIFIER_NAME,
+                b.optional(IN),
+                b.firstOf(
+                        b.sequence(DATATYPE, b.optional(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)),
+                        b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
+                );
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
