@@ -43,6 +43,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CONTINUE_STATEMENT,
     FOR_STATEMENT,
     WHILE_STATEMENT,
+    RETURN_STATEMENT,
     STATEMENT,
     VARIABLE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
@@ -180,6 +181,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.oneOrMore(STATEMENT),
                 END, LOOP, SEMICOLON);
         
+        b.rule(RETURN_STATEMENT).is(RETURN, b.optional(EXPRESSION), SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -188,7 +191,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        EXIT_STATEMENT, 
                                        CONTINUE_STATEMENT,
                                        FOR_STATEMENT,
-                                       WHILE_STATEMENT));
+                                       WHILE_STATEMENT,
+                                       RETURN_STATEMENT));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {

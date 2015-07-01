@@ -74,7 +74,8 @@ public enum PlSqlKeyword implements TokenType {
     FOR("for"),
     IN("in"),
     REVERSE("reverse"),
-    WHILE("while");
+    WHILE("while"),
+    RETURN("return");
 
     private final String value;
 
