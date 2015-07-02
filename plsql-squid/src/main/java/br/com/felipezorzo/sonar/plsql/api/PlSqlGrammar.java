@@ -51,6 +51,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     PARAMETER_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
+    DECLARE_SECTION,
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
     EXECUTE_PLSQL_BUFFER,
@@ -139,7 +140,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
-        b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(b.sequence(COLON, IDENTIFIER_NAME)));
+        b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME));
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                                         b.optional(CONSTANT),
@@ -165,7 +166,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(IF_STATEMENT).is(
                 IF, BOOLEAN_EXPRESSION, THEN,
                 b.oneOrMore(STATEMENT),
-                b.optional(b.oneOrMore(ELSIF, BOOLEAN_EXPRESSION, THEN, b.oneOrMore(STATEMENT))),
+                b.zeroOrMore(ELSIF, BOOLEAN_EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
                 END, IF, SEMICOLON);
         
@@ -250,8 +251,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
+        b.rule(DECLARE_SECTION).is(DECLARE, b.oneOrMore(VARIABLE_DECLARATION));
+        
         b.rule(ANONYMOUS_BLOCK).is(
-                b.optional(b.sequence(DECLARE, b.oneOrMore(VARIABLE_DECLARATION))),
+                b.optional(DECLARE_SECTION),
                 BLOCK_STATEMENT,
                 EXECUTE_PLSQL_BUFFER
                 );
