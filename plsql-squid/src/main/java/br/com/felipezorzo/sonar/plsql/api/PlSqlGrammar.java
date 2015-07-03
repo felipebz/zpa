@@ -58,6 +58,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Program units
     ANONYMOUS_BLOCK,
+    PROCEDURE_DECLARATION,
     
     // Top-level components
     FILE_INPUT;
@@ -251,10 +252,22 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
-        b.rule(DECLARE_SECTION).is(DECLARE, b.oneOrMore(VARIABLE_DECLARATION));
+        b.rule(DECLARE_SECTION).is(b.oneOrMore(VARIABLE_DECLARATION));
+        
+        b.rule(PROCEDURE_DECLARATION).is(
+                b.optional(CREATE, b.optional(OR, REPLACE)),
+                PROCEDURE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.firstOf(IS, AS),
+                b.firstOf(
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
+                        b.sequence(EXTERNAL, SEMICOLON))
+                );
         
         b.rule(ANONYMOUS_BLOCK).is(
-                b.optional(DECLARE_SECTION),
+                b.optional(DECLARE, DECLARE_SECTION),
                 BLOCK_STATEMENT,
                 EXECUTE_PLSQL_BUFFER
                 );

@@ -77,7 +77,18 @@ public enum PlSqlKeyword implements TokenType {
     REVERSE("reverse"),
     WHILE("while"),
     RETURN("return"),
-    NOCOPY("nocopy");
+    NOCOPY("nocopy"),
+    PROCEDURE("procedure"),
+    CREATE("create"),
+    REPLACE("replace"),
+    IS("is"),
+    AS("as"),
+    EXTERNAL("external"),
+    AUTHID("authid"),
+    CURRENT_USER("current_user"),
+    DEFINER("definer"),
+    LANGUAGE("language"),
+    JAVA("java");
 
     private final String value;
 
