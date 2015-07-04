@@ -11,7 +11,7 @@ import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
 public enum PlSqlGrammar implements GrammarRuleKey {
     
-    /* Data types */
+    // Data types
     DATATYPE,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
@@ -19,21 +19,21 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     BOOLEAN_DATATYPE,
     DATE_DATATYPE,
     
-    /* Literals */
+    // Literals
     LITERAL,
     BOOLEAN_LITERAL,
     NULL_LITERAL,
     NUMERIC_LITERAL,
     CHARACTER_LITERAL,
     
-    /* Expressions */
+    // Expressions
     EXPRESSION,
     CHARACTER_EXPRESSION,
     BOOLEAN_EXPRESSION,
     DATE_EXPRESSION,
     NUMERIC_EXPRESSION,
     
-    /* Statements */
+    // Statements
     BLOCK_STATEMENT,
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
@@ -46,7 +46,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RETURN_STATEMENT,
     STATEMENT,
     
-    /* Declarations */
+    // Declarations
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
