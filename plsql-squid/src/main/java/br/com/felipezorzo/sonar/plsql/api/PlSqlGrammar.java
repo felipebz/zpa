@@ -61,6 +61,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     PROCEDURE_DECLARATION,
     FUNCTION_DECLARATION,
     CREATE_PROCEDURE,
+    CREATE_FUNCTION,
     
     // Top-level components
     FILE_INPUT;
@@ -265,16 +266,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
                 );
         
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/function.htm
         b.rule(FUNCTION_DECLARATION).is(
-                b.optional(CREATE, b.optional(OR, REPLACE)),
-                FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                FUNCTION, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE,
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
+                        SEMICOLON,
+                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
                 );
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_procedure.htm
@@ -288,6 +287,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
                         b.sequence(EXTERNAL, SEMICOLON))
+                );
+        
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_function.htm
+        b.rule(CREATE_FUNCTION).is(
+                CREATE, b.optional(OR, REPLACE),
+                FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                RETURN, DATATYPE,
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.firstOf(IS, AS),
+                b.firstOf(
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
                 );
         
         b.rule(ANONYMOUS_BLOCK).is(

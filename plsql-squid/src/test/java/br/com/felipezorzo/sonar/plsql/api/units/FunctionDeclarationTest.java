@@ -34,33 +34,6 @@ public class FunctionDeclarationTest extends RuleTest {
     }
     
     @Test
-    public void matchesSimpleCreateFunction() {
-        assertThat(p).matches(""
-                + "create function test return number is\n"
-                + "begin\n"
-                + "return 0;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesSimpleCreateOrReplaceFunction() {
-        assertThat(p).matches(""
-                + "create or replace function test return number is\n"
-                + "begin\n"
-                + "return 0;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesFunctionWithSchema() {
-        assertThat(p).matches(""
-                + "function schema.test return number is\n"
-                + "begin\n"
-                + "return 0;\n"
-                + "end;");
-    }
-   
-    @Test
     public void matchesFunctionWithParameter() {
         assertThat(p).matches(""
                 + "function test(parameter in number) return number is\n"
@@ -76,29 +49,6 @@ public class FunctionDeclarationTest extends RuleTest {
                 + "begin\n"
                 + "return 0;\n"
                 + "end;");
-    }
-    
-    @Test
-    public void matchesFunctionWithAuthidCurrentUser() {
-        assertThat(p).matches(""
-                + "function test return number authid current_user is\n"
-                + "begin\n"
-                + "return 0;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesFunctionWithAuthidDefiner() {
-        assertThat(p).matches(""
-                + "function test return number authid definer is\n"
-                + "begin\n"
-                + "return 0;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesFunctionWithJavaCallSpec() {
-        assertThat(p).matches("function test return number is language java 'javatest';");
     }
     
     @Test
