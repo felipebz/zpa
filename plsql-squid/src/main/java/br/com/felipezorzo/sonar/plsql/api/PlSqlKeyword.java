@@ -88,7 +88,8 @@ public enum PlSqlKeyword implements TokenType {
     CURRENT_USER("current_user"),
     DEFINER("definer"),
     LANGUAGE("language"),
-    JAVA("java");
+    JAVA("java"),
+    FUNCTION("function");
 
     private final String value;
 

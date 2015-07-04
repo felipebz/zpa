@@ -59,6 +59,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     // Program units
     ANONYMOUS_BLOCK,
     PROCEDURE_DECLARATION,
+    FUNCTION_DECLARATION,
     
     // Top-level components
     FILE_INPUT;
@@ -264,6 +265,18 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
                         b.sequence(EXTERNAL, SEMICOLON))
+                );
+        
+        b.rule(FUNCTION_DECLARATION).is(
+                b.optional(CREATE, b.optional(OR, REPLACE)),
+                FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                RETURN, DATATYPE,
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.firstOf(IS, AS),
+                b.firstOf(
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
                 );
         
         b.rule(ANONYMOUS_BLOCK).is(
