@@ -5,7 +5,7 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 
-public class WhileStatementTests extends RuleTest {
+public class WhileStatementTest extends RuleTest {
 
     @Before
     public void init() {
