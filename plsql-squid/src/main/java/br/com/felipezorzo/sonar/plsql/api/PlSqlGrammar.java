@@ -60,6 +60,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ANONYMOUS_BLOCK,
     PROCEDURE_DECLARATION,
     FUNCTION_DECLARATION,
+    CREATE_PROCEDURE,
     
     // Top-level components
     FILE_INPUT;
@@ -255,16 +256,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DECLARE_SECTION).is(b.oneOrMore(VARIABLE_DECLARATION));
         
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
-                b.optional(CREATE, b.optional(OR, REPLACE)),
-                PROCEDURE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                PROCEDURE, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
-                        b.sequence(EXTERNAL, SEMICOLON))
+                        SEMICOLON,
+                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
                 );
         
         b.rule(FUNCTION_DECLARATION).is(
@@ -277,6 +275,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
+                );
+        
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_procedure.htm
+        b.rule(CREATE_PROCEDURE).is(
+                CREATE, b.optional(OR, REPLACE),
+                PROCEDURE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.firstOf(IS, AS),
+                b.firstOf(
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
+                        b.sequence(EXTERNAL, SEMICOLON))
                 );
         
         b.rule(ANONYMOUS_BLOCK).is(

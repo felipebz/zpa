@@ -34,33 +34,6 @@ public class ProcedureDeclarationTest extends RuleTest {
     }
     
     @Test
-    public void matchesSimpleCreateProcedure() {
-        assertThat(p).matches(""
-                + "create procedure test is\n"
-                + "begin\n"
-                + "null;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesSimpleCreateOrReplaceProcedure() {
-        assertThat(p).matches(""
-                + "create or replace procedure test is\n"
-                + "begin\n"
-                + "null;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesProcedureWithSchema() {
-        assertThat(p).matches(""
-                + "procedure schema.test is\n"
-                + "begin\n"
-                + "null;\n"
-                + "end;");
-    }
-   
-    @Test
     public void matchesProcedureWithParameter() {
         assertThat(p).matches(""
                 + "procedure test(parameter in number) is\n"
@@ -76,34 +49,6 @@ public class ProcedureDeclarationTest extends RuleTest {
                 + "begin\n"
                 + "null;\n"
                 + "end;");
-    }
-    
-    @Test
-    public void matchesProcedureWithAuthidCurrentUser() {
-        assertThat(p).matches(""
-                + "procedure test authid current_user is\n"
-                + "begin\n"
-                + "null;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesProcedureWithAuthidDefiner() {
-        assertThat(p).matches(""
-                + "procedure test authid definer is\n"
-                + "begin\n"
-                + "null;\n"
-                + "end;");
-    }
-    
-    @Test
-    public void matchesProcedureWithJavaCallSpec() {
-        assertThat(p).matches("procedure test is language java 'javatest';");
-    }
-    
-    @Test
-    public void matchesExternalProcedure() {
-        assertThat(p).matches("procedure test is external;");
     }
     
     @Test
