@@ -213,7 +213,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(BOOLEAN_EXPRESSION).is(
                b.optional(NOT),
-               b.firstOf(BOOLEAN_LITERAL, IDENTIFIER_NAME),
+               b.firstOf(BOOLEAN_LITERAL, OTHER_BOOLEAN_EXPRESSION, IDENTIFIER_NAME),
                b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
         
         b.rule(OTHER_BOOLEAN_EXPRESSION).is(
@@ -249,7 +249,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                b.optional(EXPONENTIATION, NUMERIC_EXPRESSION),
                b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
         
-        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
+        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, OTHER_BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {
