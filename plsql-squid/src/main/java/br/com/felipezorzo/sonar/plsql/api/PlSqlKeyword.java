@@ -89,7 +89,13 @@ public enum PlSqlKeyword implements TokenType {
     DEFINER("definer"),
     LANGUAGE("language"),
     JAVA("java"),
-    FUNCTION("function");
+    FUNCTION("function"),
+    EXISTS("exists"),
+    FOUND("found"),
+    NOTFOUND("notfound"),
+    ISOPEN("isopen"),
+    LIKE("like"),
+    BETWEEN("between");
 
     private final String value;
 
