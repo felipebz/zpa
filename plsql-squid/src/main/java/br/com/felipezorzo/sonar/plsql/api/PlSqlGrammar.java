@@ -70,7 +70,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
-        b.rule(FILE_INPUT).is(b.oneOrMore(ANONYMOUS_BLOCK), EOF);
+        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION)), EOF);
 
         createLiterals(b);
         createDatatypes(b);
