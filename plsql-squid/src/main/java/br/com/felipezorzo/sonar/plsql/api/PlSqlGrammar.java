@@ -84,7 +84,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
         b.rule(BUILTIN_FUNCTIONS).is(REPLACE);
-        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION)), EOF);
+        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION, EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
         createDatatypes(b);
