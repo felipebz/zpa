@@ -221,7 +221,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
-        b.rule(PRIMARY_EXPRESSION).is(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS));
+        b.rule(PRIMARY_EXPRESSION).is(
+                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS),
+                b.nextNot(ASSIGNMENT_STATEMENT));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(PRIMARY_EXPRESSION, b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
         
