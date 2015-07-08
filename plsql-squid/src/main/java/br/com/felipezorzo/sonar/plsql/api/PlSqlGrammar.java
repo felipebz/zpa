@@ -67,6 +67,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
     EXECUTE_PLSQL_BUFFER,
+    BUILTIN_FUNCTIONS,
     
     // Program units
     ANONYMOUS_BLOCK,
@@ -82,6 +83,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
+        b.rule(BUILTIN_FUNCTIONS).is(REPLACE);
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION)), EOF);
 
         createLiterals(b);
@@ -219,7 +221,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
-        b.rule(PRIMARY_EXPRESSION).is(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL));
+        b.rule(PRIMARY_EXPRESSION).is(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(PRIMARY_EXPRESSION, b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
         

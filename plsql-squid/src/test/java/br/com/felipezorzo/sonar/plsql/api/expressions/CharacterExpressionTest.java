@@ -45,4 +45,9 @@ public class CharacterExpressionTest extends RuleTest {
         assertThat(p).matches(":var:indicator||:var:indicator");
     }
     
+    @Test
+    public void matchesReplace() {
+        assertThat(p).matches("replace(var, 'x', 'y')");
+    }
+    
 }
