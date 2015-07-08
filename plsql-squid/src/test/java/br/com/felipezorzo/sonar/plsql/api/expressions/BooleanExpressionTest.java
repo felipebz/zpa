@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.api.expressions;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -13,7 +12,7 @@ public class BooleanExpressionTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.BOOLEAN_EXPRESSION);
+        setRootRule(PlSqlGrammar.EXPRESSION);
     }
     
     @Test
@@ -46,7 +45,7 @@ public class BooleanExpressionTest extends RuleTest {
         assertThat(p).matches("var and var");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesExpressionWithFunctionCall() {
         assertThat(p).matches("func(var) and func(var)");
     }

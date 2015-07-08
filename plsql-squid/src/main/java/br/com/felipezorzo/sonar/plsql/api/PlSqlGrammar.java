@@ -28,11 +28,22 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Expressions
     EXPRESSION,
-    CHARACTER_EXPRESSION,
     BOOLEAN_EXPRESSION,
-    OTHER_BOOLEAN_EXPRESSION,
-    DATE_EXPRESSION,
-    NUMERIC_EXPRESSION,
+    PRIMARY_EXPRESSION, 
+    BRACKED_EXPRESSION, 
+    MEMBER_EXPRESSION, 
+    OBJECT_REFERENCE, 
+    POSTFIX_EXPRESSION, 
+    IN_EXPRESSION, 
+    UNARY_EXPRESSION, 
+    MULTIPLICATIVE_EXPRESSION, 
+    ADDITIVE_EXPRESSION, 
+    CONCATENATION_EXPRESSION, 
+    COMPARISION_EXPRESSION, 
+    EXPONENTIATION_EXPRESSION, 
+    ARGUMENT, 
+    ARGUMENTS, 
+    CALL_EXPRESSION,
     
     // Statements
     BLOCK_STATEMENT,
@@ -92,7 +103,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
         b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
         
-        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL));
+        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL));
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
@@ -162,32 +173,32 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(ASSIGNMENT_STATEMENT).is(
                 b.firstOf(b.sequence(IDENTIFIER_NAME,
                                      b.optional(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
-                                                          b.sequence(LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS)))),
+                                                          b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS)))),
                           HOST_AND_INDICATOR_VARIABLE),
                 ASSIGNMENT,
                 EXPRESSION,
                 SEMICOLON);
         
         b.rule(IF_STATEMENT).is(
-                IF, BOOLEAN_EXPRESSION, THEN,
+                IF, EXPRESSION, THEN,
                 b.oneOrMore(STATEMENT),
-                b.zeroOrMore(ELSIF, BOOLEAN_EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
+                b.zeroOrMore(ELSIF, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
                 END, IF, SEMICOLON);
         
         b.rule(LOOP_STATEMENT).is(LOOP, b.oneOrMore(STATEMENT), END, LOOP, SEMICOLON);
         
-        b.rule(EXIT_STATEMENT).is(EXIT, b.optional(WHEN, BOOLEAN_EXPRESSION), SEMICOLON);
+        b.rule(EXIT_STATEMENT).is(EXIT, b.optional(WHEN, EXPRESSION), SEMICOLON);
         
-        b.rule(CONTINUE_STATEMENT).is(CONTINUE, b.optional(WHEN, BOOLEAN_EXPRESSION), SEMICOLON);
+        b.rule(CONTINUE_STATEMENT).is(CONTINUE, b.optional(WHEN, EXPRESSION), SEMICOLON);
         
         b.rule(FOR_STATEMENT).is(
-                FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE), NUMERIC_EXPRESSION, RANGE, NUMERIC_EXPRESSION, LOOP,
+                FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE), EXPRESSION, RANGE, EXPRESSION, LOOP,
                 b.oneOrMore(STATEMENT),
                 END, LOOP, SEMICOLON);
         
         b.rule(WHILE_STATEMENT).is(
-                WHILE, BOOLEAN_EXPRESSION, LOOP,
+                WHILE, EXPRESSION, LOOP,
                 b.oneOrMore(STATEMENT),
                 END, LOOP, SEMICOLON);
         
@@ -207,49 +218,81 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
-        b.rule(CHARACTER_EXPRESSION).is(
-               b.firstOf(STRING_LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE),
-               b.optional(CONCATENATION, CHARACTER_EXPRESSION));
         
-        b.rule(BOOLEAN_EXPRESSION).is(
-               b.optional(NOT),
-               b.firstOf(BOOLEAN_LITERAL, OTHER_BOOLEAN_EXPRESSION, IDENTIFIER_NAME),
-               b.optional(b.firstOf(AND, OR), BOOLEAN_EXPRESSION));
+        b.rule(PRIMARY_EXPRESSION).is(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL));
         
-        b.rule(OTHER_BOOLEAN_EXPRESSION).is(
-                b.firstOf(
-                        b.sequence(IDENTIFIER_NAME, DOT, EXISTS, LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS),
+        b.rule(BRACKED_EXPRESSION).is(b.firstOf(PRIMARY_EXPRESSION, b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
+        
+        b.rule(MEMBER_EXPRESSION).is(
+                BRACKED_EXPRESSION,
+                b.zeroOrMore(
+                        b.firstOf(DOT, MOD), 
+                        b.firstOf(
+                                IDENTIFIER_NAME,
+                                COUNT,
+                                ROWCOUNT,
+                                BULK_ROWCOUNT,
+                                FIRST,
+                                LAST,
+                                LIMIT,
+                                NEXT,
+                                PRIOR,
+                                EXISTS,
+                                FOUND,
+                                NOTFOUND,
+                                ISOPEN)
+                        )).skipIfOneChild();
+        
+        b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), EXPRESSION);
+        
+        b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
+        
+        b.rule(CALL_EXPRESSION).is(MEMBER_EXPRESSION, ARGUMENTS);
+        
+        b.rule(OBJECT_REFERENCE).is(
+                b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
+                b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION))).skipIfOneChild();
+        
+        b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, b.optional(IS, b.optional(NOT), NULL));
+        
+        b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, b.optional(b.sequence(b.optional(NOT), IN , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
+        
+        b.rule(UNARY_EXPRESSION).is(b.firstOf(
+                        b.sequence(NOT, UNARY_EXPRESSION),
+                        IN_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(MULTIPLICATIVE_EXPRESSION).is(EXPONENTIATION_EXPRESSION, b.zeroOrMore(b.firstOf(MULTIPLICATION, DIVISION), UNARY_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(ADDITIVE_EXPRESSION).is(MULTIPLICATIVE_EXPRESSION, b.zeroOrMore(b.firstOf(PLUS, MINUS), MULTIPLICATIVE_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(CONCATENATION_EXPRESSION).is(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION, ADDITIVE_EXPRESSION)).skipIfOneChild();
+       
+        b.rule(COMPARISION_EXPRESSION).is(CONCATENATION_EXPRESSION, 
+                b.zeroOrMore(b.firstOf(
                         b.sequence(
-                                b.firstOf(SQL, b.sequence(b.optional(COLON), IDENTIFIER_NAME)),
-                                MOD,
-                                b.firstOf(FOUND, NOTFOUND, ISOPEN)))
-                );
+                                b.firstOf(
+                                    EQUALS,
+                                    NOTEQUALS, 
+                                    NOTEQUALS2, 
+                                    NOTEQUALS3, 
+                                    NOTEQUALS4, 
+                                    LESSTHAN, 
+                                    GREATERTHAN, 
+                                    LESSTHANOREQUAL, 
+                                    GREATERTHANOREQUAL, 
+                                    b.sequence(b.optional(NOT), LIKE)),
+                                CONCATENATION_EXPRESSION),
+                        b.sequence(
+                                b.optional(NOT),
+                                BETWEEN, 
+                                CONCATENATION_EXPRESSION, 
+                                AND, 
+                                CONCATENATION_EXPRESSION)))).skipIfOneChild();   
+        b.rule(BOOLEAN_EXPRESSION).is(COMPARISION_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISION_EXPRESSION)).skipIfOneChild();
         
-        b.rule(DATE_EXPRESSION).is(
-               b.firstOf(DATE_LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE),
-               b.optional(b.firstOf(PLUS, MINUS), NUMERIC_EXPRESSION));
-        
-        b.rule(NUMERIC_EXPRESSION).is(
-               b.firstOf(NUMERIC_LITERAL,
-                         b.sequence(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE), 
-                             b.optional(
-                                 b.firstOf(b.sequence(MOD, ROWCOUNT),
-                                           b.sequence(DOT, b.firstOf(COUNT,
-                                                                     FIRST,
-                                                                     LAST,
-                                                                     LIMIT,
-                                                                     b.sequence(b.firstOf(NEXT, PRIOR),
-                                                                                LPARENTHESIS,
-                                                                                NUMERIC_EXPRESSION,
-                                                                                RPARENTHESIS)))
-                                              ))),
-                         b.sequence(SQL, MOD, b.firstOf(ROWCOUNT,
-                                                        b.sequence(BULK_ROWCOUNT, LPARENTHESIS, NUMERIC_EXPRESSION, RPARENTHESIS))),
-                         HOST_AND_INDICATOR_VARIABLE),
-               b.optional(EXPONENTIATION, NUMERIC_EXPRESSION),
-               b.optional(b.firstOf(PLUS, MINUS, MULTIPLICATION, DIVISION), NUMERIC_EXPRESSION));
-        
-        b.rule(EXPRESSION).is(b.firstOf(CHARACTER_EXPRESSION, BOOLEAN_EXPRESSION, OTHER_BOOLEAN_EXPRESSION, DATE_EXPRESSION, NUMERIC_EXPRESSION));
+        b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION);
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {

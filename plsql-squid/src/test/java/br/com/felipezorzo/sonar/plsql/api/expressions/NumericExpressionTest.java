@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.api.expressions;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -13,7 +12,7 @@ public class NumericExpressionTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.NUMERIC_EXPRESSION);
+        setRootRule(PlSqlGrammar.EXPRESSION);
     }
     
     @Test
@@ -76,7 +75,7 @@ public class NumericExpressionTest extends RuleTest {
         assertThat(p).matches("var + 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesFunctionCallExpression() {
         assertThat(p).matches("func(var) + 1");
     }

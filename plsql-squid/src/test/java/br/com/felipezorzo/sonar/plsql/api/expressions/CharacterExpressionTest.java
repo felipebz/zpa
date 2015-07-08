@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.api.expressions;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -13,7 +12,7 @@ public class CharacterExpressionTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.CHARACTER_EXPRESSION);
+        setRootRule(PlSqlGrammar.EXPRESSION);
     }
     
     @Test
@@ -31,7 +30,7 @@ public class CharacterExpressionTest extends RuleTest {
         assertThat(p).matches("var||var");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesFunctionCallConcatenation() {
         assertThat(p).matches("func(var)||func(var)");
     }
@@ -45,4 +44,5 @@ public class CharacterExpressionTest extends RuleTest {
     public void matchesIndicatorVariableConcatenation() {
         assertThat(p).matches(":var:indicator||:var:indicator");
     }
+    
 }

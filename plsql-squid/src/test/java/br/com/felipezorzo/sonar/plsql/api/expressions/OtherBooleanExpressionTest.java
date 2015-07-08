@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.api.expressions;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -13,7 +12,7 @@ public class OtherBooleanExpressionTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.OTHER_BOOLEAN_EXPRESSION);
+        setRootRule(PlSqlGrammar.EXPRESSION);
     }
     
     @Test
@@ -42,52 +41,52 @@ public class OtherBooleanExpressionTest extends RuleTest {
         assertThat(p).matches("sql%isopen");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesIsNull() {
         assertThat(p).matches("var is null");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesIsNotNull() {
         assertThat(p).matches("var is not null");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesLike() {
         assertThat(p).matches("var like 'test'");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesNotLike() {
         assertThat(p).matches("var not like 'test'");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesBetween() {
         assertThat(p).matches("var between 1 and 2");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesNotBetween() {
         assertThat(p).matches("var not between 1 and 2");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesBasicIn() {
         assertThat(p).matches("var in (1)");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesBasicInWithMultipleValues() {
         assertThat(p).matches("var in (1, 2, 3)");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesEqualTo() {
         assertThat(p).matches("1 = 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesNotEqualTo() {
         assertThat(p).matches("1 <> 2");
         assertThat(p).matches("1 != 2");
@@ -95,22 +94,22 @@ public class OtherBooleanExpressionTest extends RuleTest {
         assertThat(p).matches("1 ^= 2");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesLessThan() {
         assertThat(p).matches("1 < 2");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesGreaterThen() {
         assertThat(p).matches("2 > 1");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesLessThanOrEqualTo() {
         assertThat(p).matches("1 <= 2");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesGreaterThenOrEqualTo() {
         assertThat(p).matches("2 >= 1");
     }
