@@ -104,7 +104,10 @@ public enum PlSqlKeyword implements TokenType {
     IMMEDIATE("immediate"),
     BATCH("batch"),
     WAIT("wait"),
-    NOWAIT("nowait");
+    NOWAIT("nowait"),
+    ROLLBACK("rollback"),
+    TO("to"),
+    SAVEPOINT("savepoint");
 
     private final String value;
 

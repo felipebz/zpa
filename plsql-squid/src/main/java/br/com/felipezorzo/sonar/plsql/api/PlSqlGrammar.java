@@ -57,6 +57,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     WHILE_STATEMENT,
     RETURN_STATEMENT,
     COMMIT_STATEMENT,
+    ROLLBACK_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -210,11 +211,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(COMMIT_STATEMENT).is(
                 COMMIT,
                 b.optional(WORK),
-                b.firstOf(
+                b.optional(b.firstOf(
                         b.sequence(FORCE, STRING_LITERAL, b.optional(COMMA, INTEGER_LITERAL)),
                         b.sequence(
                                 b.optional(COMMENT, STRING_LITERAL),
-                                b.optional(WRITE, b.optional(b.firstOf(IMMEDIATE, BATCH)), b.optional(b.firstOf(WAIT, NOWAIT))))),
+                                b.optional(WRITE, b.optional(b.firstOf(IMMEDIATE, BATCH)), b.optional(b.firstOf(WAIT, NOWAIT)))))),
+                SEMICOLON);
+        
+        b.rule(ROLLBACK_STATEMENT).is(
+                ROLLBACK,
+                b.optional(WORK),
+                b.optional(b.firstOf(
+                        b.sequence(FORCE, STRING_LITERAL),
+                        b.sequence(TO, b.optional(SAVEPOINT), IDENTIFIER_NAME))),
                 SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
@@ -227,7 +236,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        FOR_STATEMENT,
                                        WHILE_STATEMENT,
                                        RETURN_STATEMENT,
-                                       COMMIT_STATEMENT));
+                                       COMMIT_STATEMENT,
+                                       ROLLBACK_STATEMENT));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
