@@ -95,7 +95,16 @@ public enum PlSqlKeyword implements TokenType {
     NOTFOUND("notfound"),
     ISOPEN("isopen"),
     LIKE("like"),
-    BETWEEN("between");
+    BETWEEN("between"),
+    COMMIT("commit"),
+    WORK("work"),
+    FORCE("force"),
+    COMMENT("comment"),
+    WRITE("write"),
+    IMMEDIATE("immediate"),
+    BATCH("batch"),
+    WAIT("wait"),
+    NOWAIT("nowait");
 
     private final String value;
 
