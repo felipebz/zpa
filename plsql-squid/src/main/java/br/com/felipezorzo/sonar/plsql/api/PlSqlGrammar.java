@@ -58,6 +58,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RETURN_STATEMENT,
     COMMIT_STATEMENT,
     ROLLBACK_STATEMENT,
+    SAVEPOINT_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -225,6 +226,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(FORCE, STRING_LITERAL),
                         b.sequence(TO, b.optional(SAVEPOINT), IDENTIFIER_NAME))),
                 SEMICOLON);
+        
+        b.rule(SAVEPOINT_STATEMENT).is(SAVEPOINT, IDENTIFIER_NAME, SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
