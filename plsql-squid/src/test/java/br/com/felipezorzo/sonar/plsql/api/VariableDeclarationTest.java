@@ -48,7 +48,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number not null default 1;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesTypeAnchoredDeclaration() {
         assertThat(p).matches("var custom%type;");
     }
@@ -63,7 +63,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var table%rowtype;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesTableColumnAnchoredDeclaration() {
         assertThat(p).matches("var table.column%type;");
     }

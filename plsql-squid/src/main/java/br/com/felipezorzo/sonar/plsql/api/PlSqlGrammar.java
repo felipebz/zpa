@@ -65,6 +65,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     // Declarations
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
+    TYPE_ATTRIBUTE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     DECLARE_SECTION,
@@ -158,11 +159,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DATE_DATATYPE).is(DATE);
         
-        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE, BOOLEAN_DATATYPE, DATE_DATATYPE));
+        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE, BOOLEAN_DATATYPE, DATE_DATATYPE, TYPE_ATTRIBUTE_DECLARATION));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
         b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME));
+        
+        b.rule(TYPE_ATTRIBUTE_DECLARATION).is(
+                IDENTIFIER_NAME,
+                b.optional(
+                        DOT, IDENTIFIER_NAME, 
+                        b.optional(DOT, IDENTIFIER_NAME)),
+                MOD,
+                TYPE);
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                                         b.optional(CONSTANT),
