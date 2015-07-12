@@ -74,7 +74,7 @@ public class CreatePackageTest extends RuleTest {
     @Test
     public void matchesPackageWithProcedure() {
         assertThat(p).matches(""
-                + "create package test authid definer is\n"
+                + "create package test is\n"
                 + "procedure proc;\n"
                 + "end;");
     }
@@ -82,7 +82,7 @@ public class CreatePackageTest extends RuleTest {
     @Test
     public void matchesPackageWithFunction() {
         assertThat(p).matches(""
-                + "create package test authid definer is\n"
+                + "create package test is\n"
                 + "function func return number;\n"
                 + "end;");
     }
