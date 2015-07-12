@@ -32,9 +32,15 @@ public class BlockStatementTest extends RuleTest {
     public void matchesBlockWithOneExceptionHandler() {
         assertThat(p).matches("begin null; exception when others then null; end;");
     }
+    
     @Test
     public void matchesBlockWithMultipleExceptionHandler() {
         assertThat(p).matches("begin null; exception when others then null; when others then null; end;");
+    }
+    
+    @Test
+    public void matchesBlockWithNameAtEnd() {
+        assertThat(p).matches("begin null; end block_name;");
     }
     
     @Test

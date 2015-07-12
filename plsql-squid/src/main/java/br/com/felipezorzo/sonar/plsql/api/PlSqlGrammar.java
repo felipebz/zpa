@@ -185,7 +185,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
         
-        b.rule(BLOCK_STATEMENT).is(BEGIN, b.oneOrMore(STATEMENT), b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), END, SEMICOLON);
+        b.rule(BLOCK_STATEMENT).is(
+                BEGIN,
+                b.oneOrMore(STATEMENT),
+                b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), 
+                END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(ASSIGNMENT_STATEMENT).is(
                 b.firstOf(b.sequence(IDENTIFIER_NAME,
