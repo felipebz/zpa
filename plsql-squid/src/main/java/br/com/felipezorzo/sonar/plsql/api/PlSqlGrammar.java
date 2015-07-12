@@ -80,6 +80,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     FUNCTION_DECLARATION,
     CREATE_PROCEDURE,
     CREATE_FUNCTION,
+    CREATE_PACKAGE,
     
     // Top-level components
     FILE_INPUT;
@@ -89,7 +90,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
         b.rule(BUILTIN_FUNCTIONS).is(REPLACE);
-        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION, EXECUTE_PLSQL_BUFFER)), EOF);
+        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION, CREATE_PACKAGE, EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
         createDatatypes(b);
@@ -350,7 +351,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
-        b.rule(DECLARE_SECTION).is(b.oneOrMore(VARIABLE_DECLARATION));
+        b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(VARIABLE_DECLARATION, PROCEDURE_DECLARATION, FUNCTION_DECLARATION)));
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
@@ -396,6 +397,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
                 );
+        
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm
+        b.rule(CREATE_PACKAGE).is(
+                CREATE, b.optional(OR, REPLACE),
+                PACKAGE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.firstOf(IS, AS),
+                b.oneOrMore(b.firstOf(DECLARE_SECTION, NULL_STATEMENT)),
+                END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(ANONYMOUS_BLOCK).is(
                 b.optional(DECLARE, DECLARE_SECTION),

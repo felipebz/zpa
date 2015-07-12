@@ -109,7 +109,8 @@ public enum PlSqlKeyword implements TokenType {
     TO("to"),
     SAVEPOINT("savepoint"),
     RAISE("raise"),
-    TYPE("type");
+    TYPE("type"),
+    PACKAGE("package");
 
     private final String value;
 
