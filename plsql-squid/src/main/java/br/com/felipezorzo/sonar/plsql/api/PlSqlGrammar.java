@@ -81,6 +81,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_PROCEDURE,
     CREATE_FUNCTION,
     CREATE_PACKAGE,
+    CREATE_PACKAGE_BODY,
     
     // Top-level components
     FILE_INPUT;
@@ -406,6 +407,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.oneOrMore(b.firstOf(DECLARE_SECTION, NULL_STATEMENT)),
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package_body.htm
+        b.rule(CREATE_PACKAGE_BODY).is(
+                CREATE, b.optional(OR, REPLACE),
+                PACKAGE, BODY, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                b.firstOf(IS, AS),
+                b.oneOrMore(b.firstOf(DECLARE_SECTION, NULL_STATEMENT)),
+                b.firstOf(
+                        BLOCK_STATEMENT,
+                        b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
         b.rule(ANONYMOUS_BLOCK).is(
                 b.optional(DECLARE, DECLARE_SECTION),
