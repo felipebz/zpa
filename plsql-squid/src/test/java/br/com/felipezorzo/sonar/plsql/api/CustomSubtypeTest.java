@@ -31,5 +31,10 @@ public class CustomSubtypeTest extends RuleTest {
     public void matchesSubtypeWithNotNullConstraint() {
         assertThat(p).matches("subtype sub is number not null;");
     }
+    
+    @Test
+    public void matchesSubtypeWithRange() {
+        assertThat(p).matches("subtype sub is number range 1..2;");
+    }
 
 }

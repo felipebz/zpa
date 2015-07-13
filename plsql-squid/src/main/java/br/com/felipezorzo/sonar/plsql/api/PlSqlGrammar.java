@@ -185,7 +185,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                                 EXCEPTION),                                           
                                         SEMICOLON);
         
-        b.rule(CUSTOM_SUBTYPE).is(SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE, b.optional(NOT, NULL), SEMICOLON);
+        b.rule(CUSTOM_SUBTYPE).is(
+                SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
+                b.optional(NOT, NULL),
+                b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
+                SEMICOLON);
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
