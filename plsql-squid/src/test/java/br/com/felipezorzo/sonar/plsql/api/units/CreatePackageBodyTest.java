@@ -19,7 +19,6 @@ public class CreatePackageBodyTest extends RuleTest {
     public void matchesSimplePackageBody() {
         assertThat(p).matches(""
                 + "create package body test is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -27,7 +26,6 @@ public class CreatePackageBodyTest extends RuleTest {
     public void matchesSimplePackageBodyAlternative() {
         assertThat(p).matches(""
                 + "create package body test as\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -35,7 +33,6 @@ public class CreatePackageBodyTest extends RuleTest {
     public void matchesSimplePackageBodyWithNameAtEnd() {
         assertThat(p).matches(""
                 + "create package body test is\n"
-                + "null;\n"
                 + "end test;");
     }
     
@@ -43,7 +40,6 @@ public class CreatePackageBodyTest extends RuleTest {
     public void matchesSimpleCreateOrReplacePackageBody() {
         assertThat(p).matches(""
                 + "create or replace package body test is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -51,7 +47,6 @@ public class CreatePackageBodyTest extends RuleTest {
     public void matchesPackageBodyWithSchema() {
         assertThat(p).matches(""
                 + "create package body schema.test is\n"
-                + "null;\n"
                 + "end;");
     }
     

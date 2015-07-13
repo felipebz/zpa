@@ -19,7 +19,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesSimplePackage() {
         assertThat(p).matches(""
                 + "create package test is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -27,7 +26,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesSimplePackageAlternative() {
         assertThat(p).matches(""
                 + "create package test as\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -35,7 +33,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesSimplePackageWithNameAtEnd() {
         assertThat(p).matches(""
                 + "create package test is\n"
-                + "null;\n"
                 + "end test;");
     }
     
@@ -43,7 +40,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesSimpleCreateOrReplacePackage() {
         assertThat(p).matches(""
                 + "create or replace package test is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -51,7 +47,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesPackageWithSchema() {
         assertThat(p).matches(""
                 + "create package schema.test is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -59,7 +54,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesPackageWithAuthidCurrentUser() {
         assertThat(p).matches(""
                 + "create package test authid current_user is\n"
-                + "null;\n"
                 + "end;");
     }
     
@@ -67,7 +61,6 @@ public class CreatePackageTest extends RuleTest {
     public void matchesPackageWithAuthidDefiner() {
         assertThat(p).matches(""
                 + "create package test authid definer is\n"
-                + "null;\n"
                 + "end;");
     }
     
