@@ -18,6 +18,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CHARACTER_DATAYPE,
     BOOLEAN_DATATYPE,
     DATE_DATATYPE,
+    CUSTOM_SUBTYPE,
     
     // Literals
     LITERAL,
@@ -183,6 +184,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                                         b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL)),
                                                 EXCEPTION),                                           
                                         SEMICOLON);
+        
+        b.rule(CUSTOM_SUBTYPE).is(SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE, b.optional(NOT, NULL), SEMICOLON);
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
@@ -359,7 +362,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
-        b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(VARIABLE_DECLARATION, PROCEDURE_DECLARATION, FUNCTION_DECLARATION)));
+        b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(VARIABLE_DECLARATION, PROCEDURE_DECLARATION, FUNCTION_DECLARATION, CUSTOM_SUBTYPE)));
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
