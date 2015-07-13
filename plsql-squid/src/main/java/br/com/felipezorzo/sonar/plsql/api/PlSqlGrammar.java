@@ -177,8 +177,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                                         b.optional(CONSTANT),
-                                        DATATYPE,
-                                        b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL),
+                                        b.firstOf(
+                                                b.sequence(
+                                                        DATATYPE,
+                                                        b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL)),
+                                                EXCEPTION),                                           
                                         SEMICOLON);
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
