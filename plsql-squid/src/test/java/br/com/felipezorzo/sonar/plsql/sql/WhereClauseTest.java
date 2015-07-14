@@ -24,9 +24,15 @@ public class WhereClauseTest extends RuleTest {
     public void matchesColumnComparation() {
         assertThat(p).matches("where tab.col = tab2.col2");
     }
+    
     @Test
     public void matchesMultipleColumnComparation() {
         assertThat(p).matches("where tab.col = tab2.col2 and tab.col = tab2.col2");
+    }
+    
+    @Test
+    public void matchesComparationWithSubquery() {
+        assertThat(p).matches("where tab.col = (select 1 from dual)");
     }
 
 }

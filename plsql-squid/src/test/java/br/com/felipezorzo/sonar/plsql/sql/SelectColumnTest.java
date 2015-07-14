@@ -76,5 +76,10 @@ public class SelectColumnTest extends RuleTest {
     public void matchesColumnWithAliasWithAsKeyword() {
         assertThat(p).matches("null as alias");
     }
+    
+    @Test
+    public void matchesSubqueryAsColumn() {
+        assertThat(p).matches("(select 1 from dual) col");
+    }
 
 }

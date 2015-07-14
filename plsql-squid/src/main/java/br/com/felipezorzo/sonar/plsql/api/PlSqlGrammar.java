@@ -68,6 +68,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ROLLBACK_STATEMENT,
     SAVEPOINT_STATEMENT,
     RAISE_STATEMENT,
+    SELECT_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -265,6 +266,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(RAISE_STATEMENT).is(RAISE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
+        b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -277,7 +280,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        RETURN_STATEMENT,
                                        COMMIT_STATEMENT,
                                        ROLLBACK_STATEMENT,
-                                       RAISE_STATEMENT));
+                                       RAISE_STATEMENT,
+                                       SELECT_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
@@ -380,7 +384,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 CONCATENATION_EXPRESSION)))).skipIfOneChild();   
         b.rule(BOOLEAN_EXPRESSION).is(COMPARISION_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISION_EXPRESSION)).skipIfOneChild();
         
-        b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION);
+        b.rule(EXPRESSION).is(b.firstOf(SELECT_EXPRESSION, BOOLEAN_EXPRESSION));
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {
