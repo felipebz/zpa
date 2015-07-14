@@ -113,7 +113,8 @@ public enum PlSqlKeyword implements TokenType {
     PACKAGE("package"),
     BODY("body"),
     SUBTYPE("subtype"),
-    RANGE_KEYWORD("range");
+    RANGE_KEYWORD("range"),
+    WHERE("where");
 
     private final String value;
 
