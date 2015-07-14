@@ -50,6 +50,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SELECT_COLUMN,
     FROM_CLAUSE,
     WHERE_CLAUSE,
+    INTO_CLAUSE,
     SELECT_EXPRESSION,
     
     // Statements
@@ -290,8 +291,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(WHERE_CLAUSE).is(WHERE, EXPRESSION);
         
+        b.rule(INTO_CLAUSE).is(
+                b.optional(BULK, COLLECT), INTO,
+                IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME));
+        
         b.rule(SELECT_EXPRESSION).is(
                 SELECT, SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
+                b.optional(INTO_CLAUSE),
                 FROM, FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE),
                 b.optional(WHERE_CLAUSE));
     }

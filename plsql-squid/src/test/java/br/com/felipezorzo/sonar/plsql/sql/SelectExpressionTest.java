@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.sql;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -20,10 +19,10 @@ public class SelectExpressionTest extends RuleTest {
     public void matchesSimpleSelect() {
         assertThat(p).matches(""
                 + "select 1\n"
-                + "from dual\n");
+                + "from dual");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesSimpleSelectInto() {
         assertThat(p).matches(""
                 + "select 1\n"
@@ -46,7 +45,7 @@ public class SelectExpressionTest extends RuleTest {
                 + "from dual");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesSelectWithMultipleColumnsAndIntoClause() {
         assertThat(p).matches(""
                 + "select 1, 2\n"

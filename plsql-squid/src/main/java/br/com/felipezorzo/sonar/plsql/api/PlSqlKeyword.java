@@ -116,7 +116,10 @@ public enum PlSqlKeyword implements TokenType {
     RANGE_KEYWORD("range"),
     WHERE("where"),
     SELECT("select"),
-    FROM("from");
+    FROM("from"),
+    BULK("bulk"),
+    COLLECT("collect"),
+    INTO("into");
 
     private final String value;
 
