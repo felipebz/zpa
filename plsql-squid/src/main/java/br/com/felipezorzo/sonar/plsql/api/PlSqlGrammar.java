@@ -48,6 +48,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // DML
     SELECT_COLUMN,
+    FROM_CLAUSE,
     
     // Statements
     BLOCK_STATEMENT,
@@ -278,6 +279,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
+        
+        b.rule(FROM_CLAUSE).is(
+                IDENTIFIER_NAME,
+                b.optional(DOT, IDENTIFIER_NAME),
+                b.optional(REMOTE, IDENTIFIER_NAME),
+                b.optional(IDENTIFIER_NAME));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
