@@ -46,6 +46,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ARGUMENTS, 
     CALL_EXPRESSION,
     
+    // DML
+    SELECT_COLUMN,
+    
     // Statements
     BLOCK_STATEMENT,
     NULL_STATEMENT,
@@ -97,6 +100,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createLiterals(b);
         createDatatypes(b);
         createStatements(b);
+        createDmlStatements(b);
         createExpressions(b);
         createDeclarations(b);
         createProgramUnits(b);
@@ -272,11 +276,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        RAISE_STATEMENT));
     }
     
+    private static void createDmlStatements(LexerfulGrammarBuilder b) {
+        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
+    }
+    
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS),
+                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION),
                 b.nextNot(ASSIGNMENT_STATEMENT));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(PRIMARY_EXPRESSION, b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
