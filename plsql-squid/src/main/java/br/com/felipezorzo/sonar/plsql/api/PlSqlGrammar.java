@@ -69,6 +69,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SAVEPOINT_STATEMENT,
     RAISE_STATEMENT,
     SELECT_STATEMENT,
+    CALL_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -268,6 +269,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
         
+        b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -281,7 +284,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        COMMIT_STATEMENT,
                                        ROLLBACK_STATEMENT,
                                        RAISE_STATEMENT,
-                                       SELECT_STATEMENT));
+                                       SELECT_STATEMENT,
+                                       CALL_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
