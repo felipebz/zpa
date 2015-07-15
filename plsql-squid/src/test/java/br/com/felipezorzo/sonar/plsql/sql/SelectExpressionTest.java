@@ -59,5 +59,26 @@ public class SelectExpressionTest extends RuleTest {
                 + "select 1\n"
                 + "from emp, dept");
     }
+    
+    @Test
+    public void matchesSelectAll() {
+        assertThat(p).matches(""
+                + "select all 1\n"
+                + "from dual");
+    }
+    
+    @Test
+    public void matchesSelectDistinct() {
+        assertThat(p).matches(""
+                + "select distinct 1\n"
+                + "from dual");
+    }
+    
+    @Test
+    public void matchesSelectUnique() {
+        assertThat(p).matches(""
+                + "select unique 1\n"
+                + "from dual");
+    }
 
 }

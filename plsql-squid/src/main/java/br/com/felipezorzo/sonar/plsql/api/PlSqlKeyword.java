@@ -119,7 +119,10 @@ public enum PlSqlKeyword implements TokenType {
     FROM("from"),
     BULK("bulk"),
     COLLECT("collect"),
-    INTO("into");
+    INTO("into"),
+    ALL("all"),
+    DISTINCT("distinct"),
+    UNIQUE("unique");
 
     private final String value;
 

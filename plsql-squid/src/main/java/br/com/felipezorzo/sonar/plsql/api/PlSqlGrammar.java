@@ -304,7 +304,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME));
         
         b.rule(SELECT_EXPRESSION).is(
-                SELECT, SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
+                SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                 b.optional(INTO_CLAUSE),
                 FROM, FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE),
                 b.optional(WHERE_CLAUSE));
