@@ -10,6 +10,27 @@
   <artifactId>sslr-plsql-toolkit</artifactId>
 
   <name>PL/SQL :: SSLR Toolkit</name>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.codehaus.sonar.sslr</groupId>
+      <artifactId>sslr-toolkit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>plsql-squid</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+       <groupId>junit</groupId>
+       <artifactId>junit</artifactId>
+       <scope>test</scope>
+     </dependency>
+  </dependencies>
 
   <build>
     <plugins>
@@ -20,7 +41,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>obr.com.felipezorzo.sonar.plsql.PlSqlToolkit</mainClass>
+              <mainClass>br.com.felipezorzo.sonar.plsql.toolkit.PlSqlToolkit</mainClass>
             </manifest>
           </archive>
         </configuration>
