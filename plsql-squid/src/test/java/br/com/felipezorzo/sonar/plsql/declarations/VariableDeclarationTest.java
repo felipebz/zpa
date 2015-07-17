@@ -63,12 +63,12 @@ public class VariableDeclarationTest extends RuleTest {
 
     @Test @Ignore
     public void matchesTableAnchoredDeclaration() {
-        assertThat(p).matches("var table%rowtype;");
+        assertThat(p).matches("var tab%rowtype;");
     }
     
     @Test
     public void matchesTableColumnAnchoredDeclaration() {
-        assertThat(p).matches("var table.column%type;");
+        assertThat(p).matches("var tab.column%type;");
     }
     
     @Test @Ignore

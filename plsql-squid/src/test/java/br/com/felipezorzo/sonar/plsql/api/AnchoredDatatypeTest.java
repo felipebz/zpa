@@ -21,12 +21,12 @@ public class AnchoredDatatypeTest extends RuleTest {
     
     @Test
     public void matchesTableColumn() {
-        assertThat(p).matches("table.name%type");
+        assertThat(p).matches("tab.name%type");
     }
     
     @Test
     public void matchesTableColumnWithExplicitSchema() {
-        assertThat(p).matches("schema.table.name%type");
+        assertThat(p).matches("schema.tab.name%type");
     }
 
 }

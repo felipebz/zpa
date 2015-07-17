@@ -78,6 +78,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     PARAMETER_DECLARATION,
     CURSOR_DECLARATION,
     RECORD_DECLARATION,
+    TABLE_OF_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     DECLARE_SECTION,
@@ -437,13 +438,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 LPARENTHESIS, b.oneOrMore(IDENTIFIER_NAME, DATATYPE, b.optional(COMMA)), RPARENTHESIS,
                 SEMICOLON);
         
+        b.rule(TABLE_OF_DECLARATION).is(
+                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, IDENTIFIER_NAME,
+                b.optional(INDEX, BY, DATATYPE),
+                SEMICOLON);
+        
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
                 VARIABLE_DECLARATION,
                 PROCEDURE_DECLARATION,
                 FUNCTION_DECLARATION,
                 CUSTOM_SUBTYPE,
                 CURSOR_DECLARATION,
-                RECORD_DECLARATION)));
+                RECORD_DECLARATION,
+                TABLE_OF_DECLARATION)));
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
