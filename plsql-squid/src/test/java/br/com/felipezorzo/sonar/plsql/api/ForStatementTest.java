@@ -29,6 +29,54 @@ public class ForStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesForInCursor() {
+        assertThat(p).matches(""
+                + "for i in cur loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
+    public void matchesForInCursorWithPackage() {
+        assertThat(p).matches(""
+                + "for i in pack.cur loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
+    public void matchesForInCursorWithPackageAndSchema() {
+        assertThat(p).matches(""
+                + "for i in sch.pack.cur loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
+    public void matchesForInCursorWithParameters() {
+        assertThat(p).matches(""
+                + "for i in cur(x) loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
+    public void matchesForInCursorWithMultipleParameters() {
+        assertThat(p).matches(""
+                + "for i in cur(x, y) loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
+    public void matchesForInCursorWithExplicitParameters() {
+        assertThat(p).matches(""
+                + "for i in cur(p1 => x) loop "
+                + "null; "
+                + "end loop;");
+    }
+    
+    @Test
     public void matchesNestedForLoop() {
         assertThat(p).matches(""
                 + "for i in 1..2 loop "
