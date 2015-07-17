@@ -128,7 +128,8 @@ public enum PlSqlKeyword implements TokenType {
     TABLE("table"),
     OF("of"),
     INDEX("index"),
-    BY("by");
+    BY("by"),
+    REF("ref");
 
     private final String value;
 

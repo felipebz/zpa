@@ -81,7 +81,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var tab.column%type;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesRefObjectDeclaration() {
         assertThat(p).matches("var ref custom;");
     }

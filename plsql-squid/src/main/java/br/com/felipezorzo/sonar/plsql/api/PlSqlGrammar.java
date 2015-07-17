@@ -21,6 +21,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CUSTOM_SUBTYPE,
     ANCHORED_DATATYPE,
     CUSTOM_DATATYPE,
+    REF_DATATYPE,
     
     // Literals
     LITERAL,
@@ -186,6 +187,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
         b.rule(CUSTOM_DATATYPE).is(b.optional(IDENTIFIER_NAME, DOT), b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
         
+        b.rule(REF_DATATYPE).is(REF, CUSTOM_DATATYPE);
+        
         b.rule(DATATYPE).is(b.firstOf(
                 NUMERIC_DATATYPE,
                 LOB_DATATYPE,
@@ -193,7 +196,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 BOOLEAN_DATATYPE,
                 DATE_DATATYPE,
                 ANCHORED_DATATYPE,
-                CUSTOM_DATATYPE));
+                CUSTOM_DATATYPE,
+                REF_DATATYPE));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
