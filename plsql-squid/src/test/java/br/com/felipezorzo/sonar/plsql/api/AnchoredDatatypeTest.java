@@ -28,5 +28,10 @@ public class AnchoredDatatypeTest extends RuleTest {
     public void matchesTableColumnWithExplicitSchema() {
         assertThat(p).matches("schema.tab.name%type");
     }
+    
+    @Test
+    public void matchesSimpleRowtypeAttribute() {
+        assertThat(p).matches("name%rowtype");
+    }
 
 }

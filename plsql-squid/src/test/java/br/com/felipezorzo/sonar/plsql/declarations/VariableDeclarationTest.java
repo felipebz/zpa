@@ -71,7 +71,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var sch.pack.custom;");
     }
 
-    @Test @Ignore
+    @Test
     public void matchesTableAnchoredDeclaration() {
         assertThat(p).matches("var tab%rowtype;");
     }

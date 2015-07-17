@@ -183,7 +183,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         DOT, IDENTIFIER_NAME, 
                         b.optional(DOT, IDENTIFIER_NAME)),
                 MOD,
-                TYPE);
+                b.firstOf(TYPE, ROWTYPE));
 
         b.rule(CUSTOM_DATATYPE).is(b.optional(IDENTIFIER_NAME, DOT), b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
         
