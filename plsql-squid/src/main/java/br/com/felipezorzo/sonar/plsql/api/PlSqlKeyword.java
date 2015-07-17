@@ -123,7 +123,8 @@ public enum PlSqlKeyword implements TokenType {
     ALL("all"),
     DISTINCT("distinct"),
     UNIQUE("unique"),
-    CURSOR("cursor");
+    CURSOR("cursor"),
+    RECORD("record");
 
     private final String value;
 

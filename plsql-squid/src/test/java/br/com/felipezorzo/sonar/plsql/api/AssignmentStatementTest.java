@@ -19,7 +19,7 @@ public class AssignmentStatementTest extends RuleTest {
     
     @Test
     public void assignmentToRecordAttribute() {
-        assertThat(p).matches("record.attribute := 1;");
+        assertThat(p).matches("rec.attribute := 1;");
     }
     
     @Test
