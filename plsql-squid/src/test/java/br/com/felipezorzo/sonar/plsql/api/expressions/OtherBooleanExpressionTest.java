@@ -22,16 +22,16 @@ public class OtherBooleanExpressionTest extends RuleTest {
     
     @Test
     public void matchesCursorMethods() {
-        assertThat(p).matches("cursor%found");
-        assertThat(p).matches("cursor%notfound");
-        assertThat(p).matches("cursor%isopen");
+        assertThat(p).matches("cur%found");
+        assertThat(p).matches("cur%notfound");
+        assertThat(p).matches("cur%isopen");
     }
     
     @Test
     public void matchesHostCursorMethods() {
-        assertThat(p).matches(":cursor%found");
-        assertThat(p).matches(":cursor%notfound");
-        assertThat(p).matches(":cursor%isopen");
+        assertThat(p).matches(":cur%found");
+        assertThat(p).matches(":cur%notfound");
+        assertThat(p).matches(":cur%isopen");
     }
     
     @Test

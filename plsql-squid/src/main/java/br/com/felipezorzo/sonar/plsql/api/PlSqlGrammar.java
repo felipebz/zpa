@@ -75,6 +75,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     // Declarations
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
+    CURSOR_DECLARATION,
     TYPE_ATTRIBUTE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
@@ -399,12 +400,22 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(DATATYPE, b.optional(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)),
                         b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
                 );
+        
+        b.rule(CURSOR_DECLARATION).is(
+                CURSOR, IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                IS, SELECT_EXPRESSION, SEMICOLON);
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
-        b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(VARIABLE_DECLARATION, PROCEDURE_DECLARATION, FUNCTION_DECLARATION, CUSTOM_SUBTYPE)));
+        b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
+                VARIABLE_DECLARATION,
+                PROCEDURE_DECLARATION,
+                FUNCTION_DECLARATION,
+                CUSTOM_SUBTYPE,
+                CURSOR_DECLARATION)));
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
