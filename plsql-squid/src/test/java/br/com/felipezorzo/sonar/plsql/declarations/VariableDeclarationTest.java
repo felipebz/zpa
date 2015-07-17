@@ -56,9 +56,19 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var custom%type;");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesObjectDeclaration() {
         assertThat(p).matches("var custom;");
+    }
+    
+    @Test
+    public void matchesObjectDeclarationWithPackage() {
+        assertThat(p).matches("var pack.custom;");
+    }
+    
+    @Test
+    public void matchesObjectDeclarationWithPackageAndSchema() {
+        assertThat(p).matches("var sch.pack.custom;");
     }
 
     @Test @Ignore
