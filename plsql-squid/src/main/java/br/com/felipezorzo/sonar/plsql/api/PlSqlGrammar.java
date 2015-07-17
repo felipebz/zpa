@@ -19,6 +19,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     BOOLEAN_DATATYPE,
     DATE_DATATYPE,
     CUSTOM_SUBTYPE,
+    ANCHORED_DATATYPE,
     
     // Literals
     LITERAL,
@@ -76,7 +77,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
     CURSOR_DECLARATION,
-    TYPE_ATTRIBUTE_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     DECLARE_SECTION,
@@ -173,13 +173,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DATE_DATATYPE).is(DATE);
         
-        b.rule(DATATYPE).is(b.firstOf(NUMERIC_DATATYPE, LOB_DATATYPE, CHARACTER_DATAYPE, BOOLEAN_DATATYPE, DATE_DATATYPE, TYPE_ATTRIBUTE_DECLARATION));
-    }
-
-    private static void createStatements(LexerfulGrammarBuilder b) {
-        b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME));
-        
-        b.rule(TYPE_ATTRIBUTE_DECLARATION).is(
+        b.rule(ANCHORED_DATATYPE).is(
                 IDENTIFIER_NAME,
                 b.optional(
                         DOT, IDENTIFIER_NAME, 
@@ -187,20 +181,17 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 MOD,
                 TYPE);
         
-        b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
-                                        b.optional(CONSTANT),
-                                        b.firstOf(
-                                                b.sequence(
-                                                        DATATYPE,
-                                                        b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL)),
-                                                EXCEPTION),                                           
-                                        SEMICOLON);
-        
-        b.rule(CUSTOM_SUBTYPE).is(
-                SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
-                b.optional(NOT, NULL),
-                b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
-                SEMICOLON);
+        b.rule(DATATYPE).is(b.firstOf(
+                NUMERIC_DATATYPE,
+                LOB_DATATYPE,
+                CHARACTER_DATAYPE,
+                BOOLEAN_DATATYPE,
+                DATE_DATATYPE,
+                ANCHORED_DATATYPE));
+    }
+
+    private static void createStatements(LexerfulGrammarBuilder b) {
+        b.rule(HOST_AND_INDICATOR_VARIABLE).is(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME));
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
@@ -419,6 +410,21 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         SEMICOLON,
                         b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
                 );
+        
+        b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
+                b.optional(CONSTANT),
+                b.firstOf(
+                        b.sequence(
+                                DATATYPE,
+                                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL)),
+                        EXCEPTION),                                           
+                SEMICOLON);
+        
+        b.rule(CUSTOM_SUBTYPE).is(
+                SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
+                b.optional(NOT, NULL),
+                b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
+                SEMICOLON);
         
         b.rule(CURSOR_DECLARATION).is(
                 CURSOR, IDENTIFIER_NAME,
