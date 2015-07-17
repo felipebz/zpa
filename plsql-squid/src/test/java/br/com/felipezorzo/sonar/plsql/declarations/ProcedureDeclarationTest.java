@@ -1,4 +1,4 @@
-package br.com.felipezorzo.sonar.plsql.api.units;
+package br.com.felipezorzo.sonar.plsql.declarations;
 
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
