@@ -134,7 +134,8 @@ public enum PlSqlKeyword implements TokenType {
     GROUP("group"),
     ORDER("order"),
     ASC("asc"),
-    DESC("desc");
+    DESC("desc"),
+    THE("the");
 
     private final String value;
 

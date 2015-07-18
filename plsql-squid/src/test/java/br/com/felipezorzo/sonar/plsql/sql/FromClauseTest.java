@@ -34,5 +34,15 @@ public class FromClauseTest extends RuleTest {
     public void matchesTableWithAlias() {
         assertThat(p).matches("tab alias");
     }
+    
+    @Test
+    public void matchesSubquery() {
+        assertThat(p).matches("(select 1 from dual)");
+    }
+    
+    @Test
+    public void matchesSubqueryWithTheKeyword() {
+        assertThat(p).matches("the (select 1 from dual)");
+    }
 
 }

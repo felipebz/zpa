@@ -299,9 +299,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
         b.rule(FROM_CLAUSE).is(
-                IDENTIFIER_NAME,
-                b.optional(DOT, IDENTIFIER_NAME),
-                b.optional(REMOTE, IDENTIFIER_NAME),
+                b.firstOf(
+                        b.sequence(
+                                IDENTIFIER_NAME,
+                                b.optional(DOT, IDENTIFIER_NAME),
+                                b.optional(REMOTE, IDENTIFIER_NAME)),
+                        b.sequence(b.optional(THE), LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(IDENTIFIER_NAME));
         
         b.rule(WHERE_CLAUSE).is(WHERE, EXPRESSION);
