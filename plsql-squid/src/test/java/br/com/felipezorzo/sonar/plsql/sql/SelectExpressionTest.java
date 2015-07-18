@@ -70,4 +70,26 @@ public class SelectExpressionTest extends RuleTest {
         assertThat(p).matches("select 1 from dual order by 1");
     }
 
+    @Test
+    public void matchesSelectWithParenthesis() {
+        assertThat(p).matches("(select 1 from dual)");
+    }
+    
+    @Test
+    public void matchesSelectWithUnion() {
+        assertThat(p).matches("select 1 from dual union select 2 from dual");
+        assertThat(p).matches("(select 1 from dual) union (select 2 from dual)");
+    }
+    
+    @Test
+    public void matchesSelectWithUnionAll() {
+        assertThat(p).matches("select 1 from dual union all select 2 from dual");
+        assertThat(p).matches("(select 1 from dual) union all (select 2 from dual)");
+    }
+    
+    @Test
+    public void matchesSelectWithMinus() {
+        assertThat(p).matches("(select 1 from dual) minus (select 2 from dual)");
+    }
+
 }
