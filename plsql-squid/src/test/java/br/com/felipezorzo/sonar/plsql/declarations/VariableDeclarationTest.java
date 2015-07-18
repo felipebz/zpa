@@ -3,7 +3,6 @@ package br.com.felipezorzo.sonar.plsql.declarations;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
