@@ -26,6 +26,11 @@ public class SelectColumnTest extends RuleTest {
     }
     
     @Test
+    public void matchesCount() {
+        assertThat(p).matches("count(*)");
+    }
+    
+    @Test
     public void matchesColumnName() {
         assertThat(p).matches("name");
     }
