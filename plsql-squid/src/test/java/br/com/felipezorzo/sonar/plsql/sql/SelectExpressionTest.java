@@ -17,84 +17,57 @@ public class SelectExpressionTest extends RuleTest {
     
     @Test
     public void matchesSimpleSelect() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "from dual");
+        assertThat(p).matches("select 1 from dual");
     }
     
     @Test
     public void matchesSimpleSelectInto() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "into var\n"
-                + "from dual");
+        assertThat(p).matches("select 1 into var from dual");
     }
     
     @Test
     public void matchesSelectWithWhere() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "from dual\n"
-                + "where 1 = 1");
+        assertThat(p).matches("select 1 from dual where 1 = 1");
     }
     
     @Test
     public void matchesSelectWithMultipleColumns() {
-        assertThat(p).matches(""
-                + "select 1, 2\n"
-                + "from dual");
+        assertThat(p).matches("select 1, 2 from dual");
     }
     
     @Test
     public void matchesSelectWithMultipleColumnsAndIntoClause() {
-        assertThat(p).matches(""
-                + "select 1, 2\n"
-                + "into var1, var2\n"
-                + "from dual");
+        assertThat(p).matches("select 1, 2 into var1, var2 from dual");
     }
     
     @Test
     public void matchesSelectWithMultipleTables() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "from emp, dept");
+        assertThat(p).matches("select 1 from emp, dept");
     }
     
     @Test
     public void matchesSelectAll() {
-        assertThat(p).matches(""
-                + "select all 1\n"
-                + "from dual");
+        assertThat(p).matches("select all 1 from dual");
     }
     
     @Test
     public void matchesSelectDistinct() {
-        assertThat(p).matches(""
-                + "select distinct 1\n"
-                + "from dual");
+        assertThat(p).matches("select distinct 1 from dual");
     }
     
     @Test
     public void matchesSelectUnique() {
-        assertThat(p).matches(""
-                + "select unique 1\n"
-                + "from dual");
+        assertThat(p).matches("select unique 1 from dual");
     }
     
     @Test
     public void matchesSelectWithGroupBy() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "from dual\n"
-                + "group by 1");
+        assertThat(p).matches("select 1 from dual group by 1");
     }
     
     @Test
     public void matchesSelectWithOrderBy() {
-        assertThat(p).matches(""
-                + "select 1\n"
-                + "from dual\n"
-                + "order by 1");
+        assertThat(p).matches("select 1 from dual order by 1");
     }
 
 }
