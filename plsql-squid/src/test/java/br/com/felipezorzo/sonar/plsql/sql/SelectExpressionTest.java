@@ -88,5 +88,13 @@ public class SelectExpressionTest extends RuleTest {
                 + "from dual\n"
                 + "group by 1");
     }
+    
+    @Test
+    public void matchesSelectWithOrderBy() {
+        assertThat(p).matches(""
+                + "select 1\n"
+                + "from dual\n"
+                + "order by 1");
+    }
 
 }
