@@ -66,28 +66,8 @@ public class PlSqlLexerTest {
     }
     
     @Test
-    public void negativeIntegerLiteral() {
-        assertThatIsToken("-14", PlSqlTokenType.INTEGER_LITERAL);
-    }
-    
-    @Test
-    public void positiveIntegerLiteral() {
-        assertThatIsToken("+32767", PlSqlTokenType.INTEGER_LITERAL);
-    }
-    
-    @Test
     public void simpleRealLiteral() {
         assertThatIsToken("3.14159", PlSqlTokenType.REAL_LITERAL);
-    }
-    
-    @Test
-    public void negativeRealLiteral() {
-        assertThatIsToken("-12.0", PlSqlTokenType.REAL_LITERAL);
-    }
-    
-    @Test
-    public void positiveRealLiteral() {
-        assertThatIsToken("+8300.00", PlSqlTokenType.REAL_LITERAL);
     }
     
     @Test
@@ -108,11 +88,6 @@ public class PlSqlLexerTest {
     @Test
     public void scientificNotationLiteralWithNegativeExponent() {
         assertThatIsToken("1.0E-7", PlSqlTokenType.SCIENTIFIC_LITERAL);
-    }
-    
-    @Test
-    public void negativeScientificNotationLiteral() {
-        assertThatIsToken("-1E38", PlSqlTokenType.SCIENTIFIC_LITERAL);
     }
     
     @Test

@@ -20,22 +20,16 @@ public class PlSqlLexer {
     public static final String MULTILINE_COMMENT = "/\\*[\\s\\S]*?\\*\\/";
     public static final String COMMENT = "(?:" + INLINE_COMMENT + "|" + MULTILINE_COMMENT + ")";
     
-    // Literals reference: http://docs.oracle.com/cd/B19306_01/server.102/b14200/sql_elements003.htm
-    // Unlike some other languages (like Python), in PL/SQL the sign of a number is a part of the literal.
-    // So, -5 is a valid numeric literal, but --5 isn't.
-    public static final String INTEGER_LITERAL = "(?:"
-            + "(\\+|-)?\\d++"
-            + ")";
+    public static final String INTEGER_LITERAL = "(?:\\d++)";
     
     // TODO: improve this regex
     public static final String REAL_LITERAL = "(?:"
-            + "(\\+|-)?("
+            + "("
             + "\\d*+(?!\\.\\.)\\.\\d++"
             + "|\\d++(?!\\.\\.)\\.\\d*+)"
             + ")";
     
     public static final String SCIENTIFIC_LITERAL = "(?:"
-            + "(\\+|-)?"
             + "\\d*+(\\.\\d*+)?[Ee](\\+|-)?\\d++"
             + ")";
     

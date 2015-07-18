@@ -361,6 +361,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(NOT, UNARY_EXPRESSION),
+                        b.sequence(PLUS, UNARY_EXPRESSION),
+                        b.sequence(MINUS, UNARY_EXPRESSION),
                         IN_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();

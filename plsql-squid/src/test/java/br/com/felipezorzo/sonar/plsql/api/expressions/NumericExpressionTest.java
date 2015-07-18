@@ -18,11 +18,13 @@ public class NumericExpressionTest extends RuleTest {
     @Test
     public void matchesNumericAddition() {
         assertThat(p).matches("1 + 1");
+        assertThat(p).matches("1+1");
     }
     
     @Test
     public void matchesNumericSubtraction() {
         assertThat(p).matches("1 - 1");
+        assertThat(p).matches("1-1");
     }
     
     @Test
