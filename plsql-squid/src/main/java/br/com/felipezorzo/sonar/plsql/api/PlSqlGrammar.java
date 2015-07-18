@@ -432,7 +432,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(
                                 DATATYPE,
-                                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), LITERAL)),
+                                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)),
                         EXCEPTION),                                           
                 SEMICOLON);
         

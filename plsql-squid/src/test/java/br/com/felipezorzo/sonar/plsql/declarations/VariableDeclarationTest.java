@@ -35,6 +35,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number := 1;");
         assertThat(p).matches("var varchar2(1) := 'a';");
         assertThat(p).matches("var boolean := true;");
+        assertThat(p).matches("var boolean := var2;");
     }
     
     @Test
@@ -42,6 +43,7 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number default 1;");
         assertThat(p).matches("var varchar2(1) default 'a';");
         assertThat(p).matches("var boolean default true;");
+        assertThat(p).matches("var boolean default var2;");
     }
     
     @Test
