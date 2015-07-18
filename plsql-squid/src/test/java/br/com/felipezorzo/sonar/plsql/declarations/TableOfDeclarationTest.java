@@ -24,5 +24,10 @@ public class TableOfDeclarationTest extends RuleTest {
     public void matchesIndexedDeclaration() {
         assertThat(p).matches("type foo is table of bar index by binary_integer;");
     }
+    
+    @Test
+    public void matchesDeclarationWithBuiltinDatatypes() {
+        assertThat(p).matches("type foo is table of varchar2(10) index by number(5);");
+    }
 
 }

@@ -453,7 +453,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 SEMICOLON);
         
         b.rule(TABLE_OF_DECLARATION).is(
-                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, IDENTIFIER_NAME,
+                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, DATATYPE,
                 b.optional(INDEX, BY, DATATYPE),
                 SEMICOLON);
         
