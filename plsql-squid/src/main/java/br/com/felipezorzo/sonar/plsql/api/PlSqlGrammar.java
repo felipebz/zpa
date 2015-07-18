@@ -54,6 +54,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     FROM_CLAUSE,
     WHERE_CLAUSE,
     INTO_CLAUSE,
+    GROUP_BY_CLAUSE,
     SELECT_EXPRESSION,
     
     // Statements
@@ -308,11 +309,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(BULK, COLLECT), INTO,
                 IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME));
         
+        b.rule(GROUP_BY_CLAUSE).is(
+                GROUP, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION));
+        
         b.rule(SELECT_EXPRESSION).is(
                 SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                 b.optional(INTO_CLAUSE),
                 FROM, FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE),
-                b.optional(WHERE_CLAUSE));
+                b.optional(WHERE_CLAUSE),
+                b.optional(GROUP_BY_CLAUSE));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {

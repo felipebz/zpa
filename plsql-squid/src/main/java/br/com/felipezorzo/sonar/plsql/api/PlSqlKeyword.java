@@ -130,7 +130,8 @@ public enum PlSqlKeyword implements TokenType {
     INDEX("index"),
     BY("by"),
     REF("ref"),
-    ROWTYPE("rowtype");
+    ROWTYPE("rowtype"),
+    GROUP("group");
 
     private final String value;
 

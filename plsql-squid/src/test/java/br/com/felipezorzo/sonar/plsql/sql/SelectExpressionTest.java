@@ -80,5 +80,13 @@ public class SelectExpressionTest extends RuleTest {
                 + "select unique 1\n"
                 + "from dual");
     }
+    
+    @Test
+    public void matchesSelectWithGroupBy() {
+        assertThat(p).matches(""
+                + "select 1\n"
+                + "from dual\n"
+                + "group by 1");
+    }
 
 }
