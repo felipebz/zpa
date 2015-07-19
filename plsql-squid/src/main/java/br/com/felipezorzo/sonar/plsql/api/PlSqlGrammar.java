@@ -371,7 +371,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
-                b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION))).skipIfOneChild();
+                b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
+                b.optional(LPARENTHESIS, PLUS, RPARENTHESIS)).skipIfOneChild();
         
         b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, b.optional(IS, b.optional(NOT), NULL));
         

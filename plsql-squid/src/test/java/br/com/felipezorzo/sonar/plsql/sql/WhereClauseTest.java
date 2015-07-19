@@ -34,5 +34,10 @@ public class WhereClauseTest extends RuleTest {
     public void matchesComparationWithSubquery() {
         assertThat(p).matches("where tab.col = (select 1 from dual)");
     }
+    
+    @Test
+    public void matchesOuterJoin() {
+        assertThat(p).matches("where tab.col(+) = tab2.col2");
+    }
 
 }
