@@ -138,7 +138,9 @@ public enum PlSqlKeyword implements TokenType {
     THE("the"),
     MINUS_KEYWORD("minus"),
     UNION("union"),
-    DETERMINISTIC("deterministic");
+    DETERMINISTIC("deterministic"),
+    EXECUTE("execute"),
+    USING("using");
 
     private final String value;
 

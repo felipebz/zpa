@@ -75,6 +75,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RAISE_STATEMENT,
     SELECT_STATEMENT,
     CALL_STATEMENT,
+    EXECUTE_IMMEDIATE_PARAMETER,
+    EXECUTE_IMMEDIATE_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -278,6 +280,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
         
+        b.rule(EXECUTE_IMMEDIATE_PARAMETER).is(
+                b.optional(b.firstOf(b.sequence(IN, b.optional(OUT)), OUT)),
+                EXPRESSION);
+        
+        b.rule(EXECUTE_IMMEDIATE_STATEMENT).is(
+                EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
+                b.optional(INTO, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
+                b.optional(USING, EXECUTE_IMMEDIATE_PARAMETER, b.zeroOrMore(COMMA, EXECUTE_IMMEDIATE_PARAMETER)),
+                SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -292,7 +304,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        ROLLBACK_STATEMENT,
                                        RAISE_STATEMENT,
                                        SELECT_STATEMENT,
-                                       CALL_STATEMENT));
+                                       CALL_STATEMENT,
+                                       EXECUTE_IMMEDIATE_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
