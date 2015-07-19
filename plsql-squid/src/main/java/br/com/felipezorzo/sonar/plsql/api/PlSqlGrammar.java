@@ -58,9 +58,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     GROUP_BY_CLAUSE,
     ORDER_BY_CLAUSE,
     SELECT_EXPRESSION,
-    INSERT_EXPRESSION,
-    UPDATE_COLUMN,
-    UPDATE_EXPRESSION,
     
     // Statements
     BLOCK_STATEMENT,
@@ -78,6 +75,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SAVEPOINT_STATEMENT,
     RAISE_STATEMENT,
     SELECT_STATEMENT,
+    INSERT_STATEMENT,
+    UPDATE_COLUMN,
+    UPDATE_STATEMENT,
     CALL_STATEMENT,
     EXECUTE_IMMEDIATE_PARAMETER,
     EXECUTE_IMMEDIATE_STATEMENT,
@@ -276,6 +276,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
         
+        b.rule(INSERT_STATEMENT).is(
+                INSERT, INTO, IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                SEMICOLON);
+        
+        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, EQUALS, EXPRESSION);
+        
+        b.rule(UPDATE_STATEMENT).is(
+                UPDATE, IDENTIFIER_NAME, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                b.optional(WHERE_CLAUSE),
+                SEMICOLON);
+        
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
         
         b.rule(EXECUTE_IMMEDIATE_PARAMETER).is(
@@ -302,6 +315,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        ROLLBACK_STATEMENT,
                                        RAISE_STATEMENT,
                                        SELECT_STATEMENT,
+                                       INSERT_STATEMENT,
+                                       UPDATE_STATEMENT,
                                        CALL_STATEMENT,
                                        EXECUTE_IMMEDIATE_STATEMENT));
     }
@@ -341,19 +356,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                             b.optional(ORDER_BY_CLAUSE)),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(b.firstOf(MINUS_KEYWORD, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION));
-        
-        b.rule(INSERT_EXPRESSION).is(
-                INSERT, INTO, IDENTIFIER_NAME,
-                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
-                VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
-                SEMICOLON);
-        
-        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, EQUALS, EXPRESSION);
-        
-        b.rule(UPDATE_EXPRESSION).is(
-                UPDATE, IDENTIFIER_NAME, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
-                b.optional(WHERE_CLAUSE),
-                SEMICOLON);
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
