@@ -78,6 +78,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     INSERT_STATEMENT,
     UPDATE_COLUMN,
     UPDATE_STATEMENT,
+    DELETE_STATEMENT,
     CALL_STATEMENT,
     EXECUTE_IMMEDIATE_PARAMETER,
     EXECUTE_IMMEDIATE_STATEMENT,
@@ -289,6 +290,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
+        b.rule(DELETE_STATEMENT).is(DELETE, b.optional(FROM), IDENTIFIER_NAME, b.optional(WHERE_CLAUSE), SEMICOLON);
+        
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
         
         b.rule(EXECUTE_IMMEDIATE_PARAMETER).is(
@@ -317,6 +320,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        SELECT_STATEMENT,
                                        INSERT_STATEMENT,
                                        UPDATE_STATEMENT,
+                                       DELETE_STATEMENT,
                                        CALL_STATEMENT,
                                        EXECUTE_IMMEDIATE_STATEMENT));
     }
