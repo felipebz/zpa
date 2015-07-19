@@ -190,7 +190,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
         b.rule(CUSTOM_DATATYPE).is(b.optional(IDENTIFIER_NAME, DOT), b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
         
-        b.rule(REF_DATATYPE).is(REF, CUSTOM_DATATYPE);
+        b.rule(REF_DATATYPE).is(REF, b.firstOf(CUSTOM_DATATYPE, CURSOR));
         
         b.rule(DATATYPE).is(b.firstOf(
                 NUMERIC_DATATYPE,
