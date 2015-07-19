@@ -59,6 +59,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ORDER_BY_CLAUSE,
     SELECT_EXPRESSION,
     INSERT_EXPRESSION,
+    UPDATE_COLUMN,
+    UPDATE_EXPRESSION,
     
     // Statements
     BLOCK_STATEMENT,
@@ -343,6 +345,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 INSERT, INTO, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                SEMICOLON);
+        
+        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, EQUALS, EXPRESSION);
+        
+        b.rule(UPDATE_EXPRESSION).is(
+                UPDATE, IDENTIFIER_NAME, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                b.optional(WHERE_CLAUSE),
                 SEMICOLON);
     }
     
