@@ -218,8 +218,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ASSIGNMENT_STATEMENT).is(
                 b.firstOf(b.sequence(IDENTIFIER_NAME,
-                                     b.optional(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
-                                                          b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS)))),
+                                     b.zeroOrMore(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
+                                                            b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS)))),
                           HOST_AND_INDICATOR_VARIABLE),
                 ASSIGNMENT,
                 EXPRESSION,

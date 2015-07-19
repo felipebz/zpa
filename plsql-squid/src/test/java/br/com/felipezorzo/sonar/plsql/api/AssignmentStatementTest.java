@@ -28,6 +28,11 @@ public class AssignmentStatementTest extends RuleTest {
     }
     
     @Test
+    public void assignmentToItemInRecordCollection() {
+        assertThat(p).matches("collection(1).field := 1;");
+    }
+    
+    @Test
     public void assignmentToHostVariable() {
         assertThat(p).matches(":var := 1;");
     }
