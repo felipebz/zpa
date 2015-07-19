@@ -341,7 +341,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION),
                 b.nextNot(ASSIGNMENT_STATEMENT));
         
-        b.rule(BRACKED_EXPRESSION).is(b.firstOf(PRIMARY_EXPRESSION, b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
+        b.rule(BRACKED_EXPRESSION).is(b.firstOf(
+                PRIMARY_EXPRESSION,
+                b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
         
         b.rule(MEMBER_EXPRESSION).is(
                 BRACKED_EXPRESSION,

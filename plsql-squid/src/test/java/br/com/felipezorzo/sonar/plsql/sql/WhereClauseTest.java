@@ -39,5 +39,15 @@ public class WhereClauseTest extends RuleTest {
     public void matchesOuterJoin() {
         assertThat(p).matches("where tab.col(+) = tab2.col2");
     }
+    
+    @Test
+    public void matchesTupleInSelect() {
+        assertThat(p).matches("where (foo, bar, baz) in (select 1, 2, 3 from dual)");
+    }
+    
+    @Test
+    public void matchesTupleInValues() {
+        assertThat(p).matches("where (foo, bar) in ((1, 2), (2, 3))");
+    }
 
 }
