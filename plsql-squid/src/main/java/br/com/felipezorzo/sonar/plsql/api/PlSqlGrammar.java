@@ -216,14 +216,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), 
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(ASSIGNMENT_STATEMENT).is(
-                b.firstOf(b.sequence(IDENTIFIER_NAME,
-                                     b.zeroOrMore(b.firstOf(b.sequence(DOT, IDENTIFIER_NAME),
-                                                            b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS)))),
-                          HOST_AND_INDICATOR_VARIABLE),
-                ASSIGNMENT,
-                EXPRESSION,
-                SEMICOLON);
+        b.rule(ASSIGNMENT_STATEMENT).is(OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
         
         b.rule(IF_STATEMENT).is(
                 IF, EXPRESSION, THEN,
@@ -351,8 +344,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT));
         
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION),
-                b.nextNot(ASSIGNMENT_STATEMENT));
+                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,
