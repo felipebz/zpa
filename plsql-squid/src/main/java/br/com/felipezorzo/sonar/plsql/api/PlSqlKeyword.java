@@ -140,7 +140,9 @@ public enum PlSqlKeyword implements TokenType {
     UNION("union"),
     DETERMINISTIC("deterministic"),
     EXECUTE("execute"),
-    USING("using");
+    USING("using"),
+    INSERT("insert"),
+    VALUES("values");
 
     private final String value;
 
