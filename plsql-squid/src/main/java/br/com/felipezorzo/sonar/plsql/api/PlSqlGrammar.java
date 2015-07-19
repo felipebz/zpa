@@ -442,7 +442,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FUNCTION_DECLARATION).is(
                 FUNCTION, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                RETURN, DATATYPE,
+                RETURN, DATATYPE, b.optional(DETERMINISTIC),
                 b.firstOf(
                         SEMICOLON,
                         b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
@@ -509,7 +509,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE, b.optional(OR, REPLACE),
                 FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                RETURN, DATATYPE,
+                RETURN, DATATYPE, b.optional(DETERMINISTIC),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
                 b.firstOf(

@@ -112,5 +112,14 @@ public class CreateFunctionTest extends RuleTest {
                 + "return 0;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesDeterministicFunction() {
+        assertThat(p).matches(""
+                + "create function test return number deterministic is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
 
 }
