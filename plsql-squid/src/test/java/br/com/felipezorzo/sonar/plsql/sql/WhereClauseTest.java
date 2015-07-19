@@ -49,5 +49,15 @@ public class WhereClauseTest extends RuleTest {
     public void matchesTupleInValues() {
         assertThat(p).matches("where (foo, bar) in ((1, 2), (2, 3))");
     }
+    
+    @Test
+    public void matchesExists() {
+        assertThat(p).matches("where exists (select 1 from dual)");
+    }
+    
+    @Test
+    public void matchesNotExists() {
+        assertThat(p).matches("where not exists (select 1 from dual)");
+    }
 
 }

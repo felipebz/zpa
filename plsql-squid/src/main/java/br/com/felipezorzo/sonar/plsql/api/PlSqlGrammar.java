@@ -38,7 +38,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     MEMBER_EXPRESSION, 
     OBJECT_REFERENCE, 
     POSTFIX_EXPRESSION, 
-    IN_EXPRESSION, 
+    IN_EXPRESSION,
+    EXISTS_EXPRESSION,
     UNARY_EXPRESSION, 
     MULTIPLICATIVE_EXPRESSION, 
     ADDITIVE_EXPRESSION, 
@@ -385,11 +386,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, b.optional(b.sequence(b.optional(NOT), IN , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
         
+        b.rule(EXISTS_EXPRESSION).is(EXISTS , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS).skipIfOneChild();
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(NOT, UNARY_EXPRESSION),
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
-                        IN_EXPRESSION)).skipIfOneChild();
+                        IN_EXPRESSION,
+                        EXISTS_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
         
