@@ -29,5 +29,20 @@ public class IntoClauseTest extends RuleTest {
     public void matchesBulkCollect() {
         assertThat(p).matches("bulk collect into var");
     }
+    
+    @Test
+    public void matchesSimpleCollectionElement() {
+        assertThat(p).matches("into col(1)");
+    }
+    
+    @Test
+    public void matchesSimpleIntoRecordItem() {
+        assertThat(p).matches("into col.it");
+    }
+    
+    @Test
+    public void matchesSimpleIntoItemInRecordCollection() {
+        assertThat(p).matches("into col(1).it");
+    }
 
 }

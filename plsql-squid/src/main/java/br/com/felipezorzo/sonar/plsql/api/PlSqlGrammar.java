@@ -317,7 +317,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(INTO_CLAUSE).is(
                 b.optional(BULK, COLLECT), INTO,
-                IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME));
+                OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE));
         
         b.rule(GROUP_BY_CLAUSE).is(
                 GROUP, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION));
