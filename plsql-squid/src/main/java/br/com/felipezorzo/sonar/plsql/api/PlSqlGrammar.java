@@ -90,6 +90,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CURSOR_DECLARATION,
     RECORD_DECLARATION,
     TABLE_OF_DECLARATION,
+    REF_CURSOR_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     DECLARE_SECTION,
@@ -195,7 +196,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
 
         b.rule(CUSTOM_DATATYPE).is(b.optional(IDENTIFIER_NAME, DOT), b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
         
-        b.rule(REF_DATATYPE).is(REF, b.firstOf(CUSTOM_DATATYPE, CURSOR));
+        b.rule(REF_DATATYPE).is(REF, CUSTOM_DATATYPE);
         
         b.rule(DATATYPE).is(b.firstOf(
                 NUMERIC_DATATYPE,
@@ -511,6 +512,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(INDEX, BY, DATATYPE),
                 SEMICOLON);
         
+        b.rule(REF_CURSOR_DECLARATION).is(TYPE, IDENTIFIER_NAME, IS, REF, CURSOR, b.optional(RETURN, DATATYPE), SEMICOLON);
+        
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
                 VARIABLE_DECLARATION,
                 PROCEDURE_DECLARATION,
@@ -518,7 +521,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CUSTOM_SUBTYPE,
                 CURSOR_DECLARATION,
                 RECORD_DECLARATION,
-                TABLE_OF_DECLARATION)));
+                TABLE_OF_DECLARATION,
+                REF_CURSOR_DECLARATION)));
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {

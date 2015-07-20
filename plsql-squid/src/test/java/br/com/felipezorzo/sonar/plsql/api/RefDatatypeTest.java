@@ -16,10 +16,5 @@ public class RefDatatypeTest extends RuleTest {
     public void matchesSimpleRef() {
         assertThat(p).matches("ref custom");
     }
-    
-    @Test
-    public void matchesRefCursor() {
-        assertThat(p).matches("ref cursor");
-    }
 
 }
