@@ -3,6 +3,7 @@ package br.com.felipezorzo.sonar.plsql.lexer;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.and;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.commentRegexp;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.o2n;
+import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.or;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.regexp;
 import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
@@ -37,6 +38,10 @@ public class PlSqlLexer {
     
     public static final String DATE_LITERAL = "(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
     
+    public static final String SIMPLE_IDENTIFIER = and("[a-zA-Z_]", o2n("[\\w#$]"));
+    
+    public static final String QUOTED_IDENTIFIER = "\".*\"";
+    
     private PlSqlLexer() {
     }
 
@@ -53,7 +58,7 @@ public class PlSqlLexer {
                 .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
-                .withChannel(new IdentifierAndKeywordChannel(and("[a-zA-Z_]", o2n("\\w")), false, PlSqlKeyword.values()))
+                .withChannel(new IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false, PlSqlKeyword.values()))
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
                 .withChannel(new UnknownCharacterChannel())
                 .build();
