@@ -29,5 +29,10 @@ public class UpdateStatementTest extends RuleTest {
     public void matchesUpdateMultipleColumns() {
         assertThat(p).matches("update tab set x = 1, y = 1;");
     }
+    
+    @Test
+    public void matchesUpdateWithAlias() {
+        assertThat(p).matches("update tab t set t.x = 1;");
+    }
 
 }

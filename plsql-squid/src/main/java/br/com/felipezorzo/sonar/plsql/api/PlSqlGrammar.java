@@ -284,10 +284,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
                 SEMICOLON);
         
-        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, EQUALS, EXPRESSION);
+        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), EQUALS, EXPRESSION);
         
         b.rule(UPDATE_STATEMENT).is(
-                UPDATE, IDENTIFIER_NAME, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                UPDATE, IDENTIFIER_NAME, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
