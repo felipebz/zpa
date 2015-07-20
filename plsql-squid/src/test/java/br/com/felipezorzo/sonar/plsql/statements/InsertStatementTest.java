@@ -29,5 +29,10 @@ public class InsertStatementTest extends RuleTest {
     public void matchesInsertMultipleColumns() {
         assertThat(p).matches("insert into tab (x, y) values (1, 2);");
     }
+    
+    @Test
+    public void matchesInsertWithSubquery() {
+        assertThat(p).matches("insert into tab (x, y) (select 1, 2 from dual);");
+    }
 
 }

@@ -281,7 +281,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(INSERT_STATEMENT).is(
                 INSERT, INTO, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
-                VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                b.firstOf(
+                        b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                        SELECT_EXPRESSION),
                 SEMICOLON);
         
         b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), EQUALS, EXPRESSION);
