@@ -145,7 +145,8 @@ public enum PlSqlKeyword implements TokenType {
     VALUES("values"),
     UPDATE("update"),
     SET("set"),
-    DELETE("delete");
+    DELETE("delete"),
+    CASE("case");
 
     private final String value;
 

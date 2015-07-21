@@ -48,6 +48,11 @@ public class NumericExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesMathematicalOperationBetweenTwoCaseExpressions() {
+        assertThat(p).matches("(case when 1 = 1 then 1 end) + (case when 1 = 1 then 1 end)");
+    }
+    
+    @Test
     public void matchesCursorRowcount() {
         assertThat(p).matches("cur%rowcount + 1");
     }

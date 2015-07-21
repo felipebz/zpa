@@ -49,6 +49,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ARGUMENT, 
     ARGUMENTS, 
     CALL_EXPRESSION,
+    CASE_EXPRESSION,
     
     // DML
     SELECT_COLUMN,
@@ -421,12 +422,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(EXISTS_EXPRESSION).is(EXISTS , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS).skipIfOneChild();
         
+        b.rule(CASE_EXPRESSION).is(
+                CASE, b.optional(IDENTIFIER_NAME),
+                b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION),
+                b.optional(ELSE, EXPRESSION),
+                END);
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(NOT, UNARY_EXPRESSION),
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
+                        CASE_EXPRESSION,
                         EXISTS_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
