@@ -115,7 +115,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
-        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(ANONYMOUS_BLOCK, CREATE_PROCEDURE, CREATE_FUNCTION, CREATE_PACKAGE, EXECUTE_PLSQL_BUFFER)), EOF);
+        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
+                ANONYMOUS_BLOCK,
+                CREATE_PROCEDURE, 
+                CREATE_FUNCTION, 
+                CREATE_PACKAGE,
+                CREATE_PACKAGE_BODY,
+                EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
         createDatatypes(b);
@@ -575,10 +581,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         BLOCK_STATEMENT,
                         b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
-        b.rule(ANONYMOUS_BLOCK).is(
-                b.optional(DECLARE, DECLARE_SECTION),
-                BLOCK_STATEMENT,
-                EXECUTE_PLSQL_BUFFER
-                );
+        b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT, EXECUTE_PLSQL_BUFFER);
     }
 }
