@@ -43,6 +43,11 @@ public class NumericExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesMathematicalOperationBetweenTwoQueries() {
+        assertThat(p).matches("(select 1 from dual) + (select 1 from dual)");
+    }
+    
+    @Test
     public void matchesCursorRowcount() {
         assertThat(p).matches("cur%rowcount + 1");
     }

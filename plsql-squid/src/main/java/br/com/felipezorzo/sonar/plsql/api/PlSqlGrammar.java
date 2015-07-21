@@ -426,6 +426,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         IN_EXPRESSION,
+                        SELECT_EXPRESSION,
                         EXISTS_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
@@ -459,7 +460,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 CONCATENATION_EXPRESSION)))).skipIfOneChild();   
         b.rule(BOOLEAN_EXPRESSION).is(COMPARISION_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISION_EXPRESSION)).skipIfOneChild();
         
-        b.rule(EXPRESSION).is(b.firstOf(SELECT_EXPRESSION, BOOLEAN_EXPRESSION));
+        b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION);
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {
