@@ -392,6 +392,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(ORDER_BY_CLAUSE).is(
                 ORDER, BY, EXPRESSION, b.optional(b.firstOf(ASC, DESC)), b.zeroOrMore(COMMA, EXPRESSION), b.optional(b.firstOf(ASC, DESC)));
         
+        b.rule(FOR_UPDATE_CLAUSE).is(
+                FOR, UPDATE,
+                b.optional(OF, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
+                b.optional(b.firstOf(NOWAIT, b.sequence(WAIT, INTEGER_LITERAL), b.sequence(SKIP, LOCKED))));
+        
         b.rule(SELECT_EXPRESSION).is(
                 b.firstOf(
                     b.sequence(
@@ -402,7 +407,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                             b.optional(GROUP_BY_CLAUSE),
                             b.optional(ORDER_BY_CLAUSE)),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
-                b.optional(b.firstOf(MINUS_KEYWORD, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION));
+                b.optional(b.firstOf(MINUS_KEYWORD, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
+                b.optional(FOR_UPDATE_CLAUSE));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
