@@ -354,7 +354,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE));
         
         b.rule(GROUP_BY_CLAUSE).is(
-                GROUP, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION));
+                GROUP, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION),
+                b.optional(HAVING, EXPRESSION));
         
         b.rule(ORDER_BY_CLAUSE).is(
                 ORDER, BY, EXPRESSION, b.optional(b.firstOf(ASC, DESC)), b.zeroOrMore(COMMA, EXPRESSION), b.optional(b.firstOf(ASC, DESC)));
