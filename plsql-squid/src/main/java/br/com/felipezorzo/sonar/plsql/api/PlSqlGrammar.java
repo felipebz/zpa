@@ -85,6 +85,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXECUTE_IMMEDIATE_STATEMENT,
     OPEN_STATEMENT,
     OPEN_FOR_STATEMENT,
+    FETCH_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -326,6 +327,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
+        b.rule(FETCH_STATEMENT).is(
+                FETCH, PRIMARY_EXPRESSION,
+                b.firstOf(
+                        b.sequence(INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
+                        b.sequence(
+                                BULK, COLLECT, INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER),
+                                b.optional(LIMIT, EXPRESSION))),
+                SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -346,7 +356,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        CALL_STATEMENT,
                                        EXECUTE_IMMEDIATE_STATEMENT,
                                        OPEN_STATEMENT,
-                                       OPEN_FOR_STATEMENT));
+                                       OPEN_FOR_STATEMENT,
+                                       FETCH_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
