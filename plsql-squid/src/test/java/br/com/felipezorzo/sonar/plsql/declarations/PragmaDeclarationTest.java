@@ -24,5 +24,10 @@ public class PragmaDeclarationTest extends RuleTest {
     public void matchesExceptionInit() {
         assertThat(p).matches("pragma exception_init(1, 1);");
     }
+    
+    @Test
+    public void matchesSeriallyReusable() {
+        assertThat(p).matches("pragma serially_reusable;");
+    }
 
 }
