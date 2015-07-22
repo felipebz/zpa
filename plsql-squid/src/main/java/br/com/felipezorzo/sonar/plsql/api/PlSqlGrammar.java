@@ -355,6 +355,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        RETURN_STATEMENT,
                                        COMMIT_STATEMENT,
                                        ROLLBACK_STATEMENT,
+                                       SAVEPOINT_STATEMENT,
                                        RAISE_STATEMENT,
                                        SELECT_STATEMENT,
                                        INSERT_STATEMENT,
@@ -410,7 +411,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         // TODO: remove this rule and fix IDENTIFIER_NAME to accept all non-reserved keywords
-        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS));
+        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE));
         
         b.rule(PRIMARY_EXPRESSION).is(
                 b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION));
