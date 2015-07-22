@@ -91,5 +91,10 @@ public class SelectExpressionTest extends RuleTest {
     public void matchesSelectWithMinus() {
         assertThat(p).matches("(select 1 from dual) minus (select 2 from dual)");
     }
+    
+    @Test
+    public void matchesSelectCountDistinct() {
+        assertThat(p).matches("select count(distinct foo) from dual");
+    }
 
 }

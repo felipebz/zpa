@@ -441,7 +441,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 DELETE)
                         )).skipIfOneChild();
         
-        b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), EXPRESSION);
+        b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
