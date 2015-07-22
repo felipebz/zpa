@@ -374,10 +374,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(FROM_CLAUSE).is(
                 b.firstOf(
-                        b.sequence(
-                                IDENTIFIER_NAME,
-                                b.optional(DOT, IDENTIFIER_NAME),
-                                b.optional(REMOTE, IDENTIFIER_NAME)),
+                        b.sequence(OBJECT_REFERENCE, b.optional(REMOTE, IDENTIFIER_NAME)),
                         b.sequence(b.optional(THE), LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(IDENTIFIER_NAME));
         
@@ -411,7 +408,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         // TODO: remove this rule and fix IDENTIFIER_NAME to accept all non-reserved keywords
-        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE));
+        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE, TABLE));
         
         b.rule(PRIMARY_EXPRESSION).is(
                 b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION));
@@ -423,7 +420,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(MEMBER_EXPRESSION).is(
                 BRACKED_EXPRESSION,
                 b.zeroOrMore(
-                        b.firstOf(DOT, MOD), 
+                        b.firstOf(DOT, MOD),
                         b.firstOf(
                                 IDENTIFIER_NAME,
                                 COUNT,

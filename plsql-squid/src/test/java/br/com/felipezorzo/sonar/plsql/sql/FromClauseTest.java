@@ -44,5 +44,11 @@ public class FromClauseTest extends RuleTest {
     public void matchesSubqueryWithTheKeyword() {
         assertThat(p).matches("the (select 1 from dual)");
     }
+    
+    @Test
+    public void matchesFunctionCall() {
+        assertThat(p).matches("func(var)");
+        assertThat(p).matches("table(xmlsequence(x))");
+    }
 
 }
