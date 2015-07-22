@@ -81,9 +81,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     UPDATE_STATEMENT,
     DELETE_STATEMENT,
     CALL_STATEMENT,
-    EXECUTE_IMMEDIATE_PARAMETER,
+    UNNAMED_ACTUAL_PAMETER,
     EXECUTE_IMMEDIATE_STATEMENT,
     OPEN_STATEMENT,
+    OPEN_FOR_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -305,19 +306,24 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
         
-        b.rule(EXECUTE_IMMEDIATE_PARAMETER).is(
+        b.rule(UNNAMED_ACTUAL_PAMETER).is(
                 b.optional(b.firstOf(b.sequence(IN, b.optional(OUT)), OUT)),
                 EXPRESSION);
         
         b.rule(EXECUTE_IMMEDIATE_STATEMENT).is(
                 EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
                 b.optional(INTO, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
-                b.optional(USING, EXECUTE_IMMEDIATE_PARAMETER, b.zeroOrMore(COMMA, EXECUTE_IMMEDIATE_PARAMETER)),
+                b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
         b.rule(OPEN_STATEMENT).is(
                 OPEN, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                SEMICOLON);
+        
+        b.rule(OPEN_FOR_STATEMENT).is(
+                OPEN, PRIMARY_EXPRESSION, FOR, EXPRESSION,
+                b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
@@ -339,7 +345,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        DELETE_STATEMENT,
                                        CALL_STATEMENT,
                                        EXECUTE_IMMEDIATE_STATEMENT,
-                                       OPEN_STATEMENT));
+                                       OPEN_STATEMENT,
+                                       OPEN_FOR_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
