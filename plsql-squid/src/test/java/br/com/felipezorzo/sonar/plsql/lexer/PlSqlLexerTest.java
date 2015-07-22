@@ -3,6 +3,7 @@ package br.com.felipezorzo.sonar.plsql.lexer;
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasComment;
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasToken;
 import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.not;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -96,11 +97,23 @@ public class PlSqlLexerTest {
     }
     
     @Test
+    public void cornerCases() {
+        assertThatIsNotToken("1..", PlSqlTokenType.REAL_LITERAL);
+        assertThatIsNotToken("..2", PlSqlTokenType.REAL_LITERAL);
+        
+        assertThatIsNotToken("e1", PlSqlTokenType.SCIENTIFIC_LITERAL);
+    }
+    
+    @Test
     public void dateLiteral() {
         assertThatIsToken("DATE '2015-01-01'", PlSqlTokenType.DATE_LITERAL);
     }
     
     private void assertThatIsToken(String sourceCode, TokenType tokenType) {
         assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType));
+    }
+    
+    private void assertThatIsNotToken(String sourceCode, TokenType tokenType) {
+        assertThat(lexer.lex(sourceCode), not(hasToken(sourceCode, tokenType)));
     }
 }

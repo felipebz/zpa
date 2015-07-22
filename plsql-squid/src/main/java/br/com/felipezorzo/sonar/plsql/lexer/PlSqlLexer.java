@@ -31,7 +31,7 @@ public class PlSqlLexer {
             + ")";
     
     public static final String SCIENTIFIC_LITERAL = "(?:"
-            + "\\d*+(\\.\\d*+)?[Ee](\\+|-)?\\d++"
+            + "\\d++(\\.\\d*+)?[Ee](\\+|-)?\\d++"
             + ")";
     
     public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
