@@ -152,7 +152,8 @@ public enum PlSqlKeyword implements TokenType {
     FETCH("fetch"),
     CLOSE("close"),
     PRAGMA("pragma"),
-    AUTONOMOUS_TRANSACTION("autonomous_transaction");
+    AUTONOMOUS_TRANSACTION("autonomous_transaction"),
+    EXCEPTION_INIT("exception_init");
 
     private final String value;
 

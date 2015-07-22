@@ -19,5 +19,10 @@ public class PragmaDeclarationTest extends RuleTest {
     public void matchesAutonomousTransaction() {
         assertThat(p).matches("pragma autonomous_transaction;");
     }
+    
+    @Test
+    public void matchesExceptionInit() {
+        assertThat(p).matches("pragma exception_init(1, 1);");
+    }
 
 }

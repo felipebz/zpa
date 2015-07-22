@@ -97,6 +97,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     TABLE_OF_DECLARATION,
     REF_CURSOR_DECLARATION,
     AUTONOMOUS_TRANSACTION_PRAGMA,
+    EXCEPTION_INIT_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
@@ -565,7 +566,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(AUTONOMOUS_TRANSACTION_PRAGMA).is(PRAGMA, AUTONOMOUS_TRANSACTION, SEMICOLON);
         
-        b.rule(PRAGMA_DECLARATION).is(AUTONOMOUS_TRANSACTION_PRAGMA);
+        b.rule(EXCEPTION_INIT_PRAGMA).is(PRAGMA, EXCEPTION_INIT, LPARENTHESIS, EXPRESSION, COMMA, EXPRESSION, RPARENTHESIS, SEMICOLON);
+        
+        b.rule(PRAGMA_DECLARATION).is(b.firstOf(
+                EXCEPTION_INIT_PRAGMA,
+                AUTONOMOUS_TRANSACTION_PRAGMA));
         
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
                 VARIABLE_DECLARATION,
