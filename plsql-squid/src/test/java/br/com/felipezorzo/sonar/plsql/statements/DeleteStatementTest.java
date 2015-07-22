@@ -29,5 +29,10 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesDeleteWithWhere() {
         assertThat(p).matches("delete from tab where x = 1;");
     }
+    
+    @Test
+    public void matchesDeleteWithAlias() {
+        assertThat(p).matches("delete tab t;");
+    }
 
 }
