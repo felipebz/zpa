@@ -86,6 +86,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     OPEN_STATEMENT,
     OPEN_FOR_STATEMENT,
     FETCH_STATEMENT,
+    CLOSE_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -336,6 +337,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 b.optional(LIMIT, EXPRESSION))),
                 SEMICOLON);
         
+        b.rule(CLOSE_STATEMENT).is(CLOSE, PRIMARY_EXPRESSION, SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -357,7 +360,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        EXECUTE_IMMEDIATE_STATEMENT,
                                        OPEN_STATEMENT,
                                        OPEN_FOR_STATEMENT,
-                                       FETCH_STATEMENT));
+                                       FETCH_STATEMENT,
+                                       CLOSE_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
