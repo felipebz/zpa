@@ -96,6 +96,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RECORD_DECLARATION,
     TABLE_OF_DECLARATION,
     REF_CURSOR_DECLARATION,
+    AUTONOMOUS_TRANSACTION_PRAGMA,
+    PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
     DECLARE_SECTION,
@@ -561,6 +563,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(REF_CURSOR_DECLARATION).is(TYPE, IDENTIFIER_NAME, IS, REF, CURSOR, b.optional(RETURN, DATATYPE), SEMICOLON);
         
+        b.rule(AUTONOMOUS_TRANSACTION_PRAGMA).is(PRAGMA, AUTONOMOUS_TRANSACTION, SEMICOLON);
+        
+        b.rule(PRAGMA_DECLARATION).is(AUTONOMOUS_TRANSACTION_PRAGMA);
+        
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
                 VARIABLE_DECLARATION,
                 PROCEDURE_DECLARATION,
@@ -569,7 +575,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CURSOR_DECLARATION,
                 RECORD_DECLARATION,
                 TABLE_OF_DECLARATION,
-                REF_CURSOR_DECLARATION)));
+                REF_CURSOR_DECLARATION,
+                PRAGMA_DECLARATION)));
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {

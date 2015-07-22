@@ -150,7 +150,9 @@ public enum PlSqlKeyword implements TokenType {
     HAVING("having"),
     OPEN("open"),
     FETCH("fetch"),
-    CLOSE("close");
+    CLOSE("close"),
+    PRAGMA("pragma"),
+    AUTONOMOUS_TRANSACTION("autonomous_transaction");
 
     private final String value;
 
