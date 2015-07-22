@@ -8,7 +8,7 @@ import org.junit.Test;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 import br.com.felipezorzo.sonar.plsql.api.RuleTest;
 
-public class RefCursorDeclaration extends RuleTest {
+public class RefCursorDeclarationTest extends RuleTest {
 
     @Before
     public void init() {
