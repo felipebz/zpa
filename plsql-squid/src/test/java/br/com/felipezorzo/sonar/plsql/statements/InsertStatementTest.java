@@ -39,5 +39,10 @@ public class InsertStatementTest extends RuleTest {
     public void matchesInsertWithSchema() {
         assertThat(p).matches("insert into sch.tab values (1);");
     }
+    
+    @Test
+    public void matchesInsertRecord() {
+        assertThat(p).matches("insert into tab values foo;");
+    }
 
 }

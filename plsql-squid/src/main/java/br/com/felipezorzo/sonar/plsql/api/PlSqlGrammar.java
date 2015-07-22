@@ -299,6 +299,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                        b.sequence(VALUES, EXPRESSION),
                         SELECT_EXPRESSION),
                 SEMICOLON);
         
