@@ -34,5 +34,10 @@ public class InsertStatementTest extends RuleTest {
     public void matchesInsertWithSubquery() {
         assertThat(p).matches("insert into tab (x, y) (select 1, 2 from dual);");
     }
+    
+    @Test
+    public void matchesInsertWithSchema() {
+        assertThat(p).matches("insert into sch.tab values (1);");
+    }
 
 }

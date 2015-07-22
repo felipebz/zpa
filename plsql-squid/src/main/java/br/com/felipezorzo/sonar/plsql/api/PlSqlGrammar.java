@@ -295,7 +295,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
         
         b.rule(INSERT_STATEMENT).is(
-                INSERT, INTO, IDENTIFIER_NAME,
+                INSERT, INTO, OBJECT_REFERENCE,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
@@ -305,12 +305,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), EQUALS, EXPRESSION);
         
         b.rule(UPDATE_STATEMENT).is(
-                UPDATE, IDENTIFIER_NAME, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                UPDATE, OBJECT_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
         b.rule(DELETE_STATEMENT).is(
-                DELETE, b.optional(FROM), IDENTIFIER_NAME,  b.optional(IDENTIFIER_NAME),
+                DELETE, b.optional(FROM), OBJECT_REFERENCE,  b.optional(IDENTIFIER_NAME),
                 b.optional(WHERE_CLAUSE), SEMICOLON);
         
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);

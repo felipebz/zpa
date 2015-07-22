@@ -34,5 +34,10 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesDeleteWithAlias() {
         assertThat(p).matches("delete tab t;");
     }
+    
+    @Test
+    public void matchesDeleteWithSchema() {
+        assertThat(p).matches("delete sch.tab;");
+    }
 
 }
