@@ -81,5 +81,12 @@ public class CreatePackageBodyTest extends RuleTest {
                 + "var := 0;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesPackageBodyWithTimestamp() {
+        assertThat(p).matches(""
+                + "create package body test timestamp '2015-01-01' is\n"
+                + "end;");
+    }
 
 }

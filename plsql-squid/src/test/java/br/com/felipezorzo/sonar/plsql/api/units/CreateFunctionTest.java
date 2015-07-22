@@ -121,5 +121,14 @@ public class CreateFunctionTest extends RuleTest {
                 + "return 0;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesFunctionWithTimestamp() {
+        assertThat(p).matches(""
+                + "create function test timestamp '2015-01-01' return number is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
 
 }

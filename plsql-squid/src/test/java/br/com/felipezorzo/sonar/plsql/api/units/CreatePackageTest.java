@@ -79,5 +79,12 @@ public class CreatePackageTest extends RuleTest {
                 + "function func return number;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesPackageWithTimestamp() {
+        assertThat(p).matches(""
+                + "create package test timestamp '2015-01-01' is\n"
+                + "end;");
+    }
 
 }

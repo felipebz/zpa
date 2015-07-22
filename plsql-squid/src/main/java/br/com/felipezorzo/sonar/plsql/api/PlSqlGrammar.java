@@ -58,6 +58,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     INTO_CLAUSE,
     GROUP_BY_CLAUSE,
     ORDER_BY_CLAUSE,
+    FOR_UPDATE_CLAUSE,
     SELECT_EXPRESSION,
     
     // Statements
@@ -199,7 +200,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);
         
-        b.rule(DATE_DATATYPE).is(DATE);
+        b.rule(DATE_DATATYPE).is(b.firstOf(DATE, TIMESTAMP));
         
         b.rule(ANCHORED_DATATYPE).is(
                 IDENTIFIER_NAME,
@@ -593,7 +594,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_procedure.htm
         b.rule(CREATE_PROCEDURE).is(
                 CREATE, b.optional(OR, REPLACE),
-                PROCEDURE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                PROCEDURE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
@@ -606,7 +607,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_function.htm
         b.rule(CREATE_FUNCTION).is(
                 CREATE, b.optional(OR, REPLACE),
-                FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                FUNCTION, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE, b.optional(DETERMINISTIC),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
@@ -619,7 +620,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm
         b.rule(CREATE_PACKAGE).is(
                 CREATE, b.optional(OR, REPLACE),
-                PACKAGE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                PACKAGE, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
                 b.zeroOrMore(DECLARE_SECTION),
@@ -628,7 +629,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package_body.htm
         b.rule(CREATE_PACKAGE_BODY).is(
                 CREATE, b.optional(OR, REPLACE),
-                PACKAGE, BODY, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME,
+                PACKAGE, BODY, b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.firstOf(IS, AS),
                 b.zeroOrMore(DECLARE_SECTION),
                 b.firstOf(

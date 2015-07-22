@@ -117,5 +117,14 @@ public class CreateProcedureTest extends RuleTest {
                 + "null;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesProcedureWithTimestamp() {
+        assertThat(p).matches(""
+                + "create procedure test timestamp '2015-01-01' is\n"
+                + "begin\n"
+                + "null;\n"
+                + "end;");
+    }
 
 }

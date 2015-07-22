@@ -154,7 +154,8 @@ public enum PlSqlKeyword implements TokenType {
     PRAGMA("pragma"),
     AUTONOMOUS_TRANSACTION("autonomous_transaction"),
     EXCEPTION_INIT("exception_init"),
-    SERIALLY_REUSABLE("serially_reusable");
+    SERIALLY_REUSABLE("serially_reusable"),
+    TIMESTAMP("timestamp");
 
     private final String value;
 
