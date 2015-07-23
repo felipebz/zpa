@@ -403,7 +403,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
                 RPARENTHESIS);
         
-        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(ANALYTIC_CLAUSE), b.optional(b.optional(AS), IDENTIFIER_NAME));
+        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
         b.rule(FROM_CLAUSE).is(
                 b.firstOf(
@@ -460,7 +460,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         // TODO: remove this rule and fix IDENTIFIER_NAME to accept all non-reserved keywords
-        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE, TABLE));
+        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE, TABLE, ROWID));
         
         b.rule(PRIMARY_EXPRESSION).is(
                 b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION));
@@ -501,7 +501,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
                 b.optional(LPARENTHESIS, PLUS, RPARENTHESIS)).skipIfOneChild();
         
-        b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, b.optional(IS, b.optional(NOT), NULL));
+        b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, 
+                b.optional(b.firstOf(
+                        b.sequence(IS, b.optional(NOT), NULL),
+                        ANALYTIC_CLAUSE)));
         
         b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, b.optional(b.sequence(b.optional(NOT), IN , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
         

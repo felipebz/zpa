@@ -96,5 +96,12 @@ public class SelectExpressionTest extends RuleTest {
     public void matchesSelectCountDistinct() {
         assertThat(p).matches("select count(distinct foo) from dual");
     }
+    
+    @Test
+    public void matchesSelectWithAnalyticFunction() {
+        assertThat(p).matches("select count(foo) over () from dual");
+        assertThat(p).matches("select (count(foo) over ()) from dual");
+        assertThat(p).matches("select func(count(foo) over ()) from dual");
+    }
 
 }
