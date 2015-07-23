@@ -39,10 +39,5 @@ public class GroupByClauseTest extends RuleTest {
     public void matchesSimpleGroupByFunctionCall() {
         assertThat(p).matches("group by func(var)");
     }
-    
-    @Test
-    public void matchesSimpleGroupByWithHaving() {
-        assertThat(p).matches("group by col having col > 1");
-    }
 
 }
