@@ -509,7 +509,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(IS, b.optional(NOT), NULL),
                         ANALYTIC_CLAUSE)));
         
-        b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, b.optional(b.sequence(b.optional(NOT), IN , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
+        b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, 
+                b.optional(b.sequence(
+                        b.optional(NOT), IN, 
+                        b.firstOf(
+                                b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                                EXPRESSION)))).skipIfOneChild();
         
         b.rule(EXISTS_EXPRESSION).is(EXISTS , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS).skipIfOneChild();
         

@@ -82,6 +82,11 @@ public class OtherBooleanExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesBasicInWithoutParenthesis() {
+        assertThat(p).matches("var in 1");
+    }
+    
+    @Test
     public void matchesEqualTo() {
         assertThat(p).matches("1 = 1");
     }
