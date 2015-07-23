@@ -26,6 +26,11 @@ public class SelectExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesSelectBulkCollectInto() {
+        assertThat(p).matches("select 1 bulk collect into var from dual");
+    }
+    
+    @Test
     public void matchesSelectWithWhere() {
         assertThat(p).matches("select 1 from dual where 1 = 1");
     }

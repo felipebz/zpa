@@ -6,6 +6,8 @@ import static br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType.*;
 import static com.sonar.sslr.api.GenericTokenType.EOF;
 import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 
+import java.util.ArrayList;
+
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
@@ -116,8 +118,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     DECLARE_SECTION,
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
+    NON_RESERVED_KEYWORD,
     EXECUTE_PLSQL_BUFFER,
-    BUILTIN_FUNCTIONS,
     
     // Program units
     ANONYMOUS_BLOCK,
@@ -134,7 +136,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     public static LexerfulGrammarBuilder create() {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
-        b.rule(IDENTIFIER_NAME).is(IDENTIFIER);
+        ArrayList<PlSqlKeyword> keywords = PlSqlKeyword.getNonReservedKeywords();
+        PlSqlKeyword[] rest = keywords.subList(2, keywords.size()).toArray(new PlSqlKeyword[keywords.size() - 2]);
+        b.rule(NON_RESERVED_KEYWORD).is(b.firstOf(keywords.get(0), keywords.get(1), (Object[]) rest));
+        
+        b.rule(IDENTIFIER_NAME).is(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD));
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 ANONYMOUS_BLOCK,
                 CREATE_PROCEDURE, 
@@ -459,11 +465,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
-        // TODO: remove this rule and fix IDENTIFIER_NAME to accept all non-reserved keywords
-        b.rule(BUILTIN_FUNCTIONS).is(b.firstOf(REPLACE, COUNT, OPEN, DELETE, CLOSE, EXISTS, EXECUTE, TABLE, ROWID));
-        
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, BUILTIN_FUNCTIONS, MULTIPLICATION));
+                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, MULTIPLICATION));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,

@@ -68,5 +68,11 @@ public class IdentifierNameTest extends RuleTest {
     public void notMatchesIdentifierWithSpace() {
         assertThat(p).notMatches("user id");
     }
+    
+    @Test
+    public void matchesTeste() {
+        assertThat(p).matches("cursor");
+        assertThat(p).matches("rowid");
+    }
 
 }

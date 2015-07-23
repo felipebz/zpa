@@ -1,21 +1,111 @@
 package br.com.felipezorzo.sonar.plsql.api;
 
+import java.util.ArrayList;
+
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.TokenType;
 
 public enum PlSqlKeyword implements TokenType {
-    BEGIN("begin"),
-    NULL("null"),
-    END("end"),
-    EXCEPTION("exception"),
+    ALL("all", true),
+    ALTER("alter", true),
+    AND("and", true),
+    ANY("any", true),
+    ARRAY("array", true),
+    ARROW("arrow", true),
+    AS("as", true),
+    ASC("asc", true),
+    AT("at", true),
+    BEGIN("begin", true),
+    BETWEEN("between", true),
+    BY("by", true),
+    CASE("case", true),
+    CHECK("check", true),
+    CLUSTERS("clusters", true),
+    CLUSTER("cluster", true),
+    COLAUTH("colauth", true),
+    COLUMNS("columns", true),
+    COMPRESS("compress", true),
+    CONNECT("connect", true),
+    CRASH("crash", true),
+    CREATE("create", true),
+    CURRENT("current", true),
+    DECIMAL("decimal", true),
+    DECLARE("declare", true),
+    DEFAULT("default", true),
+    DELETE("delete", true),
+    DESC("desc", true),
+    DISTINCT("distinct", true),
+    DROP("drop", true),
+    ELSE("else", true),
+    END("end", true),
+    EXCEPTION("exception", true),
+    EXCLUSIVE("exclusive", true),
+    EXISTS("exists", true),
+    FETCH("fetch", true),
+    FORM("form", true),
+    FOR("for", true),
+    FROM("from", true),
+    GOTO("goto", true),
+    GRANT("grant", true),
+    GROUP("group", true),
+    HAVING("having", true),
+    IDENTIFIED("identified", true),
+    IF("if", true),
+    IN("in", true),
+    INDEXES("indexes", true),
+    INDEX("index", true),
+    INSERT("insert", true),
+    INTERSECT("intersect", true),
+    INTO("into", true),
+    IS("is", true),
+    LIKE("like", true),
+    LOCK("lock", true),
+    MINUS_KEYWORD("minus", true),
+    MODE("mode", true),
+    NOCOMPRESS("nocompress", true),
+    NOT("not", true),
+    NOWAIT("nowait", true),
+    NULL("null", true),
+    OF("of", true),
+    ON("on", true),
+    OPTION("option", true),
+    OR("or", true),
+    ORDER("order", true),
+    OVERLAPS("overlaps", true),
+    PRIOR("prior", true),
+    PROCEDURE("procedure", true),
+    PUBLIC("public", true),
+    RANGE_KEYWORD("range", true),
+    RECORD("record", true),
+    RESOURCE("resource", true),
+    REVOKE("revoke", true),
+    SELECT("select", true),
+    SHARE("share", true),
+    SIZE("size", true),
+    SQL("sql", true),
+    START("start", true),
+    SUBTYPE("subtype", true),
+    TABAUTH("tabauth", true),
+    THEN("then", true),
+    TO("to", true),
+    TYPE("type", true),
+    UNION("union", true),
+    UNIQUE("unique", true),
+    UPDATE("update", true),
+    USE("use", true),
+    VALUES("values", true),
+    VIEW("view", true),
+    VIEWS("views", true),
+    WHEN("when", true),
+    WHERE("where", true),
+    WITH("with", true),
+    REF("ref", true),
+    OUT("out", true),
+    SET("set", true),
+    BULK("bulk", true),
+
     NUMBER("number"),
     OTHERS("others"),
-    THEN("then"),
-    WHEN("when"),
-    DEFAULT("default"),
-    NOT("not"),
-    AND("and"),
-    OR("or"),
     CONSTANT("constant"),
     FALSE("false"),
     TRUE("true"),
@@ -27,7 +117,6 @@ public enum PlSqlKeyword implements TokenType {
     BINARY_FLOAT("binary_float"),
     BINARY_INTEGER("binary_integer"),
     DEC("dec"),
-    DECIMAL("DECIMAL"),
     DOUBLE("double"),
     PRECISION("precision"),
     FLOAT("float"),
@@ -56,33 +145,21 @@ public enum PlSqlKeyword implements TokenType {
     BOOLEAN("boolean"),
     DATE("date"),
     ROWCOUNT("rowcount"),
-    SQL("sql"),
     BULK_ROWCOUNT("bulk_rowcount"),
     COUNT("count"),
     FIRST("first"),
     LAST("last"),
     LIMIT("limit"),
     NEXT("next"),
-    PRIOR("prior"),
-    DECLARE("declare"),
-    IF("if"),
     ELSIF("elsif"),
-    ELSE("else"),
     LOOP("loop"),
     EXIT("exit"),
     CONTINUE("continue"),
-    FOR("for"),
-    IN("in"),
-    OUT("out"),
     REVERSE("reverse"),
     WHILE("while"),
     RETURN("return"),
     NOCOPY("nocopy"),
-    PROCEDURE("procedure"),
-    CREATE("create"),
     REPLACE("replace"),
-    IS("is"),
-    AS("as"),
     EXTERNAL("external"),
     AUTHID("authid"),
     CURRENT_USER("current_user"),
@@ -90,12 +167,9 @@ public enum PlSqlKeyword implements TokenType {
     LANGUAGE("language"),
     JAVA("java"),
     FUNCTION("function"),
-    EXISTS("exists"),
     FOUND("found"),
     NOTFOUND("notfound"),
     ISOPEN("isopen"),
-    LIKE("like"),
-    BETWEEN("between"),
     COMMIT("commit"),
     WORK("work"),
     FORCE("force"),
@@ -104,52 +178,20 @@ public enum PlSqlKeyword implements TokenType {
     IMMEDIATE("immediate"),
     BATCH("batch"),
     WAIT("wait"),
-    NOWAIT("nowait"),
     ROLLBACK("rollback"),
-    TO("to"),
     SAVEPOINT("savepoint"),
     RAISE("raise"),
-    TYPE("type"),
     PACKAGE("package"),
     BODY("body"),
-    SUBTYPE("subtype"),
-    RANGE_KEYWORD("range"),
-    WHERE("where"),
-    SELECT("select"),
-    FROM("from"),
-    BULK("bulk"),
     COLLECT("collect"),
-    INTO("into"),
-    ALL("all"),
-    DISTINCT("distinct"),
-    UNIQUE("unique"),
     CURSOR("cursor"),
-    RECORD("record"),
-    TABLE("table"),
-    OF("of"),
-    INDEX("index"),
-    BY("by"),
-    REF("ref"),
+    TABLE("table"), // actually "table" is a reserved keyword, but Oracle has function named "table"
     ROWTYPE("rowtype"),
-    GROUP("group"),
-    ORDER("order"),
-    ASC("asc"),
-    DESC("desc"),
     THE("the"),
-    MINUS_KEYWORD("minus"),
-    UNION("union"),
     DETERMINISTIC("deterministic"),
     EXECUTE("execute"),
     USING("using"),
-    INSERT("insert"),
-    VALUES("values"),
-    UPDATE("update"),
-    SET("set"),
-    DELETE("delete"),
-    CASE("case"),
-    HAVING("having"),
     OPEN("open"),
-    FETCH("fetch"),
     CLOSE("close"),
     PRAGMA("pragma"),
     AUTONOMOUS_TRANSACTION("autonomous_transaction"),
@@ -158,10 +200,7 @@ public enum PlSqlKeyword implements TokenType {
     TIMESTAMP("timestamp"),
     SKIP("skip"),
     LOCKED("locked"),
-    CONNECT("connect"),
     NOCYCLE("nocycle"),
-    START("start"),
-    WITH("with"),
     SIBLINGS("siblings"),
     NULLS("nulls"),
     PIPELINED("pipelined"),
@@ -169,15 +208,20 @@ public enum PlSqlKeyword implements TokenType {
     UNBOUNDED("unbounded"),
     PRECEDING("preceding"),
     FOLLOWING("following"),
-    CURRENT("current"),
     ROW("row"),
     ROWS("rows"),
     OVER("over");
 
     private final String value;
+    private final boolean reserved;
 
     private PlSqlKeyword(String value) {
+        this(value, false);
+    }
+    
+    private PlSqlKeyword(String value, boolean reserved) {
         this.value = value;
+        this.reserved = reserved;
     }
 
     @Override
@@ -188,6 +232,10 @@ public enum PlSqlKeyword implements TokenType {
     @Override
     public String getValue() {
         return value;
+    }
+    
+    public boolean isReserved() {
+        return reserved;
     }
 
     @Override
@@ -200,6 +248,17 @@ public enum PlSqlKeyword implements TokenType {
         String[] keywords = new String[keywordsEnum.length];
         for (int i = 0; i < keywords.length; i++) {
             keywords[i] = keywordsEnum[i].getValue();
+        }
+        return keywords;
+    }
+    
+    public static ArrayList<PlSqlKeyword> getNonReservedKeywords() {
+        PlSqlKeyword[] keywordsEnum = PlSqlKeyword.values();
+        ArrayList<PlSqlKeyword> keywords = new ArrayList<>();
+        for (PlSqlKeyword keyword : keywordsEnum) {
+            if (!keyword.isReserved()) {
+                keywords.add(keyword);
+            }
         }
         return keywords;
     }
