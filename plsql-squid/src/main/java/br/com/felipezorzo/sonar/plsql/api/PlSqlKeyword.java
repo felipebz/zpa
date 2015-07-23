@@ -157,7 +157,11 @@ public enum PlSqlKeyword implements TokenType {
     SERIALLY_REUSABLE("serially_reusable"),
     TIMESTAMP("timestamp"),
     SKIP("skip"),
-    LOCKED("locked");
+    LOCKED("locked"),
+    CONNECT("connect"),
+    NOCYCLE("nocycle"),
+    START("start"),
+    WITH("with");
 
     private final String value;
 

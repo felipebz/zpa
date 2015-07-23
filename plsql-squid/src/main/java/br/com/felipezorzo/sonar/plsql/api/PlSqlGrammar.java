@@ -60,6 +60,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     HAVING_CLAUSE,
     ORDER_BY_CLAUSE,
     FOR_UPDATE_CLAUSE,
+    CONNECT_BY_CLAUSE,
+    START_WITH_CLAUSE,
+    HIERARCHICAL_QUERY_CLAUSE,
     SELECT_EXPRESSION,
     
     // Statements
@@ -403,6 +406,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(OF, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
                 b.optional(b.firstOf(NOWAIT, b.sequence(WAIT, INTEGER_LITERAL), b.sequence(SKIP, LOCKED))));
         
+        b.rule(CONNECT_BY_CLAUSE).is(CONNECT, BY, b.optional(NOCYCLE), EXPRESSION);
+        
+        b.rule(START_WITH_CLAUSE).is(START, WITH, EXPRESSION);
+        
+        b.rule(HIERARCHICAL_QUERY_CLAUSE).is(b.firstOf(
+                b.sequence(CONNECT_BY_CLAUSE, b.optional(START_WITH_CLAUSE)),
+                b.sequence(START_WITH_CLAUSE, CONNECT_BY_CLAUSE)));
+        
         b.rule(SELECT_EXPRESSION).is(
                 b.firstOf(
                     b.sequence(
@@ -412,6 +423,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                             b.optional(WHERE_CLAUSE),
                             b.optional(GROUP_BY_CLAUSE),
                             b.optional(HAVING_CLAUSE),
+                            b.optional(HIERARCHICAL_QUERY_CLAUSE),
                             b.optional(ORDER_BY_CLAUSE)),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(b.firstOf(MINUS_KEYWORD, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
@@ -479,6 +491,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(NOT, UNARY_EXPRESSION),
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
+                        b.sequence(PRIOR, UNARY_EXPRESSION),
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
