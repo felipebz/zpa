@@ -163,7 +163,8 @@ public enum PlSqlKeyword implements TokenType {
     START("start"),
     WITH("with"),
     SIBLINGS("siblings"),
-    NULLS("nulls");
+    NULLS("nulls"),
+    PIPELINED("pipelined");
 
     private final String value;
 

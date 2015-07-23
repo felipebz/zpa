@@ -80,5 +80,14 @@ public class FunctionDeclarationTest extends RuleTest {
                 + "return 0;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesPipelinedFunction() {
+        assertThat(p).matches(""
+                + "function test return number pipelined is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
 
 }
