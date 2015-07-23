@@ -246,7 +246,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
-        b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, IDENTIFIER_NAME), THEN, b.oneOrMore(STATEMENT));
+        b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, OBJECT_REFERENCE), THEN, b.oneOrMore(STATEMENT));
         
         b.rule(BLOCK_STATEMENT).is(
                 b.optional(DECLARE, b.oneOrMore(DECLARE_SECTION)),
