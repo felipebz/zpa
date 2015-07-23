@@ -88,5 +88,13 @@ public class ForStatementTest extends RuleTest {
                 + "end loop; "
                 + "end loop;");
     }
+    
+    @Test
+    public void matchesForLoopWithExpressionInBothSides() {
+        assertThat(p).matches(""
+                + "for i in 1 + 1 .. 2 + 2 loop "
+                + "null; "
+                + "end loop;");
+    }
 
 }

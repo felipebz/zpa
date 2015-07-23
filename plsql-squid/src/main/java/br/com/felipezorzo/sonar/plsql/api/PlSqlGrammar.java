@@ -258,8 +258,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FOR_STATEMENT).is(
                 FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE),
                 b.firstOf(
-                        b.sequence(OBJECT_REFERENCE, b.nextNot(RANGE)),
-                        b.sequence(EXPRESSION, RANGE, EXPRESSION)),
+                        b.sequence(EXPRESSION, RANGE, EXPRESSION),
+                        OBJECT_REFERENCE),
                 LOOP,
                 b.oneOrMore(STATEMENT),
                 END, LOOP, SEMICOLON);
