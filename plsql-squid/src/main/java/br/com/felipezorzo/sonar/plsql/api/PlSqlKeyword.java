@@ -210,7 +210,8 @@ public enum PlSqlKeyword implements TokenType {
     FOLLOWING("following"),
     ROW("row"),
     ROWS("rows"),
-    OVER("over");
+    OVER("over"),
+    PIPE("pipe");
 
     private final String value;
     private final boolean reserved;
