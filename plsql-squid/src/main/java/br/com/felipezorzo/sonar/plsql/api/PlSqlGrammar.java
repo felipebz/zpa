@@ -453,7 +453,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                             b.optional(INTO_CLAUSE),
                             FROM, FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE),
                             b.optional(WHERE_CLAUSE),
-                            b.optional(GROUP_BY_CLAUSE),
+                            b.optional(b.firstOf(
+                                    b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
+                                    b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
                             b.optional(HAVING_CLAUSE),
                             b.optional(HIERARCHICAL_QUERY_CLAUSE),
                             b.optional(ORDER_BY_CLAUSE)),
