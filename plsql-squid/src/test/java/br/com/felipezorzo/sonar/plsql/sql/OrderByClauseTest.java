@@ -37,7 +37,7 @@ public class OrderByClauseTest extends RuleTest {
     
     @Test
     public void matchesOrderByWithMultipleValuesAndOrdering() {
-        assertThat(p).matches("order by col1 asc, col2 desc");
+        assertThat(p).matches("order by col1 asc, col2 desc, col3 desc");
     }
     
     @Test
@@ -53,6 +53,21 @@ public class OrderByClauseTest extends RuleTest {
     @Test
     public void matchesSimpleOrderByFunctionCall() {
         assertThat(p).matches("order by func(var)");
+    }
+    
+    @Test
+    public void matchesOrderSiblingsBy() {
+        assertThat(p).matches("order siblings by col");
+    }
+    
+    @Test
+    public void matchesOrderByNullsFirst() {
+        assertThat(p).matches("order by col nulls first");
+    }
+    
+    @Test
+    public void matchesOrderByNullsLast() {
+        assertThat(p).matches("order by col nulls last");
     }
 
 }

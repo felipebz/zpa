@@ -58,6 +58,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     INTO_CLAUSE,
     GROUP_BY_CLAUSE,
     HAVING_CLAUSE,
+    ORDER_BY_ITEM,
     ORDER_BY_CLAUSE,
     FOR_UPDATE_CLAUSE,
     CONNECT_BY_CLAUSE,
@@ -398,8 +399,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(HAVING_CLAUSE).is(HAVING, EXPRESSION);
         
+        b.rule(ORDER_BY_ITEM).is(EXPRESSION, b.optional(b.firstOf(ASC, DESC)), b.optional(NULLS, b.firstOf(FIRST, LAST)));
+        
         b.rule(ORDER_BY_CLAUSE).is(
-                ORDER, BY, EXPRESSION, b.optional(b.firstOf(ASC, DESC)), b.zeroOrMore(COMMA, EXPRESSION), b.optional(b.firstOf(ASC, DESC)));
+                ORDER, b.optional(SIBLINGS), BY, ORDER_BY_ITEM, b.zeroOrMore(COMMA, ORDER_BY_ITEM));
         
         b.rule(FOR_UPDATE_CLAUSE).is(
                 FOR, UPDATE,

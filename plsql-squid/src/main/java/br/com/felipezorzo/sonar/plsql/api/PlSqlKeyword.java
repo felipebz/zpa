@@ -161,7 +161,9 @@ public enum PlSqlKeyword implements TokenType {
     CONNECT("connect"),
     NOCYCLE("nocycle"),
     START("start"),
-    WITH("with");
+    WITH("with"),
+    SIBLINGS("siblings"),
+    NULLS("nulls");
 
     private final String value;
 
