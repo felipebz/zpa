@@ -164,7 +164,15 @@ public enum PlSqlKeyword implements TokenType {
     WITH("with"),
     SIBLINGS("siblings"),
     NULLS("nulls"),
-    PIPELINED("pipelined");
+    PIPELINED("pipelined"),
+    PARTITION("partition"),
+    UNBOUNDED("unbounded"),
+    PRECEDING("preceding"),
+    FOLLOWING("following"),
+    CURRENT("current"),
+    ROW("row"),
+    ROWS("rows"),
+    OVER("over");
 
     private final String value;
 

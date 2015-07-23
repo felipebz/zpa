@@ -52,6 +52,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CASE_EXPRESSION,
     
     // DML
+    PARTITION_BY_CLAUSE,
+    WINDOWING_LIMIT,
+    WINDOWING_CLAUSE,
+    ANALYTIC_CLAUSE,
     SELECT_COLUMN,
     FROM_CLAUSE,
     WHERE_CLAUSE,
@@ -380,7 +384,26 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
-        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
+        
+        b.rule(PARTITION_BY_CLAUSE).is(PARTITION, BY, EXPRESSION, b.optional(COMMA, EXPRESSION));
+        
+        b.rule(WINDOWING_LIMIT).is(b.firstOf(
+                b.sequence(UNBOUNDED, b.firstOf(PRECEDING, FOLLOWING)),
+                b.sequence(CURRENT, ROW),
+                b.sequence(EXPRESSION, b.firstOf(PRECEDING, FOLLOWING))));
+        
+        b.rule(WINDOWING_CLAUSE).is(
+                b.firstOf(ROWS, RANGE_KEYWORD),
+                b.firstOf(
+                        b.sequence(BETWEEN, WINDOWING_LIMIT, AND, WINDOWING_LIMIT),
+                        WINDOWING_LIMIT));
+        
+        b.rule(ANALYTIC_CLAUSE).is(
+                OVER, LPARENTHESIS, 
+                b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
+                RPARENTHESIS);
+        
+        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(ANALYTIC_CLAUSE), b.optional(b.optional(AS), IDENTIFIER_NAME));
         
         b.rule(FROM_CLAUSE).is(
                 b.firstOf(
