@@ -319,7 +319,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         SELECT_EXPRESSION),
                 SEMICOLON);
         
-        b.rule(UPDATE_COLUMN).is(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), EQUALS, EXPRESSION);
+        b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, EXPRESSION);
         
         b.rule(UPDATE_STATEMENT).is(
                 UPDATE, OBJECT_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),

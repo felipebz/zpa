@@ -37,7 +37,7 @@ public class UpdateStatementTest extends RuleTest {
     
     @Test
     public void matchesUpdateWithSchema() {
-        assertThat(p).matches("update sch.tab set x = 1;");
+        assertThat(p).matches("update sch.tab set sch.tab.x = 1;");
     }
 
 }
