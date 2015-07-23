@@ -538,7 +538,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
-                        EXISTS_EXPRESSION)).skipIfOneChild();
+                        EXISTS_EXPRESSION), b.optional(AS, IDENTIFIER_NAME)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
         

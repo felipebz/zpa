@@ -108,5 +108,10 @@ public class SelectExpressionTest extends RuleTest {
         assertThat(p).matches("select (count(foo) over ()) from dual");
         assertThat(p).matches("select func(count(foo) over ()) from dual");
     }
+    
+    @Test
+    public void matchesSelectXmlelement() {
+        assertThat(p).matches("select xmlelement(dummy as \"x\") from dual");
+    }
 
 }
