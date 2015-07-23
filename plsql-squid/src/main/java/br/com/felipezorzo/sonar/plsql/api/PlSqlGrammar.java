@@ -94,6 +94,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
     CURSOR_DECLARATION,
+    RECORD_FIELD_DECLARATION,
     RECORD_DECLARATION,
     TABLE_OF_DECLARATION,
     REF_CURSOR_DECLARATION,
@@ -562,9 +563,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 IS, SELECT_EXPRESSION, SEMICOLON);
         
+        b.rule(RECORD_FIELD_DECLARATION).is(
+                IDENTIFIER_NAME, DATATYPE,
+                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION));
+        
         b.rule(RECORD_DECLARATION).is(
                 TYPE, IDENTIFIER_NAME, IS, RECORD,
-                LPARENTHESIS, b.oneOrMore(IDENTIFIER_NAME, DATATYPE, b.optional(COMMA)), RPARENTHESIS,
+                LPARENTHESIS, RECORD_FIELD_DECLARATION, b.zeroOrMore(COMMA, RECORD_FIELD_DECLARATION), RPARENTHESIS,
                 SEMICOLON);
         
         b.rule(TABLE_OF_DECLARATION).is(

@@ -24,5 +24,20 @@ public class RecordDeclarationTest extends RuleTest {
     public void matchesRecordWithMultipleFields() {
         assertThat(p).matches("type foo is record(x number, y number);");
     }
+    
+    @Test
+    public void matchesRecordWithDefaultField() {
+        assertThat(p).matches("type foo is record(x number default 1);");
+    }
+    
+    @Test
+    public void matchesRecordWithDefaultFieldAlternative() {
+        assertThat(p).matches("type foo is record(x number := 1);");
+    }
+    
+    @Test
+    public void matchesRecordWithNotNullField() {
+        assertThat(p).matches("type foo is record(x number not null default 1);");
+    }
 
 }
