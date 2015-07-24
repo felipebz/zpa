@@ -15,6 +15,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Data types
     DATATYPE,
+    CHARACTER_SET_CLAUSE,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
     CHARACTER_DATAYPE,
@@ -198,7 +199,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         SMALLINT), 
                 b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
         
-        b.rule(LOB_DATATYPE).is(b.firstOf(BFILE, BLOB, CLOB, NCLOB));
+        b.rule(CHARACTER_SET_CLAUSE).is(CHARACTER, SET, b.firstOf(ANY_CS, b.sequence(IDENTIFIER_NAME, MOD, CHARSET)));
+        
+        b.rule(LOB_DATATYPE).is(b.firstOf(BFILE, BLOB, CLOB, NCLOB), b.optional(CHARACTER_SET_CLAUSE));
         
         b.rule(CHARACTER_DATAYPE).is(
                 b.firstOf(
@@ -213,7 +216,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         UROWID,
                         VARCHAR,
                         VARCHAR2), 
-                b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS));
+                b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS),
+                b.optional(CHARACTER_SET_CLAUSE));
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);
         
@@ -487,6 +491,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.zeroOrMore(
                         b.firstOf(DOT, MOD, REMOTE),
                         b.nextNot(ROWTYPE),
+                        b.nextNot(TYPE),
                         b.firstOf(
                                 IDENTIFIER_NAME,
                                 COUNT,

@@ -29,7 +29,6 @@ public enum PlSqlKeyword implements TokenType {
     CRASH("crash", true),
     CREATE("create", true),
     CURRENT("current", true),
-    DECIMAL("decimal", true),
     DECLARE("declare", true),
     DEFAULT("default", true),
     DELETE("delete", true),
@@ -88,7 +87,6 @@ public enum PlSqlKeyword implements TokenType {
     TABAUTH("tabauth", true),
     THEN("then", true),
     TO("to", true),
-    TYPE("type", true),
     UNION("union", true),
     UNIQUE("unique", true),
     UPDATE("update", true),
@@ -103,7 +101,13 @@ public enum PlSqlKeyword implements TokenType {
     OUT("out", true),
     SET("set", true),
     BULK("bulk", true),
+    
+    // actually these keywords are reserved according the documentation, but Oracle accepts as identifiers in some situations
+    TABLE("table"),
+    DECIMAL("decimal"),
+    TYPE("type"),
 
+    // non reserved keywords
     NUMBER("number"),
     OTHERS("others"),
     CONSTANT("constant"),
@@ -185,7 +189,6 @@ public enum PlSqlKeyword implements TokenType {
     BODY("body"),
     COLLECT("collect"),
     CURSOR("cursor"),
-    TABLE("table"), // actually "table" is a reserved keyword, but Oracle has function named "table"
     ROWTYPE("rowtype"),
     THE("the"),
     DETERMINISTIC("deterministic"),
@@ -211,7 +214,9 @@ public enum PlSqlKeyword implements TokenType {
     ROW("row"),
     ROWS("rows"),
     OVER("over"),
-    PIPE("pipe");
+    PIPE("pipe"),
+    ANY_CS("any_cs"),
+    CHARSET("charset");
 
     private final String value;
     private final boolean reserved;
