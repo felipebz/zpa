@@ -311,8 +311,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
         
         b.rule(INSERT_STATEMENT).is(
-                INSERT, INTO, OBJECT_REFERENCE,
-                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                INSERT, INTO, MEMBER_EXPRESSION, b.optional(IDENTIFIER_NAME),
+                b.optional(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS),
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
                         b.sequence(VALUES, EXPRESSION),

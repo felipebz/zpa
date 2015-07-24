@@ -21,8 +21,18 @@ public class InsertStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesInsertWithTableAlias() {
+        assertThat(p).matches("insert into tab t values (1);");
+    }
+    
+    @Test
     public void matchesInsertWithExplicitColumn() {
         assertThat(p).matches("insert into tab (x) values (1);");
+    }
+    
+    @Test
+    public void matchesInsertWithExplicitColumnAlternative() {
+        assertThat(p).matches("insert into tab (tab.x) values (1);");
     }
     
     @Test
@@ -32,6 +42,11 @@ public class InsertStatementTest extends RuleTest {
     
     @Test
     public void matchesInsertWithSubquery() {
+        assertThat(p).matches("insert into tab (select 1, 2 from dual);");
+    }
+    
+    @Test
+    public void matchesInsertWithSubqueryInColumns() {
         assertThat(p).matches("insert into tab (x, y) (select 1, 2 from dual);");
     }
     
