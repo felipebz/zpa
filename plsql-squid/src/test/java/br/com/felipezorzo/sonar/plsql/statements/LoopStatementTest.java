@@ -32,5 +32,13 @@ public class LoopStatementTest extends RuleTest {
                 + "end loop; "
                 + "end loop;");
     }
+    
+    @Test
+    public void matchesLabeledLoop() {
+        assertThat(p).matches(""
+                + "<<foo>> loop "
+                + "null; "
+                + "end loop foo;");
+    }
 
 }

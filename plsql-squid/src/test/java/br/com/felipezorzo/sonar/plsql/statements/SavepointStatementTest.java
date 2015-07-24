@@ -19,5 +19,10 @@ public class SavepointStatementTest extends RuleTest {
     public void matchesSavepoint() {
         assertThat(p).matches("savepoint save;");
     }
+    
+    @Test
+    public void matchesLabeledSavepoint() {
+        assertThat(p).matches("<<foo>> savepoint save;");
+    }
 
 }

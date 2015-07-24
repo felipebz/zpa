@@ -54,5 +54,10 @@ public class FetchStatementTest extends RuleTest {
     public void matchesSimpleFetchBulkCollectIntoWithLimit() {
         assertThat(p).matches("fetch foo bulk collect into bar limit 10;");
     }
+    
+    @Test
+    public void matchesLabeledFetchInto() {
+        assertThat(p).matches("<<foo>> fetch foo into bar;");
+    }
 
 }

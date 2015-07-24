@@ -69,5 +69,10 @@ public class CommitStatementTest extends RuleTest {
     public void matchesLongCommitStatement() {
         assertThat(p).matches("commit work comment 'teste' write immediate wait;");
     }
+    
+    @Test
+    public void matchesLabeledCommit() {
+        assertThat(p).matches("<<foo>> commit;");
+    }
 
 }

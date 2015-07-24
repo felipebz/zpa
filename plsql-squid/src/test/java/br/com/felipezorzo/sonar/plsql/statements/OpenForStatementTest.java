@@ -54,5 +54,10 @@ public class OpenForStatementTest extends RuleTest {
     public void matchesOpenWithMultipleParameters() {
         assertThat(p).matches("open cur for myquery using foo, bar, baz;");
     }
+    
+    @Test
+    public void matcheslabeledOpen() {
+        assertThat(p).matches("<<foo>> open cur for myquery;");
+    }
 
 }

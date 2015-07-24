@@ -24,5 +24,10 @@ public class RaiseStatementTest extends RuleTest {
     public void matchesRaiseException() {
         assertThat(p).matches("raise ex;");
     }
+    
+    @Test
+    public void matchesLabeledRaise() {
+        assertThat(p).matches("<<foo>> raise;");
+    }
 
 }

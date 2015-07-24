@@ -24,5 +24,10 @@ public class CloseStatementTest extends RuleTest {
     public void matchesSimpleCloseHostCursor() {
         assertThat(p).matches("close :foo;");
     }
+    
+    @Test
+    public void matchesLabeledClose() {
+        assertThat(p).matches("<<foo>> close foo;");
+    }
 
 }

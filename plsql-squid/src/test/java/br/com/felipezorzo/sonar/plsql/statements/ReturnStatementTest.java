@@ -24,5 +24,10 @@ public class ReturnStatementTest extends RuleTest {
     public void matchesReturnWithValue() {
         assertThat(p).matches("return 1;");
     }
+    
+    @Test
+    public void matchesLabeledReturn() {
+        assertThat(p).matches("<<foo>> return;");
+    }
 
 }

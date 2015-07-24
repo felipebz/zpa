@@ -74,6 +74,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SELECT_EXPRESSION,
     
     // Statements
+    LABEL,
     BLOCK_STATEMENT,
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
@@ -247,45 +248,52 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, OBJECT_REFERENCE), THEN, b.oneOrMore(STATEMENT));
         
+        b.rule(LABEL).is(LLABEL, IDENTIFIER_NAME, RLABEL);
+        
         b.rule(BLOCK_STATEMENT).is(
+                b.optional(LABEL),
                 b.optional(DECLARE, b.zeroOrMore(DECLARE_SECTION)),
                 BEGIN,
                 b.oneOrMore(STATEMENT),
                 b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), 
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(ASSIGNMENT_STATEMENT).is(OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
+        b.rule(ASSIGNMENT_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
         
         b.rule(IF_STATEMENT).is(
+                b.optional(LABEL),
                 IF, EXPRESSION, THEN,
                 b.oneOrMore(STATEMENT),
                 b.zeroOrMore(ELSIF, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
-                END, IF, SEMICOLON);
+                END, IF, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(LOOP_STATEMENT).is(LOOP, b.oneOrMore(STATEMENT), END, LOOP, SEMICOLON);
+        b.rule(LOOP_STATEMENT).is(b.optional(LABEL), LOOP, b.oneOrMore(STATEMENT), END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(EXIT_STATEMENT).is(EXIT, b.optional(WHEN, EXPRESSION), SEMICOLON);
+        b.rule(EXIT_STATEMENT).is(b.optional(LABEL), EXIT, b.optional(WHEN, EXPRESSION), SEMICOLON);
         
-        b.rule(CONTINUE_STATEMENT).is(CONTINUE, b.optional(WHEN, EXPRESSION), SEMICOLON);
+        b.rule(CONTINUE_STATEMENT).is(b.optional(LABEL), CONTINUE, b.optional(WHEN, EXPRESSION), SEMICOLON);
         
         b.rule(FOR_STATEMENT).is(
+                b.optional(LABEL), 
                 FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE),
                 b.firstOf(
                         b.sequence(EXPRESSION, RANGE, EXPRESSION),
                         OBJECT_REFERENCE),
                 LOOP,
                 b.oneOrMore(STATEMENT),
-                END, LOOP, SEMICOLON);
+                END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(WHILE_STATEMENT).is(
+                b.optional(LABEL), 
                 WHILE, EXPRESSION, LOOP,
                 b.oneOrMore(STATEMENT),
-                END, LOOP, SEMICOLON);
+                END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(RETURN_STATEMENT).is(RETURN, b.optional(EXPRESSION), SEMICOLON);
+        b.rule(RETURN_STATEMENT).is(b.optional(LABEL), RETURN, b.optional(EXPRESSION), SEMICOLON);
         
         b.rule(COMMIT_STATEMENT).is(
+                b.optional(LABEL), 
                 COMMIT,
                 b.optional(WORK),
                 b.optional(b.firstOf(
@@ -296,6 +304,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 SEMICOLON);
         
         b.rule(ROLLBACK_STATEMENT).is(
+                b.optional(LABEL), 
                 ROLLBACK,
                 b.optional(WORK),
                 b.optional(b.firstOf(
@@ -303,13 +312,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(TO, b.optional(SAVEPOINT), IDENTIFIER_NAME))),
                 SEMICOLON);
         
-        b.rule(SAVEPOINT_STATEMENT).is(SAVEPOINT, IDENTIFIER_NAME, SEMICOLON);
+        b.rule(SAVEPOINT_STATEMENT).is(b.optional(LABEL), SAVEPOINT, IDENTIFIER_NAME, SEMICOLON);
         
-        b.rule(RAISE_STATEMENT).is(RAISE, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        b.rule(RAISE_STATEMENT).is(b.optional(LABEL), RAISE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(SELECT_STATEMENT).is(SELECT_EXPRESSION, SEMICOLON);
+        b.rule(SELECT_STATEMENT).is(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON);
         
         b.rule(INSERT_STATEMENT).is(
+                b.optional(LABEL), 
                 INSERT, INTO, MEMBER_EXPRESSION, b.optional(IDENTIFIER_NAME),
                 b.optional(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS),
                 b.firstOf(
@@ -321,40 +331,46 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, EXPRESSION);
         
         b.rule(UPDATE_STATEMENT).is(
+                b.optional(LABEL), 
                 UPDATE, OBJECT_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
         b.rule(DELETE_STATEMENT).is(
+                b.optional(LABEL), 
                 DELETE, b.optional(FROM), OBJECT_REFERENCE,  b.optional(IDENTIFIER_NAME),
                 b.optional(b.firstOf(
                         WHERE_CLAUSE,
                         b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME))), 
                 SEMICOLON);
         
-        b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
+        b.rule(CALL_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON);
         
         b.rule(UNNAMED_ACTUAL_PAMETER).is(
                 b.optional(b.firstOf(b.sequence(IN, b.optional(OUT)), OUT)),
                 EXPRESSION);
         
         b.rule(EXECUTE_IMMEDIATE_STATEMENT).is(
+                b.optional(LABEL), 
                 EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
                 b.optional(INTO, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
         b.rule(OPEN_STATEMENT).is(
+                b.optional(LABEL), 
                 OPEN, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
                 SEMICOLON);
         
         b.rule(OPEN_FOR_STATEMENT).is(
+                b.optional(LABEL), 
                 OPEN, PRIMARY_EXPRESSION, FOR, EXPRESSION,
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
         b.rule(FETCH_STATEMENT).is(
+                b.optional(LABEL), 
                 FETCH, PRIMARY_EXPRESSION,
                 b.firstOf(
                         b.sequence(INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
@@ -363,15 +379,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 b.optional(LIMIT, EXPRESSION))),
                 SEMICOLON);
         
-        b.rule(CLOSE_STATEMENT).is(CLOSE, PRIMARY_EXPRESSION, SEMICOLON);
+        b.rule(CLOSE_STATEMENT).is(b.optional(LABEL), CLOSE, PRIMARY_EXPRESSION, SEMICOLON);
         
-        b.rule(PIPE_ROW_STATEMENT).is(PIPE, ROW, LPARENTHESIS, EXPRESSION, RPARENTHESIS, SEMICOLON);
+        b.rule(PIPE_ROW_STATEMENT).is(b.optional(LABEL), PIPE, ROW, LPARENTHESIS, EXPRESSION, RPARENTHESIS, SEMICOLON);
         
         b.rule(CASE_STATEMENT).is(
+                b.optional(LABEL), 
                 CASE, b.optional(OBJECT_REFERENCE),
                 b.oneOrMore(WHEN, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
-                END, CASE, SEMICOLON);
+                END, CASE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,

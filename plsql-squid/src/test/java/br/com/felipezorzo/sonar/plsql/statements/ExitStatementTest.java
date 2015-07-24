@@ -24,5 +24,10 @@ public class ExitStatementTest extends RuleTest {
     public void matchesExitWhen() {
         assertThat(p).matches("exit when true;");
     }
+    
+    @Test
+    public void matchesLabeledExit() {
+        assertThat(p).matches("<<foo>> exit;");
+    }
 
 }

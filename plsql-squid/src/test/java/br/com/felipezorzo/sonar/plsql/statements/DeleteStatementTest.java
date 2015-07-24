@@ -44,5 +44,10 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesDeleteCurrentOf() {
         assertThat(p).matches("delete tab where current of cur;");
     }
+    
+    @Test
+    public void matchesLabeledDelete() {
+        assertThat(p).matches("<<foo>> delete tab;");
+    }
 
 }

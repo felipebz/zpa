@@ -44,5 +44,10 @@ public class AssignmentStatementTest extends RuleTest {
     public void assignmentToIndicatorVariable() {
         assertThat(p).matches(":var:indicator := 1;");
     }
+    
+    @Test
+    public void matchesLabeledAssignment() {
+        assertThat(p).matches("<<foo>> var := 1;");
+    }
 
 }

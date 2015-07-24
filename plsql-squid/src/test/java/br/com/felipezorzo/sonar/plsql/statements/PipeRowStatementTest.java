@@ -19,5 +19,10 @@ public class PipeRowStatementTest extends RuleTest {
     public void matchesSimpleSearchedCase() {
         assertThat(p).matches("pipe row (value);");
     }
+    
+    @Test
+    public void matchesLabeledSearchedCase() {
+        assertThat(p).matches("<<foo>> pipe row (value);");
+    }
 
 }

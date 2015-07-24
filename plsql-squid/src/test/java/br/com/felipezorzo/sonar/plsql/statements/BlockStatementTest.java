@@ -65,4 +65,9 @@ public class BlockStatementTest extends RuleTest {
     public void notMatchesBlockWithIncompleteExceptionHandler() {
         assertThat(p).notMatches("begin null; exception end;");
     }
+    
+    @Test
+    public void matchesLabeledBlock() {
+        assertThat(p).matches("<<foo>> begin null; end foo;");
+    }
 }

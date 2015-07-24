@@ -29,5 +29,10 @@ public class OpenStatementTest extends RuleTest {
     public void matchesOpenWithMultipleParameters() {
         assertThat(p).matches("open cur(foo, bar);");
     }
+    
+    @Test
+    public void matchesLabeledOpen() {
+        assertThat(p).matches("<<foo>> open cur;");
+    }
 
 }

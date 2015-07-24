@@ -24,5 +24,10 @@ public class ContinueStatementTest extends RuleTest {
     public void matchesContinueWhen() {
         assertThat(p).matches("continue when true;");
     }
+    
+    @Test
+    public void matchesLabeledContinue() {
+        assertThat(p).matches("<<foo>> continue;");
+    }
 
 }

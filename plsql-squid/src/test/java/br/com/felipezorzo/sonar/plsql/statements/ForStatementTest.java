@@ -96,5 +96,13 @@ public class ForStatementTest extends RuleTest {
                 + "null; "
                 + "end loop;");
     }
+    
+    @Test
+    public void matchesLabeledForLoop() {
+        assertThat(p).matches(""
+                + "<<foo>> for i in 1..2 loop "
+                + "null; "
+                + "end loop foo;");
+    }
 
 }

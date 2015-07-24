@@ -32,5 +32,13 @@ public class WhileStatementTest extends RuleTest {
                 + "end loop; "
                 + "end loop;");
     }
+    
+    @Test
+    public void matchesLabeledLoop() {
+        assertThat(p).matches(""
+                + "<<foo>> while true loop "
+                + "null; "
+                + "end loop foo;");
+    }
 
 }

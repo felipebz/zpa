@@ -54,5 +54,10 @@ public class ExecuteImmediateStatementTest extends RuleTest {
     public void matchesExecuteImmediateUsingWithInOutVariable() {
         assertThat(p).matches("execute immediate 'command' using in out var;");
     }
+    
+    @Test
+    public void matchesLabeledExecuteImmediate() {
+        assertThat(p).matches("<<label>> execute immediate 'command';");
+    }
 
 }

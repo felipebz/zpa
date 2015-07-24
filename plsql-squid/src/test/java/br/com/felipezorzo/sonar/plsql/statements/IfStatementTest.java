@@ -76,5 +76,13 @@ public class IfStatementTest extends RuleTest {
                 + "end if;"
                 + "end if;");
     }
+    
+    @Test
+    public void matchesLabeledIf() {
+        assertThat(p).matches(""
+                + "<<foo>> if true then "
+                + "null; "
+                + "end if foo;");
+    }
 
 }

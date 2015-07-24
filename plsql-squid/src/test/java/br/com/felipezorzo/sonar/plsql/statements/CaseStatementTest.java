@@ -44,5 +44,10 @@ public class CaseStatementTest extends RuleTest {
     public void matchesCaseWithMemberIdentifier() {
         assertThat(p).matches("case foo.bar when 1 then foo := bar; end case;");
     }
+    
+    @Test
+    public void matchesLabeledCase() {
+        assertThat(p).matches("<<foo>> case when x = 1 then foo := bar; end case foo;");
+    }
 
 }

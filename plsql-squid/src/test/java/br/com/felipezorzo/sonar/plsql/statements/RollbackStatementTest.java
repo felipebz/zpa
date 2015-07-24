@@ -44,5 +44,10 @@ public class RollbackStatementTest extends RuleTest {
     public void matchesLongRollbackStatement() {
         assertThat(p).matches("rollback work to savepoint save;");
     }
+    
+    @Test
+    public void matchesLabeledRollback() {
+        assertThat(p).matches("<<foo>> rollback;");
+    }
 
 }
