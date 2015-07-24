@@ -203,8 +203,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         CHAR,
                         CHARACTER,
-                        LONG,
-                        b.sequence(LONG, RAW),
+                        b.sequence(LONG, b.optional(RAW)),
                         NCHAR,
                         NVARCHAR2,
                         RAW,
