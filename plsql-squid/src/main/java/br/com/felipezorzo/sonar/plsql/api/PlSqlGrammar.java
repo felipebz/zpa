@@ -100,6 +100,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     FETCH_STATEMENT,
     CLOSE_STATEMENT,
     PIPE_ROW_STATEMENT,
+    CASE_STATEMENT,
     STATEMENT,
     
     // Declarations
@@ -362,6 +363,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(PIPE_ROW_STATEMENT).is(PIPE, ROW, LPARENTHESIS, EXPRESSION, RPARENTHESIS, SEMICOLON);
         
+        b.rule(CASE_STATEMENT).is(
+                CASE, b.optional(IDENTIFIER_NAME),
+                b.oneOrMore(WHEN, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
+                b.optional(ELSE, b.oneOrMore(STATEMENT)),
+                END, CASE, SEMICOLON);
+        
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
                                        ASSIGNMENT_STATEMENT, 
@@ -386,7 +393,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        OPEN_FOR_STATEMENT,
                                        FETCH_STATEMENT,
                                        CLOSE_STATEMENT,
-                                       PIPE_ROW_STATEMENT));
+                                       PIPE_ROW_STATEMENT,
+                                       CASE_STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
