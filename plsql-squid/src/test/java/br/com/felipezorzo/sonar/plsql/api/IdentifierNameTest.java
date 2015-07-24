@@ -50,6 +50,12 @@ public class IdentifierNameTest extends RuleTest {
     }
     
     @Test
+    public void matchesNonReservedKeywords() {
+        assertThat(p).matches("cursor");
+        assertThat(p).matches("rowid");
+    }
+    
+    @Test
     public void notMatchesIdentifierWithAmpersand() {
         assertThat(p).notMatches("mine&yours");
     }
@@ -70,9 +76,9 @@ public class IdentifierNameTest extends RuleTest {
     }
     
     @Test
-    public void matchesTeste() {
-        assertThat(p).matches("cursor");
-        assertThat(p).matches("rowid");
+    public void notMatchesQuotedIdentifierCornerCases() {
+        assertThat(p).notMatches("\"\"");
+        assertThat(p).notMatches("\"\"\"\"");
     }
 
 }

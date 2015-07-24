@@ -40,7 +40,7 @@ public class PlSqlLexer {
     
     public static final String SIMPLE_IDENTIFIER = and("[a-zA-Z_]", o2n("[\\w#$]"));
     
-    public static final String QUOTED_IDENTIFIER = "\".*\"";
+    public static final String QUOTED_IDENTIFIER = "\".+?\"";
     
     private PlSqlLexer() {
     }
