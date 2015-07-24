@@ -39,5 +39,10 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesDeleteWithSchema() {
         assertThat(p).matches("delete sch.tab;");
     }
+    
+    @Test
+    public void matchesDeleteCurrentOf() {
+        assertThat(p).matches("delete tab where current of cur;");
+    }
 
 }

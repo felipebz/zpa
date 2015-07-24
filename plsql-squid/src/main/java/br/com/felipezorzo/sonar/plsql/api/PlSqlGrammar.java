@@ -322,7 +322,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DELETE_STATEMENT).is(
                 DELETE, b.optional(FROM), OBJECT_REFERENCE,  b.optional(IDENTIFIER_NAME),
-                b.optional(WHERE_CLAUSE), SEMICOLON);
+                b.optional(b.firstOf(
+                        WHERE_CLAUSE,
+                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME))), 
+                SEMICOLON);
         
         b.rule(CALL_STATEMENT).is(OBJECT_REFERENCE, SEMICOLON);
         
