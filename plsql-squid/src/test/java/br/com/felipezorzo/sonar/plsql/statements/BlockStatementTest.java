@@ -52,6 +52,11 @@ public class BlockStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesBlockWithDeclareSectionWithoutDeclarations() {
+        assertThat(p).matches("declare begin null; end block_name;");
+    }
+    
+    @Test
     public void notMatchesBlockWithoutStatements() {
         assertThat(p).notMatches("begin end;");
     }
