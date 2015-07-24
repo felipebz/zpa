@@ -12,7 +12,7 @@ public class PipeRowStatementTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.PIPE_ROW_STATAMENT);
+        setRootRule(PlSqlGrammar.PIPE_ROW_STATEMENT);
     }
 
     @Test
