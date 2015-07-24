@@ -218,15 +218,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DATE_DATATYPE).is(b.firstOf(DATE, TIMESTAMP));
         
-        b.rule(ANCHORED_DATATYPE).is(
-                IDENTIFIER_NAME,
-                b.optional(
-                        DOT, IDENTIFIER_NAME, 
-                        b.optional(DOT, IDENTIFIER_NAME)),
-                MOD,
-                b.firstOf(TYPE, ROWTYPE));
+        b.rule(ANCHORED_DATATYPE).is(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE));
 
-        b.rule(CUSTOM_DATATYPE).is(b.optional(IDENTIFIER_NAME, DOT), b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
+        b.rule(CUSTOM_DATATYPE).is(MEMBER_EXPRESSION);
         
         b.rule(REF_DATATYPE).is(REF, CUSTOM_DATATYPE);
         
@@ -480,7 +474,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(MEMBER_EXPRESSION).is(
                 BRACKED_EXPRESSION,
                 b.zeroOrMore(
-                        b.firstOf(DOT, MOD),
+                        b.firstOf(DOT, MOD, REMOTE),
+                        b.nextNot(ROWTYPE),
                         b.firstOf(
                                 IDENTIFIER_NAME,
                                 COUNT,

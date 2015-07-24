@@ -100,6 +100,11 @@ public class VariableDeclarationTest extends RuleTest {
     }
     
     @Test
+    public void matchesRemoteTableColumnAnchoredDeclaration() {
+        assertThat(p).matches("var tab.col@sch.foo%type;");
+    }
+    
+    @Test
     public void matchesExceptionDeclaration() {
         assertThat(p).matches("var exception;");
     }
