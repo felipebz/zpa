@@ -364,7 +364,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(PIPE_ROW_STATEMENT).is(PIPE, ROW, LPARENTHESIS, EXPRESSION, RPARENTHESIS, SEMICOLON);
         
         b.rule(CASE_STATEMENT).is(
-                CASE, b.optional(IDENTIFIER_NAME),
+                CASE, b.optional(OBJECT_REFERENCE),
                 b.oneOrMore(WHEN, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
                 b.optional(ELSE, b.oneOrMore(STATEMENT)),
                 END, CASE, SEMICOLON);
@@ -530,7 +530,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(EXISTS_EXPRESSION).is(EXISTS , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS).skipIfOneChild();
         
         b.rule(CASE_EXPRESSION).is(
-                CASE, b.optional(IDENTIFIER_NAME),
+                CASE, b.optional(OBJECT_REFERENCE),
                 b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION),
                 b.optional(ELSE, EXPRESSION),
                 END);

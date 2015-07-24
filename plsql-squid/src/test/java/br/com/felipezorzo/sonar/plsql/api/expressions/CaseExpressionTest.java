@@ -34,5 +34,10 @@ public class CaseExpressionTest extends RuleTest {
     public void matchesCaseWithElse() {
         assertThat(p).matches("case x when 1 then 1 else 2 end");
     }
+    
+    @Test
+    public void matchesCaseWithMemberIdentifier() {
+        assertThat(p).matches("case foo.bar when 1 then 1 end");
+    }
 
 }
