@@ -513,7 +513,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, MULTIPLICATION));
+                b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, LITERAL, SQL, MULTIPLICATION)).skipIfOneChild();
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,
@@ -596,7 +596,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
                 CAST_EXPRESSION,
-                b.sequence(MEMBER_EXPRESSION, ARGUMENTS)));
+                b.sequence(MEMBER_EXPRESSION, ARGUMENTS))).skipIfOneChild();
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
@@ -606,7 +606,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, 
                 b.optional(b.firstOf(
                         b.sequence(IS, b.optional(NOT), NULL),
-                        ANALYTIC_CLAUSE)));
+                        ANALYTIC_CLAUSE))).skipIfOneChild();
         
         b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, 
                 b.optional(b.sequence(
@@ -667,7 +667,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 CONCATENATION_EXPRESSION)))).skipIfOneChild();   
         b.rule(BOOLEAN_EXPRESSION).is(COMPARISION_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISION_EXPRESSION)).skipIfOneChild();
         
-        b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION);
+        b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION).skipIfOneChild();
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {
