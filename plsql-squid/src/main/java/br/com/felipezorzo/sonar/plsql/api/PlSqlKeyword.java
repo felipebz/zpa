@@ -216,7 +216,17 @@ public enum PlSqlKeyword implements TokenType {
     OVER("over"),
     PIPE("pipe"),
     ANY_CS("any_cs"),
-    CHARSET("charset");
+    CHARSET("charset"),
+    XMLSERIALIZE("xmlserialize"),
+    DOCUMENT("document"),
+    CONTENT("content"),
+    ENCODING("encoding"),
+    VERSION("version"),
+    NO("no"),
+    IDENT("ident"),
+    HIDE("hide"),
+    SHOW("show"),
+    DEFAULTS("defaults"),;
 
     private final String value;
     private final boolean reserved;

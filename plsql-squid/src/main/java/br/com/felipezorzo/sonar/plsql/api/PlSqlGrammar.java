@@ -53,6 +53,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ARGUMENTS, 
     CALL_EXPRESSION,
     CASE_EXPRESSION,
+    XMLSERIALIZE_EXPRESSION,
     
     // DML
     PARTITION_BY_CLAUSE,
@@ -526,11 +527,20 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 DELETE)
                         )).skipIfOneChild();
         
+        b.rule(XMLSERIALIZE_EXPRESSION).is(
+                XMLSERIALIZE, LPARENTHESIS,
+                b.firstOf(DOCUMENT, CONTENT), EXPRESSION,
+                b.optional(ENCODING, EXPRESSION),
+                b.optional(VERSION, STRING_LITERAL),
+                b.optional(b.firstOf(b.sequence(NO, IDENT), b.sequence(IDENT, b.optional(SIZE, EQUALS, EXPRESSION)))),
+                b.optional(b.firstOf(HIDE, SHOW), DEFAULTS),
+                RPARENTHESIS);
+        
         b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
-        b.rule(CALL_EXPRESSION).is(MEMBER_EXPRESSION, ARGUMENTS);
+        b.rule(CALL_EXPRESSION).is(b.firstOf(b.sequence(MEMBER_EXPRESSION, ARGUMENTS), XMLSERIALIZE_EXPRESSION));
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
