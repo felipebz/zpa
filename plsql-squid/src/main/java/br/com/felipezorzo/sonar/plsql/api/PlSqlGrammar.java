@@ -56,9 +56,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CASE_EXPRESSION,
     EXTRACT_DATETIME_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
-    XMLATTRIBUTE,
+    XML_COLUMN,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
+    XMLFOREST_EXPRESSION,
     CAST_EXPRESSION,
     AT_TIME_ZONE_EXPRESSION,
     
@@ -548,14 +549,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(b.firstOf(HIDE, SHOW), DEFAULTS),
                 RPARENTHESIS);
         
-        b.rule(XMLATTRIBUTE).is(
+        b.rule(XML_COLUMN).is(
                 EXPRESSION, b.optional(AS, b.firstOf(b.sequence(EVALNAME, EXPRESSION), IDENTIFIER_NAME)));
         
         b.rule(XMLATTRIBUTES_EXPRESSION).is(
                 XMLATTRIBUTES, LPARENTHESIS,
                 b.optional(b.firstOf(ENTITYESCAPING, NOENTITYESCAPING)),
                 b.optional(b.firstOf(SCHEMACHECK, NOSCHEMACHECK)),
-                XMLATTRIBUTE, b.zeroOrMore(COMMA, XMLATTRIBUTE),
+                XML_COLUMN, b.zeroOrMore(COMMA, XML_COLUMN),
                 RPARENTHESIS);
         
         b.rule(XMLELEMENT_EXPRESSION).is(
@@ -567,6 +568,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         ),
                 b.optional(COMMA, XMLATTRIBUTES_EXPRESSION),
                 b.zeroOrMore(COMMA, EXPRESSION, b.optional(AS, IDENTIFIER_NAME)),
+                RPARENTHESIS);
+        
+        b.rule(XMLFOREST_EXPRESSION).is(
+                XMLFOREST, LPARENTHESIS,
+                XML_COLUMN, b.zeroOrMore(COMMA, XML_COLUMN),
                 RPARENTHESIS);
         
         b.rule(CAST_EXPRESSION).is(
@@ -582,6 +588,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(CALL_EXPRESSION).is(b.firstOf(
                 EXTRACT_DATETIME_EXPRESSION,
                 XMLELEMENT_EXPRESSION,
+                XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
                 CAST_EXPRESSION,
                 b.sequence(MEMBER_EXPRESSION, ARGUMENTS)));
