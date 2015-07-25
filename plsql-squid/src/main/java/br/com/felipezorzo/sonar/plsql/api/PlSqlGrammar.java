@@ -53,6 +53,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     ARGUMENTS, 
     CALL_EXPRESSION,
     CASE_EXPRESSION,
+    EXTRACT_DATETIME_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
     
     // DML
@@ -527,6 +528,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 DELETE)
                         )).skipIfOneChild();
         
+        b.rule(EXTRACT_DATETIME_EXPRESSION).is(EXTRACT, LPARENTHESIS, IDENTIFIER, FROM, EXPRESSION, RPARENTHESIS);
+        
         b.rule(XMLSERIALIZE_EXPRESSION).is(
                 XMLSERIALIZE, LPARENTHESIS,
                 b.firstOf(DOCUMENT, CONTENT), EXPRESSION,
@@ -540,7 +543,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
-        b.rule(CALL_EXPRESSION).is(b.firstOf(b.sequence(MEMBER_EXPRESSION, ARGUMENTS), XMLSERIALIZE_EXPRESSION));
+        b.rule(CALL_EXPRESSION).is(b.firstOf(
+                b.sequence(MEMBER_EXPRESSION, ARGUMENTS),
+                EXTRACT_DATETIME_EXPRESSION, 
+                XMLSERIALIZE_EXPRESSION));
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
@@ -572,7 +578,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         b.sequence(PRIOR, UNARY_EXPRESSION),
-                        b.sequence(IDENTIFIER, FROM, EXPRESSION),
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
