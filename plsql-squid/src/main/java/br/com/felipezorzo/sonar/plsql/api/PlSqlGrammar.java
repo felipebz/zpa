@@ -562,6 +562,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         b.sequence(PRIOR, UNARY_EXPRESSION),
+                        b.sequence(IDENTIFIER, FROM, EXPRESSION),
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
