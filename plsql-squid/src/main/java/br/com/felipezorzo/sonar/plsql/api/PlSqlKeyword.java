@@ -227,7 +227,9 @@ public enum PlSqlKeyword implements TokenType {
     IDENT("ident"),
     HIDE("hide"),
     SHOW("show"),
-    DEFAULTS("defaults");
+    DEFAULTS("defaults"),
+    CAST("cast"),
+    MULTISET("multiset");
 
     private final String value;
     private final boolean reserved;

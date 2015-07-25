@@ -55,6 +55,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CASE_EXPRESSION,
     EXTRACT_DATETIME_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
+    CAST_EXPRESSION,
     
     // DML
     PARTITION_BY_CLAUSE,
@@ -539,14 +540,17 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(b.firstOf(HIDE, SHOW), DEFAULTS),
                 RPARENTHESIS);
         
+        b.rule(CAST_EXPRESSION).is(CAST, LPARENTHESIS, b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION), RPARENTHESIS);
+        
         b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
         b.rule(CALL_EXPRESSION).is(b.firstOf(
-                b.sequence(MEMBER_EXPRESSION, ARGUMENTS),
                 EXTRACT_DATETIME_EXPRESSION, 
-                XMLSERIALIZE_EXPRESSION));
+                XMLSERIALIZE_EXPRESSION,
+                CAST_EXPRESSION,
+                b.sequence(MEMBER_EXPRESSION, ARGUMENTS)));
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
