@@ -56,6 +56,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXTRACT_DATETIME_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
     CAST_EXPRESSION,
+    AT_TIME_ZONE_EXPRESSION,
     
     // DML
     PARTITION_BY_CLAUSE,
@@ -577,6 +578,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(ELSE, EXPRESSION),
                 END);
         
+        b.rule(AT_TIME_ZONE_EXPRESSION).is(AT, b.firstOf(LOCAL, b.sequence(TIME, ZONE, EXPRESSION)));
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(NOT, UNARY_EXPRESSION),
                         b.sequence(PLUS, UNARY_EXPRESSION),
@@ -585,7 +588,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
-                        EXISTS_EXPRESSION), b.optional(AS, IDENTIFIER_NAME)).skipIfOneChild();
+                        EXISTS_EXPRESSION),
+                b.optional(AT_TIME_ZONE_EXPRESSION),
+                b.optional(AS, IDENTIFIER_NAME)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
         

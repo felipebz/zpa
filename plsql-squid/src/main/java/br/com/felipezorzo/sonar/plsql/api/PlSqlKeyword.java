@@ -229,7 +229,10 @@ public enum PlSqlKeyword implements TokenType {
     SHOW("show"),
     DEFAULTS("defaults"),
     CAST("cast"),
-    MULTISET("multiset");
+    MULTISET("multiset"),
+    LOCAL("local"),
+    TIME("time"),
+    ZONE("zone");
 
     private final String value;
     private final boolean reserved;
