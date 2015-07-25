@@ -16,16 +16,15 @@ import com.sonar.sslr.api.Grammar;
 
 @Rule(
     key = EmptyBlockCheck.CHECK_KEY,
-    priority = Priority.INFO,
+    priority = Priority.MINOR,
     name = "Empty blocks should be removed.",
-    tags = Tags.UNUSED,
-    description = "Empty blocks should be removed."
+    tags = Tags.UNUSED
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
+@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
 public class EmptyBlockCheck extends SquidCheck<Grammar> {
-    public static final String CHECK_KEY = "P001";
+    public static final String CHECK_KEY = "EmptyBlock";
     private static final String MESSAGE = "Either remove or fill this block of code.";
     
     @Override
