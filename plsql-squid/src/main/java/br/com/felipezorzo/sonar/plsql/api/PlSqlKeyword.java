@@ -241,7 +241,8 @@ public enum PlSqlKeyword implements TokenType {
     NOENTITYESCAPING("noentityescaping"),
     NAME("name"),
     EVALNAME("evalname"),
-    XMLFOREST("xmlforest");
+    XMLFOREST("xmlforest"),
+    JOIN("join");
 
     private final String value;
     private final boolean reserved;

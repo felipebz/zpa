@@ -68,6 +68,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
     ANALYTIC_CLAUSE,
+    JOIN_CLAUSE,
     SELECT_COLUMN,
     FROM_CLAUSE,
     WHERE_CLAUSE,
@@ -449,6 +450,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
                 RPARENTHESIS);
         
+        b.rule(JOIN_CLAUSE).is(OBJECT_REFERENCE, b.oneOrMore(JOIN, OBJECT_REFERENCE, ON, EXPRESSION));
+        
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
         b.rule(FROM_CLAUSE).is(
@@ -491,7 +494,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                     b.sequence(
                             SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                             b.optional(INTO_CLAUSE),
-                            FROM, FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE),
+                            FROM, b.firstOf(
+                                    JOIN_CLAUSE,
+                                    b.sequence(FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE))),
                             b.optional(WHERE_CLAUSE),
                             b.optional(b.firstOf(
                                     b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
