@@ -24,5 +24,10 @@ public class CastExpressionTest extends RuleTest {
     public void matchesCastMultiset() {
         assertThat(p).matches("cast(multiset (select 1 from dual) as number)");
     }
+    
+    @Test
+    public void matchesComplexCast() {
+        assertThat(p).matches("cast((cast(localtimestamp as timestamp with time zone) at time zone 'gmt') at time zone custom_zone as timestamp)");
+    }
 
 }

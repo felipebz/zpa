@@ -232,7 +232,15 @@ public enum PlSqlKeyword implements TokenType {
     MULTISET("multiset"),
     LOCAL("local"),
     TIME("time"),
-    ZONE("zone");
+    ZONE("zone"),
+    XMLATTRIBUTES("xmlattributes"),
+    SCHEMACHECK("schemacheck"),
+    NOSCHEMACHECK("noschemacheck"),
+    XMLELEMENT("xmlelement"),
+    ENTITYESCAPING("entityescaping"),
+    NOENTITYESCAPING("noentityescaping"),
+    NAME("name"),
+    EVALNAME("evalname");
 
     private final String value;
     private final boolean reserved;

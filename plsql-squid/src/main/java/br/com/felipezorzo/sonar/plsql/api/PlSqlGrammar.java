@@ -20,6 +20,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     LOB_DATATYPE,
     CHARACTER_DATAYPE,
     BOOLEAN_DATATYPE,
+    WITH_TIME_ZONE,
     DATE_DATATYPE,
     CUSTOM_SUBTYPE,
     ANCHORED_DATATYPE,
@@ -55,6 +56,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CASE_EXPRESSION,
     EXTRACT_DATETIME_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
+    XMLATTRIBUTE,
+    XMLATTRIBUTES_EXPRESSION,
+    XMLELEMENT_EXPRESSION,
     CAST_EXPRESSION,
     AT_TIME_ZONE_EXPRESSION,
     
@@ -226,7 +230,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);
         
-        b.rule(DATE_DATATYPE).is(b.firstOf(DATE, TIMESTAMP));
+        b.rule(DATE_DATATYPE).is(b.firstOf(
+                DATE,
+                b.sequence(TIMESTAMP, b.optional(WITH, b.optional(LOCAL), TIME, ZONE))));
         
         b.rule(ANCHORED_DATATYPE).is(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE));
 
@@ -535,20 +541,47 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(XMLSERIALIZE_EXPRESSION).is(
                 XMLSERIALIZE, LPARENTHESIS,
                 b.firstOf(DOCUMENT, CONTENT), EXPRESSION,
+                b.optional(AS, DATATYPE),
                 b.optional(ENCODING, EXPRESSION),
                 b.optional(VERSION, STRING_LITERAL),
                 b.optional(b.firstOf(b.sequence(NO, IDENT), b.sequence(IDENT, b.optional(SIZE, EQUALS, EXPRESSION)))),
                 b.optional(b.firstOf(HIDE, SHOW), DEFAULTS),
                 RPARENTHESIS);
         
-        b.rule(CAST_EXPRESSION).is(CAST, LPARENTHESIS, b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION), RPARENTHESIS);
+        b.rule(XMLATTRIBUTE).is(
+                EXPRESSION, b.optional(AS, b.firstOf(b.sequence(EVALNAME, EXPRESSION), IDENTIFIER_NAME)));
+        
+        b.rule(XMLATTRIBUTES_EXPRESSION).is(
+                XMLATTRIBUTES, LPARENTHESIS,
+                b.optional(b.firstOf(ENTITYESCAPING, NOENTITYESCAPING)),
+                b.optional(b.firstOf(SCHEMACHECK, NOSCHEMACHECK)),
+                XMLATTRIBUTE, b.zeroOrMore(COMMA, XMLATTRIBUTE),
+                RPARENTHESIS);
+        
+        b.rule(XMLELEMENT_EXPRESSION).is(
+                XMLELEMENT, LPARENTHESIS,
+                b.optional(b.firstOf(ENTITYESCAPING, NOENTITYESCAPING)),
+                b.firstOf(
+                        b.sequence(EVALNAME, EXPRESSION),
+                        b.sequence(b.optional(NAME), IDENTIFIER_NAME)
+                        ),
+                b.optional(COMMA, XMLATTRIBUTES_EXPRESSION),
+                b.zeroOrMore(COMMA, EXPRESSION, b.optional(AS, IDENTIFIER_NAME)),
+                RPARENTHESIS);
+        
+        b.rule(CAST_EXPRESSION).is(
+                CAST, LPARENTHESIS,
+                b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
+                AS, DATATYPE,
+                RPARENTHESIS);
         
         b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
         b.rule(CALL_EXPRESSION).is(b.firstOf(
-                EXTRACT_DATETIME_EXPRESSION, 
+                EXTRACT_DATETIME_EXPRESSION,
+                XMLELEMENT_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
                 CAST_EXPRESSION,
                 b.sequence(MEMBER_EXPRESSION, ARGUMENTS)));
@@ -589,8 +622,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
                         EXISTS_EXPRESSION),
-                b.optional(AT_TIME_ZONE_EXPRESSION),
-                b.optional(AS, IDENTIFIER_NAME)).skipIfOneChild();
+                b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPONENTIATION_EXPRESSION).is(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild();
         
