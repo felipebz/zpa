@@ -4,7 +4,10 @@ import org.sonar.squidbridge.measures.CalculatedMetricFormula;
 import org.sonar.squidbridge.measures.MetricDef;
 
 public enum PlSqlMetric implements MetricDef {
-    FILES;
+    FILES,
+    LINES,
+    LINES_OF_CODE, 
+    COMMENT_LINES;
     
     @Override
     public String getName() {

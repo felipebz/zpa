@@ -4,12 +4,15 @@ import java.io.File;
 import java.util.Collection;
 
 import org.sonar.squidbridge.AstScanner;
+import org.sonar.squidbridge.AstScanner.Builder;
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.SourceCode;
 import org.sonar.squidbridge.api.SourceFile;
 import org.sonar.squidbridge.api.SourceProject;
 import org.sonar.squidbridge.indexer.QueryByType;
+import org.sonar.squidbridge.metrics.CommentsVisitor;
+import org.sonar.squidbridge.metrics.LinesVisitor;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
 import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
@@ -52,6 +55,7 @@ public class PlSqlAstScanner {
         
         builder.setFilesMetric(PlSqlMetric.FILES);
         setCommentAnalyser(builder);
+        setMetrics(conf, builder);
 
         /* External visitors (typically Check ones) */
         for (SquidAstVisitor<Grammar> visitor : visitors) {
@@ -64,6 +68,15 @@ public class PlSqlAstScanner {
         return builder.build();
     }
     
+    private static void setMetrics(PlSqlConfiguration conf, Builder<Grammar> builder) {
+        builder.withSquidAstVisitor(new LinesVisitor<>(PlSqlMetric.LINES));
+        builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor<Grammar>(PlSqlMetric.LINES_OF_CODE));
+        builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
+                .withNoSonar(true)
+                .withIgnoreHeaderComment(conf.getIgnoreHeaderComments())
+                .build());
+    }
+
     private static void setCommentAnalyser(AstScanner.Builder<Grammar> builder) {
         builder.setCommentAnalyser(new PlSqlCommentAnalyzer());
     }

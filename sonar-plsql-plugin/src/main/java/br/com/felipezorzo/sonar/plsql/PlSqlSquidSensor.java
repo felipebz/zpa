@@ -15,6 +15,7 @@ import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
+import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.squidbridge.AstScanner;
@@ -33,17 +34,19 @@ import com.sonar.sslr.api.Grammar;
 public class PlSqlSquidSensor implements Sensor {
 
     private final Checks<SquidAstVisitor<Grammar>> checks;
+    private final FileLinesContextFactory fileLinesContextFactory;
 
     private SensorContext context;
     private AstScanner<Grammar> scanner;
     private FileSystem fileSystem;
     private ResourcePerspectives resourcePerspectives;
 
-    public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
-            CheckFactory checkFactory) {
+    public PlSqlSquidSensor(FileLinesContextFactory fileLinesContextFactory, FileSystem fileSystem,
+            ResourcePerspectives perspectives, CheckFactory checkFactory) {
         this.checks = checkFactory.<SquidAstVisitor<Grammar>> create(
                 CheckList.REPOSITORY_KEY).addAnnotatedChecks(
                 CheckList.getChecks());
+        this.fileLinesContextFactory = fileLinesContextFactory;
         this.fileSystem = fileSystem;
         this.resourcePerspectives = perspectives;
     }
@@ -59,7 +62,7 @@ public class PlSqlSquidSensor implements Sensor {
         this.context = context;
 
         List<SquidAstVisitor<Grammar>> visitors = Lists.newArrayList(checks.all());
-        
+        visitors.add(new FileLinesVisitor(fileLinesContextFactory, fileSystem));
         this.scanner = PlSqlAstScanner.create(createConfiguration(), visitors);
         FilePredicates p = fileSystem.predicates();
         scanner.scanFiles(Lists.newArrayList(fileSystem.files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
@@ -85,8 +88,10 @@ public class PlSqlSquidSensor implements Sensor {
     }
 
     private void saveMeasures(InputFile sonarFile, SourceFile squidFile) {
-        context.saveMeasure(sonarFile, CoreMetrics.FILES,
-                squidFile.getDouble(PlSqlMetric.FILES));
+        context.saveMeasure(sonarFile, CoreMetrics.FILES, squidFile.getDouble(PlSqlMetric.FILES));
+        context.saveMeasure(sonarFile, CoreMetrics.LINES, squidFile.getDouble(PlSqlMetric.LINES));
+        context.saveMeasure(sonarFile, CoreMetrics.NCLOC, squidFile.getDouble(PlSqlMetric.LINES_OF_CODE));
+        context.saveMeasure(sonarFile, CoreMetrics.COMMENT_LINES, squidFile.getDouble(PlSqlMetric.COMMENT_LINES));
     }
     
     private void saveIssues(InputFile sonarFile, SourceFile squidFile) {

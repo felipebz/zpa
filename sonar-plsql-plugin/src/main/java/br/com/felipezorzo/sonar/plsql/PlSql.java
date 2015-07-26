@@ -17,7 +17,7 @@ public class PlSql extends AbstractLanguage {
     private Settings settings;
 
     public PlSql(Settings configuration) {
-      super(KEY, "PL/SQL Language");
+      super(KEY, "PL/SQL");
       this.settings = configuration;
     }
 
