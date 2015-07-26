@@ -17,6 +17,7 @@ public class CheckList {
     public static List<Class> getChecks() {
         return ImmutableList.<Class>of(
             EmptyBlockCheck.class,
-            ParsingErrorCheck.class);
+            ParsingErrorCheck.class,
+            CollapsibleIfStatementsCheck.class);
     }
 }
