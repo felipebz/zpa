@@ -18,6 +18,7 @@ public class CheckList {
         return ImmutableList.<Class>of(
             EmptyBlockCheck.class,
             ParsingErrorCheck.class,
-            CollapsibleIfStatementsCheck.class);
+            CollapsibleIfStatementsCheck.class,
+            InequalityUsageCheck.class);
     }
 }
