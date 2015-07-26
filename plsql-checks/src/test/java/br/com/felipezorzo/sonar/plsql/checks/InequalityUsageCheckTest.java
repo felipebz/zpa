@@ -16,9 +16,9 @@ public class InequalityUsageCheckTest {
         SourceFile file = PlSqlAstScanner.scanSingleFile(
                 new File("src/test/resources/checks/inequality_usage_check.sql"), check);
         CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(3).withMessage("Replace \"!=\" by \"<>\"")
-            .next().atLine(4).withMessage("Replace \"^=\" by \"<>\"")
-            .next().atLine(5).withMessage("Replace \"~=\" by \"<>\"")
+            .next().atLine(3).withMessage("Replace \"!=\" by \"<>\".")
+            .next().atLine(4).withMessage("Replace \"^=\" by \"<>\".")
+            .next().atLine(5).withMessage("Replace \"~=\" by \"<>\".")
             .noMore();
     }
     
