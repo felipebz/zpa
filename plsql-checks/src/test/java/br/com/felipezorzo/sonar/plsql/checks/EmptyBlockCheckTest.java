@@ -19,12 +19,5 @@ public class EmptyBlockCheckTest {
             .next().atLine(2).withMessage(message)
             .noMore();
     }
-    
-    @Test
-    public void notMatchesABlockWithValidStatements() {
-        EmptyBlockCheck check = new EmptyBlockCheck();
-        SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/checks/block_with_valid_statements.sql"), check);
-        CheckMessagesVerifier.verify(file.getCheckMessages()).noMore();
-    }
 
 }

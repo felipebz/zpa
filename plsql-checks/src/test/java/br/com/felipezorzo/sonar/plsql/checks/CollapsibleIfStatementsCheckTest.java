@@ -14,7 +14,7 @@ public class CollapsibleIfStatementsCheckTest {
     public void matchesCollapsibleIf() {
         CollapsibleIfStatementsCheck check = new CollapsibleIfStatementsCheck();
         SourceFile file = PlSqlAstScanner.scanSingleFile(
-                new File("src/test/resources/checks/collapsible_if_statements_test.sql"), check);
+                new File("src/test/resources/checks/collapsible_if_statements.sql"), check);
         String message = "Merge this if statement with the enclosing one.";
         CheckMessagesVerifier.verify(file.getCheckMessages())
             .next().atLine(4).withMessage(message)

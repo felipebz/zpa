@@ -7,4 +7,3 @@ begin
   -- valid usage
   foo := (x <> a);
 end;
-/
