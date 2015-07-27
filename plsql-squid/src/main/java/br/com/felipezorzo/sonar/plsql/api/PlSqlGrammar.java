@@ -805,6 +805,6 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         BLOCK_STATEMENT,
                         b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
-        b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT, EXECUTE_PLSQL_BUFFER);
+        b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
     }
 }

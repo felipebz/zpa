@@ -20,8 +20,7 @@ public class AnonymousBlockTest extends RuleTest {
         assertThat(p).matches(""
                 + "BEGIN\n"
                 + "NULL;\n"
-                + "END;\n"
-                + "/");
+                + "END;");
     }
     
     @Test
@@ -31,8 +30,7 @@ public class AnonymousBlockTest extends RuleTest {
                 + "VAR NUMBER;\n"
                 + "BEGIN\n"
                 + "NULL;\n"
-                + "END;\n"
-                + "/");
+                + "END;");
     }
 
 }
