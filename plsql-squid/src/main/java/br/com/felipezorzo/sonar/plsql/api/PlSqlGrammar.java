@@ -48,7 +48,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     MULTIPLICATIVE_EXPRESSION, 
     ADDITIVE_EXPRESSION, 
     CONCATENATION_EXPRESSION, 
-    COMPARISION_EXPRESSION, 
+    COMPARISON_EXPRESSION, 
     EXPONENTIATION_EXPRESSION, 
     ARGUMENT, 
     ARGUMENTS, 
@@ -644,7 +644,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CONCATENATION_EXPRESSION).is(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION, ADDITIVE_EXPRESSION)).skipIfOneChild();
        
-        b.rule(COMPARISION_EXPRESSION).is(CONCATENATION_EXPRESSION, 
+        b.rule(COMPARISON_EXPRESSION).is(CONCATENATION_EXPRESSION, 
                 b.zeroOrMore(b.firstOf(
                         b.sequence(
                                 b.firstOf(
@@ -665,7 +665,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 CONCATENATION_EXPRESSION, 
                                 AND, 
                                 CONCATENATION_EXPRESSION)))).skipIfOneChild();   
-        b.rule(BOOLEAN_EXPRESSION).is(COMPARISION_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISION_EXPRESSION)).skipIfOneChild();
+        b.rule(BOOLEAN_EXPRESSION).is(COMPARISON_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISON_EXPRESSION)).skipIfOneChild();
         
         b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION).skipIfOneChild();
     }

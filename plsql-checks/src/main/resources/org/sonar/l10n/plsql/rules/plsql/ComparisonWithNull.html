@@ -1,0 +1,31 @@
+<p>
+To test for nulls, use only the comparison conditions IS NULL and IS NOT NULL. Any other comparison with nulls will result in NULL.
+</p>
+
+<p>
+Keep in mind that an empty string is equivalent to a NULL literal.  
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+if var = null then
+  -- code
+end if;
+</pre>
+
+Or:
+
+<pre>
+if var = '' then
+  -- code
+end if;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+if var is null then
+  -- code
+end if;
+</pre>

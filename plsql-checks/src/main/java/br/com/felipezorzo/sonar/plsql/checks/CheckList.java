@@ -19,6 +19,7 @@ public class CheckList {
             EmptyBlockCheck.class,
             ParsingErrorCheck.class,
             CollapsibleIfStatementsCheck.class,
-            InequalityUsageCheck.class);
+            InequalityUsageCheck.class,
+            ComparisonWithNullCheck.class);
     }
 }
