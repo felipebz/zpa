@@ -20,6 +20,7 @@ public class CheckList {
             ParsingErrorCheck.class,
             CollapsibleIfStatementsCheck.class,
             InequalityUsageCheck.class,
-            ComparisonWithNullCheck.class);
+            ComparisonWithNullCheck.class,
+            TooManyRowsHandlerCheck.class);
     }
 }
