@@ -8,7 +8,7 @@ import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 import br.com.felipezorzo.sonar.plsql.PlSqlAstScanner;
 
-public class EmptyBlockCheckTest {
+public class EmptyBlockCheckTest extends BaseCheckTest {
 
     @Test
     public void matchesEmptyBlock() {

@@ -8,7 +8,7 @@ import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 import br.com.felipezorzo.sonar.plsql.PlSqlAstScanner;
 
-public class ParsingErrorCheckTest {
+public class ParsingErrorCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {

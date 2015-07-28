@@ -1,0 +1,29 @@
+<p>
+Quando um comando SELECT INTO causa a exceção pré-definida TOO_MANY_ROWS os valores das variáveis na cláusula INTO ficam indefinidos.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+begin
+  select empno
+    into var
+    from emp;
+exception
+  when too_many_rows then
+    null;
+end;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+begin
+  select empno
+    into var
+    from emp;
+exception
+  when too_many_rows then
+    var := null;
+end;
+</pre>

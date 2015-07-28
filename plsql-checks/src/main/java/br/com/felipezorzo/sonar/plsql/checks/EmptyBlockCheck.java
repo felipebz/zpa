@@ -6,26 +6,22 @@ import org.sonar.check.Rule;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-import org.sonar.squidbridge.checks.SquidCheck;
 import org.sonar.sslr.ast.AstSelect;
 
-import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
-
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
+
+import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 
 @Rule(
     key = EmptyBlockCheck.CHECK_KEY,
     priority = Priority.MINOR,
-    name = "Empty blocks should be removed.",
     tags = Tags.UNUSED
 )
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class EmptyBlockCheck extends SquidCheck<Grammar> {
+public class EmptyBlockCheck extends BaseCheck {
     public static final String CHECK_KEY = "EmptyBlock";
-    private static final String MESSAGE = "Either remove or fill this block of code.";
     
     @Override
     public void init() {
@@ -42,6 +38,6 @@ public class EmptyBlockCheck extends SquidCheck<Grammar> {
       AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
       if (nullStatementSelect.isEmpty()) return;
       
-      getContext().createLineViolation(this, MESSAGE, stmtLists.get(0));
+      getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), stmtLists.get(0));
     }
 }

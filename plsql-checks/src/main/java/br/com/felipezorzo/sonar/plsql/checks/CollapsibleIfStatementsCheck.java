@@ -8,11 +8,9 @@ import org.sonar.check.Rule;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-import org.sonar.squidbridge.checks.SquidCheck;
 import org.sonar.sslr.ast.AstSelect;
 
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
@@ -20,16 +18,14 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @Rule(
     key = CollapsibleIfStatementsCheck.CHECK_KEY,
     priority = Priority.MAJOR,
-    name = "Collapsible \"if\" statements should be merged.",
     tags = Tags.CLUMSY
 )
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class CollapsibleIfStatementsCheck extends SquidCheck<Grammar> {
+public class CollapsibleIfStatementsCheck extends BaseCheck {
 
     public static final String CHECK_KEY = "CollapsibleIfStatements";
-    private static final String MESSAGE = "Merge this if statement with the enclosing one.";
 
     @Override
     public void init() {
@@ -40,7 +36,7 @@ public class CollapsibleIfStatementsCheck extends SquidCheck<Grammar> {
     public void visitNode(AstNode node) {
         AstNode singleIfChild = singleIfChild(node);
         if (singleIfChild != null && !hasElseOrElif(singleIfChild)) {
-            getContext().createLineViolation(this, MESSAGE, singleIfChild);
+            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), singleIfChild);
         }
     }
 

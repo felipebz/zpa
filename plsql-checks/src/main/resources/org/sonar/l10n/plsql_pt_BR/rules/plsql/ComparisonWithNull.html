@@ -1,0 +1,31 @@
+<p>
+Para testar por nulls, use apenas as comparações IS NULL e IS NOT NULL. Qualquer outra comparação com nulls resultará em NULL.
+</p>
+
+<p>
+Lembre que uma string vazia é equivalente ao literal NULL.  
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+if var = null then
+  -- code
+end if;
+</pre>
+
+Ou:
+
+<pre>
+if var = '' then
+  -- code
+end if;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+if var is null then
+  -- code
+end if;
+</pre>
