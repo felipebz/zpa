@@ -100,6 +100,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SAVEPOINT_STATEMENT,
     RAISE_STATEMENT,
     SELECT_STATEMENT,
+    INSERT_COLUMNS,
     INSERT_STATEMENT,
     UPDATE_COLUMN,
     UPDATE_STATEMENT,
@@ -330,10 +331,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SELECT_STATEMENT).is(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON);
         
+        b.rule(INSERT_COLUMNS).is(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS);
+        
         b.rule(INSERT_STATEMENT).is(
                 b.optional(LABEL), 
                 INSERT, INTO, MEMBER_EXPRESSION, b.optional(IDENTIFIER_NAME),
-                b.optional(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS),
+                b.optional(INSERT_COLUMNS),
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
                         b.sequence(VALUES, EXPRESSION),

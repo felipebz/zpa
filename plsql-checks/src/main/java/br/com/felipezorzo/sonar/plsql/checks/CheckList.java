@@ -21,6 +21,7 @@ public class CheckList {
             CollapsibleIfStatementsCheck.class,
             InequalityUsageCheck.class,
             ComparisonWithNullCheck.class,
-            TooManyRowsHandlerCheck.class);
+            TooManyRowsHandlerCheck.class,
+            InsertWithoutColumnsCheck.class);
     }
 }
