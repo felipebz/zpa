@@ -23,6 +23,7 @@ public class CheckList {
             ComparisonWithNullCheck.class,
             TooManyRowsHandlerCheck.class,
             InsertWithoutColumnsCheck.class,
-            DeclareSectionWithoutDeclarationsCheck.class);
+            DeclareSectionWithoutDeclarationsCheck.class,
+            NvlWithNullParameterCheck.class);
     }
 }

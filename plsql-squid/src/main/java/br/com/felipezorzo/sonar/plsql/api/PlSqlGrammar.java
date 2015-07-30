@@ -51,7 +51,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     COMPARISON_EXPRESSION, 
     EXPONENTIATION_EXPRESSION, 
     ARGUMENT, 
-    ARGUMENTS, 
+    ARGUMENTS,
+    METHOD_CALL,
     CALL_EXPRESSION,
     CASE_EXPRESSION,
     EXTRACT_DATETIME_EXPRESSION,
@@ -593,13 +594,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
+        b.rule(METHOD_CALL).is(MEMBER_EXPRESSION, ARGUMENTS);
+        
         b.rule(CALL_EXPRESSION).is(b.firstOf(
                 EXTRACT_DATETIME_EXPRESSION,
                 XMLELEMENT_EXPRESSION,
                 XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
                 CAST_EXPRESSION,
-                b.sequence(MEMBER_EXPRESSION, ARGUMENTS))).skipIfOneChild();
+                METHOD_CALL)).skipIfOneChild();
         
         b.rule(OBJECT_REFERENCE).is(
                 b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
