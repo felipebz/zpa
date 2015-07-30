@@ -33,19 +33,10 @@ public class ComparisonWithNullCheck extends BaseCheck {
     public void visitNode(AstNode node) {
         List<AstNode> children = node.getChildren(PlSqlGrammar.LITERAL);
         for (AstNode child : children) {
-            if (child.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) {
-                registerViolation(child);
+            if (CheckUtils.isNullLiteralOrEmptyString(child)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
                 continue;
             }
-            
-            AstNode characterLiteral = child.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
-            if (characterLiteral != null && characterLiteral.getTokenValue().equals("''")) {
-                registerViolation(child);
-            }
         }
-    }
-    
-    private void registerViolation(AstNode node) {
-        getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
     }
 }
