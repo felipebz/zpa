@@ -22,6 +22,7 @@ public class CheckList {
             InequalityUsageCheck.class,
             ComparisonWithNullCheck.class,
             TooManyRowsHandlerCheck.class,
-            InsertWithoutColumnsCheck.class);
+            InsertWithoutColumnsCheck.class,
+            DeclareSectionWithoutDeclarationsCheck.class);
     }
 }
