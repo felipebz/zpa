@@ -31,7 +31,7 @@ import br.com.felipezorzo.sonar.plsql.checks.CheckList;
 public class PlSqlSquidSensorTest {
 
     private PlSqlSquidSensor sensor;
-    private DefaultFileSystem fs = new DefaultFileSystem();
+    private DefaultFileSystem fs = new DefaultFileSystem(new File("."));
     ResourcePerspectives perspectives;
 
     @Before
