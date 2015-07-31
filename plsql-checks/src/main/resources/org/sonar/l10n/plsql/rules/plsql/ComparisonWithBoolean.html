@@ -1,0 +1,17 @@
+<p>
+Remove literal boolean values from comparisons to improve readability.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+if var = true then ...
+if var = false then ...
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+if var then ...
+if not var then ...
+</pre>
