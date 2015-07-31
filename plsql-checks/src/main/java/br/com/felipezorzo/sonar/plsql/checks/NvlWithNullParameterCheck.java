@@ -42,7 +42,7 @@ public class NvlWithNullParameterCheck extends BaseCheck {
         for (AstNode argument : allArguments) {
             AstNode argumentValue = argument.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, argumentValue.getTokenValue());
             }
         }
     }

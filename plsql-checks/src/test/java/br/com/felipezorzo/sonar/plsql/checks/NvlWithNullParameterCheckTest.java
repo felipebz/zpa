@@ -15,12 +15,13 @@ public class NvlWithNullParameterCheckTest extends BaseCheckTest {
         NvlWithNullParameterCheck check = new NvlWithNullParameterCheck();
         SourceFile file = PlSqlAstScanner.scanSingleFile(
                 new File("src/test/resources/checks/nvl_with_null_parameter.sql"), check);
-        final String message = "Remove the NULL parameter of this NVL.";
+        final String messageWithNull = "Remove the NULL parameter of this NVL.";
+        final String messageWithEmptyString = "Remove the '' parameter of this NVL.";
         CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(5).withMessage(message)
+            .next().atLine(2).withMessage(messageWithNull)
+            .next().atLine(3).withMessage(messageWithNull)
+            .next().atLine(4).withMessage(messageWithEmptyString)
+            .next().atLine(5).withMessage(messageWithEmptyString)
             .noMore();
     }
     
