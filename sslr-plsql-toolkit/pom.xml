@@ -13,7 +13,7 @@
   
   <dependencies>
     <dependency>
-      <groupId>org.codehaus.sonar.sslr</groupId>
+      <groupId>org.sonarsource.sslr</groupId>
       <artifactId>sslr-toolkit</artifactId>
     </dependency>
     <dependency>
