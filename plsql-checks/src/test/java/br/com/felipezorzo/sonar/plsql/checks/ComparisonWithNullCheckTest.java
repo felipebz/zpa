@@ -14,12 +14,13 @@ public class ComparisonWithNullCheckTest extends BaseCheckTest {
     public void test() {
         ComparisonWithNullCheck check = new ComparisonWithNullCheck();
         SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/checks/comparison_with_null.sql"), check);
-        String message = "Change this comparison to \"IS NULL\" or \"IS NOT NULL\".";
+        final String messageWithIsNull = "Fix this comparison or change to \"IS NULL\".";
+        final String messageWithIsNotNull = "Fix this comparison or change to \"IS NOT NULL\".";
         CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(3).withMessage(message)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(5).withMessage(message)
-            .next().atLine(6).withMessage(message)
+            .next().atLine(3).withMessage(messageWithIsNull)
+            .next().atLine(4).withMessage(messageWithIsNotNull)
+            .next().atLine(5).withMessage(messageWithIsNull)
+            .next().atLine(6).withMessage(messageWithIsNotNull)
             .noMore();
     }
 

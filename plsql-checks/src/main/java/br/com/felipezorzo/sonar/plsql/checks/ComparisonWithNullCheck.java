@@ -12,6 +12,7 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
+import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 
 @Rule(
     key = ComparisonWithNullCheck.CHECK_KEY,
@@ -34,7 +35,15 @@ public class ComparisonWithNullCheck extends BaseCheck {
         List<AstNode> children = node.getChildren(PlSqlGrammar.LITERAL);
         for (AstNode child : children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                String suggestion = null;
+                AstNode operator = node.getFirstChild(PlSqlGrammar.RELATIONAL_OPERATOR);
+                if (operator.getFirstChild().is(PlSqlPunctuator.EQUALS)) {
+                    suggestion = "IS NULL";
+                } else {
+                    suggestion = "IS NOT NULL";  
+                }
+                
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, suggestion);
                 continue;
             }
         }
