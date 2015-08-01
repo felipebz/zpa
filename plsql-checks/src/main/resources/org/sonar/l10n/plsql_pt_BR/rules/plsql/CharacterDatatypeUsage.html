@@ -1,0 +1,18 @@
+<p>
+Atualmente os tipos de dados VARCHAR e VARCHAR2 são idênticos. Mas para acomodar padrões SQL emergentes, o VARCHAR pode se tornar um tipo de dados diferente no futuro.
+</p>
+
+<p>
+O tipo de dados CHAR não oferece nenhuma vantagem sobre o VARCHAR2 e faz com que a pesquisa seja mais difícil devido aos valores com espaços à direita.
+</p>
+
+<pre>
+declare
+  var1 varchar(10); -- violação
+  var2 char(10); -- violação
+  
+  var3 varchar2(10); -- ok
+begin
+  null;
+end;
+</pre>

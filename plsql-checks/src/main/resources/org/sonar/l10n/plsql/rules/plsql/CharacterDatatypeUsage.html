@@ -1,0 +1,18 @@
+<p>
+Currently, the VARCHAR and VARCHAR2 data types are identical. But to accommodate emerging SQL standards, VARCHAR might become a separate data type in future.
+</p>
+
+<p>
+The CHAR data type doesn't have any advantage over VARCHAR2 and makes searching more difficult because the right-padded values.
+</p>
+
+<pre>
+declare
+  var1 varchar(10); -- noncompliant
+  var2 char(10); -- noncompliant
+  
+  var3 varchar2(10); -- compliant
+begin
+  null;
+end;
+</pre>
