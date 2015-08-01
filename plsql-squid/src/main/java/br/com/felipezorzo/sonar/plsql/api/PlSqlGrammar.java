@@ -6,7 +6,7 @@ import static br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType.*;
 import static com.sonar.sslr.api.GenericTokenType.EOF;
 import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
@@ -153,7 +153,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     public static LexerfulGrammarBuilder create() {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
-        ArrayList<PlSqlKeyword> keywords = PlSqlKeyword.getNonReservedKeywords();
+        List<PlSqlKeyword> keywords = PlSqlKeyword.getNonReservedKeywords();
         PlSqlKeyword[] rest = keywords.subList(2, keywords.size()).toArray(new PlSqlKeyword[keywords.size() - 2]);
         b.rule(NON_RESERVED_KEYWORD).is(b.firstOf(keywords.get(0), keywords.get(1), (Object[]) rest));
         

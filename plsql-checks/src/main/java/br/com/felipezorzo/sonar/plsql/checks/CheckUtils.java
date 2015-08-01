@@ -15,7 +15,7 @@ public class CheckUtils {
         }
         
         AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
-        if (characterLiteral != null && characterLiteral.getTokenValue().equals("''")) {
+        if (characterLiteral != null && "''".equals(characterLiteral.getTokenValue())) {
             return true;
         }
         

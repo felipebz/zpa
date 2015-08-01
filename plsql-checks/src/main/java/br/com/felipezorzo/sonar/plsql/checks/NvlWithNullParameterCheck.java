@@ -33,7 +33,7 @@ public class NvlWithNullParameterCheck extends BaseCheck {
     public void visitNode(AstNode node) {
         AstNode identifier = node.getFirstChild();
         if (!identifier.is(PlSqlGrammar.IDENTIFIER_NAME)) return;
-        if (!identifier.getTokenOriginalValue().equalsIgnoreCase("NVL")) return;
+        if (!"NVL".equalsIgnoreCase(identifier.getTokenOriginalValue())) return;
         
         AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
         if (arguments == null) return;

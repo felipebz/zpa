@@ -1,6 +1,7 @@
 package br.com.felipezorzo.sonar.plsql.api;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.TokenType;
@@ -284,9 +285,9 @@ public enum PlSqlKeyword implements TokenType {
         return keywords;
     }
     
-    public static ArrayList<PlSqlKeyword> getNonReservedKeywords() {
+    public static List<PlSqlKeyword> getNonReservedKeywords() {
         PlSqlKeyword[] keywordsEnum = PlSqlKeyword.values();
-        ArrayList<PlSqlKeyword> keywords = new ArrayList<>();
+        List<PlSqlKeyword> keywords = new ArrayList<>();
         for (PlSqlKeyword keyword : keywordsEnum) {
             if (!keyword.isReserved()) {
                 keywords.add(keyword);

@@ -35,6 +35,15 @@ public class CustomAnnotationBasedRulesDefinition {
     private final ExternalDescriptionLoader externalDescriptionLoader;
     private final Locale locale;
 
+    public CustomAnnotationBasedRulesDefinition(NewRepository repository, String languageKey) {
+        this.repository = repository;
+        this.languageKey = languageKey;
+        this.locale = Locale.getDefault();
+        String externalDescriptionBasePath = getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale);
+        externalDescriptionBasePath = String.format("%s/rules/%s", externalDescriptionBasePath, repository.key());
+        this.externalDescriptionLoader = new ExternalDescriptionLoader(repository, externalDescriptionBasePath);
+    }
+    
     /**
      * Adds annotated rule classes to an instance of NewRepository. Fails if one
      * the classes has no SQALE annotation.
@@ -42,15 +51,6 @@ public class CustomAnnotationBasedRulesDefinition {
     @SuppressWarnings("rawtypes")
     public static void load(NewRepository repository, String languageKey, Iterable<Class> ruleClasses) {
         new CustomAnnotationBasedRulesDefinition(repository, languageKey).addRuleClasses(true, ruleClasses);
-    }
-
-    public CustomAnnotationBasedRulesDefinition(NewRepository repository, String languageKey) {
-      this.repository = repository;
-      this.languageKey = languageKey;
-      this.locale = Locale.getDefault();
-      String externalDescriptionBasePath = getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale);
-      externalDescriptionBasePath = String.format("%s/rules/%s", externalDescriptionBasePath, repository.key());
-      this.externalDescriptionLoader = new ExternalDescriptionLoader(repository, externalDescriptionBasePath);
     }
 
     @SuppressWarnings("rawtypes")
