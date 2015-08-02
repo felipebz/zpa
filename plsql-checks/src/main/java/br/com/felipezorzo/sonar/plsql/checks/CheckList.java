@@ -27,6 +27,7 @@ public class CheckList {
             NvlWithNullParameterCheck.class,
             ComparisonWithBooleanCheck.class,
             CharacterDatatypeUsageCheck.class,
-            SelectAllColumnsCheck.class);
+            SelectAllColumnsCheck.class,
+            ColumnsShouldHaveTableNameCheck.class);
     }
 }
