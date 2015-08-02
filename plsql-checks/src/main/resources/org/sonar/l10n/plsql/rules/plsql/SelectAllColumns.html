@@ -1,0 +1,18 @@
+<p>
+SELECT * returns all the available columns. You should explicitly list the necessary columns.
+When considering using *, you should consider the possibility that more fields will be added to the table later.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+begin
+  select *
+    into var
+    from emp;
+  
+  select emp.*
+    into var
+    from emp;
+end;
+</pre>

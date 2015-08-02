@@ -26,6 +26,7 @@ public class CheckList {
             DeclareSectionWithoutDeclarationsCheck.class,
             NvlWithNullParameterCheck.class,
             ComparisonWithBooleanCheck.class,
-            CharacterDatatypeUsageCheck.class);
+            CharacterDatatypeUsageCheck.class,
+            SelectAllColumnsCheck.class);
     }
 }

@@ -1,0 +1,18 @@
+<p>
+SELECT * retorna todas as colunas disponíveis. Você deve listar explicitamente as colunas necessárias.
+Ao usar *, você deve considerar a possibilidade de novas colunas serem adicionadas à tabela no futuro.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+begin
+  select *
+    into var
+    from emp;
+  
+  select emp.*
+    into var
+    from emp;
+end;
+</pre>
