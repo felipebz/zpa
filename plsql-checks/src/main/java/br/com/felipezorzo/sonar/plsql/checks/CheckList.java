@@ -28,6 +28,7 @@ public class CheckList {
             ComparisonWithBooleanCheck.class,
             CharacterDatatypeUsageCheck.class,
             SelectAllColumnsCheck.class,
-            ColumnsShouldHaveTableNameCheck.class);
+            ColumnsShouldHaveTableNameCheck.class,
+            SelectWithRownumAndOrderByCheck.class);
     }
 }

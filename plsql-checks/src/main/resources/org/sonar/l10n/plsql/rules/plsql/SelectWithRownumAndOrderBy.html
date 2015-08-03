@@ -1,0 +1,33 @@
+<p>
+In a SELECT expression, the WHERE clause is executed before the ORDER BY clause. Consider this example:
+</p>
+
+<pre>
+DECLARE
+  CURSOR recent_users IS
+    SELECT user.name,
+           user.creation_date
+      FROM user
+     WHERE ROWNUM <= 5
+     ORDER BY user.creation_date DESC;
+BEGIN
+  ...
+</pre>
+
+<p>
+This query won't return the last 5 created users. The database will filter the users without any ordering and after, apply the ORDER BY clause. The corrected query is:
+</p>
+
+<pre>
+DECLARE
+  CURSOR recent_users IS
+    SELECT name,
+           creation_date
+      FROM (SELECT user.name,
+                   user.creation_date
+              FROM user
+             ORDER BY user.creation_date DESC)
+     WHERE ROWNUM <= 5;
+BEGIN
+  ...
+</pre>

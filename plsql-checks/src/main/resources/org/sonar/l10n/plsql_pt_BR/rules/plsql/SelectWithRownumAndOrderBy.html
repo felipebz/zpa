@@ -1,0 +1,33 @@
+<p>
+Em uma expressão SELECT, a cláusula WHERE é executada antes da cláusula ORDER BY. Considere esse exemplo:
+</p>
+
+<pre>
+DECLARE
+  CURSOR usuarios_recentes IS
+    SELECT usuario.nome,
+           usuario.data_de_criacao
+      FROM usuario
+     WHERE ROWNUM <= 5
+     ORDER BY usuario.data_de_criacao DESC;
+BEGIN
+  ...
+</pre>
+
+<p>
+Essa consulta não retornará os últimos 5 usuários criados. O banco de dados filtrará os usuários sem nenhuma ordenação e só então aplicará a cláusula ORDER BY. A consulta corrigida é:
+</p>
+
+<pre>
+DECLARE
+  CURSOR usuarios_recentes IS
+    SELECT nome,
+           data_de_criacao
+      FROM (SELECT usuario.nome,
+                   usuario.data_de_criacao
+              FROM usuario
+             ORDER BY user.data_de_criacao DESC)
+     WHERE ROWNUM <= 5;
+BEGIN
+  ...
+</pre>
