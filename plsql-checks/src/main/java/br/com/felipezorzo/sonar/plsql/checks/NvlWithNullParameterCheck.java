@@ -12,6 +12,7 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
+import br.com.felipezorzo.sonar.plsql.checks.common.BaseMethodCallChecker;
 
 @Rule(
     key = NvlWithNullParameterCheck.CHECK_KEY,
@@ -21,28 +22,21 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class NvlWithNullParameterCheck extends BaseCheck {
+public class NvlWithNullParameterCheck extends BaseMethodCallChecker {
     public static final String CHECK_KEY = "NvlWithNullParameter";
 
     @Override
-    public void init() {
-        subscribeTo(PlSqlGrammar.METHOD_CALL);
+    protected boolean isMethod(AstNode identifier) {
+        return identifier.is(PlSqlGrammar.IDENTIFIER_NAME) &&
+               "NVL".equalsIgnoreCase(identifier.getTokenOriginalValue());
     }
-    
+
     @Override
-    public void visitNode(AstNode node) {
-        AstNode identifier = node.getFirstChild();
-        if (!identifier.is(PlSqlGrammar.IDENTIFIER_NAME)) return;
-        if (!"NVL".equalsIgnoreCase(identifier.getTokenOriginalValue())) return;
-        
-        AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
-        if (arguments == null) return;
-        
-        List<AstNode> allArguments = arguments.getChildren(PlSqlGrammar.ARGUMENT);
-        for (AstNode argument : allArguments) {
+    protected void checkArguments(List<AstNode> arguments) {
+        for (AstNode argument : arguments) {
             AstNode argumentValue = argument.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, argumentValue.getTokenValue());
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), getCurrentNode(), argumentValue.getTokenValue());
             }
         }
     }
