@@ -29,6 +29,7 @@ public class CheckList {
             CharacterDatatypeUsageCheck.class,
             SelectAllColumnsCheck.class,
             ColumnsShouldHaveTableNameCheck.class,
-            SelectWithRownumAndOrderByCheck.class);
+            SelectWithRownumAndOrderByCheck.class,
+            ToDateWithoutFormatCheck.class);
     }
 }

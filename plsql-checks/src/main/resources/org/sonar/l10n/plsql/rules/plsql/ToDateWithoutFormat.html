@@ -1,0 +1,11 @@
+<p>
+Always specify the date format in TO_DATE calls.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+begin
+  var := to_date('2015-01-01');
+end;
+</pre>
