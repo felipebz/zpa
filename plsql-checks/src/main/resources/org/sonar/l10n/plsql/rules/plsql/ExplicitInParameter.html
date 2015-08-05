@@ -1,0 +1,15 @@
+<p>
+If not set, the parameter mode is IN. However, defining it explicitly does make the code easier to read.
+</p>
+
+<pre>
+CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- violation
+BEGIN
+  NULL;
+END;
+
+CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- correct, the parameter mode is defined
+BEGIN
+  NULL;
+END;
+</pre>

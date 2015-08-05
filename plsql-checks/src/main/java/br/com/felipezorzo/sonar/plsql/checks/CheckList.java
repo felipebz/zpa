@@ -30,6 +30,7 @@ public class CheckList {
             SelectAllColumnsCheck.class,
             ColumnsShouldHaveTableNameCheck.class,
             SelectWithRownumAndOrderByCheck.class,
-            ToDateWithoutFormatCheck.class);
+            ToDateWithoutFormatCheck.class,
+            ExplicitInParameterCheck.class);
     }
 }

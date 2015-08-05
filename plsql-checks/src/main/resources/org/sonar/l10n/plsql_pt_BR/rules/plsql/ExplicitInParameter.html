@@ -1,0 +1,15 @@
+<p>
+Se não for informado, o modo padrão dos parâmetros é IN. Porém, definir ele explicitamente faz com que o código seja mais fácil de ler.
+</p>
+
+<pre>
+CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- violação
+BEGIN
+  NULL;
+END;
+
+CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- correto, o modo do parâmetro está definido
+BEGIN
+  NULL;
+END;
+</pre>
