@@ -119,6 +119,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     STATEMENT,
     
     // Declarations
+    DEFAULT_VALUE_ASSIGNMENT,
     VARIABLE_DECLARATION,
     PARAMETER_DECLARATION,
     CURSOR_PARAMETER_DECLARATION,
@@ -682,11 +683,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
     
     private static void createDeclarations(LexerfulGrammarBuilder b) {
+        b.rule(DEFAULT_VALUE_ASSIGNMENT).is(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION);
+        
         b.rule(PARAMETER_DECLARATION).is(
                 IDENTIFIER_NAME,
                 b.optional(IN),
                 b.firstOf(
-                        b.sequence(DATATYPE, b.optional(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)),
+                        b.sequence(DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT)),
                         b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
                 );
         
@@ -714,7 +717,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(
                                 DATATYPE,
-                                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)),
+                                b.optional(b.optional(NOT, NULL), DEFAULT_VALUE_ASSIGNMENT)),
                         EXCEPTION),                                           
                 SEMICOLON);
         
@@ -727,7 +730,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(CURSOR_PARAMETER_DECLARATION).is(
                 IDENTIFIER_NAME,
                 b.optional(IN),
-                DATATYPE, b.optional(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION));
+                DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT));
         
         b.rule(CURSOR_DECLARATION).is(
                 CURSOR, IDENTIFIER_NAME,
@@ -736,7 +739,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(RECORD_FIELD_DECLARATION).is(
                 IDENTIFIER_NAME, DATATYPE,
-                b.optional(b.optional(NOT, NULL), b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION));
+                b.optional(b.optional(NOT, NULL), DEFAULT_VALUE_ASSIGNMENT));
         
         b.rule(RECORD_DECLARATION).is(
                 TYPE, IDENTIFIER_NAME, IS, RECORD,
