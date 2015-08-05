@@ -31,6 +31,7 @@ public class CheckList {
             ColumnsShouldHaveTableNameCheck.class,
             SelectWithRownumAndOrderByCheck.class,
             ToDateWithoutFormatCheck.class,
-            ExplicitInParameterCheck.class);
+            ExplicitInParameterCheck.class,
+            VariableInitializationWithNullCheck.class);
     }
 }
