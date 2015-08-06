@@ -12,15 +12,19 @@ import org.sonar.squidbridge.api.SourceFile;
 import org.sonar.squidbridge.api.SourceProject;
 import org.sonar.squidbridge.indexer.QueryByType;
 import org.sonar.squidbridge.metrics.CommentsVisitor;
+import org.sonar.squidbridge.metrics.ComplexityVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
-
-import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
-import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
+
+import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
+import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
+import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
+import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
 
 public class PlSqlAstScanner {
 
@@ -75,6 +79,30 @@ public class PlSqlAstScanner {
                 .withNoSonar(true)
                 .withIgnoreHeaderComment(conf.getIgnoreHeaderComments())
                 .build());
+        
+        AstNodeType[] complexityAstNodeType = new AstNodeType[] {
+                PlSqlGrammar.CREATE_PROCEDURE,
+                PlSqlGrammar.CREATE_FUNCTION,
+                PlSqlGrammar.ANONYMOUS_BLOCK,
+                
+                PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.FUNCTION_DECLARATION,
+                
+                PlSqlGrammar.LOOP_STATEMENT,
+                PlSqlGrammar.CONTINUE_STATEMENT,
+                PlSqlGrammar.FOR_STATEMENT,
+                PlSqlGrammar.EXIT_STATEMENT,
+                PlSqlGrammar.IF_STATEMENT,
+                PlSqlGrammar.RAISE_STATEMENT,
+                PlSqlGrammar.RETURN_STATEMENT,
+                PlSqlGrammar.WHILE_STATEMENT,
+                
+                // this includes WHEN in exception handlers, exit/continue statements and CASE expressions
+                PlSqlKeyword.WHEN,
+                PlSqlKeyword.ELSIF
+        };
+        builder.withSquidAstVisitor(ComplexityVisitor.<Grammar> builder().setMetricDef(PlSqlMetric.COMPLEXITY)
+                .subscribeTo(complexityAstNodeType).build());
     }
 
     private static void setCommentAnalyser(AstScanner.Builder<Grammar> builder) {

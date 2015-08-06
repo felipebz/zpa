@@ -7,7 +7,8 @@ public enum PlSqlMetric implements MetricDef {
     FILES,
     LINES,
     LINES_OF_CODE, 
-    COMMENT_LINES;
+    COMMENT_LINES,
+    COMPLEXITY;
     
     @Override
     public String getName() {

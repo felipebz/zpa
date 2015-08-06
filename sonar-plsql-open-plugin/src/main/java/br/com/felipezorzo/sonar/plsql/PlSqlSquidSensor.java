@@ -16,6 +16,8 @@ import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.FileLinesContextFactory;
+import org.sonar.api.measures.PersistenceMode;
+import org.sonar.api.measures.RangeDistributionBuilder;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.squidbridge.AstScanner;
@@ -23,16 +25,21 @@ import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.api.CheckMessage;
 import org.sonar.squidbridge.api.SourceCode;
 import org.sonar.squidbridge.api.SourceFile;
+import org.sonar.squidbridge.api.SourceFunction;
+import org.sonar.squidbridge.indexer.QueryByParent;
 import org.sonar.squidbridge.indexer.QueryByType;
-
-import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
-import br.com.felipezorzo.sonar.plsql.checks.CheckList;
 
 import com.google.common.collect.Lists;
 import com.sonar.sslr.api.Grammar;
 
+import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
+import br.com.felipezorzo.sonar.plsql.checks.CheckList;
+
 public class PlSqlSquidSensor implements Sensor {
 
+    private static final Number[] LIMITS_COMPLEXITY_METHODS = {1, 2, 4, 6, 8, 10, 12};
+    private static final Number[] LIMITS_COMPLEXITY_FILES = {0, 5, 10, 20, 30, 60, 90};
+    
     private final Checks<SquidAstVisitor<Grammar>> checks;
     private final FileLinesContextFactory fileLinesContextFactory;
 
@@ -82,6 +89,8 @@ public class PlSqlSquidSensor implements Sensor {
             InputFile inputFile = fileSystem.inputFile(fileSystem.predicates()
                     .is(new java.io.File(squidFile.getKey())));
 
+            saveFilesComplexityDistribution(inputFile, squidFile);
+            saveFunctionsComplexityDistribution(inputFile, squidFile);
             saveMeasures(inputFile, squidFile);
             saveIssues(inputFile, squidFile);
         }
@@ -92,6 +101,25 @@ public class PlSqlSquidSensor implements Sensor {
         context.saveMeasure(sonarFile, CoreMetrics.LINES, squidFile.getDouble(PlSqlMetric.LINES));
         context.saveMeasure(sonarFile, CoreMetrics.NCLOC, squidFile.getDouble(PlSqlMetric.LINES_OF_CODE));
         context.saveMeasure(sonarFile, CoreMetrics.COMMENT_LINES, squidFile.getDouble(PlSqlMetric.COMMENT_LINES));
+        context.saveMeasure(sonarFile, CoreMetrics.COMPLEXITY, squidFile.getDouble(PlSqlMetric.COMPLEXITY));
+    }
+    
+    private void saveFunctionsComplexityDistribution(InputFile sonarFile, SourceFile squidFile) {
+        Collection<SourceCode> squidFunctionsInFile = scanner.getIndex().search(new QueryByParent(squidFile),
+                new QueryByType(SourceFunction.class));
+        RangeDistributionBuilder complexityDistribution = new RangeDistributionBuilder(
+                CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION, LIMITS_COMPLEXITY_METHODS);
+        for (SourceCode squidFunction : squidFunctionsInFile) {
+            complexityDistribution.add(squidFunction.getDouble(PlSqlMetric.COMPLEXITY));
+        }
+        context.saveMeasure(sonarFile, complexityDistribution.build().setPersistenceMode(PersistenceMode.MEMORY));
+    }
+
+    private void saveFilesComplexityDistribution(InputFile sonarFile, SourceFile squidFile) {
+        RangeDistributionBuilder complexityDistribution = new RangeDistributionBuilder(
+                CoreMetrics.FILE_COMPLEXITY_DISTRIBUTION, LIMITS_COMPLEXITY_FILES);
+        complexityDistribution.add(squidFile.getDouble(PlSqlMetric.COMPLEXITY));
+        context.saveMeasure(sonarFile, complexityDistribution.build().setPersistenceMode(PersistenceMode.MEMORY));
     }
     
     private void saveIssues(InputFile sonarFile, SourceFile squidFile) {

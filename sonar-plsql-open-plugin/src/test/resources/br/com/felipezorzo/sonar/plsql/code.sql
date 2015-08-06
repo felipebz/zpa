@@ -12,5 +12,10 @@ begin
   begin
     null;
   end;
+exception
+  when no_data_found then
+    null;
+  when too_many_rows then
+    null; 
 end;
 /

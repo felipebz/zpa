@@ -23,7 +23,7 @@ public class PlSqlTokenizerTest {
       PlSqlTokenizer tokenizer = new PlSqlTokenizer(Charset.forName("UTF-8"));
       tokenizer.tokenize(source, cpdTokens);
       List<TokenEntry> list = cpdTokens.getTokens();
-      assertThat(list.size()).isEqualTo(28);
+      assertThat(list.size()).isEqualTo(39);
     }
     
 }
