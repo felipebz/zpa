@@ -20,7 +20,7 @@
   <modules>
     <module>plsql-squid</module>
     <module>plsql-checks</module>
-    <module>sonar-plsql-plugin</module>
+    <module>sonar-plsql-open-plugin</module>
     <module>sslr-plsql-toolkit</module>
   </modules>
 
