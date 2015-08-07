@@ -32,6 +32,7 @@ public class CheckList {
             SelectWithRownumAndOrderByCheck.class,
             ToDateWithoutFormatCheck.class,
             ExplicitInParameterCheck.class,
-            VariableInitializationWithNullCheck.class);
+            VariableInitializationWithNullCheck.class,
+            UselessParenthesisCheck.class);
     }
 }
