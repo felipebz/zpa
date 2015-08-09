@@ -16,6 +16,14 @@ public class CheckUtils {
             return true;
         }
         
+        if (isEmptyString(node)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public static boolean isEmptyString(AstNode node) {
         AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
         if (characterLiteral != null && "''".equals(characterLiteral.getTokenValue())) {
             return true;
