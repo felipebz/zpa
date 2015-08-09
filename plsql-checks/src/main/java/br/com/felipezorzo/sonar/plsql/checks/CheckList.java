@@ -33,6 +33,7 @@ public class CheckList {
             ToDateWithoutFormatCheck.class,
             ExplicitInParameterCheck.class,
             VariableInitializationWithNullCheck.class,
-            UselessParenthesisCheck.class);
+            UselessParenthesisCheck.class,
+            IdenticalExpressionCheck.class);
     }
 }
