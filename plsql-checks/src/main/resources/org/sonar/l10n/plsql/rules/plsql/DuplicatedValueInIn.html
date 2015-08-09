@@ -1,0 +1,9 @@
+<p>
+Duplicated values in an IN condition can be either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+if value in (a, a, b) then ...
+</pre>

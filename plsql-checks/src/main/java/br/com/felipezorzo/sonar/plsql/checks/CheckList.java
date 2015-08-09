@@ -35,6 +35,7 @@ public class CheckList {
             VariableInitializationWithNullCheck.class,
             UselessParenthesisCheck.class,
             IdenticalExpressionCheck.class,
-            EmptyStringAssignmentCheck.class);
+            EmptyStringAssignmentCheck.class,
+            DuplicatedValueInInCheck.class);
     }
 }
