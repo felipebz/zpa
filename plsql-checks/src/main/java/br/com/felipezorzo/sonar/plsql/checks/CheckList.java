@@ -37,6 +37,7 @@ public class CheckList {
             IdenticalExpressionCheck.class,
             EmptyStringAssignmentCheck.class,
             DuplicatedValueInInCheck.class,
-            VariableInitializationWithFunctionCallCheck.class);
+            VariableInitializationWithFunctionCallCheck.class,
+            IfWithExitCheck.class);
     }
 }

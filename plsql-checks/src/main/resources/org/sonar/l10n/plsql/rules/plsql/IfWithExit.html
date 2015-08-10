@@ -1,0 +1,17 @@
+<p>
+To improve the code readability always use EXIT WHEN instead of an IF statement to exit from a loop.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+if condition1 then
+  exit;
+end if;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+exit when condition1;
+</pre>
