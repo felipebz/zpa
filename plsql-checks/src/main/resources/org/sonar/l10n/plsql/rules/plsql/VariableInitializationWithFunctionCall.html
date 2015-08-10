@@ -1,0 +1,24 @@
+<p>
+If your initialization fails you will not be able to handle the error in your exceptions block.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+DECLARE
+  employee_name emp.name%TYPE := get_employee_name(id => 5);
+BEGIN
+  ...
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+DECLARE
+  employee_name emp.name%TYPE;
+BEGIN
+  employee_name := get_employee_name(id => 5);
+  ...
+END;
+</pre>
