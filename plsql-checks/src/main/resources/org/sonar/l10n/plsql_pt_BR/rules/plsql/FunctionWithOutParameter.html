@@ -1,0 +1,14 @@
+<p>
+Funções com parâmetros OUT são difíceis de entender.
+É impossível dizer se um parâmetro é de entrada ou saída apenas olhando para a chamada da função
+Além disso, funções com parâmetros OUT não podem ser chamadas por SQL.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE OR REPLACE FUNCTION get_product_info(id IN NUMBER, value OUT NUMBER) RETURN VARCHAR2 IS
+BEGIN
+ ...
+END;
+</pre>

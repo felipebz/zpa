@@ -57,6 +57,7 @@ public class CheckList {
             EmptyStringAssignmentCheck.class,
             DuplicatedValueInInCheck.class,
             VariableInitializationWithFunctionCallCheck.class,
-            IfWithExitCheck.class);
+            IfWithExitCheck.class,
+            FunctionWithOutParameterCheck.class);
     }
 }

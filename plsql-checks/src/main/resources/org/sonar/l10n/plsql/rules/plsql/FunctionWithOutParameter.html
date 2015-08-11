@@ -1,0 +1,14 @@
+<p>
+Functions with OUT parameters are complex to understand.
+It is impossible to tell whether an argument is a input or output just by looking at the function call.
+Also, functions with OUT parameters cannot be called from SQL.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE OR REPLACE FUNCTION get_product_info(id IN NUMBER, value OUT NUMBER) RETURN VARCHAR2 IS
+BEGIN
+ ...
+END;
+</pre>
