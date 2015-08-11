@@ -1,7 +1,7 @@
 /*
- * SonarQube Python Plugin
- * Copyright (C) 2011 SonarSource and Waleri Enns
- * dev@sonar.codehaus.org
+ * Sonar PL/SQL Plugin (Community)
+ * Copyright (C) 2015 Felipe Zorzo
+ * felipe.b.zorzo@gmail.com
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,7 +17,6 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-
 package br.com.felipezorzo.sonar.plsql.checks;
 
 public class Tags {
