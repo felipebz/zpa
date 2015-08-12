@@ -58,6 +58,7 @@ public class CheckList {
             DuplicatedValueInInCheck.class,
             VariableInitializationWithFunctionCallCheck.class,
             IfWithExitCheck.class,
-            FunctionWithOutParameterCheck.class);
+            FunctionWithOutParameterCheck.class,
+            SameConditionCheck.class);
     }
 }
