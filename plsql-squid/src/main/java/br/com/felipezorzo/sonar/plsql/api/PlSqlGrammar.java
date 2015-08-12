@@ -55,6 +55,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Expressions
     EXPRESSION,
+    AND_EXPRESSION,
+    OR_EXPRESSION,
     BOOLEAN_EXPRESSION,
     PRIMARY_EXPRESSION, 
     BRACKED_EXPRESSION, 
@@ -696,7 +698,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 CONCATENATION_EXPRESSION, 
                                 AND, 
                                 CONCATENATION_EXPRESSION)))).skipIfOneChild();   
-        b.rule(BOOLEAN_EXPRESSION).is(COMPARISON_EXPRESSION, b.zeroOrMore(b.firstOf(AND, OR), COMPARISON_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(AND_EXPRESSION).is(COMPARISON_EXPRESSION, b.zeroOrMore(AND, COMPARISON_EXPRESSION)).skipIfOneChild();
+        b.rule(OR_EXPRESSION).is(AND_EXPRESSION, b.zeroOrMore(OR, AND_EXPRESSION)).skipIfOneChild();
+        
+        b.rule(BOOLEAN_EXPRESSION).is(OR_EXPRESSION).skip();
         
         b.rule(EXPRESSION).is(BOOLEAN_EXPRESSION).skipIfOneChild();
     }
