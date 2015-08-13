@@ -59,6 +59,7 @@ public class CheckList {
             VariableInitializationWithFunctionCallCheck.class,
             IfWithExitCheck.class,
             FunctionWithOutParameterCheck.class,
-            SameConditionCheck.class);
+            SameConditionCheck.class,
+            AddParenthesesInNestedExpressionCheck.class);
     }
 }

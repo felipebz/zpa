@@ -1,0 +1,38 @@
+<p>
+Uma condição AND tem uma precedência maior que uma condição OR, então você deve envolver a condição AND em parênteses
+por questão de clareza e para garantir que os operadores sejam avaliados na ordem que você deseja.
+</p>
+
+<p>
+Considere esse exemplo:
+</p>
+
+<pre>
+SELECT cachorros.nome
+  FROM cachorros
+ WHERE cachorros.sexo = 'macho'
+   and cachorros.cor = 'branco'
+    or cachorros.tamanho = 'grande';
+</pre>
+
+<p>
+Sem parênteses, alguém poderia pensar que ela equivale a:
+</p>
+
+<pre>
+SELECT cachorros.nome
+  FROM cachorros
+ WHERE cachorros.sexo = 'macho'
+   and (cachorros.tamanho = 'branco' or cachorros.size = 'grande');
+</pre>
+
+<p>
+Mas a consulta original é processada como:
+</p>
+
+<pre>
+SELECT cachorros.nome
+  FROM cachorros
+ WHERE (cachorros.sexo = 'macho' and cachorros.cor = 'branco')
+    or cachorros.tamanho = 'grande';
+</pre>

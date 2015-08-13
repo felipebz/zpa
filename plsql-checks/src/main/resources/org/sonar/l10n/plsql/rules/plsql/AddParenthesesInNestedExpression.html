@@ -1,0 +1,38 @@
+<p>
+An AND condition has a higher precedence than an OR condition, so you should wrap the AND condition in parentheses 
+for clarity and to ensure that the operators are evaluated in the order that you intend.
+</p>
+
+<p>
+Consider this example: 
+</p>
+
+<pre>
+SELECT dogs.name
+  FROM dogs
+ WHERE dogs.sex = 'male'
+   and dogs.color = 'white'
+    or dogs.size = 'big';
+</pre>
+
+<p>
+Without parentheses, one would think that it is equivalent to:
+</p>
+
+<pre>
+SELECT dogs.name
+  FROM dogs
+ WHERE dogs.sex = 'male'
+   and (dogs.color = 'white' or dogs.size = 'big');
+</pre>
+
+<p>
+But the original query is parsed as:
+</p>
+
+<pre>
+SELECT dogs.name
+  FROM dogs
+ WHERE (dogs.sex = 'male' and dogs.color = 'white')
+    or dogs.size = 'big';
+</pre>
