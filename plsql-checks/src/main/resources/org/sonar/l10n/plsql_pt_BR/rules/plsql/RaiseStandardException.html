@@ -1,0 +1,48 @@
+<p>
+Você deve revisar todos os comandos RAISE que causam exceções pré-definidas, porque normalmente esse é um sinal de lógica ruim. Considere esse exemplo:
+</p>
+
+<pre>
+CREATE OR REPLACE FUNCTION grupo_tem_usuario(id IN NUMBER) RETURN BOOLEAN IS
+  tem_usuario BOOLEAN;
+  usuario_id  usuario_grupo.usuario_id%TYPE;
+BEGIN
+  BEGIN
+    SELECT usuario_grupo.usuario_id
+      INTO grupo_id
+      FROM usuario_grupo
+     WHERE usuario_grupo.grupo_id = id;
+     
+    RAISE TOO_MANY_ROWS;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      tem_usuario := FALSE;
+    WHEN TOO_MANY_ROWS THEN
+      tem_usuario := TRUE;
+  END;
+  
+  RETURN tem_usuario;
+END;
+</pre>
+
+<p>
+Nesse caso, a exceção TOO_MANY_ROWS está sendo usada como mecanismo de controle de fluxo. Essa função poderia ser reescrita para evitar o comando RAISE:
+</p>
+
+<pre>
+CREATE OR REPLACE FUNCTION grupo_tem_usuario(id IN NUMBER) RETURN BOOLEAN IS
+  numero_de_usuarios NUMBER;
+BEGIN
+  BEGIN
+    SELECT COUNT(*)
+      INTO numero_de_usuarios
+      FROM usuario_grupo
+     WHERE usuario_grupo.grupo_id = id;
+  EXCEPTION
+    WHEN OTHERS THEN
+      numero_de_usuarios := 0;
+  END;
+  
+  RETURN numero_de_usuarios > 0;
+END;
+</pre>

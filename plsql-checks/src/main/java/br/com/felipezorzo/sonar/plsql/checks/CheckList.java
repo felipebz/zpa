@@ -60,6 +60,7 @@ public class CheckList {
             IfWithExitCheck.class,
             FunctionWithOutParameterCheck.class,
             SameConditionCheck.class,
-            AddParenthesesInNestedExpressionCheck.class);
+            AddParenthesesInNestedExpressionCheck.class,
+            RaiseStandardExceptionCheck.class);
     }
 }

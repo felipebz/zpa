@@ -1,0 +1,48 @@
+<p>
+You should review all the RAISE statements that causes a predefined exception, because usually this is a sign of bad logic. Consider this example:
+</p>
+
+<pre>
+CREATE OR REPLACE FUNCTION group_has_users(id IN NUMBER) RETURN BOOLEAN IS
+  has_users BOOLEAN;
+  user_id   user_group.user_id%TYPE;
+BEGIN
+  BEGIN
+    SELECT user_group.user_id
+      INTO user_id
+      FROM user_group
+     WHERE user_group.group_id = id;
+     
+    RAISE TOO_MANY_ROWS;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      has_users := FALSE;
+    WHEN TOO_MANY_ROWS THEN
+      has_users := TRUE;
+  END;
+  
+  RETURN has_users;
+END;
+</pre>
+
+<p>
+In this case, the TOO_MANY_ROWS exception is being used as a flow control mechanism. This function could be rewritten to avoid the RAISE statement:
+</p>
+
+<pre>
+CREATE OR REPLACE FUNCTION group_has_users(id IN NUMBER) RETURN BOOLEAN IS
+  number_of_users NUMBER;
+BEGIN
+  BEGIN
+    SELECT COUNT(*)
+      INTO number_of_users
+      FROM user_group
+     WHERE user_group.group_id = id;
+  EXCEPTION
+    WHEN OTHERS THEN
+      number_of_users := 0;
+  END;
+  
+  RETURN number_of_users > 0;
+END;
+</pre>
