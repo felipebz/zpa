@@ -262,7 +262,10 @@ public enum PlSqlKeyword implements TokenType {
     NAME("name"),
     EVALNAME("evalname"),
     XMLFOREST("xmlforest"),
-    JOIN("join");
+    JOIN("join"),
+    ROWNUM("rownum"),
+    LEVEL("level"),
+    SYSDATE("sysdate");
 
     private final String value;
     private final boolean reserved;

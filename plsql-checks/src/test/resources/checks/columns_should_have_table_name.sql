@@ -9,4 +9,8 @@ begin
          tab.col,
          func(col)
     from tab;
+    
+  -- do not report error in rownum
+  select rownum
+    from tab, tab2;
 end;
