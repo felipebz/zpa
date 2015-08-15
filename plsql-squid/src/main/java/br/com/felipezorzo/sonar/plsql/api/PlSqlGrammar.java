@@ -162,6 +162,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXECUTE_PLSQL_BUFFER,
     
     // Program units
+    COMPILATION_UNIT,
     ANONYMOUS_BLOCK,
     PROCEDURE_DECLARATION,
     FUNCTION_DECLARATION,
@@ -182,11 +183,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(IDENTIFIER_NAME).is(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD));
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
-                ANONYMOUS_BLOCK,
-                CREATE_PROCEDURE, 
-                CREATE_FUNCTION, 
-                CREATE_PACKAGE,
-                CREATE_PACKAGE_BODY,
+                COMPILATION_UNIT,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -850,5 +847,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
         b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
+        
+        b.rule(COMPILATION_UNIT).is(b.firstOf(
+                ANONYMOUS_BLOCK,
+                CREATE_PROCEDURE, 
+                CREATE_FUNCTION, 
+                CREATE_PACKAGE,
+                CREATE_PACKAGE_BODY));
     }
 }
