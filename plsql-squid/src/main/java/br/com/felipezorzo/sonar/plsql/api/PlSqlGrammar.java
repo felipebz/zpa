@@ -171,6 +171,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_PACKAGE,
     CREATE_PACKAGE_BODY,
     
+    // SQL Plus commands
+    SQLPLUS_COMMAND,
+    SQLPLUS_SHOW,
+    
     // Top-level components
     FILE_INPUT;
 
@@ -184,6 +188,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(IDENTIFIER_NAME).is(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD));
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 COMPILATION_UNIT,
+                SQLPLUS_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -193,13 +198,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createExpressions(b);
         createDeclarations(b);
         createProgramUnits(b);
+        createSqlPlusCommands(b);
         
         b.setRootRule(FILE_INPUT);
         b.buildWithMemoizationOfMatchesForAllRules();
         
         return b;
     }
-    
+
     private static void createLiterals(LexerfulGrammarBuilder b) {
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
@@ -854,5 +860,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_FUNCTION, 
                 CREATE_PACKAGE,
                 CREATE_PACKAGE_BODY));
+    }
+    
+    private static void createSqlPlusCommands(LexerfulGrammarBuilder b) {
+        b.rule(SQLPLUS_SHOW).is(SHOW, b.tillNewLine());
+        
+        b.rule(SQLPLUS_COMMAND).is(SQLPLUS_SHOW);
     }
 }
