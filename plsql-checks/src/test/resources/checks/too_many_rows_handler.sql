@@ -27,3 +27,14 @@ exception
     log(sqlerrm);
     raise myexception;
 end;
+
+begin
+  select empno
+    into var
+    from emp;
+exception
+  when no_data_found then
+    null;
+  when pkg.error then
+    var := null;
+end;
