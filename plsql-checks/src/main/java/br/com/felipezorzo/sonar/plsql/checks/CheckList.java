@@ -62,6 +62,7 @@ public class CheckList {
             SameConditionCheck.class,
             AddParenthesesInNestedExpressionCheck.class,
             RaiseStandardExceptionCheck.class,
-            NotFoundCheck.class);
+            NotFoundCheck.class,
+            QueryWithoutExceptionHandlingCheck.class);
     }
 }
