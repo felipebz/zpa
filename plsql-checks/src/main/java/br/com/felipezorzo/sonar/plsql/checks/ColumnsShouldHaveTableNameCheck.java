@@ -37,7 +37,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.INSTRUCTION_RELIABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class ColumnsShouldHaveTableNameCheck extends BaseCheck {
+public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "ColumnsShouldHaveTableName";
 

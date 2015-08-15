@@ -37,7 +37,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class UselessParenthesisCheck extends BaseCheck {
+public class UselessParenthesisCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UselessParenthesis";
     
     @Override

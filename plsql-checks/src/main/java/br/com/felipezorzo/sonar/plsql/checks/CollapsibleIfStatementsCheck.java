@@ -42,7 +42,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class CollapsibleIfStatementsCheck extends BaseCheck {
+public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "CollapsibleIfStatements";
 

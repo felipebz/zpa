@@ -26,11 +26,11 @@ import org.sonar.squidbridge.checks.SquidCheck;
 
 import com.sonar.sslr.api.Grammar;
 
-public class BaseCheck extends SquidCheck<Grammar> {
+public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
     
     private final ResourceBundle bundle;
     
-    protected BaseCheck() {
+    protected AbstractBaseCheck() {
         bundle = ResourceBundle.getBundle("org.sonar.l10n.plsql", Locale.getDefault());
     }
    

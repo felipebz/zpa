@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_CHANGEABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class CharacterDatatypeUsageCheck extends BaseCheck {
+public class CharacterDatatypeUsageCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "CharacterDatatypeUsage";
 

@@ -38,7 +38,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.UNDERSTANDABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class ExplicitInParameterCheck extends BaseCheck {
+public class ExplicitInParameterCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ExplicitInParameter";
     
     @Override

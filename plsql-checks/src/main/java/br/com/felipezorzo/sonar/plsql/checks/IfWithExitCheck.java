@@ -38,7 +38,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class IfWithExitCheck extends BaseCheck {
+public class IfWithExitCheck extends AbstractBaseCheck {
     
     public static final String CHECK_KEY = "IfWithExit";
 

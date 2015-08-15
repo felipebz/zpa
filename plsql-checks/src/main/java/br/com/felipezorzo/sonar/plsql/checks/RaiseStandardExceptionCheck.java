@@ -40,7 +40,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.API_ABUSE)
 @SqaleConstantRemediation("20min")
 @ActivatedByDefault
-public class RaiseStandardExceptionCheck extends BaseCheck {
+public class RaiseStandardExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "RaiseStandardException";
     
     private final List<String> standardExceptions = ImmutableList.of(

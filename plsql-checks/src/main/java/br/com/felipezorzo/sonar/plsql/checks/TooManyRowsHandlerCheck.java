@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class TooManyRowsHandlerCheck extends BaseCheck {
+public class TooManyRowsHandlerCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "TooManyRowsHandler";
 
     @Override

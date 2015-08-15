@@ -35,7 +35,7 @@ import com.sonar.sslr.api.RecognitionException;
 )
 @NoSqale
 @ActivatedByDefault
-public class ParsingErrorCheck extends BaseCheck implements AstScannerExceptionHandler {
+public class ParsingErrorCheck extends AbstractBaseCheck implements AstScannerExceptionHandler {
 
     public static final String CHECK_KEY = "ParsingError";
 

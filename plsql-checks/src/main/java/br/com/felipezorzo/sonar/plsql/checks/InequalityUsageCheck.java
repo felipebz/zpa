@@ -38,7 +38,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LANGUAGE_RELATED_PORTABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class InequalityUsageCheck extends BaseCheck {
+public class InequalityUsageCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "InequalityUsage";
 
     @Override

@@ -38,7 +38,7 @@ import com.sonar.sslr.api.AstNode;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class IdenticalExpressionCheck extends BaseCheck {
+public class IdenticalExpressionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "IdenticalExpression";
 
     @Override

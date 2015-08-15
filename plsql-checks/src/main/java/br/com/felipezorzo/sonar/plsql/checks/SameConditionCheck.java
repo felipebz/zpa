@@ -42,7 +42,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class SameConditionCheck extends BaseCheck {
+public class SameConditionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "SameCondition";
 
     @Override

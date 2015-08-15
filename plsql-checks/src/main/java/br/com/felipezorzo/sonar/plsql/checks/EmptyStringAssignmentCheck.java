@@ -37,7 +37,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.UNDERSTANDABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class EmptyStringAssignmentCheck extends BaseCheck {
+public class EmptyStringAssignmentCheck extends AbstractBaseCheck {
     
     public static final String CHECK_KEY = "EmptyStringAssignment";
     

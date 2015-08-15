@@ -38,7 +38,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("1min")
 @ActivatedByDefault
-public class DeclareSectionWithoutDeclarationsCheck extends BaseCheck {
+public class DeclareSectionWithoutDeclarationsCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DeclareSectionWithoutDeclarations";
     
     @Override

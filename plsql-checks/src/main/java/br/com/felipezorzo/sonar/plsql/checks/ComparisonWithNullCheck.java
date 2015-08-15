@@ -41,7 +41,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class ComparisonWithNullCheck extends BaseCheck {
+public class ComparisonWithNullCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ComparisonWithNull";
 
     @Override

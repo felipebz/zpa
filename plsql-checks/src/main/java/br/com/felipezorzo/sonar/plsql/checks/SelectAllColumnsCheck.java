@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.INSTRUCTION_RELIABILITY)
 @SqaleConstantRemediation("30min")
 @ActivatedByDefault
-public class SelectAllColumnsCheck extends BaseCheck {
+public class SelectAllColumnsCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "SelectAllColumns";
 

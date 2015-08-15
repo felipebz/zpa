@@ -42,7 +42,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class DuplicatedValueInInCheck extends BaseCheck {
+public class DuplicatedValueInInCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DuplicatedValueInIn";
 
     @Override

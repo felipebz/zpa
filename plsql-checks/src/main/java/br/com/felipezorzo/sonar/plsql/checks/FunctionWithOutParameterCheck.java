@@ -38,7 +38,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.UNDERSTANDABILITY)
 @SqaleConstantRemediation("1h")
 @ActivatedByDefault
-public class FunctionWithOutParameterCheck extends BaseCheck {
+public class FunctionWithOutParameterCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "FunctionWithOutParameter";
 
     @Override

@@ -24,9 +24,9 @@ import java.util.List;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
-import br.com.felipezorzo.sonar.plsql.checks.BaseCheck;
+import br.com.felipezorzo.sonar.plsql.checks.AbstractBaseCheck;
 
-public abstract class BaseMethodCallChecker extends BaseCheck {
+public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
     
     private AstNode currentNode;
     

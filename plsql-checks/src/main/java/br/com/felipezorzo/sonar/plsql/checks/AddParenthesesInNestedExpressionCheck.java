@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class AddParenthesesInNestedExpressionCheck extends BaseCheck {
+public class AddParenthesesInNestedExpressionCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "AddParenthesesInNestedExpression";
 

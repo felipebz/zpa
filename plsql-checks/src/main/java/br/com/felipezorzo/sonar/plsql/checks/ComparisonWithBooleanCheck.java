@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault   
-public class ComparisonWithBooleanCheck extends BaseCheck {
+public class ComparisonWithBooleanCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ComparisonWithBoolean";
 
     @Override

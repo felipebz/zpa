@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class EmptyBlockCheck extends BaseCheck {
+public class EmptyBlockCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "EmptyBlock";
     
     @Override

@@ -39,7 +39,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("20min")
 @ActivatedByDefault
-public class SelectWithRownumAndOrderByCheck extends BaseCheck {
+public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "SelectWithRownumAndOrderBy";
 

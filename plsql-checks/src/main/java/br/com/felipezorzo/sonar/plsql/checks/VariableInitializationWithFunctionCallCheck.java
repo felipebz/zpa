@@ -37,7 +37,7 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.INSTRUCTION_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class VariableInitializationWithFunctionCallCheck extends BaseCheck {
+public class VariableInitializationWithFunctionCallCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableInitializationWithFunctionCall";
     
     @Override
