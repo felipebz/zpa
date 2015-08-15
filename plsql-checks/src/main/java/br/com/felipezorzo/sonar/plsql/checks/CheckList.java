@@ -61,6 +61,7 @@ public class CheckList {
             FunctionWithOutParameterCheck.class,
             SameConditionCheck.class,
             AddParenthesesInNestedExpressionCheck.class,
-            RaiseStandardExceptionCheck.class);
+            RaiseStandardExceptionCheck.class,
+            NotFoundCheck.class);
     }
 }
