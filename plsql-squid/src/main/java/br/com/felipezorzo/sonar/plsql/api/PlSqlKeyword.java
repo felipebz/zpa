@@ -265,7 +265,10 @@ public enum PlSqlKeyword implements TokenType {
     JOIN("join"),
     ROWNUM("rownum"),
     LEVEL("level"),
-    SYSDATE("sysdate");
+    SYSDATE("sysdate"),
+    READ("read"),
+    ONLY("only"),
+    CONSTRAINT("constraint");
 
     private final String value;
     private final boolean reserved;

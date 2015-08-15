@@ -171,6 +171,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_FUNCTION,
     CREATE_PACKAGE,
     CREATE_PACKAGE_BODY,
+    VIEW_RESTRICTION_CLAUSE,
+    CREATE_VIEW,
     
     // SQL Plus commands
     SQLPLUS_COMMAND,
@@ -855,6 +857,23 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         BLOCK_STATEMENT,
                         b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
+        b.rule(VIEW_RESTRICTION_CLAUSE).is(
+                WITH, b.firstOf(
+                        b.sequence(READ, ONLY),
+                        b.sequence(CHECK, OPTION, b.optional(CONSTRAINT, IDENTIFIER_NAME))
+                        )
+                );
+                
+        // http://docs.oracle.com/cd/B28359_01/server.111/b28286/statements_8004.htm
+        b.rule(CREATE_VIEW).is(
+                CREATE, b.optional(OR, REPLACE), b.optional(b.optional(NO), FORCE),
+                VIEW, UNIT_NAME,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                AS,
+                SELECT_EXPRESSION,
+                b.optional(VIEW_RESTRICTION_CLAUSE),
+                SEMICOLON);
+        
         b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
         
         b.rule(COMPILATION_UNIT).is(b.firstOf(
@@ -862,7 +881,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_PROCEDURE, 
                 CREATE_FUNCTION, 
                 CREATE_PACKAGE,
-                CREATE_PACKAGE_BODY));
+                CREATE_PACKAGE_BODY,
+                CREATE_VIEW));
     }
     
     private static void createSqlPlusCommands(LexerfulGrammarBuilder b) {

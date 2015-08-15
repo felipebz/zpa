@@ -19,6 +19,7 @@
  */
 package br.com.felipezorzo.sonar.plsql.api;
 
+import org.apache.commons.lang.StringUtils;
 import org.sonar.sslr.grammar.GrammarRuleKey;
 
 import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
@@ -33,5 +34,9 @@ public class RuleTest {
 
     protected void setRootRule(GrammarRuleKey ruleKey) {
         p.setRootRule(p.getGrammar().rule(ruleKey));
+    }
+    
+    protected static String lines(String... lines) {
+        return StringUtils.join(lines, '\n');
     }
 }
