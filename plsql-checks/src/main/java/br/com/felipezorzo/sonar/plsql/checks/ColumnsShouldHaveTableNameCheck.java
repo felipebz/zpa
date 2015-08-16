@@ -48,7 +48,7 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        AstNode candidate = node.getFirstChild();
+        AstNode candidate = node.getFirstChild().getFirstChild();
         
         AstNode selectExpression = node.getParent();
         if (selectExpression.getChildren(PlSqlGrammar.FROM_CLAUSE).size() == 1) return;

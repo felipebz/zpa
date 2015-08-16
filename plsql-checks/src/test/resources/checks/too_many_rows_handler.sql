@@ -37,4 +37,6 @@ exception
     null;
   when pkg.error then
     var := null;
+  when others then
+    null;
 end;

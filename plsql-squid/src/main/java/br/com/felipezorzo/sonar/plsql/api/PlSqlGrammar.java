@@ -547,7 +547,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, SQL, MULTIPLICATION)).skipIfOneChild();
+                b.firstOf(LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, SQL, MULTIPLICATION));
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,
