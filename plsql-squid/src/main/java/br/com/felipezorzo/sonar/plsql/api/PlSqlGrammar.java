@@ -800,6 +800,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 SERIALLY_REUSABLE_PRAGMA));
         
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
+                PRAGMA_DECLARATION,
                 VARIABLE_DECLARATION,
                 PROCEDURE_DECLARATION,
                 FUNCTION_DECLARATION,
@@ -807,8 +808,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CURSOR_DECLARATION,
                 RECORD_DECLARATION,
                 TABLE_OF_DECLARATION,
-                REF_CURSOR_DECLARATION,
-                PRAGMA_DECLARATION)));
+                REF_CURSOR_DECLARATION)));
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
