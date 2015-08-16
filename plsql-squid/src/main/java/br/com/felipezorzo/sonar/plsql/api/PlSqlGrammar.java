@@ -108,6 +108,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Statements
     LABEL,
+    STATEMENTS_SECTION,
     BLOCK_STATEMENT,
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
@@ -294,13 +295,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(LABEL).is(LLABEL, IDENTIFIER_NAME, RLABEL);
         
-        b.rule(BLOCK_STATEMENT).is(
-                b.optional(LABEL),
-                b.optional(DECLARE, b.zeroOrMore(DECLARE_SECTION)),
+        b.rule(STATEMENTS_SECTION).is(
                 BEGIN,
                 b.oneOrMore(STATEMENT),
                 b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), 
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        
+        b.rule(BLOCK_STATEMENT).is(
+                b.optional(LABEL),
+                b.optional(DECLARE, b.zeroOrMore(DECLARE_SECTION)),
+                STATEMENTS_SECTION);
         
         b.rule(ASSIGNMENT_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
         
@@ -730,7 +734,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 b.firstOf(
                         SEMICOLON,
-                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
+                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), STATEMENTS_SECTION))
                 );
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/function.htm
@@ -740,7 +744,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED)),
                 b.firstOf(
                         SEMICOLON,
-                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT))
+                        b.sequence(b.firstOf(IS, AS), b.zeroOrMore(DECLARE_SECTION), STATEMENTS_SECTION))
                 );
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
@@ -820,7 +824,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), STATEMENTS_SECTION),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
                         b.sequence(EXTERNAL, SEMICOLON))
                 );
@@ -834,7 +838,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.zeroOrMore(DECLARE_SECTION), BLOCK_STATEMENT),
+                        b.sequence(b.zeroOrMore(DECLARE_SECTION), STATEMENTS_SECTION),
                         b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
                 );
         
@@ -854,7 +858,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.zeroOrMore(DECLARE_SECTION),
                 b.firstOf(
-                        BLOCK_STATEMENT,
+                        STATEMENTS_SECTION,
                         b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)));
         
         b.rule(VIEW_RESTRICTION_CLAUSE).is(

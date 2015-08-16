@@ -44,7 +44,7 @@ public class EmptyBlockCheck extends AbstractBaseCheck {
     
     @Override
     public void init() {
-      subscribeTo(PlSqlGrammar.BLOCK_STATEMENT);
+      subscribeTo(PlSqlGrammar.STATEMENTS_SECTION);
     }
     
     @Override
