@@ -117,6 +117,11 @@ public class SelectExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesSelectWithIntersect() {
+        assertThat(p).matches("(select 1 from dual) intersect (select 2 from dual)");
+    }
+    
+    @Test
     public void matchesSelectCountDistinct() {
         assertThat(p).matches("select count(distinct foo) from dual");
     }
