@@ -41,6 +41,11 @@ public class CreateViewTest extends RuleTest {
     }
     
     @Test
+    public void matchesSimpleViewWithoutSemicolon() {
+        assertThat(p).matches("create view foo as select 1 from dual");
+    }
+    
+    @Test
     public void matchesSimpleCreateOrReplaceView() {
         assertThat(p).matches("create or replace view foo as select 1 from dual;");
     }

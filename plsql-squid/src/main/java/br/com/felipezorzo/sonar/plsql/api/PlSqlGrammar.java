@@ -876,7 +876,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 AS,
                 SELECT_EXPRESSION,
                 b.optional(VIEW_RESTRICTION_CLAUSE),
-                SEMICOLON);
+                b.optional(SEMICOLON));
         
         b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
         
