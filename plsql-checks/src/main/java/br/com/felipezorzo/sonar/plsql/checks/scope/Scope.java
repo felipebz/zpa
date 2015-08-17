@@ -48,19 +48,25 @@ public class Scope {
     public Map<String, Variable> getLocalVariables() {
         return localVariables;
     }
-
-    public void useVariable(AstNode node) {
-        
+    
+    public Variable getVariableDeclaration(AstNode node) {
         String variableName = node.getTokenOriginalValue().toUpperCase();
         
         Scope scope = this;
         while (scope != null) {
             Map<String, Variable> variables = scope.getLocalVariables();
             if (variables.containsKey(variableName)) {
-                variables.get(variableName).increaseUsage();
-                return;
+                return variables.get(variableName);
             }
             scope = scope.outerScope;
+        }
+        return null;
+    }
+
+    public void useVariable(AstNode node) {
+        Variable variable = getVariableDeclaration(node);
+        if (variable != null) {
+            variable.increaseUsage();
         }
     }
 

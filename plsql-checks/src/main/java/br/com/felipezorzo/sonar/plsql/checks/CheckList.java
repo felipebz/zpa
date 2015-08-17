@@ -64,6 +64,7 @@ public class CheckList {
             RaiseStandardExceptionCheck.class,
             NotFoundCheck.class,
             QueryWithoutExceptionHandlingCheck.class,
-            UnusedVariableCheck.class);
+            UnusedVariableCheck.class,
+            VariableHidingCheck.class);
     }
 }
