@@ -104,6 +104,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CONNECT_BY_CLAUSE,
     START_WITH_CLAUSE,
     HIERARCHICAL_QUERY_CLAUSE,
+    SUBQUERY_FACTORING_CLAUSE,
     SELECT_EXPRESSION,
     
     // Statements
@@ -527,7 +528,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.sequence(CONNECT_BY_CLAUSE, b.optional(START_WITH_CLAUSE)),
                 b.sequence(START_WITH_CLAUSE, CONNECT_BY_CLAUSE)));
         
+        b.rule(SUBQUERY_FACTORING_CLAUSE).is(
+                WITH,
+                b.oneOrMore(IDENTIFIER_NAME, AS, LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(COMMA)));
+        
         b.rule(SELECT_EXPRESSION).is(
+                b.optional(SUBQUERY_FACTORING_CLAUSE),
                 b.firstOf(
                     b.sequence(
                             SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),

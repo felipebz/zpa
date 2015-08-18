@@ -137,5 +137,10 @@ public class SelectExpressionTest extends RuleTest {
     public void matchesSelectWithAnsiJoin() {
         assertThat(p).matches("select 1 from foo join bar on join.id = bar.id");
     }
+    
+    @Test
+    public void matchesSelectWithSubqueryFactoring() {
+        assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id");
+    }
 
 }
