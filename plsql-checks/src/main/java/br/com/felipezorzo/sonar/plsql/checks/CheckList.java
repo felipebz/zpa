@@ -65,6 +65,7 @@ public class CheckList {
             NotFoundCheck.class,
             QueryWithoutExceptionHandlingCheck.class,
             UnusedVariableCheck.class,
-            VariableHidingCheck.class);
+            VariableHidingCheck.class,
+            DbmsOutputPutCheck.class);
     }
 }
