@@ -45,8 +45,18 @@ public class ExecuteImmediateStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesExecuteImmediateBulkCollectIntoVariable() {
+        assertThat(p).matches("execute immediate 'command' bulk collect into var;");
+    }
+    
+    @Test
     public void matchesExecuteImmediateIntoMultipleVariables() {
         assertThat(p).matches("execute immediate 'command' into var, var2;");
+    }
+    
+    @Test
+    public void matchesExecuteImmediateBulkCollectIntoMultipleVariables() {
+        assertThat(p).matches("execute immediate 'command' bulk collect into var, var2;");
     }
     
     @Test
