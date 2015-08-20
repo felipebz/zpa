@@ -180,6 +180,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SQLPLUS_COMMAND,
     SQLPLUS_SHOW,
     
+    // DDL
+    DDL_COMMENT,
+    DDL_COMMAND,
+    
     // Top-level components
     FILE_INPUT;
 
@@ -194,6 +198,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 COMPILATION_UNIT,
                 SQLPLUS_COMMAND,
+                DDL_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -204,6 +209,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createDeclarations(b);
         createProgramUnits(b);
         createSqlPlusCommands(b);
+        createDdlCommands(b);
         
         b.setRootRule(FILE_INPUT);
         b.buildWithMemoizationOfMatchesForAllRules();
@@ -899,5 +905,29 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(SQLPLUS_SHOW).is(SHOW, b.tillNewLine());
         
         b.rule(SQLPLUS_COMMAND).is(SQLPLUS_SHOW);
+    }
+    
+    private static void createDdlCommands(LexerfulGrammarBuilder b) {
+        b.rule(DDL_COMMENT).is(
+                COMMENT, ON,
+                b.firstOf(
+                        b.sequence(
+                                COLUMN,
+                                IDENTIFIER_NAME, 
+                                b.optional(DOT, IDENTIFIER_NAME), 
+                                b.optional(DOT, IDENTIFIER_NAME)),
+                        b.sequence(
+                                b.firstOf(
+                                        TABLE,
+                                        COLUMN,
+                                        OPERATOR,
+                                        INDEXTYPE,
+                                        b.sequence(MATERIALIZED, VIEW),
+                                        b.sequence(MINING, MODEL)),
+                                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+                        ),
+                IS, CHARACTER_LITERAL, b.optional(SEMICOLON));
+        
+        b.rule(DDL_COMMAND).is(DDL_COMMENT);
     }
 }

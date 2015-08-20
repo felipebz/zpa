@@ -268,7 +268,13 @@ public enum PlSqlKeyword implements TokenType {
     SYSDATE("sysdate"),
     READ("read"),
     ONLY("only"),
-    CONSTRAINT("constraint");
+    CONSTRAINT("constraint"),
+    COLUMN("column"),
+    OPERATOR("operator"),
+    INDEXTYPE("indextype"),
+    MATERIALIZED("materialized"),
+    MINING("mining"),
+    MODEL("model");
 
     private final String value;
     private final boolean reserved;
