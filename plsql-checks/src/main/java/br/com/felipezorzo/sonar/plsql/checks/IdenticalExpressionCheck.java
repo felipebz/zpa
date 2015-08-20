@@ -48,15 +48,14 @@ public class IdenticalExpressionCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-    	AstNode operator = node.getFirstChild(PlSqlGrammar.RELATIONAL_OPERATOR);
-    	if (operator == null) return;
-    	
-    	AstNode leftSide = node.getFirstChild();
-    	AstNode rightSide = node.getLastChild();
-    	
-    	if (CheckUtils.equalNodes(leftSide, rightSide)) {
-    		getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, operator.getTokenValue());
-    	}
-    }
+        AstNode operator = node.getFirstChild(PlSqlGrammar.RELATIONAL_OPERATOR);
+        if (operator != null) {
+            AstNode leftSide = node.getFirstChild();
+            AstNode rightSide = node.getLastChild();
 
+            if (CheckUtils.equalNodes(leftSide, rightSide)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, operator.getTokenValue());
+            }
+        }
+    }
 }

@@ -44,8 +44,8 @@ import br.com.felipezorzo.sonar.plsql.checks.common.BaseMethodCallChecker;
 @ActivatedByDefault
 public class DbmsOutputPutCheck extends BaseMethodCallChecker {
     public static final String CHECK_KEY = "DbmsOutputPut";
-    private static final String dbmsOutput = "DBMS_OUTPUT";
-    private static final List<String> procedures = ImmutableList.of("PUT", "PUT_LINE");
+    private static final String DBMS_OUTPUT = "DBMS_OUTPUT";
+    private static final List<String> PROCEDURES = ImmutableList.of("PUT", "PUT_LINE");
 
     @Override
     protected boolean isMethod(AstNode identifier) {
@@ -55,7 +55,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
                 members = Lists.reverse(members);
                 String methodName = members.get(0).getTokenOriginalValue().toUpperCase();
                 String packageName = members.get(1).getTokenOriginalValue();
-                if (dbmsOutput.equalsIgnoreCase(packageName) && procedures.contains(methodName)) {
+                if (DBMS_OUTPUT.equalsIgnoreCase(packageName) && PROCEDURES.contains(methodName)) {
                     getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), getCurrentNode());
                 }
             }
@@ -65,7 +65,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
 
     @Override
     protected void checkArguments(List<AstNode> arguments) {
-        
+        // not used
     }
 
 }

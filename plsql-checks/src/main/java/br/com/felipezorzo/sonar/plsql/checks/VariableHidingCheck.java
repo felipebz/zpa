@@ -78,20 +78,16 @@ public class VariableHidingCheck extends AbstractBaseCheck {
                 getCurrentScope().declareLocalVariable(identifier, 1);
             }
             
-        } else if (!scopes.isEmpty()) {
-
-            if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
-                AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-                
-                Variable variable = getCurrentScope().getVariableDeclaration(identifier);
-                if (variable != null) {
-                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY),
-                            identifier, identifier.getTokenOriginalValue(), variable.getDeclaration().getTokenLine());
-                }
-                
-                getCurrentScope().declareLocalVariable(identifier);
+        } else if (!scopes.isEmpty() && node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
+            AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+            
+            Variable variable = getCurrentScope().getVariableDeclaration(identifier);
+            if (variable != null) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY),
+                        identifier, identifier.getTokenOriginalValue(), variable.getDeclaration().getTokenLine());
             }
             
+            getCurrentScope().declareLocalVariable(identifier);
         }
     }
     

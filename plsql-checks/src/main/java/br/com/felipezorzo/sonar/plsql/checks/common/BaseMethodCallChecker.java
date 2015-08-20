@@ -48,13 +48,13 @@ public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
             identifier = identifier.getFirstChild();
         }
         
-        if (!isMethod(identifier)) return;
-        
-        AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
-        if (arguments == null) return;
-        
-        List<AstNode> allArguments = arguments.getChildren(PlSqlGrammar.ARGUMENT);
-        checkArguments(allArguments);
+        if (isMethod(identifier)) {
+            AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
+            if (arguments != null) {
+                List<AstNode> allArguments = arguments.getChildren(PlSqlGrammar.ARGUMENT);
+                checkArguments(allArguments);
+            }
+        }
     }
     
     protected abstract boolean isMethod(AstNode identifier);

@@ -29,7 +29,7 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.Token;
 
-public class PlSqlLinesOfCodeVisitor<T> extends SquidAstVisitor<Grammar> implements AstAndTokenVisitor {
+public class PlSqlLinesOfCodeVisitor extends SquidAstVisitor<Grammar> implements AstAndTokenVisitor {
 
     private final MetricDef metric;
     private int lastTokenLine;

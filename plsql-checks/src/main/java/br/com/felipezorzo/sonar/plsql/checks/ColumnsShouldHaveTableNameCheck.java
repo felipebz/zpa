@@ -51,9 +51,9 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
         AstNode candidate = node.getFirstChild().getFirstChild();
         
         AstNode selectExpression = node.getParent();
-        if (selectExpression.getChildren(PlSqlGrammar.FROM_CLAUSE).size() == 1) return;
-        
-        if (candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
+        if (selectExpression.getChildren(PlSqlGrammar.FROM_CLAUSE).size() > 1 &&
+                candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
+                !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
             getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), candidate);
         }
     }

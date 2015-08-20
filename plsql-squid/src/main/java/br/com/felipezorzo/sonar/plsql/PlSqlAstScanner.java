@@ -93,7 +93,7 @@ public class PlSqlAstScanner {
     
     private static void setMetrics(PlSqlConfiguration conf, Builder<Grammar> builder) {
         builder.withSquidAstVisitor(new LinesVisitor<>(PlSqlMetric.LINES));
-        builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor<Grammar>(PlSqlMetric.LINES_OF_CODE));
+        builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor(PlSqlMetric.LINES_OF_CODE));
         builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
                 .withNoSonar(true)
                 .withIgnoreHeaderComment(conf.getIgnoreHeaderComments())

@@ -41,22 +41,21 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 @ActivatedByDefault
 public class EmptyBlockCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "EmptyBlock";
-    
+
     @Override
     public void init() {
-      subscribeTo(PlSqlGrammar.STATEMENTS_SECTION);
+        subscribeTo(PlSqlGrammar.STATEMENTS_SECTION);
     }
-    
+
     @Override
     public void visitNode(AstNode suiteNode) {
-      
-      AstSelect suite = suiteNode.select();
-      AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENT);
-      if (stmtLists.size() != 1) return;
-      
-      AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
-      if (nullStatementSelect.isEmpty()) return;
-      
-      getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), stmtLists.get(0));
+        AstSelect suite = suiteNode.select();
+        AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENT);
+        if (stmtLists.size() == 1) {
+            AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
+            if (!nullStatementSelect.isEmpty()) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), stmtLists.get(0));
+            }
+        }
     }
 }

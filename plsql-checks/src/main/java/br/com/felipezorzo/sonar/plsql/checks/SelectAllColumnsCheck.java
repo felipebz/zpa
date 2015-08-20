@@ -50,20 +50,20 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        if (node.getParent().getParent().is(PlSqlGrammar.EXISTS_EXPRESSION)) return;
-        
-        AstNode candidate = node.getFirstChild();
-        
-        if (candidate.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
-            candidate = candidate.getFirstChild();
-        }
-        
-        if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
-            candidate = candidate.getLastChild().getFirstChild();
-        }
-        
-        if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), candidate);
+        if (!node.getParent().getParent().is(PlSqlGrammar.EXISTS_EXPRESSION)) {
+            AstNode candidate = node.getFirstChild();
+            
+            if (candidate.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
+                candidate = candidate.getFirstChild();
+            }
+            
+            if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
+                candidate = candidate.getLastChild().getFirstChild();
+            }
+            
+            if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), candidate);
+            }
         }
     }
     

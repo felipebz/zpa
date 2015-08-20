@@ -29,48 +29,48 @@ public class CheckUtils {
 
     private CheckUtils() {
     }
-    
+
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
         AstNode literal = node.getFirstChild(PlSqlGrammar.LITERAL);
-        
+
         if (literal != null) {
             if (literal.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) {
                 return true;
             }
-            
+
             if (isEmptyString(literal)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     public static boolean isEmptyString(AstNode node) {
         AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
         if (characterLiteral != null && "''".equals(characterLiteral.getTokenValue())) {
             return true;
         }
-        
+
         return false;
     }
-    
-    public static boolean equalNodes(AstNode node1, AstNode node2){
-    	if (!node1.getType().equals(node2.getType()) || node1.getNumberOfChildren() != node2.getNumberOfChildren()){
-    		return false;
-    	}
 
-    	if (node1.getNumberOfChildren() == 0) {
-    		return node1.getToken().getValue().equals(node2.getToken().getValue());
-    	}
+    public static boolean equalNodes(AstNode node1, AstNode node2) {
+        if (!node1.getType().equals(node2.getType()) || node1.getNumberOfChildren() != node2.getNumberOfChildren()) {
+            return false;
+        }
 
-    	List<AstNode> children1 = node1.getChildren();
-    	List<AstNode> children2 = node2.getChildren();
-    	for (int i = 0; i < children1.size(); i++){
-    		if (!equalNodes(children1.get(i), children2.get(i))){
-    			return false;
-    		}
-    	}
-    	return true;
+        if (node1.getNumberOfChildren() == 0) {
+            return node1.getToken().getValue().equals(node2.getToken().getValue());
+        }
+
+        List<AstNode> children1 = node1.getChildren();
+        List<AstNode> children2 = node2.getChildren();
+        for (int i = 0; i < children1.size(); i++) {
+            if (!equalNodes(children1.get(i), children2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

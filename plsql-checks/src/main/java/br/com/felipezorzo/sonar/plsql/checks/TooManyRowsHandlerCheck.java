@@ -56,17 +56,15 @@ public class TooManyRowsHandlerCheck extends AbstractBaseCheck {
             exceptionName = exceptionName.getFirstChild();
         }
         
-        if (!exceptionName.is(PlSqlGrammar.IDENTIFIER_NAME)) return;  
-        if (!"TOO_MANY_ROWS".equalsIgnoreCase(exceptionName.getTokenValue())) return;
-    
-        // and have only one NULL_STATEMENT
-        List<AstNode> children = node.getChildren(PlSqlGrammar.STATEMENT);
-        if (children.size() > 1) return;
-        if (children.get(0).getFirstChild().is(PlSqlGrammar.NULL_STATEMENT)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+        if (exceptionName.is(PlSqlGrammar.IDENTIFIER_NAME) && 
+                "TOO_MANY_ROWS".equalsIgnoreCase(exceptionName.getTokenValue())) {
+            // and have only one NULL_STATEMENT
+            List<AstNode> children = node.getChildren(PlSqlGrammar.STATEMENT);
+            if (children.size() == 1 && children.get(0).getFirstChild().is(PlSqlGrammar.NULL_STATEMENT)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            }
+            
         }
-        
-        
     }
 }
 
