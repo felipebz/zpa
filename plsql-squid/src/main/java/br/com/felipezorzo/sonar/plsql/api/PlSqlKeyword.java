@@ -274,7 +274,13 @@ public enum PlSqlKeyword implements TokenType {
     INDEXTYPE("indextype"),
     MATERIALIZED("materialized"),
     MINING("mining"),
-    MODEL("model");
+    MODEL("model"),
+    INNER("inner"),
+    FULL("full"),
+    LEFT("left"),
+    RIGHT("right"),
+    OUTER("outer"),
+    CROSS("cross");
 
     private final String value;
     private final boolean reserved;

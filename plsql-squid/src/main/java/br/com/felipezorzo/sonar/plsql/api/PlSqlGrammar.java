@@ -91,6 +91,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
     ANALYTIC_CLAUSE,
+    ON_OR_USING_EXPRESSION,
+    INNER_CROSS_JOIN_CLAUSE,
+    OUTER_JOIN_TYPE,
+    QUERY_PARTITION_CLAUSE,
+    OUTER_JOIN_CLAUSE,
     JOIN_CLAUSE,
     SELECT_COLUMN,
     FROM_CLAUSE,
@@ -495,7 +500,37 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
                 RPARENTHESIS);
         
-        b.rule(JOIN_CLAUSE).is(OBJECT_REFERENCE, b.oneOrMore(JOIN, OBJECT_REFERENCE, ON, EXPRESSION));
+        b.rule(ON_OR_USING_EXPRESSION).is(
+                b.firstOf(
+                        b.sequence(ON, EXPRESSION),
+                        b.sequence(USING, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)));
+        
+        b.rule(OUTER_JOIN_TYPE).is(b.firstOf(FULL, LEFT, RIGHT), b.optional(OUTER));
+        
+        b.rule(QUERY_PARTITION_CLAUSE).is(
+                PARTITION, BY,
+                b.firstOf(
+                        b.sequence(IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER)),
+                        b.sequence(LPARENTHESIS, IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER), RPARENTHESIS)));
+        
+        b.rule(INNER_CROSS_JOIN_CLAUSE).is(b.firstOf(
+                b.sequence(b.optional(INNER), JOIN, OBJECT_REFERENCE, ON_OR_USING_EXPRESSION),
+                b.sequence(
+                        b.firstOf(
+                                CROSS,
+                                b.sequence(NATURAL, b.optional(INNER))),
+                        JOIN, OBJECT_REFERENCE)
+                ));
+        
+        b.rule(OUTER_JOIN_CLAUSE).is(
+                b.optional(QUERY_PARTITION_CLAUSE),
+                b.firstOf(
+                        b.sequence(OUTER_JOIN_TYPE, JOIN),
+                        b.sequence(NATURAL, b.optional(OUTER_JOIN_TYPE), JOIN)),
+                OBJECT_REFERENCE, b.optional(QUERY_PARTITION_CLAUSE),
+                b.optional(ON_OR_USING_EXPRESSION));
+        
+        b.rule(JOIN_CLAUSE).is(OBJECT_REFERENCE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
         
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
