@@ -17,7 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package br.com.felipezorzo.sonar.plsql.api.declarations;
+package br.com.felipezorzo.sonar.plsql.api.ddl;
 
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
