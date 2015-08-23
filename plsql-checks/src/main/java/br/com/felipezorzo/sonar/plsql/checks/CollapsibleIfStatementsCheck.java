@@ -32,7 +32,6 @@ import org.sonar.sslr.ast.AstSelect;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
-import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 
 @Rule(
     key = CollapsibleIfStatementsCheck.CHECK_KEY,
@@ -54,13 +53,13 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         AstNode singleIfChild = singleIfChild(node);
-        if (singleIfChild != null && !hasElseOrElif(singleIfChild)) {
+        if (singleIfChild != null && !hasElseOrElsif(node) && !hasElseOrElsif(singleIfChild)) {
             getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), singleIfChild);
         }
     }
 
-    private boolean hasElseOrElif(AstNode ifNode) {
-        return ifNode.hasDirectChildren(PlSqlKeyword.ELSIF) || ifNode.hasDirectChildren(PlSqlKeyword.ELSE);
+    private boolean hasElseOrElsif(AstNode ifNode) {
+        return ifNode.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE);
     }
 
     private AstNode singleIfChild(AstNode suite) {

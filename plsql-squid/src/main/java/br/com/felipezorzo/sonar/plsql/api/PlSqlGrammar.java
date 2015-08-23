@@ -118,6 +118,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     BLOCK_STATEMENT,
     NULL_STATEMENT,
     ASSIGNMENT_STATEMENT,
+    ELSIF_CLAUSE,
+    ELSE_CLAUSE,
     IF_STATEMENT,
     LOOP_STATEMENT,
     EXIT_STATEMENT,
@@ -320,12 +322,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ASSIGNMENT_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
         
+        b.rule(ELSIF_CLAUSE).is(ELSIF, EXPRESSION, THEN, b.oneOrMore(STATEMENT));
+        
+        b.rule(ELSE_CLAUSE).is(ELSE, b.oneOrMore(STATEMENT));
+        
         b.rule(IF_STATEMENT).is(
                 b.optional(LABEL),
                 IF, EXPRESSION, THEN,
                 b.oneOrMore(STATEMENT),
-                b.zeroOrMore(ELSIF, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
-                b.optional(ELSE, b.oneOrMore(STATEMENT)),
+                b.zeroOrMore(ELSIF_CLAUSE),
+                b.optional(ELSE_CLAUSE),
                 END, IF, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(LOOP_STATEMENT).is(b.optional(LABEL), LOOP, b.oneOrMore(STATEMENT), END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
