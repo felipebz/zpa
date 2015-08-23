@@ -50,13 +50,19 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        if (!node.hasDirectChildren(PlSqlGrammar.ORDER_BY_CLAUSE)) return;
+        if (!hasOrderByClause(node)) {
+            return;
+        }
         
         AstSelect whereClause = node.select().children(PlSqlGrammar.WHERE_CLAUSE);
-        if (whereClause.isEmpty()) return;
+        if (whereClause.isEmpty()) {
+            return;
+        }
         
-        AstSelect whereComparisonConditions = node.select().descendants(PlSqlGrammar.COMPARISON_EXPRESSION);
-        if (whereComparisonConditions.isEmpty()) return;
+        AstSelect whereComparisonConditions = whereClause.descendants(PlSqlGrammar.COMPARISON_EXPRESSION);
+        if (whereComparisonConditions.isEmpty()) {
+            return;
+        }
         
         for (AstNode comparison : whereComparisonConditions) {
             AstSelect children = comparison.select().children(PlSqlGrammar.PRIMARY_EXPRESSION);
@@ -66,6 +72,10 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
                 }
             }
         }
+    }
+
+    private boolean hasOrderByClause(AstNode node) {
+        return node.hasDirectChildren(PlSqlGrammar.ORDER_BY_CLAUSE);
     }
 
 }

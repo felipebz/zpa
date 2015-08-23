@@ -30,7 +30,13 @@ create package body test is
   procedure test is
     var number; -- violation
   begin
-    null;
+    for i in 1..10 loop
+      declare
+        i number;
+      begin
+        null;
+      end;
+    end loop;
   end;
 end;
 /

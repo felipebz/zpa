@@ -47,55 +47,61 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
     public void init() {
         subscribeTo(PlSqlGrammar.IF_STATEMENT);
     }
-    
+
     @Override
     public void visitNode(AstNode node) {
-    	if (!hasElsif(node) && hasElse(node)) {
-    		AstNode firstBoolean = getBooleanValue(node);
-    		AstNode secondBoolean = getBooleanValue(node.getFirstChild(PlSqlGrammar.ELSE_CLAUSE));
-    		
-    		if (firstBoolean != null && secondBoolean != null && !firstBoolean.getTokenValue().equals(secondBoolean.getTokenValue())) {
-    		  getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
-    		}
-    	}
+        if (!hasElsif(node) && hasElse(node)) {
+            AstNode firstBoolean = getBooleanValue(node);
+            AstNode secondBoolean = getBooleanValue(node.getFirstChild(PlSqlGrammar.ELSE_CLAUSE));
+
+            if (firstBoolean != null && secondBoolean != null
+                    && !firstBoolean.getTokenValue().equals(secondBoolean.getTokenValue())) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            }
+        }
     }
-    
+
     public boolean hasElsif(AstNode node) {
-    	return node.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE);
+        return node.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE);
     }
-    
+
     public boolean hasElse(AstNode node) {
-    	return node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE);
+        return node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE);
     }
-    
+
     public AstNode getBooleanValue(AstNode node) {
-    	return extractBooleanValueFromReturn(getStatementFrom(node));
+        return extractBooleanValueFromReturn(getStatementFrom(node));
     }
-    
+
     public AstNode getStatementFrom(AstNode node) {
-    	List<AstNode> statements = node.getChildren(PlSqlGrammar.STATEMENT);
-    	if (statements.size() == 1) {
-    		return statements.get(0);
-    	}
-    	return null;
+        List<AstNode> statements = node.getChildren(PlSqlGrammar.STATEMENT);
+        if (statements.size() == 1) {
+            return statements.get(0);
+        }
+        return null;
     }
-    
+
     public AstNode extractBooleanValueFromReturn(AstNode node) {
-    	if (node != null) {
-	    	AstNode child = node.getFirstChild();
-	    	if (child.is(PlSqlGrammar.RETURN_STATEMENT)) {
-	    		AstNode expression = child.getFirstChild(PlSqlGrammar.PRIMARY_EXPRESSION);
-	    		
-	    		if (expression != null) {
-		    		AstNode literal = expression.getFirstChild(PlSqlGrammar.LITERAL);
-		
-		            if (literal != null) {
-		            	return literal.getFirstChild(PlSqlGrammar.BOOLEAN_LITERAL);
-		            }
-	    		}
-	    	}
-    	}
-    	return null;
+        if (node != null) {
+            AstNode child = node.getFirstChild();
+            if (child.is(PlSqlGrammar.RETURN_STATEMENT)) {
+                AstNode expression = child.getFirstChild(PlSqlGrammar.PRIMARY_EXPRESSION);
+
+                return getBooleanLiteral(expression);
+            }
+        }
+        return null;
+    }
+
+    public AstNode getBooleanLiteral(AstNode expression) {
+        if (expression != null) {
+            AstNode literal = expression.getFirstChild(PlSqlGrammar.LITERAL);
+
+            if (literal != null) {
+                return literal.getFirstChild(PlSqlGrammar.BOOLEAN_LITERAL);
+            }
+        }
+        return null;
     }
 
 }

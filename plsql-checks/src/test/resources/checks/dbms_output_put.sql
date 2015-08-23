@@ -4,4 +4,5 @@ begin
   sys.dbms_output.put_line('x'); -- violation
   
   my_output.put_line('x');
+  put_line('x');
 end;

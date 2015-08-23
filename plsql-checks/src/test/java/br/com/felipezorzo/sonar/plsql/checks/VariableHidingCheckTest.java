@@ -34,6 +34,7 @@ public class VariableHidingCheckTest extends BaseCheckTest {
             .next().atLine(13).withMessage(String.format(message, "var2", 3))
             .next().atLine(20).withMessage(String.format(message, "var3", 4))
             .next().atLine(31).withMessage(String.format(message, "var", 28))
+            .next().atLine(35).withMessage(String.format(message, "i", 33))
             .noMore();
     }
     
