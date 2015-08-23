@@ -1,0 +1,19 @@
+<p>
+Return of boolean literal statements wrapped into IF-THEN-ELSE ones should be simplified.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+IF expression THEN
+  RETURN TRUE;
+ELSE
+  RETURN FALSE;
+END IF;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+RETURN expression;
+</pre>
