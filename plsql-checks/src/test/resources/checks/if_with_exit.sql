@@ -13,6 +13,18 @@ begin
     foo := bar;
   end if;
   
+  if (x = y) then
+    exit; -- ok
+  elsif (x = z) then
+    null;
+  end if;
+  
+  if (x = y) then
+    exit; -- ok
+  else
+    null;
+  end if;
+  
   loop
     exit; -- ok
   end loop;

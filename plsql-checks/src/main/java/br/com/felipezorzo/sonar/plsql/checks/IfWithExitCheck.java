@@ -29,7 +29,6 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
-import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 
 @Rule(
     key = IfWithExitCheck.CHECK_KEY,
@@ -52,7 +51,7 @@ public class IfWithExitCheck extends AbstractBaseCheck {
         AstNode statement = node.getParent();
         AstNode ifStatement = statement.getParent();
         if (ifStatement.is(PlSqlGrammar.IF_STATEMENT) &&
-            !ifStatement.hasDirectChildren(PlSqlKeyword.ELSIF, PlSqlKeyword.ELSE) &&
+            !ifStatement.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE) &&
             ifStatement.getChildren(PlSqlGrammar.STATEMENT).size() == 1) {
             getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
