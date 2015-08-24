@@ -1,0 +1,27 @@
+<p>
+Quando a cláusula IF de uma estrutura IF-THEN-ELSE não completa normalmente, a cláusa ELSE é desnecessária.  
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+BEGIN
+  IF condition THEN
+    RETURN value;
+  ELSE
+    value := NULL;
+  END IF;
+END;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+BEGIN
+  IF condition THEN
+    RETURN value;
+  END IF;
+  
+  value := NULL;
+END;
+</pre>

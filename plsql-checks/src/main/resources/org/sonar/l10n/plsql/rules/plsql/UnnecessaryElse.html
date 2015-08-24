@@ -1,0 +1,27 @@
+<p>
+When the IF clause of a IF-THEN-ELSE structure does not complete successfully, the ELSE clause is unnecessary.  
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+BEGIN
+  IF condition THEN
+    RETURN value;
+  ELSE
+    value := NULL;
+  END IF;
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+BEGIN
+  IF condition THEN
+    RETURN value;
+  END IF;
+  
+  value := NULL;
+END;
+</pre>
