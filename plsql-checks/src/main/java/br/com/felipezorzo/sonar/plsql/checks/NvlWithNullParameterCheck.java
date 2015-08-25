@@ -45,17 +45,17 @@ public class NvlWithNullParameterCheck extends BaseMethodCallChecker {
     public static final String CHECK_KEY = "NvlWithNullParameter";
 
     @Override
-    protected boolean isMethod(AstNode identifier) {
+    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
         return identifier.is(PlSqlGrammar.IDENTIFIER_NAME) &&
                "NVL".equalsIgnoreCase(identifier.getTokenOriginalValue());
     }
 
     @Override
-    protected void checkArguments(List<AstNode> arguments) {
+    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         for (AstNode argument : arguments) {
             AstNode argumentValue = argument.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), getCurrentNode(), argumentValue.getTokenValue());
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, argumentValue.getTokenValue());
             }
         }
     }

@@ -28,12 +28,6 @@ import br.com.felipezorzo.sonar.plsql.checks.AbstractBaseCheck;
 
 public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
     
-    private AstNode currentNode;
-    
-    public AstNode getCurrentNode() {
-        return currentNode;
-    }
-    
     @Override
     public void init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL);
@@ -41,24 +35,23 @@ public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
     
     @Override
     public void visitNode(AstNode node) {
-        currentNode = node;
         AstNode identifier = node.getFirstChild();
         
         if (identifier.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
             identifier = identifier.getFirstChild();
         }
         
-        if (isMethod(identifier)) {
+        if (isMethod(node, identifier)) {
             AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
             if (arguments != null) {
                 List<AstNode> allArguments = arguments.getChildren(PlSqlGrammar.ARGUMENT);
-                checkArguments(allArguments);
+                checkArguments(node, allArguments);
             }
         }
     }
     
-    protected abstract boolean isMethod(AstNode identifier);
+    protected abstract boolean isMethod(AstNode currentNode, AstNode identifier);
     
-    protected abstract void checkArguments(List<AstNode> arguments);
+    protected abstract void checkArguments(AstNode currentNode, List<AstNode> arguments);
 
 }

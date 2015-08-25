@@ -22,6 +22,8 @@ package br.com.felipezorzo.sonar.plsql;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.measures.CoreMetrics;
@@ -72,7 +74,7 @@ public class FileLinesVisitor extends SquidAstVisitor<Grammar> implements AstAnd
     }
 
     @Override
-    public void leaveFile(AstNode astNode) {
+    public void leaveFile(@Nullable AstNode astNode) {
         InputFile inputFile = fileSystem.inputFile(fileSystem.predicates().is(getContext().getFile()));
         if (inputFile == null){
             throw new IllegalStateException("InputFile is null, but it should not be.");

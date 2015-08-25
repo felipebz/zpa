@@ -48,7 +48,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
     private static final List<String> PROCEDURES = ImmutableList.of("PUT", "PUT_LINE");
 
     @Override
-    protected boolean isMethod(AstNode identifier) {
+    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
         if (identifier.is(PlSqlGrammar.MEMBER_EXPRESSION)) {
             List<AstNode> members = identifier.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.PRIMARY_EXPRESSION);
             if (members.size() >= 2) {
@@ -56,7 +56,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
                 String methodName = members.get(0).getTokenOriginalValue().toUpperCase();
                 String packageName = members.get(1).getTokenOriginalValue();
                 if (DBMS_OUTPUT.equalsIgnoreCase(packageName) && PROCEDURES.contains(methodName)) {
-                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), getCurrentNode());
+                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
                 }
             }
         }
@@ -64,7 +64,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
     }
 
     @Override
-    protected void checkArguments(List<AstNode> arguments) {
+    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         // not used
     }
 

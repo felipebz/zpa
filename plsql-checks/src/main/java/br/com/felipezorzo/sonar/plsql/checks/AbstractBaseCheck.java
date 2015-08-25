@@ -35,11 +35,7 @@ public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
     }
    
     protected String getLocalizedMessage(String checkKey) {
-        String key = "rule.plsql." + checkKey + ".message";
-        if (bundle.containsKey(key)) {
-            return bundle.getString(key);
-        }
-        return null;
+        return bundle.getString("rule.plsql." + checkKey + ".message"); 
     }
     
 }

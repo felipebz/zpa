@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
+import br.com.felipezorzo.sonar.plsql.PlSqlPlugin;
+
 public class PlSqlPluginTest {
 
     @SuppressWarnings("unchecked")

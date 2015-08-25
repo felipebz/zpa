@@ -22,6 +22,8 @@ package br.com.felipezorzo.sonar.plsql.checks.scope;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Preconditions;
 import com.sonar.sslr.api.AstNode;
 
@@ -49,7 +51,7 @@ public class Scope {
         return localVariables;
     }
     
-    public Variable getVariableDeclaration(AstNode node) {
+    public @Nullable Variable getVariableDeclaration(AstNode node) {
         String variableName = node.getTokenOriginalValue().toUpperCase();
         
         Scope scope = this;

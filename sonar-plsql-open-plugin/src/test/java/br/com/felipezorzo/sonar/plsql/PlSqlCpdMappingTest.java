@@ -25,6 +25,10 @@ import static org.mockito.Mockito.mock;
 import org.junit.Test;
 import org.sonar.api.batch.fs.FileSystem;
 
+import br.com.felipezorzo.sonar.plsql.PlSql;
+import br.com.felipezorzo.sonar.plsql.PlSqlCpdMapping;
+import br.com.felipezorzo.sonar.plsql.PlSqlTokenizer;
+
 public class PlSqlCpdMappingTest {
 
     @Test

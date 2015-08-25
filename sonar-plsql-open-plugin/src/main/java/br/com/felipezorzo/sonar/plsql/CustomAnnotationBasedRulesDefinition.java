@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -181,7 +182,7 @@ public class CustomAnnotationBasedRulesDefinition {
         return AnnotationUtils.getAnnotation(ruleClass, NoSqale.class);
     }
     
-    public static URL getLocalizedResource(String baseName, String suffix, Locale locale) {
+    public URL getLocalizedResource(String baseName, String suffix, Locale locale) {
         ResourceBundle.Control control = ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT);
         List<Locale> candidateLocales = control.getCandidateLocales(baseName, locale);
 
@@ -195,7 +196,10 @@ public class CustomAnnotationBasedRulesDefinition {
             }
         }
 
-        return null;
+        throw new MissingResourceException("Can't find resource for name "
+                + baseName + ", suffix " + suffix + " and locale " + locale.toString(),
+                this.getClass().getName(),
+                baseName);
     }
     
     public static String getLocalizedFolderName(String baseName, Locale locale) {

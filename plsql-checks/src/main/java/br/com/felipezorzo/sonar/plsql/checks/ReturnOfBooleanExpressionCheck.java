@@ -21,6 +21,8 @@ package br.com.felipezorzo.sonar.plsql.checks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -69,11 +71,11 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE);
     }
 
-    public AstNode getBooleanValue(AstNode node) {
+    public @Nullable AstNode getBooleanValue(AstNode node) {
         return extractBooleanValueFromReturn(getStatementFrom(node));
     }
 
-    public AstNode getStatementFrom(AstNode node) {
+    public @Nullable AstNode getStatementFrom(AstNode node) {
         List<AstNode> statements = node.getChildren(PlSqlGrammar.STATEMENT);
         if (statements.size() == 1) {
             return statements.get(0);
@@ -81,7 +83,7 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return null;
     }
 
-    public AstNode extractBooleanValueFromReturn(AstNode node) {
+    public @Nullable AstNode extractBooleanValueFromReturn(@Nullable AstNode node) {
         if (node != null) {
             AstNode child = node.getFirstChild();
             if (child.is(PlSqlGrammar.RETURN_STATEMENT)) {
@@ -93,7 +95,7 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return null;
     }
 
-    public AstNode getBooleanLiteral(AstNode expression) {
+    public @Nullable AstNode getBooleanLiteral(@Nullable AstNode expression) {
         if (expression != null) {
             AstNode literal = expression.getFirstChild(PlSqlGrammar.LITERAL);
 

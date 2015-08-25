@@ -17,26 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package br.com.felipezorzo.sonar.plsql;
+@ParametersAreNonnullByDefault
+package br.com.felipezorzo.sonar.plsql.lexer;
 
-import java.nio.charset.Charset;
-
-import org.sonar.squidbridge.api.SquidConfiguration;
-
-public class PlSqlConfiguration extends SquidConfiguration {
-
-    private boolean ignoreHeaderComments;
-
-    public PlSqlConfiguration(Charset charset) {
-        super(charset);
-    }
-
-    public void setIgnoreHeaderComments(boolean ignoreHeaderComments) {
-        this.ignoreHeaderComments = ignoreHeaderComments;
-    }
-
-    public boolean getIgnoreHeaderComments() {
-        return ignoreHeaderComments;
-    }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

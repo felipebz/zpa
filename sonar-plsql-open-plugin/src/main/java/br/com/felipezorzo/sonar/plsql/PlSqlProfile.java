@@ -19,6 +19,8 @@
  */
 package br.com.felipezorzo.sonar.plsql;
 
+import javax.annotation.Nullable;
+
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.rules.RuleFinder;
@@ -36,7 +38,7 @@ public class PlSqlProfile extends ProfileDefinition {
     }
 
     @Override
-    public RulesProfile createProfile(ValidationMessages validation) {
+    public RulesProfile createProfile(@Nullable ValidationMessages validation) {
       AnnotationBasedProfileBuilder annotationBasedProfileBuilder = new AnnotationBasedProfileBuilder(ruleFinder);
       return annotationBasedProfileBuilder.build(
           CheckList.REPOSITORY_KEY,

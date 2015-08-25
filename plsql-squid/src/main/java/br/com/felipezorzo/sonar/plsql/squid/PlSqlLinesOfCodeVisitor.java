@@ -17,9 +17,11 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package br.com.felipezorzo.sonar.plsql;
+package br.com.felipezorzo.sonar.plsql.squid;
 
 import static com.sonar.sslr.api.GenericTokenType.EOF;
+
+import javax.annotation.Nullable;
 
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.measures.MetricDef;
@@ -39,7 +41,7 @@ public class PlSqlLinesOfCodeVisitor extends SquidAstVisitor<Grammar> implements
     }
 
     @Override
-    public void visitFile(AstNode node) {
+    public void visitFile(@Nullable AstNode node) {
         lastTokenLine = -1;
     }
 

@@ -22,8 +22,8 @@ package br.com.felipezorzo.sonar.plsql.api;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.sslr.grammar.GrammarRuleKey;
 
-import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
 import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
 import com.google.common.base.Charsets;
 import com.sonar.sslr.api.Grammar;

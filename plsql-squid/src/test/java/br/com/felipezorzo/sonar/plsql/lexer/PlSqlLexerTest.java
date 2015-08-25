@@ -21,38 +21,36 @@ package br.com.felipezorzo.sonar.plsql.lexer;
 
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasComment;
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasToken;
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
 
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
-import br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType;
 
 import com.google.common.base.Charsets;
 import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.impl.Lexer;
 
+import br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
+
 public class PlSqlLexerTest {
     private static Lexer lexer;
 
-    @BeforeClass
-    public static void init() {
-      lexer = PlSqlLexer.create(new PlSqlConfiguration(Charsets.UTF_8));
+    static {
+        lexer = PlSqlLexer.create(new PlSqlConfiguration(Charsets.UTF_8));
     }
-    
+
     @Test
     public void multilineComment() {
-      assertThat(lexer.lex("/* multine \n comment */"), hasComment("/* multine \n comment */"));
-      assertThat(lexer.lex("/**/"), hasComment("/**/"));
+        assertThat(lexer.lex("/* multine \n comment */"), hasComment("/* multine \n comment */"));
+        assertThat(lexer.lex("/**/"), hasComment("/**/"));
     }
 
     @Test
     public void inlineComment() {
-      assertThat(lexer.lex("before -- inline \n new line"), hasComment("-- inline "));
-      assertThat(lexer.lex("--"), hasComment("--"));
+        assertThat(lexer.lex("before -- inline \n new line"), hasComment("-- inline "));
+        assertThat(lexer.lex("--"), hasComment("--"));
     }
     
     @Test

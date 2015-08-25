@@ -45,15 +45,15 @@ public class ToDateWithoutFormatCheck extends BaseMethodCallChecker {
     public static final String CHECK_KEY = "ToDateWithoutFormat";
 
     @Override
-    protected boolean isMethod(AstNode identifier) {
+    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
         return identifier.is(PlSqlGrammar.IDENTIFIER_NAME) && 
                "TO_DATE".equalsIgnoreCase(identifier.getTokenOriginalValue());
     }
 
     @Override
-    protected void checkArguments(List<AstNode> arguments) {
+    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         if (arguments.size() == 1) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), getCurrentNode());
+            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
         }
     }
 

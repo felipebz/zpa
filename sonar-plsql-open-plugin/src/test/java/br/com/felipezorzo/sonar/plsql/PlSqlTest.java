@@ -28,6 +28,9 @@ import org.sonar.api.config.Settings;
 
 import com.google.common.collect.Maps;
 
+import br.com.felipezorzo.sonar.plsql.PlSql;
+import br.com.felipezorzo.sonar.plsql.PlSqlPlugin;
+
 public class PlSqlTest {
     
     @Test

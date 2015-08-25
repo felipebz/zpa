@@ -21,6 +21,8 @@ package br.com.felipezorzo.sonar.plsql.checks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -62,7 +64,7 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
         return ifNode.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE);
     }
 
-    private AstNode singleIfChild(AstNode suite) {
+    private @Nullable AstNode singleIfChild(AstNode suite) {
         List<AstNode> statements = suite.getChildren(PlSqlGrammar.STATEMENT);
         if (statements.size() == 1) {
             AstSelect nestedIf = statements.get(0).select().children(PlSqlGrammar.IF_STATEMENT);

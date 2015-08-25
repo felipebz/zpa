@@ -45,6 +45,8 @@ import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 
+import br.com.felipezorzo.sonar.plsql.PlSql;
+import br.com.felipezorzo.sonar.plsql.PlSqlSquidSensor;
 import br.com.felipezorzo.sonar.plsql.checks.CheckList;
 
 public class PlSqlSquidSensorTest {

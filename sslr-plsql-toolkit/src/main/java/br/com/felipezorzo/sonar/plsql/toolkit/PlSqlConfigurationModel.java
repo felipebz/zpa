@@ -35,9 +35,9 @@ import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
 
-import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 import br.com.felipezorzo.sonar.plsql.parser.PlSqlParser;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
 public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 

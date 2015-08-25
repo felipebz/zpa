@@ -28,6 +28,7 @@ import net.sourceforge.pmd.cpd.TokenEntry;
 import net.sourceforge.pmd.cpd.Tokenizer;
 import net.sourceforge.pmd.cpd.Tokens;
 import br.com.felipezorzo.sonar.plsql.lexer.PlSqlLexer;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.impl.Lexer;

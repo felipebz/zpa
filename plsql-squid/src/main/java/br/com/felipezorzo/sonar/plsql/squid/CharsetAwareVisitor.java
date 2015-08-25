@@ -17,22 +17,10 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package br.com.felipezorzo.sonar.plsql.parser;
+package br.com.felipezorzo.sonar.plsql.squid;
 
-import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
-import br.com.felipezorzo.sonar.plsql.lexer.PlSqlLexer;
-import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
+import java.nio.charset.Charset;
 
-import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.impl.Parser;
-
-public final class PlSqlParser {
-
-    private PlSqlParser() {
-    }
-
-    public static Parser<Grammar> create(PlSqlConfiguration conf) {
-        return Parser.builder(PlSqlGrammar.create().build())
-                .withLexer(PlSqlLexer.create(conf)).build();
-    }
+public interface CharsetAwareVisitor {
+    void setCharset(Charset charset);
 }

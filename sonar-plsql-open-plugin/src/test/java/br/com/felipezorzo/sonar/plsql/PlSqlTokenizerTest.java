@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import br.com.felipezorzo.sonar.plsql.PlSqlTokenizer;
 import net.sourceforge.pmd.cpd.SourceCode;
 import net.sourceforge.pmd.cpd.TokenEntry;
 import net.sourceforge.pmd.cpd.Tokens;

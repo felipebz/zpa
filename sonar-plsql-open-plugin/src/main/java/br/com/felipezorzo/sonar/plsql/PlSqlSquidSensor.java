@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import javax.annotation.Nullable;
+
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.FilePredicates;
@@ -53,6 +55,8 @@ import com.sonar.sslr.api.Grammar;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
 import br.com.felipezorzo.sonar.plsql.checks.CheckList;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlAstScanner;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
 public class PlSqlSquidSensor implements Sensor {
 
@@ -84,7 +88,7 @@ public class PlSqlSquidSensor implements Sensor {
     }
 
     @Override
-    public void analyse(Project project, SensorContext context) {
+    public void analyse(@Nullable Project project, @Nullable SensorContext context) {
         this.context = context;
 
         List<SquidAstVisitor<Grammar>> visitors = Lists.newArrayList(checks.all());

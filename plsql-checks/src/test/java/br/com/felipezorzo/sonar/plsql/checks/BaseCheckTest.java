@@ -28,7 +28,7 @@ import org.sonar.squidbridge.api.SourceFile;
 
 import com.sonar.sslr.api.Grammar;
 
-import br.com.felipezorzo.sonar.plsql.PlSqlAstScanner;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlAstScanner;
 
 public class BaseCheckTest {
 

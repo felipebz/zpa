@@ -24,10 +24,11 @@ import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.commentRegexp;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.o2n;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.or;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.regexp;
-import br.com.felipezorzo.sonar.plsql.PlSqlConfiguration;
+
 import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlPunctuator;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlTokenType;
+import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
 import com.sonar.sslr.impl.Lexer;
 import com.sonar.sslr.impl.channel.BlackHoleChannel;

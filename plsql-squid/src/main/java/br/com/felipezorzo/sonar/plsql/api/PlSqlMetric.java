@@ -19,38 +19,39 @@
  */
 package br.com.felipezorzo.sonar.plsql.api;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.sonar.squidbridge.measures.CalculatedMetricFormula;
 import org.sonar.squidbridge.measures.MetricDef;
 
 public enum PlSqlMetric implements MetricDef {
-    FILES,
-    LINES,
+    FILES, 
+    LINES, 
     LINES_OF_CODE, 
-    COMMENT_LINES,
+    COMMENT_LINES, 
     COMPLEXITY;
-    
+
     @Override
     public String getName() {
-      return name();
+        return name();
     }
 
     @Override
     public boolean isCalculatedMetric() {
-      return false;
+        return false;
     }
 
     @Override
     public boolean aggregateIfThereIsAlreadyAValue() {
-      return true;
+        return true;
     }
 
     @Override
     public boolean isThereAggregationFormula() {
-      return true;
+        return true;
     }
 
     @Override
     public CalculatedMetricFormula getCalculatedMetricFormula() {
-      return null;
+        throw new NotImplementedException();
     }
 }

@@ -17,10 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package br.com.felipezorzo.sonar.plsql;
+@ParametersAreNonnullByDefault
+package br.com.felipezorzo.sonar.plsql.checks.scope;
 
-import java.nio.charset.Charset;
-
-public interface CharsetAwareVisitor {
-    void setCharset(Charset charset);
-}
+import javax.annotation.ParametersAreNonnullByDefault;
