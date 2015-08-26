@@ -76,9 +76,6 @@ public class FileLinesVisitor extends SquidAstVisitor<Grammar> implements AstAnd
     @Override
     public void leaveFile(@Nullable AstNode astNode) {
         InputFile inputFile = fileSystem.inputFile(fileSystem.predicates().is(getContext().getFile()));
-        if (inputFile == null){
-            throw new IllegalStateException("InputFile is null, but it should not be.");
-        }
         FileLinesContext fileLinesContext = fileLinesContextFactory.createFor(inputFile);
 
         int fileLength = getContext().peekSourceCode().getInt(PlSqlMetric.LINES);

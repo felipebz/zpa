@@ -83,10 +83,9 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
         if (propertyValue == null) {
             LOG.info("The property \"" + propertyKey + "\" is not set, using the default value \"" + defaultValue + "\".");
             return defaultValue;
-        } else {
-            LOG.info("The property \"" + propertyKey + "\" is set, using its value \"" + propertyValue + "\".");
-            return propertyValue;
         }
+        LOG.info("The property \"" + propertyKey + "\" is set, using its value \"" + propertyValue + "\".");
+        return propertyValue;
     }
 
 }

@@ -116,11 +116,7 @@ public class CustomAnnotationBasedRulesDefinition {
             }
             ruleKey = ruleClass.getCanonicalName();
         }
-        NewRule rule = repository.rule(ruleKey);
-        if (rule == null) {
-            throw new IllegalStateException("No rule was created for " + ruleClass + " in " + repository);
-        }
-        return rule;
+        return repository.rule(ruleKey);
     }
 
     private void setupExternalNames(Collection<NewRule> rules) {
