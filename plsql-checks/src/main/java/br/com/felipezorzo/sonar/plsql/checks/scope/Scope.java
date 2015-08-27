@@ -51,7 +51,8 @@ public class Scope {
         return localVariables;
     }
     
-    public @Nullable Variable getVariableDeclaration(AstNode node) {
+    @Nullable
+    public Variable getVariableDeclaration(AstNode node) {
         String variableName = node.getTokenOriginalValue().toUpperCase();
         
         Scope scope = this;

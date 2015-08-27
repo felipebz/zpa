@@ -71,11 +71,13 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE);
     }
 
-    public @Nullable AstNode getBooleanValue(AstNode node) {
+    @Nullable
+    public AstNode getBooleanValue(AstNode node) {
         return extractBooleanValueFromReturn(getStatementFrom(node));
     }
 
-    public @Nullable AstNode getStatementFrom(AstNode node) {
+    @Nullable
+    public AstNode getStatementFrom(AstNode node) {
         List<AstNode> statements = node.getChildren(PlSqlGrammar.STATEMENT);
         if (statements.size() == 1) {
             return statements.get(0);
@@ -83,7 +85,8 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return null;
     }
 
-    public @Nullable AstNode extractBooleanValueFromReturn(@Nullable AstNode node) {
+    @Nullable
+    public AstNode extractBooleanValueFromReturn(@Nullable AstNode node) {
         if (node != null) {
             AstNode child = node.getFirstChild();
             if (child.is(PlSqlGrammar.RETURN_STATEMENT)) {
@@ -95,7 +98,8 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
         return null;
     }
 
-    public @Nullable AstNode getBooleanLiteral(@Nullable AstNode expression) {
+    @Nullable
+    public AstNode getBooleanLiteral(@Nullable AstNode expression) {
         if (expression != null) {
             AstNode literal = expression.getFirstChild(PlSqlGrammar.LITERAL);
 
