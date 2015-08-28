@@ -20,11 +20,9 @@
 package br.com.felipezorzo.sonar.plsql;
 
 import java.lang.annotation.Annotation;
-import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -120,10 +118,6 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     private void setupExternalNames(Collection<NewRule> rules) {
-        URL resource = getLocalizedResource("/org/sonar/l10n/" + languageKey, "properties", locale);
-        if (resource == null) {
-            return;
-        }
         ResourceBundle bundle = ResourceBundle.getBundle("org.sonar.l10n." + languageKey, locale);
         for (NewRule rule : rules) {
             String baseKey = "rule." + repository.key() + "." + rule.key();
@@ -176,26 +170,6 @@ public class CustomAnnotationBasedRulesDefinition {
 
     private NoSqale getNoSqaleAnnotation(Class<?> ruleClass) {
         return AnnotationUtils.getAnnotation(ruleClass, NoSqale.class);
-    }
-    
-    public URL getLocalizedResource(String baseName, String suffix, Locale locale) {
-        ResourceBundle.Control control = ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT);
-        List<Locale> candidateLocales = control.getCandidateLocales(baseName, locale);
-
-        for (Locale specificLocale : candidateLocales) {
-            String bundleName = control.toBundleName(baseName, specificLocale);
-            String resourceName = control.toResourceName(bundleName, suffix);
-
-            URL url = CustomAnnotationBasedRulesDefinition.class.getResource(resourceName);
-            if (url != null) {
-                return url;
-            }
-        }
-
-        throw new MissingResourceException("Can't find resource for name "
-                + baseName + ", suffix " + suffix + " and locale " + locale.toString(),
-                this.getClass().getName(),
-                baseName);
     }
     
     public static String getLocalizedFolderName(String baseName, Locale locale) {
