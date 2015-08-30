@@ -20,6 +20,7 @@
 package br.com.felipezorzo.sonar.plsql.squid;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.sonar.squidbridge.AstScanner;
@@ -34,7 +35,6 @@ import org.sonar.squidbridge.metrics.CommentsVisitor;
 import org.sonar.squidbridge.metrics.ComplexityVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Grammar;
@@ -58,7 +58,7 @@ public class PlSqlAstScanner {
         if (!file.isFile()) {
             throw new IllegalArgumentException("File '" + file + "' not found.");
         }
-        AstScanner<Grammar> scanner = create(new PlSqlConfiguration(Charsets.UTF_8), visitors);
+        AstScanner<Grammar> scanner = create(new PlSqlConfiguration(StandardCharsets.UTF_8), visitors);
         scanner.scanFile(file);
         Collection<SourceCode> sources = scanner.getIndex().search(new QueryByType(SourceFile.class));
         if (sources.size() != 1) {

@@ -19,13 +19,12 @@
  */
 package br.com.felipezorzo.sonar.plsql;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.config.Settings;
 import org.sonar.api.resources.AbstractLanguage;
-
-import com.google.common.collect.Lists;
 
 public class PlSql extends AbstractLanguage {
 
@@ -51,7 +50,7 @@ public class PlSql extends AbstractLanguage {
     }
 
     private String[] filterEmptyStrings(String[] stringArray) {
-        List<String> nonEmptyStrings = Lists.newArrayList();
+        List<String> nonEmptyStrings = new ArrayList<>();
         for (String string : stringArray) {
             if (StringUtils.isNotBlank(string.trim())) {
                 nonEmptyStrings.add(string.trim());

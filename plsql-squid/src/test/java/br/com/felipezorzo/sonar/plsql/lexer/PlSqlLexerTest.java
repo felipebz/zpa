@@ -24,10 +24,11 @@ import static com.sonar.sslr.test.lexer.LexerMatchers.hasToken;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
+import java.nio.charset.StandardCharsets;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
 import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.impl.Lexer;
 
@@ -38,7 +39,7 @@ public class PlSqlLexerTest {
     private static Lexer lexer;
 
     static {
-        lexer = PlSqlLexer.create(new PlSqlConfiguration(Charsets.UTF_8));
+        lexer = PlSqlLexer.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
     }
 
     @Test

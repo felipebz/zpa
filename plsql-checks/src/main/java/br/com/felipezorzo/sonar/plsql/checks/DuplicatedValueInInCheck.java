@@ -19,6 +19,7 @@
  */
 package br.com.felipezorzo.sonar.plsql.checks;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.sonar.api.server.rule.RulesDefinition;
@@ -28,7 +29,6 @@ import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
-import com.google.common.collect.Lists;
 import com.sonar.sslr.api.AstNode;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
@@ -57,7 +57,7 @@ public class DuplicatedValueInInCheck extends AbstractBaseCheck {
     }
     
     public List<AstNode> getInValue(AstNode inExpression) {
-        List<AstNode> values = Lists.newArrayList();
+        List<AstNode> values = new ArrayList<>();
         AstNode current = inExpression.getFirstChild(PlSqlPunctuator.LPARENTHESIS);
         while (current != null) {
             current = current.getNextSibling();

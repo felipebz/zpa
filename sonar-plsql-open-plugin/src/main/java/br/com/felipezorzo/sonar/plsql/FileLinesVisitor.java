@@ -19,6 +19,7 @@
  */
 package br.com.felipezorzo.sonar.plsql;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -31,7 +32,6 @@ import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.squidbridge.SquidAstVisitor;
 
-import com.google.common.collect.Sets;
 import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.GenericTokenType;
@@ -44,8 +44,8 @@ import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
 public class FileLinesVisitor extends SquidAstVisitor<Grammar> implements AstAndTokenVisitor {
     private final FileLinesContextFactory fileLinesContextFactory;
 
-    private final Set<Integer> linesOfCode = Sets.newHashSet();
-    private final Set<Integer> linesOfComments = Sets.newHashSet();
+    private final Set<Integer> linesOfCode = new HashSet<>();
+    private final Set<Integer> linesOfComments = new HashSet<>();
     private final FileSystem fileSystem;
 
     public FileLinesVisitor(FileLinesContextFactory fileLinesContextFactory, FileSystem fileSystem) {

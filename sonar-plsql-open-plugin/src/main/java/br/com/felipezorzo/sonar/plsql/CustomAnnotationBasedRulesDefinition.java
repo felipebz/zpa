@@ -20,6 +20,7 @@
 package br.com.felipezorzo.sonar.plsql;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -43,7 +44,6 @@ import org.sonar.squidbridge.rules.ExternalDescriptionLoader;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class CustomAnnotationBasedRulesDefinition {
@@ -79,7 +79,7 @@ public class CustomAnnotationBasedRulesDefinition {
     @SuppressWarnings("rawtypes")
     public void addRuleClasses(boolean failIfSqaleNotFound, boolean failIfNoExplicitKey, Iterable<Class> ruleClasses) {
         new RulesDefinitionAnnotationLoader().load(repository, Iterables.toArray(ruleClasses, Class.class));
-        List<NewRule> newRules = Lists.newArrayList();
+        List<NewRule> newRules = new ArrayList<>();
         for (Class<?> ruleClass : ruleClasses) {
             NewRule rule = newRule(ruleClass, failIfNoExplicitKey);
             externalDescriptionLoader.addHtmlDescription(rule);
