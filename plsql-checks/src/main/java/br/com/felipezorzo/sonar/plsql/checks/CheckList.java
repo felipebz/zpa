@@ -68,6 +68,7 @@ public class CheckList {
             VariableHidingCheck.class,
             DbmsOutputPutCheck.class,
             ReturnOfBooleanExpressionCheck.class,
-            UnnecessaryElseCheck.class);
+            UnnecessaryElseCheck.class,
+            DeadCodeCheck.class);
     }
 }

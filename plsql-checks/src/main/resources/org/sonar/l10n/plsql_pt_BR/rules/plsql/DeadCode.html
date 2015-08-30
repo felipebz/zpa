@@ -1,0 +1,13 @@
+<p>
+Comandos como <code>return</code>, <code>exit</code>, <code>continue</code>, e <code>raise</code> alteram o fluxo para fora do bloco atual.
+Geralmente, qualquer comando em um bloco que estiver depois de um desses comandos é código desnecessário esperando para confundir alguém desavisado.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+begin
+  raise my_error;
+  log('finished'); -- esse código nunca será executado
+end;
+</pre>

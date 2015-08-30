@@ -31,40 +31,30 @@ import com.sonar.sslr.api.AstNode;
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
 
 @Rule(
-    key = UnnecessaryElseCheck.CHECK_KEY,
-    priority = Priority.MINOR
+    key = DeadCodeCheck.CHECK_KEY,
+    priority = Priority.MAJOR,
+    tags = Tags.UNUSED
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
-@SqaleConstantRemediation("2min")
+@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
+@SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class UnnecessaryElseCheck extends AbstractBaseCheck {
-    public static final String CHECK_KEY = "UnnecessaryElse";
-    
+public class DeadCodeCheck extends AbstractBaseCheck {
+    public static final String CHECK_KEY = "DeadCode";
+
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.ELSE_CLAUSE);
+        subscribeTo(CheckUtils.TERMINATION_STATEMENTS);
     }
 
     @Override
     public void visitNode(AstNode node) {
-        AstNode ifStatement = node.getParent();
-        
-        if (!hasElsifClause(ifStatement) && hasTerminationStatement(ifStatement)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
-        }
-    }
-    
-    public boolean hasElsifClause(AstNode node) {
-        return node.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE);
-    }
-    
-    private boolean hasTerminationStatement(AstNode ifStatement) {
-        for (AstNode statement : ifStatement.getChildren(PlSqlGrammar.STATEMENT)) {
-            AstNode internal = statement.getFirstChild();
-            if (CheckUtils.isTerminationStatement(internal)) {
-                return true;
+        if (CheckUtils.isTerminationStatement(node)) {
+            AstNode statement = node.getParent();
+            AstNode nextSibling = statement.getNextSibling();
+            if (nextSibling != null && nextSibling.is(PlSqlGrammar.STATEMENT)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), nextSibling);
             }
         }
-        return false;
     }
+
 }

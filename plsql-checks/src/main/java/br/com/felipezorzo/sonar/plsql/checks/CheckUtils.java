@@ -22,14 +22,22 @@ package br.com.felipezorzo.sonar.plsql.checks;
 import java.util.List;
 
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.AstNodeType;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlGrammar;
+import br.com.felipezorzo.sonar.plsql.api.PlSqlKeyword;
 
 public class CheckUtils {
 
+    public static final AstNodeType[] TERMINATION_STATEMENTS = {
+            PlSqlGrammar.RETURN_STATEMENT,
+            PlSqlGrammar.EXIT_STATEMENT,
+            PlSqlGrammar.CONTINUE_STATEMENT,
+            PlSqlGrammar.RAISE_STATEMENT};
+    
     private CheckUtils() {
     }
-
+    
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
         AstNode literal = node.getFirstChild(PlSqlGrammar.LITERAL);
 
@@ -72,5 +80,9 @@ public class CheckUtils {
             }
         }
         return true;
+    }
+    
+    public static boolean isTerminationStatement(AstNode node) {
+        return node.is(TERMINATION_STATEMENTS) && !node.hasDirectChildren(PlSqlKeyword.WHEN);
     }
 }
