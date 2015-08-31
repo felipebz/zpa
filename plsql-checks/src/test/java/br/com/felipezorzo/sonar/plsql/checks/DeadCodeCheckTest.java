@@ -34,6 +34,8 @@ public class DeadCodeCheckTest extends BaseCheckTest {
             .next().atLine(11).withMessage(message)
             .next().atLine(18).withMessage(message)
             .next().atLine(26).withMessage(message)
+            .next().atLine(36).withMessage(message)
+            .next().atLine(47).withMessage(message)
             .noMore();
     }
     

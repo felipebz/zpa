@@ -21,6 +21,8 @@ package br.com.felipezorzo.sonar.plsql.checks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
@@ -34,6 +36,14 @@ public class CheckUtils {
             PlSqlGrammar.EXIT_STATEMENT,
             PlSqlGrammar.CONTINUE_STATEMENT,
             PlSqlGrammar.RAISE_STATEMENT};
+    
+    private static final AstNodeType[] PROGRAM_UNITS = { 
+            PlSqlGrammar.ANONYMOUS_BLOCK,
+            PlSqlGrammar.CREATE_PROCEDURE,
+            PlSqlGrammar.PROCEDURE_DECLARATION,
+            PlSqlGrammar.CREATE_FUNCTION,
+            PlSqlGrammar.FUNCTION_DECLARATION,
+            PlSqlGrammar.CREATE_PACKAGE_BODY};
     
     private CheckUtils() {
     }
@@ -84,5 +94,9 @@ public class CheckUtils {
     
     public static boolean isTerminationStatement(AstNode node) {
         return node.is(TERMINATION_STATEMENTS) && !node.hasDirectChildren(PlSqlKeyword.WHEN);
+    }
+    
+    public static boolean isProgramUnit(@Nullable AstNode node) {
+        return node != null && node.is(PROGRAM_UNITS);
     }
 }

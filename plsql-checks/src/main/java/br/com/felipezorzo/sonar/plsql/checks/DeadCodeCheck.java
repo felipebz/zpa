@@ -19,6 +19,9 @@
  */
 package br.com.felipezorzo.sonar.plsql.checks;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -49,12 +52,36 @@ public class DeadCodeCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         if (CheckUtils.isTerminationStatement(node)) {
-            AstNode statement = node.getParent();
-            AstNode nextSibling = statement.getNextSibling();
-            if (nextSibling != null && nextSibling.is(PlSqlGrammar.STATEMENT)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), nextSibling);
+            AstNode parent = node.getParent();
+            while (!checkNode(parent)) {
+                parent = parent.getParent();
             }
         }
+    }
+    
+    private boolean shouldCheckNode(@Nullable AstNode node) {
+        if (node == null || CheckUtils.isProgramUnit(node)) {
+            return false;
+        }
+        if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT)) {
+            return true;
+        }
+        if (node.is(PlSqlGrammar.STATEMENTS_SECTION) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
+            return true;
+        }
+        return false;
+    }
+    
+    private boolean checkNode(@CheckForNull AstNode node) {
+        if (!shouldCheckNode(node)) {
+            return true;
+        }
+        AstNode nextSibling = node.getNextSibling();
+        if (nextSibling != null && nextSibling.is(PlSqlGrammar.STATEMENT)) {
+            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), nextSibling);
+            return true;
+        }
+        return false;
     }
 
 }

@@ -28,6 +28,26 @@ begin
 end;
 /
 
+begin
+  begin
+    return;
+  end;
+  
+  var := 1; -- violation
+end;
+/
+
+begin
+  begin
+    begin
+      return;
+    end;
+  end;
+  
+  var := 1; -- violation
+end;
+/
+
 -- correct
 begin
   return;
@@ -49,8 +69,34 @@ end;
 
 begin
   for i in 1..10 loop
-      exit when i = 5;
-      var := 1;
+    exit when i = 5;
+    var := 1;
   end loop;
+end;
+/
+
+begin
+  begin
+    return;
+  exception
+    when others then
+      null;
+  end;
+  
+  var := 1;
+end;
+/
+
+begin
+  begin
+    begin
+      return;
+    end;
+  exception
+    when others then
+      null;
+  end;
+  
+  var := 1; -- violation
 end;
 /
