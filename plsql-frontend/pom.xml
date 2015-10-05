@@ -8,7 +8,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>plsql-squid</artifactId>
+  <artifactId>plsql-frontend</artifactId>
 
   <name>PL/SQL :: Squid</name>
 

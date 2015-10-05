@@ -37,7 +37,7 @@
   </developers>
 
   <modules>
-    <module>plsql-squid</module>
+    <module>plsql-frontend</module>
     <module>plsql-checks</module>
     <module>sonar-plsql-open-plugin</module>
     <module>sslr-plsql-toolkit</module>
