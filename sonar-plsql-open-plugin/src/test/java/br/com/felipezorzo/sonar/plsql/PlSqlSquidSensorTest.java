@@ -40,8 +40,6 @@ import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
-import org.sonar.api.measures.FileLinesContext;
-import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 
@@ -57,9 +55,6 @@ public class PlSqlSquidSensorTest {
 
     @Before
     public void setUp() {
-      FileLinesContextFactory fileLinesContextFactory = mock(FileLinesContextFactory.class);
-      FileLinesContext fileLinesContext = mock(FileLinesContext.class);
-      when(fileLinesContextFactory.createFor(Mockito.any(InputFile.class))).thenReturn(fileLinesContext);
       ActiveRules activeRules = (new ActiveRulesBuilder())
           .create(RuleKey.of(CheckList.REPOSITORY_KEY, "EmptyBlock"))
           .setName("Print Statement Usage")
@@ -67,7 +62,7 @@ public class PlSqlSquidSensorTest {
           .build();
       CheckFactory checkFactory = new CheckFactory(activeRules);
       perspectives = mock(ResourcePerspectives.class);
-      sensor = new PlSqlSquidSensor(fileLinesContextFactory, fs, perspectives, checkFactory);
+      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory);
     }
     
     @Test
