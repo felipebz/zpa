@@ -40,6 +40,7 @@ import org.sonar.api.measures.PersistenceMode;
 import org.sonar.api.measures.RangeDistributionBuilder;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.source.Highlightable;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.api.CheckMessage;
@@ -54,6 +55,7 @@ import com.sonar.sslr.api.Grammar;
 
 import br.com.felipezorzo.sonar.plsql.api.PlSqlMetric;
 import br.com.felipezorzo.sonar.plsql.checks.CheckList;
+import br.com.felipezorzo.sonar.plsql.highlight.PlSqlHighlighter;
 import br.com.felipezorzo.sonar.plsql.squid.PlSqlAstScanner;
 import br.com.felipezorzo.sonar.plsql.squid.PlSqlConfiguration;
 
@@ -94,7 +96,7 @@ public class PlSqlSquidSensor implements Sensor {
         scanner.scanFiles(Lists.newArrayList(fileSystem.files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
 
         Collection<SourceCode> squidSourceFiles = scanner.getIndex().search(new QueryByType(SourceFile.class));
-        save(squidSourceFiles);
+        save(squidSourceFiles);        
     }
 
     private PlSqlConfiguration createConfiguration() {
@@ -112,6 +114,7 @@ public class PlSqlSquidSensor implements Sensor {
             saveFunctionsComplexityDistribution(inputFile, squidFile);
             saveMeasures(inputFile, squidFile);
             saveIssues(inputFile, squidFile);
+            highlight(inputFile);
         }
     }
 
@@ -154,6 +157,16 @@ public class PlSqlSquidSensor implements Sensor {
                         .message(message.getText(Locale.ENGLISH)).build();
                 issuable.addIssue(issue);
             }
+        }
+    }
+    
+    private void highlight(InputFile inputFile) {
+        PlSqlHighlighter highlighter = new PlSqlHighlighter(createConfiguration());
+        
+        Highlightable perspective = resourcePerspectives.as(Highlightable.class, inputFile);
+        
+        if (perspective != null) {
+            highlighter.highlight(perspective, inputFile.file());
         }
     }
 
