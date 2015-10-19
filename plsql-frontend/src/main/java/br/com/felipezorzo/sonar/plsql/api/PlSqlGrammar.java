@@ -190,6 +190,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     // DDL
     DDL_COMMENT,
     DDL_COMMAND,
+    TABLE_COLUMN_DEFINITION,
+    TABLE_RELATIONAL_PROPERTIES,
+    CREATE_TABLE,
     
     // Top-level components
     FILE_INPUT;
@@ -968,6 +971,20 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
                         ),
                 IS, CHARACTER_LITERAL, b.optional(SEMICOLON));
+        
+        b.rule(TABLE_COLUMN_DEFINITION).is(
+                IDENTIFIER_NAME, DATATYPE,
+                b.optional(SORT),
+                b.optional(DEFAULT, EXPRESSION),
+                b.optional(ENCRYPT));
+        
+        b.rule(TABLE_RELATIONAL_PROPERTIES).is(b.oneOrMore(TABLE_COLUMN_DEFINITION, b.optional(COMMA)));
+        
+        b.rule(CREATE_TABLE).is(
+                CREATE, b.optional(GLOBAL, TEMPORARY), TABLE, UNIT_NAME,
+                b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
+                b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
+                SEMICOLON);
         
         b.rule(DDL_COMMAND).is(DDL_COMMENT);
     }

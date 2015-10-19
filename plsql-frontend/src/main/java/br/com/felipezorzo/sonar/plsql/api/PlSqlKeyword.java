@@ -280,7 +280,12 @@ public enum PlSqlKeyword implements TokenType {
     LEFT("left"),
     RIGHT("right"),
     OUTER("outer"),
-    CROSS("cross");
+    CROSS("cross"),
+    GLOBAL("global"),
+    TEMPORARY("temporary"),
+    PRESERVE("preserve"),
+    SORT("sort"),
+    ENCRYPT("encrypt");
 
     private final String value;
     private final boolean reserved;
