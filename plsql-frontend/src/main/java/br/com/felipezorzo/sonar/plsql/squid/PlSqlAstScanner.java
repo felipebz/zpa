@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.AstScanner.Builder;
+import org.sonar.squidbridge.ProgressAstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.SourceCode;
@@ -73,7 +74,7 @@ public class PlSqlAstScanner {
                 new SquidAstVisitorContextImpl<>(new SourceProject("PL/SQL Project"));
         final Parser<Grammar> parser = PlSqlParser.create(conf);
 
-        AstScanner.Builder<Grammar> builder = AstScanner.<Grammar>builder(
+        AstScanner.Builder<Grammar> builder = new ProgressAstScanner.Builder<>(
                 context).setBaseParser(parser);
         
         builder.setFilesMetric(PlSqlMetric.FILES);
