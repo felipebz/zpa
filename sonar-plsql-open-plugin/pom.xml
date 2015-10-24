@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>br.com.felipezorzo.sonar.plsql</groupId>
+    <groupId>org.sonar.plsqlopen</groupId>
     <artifactId>plsql</artifactId>
     <version>1.0-SNAPSHOT</version>
   </parent>
@@ -15,7 +15,7 @@
   <description>Enable analysis and reporting on PL/SQL projects.</description>
 
   <properties>
-    <sonar.pluginClass>br.com.felipezorzo.sonar.plsql.PlSqlPlugin</sonar.pluginClass>
+    <sonar.pluginClass>org.sonar.plsqlopen.PlSqlPlugin</sonar.pluginClass>
     <sonar.pluginName>PL/SQL</sonar.pluginName>
   </properties>
 
