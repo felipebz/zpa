@@ -61,7 +61,7 @@ public class PlSqlSquidSensorTest {
           .build();
       CheckFactory checkFactory = new CheckFactory(activeRules);
       perspectives = mock(ResourcePerspectives.class);
-      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory);
+      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory, null);
     }
     
     @Test

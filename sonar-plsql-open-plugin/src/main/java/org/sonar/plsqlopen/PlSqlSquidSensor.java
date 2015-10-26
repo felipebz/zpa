@@ -31,7 +31,6 @@ import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.CheckFactory;
-import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
@@ -45,6 +44,7 @@ import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighter;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
@@ -63,7 +63,7 @@ public class PlSqlSquidSensor implements Sensor {
     private static final Number[] LIMITS_COMPLEXITY_METHODS = {1, 2, 4, 6, 8, 10, 12};
     private static final Number[] LIMITS_COMPLEXITY_FILES = {0, 5, 10, 20, 30, 60, 90};
     
-    private final Checks<SquidAstVisitor<Grammar>> checks;
+    private final PlSqlChecks checks;
 
     private SensorContext context;
     private AstScanner<Grammar> scanner;
@@ -71,10 +71,10 @@ public class PlSqlSquidSensor implements Sensor {
     private ResourcePerspectives resourcePerspectives;
 
     public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
-            CheckFactory checkFactory) {
-        this.checks = checkFactory.<SquidAstVisitor<Grammar>> create(
-                CheckList.REPOSITORY_KEY).addAnnotatedChecks(
-                CheckList.getChecks());
+            CheckFactory checkFactory, @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
+        this.checks = PlSqlChecks.createJavaScriptCheck(checkFactory)
+                .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
+                .addCustomChecks(customRulesDefinition);
         this.fileSystem = fileSystem;
         this.resourcePerspectives = perspectives;
     }
@@ -89,7 +89,7 @@ public class PlSqlSquidSensor implements Sensor {
     public void analyse(@Nullable Project project, @Nullable SensorContext context) {
         this.context = context;
 
-        List<SquidAstVisitor<Grammar>> visitors = Lists.newArrayList(checks.all());
+        List<SquidAstVisitor<Grammar>> visitors = checks.all();
         this.scanner = PlSqlAstScanner.create(createConfiguration(), visitors);
         FilePredicates p = fileSystem.predicates();
         scanner.scanFiles(Lists.newArrayList(fileSystem.files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
@@ -147,7 +147,7 @@ public class PlSqlSquidSensor implements Sensor {
         Collection<CheckMessage> messages = squidFile.getCheckMessages();
         for (CheckMessage message : messages) {
             @SuppressWarnings("unchecked")
-            RuleKey ruleKey = checks.ruleKey((SquidAstVisitor<Grammar>) message.getCheck());
+            RuleKey ruleKey = checks.ruleKeyFor((SquidAstVisitor<Grammar>) message.getCheck());
             Issuable issuable = resourcePerspectives.as(Issuable.class, sonarFile);
 
             if (issuable != null) {
