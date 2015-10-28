@@ -31,7 +31,7 @@ import com.sonar.sslr.api.AstNodeType;
 
 public class CheckUtils {
 
-    public static final AstNodeType[] TERMINATION_STATEMENTS = {
+    private static final AstNodeType[] TERMINATION_STATEMENTS = {
             PlSqlGrammar.RETURN_STATEMENT,
             PlSqlGrammar.EXIT_STATEMENT,
             PlSqlGrammar.CONTINUE_STATEMENT,
@@ -46,6 +46,10 @@ public class CheckUtils {
             PlSqlGrammar.CREATE_PACKAGE_BODY};
     
     private CheckUtils() {
+    }
+    
+    public static AstNodeType[] getTerminationStatements() {
+        return TERMINATION_STATEMENTS.clone();
     }
     
     public static boolean isNullLiteralOrEmptyString(AstNode node) {

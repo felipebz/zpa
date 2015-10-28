@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
 
   <groupId>org.sonar.plsqlopen</groupId>
@@ -13,7 +13,7 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>PL/SQL</name>
+  <name>SonarQube PL/SQL Community Plugin</name>
   <url>https://github.com/felipebz/sonar-plsql</url>
   <inceptionYear>2015</inceptionYear>
   <organization>

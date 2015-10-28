@@ -45,7 +45,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
 
     @Override
     public void init() {
-        subscribeTo(CheckUtils.TERMINATION_STATEMENTS);
+        subscribeTo(CheckUtils.getTerminationStatements());
     }
 
     @Override
