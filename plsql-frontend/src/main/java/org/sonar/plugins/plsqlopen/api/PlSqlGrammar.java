@@ -85,6 +85,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     XMLFOREST_EXPRESSION,
     CAST_EXPRESSION,
     AT_TIME_ZONE_EXPRESSION,
+    VARIABLE_NAME,
     
     // DML
     PARTITION_BY_CLAUSE,
@@ -606,8 +607,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     private static void createExpressions(LexerfulGrammarBuilder b) {
         // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
         
+        b.rule(VARIABLE_NAME).is(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE));
+        
         b.rule(PRIMARY_EXPRESSION).is(
-                b.firstOf(LITERAL, IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE, SQL, MULTIPLICATION));
+                b.firstOf(LITERAL, VARIABLE_NAME, SQL, MULTIPLICATION)).skip();
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,

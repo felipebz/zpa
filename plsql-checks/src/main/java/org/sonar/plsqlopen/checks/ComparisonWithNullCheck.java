@@ -50,7 +50,7 @@ public class ComparisonWithNullCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        List<AstNode> children = node.getChildren(PlSqlGrammar.PRIMARY_EXPRESSION);
+        List<AstNode> children = node.getChildren(PlSqlGrammar.LITERAL);
         for (AstNode child : children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
                 String suggestion = null;

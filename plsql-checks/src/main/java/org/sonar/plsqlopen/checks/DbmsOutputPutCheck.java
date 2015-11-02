@@ -49,7 +49,7 @@ public class DbmsOutputPutCheck extends BaseMethodCallChecker {
     @Override
     protected boolean isMethod(AstNode currentNode, AstNode identifier) {
         if (identifier.is(PlSqlGrammar.MEMBER_EXPRESSION)) {
-            List<AstNode> members = identifier.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.PRIMARY_EXPRESSION);
+            List<AstNode> members = identifier.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME);
             if (members.size() >= 2) {
                 members = Lists.reverse(members);
                 String methodName = members.get(0).getTokenOriginalValue().toUpperCase();

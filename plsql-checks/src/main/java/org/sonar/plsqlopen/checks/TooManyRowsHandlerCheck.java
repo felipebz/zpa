@@ -51,7 +51,7 @@ public class TooManyRowsHandlerCheck extends AbstractBaseCheck {
         // is a TOO_MANY_ROWS handler
         AstNode exceptionName = node.getChildren().get(1);
         
-        if (exceptionName.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
+        if (exceptionName.is(PlSqlGrammar.VARIABLE_NAME)) {
             exceptionName = exceptionName.getFirstChild();
         }
         

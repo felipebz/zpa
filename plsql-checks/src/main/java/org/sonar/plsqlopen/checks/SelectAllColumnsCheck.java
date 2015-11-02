@@ -57,7 +57,7 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
             }
             
             if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
-                candidate = candidate.getLastChild().getFirstChild();
+                candidate = candidate.getLastChild();
             }
             
             if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {

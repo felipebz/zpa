@@ -53,14 +53,12 @@ public class CheckUtils {
     }
     
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
-        AstNode literal = node.getFirstChild(PlSqlGrammar.LITERAL);
-
-        if (literal != null) {
-            if (literal.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) {
+        if (node != null) {
+            if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) {
                 return true;
             }
 
-            if (isEmptyString(literal)) {
+            if (isEmptyString(node)) {
                 return true;
             }
         }

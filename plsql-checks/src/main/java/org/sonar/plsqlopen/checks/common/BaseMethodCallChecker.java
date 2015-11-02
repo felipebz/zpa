@@ -37,7 +37,7 @@ public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         AstNode identifier = node.getFirstChild();
         
-        if (identifier.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
+        if (identifier.is(PlSqlGrammar.VARIABLE_NAME)) {
             identifier = identifier.getFirstChild();
         }
         

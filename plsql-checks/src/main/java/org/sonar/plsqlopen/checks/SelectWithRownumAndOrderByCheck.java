@@ -64,7 +64,7 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
         }
         
         for (AstNode comparison : whereComparisonConditions) {
-            AstSelect children = comparison.select().children(PlSqlGrammar.PRIMARY_EXPRESSION);
+            AstSelect children = comparison.select().children(PlSqlGrammar.VARIABLE_NAME);
             for (AstNode child : children) {
                 if ("rownum".equalsIgnoreCase(child.getTokenValue())) {
                     getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), child);

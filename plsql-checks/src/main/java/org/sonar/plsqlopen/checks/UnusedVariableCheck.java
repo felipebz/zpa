@@ -66,7 +66,7 @@ public class UnusedVariableCheck extends AbstractBaseCheck {
     public void init() {
         subscribeTo(scopeHolders);
         subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION,
-                    PlSqlGrammar.PRIMARY_EXPRESSION);
+                    PlSqlGrammar.VARIABLE_NAME);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class UnusedVariableCheck extends AbstractBaseCheck {
 
             if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
                 getCurrentScope().declareLocalVariable(node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME));
-            } else if (node.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
+            } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
                 AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
                 if (identifier != null) {
                     getCurrentScope().useVariable(identifier);
