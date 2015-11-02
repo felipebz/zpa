@@ -26,6 +26,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
+import org.sonar.plsqlopen.PlSql;
 import org.sonar.squidbridge.checks.SquidCheck;
 
 import com.sonar.sslr.api.Grammar;
@@ -46,7 +47,7 @@ public class CustomPlSqlRulesDefinitionTest {
         RulesDefinition.Repository repository = context.repository(REPOSITORY_KEY);
 
         assertThat(repository.name()).isEqualTo(REPOSITORY_NAME);
-        assertThat(repository.language()).isEqualTo("plsqlopen");
+        assertThat(repository.language()).isEqualTo(PlSql.KEY);
         assertThat(repository.rules()).hasSize(1);
 
         RulesDefinition.Rule alertUseRule = repository.rule(RULE_KEY);
