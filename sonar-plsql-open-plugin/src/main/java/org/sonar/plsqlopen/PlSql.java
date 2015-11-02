@@ -49,7 +49,7 @@ public class PlSql extends AbstractLanguage {
         return suffixes.length == 0 ? DEFAULT_FILE_SUFFIXES : suffixes;
     }
 
-    private String[] filterEmptyStrings(String[] stringArray) {
+    private static String[] filterEmptyStrings(String[] stringArray) {
         List<String> nonEmptyStrings = new ArrayList<>();
         for (String string : stringArray) {
             if (StringUtils.isNotBlank(string.trim())) {

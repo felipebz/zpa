@@ -53,7 +53,7 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
         }
     }
 
-    private boolean hasExceptionHandling(AstNode node) {
+    private static boolean hasExceptionHandling(AstNode node) {
         return node != null && node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER);
     }
 

@@ -56,7 +56,7 @@ public class SameConditionCheck extends AbstractBaseCheck {
         findSameConditions(expressions);
     }
 
-    private List<AstNode> getExpressions(AstNode node) {
+    private static List<AstNode> getExpressions(AstNode node) {
         List<AstNode> expressions = new ArrayList<>();
         for (AstNode subnode : node.getChildren()) {
             if (!subnode.is(PlSqlKeyword.AND, PlSqlKeyword.OR)) {

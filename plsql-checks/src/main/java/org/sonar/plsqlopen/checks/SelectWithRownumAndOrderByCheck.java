@@ -73,7 +73,7 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
         }
     }
 
-    private boolean hasOrderByClause(AstNode node) {
+    private static boolean hasOrderByClause(AstNode node) {
         return node.hasDirectChildren(PlSqlGrammar.ORDER_BY_CLAUSE);
     }
 

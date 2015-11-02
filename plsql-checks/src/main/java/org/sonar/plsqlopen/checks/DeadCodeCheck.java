@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import org.sonar.api.server.rule.RulesDefinition;
@@ -58,8 +57,8 @@ public class DeadCodeCheck extends AbstractBaseCheck {
         }
     }
     
-    private boolean shouldCheckNode(@Nullable AstNode node) {
-        if (node == null || CheckUtils.isProgramUnit(node)) {
+    private static boolean shouldCheckNode(@Nullable AstNode node) {
+        if (CheckUtils.isProgramUnit(node)) {
             return false;
         }
         if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT)) {
@@ -71,7 +70,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
         return false;
     }
     
-    private boolean checkNode(@CheckForNull AstNode node) {
+    private boolean checkNode(AstNode node) {
         if (!shouldCheckNode(node)) {
             return true;
         }

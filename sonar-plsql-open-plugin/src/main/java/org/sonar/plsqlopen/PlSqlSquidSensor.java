@@ -69,6 +69,11 @@ public class PlSqlSquidSensor implements Sensor {
     private AstScanner<Grammar> scanner;
     private FileSystem fileSystem;
     private ResourcePerspectives resourcePerspectives;
+    
+    public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
+            CheckFactory checkFactory) {
+        this(fileSystem, perspectives, checkFactory, null);
+    }
 
     public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
             CheckFactory checkFactory, @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
@@ -147,7 +152,7 @@ public class PlSqlSquidSensor implements Sensor {
         Collection<CheckMessage> messages = squidFile.getCheckMessages();
         for (CheckMessage message : messages) {
             @SuppressWarnings("unchecked")
-            RuleKey ruleKey = checks.ruleKeyFor((SquidAstVisitor<Grammar>) message.getCheck());
+            RuleKey ruleKey = checks.ruleKey((SquidAstVisitor<Grammar>) message.getCheck());
             Issuable issuable = resourcePerspectives.as(Issuable.class, sonarFile);
 
             if (issuable != null) {

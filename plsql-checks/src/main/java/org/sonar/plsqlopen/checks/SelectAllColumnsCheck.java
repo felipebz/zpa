@@ -52,10 +52,6 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
         if (!node.getParent().getParent().is(PlSqlGrammar.EXISTS_EXPRESSION)) {
             AstNode candidate = node.getFirstChild();
             
-            if (candidate.is(PlSqlGrammar.PRIMARY_EXPRESSION)) {
-                candidate = candidate.getFirstChild();
-            }
-            
             if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
                 candidate = candidate.getLastChild();
             }

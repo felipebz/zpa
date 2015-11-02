@@ -61,7 +61,7 @@ public class NotFoundCheck extends AbstractBaseCheck  {
         }
     }
     
-    private boolean parentIsNotExpression(AstNode parent) {
+    private static boolean parentIsNotExpression(AstNode parent) {
         return parent != null &&
                parent.is(PlSqlGrammar.UNARY_EXPRESSION) && 
                parent.getFirstChild().is(PlSqlKeyword.NOT);

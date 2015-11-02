@@ -48,14 +48,10 @@ public class PlSqlTokenizer implements Tokenizer {
         String fileName = source.getFileName();
         List<Token> tokens = lexer.lex(new File(fileName));
         for (Token token : tokens) {
-            TokenEntry cpdToken = new TokenEntry(getTokenImage(token), fileName, token.getLine());
+            TokenEntry cpdToken = new TokenEntry(token.getValue(), fileName, token.getLine());
             cpdTokens.add(cpdToken);
         }
         cpdTokens.add(TokenEntry.getEOF());
-    }
-
-    private String getTokenImage(Token token) {
-        return token.getValue();
     }
 
 }

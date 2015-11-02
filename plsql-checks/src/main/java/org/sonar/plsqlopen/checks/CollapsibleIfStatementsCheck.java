@@ -59,12 +59,12 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
         }
     }
 
-    private boolean hasElseOrElsif(AstNode ifNode) {
+    private static boolean hasElseOrElsif(AstNode ifNode) {
         return ifNode.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE);
     }
 
     @Nullable
-    private AstNode singleIfChild(AstNode suite) {
+    private static AstNode singleIfChild(AstNode suite) {
         List<AstNode> statements = suite.getChildren(PlSqlGrammar.STATEMENT);
         if (statements.size() == 1) {
             AstSelect nestedIf = statements.get(0).select().children(PlSqlGrammar.IF_STATEMENT);

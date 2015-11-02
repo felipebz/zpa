@@ -79,7 +79,7 @@ public class PlSqlChecks {
     }
 
     @Nullable
-    public RuleKey ruleKeyFor(SquidAstVisitor<Grammar> check) {
+    public RuleKey ruleKey(SquidAstVisitor<Grammar> check) {
       RuleKey ruleKey;
 
       for (Checks<SquidAstVisitor<Grammar>> checks : checksByRepository) {

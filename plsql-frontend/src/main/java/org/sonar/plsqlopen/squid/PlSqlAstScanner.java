@@ -78,7 +78,7 @@ public class PlSqlAstScanner {
         
         builder.setFilesMetric(PlSqlMetric.FILES);
         setCommentAnalyser(builder);
-        setMetrics(conf, builder);
+        setMetrics(builder);
 
         /* External visitors (typically Check ones) */
         for (SquidAstVisitor<Grammar> visitor : visitors) {
@@ -91,12 +91,11 @@ public class PlSqlAstScanner {
         return builder.build();
     }
     
-    private static void setMetrics(PlSqlConfiguration conf, Builder<Grammar> builder) {
+    private static void setMetrics(Builder<Grammar> builder) {
         builder.withSquidAstVisitor(new LinesVisitor<>(PlSqlMetric.LINES));
         builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor(PlSqlMetric.LINES_OF_CODE));
         builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
                 .withNoSonar(true)
-                .withIgnoreHeaderComment(conf.getIgnoreHeaderComments())
                 .build());
         
         AstNodeType[] complexityAstNodeType = new AstNodeType[] {
