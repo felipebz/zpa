@@ -112,6 +112,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     HIERARCHICAL_QUERY_CLAUSE,
     SUBQUERY_FACTORING_CLAUSE,
     SELECT_EXPRESSION,
+    DML_COMMAND,
     
     // Statements
     LABEL,
@@ -209,6 +210,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 COMPILATION_UNIT,
                 SQLPLUS_COMMAND,
+                DML_COMMAND,
                 DDL_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
@@ -602,6 +604,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
                 b.optional(FOR_UPDATE_CLAUSE));
+        
+        b.rule(DML_COMMAND).is(SELECT_EXPRESSION, b.optional(SEMICOLON));
     }
     
     private static void createExpressions(LexerfulGrammarBuilder b) {
