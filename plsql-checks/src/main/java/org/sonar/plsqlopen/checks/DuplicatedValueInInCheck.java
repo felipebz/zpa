@@ -79,7 +79,8 @@ public class DuplicatedValueInInCheck extends AbstractBaseCheck {
     private void checkValue(List<AstNode> values, int index) {
         for (int j = 0; j < index; j++) {
             if (CheckUtils.equalNodes(values.get(j), values.get(index))) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), values.get(j));
+                AstNode node = values.get(j);
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, node.getTokenOriginalValue());
                 return;
             }
         }

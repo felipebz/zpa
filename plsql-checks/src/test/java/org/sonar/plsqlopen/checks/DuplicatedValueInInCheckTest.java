@@ -29,10 +29,9 @@ public class DuplicatedValueInInCheckTest extends BaseCheckTest {
     @Test
     public void test() {
         SourceFile file = scanSingleFile("duplicated_value_in_in.sql", new DuplicatedValueInInCheck());
-        final String message = "Remove or fix this duplicated value in the IN condition.";
         CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
-            .next().atLine(7).withMessage(message)
+            .next().atLine(2).withMessage("Remove or fix the duplicated value \"1\" in the IN condition.")
+            .next().atLine(7).withMessage("Remove or fix the duplicated value \"x\" in the IN condition.")
             .noMore();
     }
     
