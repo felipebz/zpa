@@ -29,7 +29,7 @@ public class ColumnsShouldHaveTableNameCheckTest extends BaseCheckTest {
     @Test
     public void test() {
         SourceFile file = scanSingleFile("columns_should_have_table_name.sql", new ColumnsShouldHaveTableNameCheck());
-        final String message = "Specify the table of this column.";
+        final String message = "Specify the table of column \"col\".";
         CheckMessagesVerifier.verify(file.getCheckMessages())
             .next().atLine(2).withMessage(message)
             .noMore();
