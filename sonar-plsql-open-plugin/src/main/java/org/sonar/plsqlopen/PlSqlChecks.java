@@ -44,7 +44,7 @@ public class PlSqlChecks {
       this.checkFactory = checkFactory;
     }
 
-    public static PlSqlChecks createJavaScriptCheck(CheckFactory checkFactory) {
+    public static PlSqlChecks createPlSqlCheck(CheckFactory checkFactory) {
       return new PlSqlChecks(checkFactory);
     }
 

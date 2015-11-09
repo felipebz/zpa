@@ -77,7 +77,7 @@ public class PlSqlSquidSensor implements Sensor {
 
     public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
             CheckFactory checkFactory, @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
-        this.checks = PlSqlChecks.createJavaScriptCheck(checkFactory)
+        this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
         this.fileSystem = fileSystem;
