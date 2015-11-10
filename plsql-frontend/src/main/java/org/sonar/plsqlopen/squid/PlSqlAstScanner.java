@@ -76,16 +76,19 @@ public class PlSqlAstScanner {
         AstScanner.Builder<Grammar> builder = new ProgressAstScanner.Builder<>(
                 context).setBaseParser(parser);
         
+        builder.withMetrics(PlSqlMetric.values());
         builder.setFilesMetric(PlSqlMetric.FILES);
         setCommentAnalyser(builder);
         setMetrics(builder);
 
         /* External visitors (typically Check ones) */
-        for (SquidAstVisitor<Grammar> visitor : visitors) {
-            if (visitor instanceof CharsetAwareVisitor) {
-                ((CharsetAwareVisitor) visitor).setCharset(conf.getCharset());
+        if (visitors != null) {
+            for (SquidAstVisitor<Grammar> visitor : visitors) {
+                if (visitor instanceof CharsetAwareVisitor) {
+                    ((CharsetAwareVisitor) visitor).setCharset(conf.getCharset());
+                }
+                builder.withSquidAstVisitor(visitor);
             }
-            builder.withSquidAstVisitor(visitor);
         }
 
         return builder.build();
