@@ -50,12 +50,6 @@ public class PlSqlHighlighter {
         doHighlight(highlightable, tokens, offsets);
     }
     
-    public void highlight(Highlightable highlightable, String string) {
-        SourceFileOffsets offsets = new SourceFileOffsets(string);
-        List<Token> tokens = lexer.lex(string);
-        doHighlight(highlightable, tokens, offsets);
-    }
-    
     private void doHighlight(Highlightable highlightable, List<Token> tokens, SourceFileOffsets offsets) {
         Highlightable.HighlightingBuilder highlighting = highlightable.newHighlighting();
         highlightStringsAndKeywords(highlighting, tokens, offsets);
@@ -91,9 +85,7 @@ public class PlSqlHighlighter {
     }
     
     private static void highlight(Highlightable.HighlightingBuilder highlighting, int startOffset, int endOffset, String code) {
-        if (endOffset > startOffset) {
-            highlighting.highlight(startOffset, endOffset, code);
-        }
+        highlighting.highlight(startOffset, endOffset, code);
     }
     
     public boolean isLiteral(TokenType type) {
