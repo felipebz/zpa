@@ -19,3 +19,7 @@ exception
     null; 
 end;
 /
+create procedure test is begin null; end;
+/
+create function foo return number is begin null; end;
+/

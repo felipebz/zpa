@@ -66,4 +66,16 @@ public class PlSqlAstScannerTest {
       assertThat(file.getInt(PlSqlMetric.LINES_OF_CODE)).isEqualTo(4);
     }
     
+    @Test
+    public void methods() {
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/methods.sql"), noVisitors);
+      assertThat(file.getInt(PlSqlMetric.METHODS)).isEqualTo(4);
+    }
+    
+    @Test
+    public void statements() {
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/statements.sql"), noVisitors);
+      assertThat(file.getInt(PlSqlMetric.STATEMENTS)).isEqualTo(4);
+    }
+    
 }

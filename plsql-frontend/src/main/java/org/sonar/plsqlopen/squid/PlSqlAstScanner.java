@@ -30,17 +30,22 @@ import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.AstScanner.Builder;
 import org.sonar.squidbridge.ProgressAstScanner;
+import org.sonar.squidbridge.SourceCodeBuilderCallback;
+import org.sonar.squidbridge.SourceCodeBuilderVisitor;
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.SourceCode;
 import org.sonar.squidbridge.api.SourceFile;
+import org.sonar.squidbridge.api.SourceFunction;
 import org.sonar.squidbridge.api.SourceProject;
 import org.sonar.squidbridge.indexer.QueryByType;
 import org.sonar.squidbridge.metrics.CommentsVisitor;
 import org.sonar.squidbridge.metrics.ComplexityVisitor;
+import org.sonar.squidbridge.metrics.CounterVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
 
 import com.google.common.collect.ImmutableList;
+import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
@@ -78,6 +83,7 @@ public class PlSqlAstScanner {
         
         builder.withMetrics(PlSqlMetric.values());
         builder.setFilesMetric(PlSqlMetric.FILES);
+        setMethodAnalyser(builder);
         setCommentAnalyser(builder);
         setMetrics(builder);
 
@@ -99,6 +105,11 @@ public class PlSqlAstScanner {
         builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor(PlSqlMetric.LINES_OF_CODE));
         builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
                 .withNoSonar(true)
+                .build());
+        
+        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
+                .setMetricDef(PlSqlMetric.STATEMENTS)
+                .subscribeTo(PlSqlGrammar.STATEMENT)
                 .build());
         
         AstNodeType[] complexityAstNodeType = new AstNodeType[] {
@@ -124,6 +135,29 @@ public class PlSqlAstScanner {
         };
         builder.withSquidAstVisitor(ComplexityVisitor.<Grammar> builder().setMetricDef(PlSqlMetric.COMPLEXITY)
                 .subscribeTo(complexityAstNodeType).build());
+    }
+    
+    private static void setMethodAnalyser(AstScanner.Builder<Grammar> builder) {
+        PlSqlGrammar[] methodDeclarations = { 
+                PlSqlGrammar.CREATE_PROCEDURE,
+                PlSqlGrammar.CREATE_FUNCTION, 
+                PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.FUNCTION_DECLARATION };
+        
+        builder.withSquidAstVisitor(new SourceCodeBuilderVisitor<>(new SourceCodeBuilderCallback() {
+            @Override
+            public SourceCode createSourceCode(SourceCode parentSourceCode, AstNode astNode) {
+                String functionName = astNode.getFirstChild(PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME).getTokenValue();
+                SourceFunction function = new SourceFunction(functionName + ":" + astNode.getToken().getLine());
+                function.setStartAtLine(astNode.getTokenLine());
+                return function;
+            }
+        }, methodDeclarations));
+
+        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
+                .setMetricDef(PlSqlMetric.METHODS)
+                .subscribeTo(methodDeclarations)
+                .build());
     }
 
     private static void setCommentAnalyser(AstScanner.Builder<Grammar> builder) {

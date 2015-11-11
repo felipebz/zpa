@@ -128,6 +128,8 @@ public class PlSqlSquidSensor implements Sensor {
         context.saveMeasure(sonarFile, CoreMetrics.NCLOC, squidFile.getDouble(PlSqlMetric.LINES_OF_CODE));
         context.saveMeasure(sonarFile, CoreMetrics.COMMENT_LINES, squidFile.getDouble(PlSqlMetric.COMMENT_LINES));
         context.saveMeasure(sonarFile, CoreMetrics.COMPLEXITY, squidFile.getDouble(PlSqlMetric.COMPLEXITY));
+        context.saveMeasure(sonarFile, CoreMetrics.FUNCTIONS, squidFile.getDouble(PlSqlMetric.METHODS));
+        context.saveMeasure(sonarFile, CoreMetrics.STATEMENTS, squidFile.getDouble(PlSqlMetric.STATEMENTS));
     }
     
     private void saveFunctionsComplexityDistribution(InputFile sonarFile, SourceFile squidFile) {
