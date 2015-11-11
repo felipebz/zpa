@@ -3,4 +3,5 @@ begin
   /*
    * multiple lines
    */
+  null;
 end;
