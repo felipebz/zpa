@@ -61,6 +61,11 @@ public class NumericExpressionTest extends RuleTest {
     }
     
     @Test
+    public void matchesModulo() {
+        assertThat(p).matches("1 mod 1");
+    }
+    
+    @Test
     public void matchesMathematicalOperationBetweenTwoQueries() {
         assertThat(p).matches("(select 1 from dual) + (select 1 from dual)");
     }
