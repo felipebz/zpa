@@ -76,6 +76,16 @@ public class IdentifierNameTest extends RuleTest {
     }
     
     @Test
+    public void matchesIdentifierWithSpecialCharacters() {
+        assertThat(p).matches("variável");
+    }
+    
+    @Test
+    public void notMatchesIdentifierStartingWithNumber() {
+        assertThat(p).notMatches("2foo");
+    }
+    
+    @Test
     public void notMatchesIdentifierWithAmpersand() {
         assertThat(p).notMatches("mine&yours");
     }
