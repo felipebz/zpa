@@ -23,6 +23,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
+import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
+import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -55,15 +57,15 @@ public class PlSqlAstScanner {
     private PlSqlAstScanner() {
     }
     
-    public static SourceFile scanSingleFile(File file, SquidAstVisitor<Grammar> visitor) {
-        return scanSingleFile(file, ImmutableList.of(visitor));
+    public static SourceFile scanSingleFile(File file, SonarComponents components, SquidAstVisitor<Grammar> visitor) {
+        return scanSingleFile(file, components, ImmutableList.of(visitor));
     }
 
-    public static SourceFile scanSingleFile(File file, Collection<SquidAstVisitor<Grammar>> visitors) {
+    public static SourceFile scanSingleFile(File file, SonarComponents components, Collection<SquidAstVisitor<Grammar>> visitors) {
         if (!file.isFile()) {
             throw new IllegalArgumentException("File '" + file + "' not found.");
         }
-        AstScanner<Grammar> scanner = create(new PlSqlConfiguration(StandardCharsets.UTF_8), visitors);
+        AstScanner<Grammar> scanner = create(new PlSqlConfiguration(StandardCharsets.UTF_8), components, visitors);
         scanner.scanFile(file);
         Collection<SourceCode> sources = scanner.getIndex().search(new QueryByType(SourceFile.class));
         if (sources.size() != 1) {
@@ -73,9 +75,9 @@ public class PlSqlAstScanner {
         return (SourceFile) sources.iterator().next();
     }
     
-    public static AstScanner<Grammar> create(PlSqlConfiguration conf, Collection<SquidAstVisitor<Grammar>> visitors) {
+    public static AstScanner<Grammar> create(PlSqlConfiguration conf, SonarComponents components, Collection<SquidAstVisitor<Grammar>> visitors) {
         final SquidAstVisitorContextImpl<Grammar> context = 
-                new SquidAstVisitorContextImpl<>(new SourceProject("PL/SQL Project"));
+                new DefaultPlSqlVisitorContext<>(new SourceProject("PL/SQL Project"), components);
         final Parser<Grammar> parser = PlSqlParser.create(conf);
 
         AstScanner.Builder<Grammar> builder = new ProgressAstScanner.Builder<>(

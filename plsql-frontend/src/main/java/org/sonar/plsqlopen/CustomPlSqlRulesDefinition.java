@@ -17,23 +17,22 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package org.sonar.plugins.plsqlopen.api;
+package org.sonar.plsqlopen;
 
 import com.google.common.collect.ImmutableList;
 import org.sonar.api.BatchExtension;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonar.plsqlopen.PlSql;
 import org.sonar.squidbridge.annotations.AnnotationBasedRulesDefinition;
 
 public abstract class CustomPlSqlRulesDefinition implements RulesDefinition, BatchExtension {
 
     @Override
     public void define(RulesDefinition.Context context) {
-        RulesDefinition.NewRepository repo = context.createRepository(repositoryKey(), PlSql.KEY)
+        RulesDefinition.NewRepository repo = context.createRepository(repositoryKey(), "plsqlopen")
                 .setName(repositoryName());
 
         // Load metadata from check classes' annotations
-        new AnnotationBasedRulesDefinition(repo, PlSql.KEY).addRuleClasses(false,
+        new AnnotationBasedRulesDefinition(repo, "plsqlopen").addRuleClasses(false,
                 ImmutableList.copyOf(checkClasses()));
 
         repo.done();

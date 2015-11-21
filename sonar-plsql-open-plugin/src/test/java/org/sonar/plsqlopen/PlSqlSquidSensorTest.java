@@ -41,7 +41,6 @@ import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.plsqlopen.PlSql;
 import org.sonar.plsqlopen.PlSqlSquidSensor;
 import org.sonar.plsqlopen.checks.CheckList;
 
@@ -60,7 +59,8 @@ public class PlSqlSquidSensorTest {
           .build();
       CheckFactory checkFactory = new CheckFactory(activeRules);
       perspectives = mock(ResourcePerspectives.class);
-      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory);
+      SonarComponents components = mock(SonarComponents.class);
+      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory, components);
     }
     
     @Test

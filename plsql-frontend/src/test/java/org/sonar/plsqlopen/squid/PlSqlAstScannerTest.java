@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.Collection;
 
 import org.junit.Test;
+import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
@@ -39,10 +40,11 @@ import com.sonar.sslr.api.Grammar;
 public class PlSqlAstScannerTest {
     
     private Collection<SquidAstVisitor<Grammar>> noVisitors = null;
+    private SonarComponents components = null;
     
     @Test
     public void files() {
-        AstScanner<Grammar> scanner = PlSqlAstScanner.create(new PlSqlConfiguration(Charsets.UTF_8), noVisitors);
+        AstScanner<Grammar> scanner = PlSqlAstScanner.create(new PlSqlConfiguration(Charsets.UTF_8), components, noVisitors);
         scanner.scanFiles(ImmutableList.of(new File("src/test/resources/metrics/lines.sql"), new File("src/test/resources/metrics/comments.sql")));
         SourceProject project = (SourceProject) scanner.getIndex().search(new QueryByType(SourceProject.class)).iterator().next();
         assertThat(project.getInt(PlSqlMetric.FILES)).isEqualTo(2);
@@ -50,31 +52,31 @@ public class PlSqlAstScannerTest {
     
     @Test
     public void lines() {
-      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/lines.sql"), noVisitors);
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/lines.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.LINES)).isEqualTo(5);
     }
     
     @Test
     public void comments() {
-      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/comments.sql"), noVisitors);
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/comments.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.COMMENT_LINES)).isEqualTo(2);
     }
     
     @Test
     public void lines_of_code() {
-      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/lines_of_code.sql"), noVisitors);
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/lines_of_code.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.LINES_OF_CODE)).isEqualTo(4);
     }
     
     @Test
     public void methods() {
-      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/methods.sql"), noVisitors);
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/methods.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.METHODS)).isEqualTo(4);
     }
     
     @Test
     public void statements() {
-      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/statements.sql"), noVisitors);
+      SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/statements.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.STATEMENTS)).isEqualTo(4);
     }
     

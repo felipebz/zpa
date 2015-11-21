@@ -17,7 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package org.sonar.plugins.plsqlopen.api;
+package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +26,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.PlSql;
+import org.sonar.plsqlopen.CustomPlSqlRulesDefinition;
 import org.sonar.squidbridge.checks.SquidCheck;
 
 import com.sonar.sslr.api.Grammar;
@@ -47,7 +47,7 @@ public class CustomPlSqlRulesDefinitionTest {
         RulesDefinition.Repository repository = context.repository(REPOSITORY_KEY);
 
         assertThat(repository.name()).isEqualTo(REPOSITORY_NAME);
-        assertThat(repository.language()).isEqualTo(PlSql.KEY);
+        assertThat(repository.language()).isEqualTo("plsqlopen");
         assertThat(repository.rules()).hasSize(1);
 
         RulesDefinition.Rule alertUseRule = repository.rule(RULE_KEY);

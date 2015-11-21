@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
 import org.sonar.api.batch.fs.FileSystem;
-import org.sonar.plsqlopen.PlSql;
 import org.sonar.plsqlopen.PlSqlCpdMapping;
 import org.sonar.plsqlopen.PlSqlTokenizer;
 

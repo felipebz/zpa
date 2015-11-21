@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.sonar.api.config.Settings;
-import org.sonar.plsqlopen.PlSql;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
 public class PlSqlTest {
