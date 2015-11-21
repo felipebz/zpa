@@ -47,7 +47,8 @@ public class PlSqlPlugin extends SonarPlugin {
         PlSqlProfile.class,
         PlSqlSquidSensor.class,
         PlSqlRuleRepository.class,
-        PlSqlCpdMapping.class);
+        PlSqlCpdMapping.class,
+        SonarComponents.class);
   }
 
 }
