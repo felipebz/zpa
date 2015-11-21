@@ -38,7 +38,6 @@ import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.squidbridge.SquidAstVisitor;
-import org.sonar.squidbridge.api.CheckMessage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.sonar.sslr.api.Grammar;
@@ -149,7 +148,7 @@ public class SonarComponents implements BatchExtension {
 
     public class Test extends SonarComponents {
 
-        private Collection<CheckMessage> messages = new HashSet<>();
+        private Collection<AnalyzerMessage> messages = new HashSet<>();
 
         public Test(ResourcePerspectives resourcePerspectives, SensorContext context, FileSystem fs) {
             super(resourcePerspectives, context, fs);
@@ -160,7 +159,7 @@ public class SonarComponents implements BatchExtension {
             messages.add(message);
         }
 
-        public Collection<CheckMessage> getIssues() {
+        public Collection<AnalyzerMessage> getIssues() {
             return messages;
         }
     }

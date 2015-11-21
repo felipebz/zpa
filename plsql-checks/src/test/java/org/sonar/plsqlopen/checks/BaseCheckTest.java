@@ -29,10 +29,10 @@ import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
-import org.sonar.squidbridge.api.CheckMessage;
 import org.sonar.squidbridge.api.SourceFile;
 
 import com.sonar.sslr.api.Grammar;
@@ -64,7 +64,7 @@ public class BaseCheckTest {
         return PlSqlAstScanner.scanSingleFile(new File(defaultResourceFolder + filename), components, check);
     }
     
-    protected Collection<CheckMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
+    protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
         String relativePath = defaultResourceFolder + filename;
         DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
         inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
