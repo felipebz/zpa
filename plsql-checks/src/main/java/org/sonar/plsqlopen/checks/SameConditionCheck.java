@@ -25,12 +25,14 @@ import java.util.List;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -77,7 +79,10 @@ public class SameConditionCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherCondition = conditions.get(j);
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), condition, otherCondition.getToken().getLine());
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                        condition,
+                        ImmutableList.of(new PlSqlVisitorContext.Location("Original", otherCondition)),
+                        otherCondition.getToken().getLine());
                 return;
             }
         }

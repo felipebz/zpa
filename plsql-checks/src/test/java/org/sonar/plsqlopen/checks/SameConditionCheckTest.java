@@ -19,18 +19,19 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.SameConditionCheck;
-import org.sonar.squidbridge.api.SourceFile;
+import org.sonar.squidbridge.api.CheckMessage;
 import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class SameConditionCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("same_condition.sql", new SameConditionCheck());
+        Collection<CheckMessage> messages = scanFile("same_condition.sql", new SameConditionCheck());
         String message = "This condition duplicates the one on line %s.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        CheckMessagesVerifier.verify(messages)
             .next().atLine(3).withMessage(String.format(message, 3))
             .next().atLine(4).withMessage(String.format(message, 4))
             .next().atLine(10).withMessage(String.format(message, 9))
