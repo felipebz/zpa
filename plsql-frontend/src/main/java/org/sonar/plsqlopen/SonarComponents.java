@@ -97,7 +97,7 @@ public class SonarComponents implements BatchExtension {
                 int endColumn = message.getLocation().endCharacter;
                 
                 try {
-                    issue.setPrimaryLocation(inputFile, text, line, column == 0 ? -1 : column, endLine, endColumn == 0 ? -1 : endColumn);
+                    issue.setPrimaryLocation(inputFile, text, line, column, endLine, endColumn);
                 } catch (IllegalArgumentException e) {
                     // the previous setPrimaryLocation will fail if it is a multiline token
                     // for now, just fall back to old method
