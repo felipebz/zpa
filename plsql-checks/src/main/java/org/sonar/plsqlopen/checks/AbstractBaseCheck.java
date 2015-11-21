@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.squidbridge.checks.SquidCheck;
 
 import com.sonar.sslr.api.Grammar;
@@ -36,6 +37,11 @@ public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
    
     protected String getLocalizedMessage(String checkKey) {
         return bundle.getString("rule.plsql." + checkKey + ".message"); 
+    }
+    
+    @SuppressWarnings("unchecked")
+    protected PlSqlVisitorContext getPlSqlContext() {
+        return (PlSqlVisitorContext)getContext();
     }
     
 }
