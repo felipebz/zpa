@@ -19,23 +19,24 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.ComparisonWithNullCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class ComparisonWithNullCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("comparison_with_null.sql", new ComparisonWithNullCheck());
+        Collection<AnalyzerMessage> messages = scanFile("comparison_with_null.sql", new ComparisonWithNullCheck());
         final String messageWithIsNull = "Fix this comparison or change to \"IS NULL\".";
         final String messageWithIsNotNull = "Fix this comparison or change to \"IS NOT NULL\".";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(3).withMessage(messageWithIsNull)
-            .next().atLine(4).withMessage(messageWithIsNotNull)
-            .next().atLine(5).withMessage(messageWithIsNull)
-            .next().atLine(6).withMessage(messageWithIsNotNull)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(3, 11).endsAt(3, 21).withMessage(messageWithIsNull)
+            .next().startsAt(4, 11).endsAt(4, 22).withMessage(messageWithIsNotNull)
+            .next().startsAt(5, 11).endsAt(5, 19).withMessage(messageWithIsNull)
+            .next().startsAt(6, 11).endsAt(6, 20).withMessage(messageWithIsNotNull)
             .noMore();
     }
 
