@@ -19,19 +19,20 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.IfWithExitCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class IfWithExitCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("if_with_exit.sql", new IfWithExitCheck());
+        Collection<AnalyzerMessage> messages = scanFile("if_with_exit.sql", new IfWithExitCheck());
         final String message = "Replace this code by a EXIT WHEN statement.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(3).withMessage(message)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(2, 3).endsAt(4, 10).withMessage(message)
             .noMore();
     }
 

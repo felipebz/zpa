@@ -52,7 +52,7 @@ public class IfWithExitCheck extends AbstractBaseCheck {
         if (ifStatement.is(PlSqlGrammar.IF_STATEMENT) &&
             !ifStatement.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE) &&
             ifStatement.getChildren(PlSqlGrammar.STATEMENT).size() == 1) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), ifStatement);
         }
     }
 
