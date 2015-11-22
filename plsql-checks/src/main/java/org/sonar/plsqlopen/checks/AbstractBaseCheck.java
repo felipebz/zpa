@@ -39,7 +39,6 @@ public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
         return bundle.getString("rule.plsql." + checkKey + ".message"); 
     }
     
-    @SuppressWarnings("unchecked")
     protected PlSqlVisitorContext getPlSqlContext() {
         return (PlSqlVisitorContext)getContext();
     }
