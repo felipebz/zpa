@@ -48,7 +48,7 @@ public class AnalyzerMessagesVerifier {
                 AnalyzerMessage.TextSpan rightLocation = right.getLocation();
                 
                 if (leftLocation != null && rightLocation != null) {
-                    return Integer.compare(leftLocation.endCharacter, rightLocation.endCharacter);
+                    return Integer.compare(leftLocation.startCharacter, rightLocation.startCharacter);
                 }
                 
                 return left.getDefaultMessage().compareTo(right.getDefaultMessage());
