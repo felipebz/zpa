@@ -19,22 +19,23 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.AddParenthesesInNestedExpressionCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class AddParenthesesInNestedExpressionCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("add_parentheses_in_nested_expression.sql", new AddParenthesesInNestedExpressionCheck());
+        Collection<AnalyzerMessage> messages = scanFile("add_parentheses_in_nested_expression.sql", new AddParenthesesInNestedExpressionCheck());
         final String message = "Add parentheses around this AND condition.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(9).withMessage(message)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(2, 20).endsAt(2,  35).withMessage(message)
+            .next().startsAt(3, 20).endsAt(3,  35).withMessage(message)
+            .next().startsAt(3, 39).endsAt(3,  54).withMessage(message)
+            .next().startsAt(9, 10).endsAt(10, 15).withMessage(message)
             .noMore();
     }
     
