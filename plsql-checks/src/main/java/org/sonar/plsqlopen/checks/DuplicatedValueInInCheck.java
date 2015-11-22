@@ -25,12 +25,14 @@ import java.util.List;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -77,10 +79,16 @@ public class DuplicatedValueInInCheck extends AbstractBaseCheck {
     }
 
     private void checkValue(List<AstNode> values, int index) {
+        AstNode current  = values.get(index);
+        
         for (int j = 0; j < index; j++) {
-            if (CheckUtils.equalNodes(values.get(j), values.get(index))) {
-                AstNode node = values.get(j);
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, node.getTokenOriginalValue());
+            AstNode other = values.get(j);
+            
+            if (CheckUtils.equalNodes(current, other)) {
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                        current,
+                        ImmutableList.of(new PlSqlVisitorContext.Location("Original", other)),
+                        current.getTokenOriginalValue());
                 return;
             }
         }
