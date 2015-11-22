@@ -19,20 +19,25 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.IdenticalExpressionCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class IdenticalExpressionCheckTest extends BaseCheckTest {
 
 	@Test
     public void test() {
-        SourceFile file = scanSingleFile("identical_expression.sql", new IdenticalExpressionCheck());
+        Collection<AnalyzerMessage> file = scanFile("identical_expression.sql", new IdenticalExpressionCheck());
         final String message = "Identical expressions on both sides of operator \"=\".";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
-            .next().atLine(7).withMessage(message)
+        AnalyzerMessagesVerifier.verify(file)
+            .next().startsAt(2, 11).endsAt(2, 12).withMessage(message)
+                .secondaryLocationAt(2, 15, 2, 16)
+                
+            .next().startsAt(7, 10).endsAt(7, 17).withMessage(message)
+                .secondaryLocationAt(7, 20, 7, 27)
+                
             .noMore();
     }
 	
