@@ -52,7 +52,7 @@ public class ToDateWithoutFormatCheck extends BaseMethodCallChecker {
     @Override
     protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         if (arguments.size() == 1) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
+            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
         }
     }
 
