@@ -35,6 +35,7 @@ import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
@@ -82,8 +83,12 @@ public class VariableHidingCheck extends AbstractBaseCheck {
             
             Variable variable = getCurrentScope().getVariableDeclaration(identifier);
             if (variable != null) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY),
-                        identifier, identifier.getTokenOriginalValue(), variable.getDeclaration().getTokenLine());
+                AstNode originalVariable = variable.getDeclaration();
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
+                        identifier,
+                        ImmutableList.of(newLocation("Original", originalVariable)),
+                        identifier.getTokenOriginalValue(),
+                        originalVariable.getTokenLine());
             }
             
             getCurrentScope().declareLocalVariable(identifier);

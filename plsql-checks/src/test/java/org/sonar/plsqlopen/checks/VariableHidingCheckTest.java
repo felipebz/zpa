@@ -19,23 +19,34 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.VariableHidingCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class VariableHidingCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("variable_hiding.sql", new VariableHidingCheck());
+        Collection<AnalyzerMessage> messages = scanFile("variable_hiding.sql", new VariableHidingCheck());
         final String message = "This variable \"%s\" hides the declaration on line %s.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(7).withMessage(String.format(message, "var", 2))
-            .next().atLine(13).withMessage(String.format(message, "var2", 3))
-            .next().atLine(20).withMessage(String.format(message, "var3", 4))
-            .next().atLine(31).withMessage(String.format(message, "var", 28))
-            .next().atLine(35).withMessage(String.format(message, "i", 33))
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(7, 5).endsAt(7, 8).withMessage(String.format(message, "var", 2))
+                .secondaryLocationAt(2, 3, 2, 6)
+                
+            .next().startsAt(13, 5).endsAt(13, 9).withMessage(String.format(message, "var2", 3))
+                .secondaryLocationAt(3, 3, 3, 7)
+                
+            .next().startsAt(20, 5).endsAt(20, 9).withMessage(String.format(message, "var3", 4))
+                .secondaryLocationAt(4, 3, 4, 7)
+                
+            .next().startsAt(31, 5).endsAt(31, 8).withMessage(String.format(message, "var", 28))
+                .secondaryLocationAt(28, 3, 28, 6)
+                
+            .next().startsAt(35, 9).endsAt(35, 10).withMessage(String.format(message, "i", 33))
+                .secondaryLocationAt(33, 9, 33, 10)
+                
             .noMore();
     }
     
