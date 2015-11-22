@@ -19,19 +19,20 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.ColumnsShouldHaveTableNameCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class ColumnsShouldHaveTableNameCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("columns_should_have_table_name.sql", new ColumnsShouldHaveTableNameCheck());
+        Collection<AnalyzerMessage> messages = scanFile("columns_should_have_table_name.sql", new ColumnsShouldHaveTableNameCheck());
         final String message = "Specify the table of column \"col\".";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(2, 10).endsAt(2, 13).withMessage(message)
             .noMore();
     }
     
