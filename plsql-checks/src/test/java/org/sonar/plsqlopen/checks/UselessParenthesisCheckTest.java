@@ -19,19 +19,20 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.UselessParenthesisCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class UselessParenthesisCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("useless_parenthesis.sql", new UselessParenthesisCheck());
+        Collection<AnalyzerMessage> messages = scanFile("useless_parenthesis.sql", new UselessParenthesisCheck());
         String message = "Remove those useless parenthesis.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(message)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(2, 11).endsAt(2, 18).withMessage(message)
             .noMore();
     }
     
