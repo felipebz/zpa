@@ -54,7 +54,7 @@ public class NvlWithNullParameterCheck extends BaseMethodCallChecker {
         for (AstNode argument : arguments) {
             AstNode argumentValue = argument.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, argumentValue.getTokenValue());
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, argumentValue.getTokenValue());
             }
         }
     }

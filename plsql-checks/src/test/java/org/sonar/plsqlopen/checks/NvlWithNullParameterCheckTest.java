@@ -19,23 +19,24 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.NvlWithNullParameterCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
 
 public class NvlWithNullParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("nvl_with_null_parameter.sql", new NvlWithNullParameterCheck());
+        Collection<AnalyzerMessage> messages = scanFile("nvl_with_null_parameter.sql", new NvlWithNullParameterCheck());
         final String messageWithNull = "Remove the NULL parameter of this NVL.";
         final String messageWithEmptyString = "Remove the '' parameter of this NVL.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
-            .next().atLine(2).withMessage(messageWithNull)
-            .next().atLine(3).withMessage(messageWithNull)
-            .next().atLine(4).withMessage(messageWithEmptyString)
-            .next().atLine(5).withMessage(messageWithEmptyString)
+        AnalyzerMessagesVerifier.verify(messages)
+            .next().startsAt(2, 10).endsAt(2, 22).withMessage(messageWithNull)
+            .next().startsAt(3, 10).endsAt(3, 22).withMessage(messageWithNull)
+            .next().startsAt(4, 10).endsAt(4, 20).withMessage(messageWithEmptyString)
+            .next().startsAt(5, 10).endsAt(5, 20).withMessage(messageWithEmptyString)
             .noMore();
     }
     
