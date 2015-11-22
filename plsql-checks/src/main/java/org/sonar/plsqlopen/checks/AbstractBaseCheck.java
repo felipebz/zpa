@@ -25,6 +25,7 @@ import java.util.ResourceBundle;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.squidbridge.checks.SquidCheck;
 
+import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 
 public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
@@ -41,6 +42,10 @@ public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
     
     protected PlSqlVisitorContext getPlSqlContext() {
         return (PlSqlVisitorContext)getContext();
+    }
+    
+    protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
+        return new PlSqlVisitorContext.Location(message, node);
     }
     
 }
