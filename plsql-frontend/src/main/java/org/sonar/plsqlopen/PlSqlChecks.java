@@ -31,6 +31,7 @@ import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.squidbridge.SquidAstVisitor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.sonar.sslr.api.Grammar;
 
@@ -89,6 +90,11 @@ public class PlSqlChecks {
         }
       }
       return null;
+    }
+    
+    @VisibleForTesting
+    public Set<Checks<SquidAstVisitor<Grammar>>> getChecks() {
+        return checksByRepository;
     }
     
 }
