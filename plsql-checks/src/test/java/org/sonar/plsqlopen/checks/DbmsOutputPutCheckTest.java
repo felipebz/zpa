@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.DbmsOutputPutCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class DbmsOutputPutCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("dbms_output_put.sql", new DbmsOutputPutCheck());
+        Collection<AnalyzerMessage> messages = scanFile("dbms_output_put.sql", new DbmsOutputPutCheck());
         final String message = "Avoid direct calls to DBMS_OUTPUT procedures.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .next().atLine(3).withMessage(message)
             .next().atLine(4).withMessage(message)

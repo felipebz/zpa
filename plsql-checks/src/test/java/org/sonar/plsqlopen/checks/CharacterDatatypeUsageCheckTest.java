@@ -19,17 +19,17 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.CharacterDatatypeUsageCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class CharacterDatatypeUsageCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("character_datatype_usage.sql", new CharacterDatatypeUsageCheck());
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        Collection<AnalyzerMessage> messages = scanFile("character_datatype_usage.sql", new CharacterDatatypeUsageCheck());
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage("Use VARCHAR2 instead of VARCHAR.")
             .next().atLine(3).withMessage("Use VARCHAR2 instead of CHAR.")
             .noMore();

@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.RaiseStandardExceptionCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class RaiseStandardExceptionCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("raise_standard_exception.sql", new RaiseStandardExceptionCheck());
+        Collection<AnalyzerMessage> messages = scanFile("raise_standard_exception.sql", new RaiseStandardExceptionCheck());
         String message = "Avoid raising the standard exception %s.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(4).withMessage(String.format(message, "no_data_found"))
             .next().atLine(5).withMessage(String.format(message, "too_many_rows"))
             .noMore();

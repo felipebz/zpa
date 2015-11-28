@@ -19,19 +19,19 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.ComparisonWithBooleanCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class ComparisonWithBooleanCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("comparison_with_boolean.sql", new ComparisonWithBooleanCheck());
+        Collection<AnalyzerMessage> messages = scanFile("comparison_with_boolean.sql", new ComparisonWithBooleanCheck());
         final String messageWithTrue = "Remove the literal \"TRUE\" of this comparison.";
         final String messageWithFalse = "Remove the literal \"FALSE\" of this comparison.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(messageWithTrue)
             .next().atLine(3).withMessage(messageWithTrue)
             .next().atLine(4).withMessage(messageWithFalse)

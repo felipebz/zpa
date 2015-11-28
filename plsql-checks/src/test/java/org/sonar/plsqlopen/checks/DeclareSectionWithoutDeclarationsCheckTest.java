@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.DeclareSectionWithoutDeclarationsCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class DeclareSectionWithoutDeclarationsCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("declare_section_without_declarations.sql", new DeclareSectionWithoutDeclarationsCheck());
+        Collection<AnalyzerMessage> messages = scanFile("declare_section_without_declarations.sql", new DeclareSectionWithoutDeclarationsCheck());
         String message = "Remove this DECLARE keyword.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .noMore();
     }

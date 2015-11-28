@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.SelectWithRownumAndOrderByCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class SelectWithRownumAndOrderByCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("select_with_rownum_and_order_by.sql", new SelectWithRownumAndOrderByCheck());
+        Collection<AnalyzerMessage> messages = scanFile("select_with_rownum_and_order_by.sql", new SelectWithRownumAndOrderByCheck());
         final String message = "Move this ROWNUM comparation to a more external level to guarantee the ordering.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(5).withMessage(message)
             .next().atLine(11).withMessage(message)
             .noMore();

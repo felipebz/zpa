@@ -19,17 +19,17 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.NotFoundCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class NotFoundCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("not_found.sql", new NotFoundCheck());
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        Collection<AnalyzerMessage> messages = scanFile("not_found.sql", new NotFoundCheck());
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage("Use %NOTFOUND instead of NOT ...%FOUND.")
             .noMore();
     }

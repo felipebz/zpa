@@ -19,17 +19,17 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.ParsingErrorCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class ParsingErrorCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("parsing_error.sql", new ParsingErrorCheck());
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        Collection<AnalyzerMessage> messages = scanFile("parsing_error.sql", new ParsingErrorCheck());
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(1)
             .noMore();
     }

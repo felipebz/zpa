@@ -23,7 +23,6 @@ import java.util.Collection;
 
 import org.junit.Test;
 import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.checks.AddParenthesesInNestedExpressionCheck;
 
 public class AddParenthesesInNestedExpressionCheckTest extends BaseCheckTest {
     

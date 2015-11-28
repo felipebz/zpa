@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.UnnecessaryElseCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class UnnecessaryElseCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("unnecessary_else.sql", new UnnecessaryElseCheck());
+        Collection<AnalyzerMessage> messages = scanFile("unnecessary_else.sql", new UnnecessaryElseCheck());
         final String message = "Statements unnecessarily nested within ELSE clause.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(4).withMessage(message)
             .next().atLine(10).withMessage(message)
             .next().atLine(16).withMessage(message)

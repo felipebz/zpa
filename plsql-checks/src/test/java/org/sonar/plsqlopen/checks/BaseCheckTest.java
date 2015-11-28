@@ -33,7 +33,6 @@ import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
-import org.sonar.squidbridge.api.SourceFile;
 
 import com.sonar.sslr.api.Grammar;
 
@@ -51,17 +50,6 @@ public class BaseCheckTest {
     @Before
     public void setUp() {
         Locale.setDefault(Locale.ENGLISH);
-    }
-    
-    protected SourceFile scanSingleFile(String filename, SquidAstVisitor<Grammar> check) {
-        String relativePath = defaultResourceFolder + filename;
-        DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
-        inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
-        fs.add(inputFile);
-        
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
-        
-        return PlSqlAstScanner.scanSingleFile(new File(defaultResourceFolder + filename), components, check);
     }
     
     protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {

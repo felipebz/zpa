@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.SelectAllColumnsCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class SelectAllColumnsCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("select_all_columns.sql", new SelectAllColumnsCheck());
+        Collection<AnalyzerMessage> messages = scanFile("select_all_columns.sql", new SelectAllColumnsCheck());
         final String message = "SELECT * should not be used.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(3).withMessage(message)
             .next().atLine(7).withMessage(message)
             .next().atLine(11).withMessage(message)

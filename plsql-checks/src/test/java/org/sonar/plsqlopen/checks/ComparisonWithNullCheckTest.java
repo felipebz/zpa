@@ -23,7 +23,6 @@ import java.util.Collection;
 
 import org.junit.Test;
 import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.checks.ComparisonWithNullCheck;
 
 public class ComparisonWithNullCheckTest extends BaseCheckTest {
     

@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.UnusedVariableCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class UnusedVariableCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("unused_variable.sql", new UnusedVariableCheck());
+        Collection<AnalyzerMessage> messages = scanFile("unused_variable.sql", new UnusedVariableCheck());
         String message = "Remove this unused \"%s\" local variable.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(String.format(message, "var"))
             .next().atLine(3).withMessage(String.format(message, "i"))
             .next().atLine(6).withMessage(String.format(message, "proc_var"))

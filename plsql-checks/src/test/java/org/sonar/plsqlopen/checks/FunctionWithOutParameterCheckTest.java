@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.FunctionWithOutParameterCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class FunctionWithOutParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("function_with_out_parameter.sql", new FunctionWithOutParameterCheck());
+        Collection<AnalyzerMessage> messages = scanFile("function_with_out_parameter.sql", new FunctionWithOutParameterCheck());
         String message = "Rewrite this function to not depend on OUT parameters.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .next().atLine(9).withMessage(message)
             .next().atLine(18).withMessage(message)

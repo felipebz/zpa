@@ -19,17 +19,17 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.InequalityUsageCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class InequalityUsageCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("inequality_usage_check.sql", new InequalityUsageCheck());
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        Collection<AnalyzerMessage> messages = scanFile("inequality_usage_check.sql", new InequalityUsageCheck());
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(3).withMessage("Replace \"!=\" by \"<>\".")
             .next().atLine(4).withMessage("Replace \"^=\" by \"<>\".")
             .next().atLine(5).withMessage("Replace \"~=\" by \"<>\".")

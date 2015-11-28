@@ -94,7 +94,7 @@ public class AnalyzerMessagesVerifier {
 
     public AnalyzerMessagesVerifier atLine(@Nullable Integer expectedLine) {
         checkStateOfCurrent();
-        if (!Objects.equal(expectedLine, current.getLocation().startLine)) {
+        if (!Objects.equal(expectedLine, current.getLine())) {
             throw assertionError(expectedLine, current.getLine());
         }
         return this;

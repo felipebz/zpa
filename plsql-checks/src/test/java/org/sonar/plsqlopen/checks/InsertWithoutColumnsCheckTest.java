@@ -19,17 +19,17 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.InsertWithoutColumnsCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class InsertWithoutColumnsCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("insert_without_columns.sql", new InsertWithoutColumnsCheck());
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        Collection<AnalyzerMessage> messages = scanFile("insert_without_columns.sql", new InsertWithoutColumnsCheck());
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage("Specify the columns in this INSERT.")
             .noMore();
     }

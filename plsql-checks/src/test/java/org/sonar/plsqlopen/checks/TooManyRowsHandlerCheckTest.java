@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.TooManyRowsHandlerCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class TooManyRowsHandlerCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("too_many_rows_handler.sql", new TooManyRowsHandlerCheck());
+        Collection<AnalyzerMessage> messages = scanFile("too_many_rows_handler.sql", new TooManyRowsHandlerCheck());
         String message = "Fill this TOO_MANY_ROWS exception handler.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(7).withMessage(message)
             .noMore();
     }

@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.VariableInitializationWithFunctionCallCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class VariableInitializationWithFunctionCallCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("variable_initialization_with_function_call.sql", new VariableInitializationWithFunctionCallCheck());
+        Collection<AnalyzerMessage> messages = scanFile("variable_initialization_with_function_call.sql", new VariableInitializationWithFunctionCallCheck());
         final String message = "Move this initialization to the BEGIN...END block.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .next().atLine(3).withMessage(message)
             .noMore();

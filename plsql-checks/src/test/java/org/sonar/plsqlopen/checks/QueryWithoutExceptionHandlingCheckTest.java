@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.QueryWithoutExceptionHandlingCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class QueryWithoutExceptionHandlingCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("query_without_exception_handling.sql", new QueryWithoutExceptionHandlingCheck());
+        Collection<AnalyzerMessage> messages = scanFile("query_without_exception_handling.sql", new QueryWithoutExceptionHandlingCheck());
         final String message = "Handle exceptions of this query.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .next().atLine(10).withMessage(message)
             .next().atLine(20).withMessage(message)

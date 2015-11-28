@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.DeadCodeCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class DeadCodeCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("dead_code.sql", new DeadCodeCheck());
+        Collection<AnalyzerMessage> messages = scanFile("dead_code.sql", new DeadCodeCheck());
         final String message = "This code will never be executed.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(4).withMessage(message)
             .next().atLine(11).withMessage(message)
             .next().atLine(18).withMessage(message)

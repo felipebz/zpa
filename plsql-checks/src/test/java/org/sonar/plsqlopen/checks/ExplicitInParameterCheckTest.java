@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.ExplicitInParameterCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class ExplicitInParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        SourceFile file = scanSingleFile("explicit_in_parameter.sql", new ExplicitInParameterCheck());
+        Collection<AnalyzerMessage> messages = scanFile("explicit_in_parameter.sql", new ExplicitInParameterCheck());
         final String message = "Explicitly declare this parameter as IN.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(1).withMessage(message)
             .noMore();
     }

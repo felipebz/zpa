@@ -19,18 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collection;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.ReturnOfBooleanExpressionCheck;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.checks.CheckMessagesVerifier;
+import org.sonar.plsqlopen.AnalyzerMessage;
 
 public class ReturnOfBooleanExpressionCheckTest extends BaseCheckTest {
 
 	@Test
     public void test() {
-        SourceFile file = scanSingleFile("return_of_boolean_expression.sql", new ReturnOfBooleanExpressionCheck());
+        Collection<AnalyzerMessage> messages = scanFile("return_of_boolean_expression.sql", new ReturnOfBooleanExpressionCheck());
         final String message = "Replace this if-then-else statement by a single return statement.";
-        CheckMessagesVerifier.verify(file.getCheckMessages())
+        AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(2).withMessage(message)
             .next().atLine(8).withMessage(message)
             .noMore();
