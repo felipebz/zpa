@@ -30,7 +30,7 @@ public abstract class BaseMethodCallChecker extends AbstractBaseCheck {
     
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.METHOD_CALL);
+        subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT);
     }
     
     @Override
