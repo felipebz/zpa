@@ -1,0 +1,14 @@
+version: 1.0.{build}
+
+install:
+- cmd: cinst maven -Version 3.3.1
+
+cache:
+- C:\Users\appveyor\.m2
+- C:\bin\apache-maven-3.3.1
+
+build_script:
+- cmd: C:\bin\apache-maven-3.3.1\bin\mvn verify -B -e -V
+
+artifacts:
+- path: sonar-plsql-open-plugin\target\sonar-plsql-open-plugin-1.0-SNAPSHOT.jar
