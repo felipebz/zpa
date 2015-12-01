@@ -110,7 +110,6 @@ public enum PlSqlKeyword implements TokenType {
     UNION("union", true),
     UNIQUE("unique", true),
     UPDATE("update", true),
-    USE("use", true),
     VALUES("values", true),
     VIEW("view", true),
     VIEWS("views", true),
@@ -126,6 +125,7 @@ public enum PlSqlKeyword implements TokenType {
     TABLE("table"),
     DECIMAL("decimal"),
     TYPE("type"),
+    USE("use"),
 
     // non reserved keywords
     NUMBER("number"),
