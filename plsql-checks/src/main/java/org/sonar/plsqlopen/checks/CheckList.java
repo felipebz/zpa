@@ -69,6 +69,7 @@ public class CheckList {
             DbmsOutputPutCheck.class,
             ReturnOfBooleanExpressionCheck.class,
             UnnecessaryElseCheck.class,
-            DeadCodeCheck.class);
+            DeadCodeCheck.class,
+            ConcatenationWithNullCheck.class);
     }
 }
