@@ -61,12 +61,12 @@
             </goals>
             <configuration>
               <includes>
-                <include>${project.groupId}:plsql-squid</include>
-                <include>org.codehaus.sonar.sslr:sslr-core</include>
-                <include>org.codehaus.sonar.sslr:sslr-xpath</include>
-                <include>org.codehaus.sonar.sslr-squid-bridge:sslr-squid-bridge</include>
+                <include>${project.groupId}:plsql-frontend</include>
+                <include>org.sonarsource.sslr:sslr-core</include>
+                <include>org.sonarsource.sslr:sslr-xpath</include>
+                <include>org.sonarsource.sslr-squid-bridge:sslr-squid-bridge</include>
                 <include>jaxen:jaxen</include>
-                <include>org.codehaus.sonar.sslr:sslr-toolkit</include>
+                <include>org.sonarsource.sslr:sslr-toolkit</include>
                 <include>org.codehaus.sonar:sonar-colorizer</include>
                 <include>org.codehaus.sonar:sonar-channel</include>
                 <include>org.slf4j:slf4j-api</include>
