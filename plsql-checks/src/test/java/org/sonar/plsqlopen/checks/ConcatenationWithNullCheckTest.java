@@ -29,7 +29,7 @@ public class ConcatenationWithNullCheckTest extends BaseCheckTest {
     @Test
     public void test() {
         Collection<AnalyzerMessage> messages = scanFile("concatenation_with_null.sql", new ConcatenationWithNullCheck());
-        final String message = "Remove this NULL value from the concatenation.";
+        final String message = "Review this concatenation with NULL value.";
         AnalyzerMessagesVerifier.verify(messages)
             .next().startsAt(2, 15).endsAt(2, 19).withMessage(message)
             .next().startsAt(3, 15).endsAt(3, 17).withMessage(message)

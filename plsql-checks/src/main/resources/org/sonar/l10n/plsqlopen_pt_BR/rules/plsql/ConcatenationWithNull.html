@@ -1,1 +1,14 @@
-<p>Concatenar qualquer coisa com NULL não causa efeito nenhum. Sendo assim, o valor NULL deve ser removido.</p>
+<p>Concatenar um valor VARCHAR2 com NULL não causa efeito nenhum. Sendo assim, o valor NULL deve ser removido.</p>
+
+<p>Uma concatenação de qualquer outro tipo de dado com NULL causará uma conversão implícita para VARCHAR2. Se esse for o
+comportamento desejado, substituia a concatenação por uma chamada para TO_CHAR para tornar isso explícito. Veja esse exemplo:</p>
+
+<pre>
+var := NVL(''||id, 'Vazio');
+</pre>
+
+Você deveria usar:
+
+<pre>
+var := NVL(TO_CHAR(id), 'Vazio');
+</pre>
