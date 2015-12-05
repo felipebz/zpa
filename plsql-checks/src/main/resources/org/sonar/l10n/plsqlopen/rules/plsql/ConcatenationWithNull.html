@@ -7,7 +7,7 @@ replace the concatenation by a TO_CHAR call to make the intention explicit. See 
 var := NVL(''||id, 'Empty');
 </pre>
 
-You should use this:
+<p>You should use this:</p>
 
 <pre>
 var := NVL(TO_CHAR(id), 'Empty');
