@@ -58,7 +58,7 @@ public class UnnecessaryElseCheck extends AbstractBaseCheck {
     }
     
     private static boolean hasTerminationStatement(AstNode ifStatement) {
-        for (AstNode statement : ifStatement.getChildren(PlSqlGrammar.STATEMENT)) {
+        for (AstNode statement : ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren()) {
             AstNode internal = statement.getFirstChild();
             if (CheckUtils.isTerminationStatement(internal)) {
                 return true;

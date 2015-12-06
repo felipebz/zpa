@@ -149,6 +149,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     PIPE_ROW_STATEMENT,
     CASE_STATEMENT,
     STATEMENT,
+    STATEMENTS,
     
     // Declarations
     DEFAULT_VALUE_ASSIGNMENT,
@@ -311,13 +312,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
-        b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, OBJECT_REFERENCE), THEN, b.oneOrMore(STATEMENT));
+        b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, OBJECT_REFERENCE), THEN, STATEMENTS);
         
         b.rule(LABEL).is(LLABEL, IDENTIFIER_NAME, RLABEL);
         
         b.rule(STATEMENTS_SECTION).is(
                 BEGIN,
-                b.oneOrMore(STATEMENT),
+                STATEMENTS,
                 b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)), 
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
@@ -328,19 +329,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ASSIGNMENT_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON);
         
-        b.rule(ELSIF_CLAUSE).is(ELSIF, EXPRESSION, THEN, b.oneOrMore(STATEMENT));
+        b.rule(ELSIF_CLAUSE).is(ELSIF, EXPRESSION, THEN, STATEMENTS);
         
-        b.rule(ELSE_CLAUSE).is(ELSE, b.oneOrMore(STATEMENT));
+        b.rule(ELSE_CLAUSE).is(ELSE, STATEMENTS);
         
         b.rule(IF_STATEMENT).is(
                 b.optional(LABEL),
                 IF, EXPRESSION, THEN,
-                b.oneOrMore(STATEMENT),
+                STATEMENTS,
                 b.zeroOrMore(ELSIF_CLAUSE),
                 b.optional(ELSE_CLAUSE),
                 END, IF, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(LOOP_STATEMENT).is(b.optional(LABEL), LOOP, b.oneOrMore(STATEMENT), END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        b.rule(LOOP_STATEMENT).is(b.optional(LABEL), LOOP, STATEMENTS, END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(EXIT_STATEMENT).is(b.optional(LABEL), EXIT, b.optional(WHEN, EXPRESSION), SEMICOLON);
         
@@ -353,13 +354,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(EXPRESSION, RANGE, EXPRESSION),
                         OBJECT_REFERENCE),
                 LOOP,
-                b.oneOrMore(STATEMENT),
+                STATEMENTS,
                 END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(WHILE_STATEMENT).is(
                 b.optional(LABEL), 
                 WHILE, EXPRESSION, LOOP,
-                b.oneOrMore(STATEMENT),
+                STATEMENTS,
                 END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(RETURN_STATEMENT).is(b.optional(LABEL), RETURN, b.optional(EXPRESSION), SEMICOLON);
@@ -460,8 +461,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(CASE_STATEMENT).is(
                 b.optional(LABEL), 
                 CASE, b.optional(OBJECT_REFERENCE),
-                b.oneOrMore(WHEN, EXPRESSION, THEN, b.oneOrMore(STATEMENT)),
-                b.optional(ELSE, b.oneOrMore(STATEMENT)),
+                b.oneOrMore(WHEN, EXPRESSION, THEN, STATEMENTS),
+                b.optional(ELSE, STATEMENTS),
                 END, CASE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
@@ -490,6 +491,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        CLOSE_STATEMENT,
                                        PIPE_ROW_STATEMENT,
                                        CASE_STATEMENT));
+        
+        b.rule(STATEMENTS).is(b.oneOrMore(STATEMENT));
     }
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {

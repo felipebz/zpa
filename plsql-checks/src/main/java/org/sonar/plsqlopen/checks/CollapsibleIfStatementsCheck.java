@@ -65,7 +65,7 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
 
     @Nullable
     private static AstNode singleIfChild(AstNode suite) {
-        List<AstNode> statements = suite.getChildren(PlSqlGrammar.STATEMENT);
+        List<AstNode> statements = suite.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
         if (statements.size() == 1) {
             AstSelect nestedIf = statements.get(0).select().children(PlSqlGrammar.IF_STATEMENT);
             if (nestedIf.size() == 1) {

@@ -49,7 +49,7 @@ public class EmptyBlockCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode suiteNode) {
         AstSelect suite = suiteNode.select();
-        AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENT);
+        AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENTS).children();
         if (stmtLists.size() == 1) {
             AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
             if (!nullStatementSelect.isEmpty()) {

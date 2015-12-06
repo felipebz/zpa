@@ -48,10 +48,10 @@ public class IfWithExitCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         AstNode statement = node.getParent();
-        AstNode ifStatement = statement.getParent();
+        AstNode ifStatement = statement.getParent().getParent();
         if (ifStatement.is(PlSqlGrammar.IF_STATEMENT) &&
             !ifStatement.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE) &&
-            ifStatement.getChildren(PlSqlGrammar.STATEMENT).size() == 1) {
+            ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS).getNumberOfChildren() == 1) {
             getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), ifStatement);
         }
     }

@@ -77,7 +77,7 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
 
     @Nullable
     public AstNode getStatementFrom(AstNode node) {
-        List<AstNode> statements = node.getChildren(PlSqlGrammar.STATEMENT);
+        List<AstNode> statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
         if (statements.size() == 1) {
             return statements.get(0);
         }
