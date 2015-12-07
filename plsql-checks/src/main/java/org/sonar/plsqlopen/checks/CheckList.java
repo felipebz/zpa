@@ -70,6 +70,7 @@ public class CheckList {
             ReturnOfBooleanExpressionCheck.class,
             UnnecessaryElseCheck.class,
             DeadCodeCheck.class,
-            ConcatenationWithNullCheck.class);
+            ConcatenationWithNullCheck.class,
+            SameBranchCheck.class);
     }
 }

@@ -1,0 +1,40 @@
+<p>Ter duas branches na mesma estrutura <code>if</code> com a mesma implementação é código duplicado na melhor das hipóteses,
+na pior é um erro de programação. Se a mesma lógica é realmente necessária para as duas situações, então as condições devem ser combinadas.</p>
+
+<h2>Código em desconformidade</h2>
+<pre>
+IF var BETWEEN 0 AND 10 THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSIF var BETWEEN 20 AND 50 THEN
+  do_the_thing(); -- Noncompliant; duplicates first condition
+ELSE
+  do_the_rest()
+END IF;
+</pre>
+
+<h2>Código correto</h2>
+<pre>
+IF (var BETWEEN 0 AND 10) OR (var BETWEEN 20 AND 50) THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSE
+  do_the_rest()
+END IF;
+</pre>
+
+<p>ou</p>
+
+<pre>
+IF var BETWEEN 0 AND 10 THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSIF var BETWEEN 20 AND 50 THEN
+  do_the_third_thing();
+ELSE
+  do_the_rest()
+END IF;
+</pre>

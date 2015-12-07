@@ -1,0 +1,40 @@
+<p>Having two branches in the same <code>if</code> structure with the same implementation is at best duplicate code,
+and at worst a coding error. If the same logic is truly needed for both instances, then they should be combined.</p>
+
+<h2>Noncompliant Code Example</h2>
+<pre>
+IF var BETWEEN 0 AND 10 THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSIF var BETWEEN 20 AND 50 THEN
+  do_the_thing(); -- Noncompliant; duplicates first condition
+ELSE
+  do_the_rest()
+END IF;
+</pre>
+
+<h2>Compliant Solution</h2>
+<pre>
+IF (var BETWEEN 0 AND 10) OR (var BETWEEN 20 AND 50) THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSE
+  do_the_rest()
+END IF;
+</pre>
+
+<p>or</p>
+
+<pre>
+IF var BETWEEN 0 AND 10 THEN
+  do_the_thing();
+ELSIF var BETWEEN 10 AND 20 THEN
+  do_the_other_thing();
+ELSIF var BETWEEN 20 AND 50 THEN
+  do_the_third_thing();
+ELSE
+  do_the_rest()
+END IF;
+</pre>
