@@ -44,6 +44,11 @@ public class RaiseStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesRaiseMember() {
+        assertThat(p).matches("raise pack.ex;");
+    }
+    
+    @Test
     public void matchesLabeledRaise() {
         assertThat(p).matches("<<foo>> raise;");
     }

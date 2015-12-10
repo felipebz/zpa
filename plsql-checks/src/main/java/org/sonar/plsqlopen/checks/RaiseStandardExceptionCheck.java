@@ -72,7 +72,7 @@ public class RaiseStandardExceptionCheck extends AbstractBaseCheck {
     
     @Override
     public void visitNode(AstNode node) {
-        AstNode exceptionIdentifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+        AstNode exceptionIdentifier = node.getFirstChild(PlSqlGrammar.VARIABLE_NAME);
         if (exceptionIdentifier != null) {
             String exceptionName = exceptionIdentifier.getTokenOriginalValue();
             

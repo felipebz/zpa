@@ -48,6 +48,7 @@ declare
   comparision_var number;
   case_insensitive_test number;
   record_variable rectype;
+  error exception;
 begin
   simple_var := 0;
   CASE_INSENSITIVE_TEST := 0;
@@ -66,6 +67,8 @@ begin
   for i in 1..2 loop -- "i" variable is not used, but it is required here
     null;
   end loop;
+  
+  raise error;
 end;
 /
 

@@ -387,7 +387,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SAVEPOINT_STATEMENT).is(b.optional(LABEL), SAVEPOINT, IDENTIFIER_NAME, SEMICOLON);
         
-        b.rule(RAISE_STATEMENT).is(b.optional(LABEL), RAISE, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        b.rule(RAISE_STATEMENT).is(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON);
         
         b.rule(SELECT_STATEMENT).is(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON);
         
