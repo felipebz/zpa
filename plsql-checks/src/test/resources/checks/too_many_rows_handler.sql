@@ -8,6 +8,15 @@ exception
     null;
 end;
 
+begin
+  select empno
+    into var
+    from emp;
+exception
+  when no_data_found or too_many_rows then
+    null;
+end;
+
 -- compliant
 begin
   select empno

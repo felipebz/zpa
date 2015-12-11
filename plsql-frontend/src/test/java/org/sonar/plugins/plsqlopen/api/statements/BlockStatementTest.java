@@ -60,6 +60,11 @@ public class BlockStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesBlockWithOneExceptionHandlerAndMultipleExceptions() {
+        assertThat(p).matches("begin null; exception when no_data_found or too_many_rows then null; end;");
+    }
+    
+    @Test
     public void matchesBlockWithNameAtEnd() {
         assertThat(p).matches("begin null; end block_name;");
     }

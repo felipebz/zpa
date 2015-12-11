@@ -313,7 +313,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NULL_STATEMENT).is(NULL, SEMICOLON);
         
-        b.rule(EXCEPTION_HANDLER).is(WHEN, b.firstOf(OTHERS, OBJECT_REFERENCE), THEN, STATEMENTS);
+        b.rule(EXCEPTION_HANDLER).is(
+                WHEN,
+                b.firstOf(OTHERS, OBJECT_REFERENCE), 
+                b.zeroOrMore(OR, b.firstOf(OTHERS, OBJECT_REFERENCE)), 
+                THEN, STATEMENTS);
         
         b.rule(LABEL).is(LLABEL, IDENTIFIER_NAME, RLABEL);
         

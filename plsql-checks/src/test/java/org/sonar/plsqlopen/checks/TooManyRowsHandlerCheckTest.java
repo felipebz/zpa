@@ -32,6 +32,7 @@ public class TooManyRowsHandlerCheckTest extends BaseCheckTest {
         String message = "Fill this TOO_MANY_ROWS exception handler.";
         AnalyzerMessagesVerifier.verify(messages)
             .next().atLine(7).withMessage(message)
+            .next().atLine(16).withMessage(message)
             .noMore();
     }
     

@@ -49,20 +49,19 @@ public class TooManyRowsHandlerCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         // is a TOO_MANY_ROWS handler
-        AstNode exceptionName = node.getChildren().get(1);
+        List<AstNode> exceptions = node.getChildren(PlSqlGrammar.VARIABLE_NAME);
         
-        if (exceptionName.is(PlSqlGrammar.VARIABLE_NAME)) {
-            exceptionName = exceptionName.getFirstChild();
-        }
-        
-        if (exceptionName.is(PlSqlGrammar.IDENTIFIER_NAME) && 
-                "TOO_MANY_ROWS".equalsIgnoreCase(exceptionName.getTokenValue())) {
-            // and have only one NULL_STATEMENT
-            List<AstNode> children = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
-            if (children.size() == 1 && children.get(0).getFirstChild().is(PlSqlGrammar.NULL_STATEMENT)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
-            }
+        for (AstNode exception : exceptions) {
+            AstNode child = exception.getFirstChild();
             
+            if (child.is(PlSqlGrammar.IDENTIFIER_NAME) && 
+                    "TOO_MANY_ROWS".equalsIgnoreCase(child.getTokenValue())) {
+                // and have only one NULL_STATEMENT
+                List<AstNode> children = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
+                if (children.size() == 1 && children.get(0).getFirstChild().is(PlSqlGrammar.NULL_STATEMENT)) {
+                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                }
+            }
         }
     }
 }
