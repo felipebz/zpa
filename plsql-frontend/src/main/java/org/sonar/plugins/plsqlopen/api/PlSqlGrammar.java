@@ -91,6 +91,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     PARTITION_BY_CLAUSE,
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
+    KEEP_CLAUSE,
     ANALYTIC_CLAUSE,
     ON_OR_USING_EXPRESSION,
     INNER_CROSS_JOIN_CLAUSE,
@@ -510,6 +511,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(BETWEEN, WINDOWING_LIMIT, AND, WINDOWING_LIMIT),
                         WINDOWING_LIMIT));
         
+        b.rule(KEEP_CLAUSE).is(
+                KEEP, LPARENTHESIS,
+                DENSE_RANK, b.firstOf(FIRST, LAST), ORDER_BY_CLAUSE,
+                RPARENTHESIS);
+        
         b.rule(ANALYTIC_CLAUSE).is(
                 OVER, LPARENTHESIS, 
                 b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
@@ -712,7 +718,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(POSTFIX_EXPRESSION).is(OBJECT_REFERENCE, 
                 b.optional(b.firstOf(
                         b.sequence(IS, b.optional(NOT), NULL),
-                        ANALYTIC_CLAUSE))).skipIfOneChild();
+                        ANALYTIC_CLAUSE,
+                        b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))))).skipIfOneChild();
         
         b.rule(IN_EXPRESSION).is(POSTFIX_EXPRESSION, 
                 b.optional(b.sequence(

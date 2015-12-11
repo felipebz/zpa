@@ -286,7 +286,9 @@ public enum PlSqlKeyword implements TokenType {
     PRESERVE("preserve"),
     SORT("sort"),
     ENCRYPT("encrypt"),
-    MOD_KEYWORD("mod");
+    MOD_KEYWORD("mod"),
+    KEEP("keep"),
+    DENSE_RANK("dense_rank");
 
     private final String value;
     private final boolean reserved;
