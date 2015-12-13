@@ -19,24 +19,20 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-
-import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Set;
 
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.scope.Scope;
-import org.sonar.plsqlopen.checks.scope.Variable;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.AstNodeType;
 
 @Rule(
     key = UnusedVariableCheck.CHECK_KEY,
@@ -49,76 +45,25 @@ import com.sonar.sslr.api.AstNodeType;
 public class UnusedVariableCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "UnusedVariable";
-    private static final AstNodeType[] scopeHolders = { 
-            PlSqlGrammar.ANONYMOUS_BLOCK,
-            PlSqlGrammar.CREATE_PROCEDURE,
-            PlSqlGrammar.PROCEDURE_DECLARATION,
-            PlSqlGrammar.CREATE_FUNCTION,
-            PlSqlGrammar.FUNCTION_DECLARATION,
-            PlSqlGrammar.CREATE_PACKAGE_BODY,
-            PlSqlGrammar.BLOCK_STATEMENT,
-            PlSqlGrammar.FOR_STATEMENT
-            };
-
-    private Deque<Scope> scopes = new ArrayDeque<>();
 
     @Override
-    public void init() {
-        subscribeTo(scopeHolders);
-        subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION,
-                    PlSqlGrammar.VARIABLE_NAME);
-    }
-
-    @Override
-    public void visitNode(AstNode node) {
-        if (node.is(scopeHolders)) {
-            
-            scopes.push(new Scope(getCurrentScope()));
-            
-            if (node.is(PlSqlGrammar.FOR_STATEMENT)) {
-                AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
-                getCurrentScope().declareLocalVariable(identifier, 1);
+    public void leaveFile(AstNode astNode) {
+        Set<Scope> scopes = getPlSqlContext().getSymbolTable().getScopes();
+        for (Scope scope : scopes) {
+            if (scope.tree().isNot(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT)) {
+                checkScope(scope);
             }
-            
-        } else if (!scopes.isEmpty()) {
-
-            if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
-                getCurrentScope().declareLocalVariable(node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME));
-            } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
-                AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-                if (identifier != null) {
-                    getCurrentScope().useVariable(identifier);
-                }
-            }
-            
         }
     }
     
-    @Override
-    public void leaveNode(AstNode astNode) {
-      if (astNode.is(scopeHolders)) {
-        reportUnusedVariable();
-        scopes.pop();
-      }
-    }
-    
-    @Override
-    public void leaveFile(@Nullable AstNode astNode) {
-        scopes.clear();
-    }
-    
-    private void reportUnusedVariable() {
-        for (Variable localVar : getCurrentScope().getLocalVariables().values()) {
-
-            if (localVar.getUsage() == 0) {
+    private void checkScope(Scope scope) {
+        List<Symbol> symbols = scope.getSymbols(Symbol.Kind.VARIABLE);
+        for (Symbol symbol : symbols) {
+            if (symbol.usages().isEmpty()) {
                 getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY),
-                        localVar.getDeclaration(), localVar.getDeclaration().getTokenOriginalValue());
+                        symbol.declaration(), symbol.declaration().getTokenOriginalValue());
             }
         }
-    }
-
-    private Scope getCurrentScope() {
-        return scopes.peek();
     }
 
 }
