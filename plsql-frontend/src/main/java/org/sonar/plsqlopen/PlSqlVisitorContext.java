@@ -21,6 +21,7 @@ package org.sonar.plsqlopen;
 
 import java.util.List;
 
+import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.api.CodeCheck;
 import org.sonar.squidbridge.api.CodeVisitor;
 
@@ -28,6 +29,10 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 
 public interface PlSqlVisitorContext {
+    
+    SymbolTable getSymbolTable();
+    
+    void setSymbolTable(SymbolTable symbolTable);
 
     void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
     

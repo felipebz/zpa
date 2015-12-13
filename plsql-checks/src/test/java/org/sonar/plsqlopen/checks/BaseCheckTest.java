@@ -32,8 +32,10 @@ import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
+import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.squidbridge.SquidAstVisitor;
 
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.Grammar;
 
 public class BaseCheckTest {
@@ -60,7 +62,8 @@ public class BaseCheckTest {
         
         SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
         
-        PlSqlAstScanner.scanSingleFile(new File(defaultResourceFolder + filename), components, check);
+        PlSqlAstScanner.scanSingleFile(new File(defaultResourceFolder + filename), components, 
+                ImmutableList.of(new SymbolVisitor(), check));
         return ((SonarComponents.Test) components).getIssues();
     }
     

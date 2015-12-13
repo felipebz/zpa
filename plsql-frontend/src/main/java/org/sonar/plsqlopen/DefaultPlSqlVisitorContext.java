@@ -21,6 +21,7 @@ package org.sonar.plsqlopen;
 
 import java.util.List;
 
+import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.CodeCheck;
 import org.sonar.squidbridge.api.CodeVisitor;
@@ -34,12 +35,21 @@ import com.sonar.sslr.api.Token;
 public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisitorContextImpl<G> implements PlSqlVisitorContext {
 
     private SonarComponents components;
+    private SymbolTable symbolTable;
     
     public DefaultPlSqlVisitorContext(SourceProject project, SonarComponents components) {
         super(project);
         this.components = components;
     }
     
+    public SymbolTable getSymbolTable() {
+        return symbolTable;
+    }
+
+    public void setSymbolTable(SymbolTable symbolTable) {
+        this.symbolTable = symbolTable;
+    }
+
     @Override
     public void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters) {
         createLineViolation(check, message, node.getToken(), messageParameters);

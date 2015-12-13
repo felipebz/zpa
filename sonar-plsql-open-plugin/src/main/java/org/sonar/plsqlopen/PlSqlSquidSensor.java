@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,6 +41,7 @@ import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighter;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
@@ -91,7 +93,10 @@ public class PlSqlSquidSensor implements Sensor {
     public void analyse(@Nullable Project project, @Nullable SensorContext context) {
         this.context = context;
 
-        List<SquidAstVisitor<Grammar>> visitors = checks.all();
+        List<SquidAstVisitor<Grammar>> visitors = new ArrayList<>();
+        visitors.add(new SymbolVisitor());
+        visitors.addAll(checks.all());
+        
         this.scanner = PlSqlAstScanner.create(createConfiguration(), components, visitors);
         FilePredicates p = fileSystem.predicates();
         scanner.scanFiles(Lists.newArrayList(fileSystem.files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
