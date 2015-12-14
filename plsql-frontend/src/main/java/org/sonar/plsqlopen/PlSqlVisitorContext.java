@@ -19,8 +19,10 @@
  */
 package org.sonar.plsqlopen;
 
+import java.io.File;
 import java.util.List;
 
+import org.sonar.api.source.Symbolizable;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.api.CodeCheck;
 import org.sonar.squidbridge.api.CodeVisitor;
@@ -32,7 +34,11 @@ public interface PlSqlVisitorContext {
     
     SymbolTable getSymbolTable();
     
+    File getFile();
+    
     void setSymbolTable(SymbolTable symbolTable);
+    
+    Symbolizable getSymbolizable();
 
     void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
     

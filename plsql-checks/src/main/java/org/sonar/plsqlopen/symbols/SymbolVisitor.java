@@ -19,7 +19,13 @@
  */
 package org.sonar.plsqlopen.symbols;
 
+import java.nio.charset.Charset;
+
+import org.sonar.api.source.Symbolizable;
+import org.sonar.api.source.Symbolizable.SymbolTableBuilder;
+import org.sonar.plsqlopen.SourceFileOffsets;
 import org.sonar.plsqlopen.checks.AbstractBaseCheck;
+import org.sonar.plsqlopen.squid.CharsetAwareVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
@@ -30,7 +36,7 @@ import com.google.common.base.Preconditions;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
-public class SymbolVisitor extends AbstractBaseCheck {
+public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisitor {
 
     private static final AstNodeType[] scopeHolders = { 
             PlSqlGrammar.CREATE_PROCEDURE,
@@ -44,10 +50,24 @@ public class SymbolVisitor extends AbstractBaseCheck {
     
     private SymbolTableImpl symbolTable;
     private Scope currentScope;
+    private Charset charset;
+    private SourceFileOffsets offsets;
+    private Symbolizable symbolizable;
+    private SymbolTableBuilder symbolTableBuilder;
+    
+    @Override
+    public void setCharset(Charset charset) {
+        this.charset = charset;
+    }
     
     @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
+        offsets = new SourceFileOffsets(getPlSqlContext().getFile(), charset);
+        symbolizable = getPlSqlContext().getSymbolizable();
+        if (symbolizable != null) {
+            symbolTableBuilder = symbolizable.newSymbolTableBuilder();
+        }
         
         // ast is null when the file has a parsing error
         if (ast != null) {
@@ -58,9 +78,26 @@ public class SymbolVisitor extends AbstractBaseCheck {
     }
     
     @Override
-    public void leaveFile(AstNode astNode) {
+    public void leaveFile(AstNode node) {
+        if (symbolizable != null) {
+            for (Symbol symbol : symbolTable.getSymbols()) {
+                AstNode symbolNode = symbol.declaration();
+                
+                org.sonar.api.source.Symbol newSymbol = symbolTableBuilder.newSymbol(
+                        offsets.startOffset(symbolNode.getToken()), offsets.endOffset(symbolNode.getToken()));
+                
+                for (AstNode usage : symbol.usages()) {
+                    symbolTableBuilder.newReference(newSymbol, offsets.startOffset(usage.getToken()));
+                }
+            }
+            symbolizable.setSymbolTable(symbolTableBuilder.build());
+        }
+        
         symbolTable = null;
         currentScope = null;
+        offsets = null;
+        symbolizable = null;
+        symbolTableBuilder = null;
     }
 
     private void visit(AstNode ast) {

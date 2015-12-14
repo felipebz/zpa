@@ -37,6 +37,7 @@ import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.source.Symbolizable;
 import org.sonar.squidbridge.SquidAstVisitor;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -61,7 +62,11 @@ public class SonarComponents implements BatchExtension {
     public Issuable issuableFor(InputPath inputPath) {
         return resourcePerspectives.as(Issuable.class, inputPath);
     }
-
+    
+    public Symbolizable symbolizableFor(InputPath inputPath) {
+        return resourcePerspectives.as(Symbolizable.class, inputPath);
+    }
+    
     public void setChecks(PlSqlChecks checks) {
         this.checks = checks;
     }

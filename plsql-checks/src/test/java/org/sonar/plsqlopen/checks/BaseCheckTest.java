@@ -19,12 +19,13 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.util.Collection;
 import java.util.Locale;
 
 import org.junit.Before;
-import org.mockito.Mock;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
@@ -43,12 +44,6 @@ public class BaseCheckTest {
     private final String defaultResourceFolder = "src/test/resources/checks/";
     private DefaultFileSystem fs = new DefaultFileSystem(new File("."));
     
-    @Mock
-    SensorContext context;
-    
-    @Mock
-    ResourcePerspectives resourcePerspectives;
-    
     @Before
     public void setUp() {
         Locale.setDefault(Locale.ENGLISH);
@@ -59,6 +54,9 @@ public class BaseCheckTest {
         DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
         inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
         fs.add(inputFile);
+        
+        SensorContext context = mock(SensorContext.class);
+        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
         
         SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
         
