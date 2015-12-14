@@ -116,27 +116,57 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     }
 
     private void visitNodeInternal(AstNode node) {
-        if (node.is(scopeHolders)) {
-
-            enterScope(node);
-
-            if (node.is(PlSqlGrammar.FOR_STATEMENT)) {
-                AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
-                createSymbol(identifier, Symbol.Kind.VARIABLE);
-            }
-
-        } else if (currentScope != null && node.is(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.VARIABLE_NAME)) {
-
-            AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-            if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
-                createSymbol(identifier, Symbol.Kind.VARIABLE);
-            } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
-                if (identifier != null) {
-                    Symbol symbol = currentScope.getSymbol(identifier.getTokenOriginalValue());
-                    if (symbol != null) {
-                        symbol.addUsage(identifier);
-                    }
-                }
+        
+        if (node.is(PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION)) {
+            visitProcedure(node);
+        } else if (node.is(PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION)) {
+            visitFunction(node);
+        } else if (node.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)) {
+            visitPackage(node);
+        } else if (node.is(PlSqlGrammar.BLOCK_STATEMENT)) {
+            visitBlock(node);
+        } else if (node.is(PlSqlGrammar.FOR_STATEMENT)) {
+            visitFor(node);
+        } else if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
+            visitVariableDeclaration(node);
+        } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
+            visitVariableName(node);
+        }
+    }
+    
+    private void visitProcedure(AstNode node) {
+        enterScope(node);
+    }
+    
+    private void visitFunction(AstNode node) {
+        enterScope(node);
+    }
+    
+    private void visitPackage(AstNode node) {
+        enterScope(node);
+    }
+    
+    private void visitBlock(AstNode node) {
+        enterScope(node);
+    }
+    
+    private void visitFor(AstNode node) {
+        enterScope(node);
+        AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
+        createSymbol(identifier, Symbol.Kind.VARIABLE);
+    }
+    
+    private void visitVariableDeclaration(AstNode node) {
+        AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+        createSymbol(identifier, Symbol.Kind.VARIABLE);
+    }
+    
+    private void visitVariableName(AstNode node) {
+        AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+        if (identifier != null && currentScope != null) {
+            Symbol symbol = currentScope.getSymbol(identifier.getTokenOriginalValue());
+            if (symbol != null) {
+                symbol.addUsage(identifier);
             }
         }
     }
