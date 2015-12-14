@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import org.sonar.api.source.Highlightable;
+import org.sonar.plsqlopen.SourceFileOffsets;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
