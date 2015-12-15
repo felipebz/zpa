@@ -106,6 +106,7 @@ public class SonarComponents implements BatchExtension {
                 } catch (IllegalArgumentException e) {
                     // the previous setPrimaryLocation will fail if it is a multiline token
                     // for now, just fall back to old method
+                    LOG.debug("Fail to set primary location", e);
                     issue.setPrimaryLocation(inputFile, text, line, -1, 0, -1);
                 }
             } else {
@@ -118,7 +119,6 @@ public class SonarComponents implements BatchExtension {
             String secondaryText = location.getText(Locale.ENGLISH);
             try {
                 issue.addSecondaryLocation(inputFile, secondarySpan.startLine, secondarySpan.startCharacter, secondarySpan.endLine, secondarySpan.endCharacter, secondaryText);
-                LOG.debug("addSecondaryLocation SUCESS");
             } catch (IllegalArgumentException e) {
                 LOG.debug("addSecondaryLocation FAIL", e);
             }

@@ -58,7 +58,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
     }
     
     private static boolean shouldCheckNode(@Nullable AstNode node) {
-        if (CheckUtils.isProgramUnit(node)) {
+        if (node == null || CheckUtils.isProgramUnit(node)) {
             return false;
         }
         if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT)) {

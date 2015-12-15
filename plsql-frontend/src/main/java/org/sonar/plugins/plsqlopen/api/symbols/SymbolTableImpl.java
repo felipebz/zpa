@@ -35,9 +35,6 @@ public class SymbolTableImpl implements SymbolTable {
     private List<Symbol> symbols = new ArrayList<>();
     private Set<Scope> scopes = new LinkedHashSet<>();
 
-    public SymbolTableImpl(){
-    }
-
     public void addScope(Scope scope){
         scopes.add(scope);
     }

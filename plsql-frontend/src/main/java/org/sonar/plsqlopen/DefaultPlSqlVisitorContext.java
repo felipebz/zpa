@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen;
 
-import java.io.File;
 import java.util.List;
 
 import org.sonar.api.source.Symbolizable;
@@ -44,10 +43,12 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
         this.components = components;
     }
     
+    @Override
     public SymbolTable getSymbolTable() {
         return symbolTable;
     }
 
+    
     public void setSymbolTable(SymbolTable symbolTable) {
         this.symbolTable = symbolTable;
     }
