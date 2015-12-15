@@ -129,6 +129,8 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
             visitFor(node);
         } else if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
             visitVariableDeclaration(node);
+        } else if (node.is(PlSqlGrammar.PARAMETER_DECLARATION)) {
+            visitParameterDeclaration(node);
         } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
             visitVariableName(node);
         }
@@ -159,6 +161,11 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     private void visitVariableDeclaration(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
         createSymbol(identifier, Symbol.Kind.VARIABLE);
+    }
+    
+    private void visitParameterDeclaration(AstNode node) {
+        AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+        createSymbol(identifier, Symbol.Kind.PARAMETER).addModifiers(node.getChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT));;
     }
     
     private void visitVariableName(AstNode node) {
