@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen;
 
 import java.lang.annotation.Annotation;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -174,7 +175,22 @@ public class CustomAnnotationBasedRulesDefinition {
     
     public static String getLocalizedFolderName(String baseName, Locale locale) {
         ResourceBundle.Control control = ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT);
-        return control.toBundleName(baseName, locale);
+        
+        String path = control.toBundleName(baseName, locale);
+        URL url = CustomAnnotationBasedRulesDefinition.class.getResource(path);
+        
+        if (url == null) {
+            Locale localeWithoutCountry = locale.getCountry() == null ? locale : new Locale(locale.getLanguage());
+            path = control.toBundleName(baseName, localeWithoutCountry);
+            url = CustomAnnotationBasedRulesDefinition.class.getResource(path);
+            
+            if (url == null) {
+                path = baseName;
+                url = CustomAnnotationBasedRulesDefinition.class.getResource(path);
+            }
+        }
+        
+        return path;
     }
 
 }
