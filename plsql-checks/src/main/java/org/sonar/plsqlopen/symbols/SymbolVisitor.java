@@ -46,7 +46,8 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
             PlSqlGrammar.CREATE_PACKAGE,
             PlSqlGrammar.CREATE_PACKAGE_BODY,
             PlSqlGrammar.BLOCK_STATEMENT,
-            PlSqlGrammar.FOR_STATEMENT};
+            PlSqlGrammar.FOR_STATEMENT,
+            PlSqlGrammar.CURSOR_DECLARATION};
     
     private SymbolTableImpl symbolTable;
     private Scope currentScope;
@@ -123,13 +124,15 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
             visitFunction(node);
         } else if (node.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)) {
             visitPackage(node);
+        } else if (node.is(PlSqlGrammar.CURSOR_DECLARATION)) {
+            visitCursor(node);
         } else if (node.is(PlSqlGrammar.BLOCK_STATEMENT)) {
             visitBlock(node);
         } else if (node.is(PlSqlGrammar.FOR_STATEMENT)) {
             visitFor(node);
         } else if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
             visitVariableDeclaration(node);
-        } else if (node.is(PlSqlGrammar.PARAMETER_DECLARATION)) {
+        } else if (node.is(PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_PARAMETER_DECLARATION)) {
             visitParameterDeclaration(node);
         } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
             visitVariableName(node);
@@ -145,6 +148,10 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     }
     
     private void visitPackage(AstNode node) {
+        enterScope(node);
+    }
+    
+    private void visitCursor(AstNode node) {
         enterScope(node);
     }
     
