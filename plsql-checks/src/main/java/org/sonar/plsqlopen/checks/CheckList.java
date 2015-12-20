@@ -71,6 +71,7 @@ public class CheckList {
             UnnecessaryElseCheck.class,
             DeadCodeCheck.class,
             ConcatenationWithNullCheck.class,
-            SameBranchCheck.class);
+            SameBranchCheck.class,
+            UnusedParameterCheck.class);
     }
 }

@@ -1,0 +1,19 @@
+<p>Parâmetros não usados causam confusão. Não importa quais valores sejam passados para tais parâmetros, o comportamento do método será o mesmo.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+PROCEDURE do_something(a IN NUMBER, b IN NUMBER) IS -- "b" is unused
+BEGIN
+  compute(a);
+END;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+PROCEDURE do_something(a IN NUMBER) IS
+BEGIN
+  compute(a);
+END;
+</pre>

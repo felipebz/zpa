@@ -1,0 +1,19 @@
+<p>Unused parameters are misleading. Whatever the value passed to such parameters is, the behavior will be the same.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+PROCEDURE do_something(a IN NUMBER, b IN NUMBER) IS -- "b" is unused
+BEGIN
+  compute(a);
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+PROCEDURE do_something(a IN NUMBER) IS
+BEGIN
+  compute(a);
+END;
+</pre>
