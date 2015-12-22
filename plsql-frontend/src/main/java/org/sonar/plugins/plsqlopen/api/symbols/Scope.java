@@ -34,11 +34,13 @@ public class Scope {
 
     private final Scope outer;
     private final AstNode node;
+    private final boolean autonomousTransaction;
     protected List<Symbol> symbols = new ArrayList<>();
 
-    public Scope(Scope outer, AstNode node) {
+    public Scope(Scope outer, AstNode node, boolean autonomousTransaction) {
         this.outer = outer;
         this.node = node;
+        this.autonomousTransaction = autonomousTransaction;
     }
 
     public AstNode tree() {
@@ -47,6 +49,10 @@ public class Scope {
 
     public Scope outer() {
         return outer;
+    }
+    
+    public boolean isAutonomousTransaction() {
+        return autonomousTransaction;
     }
     
     public List<Symbol> getSymbols() {

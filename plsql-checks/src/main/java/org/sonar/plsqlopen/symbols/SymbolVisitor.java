@@ -159,27 +159,36 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     }
     
     private void visitProcedure(AstNode node) {
-        enterScope(node);
+        boolean autonomousTransaction = node.select()
+                .children(PlSqlGrammar.DECLARE_SECTION)
+                .children(PlSqlGrammar.PRAGMA_DECLARATION)
+                .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty();
+        enterScope(node, autonomousTransaction);
     }
     
     private void visitFunction(AstNode node) {
-        enterScope(node);
+        boolean autonomousTransaction = node.select()
+                .children(PlSqlGrammar.DECLARE_SECTION)
+                .children(PlSqlGrammar.PRAGMA_DECLARATION)
+                .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty();
+        
+        enterScope(node, autonomousTransaction);
     }
     
     private void visitPackage(AstNode node) {
-        enterScope(node);
+        enterScope(node, false);
     }
     
     private void visitCursor(AstNode node) {
-        enterScope(node);
+        enterScope(node, null);
     }
     
     private void visitBlock(AstNode node) {
-        enterScope(node);
+        enterScope(node, null);
     }
     
     private void visitFor(AstNode node) {
-        enterScope(node);
+        enterScope(node, null);
         AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
         createSymbol(identifier, Symbol.Kind.VARIABLE);
     }
@@ -208,8 +217,16 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
         return symbolTable.declareSymbol(identifier, kind, currentScope);
     }
     
-    private void enterScope(AstNode node) {
-        currentScope = new Scope(currentScope, node);
+    private void enterScope(AstNode node, Boolean autonomousTransaction) {
+        boolean autonomous = false;
+        
+        if (autonomousTransaction != null) {
+          autonomous = autonomousTransaction;  
+        } else if (currentScope != null) {
+            autonomous = currentScope.isAutonomousTransaction();
+        }
+        
+        currentScope = new Scope(currentScope, node, autonomous);
         symbolTable.addScope(currentScope);
     }
     
