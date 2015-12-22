@@ -62,6 +62,11 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     }
     
     @Override
+    public void init() {
+        subscribeTo(scopeHolders);
+    }
+    
+    @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
         offsets = new SourceFileOffsets(getPlSqlContext().getFile(), charset);
@@ -76,6 +81,20 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
         }
         
         getPlSqlContext().setSymbolTable(symbolTable);
+    }
+    
+    @Override
+    public void visitNode(AstNode astNode) {
+        if (astNode.is(scopeHolders)) {
+            getPlSqlContext().setCurrentScope(symbolTable.getScopeFor(astNode));
+        }
+    }
+    
+    @Override
+    public void leaveNode(AstNode astNode) {
+        if (astNode.is(scopeHolders)) {
+            getPlSqlContext().setCurrentScope(getPlSqlContext().getCurrentScope().outer());
+        }
     }
     
     @Override

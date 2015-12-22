@@ -22,6 +22,7 @@ package org.sonar.plsqlopen;
 import java.util.List;
 
 import org.sonar.api.source.Symbolizable;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.CodeCheck;
@@ -37,6 +38,7 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
 
     private SonarComponents components;
     private SymbolTable symbolTable;
+    private Scope scope;
     
     public DefaultPlSqlVisitorContext(SourceProject project, SonarComponents components) {
         super(project);
@@ -48,7 +50,7 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
         return symbolTable;
     }
 
-    
+    @Override
     public void setSymbolTable(SymbolTable symbolTable) {
         this.symbolTable = symbolTable;
     }
@@ -56,6 +58,16 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     @Override
     public Symbolizable getSymbolizable() {
         return components.symbolizableFor(components.inputFromIOFile(getFile()));
+    }
+    
+    @Override
+    public void setCurrentScope(Scope scope) {
+        this.scope = scope;
+    }
+    
+    @Override
+    public Scope getCurrentScope() {
+        return scope;
     }
 
     @Override

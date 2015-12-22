@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.List;
 
 import org.sonar.api.source.Symbolizable;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.api.CodeCheck;
 import org.sonar.squidbridge.api.CodeVisitor;
@@ -39,6 +40,10 @@ public interface PlSqlVisitorContext {
     void setSymbolTable(SymbolTable symbolTable);
     
     Symbolizable getSymbolizable();
+    
+    void setCurrentScope(Scope scope);
+    
+    Scope getCurrentScope();
 
     void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
     
@@ -60,4 +65,5 @@ public interface PlSqlVisitorContext {
             this.node = node;
         }
     }
+    
 }
