@@ -1,0 +1,12 @@
+<p>
+Geralmente, o contole de uma transação deve ser responsabilidade do "proprietário" dela.
+Se a transação foi iniciada por um código Java, o commit e rollback devem ser feitos no código Java.
+</p>
+
+<p>
+Assim, nessa situação, chamar um COMMIT ou ROLLBACK a partir de um objeto de banco de dados é uma prática ruim e deve ser evitada.
+</p>
+
+<p>
+Essa regra ignora procedimentos e funções com <code>PRAGMA AUTONOMOUS_TRANSACTION</code>.
+</p>

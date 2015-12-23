@@ -72,6 +72,7 @@ public class CheckList {
             DeadCodeCheck.class,
             ConcatenationWithNullCheck.class,
             SameBranchCheck.class,
-            UnusedParameterCheck.class);
+            UnusedParameterCheck.class,
+            CommitRollbackCheck.class);
     }
 }

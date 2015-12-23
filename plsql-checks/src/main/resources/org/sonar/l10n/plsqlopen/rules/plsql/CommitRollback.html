@@ -1,0 +1,12 @@
+<p>
+Usually, the control of the transaction should be handled by the its "owner".
+If the transaction was started by some Java code, the commit and rollback of this should be done in the Java code.
+</p>
+
+<p>
+So, in this situation, calling a COMMIT or ROLLBACK from a database object is a bad pratice and should be avoided. 
+</p>
+
+<p>
+This rule ignores procedures and functions with <code>PRAGMA AUTONOMOUS_TRANSACTION</code>.
+</p>
