@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>24</version>
+    <version>25</version>
   </parent>
 
   <groupId>org.sonar.plsqlopen</groupId>
@@ -62,7 +62,8 @@
 
   <properties>
     <license.title>Sonar PL/SQL Plugin (Community)</license.title>
-    <license.mailto>felipe.b.zorzo@gmail.com</license.mailto>
+    <license.owner>Felipe Zorzo</license.owner>
+    <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     <sonar.version>4.5.5</sonar.version>
     <sslr.version>1.21</sslr.version>
