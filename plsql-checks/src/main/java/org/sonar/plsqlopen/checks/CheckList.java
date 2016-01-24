@@ -73,6 +73,7 @@ public class CheckList {
             ConcatenationWithNullCheck.class,
             SameBranchCheck.class,
             UnusedParameterCheck.class,
-            CommitRollbackCheck.class);
+            CommitRollbackCheck.class,
+            UnnecessaryNullStatementCheck.class);
     }
 }

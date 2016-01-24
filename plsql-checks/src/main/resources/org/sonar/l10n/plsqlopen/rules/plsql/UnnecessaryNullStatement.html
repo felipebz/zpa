@@ -1,0 +1,10 @@
+A NULL statement at the same level of other statements is useless, so should be removed.
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+BEGIN
+  var := 1;
+  NULL; -- this NULL statement can be removed
+END
+</pre>

@@ -1,0 +1,10 @@
+Uma instrução NULL no mesmo nível de outras instruções é inútil, portanto deve ser removida.
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+BEGIN
+  var := 1;
+  NULL; -- essa instrução NULL pode ser removida
+END
+</pre>
