@@ -74,6 +74,7 @@ public class CheckList {
             SameBranchCheck.class,
             UnusedParameterCheck.class,
             CommitRollbackCheck.class,
-            UnnecessaryNullStatementCheck.class);
+            UnnecessaryNullStatementCheck.class,
+            DuplicateConditionIfElsifCheck.class);
     }
 }
