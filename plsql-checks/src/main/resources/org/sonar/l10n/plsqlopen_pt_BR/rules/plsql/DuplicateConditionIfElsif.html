@@ -1,1 +1,22 @@
-tbd
+<p>
+Uma sequência de instruções <code>if</code>/<code>elsif</code> é avaliada de cima para baixo.
+Apenas uma branch dessas instruções será executada de cada vez: a primeira que retornar <code>true</code>.
+</p>
+
+<p>
+Assim, duplicar uma condição automaticamente leva a código inútil. Geralmente isso acontece por um erro ao copiar/colar.
+Na melhor situação isso é apenas código inútil e na pior das situações é um bug que provavelmente causará mais problemas
+na manutenção do código e obviamente pode levar a um comportamento inesperado.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+IF (param = 1) THEN
+  open();
+ELSIF (param = 2) THEN
+  close();
+ELSIF (param = 1) // Incorreto
+  move();
+END IF;
+</pre>
