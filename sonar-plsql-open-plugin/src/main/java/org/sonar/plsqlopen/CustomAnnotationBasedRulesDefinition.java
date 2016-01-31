@@ -186,7 +186,7 @@ public class CustomAnnotationBasedRulesDefinition {
             
             if (url == null) {
                 path = baseName;
-                url = CustomAnnotationBasedRulesDefinition.class.getResource(path);
+                CustomAnnotationBasedRulesDefinition.class.getResource(path);
             }
         }
         

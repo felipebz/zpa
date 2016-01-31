@@ -200,7 +200,7 @@ public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisi
     
     private void visitParameterDeclaration(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-        createSymbol(identifier, Symbol.Kind.PARAMETER).addModifiers(node.getChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT));;
+        createSymbol(identifier, Symbol.Kind.PARAMETER).addModifiers(node.getChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT));
     }
     
     private void visitVariableName(AstNode node) {
