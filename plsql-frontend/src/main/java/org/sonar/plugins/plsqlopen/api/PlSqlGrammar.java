@@ -88,6 +88,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     VARIABLE_NAME,
     
     // DML
+    TABLE_REFERENCE,
+    ALIAS,
     PARTITION_BY_CLAUSE,
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
@@ -400,7 +402,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(INSERT_STATEMENT).is(
                 b.optional(LABEL), 
-                INSERT, INTO, MEMBER_EXPRESSION, b.optional(IDENTIFIER_NAME),
+                INSERT, INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME),
                 b.optional(INSERT_COLUMNS),
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
@@ -412,13 +414,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(UPDATE_STATEMENT).is(
                 b.optional(LABEL), 
-                UPDATE, OBJECT_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                UPDATE, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
         b.rule(DELETE_STATEMENT).is(
                 b.optional(LABEL), 
-                DELETE, b.optional(FROM), OBJECT_REFERENCE,  b.optional(IDENTIFIER_NAME),
+                DELETE, b.optional(FROM), 
+                b.firstOf(TABLE_REFERENCE, b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
+                b.optional(IDENTIFIER_NAME),
                 b.optional(b.firstOf(
                         WHERE_CLAUSE,
                         b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME))), 
@@ -502,6 +506,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     private static void createDmlStatements(LexerfulGrammarBuilder b) {
         
+        b.rule(TABLE_REFERENCE).is(
+                b.optional(IDENTIFIER_NAME, DOT),
+                IDENTIFIER_NAME,
+                b.optional(REMOTE, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)));
+        
+        b.rule(ALIAS).is(IDENTIFIER_NAME);
+        
         b.rule(PARTITION_BY_CLAUSE).is(PARTITION, BY, EXPRESSION, b.optional(COMMA, EXPRESSION));
         
         b.rule(WINDOWING_LIMIT).is(b.firstOf(
@@ -539,12 +550,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(LPARENTHESIS, IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER), RPARENTHESIS)));
         
         b.rule(INNER_CROSS_JOIN_CLAUSE).is(b.firstOf(
-                b.sequence(b.optional(INNER), JOIN, OBJECT_REFERENCE, ON_OR_USING_EXPRESSION),
+                b.sequence(b.optional(INNER), JOIN, TABLE_REFERENCE, ON_OR_USING_EXPRESSION),
                 b.sequence(
                         b.firstOf(
                                 CROSS,
                                 b.sequence(NATURAL, b.optional(INNER))),
-                        JOIN, OBJECT_REFERENCE)
+                        JOIN, TABLE_REFERENCE)
                 ));
         
         b.rule(OUTER_JOIN_CLAUSE).is(
@@ -552,18 +563,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(OUTER_JOIN_TYPE, JOIN),
                         b.sequence(NATURAL, b.optional(OUTER_JOIN_TYPE), JOIN)),
-                OBJECT_REFERENCE, b.optional(QUERY_PARTITION_CLAUSE),
+                TABLE_REFERENCE, b.optional(QUERY_PARTITION_CLAUSE),
                 b.optional(ON_OR_USING_EXPRESSION));
         
-        b.rule(JOIN_CLAUSE).is(OBJECT_REFERENCE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
+        b.rule(JOIN_CLAUSE).is(TABLE_REFERENCE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
         
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
         b.rule(FROM_CLAUSE).is(
                 b.firstOf(
-                        b.sequence(OBJECT_REFERENCE, b.optional(REMOTE, IDENTIFIER_NAME)),
-                        b.sequence(b.optional(THE), LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
-                b.optional(IDENTIFIER_NAME));
+                        b.sequence(b.optional(THE), LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                        b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
+                        OBJECT_REFERENCE),
+                b.optional(ALIAS));
         
         b.rule(WHERE_CLAUSE).is(WHERE, EXPRESSION);
         

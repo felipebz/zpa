@@ -67,5 +67,10 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesLabeledDelete() {
         assertThat(p).matches("<<foo>> delete tab;");
     }
+    
+    @Test
+    public void matchesDeleteFromQuery() {
+        assertThat(p).matches("delete (select * from dual);");
+    }
 
 }
