@@ -31,10 +31,10 @@ public class UnnecessaryAliasInQueryCheckTest extends BaseCheckTest {
         Collection<AnalyzerMessage> messages = scanFile("unnecessary_alias_in_query.sql", new UnnecessaryAliasInQueryCheck());
         String message = "This query has only one reference to the table \"tab\". Remove the alias \"x\" to improve the readability.";
         AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(6).withMessage(message)
-            .next().atLine(10).withMessage(message)
-            .next().atLine(13).withMessage(message)
+            .next().startsAt(3, 14).endsAt(3, 15).withMessage(message)
+            .next().startsAt(6, 14).endsAt(6, 15).withMessage(message)
+            .next().startsAt(10, 14).endsAt(10, 15).withMessage(message)
+            .next().startsAt(13, 29).endsAt(13, 30).withMessage(message)
             .noMore();
     }
     
@@ -46,7 +46,7 @@ public class UnnecessaryAliasInQueryCheckTest extends BaseCheckTest {
         Collection<AnalyzerMessage> messages = scanFile("unnecessary_alias_in_query_custom_length.sql", check);
         String message = "This query has only one reference to the table \"tab\". Remove the alias \"x\" to improve the readability.";
         AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(3).withMessage(message)
+            .next().startsAt(3, 14).endsAt(3, 15).withMessage(message)
             .noMore();
     }
 

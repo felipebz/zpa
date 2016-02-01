@@ -10,7 +10,7 @@ begin
     from tab x -- violation
    where exists (select 1 from tab2);
    
-  select (select 1 from tab x)
+  select (select 1 from tab x) -- violation
     from tab2;
     
   -- correct
