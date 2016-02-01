@@ -1,0 +1,31 @@
+<p>
+An alias can be used in tables when you plan to add the same table more than once in the FROM clause 
+(e.g. self join), or you want to shorten the table name to make the SQL statement shorter and easier to read. 
+But when abused, aliases can have the opposite effect: decrease legibility. 
+</p>
+
+<p>
+Consider using aliases only when the table appears more than once in a query. 
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+SELECT a.id,
+       b.id,
+       b.name
+  FROM employee a,
+       dept b
+ WHERE a.dept_id = b.id;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+SELECT employee.id,
+       dept.id,
+       dept.name
+  FROM employee,
+       dept
+ WHERE employee.dept_id = dept.id;
+</pre>

@@ -75,6 +75,7 @@ public class CheckList {
             UnusedParameterCheck.class,
             CommitRollbackCheck.class,
             UnnecessaryNullStatementCheck.class,
-            DuplicateConditionIfElsifCheck.class);
+            DuplicateConditionIfElsifCheck.class,
+            UnnecessaryAliasInQueryCheck.class);
     }
 }

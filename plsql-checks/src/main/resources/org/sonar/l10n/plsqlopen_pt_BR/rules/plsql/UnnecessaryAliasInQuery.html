@@ -1,0 +1,31 @@
+<p>
+Um alias pode ser usado em tabelas quando você pretende adicionar a mesma tabela mais que uma vez na cláusula FROM
+(por exemplo, em self join) ou para reduzir o nome da tabela para tornar a instrução SQL menor e mais fácil de ler.
+Mas quando abusados, os aliases podem ter o efeito oposto: diminiuir a legibilidade.
+</p>
+
+<p>
+Prefira usar aliases apenas quando a tabela aparece mais de uma vez em uma consulta.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+SELECT a.id,
+       b.id,
+       b.name
+  FROM employee a,
+       dept b
+ WHERE a.dept_id = b.id;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+SELECT employee.id,
+       dept.id,
+       dept.name
+  FROM employee,
+       dept
+ WHERE employee.dept_id = dept.id;
+</pre>
