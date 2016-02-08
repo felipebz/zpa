@@ -61,7 +61,7 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
         }
         
         ListMultimap<String, TableReference> tableReferences = ArrayListMultimap.create();
-        for (AstNode fromClause : node.getDescendants(PlSqlGrammar.FROM_CLAUSE)) {
+        for (AstNode fromClause : node.getDescendants(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE)) {
             AstNode table = fromClause.getFirstChild(PlSqlGrammar.TABLE_REFERENCE);
             AstNode alias = fromClause.getFirstChild(PlSqlGrammar.ALIAS);
 

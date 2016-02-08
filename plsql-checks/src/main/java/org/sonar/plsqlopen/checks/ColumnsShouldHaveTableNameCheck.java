@@ -53,7 +53,7 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
         }
         
         AstNode selectExpression = node.getParent();
-        if (selectExpression.getChildren(PlSqlGrammar.FROM_CLAUSE).size() > 1 &&
+        if (selectExpression.getFirstChild(PlSqlGrammar.FROM_CLAUSE).getChildren(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size() > 1 &&
                 candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
             getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());

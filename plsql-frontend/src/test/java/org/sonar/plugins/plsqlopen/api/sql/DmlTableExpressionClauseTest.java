@@ -26,11 +26,11 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class FromClauseTest extends RuleTest {
+public class DmlTableExpressionClauseTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.FROM_CLAUSE);
+        setRootRule(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE);
     }
     
     @Test
@@ -56,11 +56,6 @@ public class FromClauseTest extends RuleTest {
     @Test
     public void matchesSubquery() {
         assertThat(p).matches("(select 1 from dual)");
-    }
-    
-    @Test
-    public void matchesSubqueryWithTheKeyword() {
-        assertThat(p).matches("the (select 1 from dual)");
     }
     
     @Test

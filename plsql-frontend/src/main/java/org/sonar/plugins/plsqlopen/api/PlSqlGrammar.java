@@ -89,6 +89,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // DML
     TABLE_REFERENCE,
+    DML_TABLE_EXPRESSION_CLAUSE,
     ALIAS,
     PARTITION_BY_CLAUSE,
     WINDOWING_LIMIT,
@@ -414,15 +415,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(UPDATE_STATEMENT).is(
                 b.optional(LABEL), 
-                UPDATE, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME), SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(WHERE_CLAUSE),
                 SEMICOLON);
         
         b.rule(DELETE_STATEMENT).is(
                 b.optional(LABEL), 
                 DELETE, b.optional(FROM), 
-                b.firstOf(TABLE_REFERENCE, b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
-                b.optional(IDENTIFIER_NAME),
+                DML_TABLE_EXPRESSION_CLAUSE,
                 b.optional(b.firstOf(
                         WHERE_CLAUSE,
                         b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME))), 
@@ -570,12 +570,18 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
-        b.rule(FROM_CLAUSE).is(
+        b.rule(DML_TABLE_EXPRESSION_CLAUSE).is(
                 b.firstOf(
-                        b.sequence(b.optional(THE), LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                        b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                         b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                         OBJECT_REFERENCE),
                 b.optional(ALIAS));
+        
+        b.rule(FROM_CLAUSE).is(
+                FROM, 
+                b.firstOf(
+                        JOIN_CLAUSE,
+                        b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.zeroOrMore(COMMA, DML_TABLE_EXPRESSION_CLAUSE))));
         
         b.rule(WHERE_CLAUSE).is(WHERE, EXPRESSION);
         
@@ -616,9 +622,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                     b.sequence(
                             SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                             b.optional(INTO_CLAUSE),
-                            FROM, b.firstOf(
-                                    JOIN_CLAUSE,
-                                    b.sequence(FROM_CLAUSE, b.zeroOrMore(COMMA, FROM_CLAUSE))),
+                            FROM_CLAUSE,
                             b.optional(WHERE_CLAUSE),
                             b.optional(b.firstOf(
                                     b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
