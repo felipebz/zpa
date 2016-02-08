@@ -32,6 +32,7 @@ import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.AstNodeType;
 
 @Rule(
     key = UnnecessaryAliasInQueryCheck.CHECK_KEY,
@@ -49,14 +50,22 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
         defaultValue = "" + DEFAULT_ACCEPTED_LENGTH)
     public int acceptedLength = DEFAULT_ACCEPTED_LENGTH;
     
+    private AstNodeType[] dmlStatements = new AstNodeType[] {
+            PlSqlGrammar.SELECT_EXPRESSION,
+            PlSqlGrammar.UPDATE_STATEMENT,
+            PlSqlGrammar.DELETE_STATEMENT
+    };
+    
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.SELECT_EXPRESSION);
+        subscribeTo(dmlStatements);
     }
 
     @Override
     public void visitNode(AstNode node) {
-        if (node.hasAncestor(PlSqlGrammar.SELECT_EXPRESSION)) {
+        if (node.hasAncestor(dmlStatements)) {
+            // if the current node is inside another DML statement (i.e. subquery), the node should be
+            // ignored because it is considered in the analysis of the outer statement 
             return;
         }
         
