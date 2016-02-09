@@ -25,20 +25,17 @@ import java.util.ResourceBundle;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.squidbridge.checks.SquidCheck;
 
-import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.api.Token;
 
 public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
     
-    private final ResourceBundle bundle;
+    private ResourceBundle bundle;
     
-    protected AbstractBaseCheck() {
-        bundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault());
-    }
-   
     protected String getLocalizedMessage(String checkKey) {
+        if (bundle == null) {
+            bundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault());
+        }
         return bundle.getString("rule.plsql." + checkKey + ".message"); 
     }
     
