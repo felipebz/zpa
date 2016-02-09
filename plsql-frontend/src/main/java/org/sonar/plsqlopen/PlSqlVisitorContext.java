@@ -52,7 +52,7 @@ public interface PlSqlVisitorContext {
     void createLineViolation(CodeCheck check, String message, int line, Object... messageParameters);
     
     void createViolation(CodeVisitor check, String message, AstNode node, Object... messageParameters);
-
+    
     void createViolation(CodeVisitor check, String message, AstNode node, List<Location> secondary,
             Object... messageParameters);
 

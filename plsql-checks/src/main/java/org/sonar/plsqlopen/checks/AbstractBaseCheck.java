@@ -25,8 +25,10 @@ import java.util.ResourceBundle;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.squidbridge.checks.SquidCheck;
 
+import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.Token;
 
 public abstract class AbstractBaseCheck extends SquidCheck<Grammar> {
     
