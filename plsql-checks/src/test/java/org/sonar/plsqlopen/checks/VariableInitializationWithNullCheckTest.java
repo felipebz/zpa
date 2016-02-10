@@ -19,24 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class VariableInitializationWithNullCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("variable_initialization_with_null.sql", new VariableInitializationWithNullCheck());
-        final String message = "Remove this unnecessary initialization to NULL.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(5).withMessage(message)
-            .next().atLine(7).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("variable_initialization_with_null.sql"), new VariableInitializationWithNullCheck());
     }
 
 }

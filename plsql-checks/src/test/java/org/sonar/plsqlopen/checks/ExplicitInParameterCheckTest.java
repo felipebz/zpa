@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ExplicitInParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("explicit_in_parameter.sql", new ExplicitInParameterCheck());
-        final String message = "Explicitly declare this parameter as IN.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(1).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("explicit_in_parameter.sql"), new ExplicitInParameterCheck());
     }
     
 }

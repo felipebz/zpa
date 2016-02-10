@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ReturnOfBooleanExpressionCheckTest extends BaseCheckTest {
 
 	@Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("return_of_boolean_expression.sql", new ReturnOfBooleanExpressionCheck());
-        final String message = "Replace this if-then-else statement by a single return statement.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(8).withMessage(message)
-            .noMore();
+	    PlSqlCheckVerifier.verify(getPath("return_of_boolean_expression.sql"), new ReturnOfBooleanExpressionCheck());
     }
 	
 }

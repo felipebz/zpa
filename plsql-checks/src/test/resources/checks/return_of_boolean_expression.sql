@@ -1,11 +1,11 @@
 begin
-  if (a = b) then -- violation
+  if (a = b) then -- Noncompliant {{Replace this if-then-else statement by a single return statement.}}
     return true;
   else
     return false;
   end if;
   
-  if (a = b) then -- violation
+  if (a = b) then -- Noncompliant
     return false;
   else
     return true;

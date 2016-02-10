@@ -19,23 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class SelectAllColumnsCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("select_all_columns.sql", new SelectAllColumnsCheck());
-        final String message = "SELECT * should not be used.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(7).withMessage(message)
-            .next().atLine(11).withMessage(message)
-            .next().atLine(15).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("select_all_columns.sql"), new SelectAllColumnsCheck());
     }
 
 }

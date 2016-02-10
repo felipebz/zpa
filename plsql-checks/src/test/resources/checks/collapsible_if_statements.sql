@@ -1,14 +1,14 @@
 begin
   -- can be collapsed
   if x = 1 then
-    if y = 2 then -- violation
+    if y = 2 then -- Noncompliant {{Merge this if statement with the enclosing one.}}
       null;
     end if;
   end if;
   
   if x = 1 then
-    if y = 2 then -- violation
-      if z = 3 then -- violation
+    if y = 2 then -- Noncompliant
+      if z = 3 then -- Noncompliant
         null;
       end if;
     end if;

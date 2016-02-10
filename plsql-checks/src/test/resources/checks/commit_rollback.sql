@@ -7,10 +7,10 @@ create procedure test is
   end;
   
 begin
- commit; -- violation
+ commit; -- Noncompliant {{Avoid COMMIT calls unless it is in an autonomous transaction.}}
  
  begin
-   rollback; -- violation
+   rollback; -- Noncompliant {{Avoid ROLLBACK calls unless it is in an autonomous transaction.}}
  end;
 end;
 /

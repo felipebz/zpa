@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class CharacterDatatypeUsageCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("character_datatype_usage.sql", new CharacterDatatypeUsageCheck());
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage("Use VARCHAR2 instead of VARCHAR.")
-            .next().atLine(3).withMessage("Use VARCHAR2 instead of CHAR.")
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("character_datatype_usage.sql"), new CharacterDatatypeUsageCheck());
     }
     
 }

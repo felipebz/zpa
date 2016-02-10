@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class DeclareSectionWithoutDeclarationsCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("declare_section_without_declarations.sql", new DeclareSectionWithoutDeclarationsCheck());
-        String message = "Remove this DECLARE keyword.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("declare_section_without_declarations.sql"), new DeclareSectionWithoutDeclarationsCheck());
     }
     
 }

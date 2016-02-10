@@ -19,25 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ComparisonWithBooleanCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("comparison_with_boolean.sql", new ComparisonWithBooleanCheck());
-        final String messageWithTrue = "Remove the literal \"TRUE\" of this comparison.";
-        final String messageWithFalse = "Remove the literal \"FALSE\" of this comparison.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(messageWithTrue)
-            .next().atLine(3).withMessage(messageWithTrue)
-            .next().atLine(4).withMessage(messageWithFalse)
-            .next().atLine(5).withMessage(messageWithFalse)
-            .next().atLine(6).withMessage(messageWithTrue)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("comparison_with_boolean.sql"), new ComparisonWithBooleanCheck());
     }
 
 }

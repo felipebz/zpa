@@ -1,5 +1,5 @@
 begin
-  select col, -- violation
+  select col, -- Noncompliant {{Specify the table of column "col".}} [[sc=10;ec=13]]
          tab.col,
          func(col),
          'text'

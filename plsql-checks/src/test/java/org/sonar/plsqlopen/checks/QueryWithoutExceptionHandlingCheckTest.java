@@ -19,26 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class QueryWithoutExceptionHandlingCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("query_without_exception_handling.sql", new QueryWithoutExceptionHandlingCheck());
-        final String message = "Handle exceptions of this query.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(10).withMessage(message)
-            .next().atLine(20).withMessage(message)
-            .next().atLine(33).withMessage(message)
-            .next().atLine(41).withMessage(message)
-            .next().atLine(50).withMessage(message)
-            .next().atLine(57).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("query_without_exception_handling.sql"), new QueryWithoutExceptionHandlingCheck());
     }
     
 }

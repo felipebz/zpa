@@ -19,31 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class SameConditionCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("same_condition.sql", new SameConditionCheck());
-        String message = "This condition duplicates the one on line %s.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(3, 21).endsAt(3, 26).withMessage(String.format(message, 3))
-                .secondaryLocationAt(3, 11, 3, 16)
-            
-            .next().startsAt(4, 20).endsAt(4, 25).withMessage(String.format(message, 4))
-                .secondaryLocationAt(4, 11, 4, 16)
-            
-            .next().startsAt(10, 10).endsAt(10, 21).withMessage(String.format(message, 9))
-                .secondaryLocationAt(9, 10, 9, 21)
-            
-            .next().startsAt(16, 10).endsAt(16, 40).withMessage(String.format(message, 15))
-                .secondaryLocationAt(15, 10, 15, 40)
-            
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("same_condition.sql"), new SameConditionCheck());
     }
     
 }

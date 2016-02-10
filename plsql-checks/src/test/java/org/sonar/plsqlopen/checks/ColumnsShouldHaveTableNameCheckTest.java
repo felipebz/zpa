@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ColumnsShouldHaveTableNameCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("columns_should_have_table_name.sql", new ColumnsShouldHaveTableNameCheck());
-        final String message = "Specify the table of column \"col\".";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(2, 10).endsAt(2, 13).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("columns_should_have_table_name.sql"), new ColumnsShouldHaveTableNameCheck());
     }
     
 }

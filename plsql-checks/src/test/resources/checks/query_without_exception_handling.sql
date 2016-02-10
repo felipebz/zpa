@@ -1,5 +1,5 @@
 begin 
-  select 1 -- violation
+  select 1 -- Noncompliant {{Handle exceptions of this query.}}
     into var
     from dual;
 end;
@@ -7,7 +7,7 @@ end;
 
 begin
   if (true) then 
-    select 1 -- violation
+    select 1 -- Noncompliant
       into var
       from dual;
   end if;
@@ -17,7 +17,7 @@ end;
 begin
 
     begin
-      select 1 -- violation, inner block without exception handling
+      select 1 -- Noncompliant, inner block without exception handling
         into var
         from dual;
     end;
@@ -30,7 +30,7 @@ end;
 
 create procedure foo is
 begin
-  select 1 -- violation
+  select 1 -- Noncompliant
     into var
     from dual;
 end;
@@ -38,7 +38,7 @@ end;
 
 create function foo return number is
 begin
-  select 1 -- violation
+  select 1 -- Noncompliant
     into var
     from dual;
 end;
@@ -47,14 +47,14 @@ end;
 create package body pack is
     procedure foo is
     begin
-      select 1 -- violation
+      select 1 -- Noncompliant
         into var
         from dual;
     end;
     
     function foo return number is
     begin
-      select 1 -- violation
+      select 1 -- Noncompliant
         into var
         from dual;
     end;

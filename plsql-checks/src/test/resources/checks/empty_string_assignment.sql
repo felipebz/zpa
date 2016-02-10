@@ -1,5 +1,5 @@
 begin
-  var := ''; -- violation
+  var := ''; -- Noncompliant {{Replace this empty string by NULL.}}
   
   -- correct
   var := ' ';

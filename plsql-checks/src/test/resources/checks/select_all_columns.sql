@@ -1,18 +1,18 @@
 begin
   -- violations
-  select *
+  select * -- Noncompliant {{SELECT * should not be used.}}
     into var
     from emp;
   
-  select emp.*
+  select emp.* -- Noncompliant
     into var
     from emp;
   
-  select distinct emp.*
+  select distinct emp.* -- Noncompliant
     into var
     from emp;
     
-  select user.emp.*
+  select user.emp.* -- Noncompliant
     into var
     from user.emp;
     

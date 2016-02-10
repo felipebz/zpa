@@ -19,26 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class UnusedVariableCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("unused_variable.sql", new UnusedVariableCheck());
-        String message = "Remove this unused \"%s\" local variable.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(String.format(message, "var"))
-            .next().atLine(3).withMessage(String.format(message, "i"))
-            .next().atLine(6).withMessage(String.format(message, "proc_var"))
-            .next().atLine(12).withMessage(String.format(message, "func_var"))
-            .next().atLine(20).withMessage(String.format(message, "var2"))
-            .next().atLine(32).withMessage(String.format(message, "package_body_var"))
-            .next().atLine(33).withMessage(String.format(message, "hidden_var"))
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("unused_variable.sql"), new UnusedVariableCheck());
     }
     
 }

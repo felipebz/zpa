@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class TooManyRowsHandlerCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("too_many_rows_handler.sql", new TooManyRowsHandlerCheck());
-        String message = "Fill this TOO_MANY_ROWS exception handler.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(7).withMessage(message)
-            .next().atLine(16).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("too_many_rows_handler.sql"), new TooManyRowsHandlerCheck());
     }
     
 }

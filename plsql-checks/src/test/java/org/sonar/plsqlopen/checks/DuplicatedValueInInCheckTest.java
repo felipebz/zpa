@@ -19,24 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class DuplicatedValueInInCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> file = scanFile("duplicated_value_in_in.sql", new DuplicatedValueInInCheck());
-        AnalyzerMessagesVerifier.verify(file)
-            .next().startsAt(2, 20).endsAt(2, 21).withMessage("Remove or fix the duplicated value \"1\" in the IN condition.")
-                .secondaryLocationAt(2, 17, 2, 18)
-                
-            .next().startsAt(7, 24).endsAt(7, 25).withMessage("Remove or fix the duplicated value \"x\" in the IN condition.")
-                .secondaryLocationAt(7, 18, 7, 19)
-                
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("duplicated_value_in_in.sql"), new DuplicatedValueInInCheck());
     }
     
 }

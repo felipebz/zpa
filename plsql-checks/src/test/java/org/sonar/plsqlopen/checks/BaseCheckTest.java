@@ -49,6 +49,10 @@ public class BaseCheckTest {
         Locale.setDefault(Locale.ENGLISH);
     }
     
+    protected String getPath(String filename) {
+        return defaultResourceFolder + filename;
+    }
+    
     protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
         String relativePath = defaultResourceFolder + filename;
         DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");

@@ -19,23 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class UnusedParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("unused_parameter.sql", new UnusedParameterCheck());
-        String message = "Remove this unused \"%s\" parameter.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(1, 32).endsAt(1, 40).withMessage(String.format(message, "b"))
-            .next().startsAt(7, 31).endsAt(7, 39).withMessage(String.format(message, "b"))
-            .next().startsAt(16, 28).endsAt(16, 36).withMessage(String.format(message, "b"))
-            .next().startsAt(17, 17).endsAt(17, 25).withMessage(String.format(message, "x"))
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("unused_parameter.sql"), new UnusedParameterCheck());
     }
     
 }

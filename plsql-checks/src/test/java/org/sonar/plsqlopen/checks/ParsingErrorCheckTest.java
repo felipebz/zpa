@@ -19,8 +19,9 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collection;
 import org.junit.Test;
 import org.sonar.plsqlopen.AnalyzerMessage;
 
@@ -29,9 +30,9 @@ public class ParsingErrorCheckTest extends BaseCheckTest {
     @Test
     public void test() {
         Collection<AnalyzerMessage> messages = scanFile("parsing_error.sql", new ParsingErrorCheck());
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(1)
-            .noMore();
+        assertThat(messages).hasSize(1);
+        AnalyzerMessage issue = messages.iterator().next();
+        assertThat(issue.getLine()).isEqualTo(1);
     }
 
 }

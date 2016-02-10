@@ -19,19 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ToDateWithoutFormatCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("to_date_without_format.sql", new ToDateWithoutFormatCheck());
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(2, 13).endsAt(2, 34).withMessage("Specify the date format in this TO_DATE.")
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("to_date_without_format.sql"), new ToDateWithoutFormatCheck());
     }
     
 }

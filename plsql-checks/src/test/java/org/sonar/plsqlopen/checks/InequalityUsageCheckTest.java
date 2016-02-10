@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class InequalityUsageCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("inequality_usage_check.sql", new InequalityUsageCheck());
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(3).withMessage("Replace \"!=\" by \"<>\".")
-            .next().atLine(4).withMessage("Replace \"^=\" by \"<>\".")
-            .next().atLine(5).withMessage("Replace \"~=\" by \"<>\".")
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("inequality_usage_check.sql"), new InequalityUsageCheck());
     }
     
 }

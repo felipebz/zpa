@@ -1,6 +1,6 @@
 begin
-  if (x = y) then
-    exit; -- violation
+  if (x = y) then -- Noncompliant {{Replace this code by a EXIT WHEN statement.}} [[sc=3;el=+2;ec=10]]
+    exit;
   end if;
   
   if (x = y) then

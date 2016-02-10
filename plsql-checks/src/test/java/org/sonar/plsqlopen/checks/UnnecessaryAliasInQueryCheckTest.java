@@ -19,25 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class UnnecessaryAliasInQueryCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("unnecessary_alias_in_query.sql", new UnnecessaryAliasInQueryCheck());
-        String message = "This statement has only one reference to the table \"tab\". Remove the alias \"x\" to improve the readability.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(3, 14).endsAt(3, 15).withMessage(message)
-            .next().startsAt(6, 14).endsAt(6, 15).withMessage(message)
-            .next().startsAt(10, 14).endsAt(10, 15).withMessage(message)
-            .next().startsAt(13, 29).endsAt(13, 30).withMessage(message)
-            .next().startsAt(16, 14).endsAt(16, 15).withMessage(message)
-            .next().startsAt(20, 14).endsAt(20, 15).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("unnecessary_alias_in_query.sql"), new UnnecessaryAliasInQueryCheck());
     }
     
     @Test
@@ -45,11 +34,7 @@ public class UnnecessaryAliasInQueryCheckTest extends BaseCheckTest {
         UnnecessaryAliasInQueryCheck check = new UnnecessaryAliasInQueryCheck();
         check.acceptedLength = 4;
         
-        Collection<AnalyzerMessage> messages = scanFile("unnecessary_alias_in_query_custom_length.sql", check);
-        String message = "This statement has only one reference to the table \"tab\". Remove the alias \"x\" to improve the readability.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(3, 14).endsAt(3, 15).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("unnecessary_alias_in_query.sql"), check);
     }
 
 }

@@ -19,25 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class IdenticalExpressionCheckTest extends BaseCheckTest {
 
 	@Test
     public void test() {
-        Collection<AnalyzerMessage> file = scanFile("identical_expression.sql", new IdenticalExpressionCheck());
-        final String message = "Identical expressions on both sides of operator \"=\".";
-        AnalyzerMessagesVerifier.verify(file)
-            .next().startsAt(2, 11).endsAt(2, 12).withMessage(message)
-                .secondaryLocationAt(2, 15, 2, 16)
-                
-            .next().startsAt(7, 10).endsAt(7, 17).withMessage(message)
-                .secondaryLocationAt(7, 20, 7, 27)
-                
-            .noMore();
+	    PlSqlCheckVerifier.verify(getPath("identical_expression.sql"), new IdenticalExpressionCheck());
     }
 	
 }

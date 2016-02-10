@@ -1,7 +1,7 @@
 begin
   if foo then
     null;
-  elsif foo then -- violation
+  elsif foo then -- Noncompliant {{This branch can not be reached because the condition duplicates a previous condition in the same sequence of "if/else if" statements.}}
     null;
   end if;
   
@@ -9,7 +9,7 @@ begin
     null;
   elsif bar then
     null;
-  elsif bar then -- violation
+  elsif bar then -- Noncompliant
     null;
   end if;
   

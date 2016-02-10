@@ -1,23 +1,23 @@
 begin
   select *
-    from tab x; -- violation
+    from tab x; -- Noncompliant {{This statement has only one reference to the table "tab". Remove the alias "x" to improve the readability.}} [[sc=14;ec=15]]
     
   select *
-    from tab x, -- violation
+    from tab x, -- Noncompliant [[sc=14;ec=15]]
          tab2;
          
   select *
-    from tab x -- violation
+    from tab x -- Noncompliant [[sc=14;ec=15]]
    where exists (select 1 from tab2);
    
-  select (select 1 from tab x) -- violation
+  select (select 1 from tab x) -- Noncompliant [[sc=29;ec=30]]
     from tab2;
     
-  update tab x -- violation
+  update tab x -- Noncompliant [[sc=14;ec=15]]
      set foo = bar
    where exists (select 1 from tab2);
    
-  delete tab x -- violation
+  delete tab x -- Noncompliant [[sc=14;ec=15]]
    where exists (select 1 from tab2);
     
   -- correct

@@ -1,15 +1,15 @@
 declare
-  var number; -- violation
-  i number; -- violation
+  var number; -- Noncompliant {{Remove this unused "var" local variable.}}
+  i number; -- Noncompliant {{Remove this unused "i" local variable.}}
   
   procedure proc is
-    proc_var number;  -- violation
+    proc_var number;  -- Noncompliant {{Remove this unused "proc_var" local variable.}}
   begin
     null;
   end;
   
   function func return number is
-    func_var number;  -- violation
+    func_var number;  -- Noncompliant {{Remove this unused "func_var" local variable.}}
   begin
     null;
   end;
@@ -17,7 +17,7 @@ begin
   null;
   
   declare
-    var2 number; -- violation
+    var2 number; -- Noncompliant {{Remove this unused "var2" local variable.}}
   begin
     null;
   end;
@@ -29,8 +29,8 @@ end;
 /
 
 create or replace package body test is
-  package_body_var number;  -- violation
-  hidden_var number;  -- violation
+  package_body_var number;  -- Noncompliant {{Remove this unused "package_body_var" local variable.}}
+  hidden_var number;  -- Noncompliant {{Remove this unused "hidden_var" local variable.}}
   
   procedure proc is
     hidden_var number; -- this declaration hides the previous one

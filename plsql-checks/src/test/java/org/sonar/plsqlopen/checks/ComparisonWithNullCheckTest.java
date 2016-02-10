@@ -19,24 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ComparisonWithNullCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("comparison_with_null.sql", new ComparisonWithNullCheck());
-        final String messageWithIsNull = "Fix this comparison or change to \"IS NULL\".";
-        final String messageWithIsNotNull = "Fix this comparison or change to \"IS NOT NULL\".";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(3, 11).endsAt(3, 21).withMessage(messageWithIsNull)
-            .next().startsAt(4, 11).endsAt(4, 22).withMessage(messageWithIsNotNull)
-            .next().startsAt(5, 11).endsAt(5, 19).withMessage(messageWithIsNull)
-            .next().startsAt(6, 11).endsAt(6, 20).withMessage(messageWithIsNotNull)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("comparison_with_null.sql"), new ComparisonWithNullCheck());
     }
 
 }

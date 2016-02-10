@@ -1,5 +1,5 @@
 begin
-  var := ((x = 1)); -- violation
+  var := ((x = 1)); -- Noncompliant {{Remove those useless parenthesis.}} [[sc=11;ec=18]]
   
   -- valid
   var := (x = 1);

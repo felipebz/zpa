@@ -1,5 +1,5 @@
 begin
-  declare -- violation
+  declare -- Noncompliant {{Remove this DECLARE keyword.}}
   begin
     null;
   end;

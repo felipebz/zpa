@@ -1,25 +1,25 @@
 begin
   if (foo = bar) then
     return;
-  else -- violation
+  else -- Noncompliant {{Statements unnecessarily nested within ELSE clause.}}
     foo := null;
   end if;
   
   if (foo = bar) then
     exit;
-  else -- violation
+  else -- Noncompliant
     foo := null;
   end if;
   
   if (foo = bar) then
     continue;
-  else -- violation
+  else -- Noncompliant
     foo := null;
   end if;
   
   if (foo = bar) then
     raise;
-  else -- violation
+  else -- Noncompliant
     foo := null;
   end if;
 end;

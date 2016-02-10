@@ -19,23 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class AddParenthesesInNestedExpressionCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("add_parentheses_in_nested_expression.sql", new AddParenthesesInNestedExpressionCheck());
-        final String message = "Add parentheses around this AND condition.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(2, 20).endsAt(2,  35).withMessage(message)
-            .next().startsAt(3, 20).endsAt(3,  35).withMessage(message)
-            .next().startsAt(3, 39).endsAt(3,  54).withMessage(message)
-            .next().startsAt(9, 10).endsAt(10, 15).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("add_parentheses_in_nested_expression.sql"), new AddParenthesesInNestedExpressionCheck());
     }
     
 }

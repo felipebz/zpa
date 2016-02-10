@@ -1,21 +1,21 @@
 begin
   return;
   
-  var := 1; -- violation
+  var := 1; -- Noncompliant {{This code will never be executed.}}
 end;
 /
 
 begin
   raise;
   
-  var := 1; -- violation
+  var := 1; -- Noncompliant
 end;
 /
 
 begin
   for i in 1..10 loop
       continue;
-      var := 1; -- violation
+      var := 1; -- Noncompliant
   end loop;
 end;
 /
@@ -23,7 +23,7 @@ end;
 begin
   for i in 1..10 loop
       exit;
-      var := 1; -- violation
+      var := 1; -- Noncompliant
   end loop;
 end;
 /
@@ -33,7 +33,7 @@ begin
     return;
   end;
   
-  var := 1; -- violation
+  var := 1; -- Noncompliant
 end;
 /
 
@@ -44,7 +44,7 @@ begin
     end;
   end;
   
-  var := 1; -- violation
+  var := 1; -- Noncompliant
 end;
 /
 

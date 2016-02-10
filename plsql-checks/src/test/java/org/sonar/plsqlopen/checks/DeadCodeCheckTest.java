@@ -19,25 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class DeadCodeCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("dead_code.sql", new DeadCodeCheck());
-        final String message = "This code will never be executed.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(11).withMessage(message)
-            .next().atLine(18).withMessage(message)
-            .next().atLine(26).withMessage(message)
-            .next().atLine(36).withMessage(message)
-            .next().atLine(47).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("dead_code.sql"), new DeadCodeCheck());
     }
     
 }

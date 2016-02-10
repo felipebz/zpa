@@ -19,25 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class SameBranchCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("same_branch.sql", new SameBranchCheck());
-        final String message = "Either merge this branch with the identical one on line %d or change one of the implementations.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(5, 5).endsAt(5, 14).withMessage(String.format(message, 3))
-                .secondaryLocationAt(3, 5, 3, 14)
-            
-            .next().startsAt(11, 5).endsAt(11, 14).withMessage(String.format(message, 9))
-                .secondaryLocationAt(9, 5, 9, 14)
-            
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("same_branch.sql"), new SameBranchCheck());
     }
     
 }

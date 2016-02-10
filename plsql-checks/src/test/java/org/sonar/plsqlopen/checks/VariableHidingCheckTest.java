@@ -19,34 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class VariableHidingCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("variable_hiding.sql", new VariableHidingCheck());
-        final String message = "This variable \"%s\" hides the declaration on line %s.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(7, 5).endsAt(7, 8).withMessage(String.format(message, "var", 2))
-                .secondaryLocationAt(2, 3, 2, 6)
-                
-            .next().startsAt(13, 5).endsAt(13, 9).withMessage(String.format(message, "var2", 3))
-                .secondaryLocationAt(3, 3, 3, 7)
-                
-            .next().startsAt(20, 5).endsAt(20, 9).withMessage(String.format(message, "var3", 4))
-                .secondaryLocationAt(4, 3, 4, 7)
-                
-            .next().startsAt(31, 5).endsAt(31, 8).withMessage(String.format(message, "var", 28))
-                .secondaryLocationAt(28, 3, 28, 6)
-                
-            .next().startsAt(35, 9).endsAt(35, 10).withMessage(String.format(message, "i", 33))
-                .secondaryLocationAt(33, 9, 33, 10)
-                
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("variable_hiding.sql"), new VariableHidingCheck());
     }
     
 }

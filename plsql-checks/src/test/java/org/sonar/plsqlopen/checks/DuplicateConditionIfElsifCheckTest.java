@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class DuplicateConditionIfElsifCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("duplicate_condition_if_elsif.sql", new DuplicateConditionIfElsifCheck());
-        final String message = "This branch can not be reached because the condition duplicates a previous condition in the same sequence of \"if/else if\" statements.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(12).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("duplicate_condition_if_elsif.sql"), new DuplicateConditionIfElsifCheck());
     }
 
 }

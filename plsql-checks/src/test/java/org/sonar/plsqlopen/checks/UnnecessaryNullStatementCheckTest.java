@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class UnnecessaryNullStatementCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("unnecessary_null_statement.sql", new UnnecessaryNullStatementCheck());
-        final String message = "This NULL statement does not have any effect here.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(7).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("unnecessary_null_statement.sql"), new UnnecessaryNullStatementCheck());
     }
 
 }

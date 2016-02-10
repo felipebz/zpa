@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class RaiseStandardExceptionCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("raise_standard_exception.sql", new RaiseStandardExceptionCheck());
-        String message = "Avoid raising the standard exception %s.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(4).withMessage(String.format(message, "no_data_found"))
-            .next().atLine(5).withMessage(String.format(message, "too_many_rows"))
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("raise_standard_exception.sql"), new RaiseStandardExceptionCheck());
     }
 
 }

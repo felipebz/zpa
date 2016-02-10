@@ -1,5 +1,5 @@
 begin
-  null;
+  null; -- Noncompliant {{Either remove or fill this block of code.}}
 end;
 /
 declare

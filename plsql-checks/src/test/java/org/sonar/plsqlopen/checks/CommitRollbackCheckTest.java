@@ -19,22 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class CommitRollbackCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("commit_rollback.sql", new CommitRollbackCheck());
-        final String messageCommit = "Avoid COMMIT calls unless it is in an autonomous transaction.";
-        final String messageRollback = "Avoid ROLLBACK calls unless it is in an autonomous transaction.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(10).withMessage(messageCommit)
-            .next().atLine(13).withMessage(messageRollback)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("commit_rollback.sql"), new CommitRollbackCheck());
     }
 
 }

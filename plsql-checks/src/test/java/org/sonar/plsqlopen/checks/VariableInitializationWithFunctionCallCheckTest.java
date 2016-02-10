@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class VariableInitializationWithFunctionCallCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("variable_initialization_with_function_call.sql", new VariableInitializationWithFunctionCallCheck());
-        final String message = "Move this initialization to the BEGIN...END block.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("variable_initialization_with_function_call.sql"), new VariableInitializationWithFunctionCallCheck());
     }
     
 }

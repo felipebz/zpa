@@ -19,22 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class DbmsOutputPutCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("dbms_output_put.sql", new DbmsOutputPutCheck());
-        final String message = "Avoid direct calls to DBMS_OUTPUT procedures.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(3).withMessage(message)
-            .next().atLine(4).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("dbms_output_put.sql"), new DbmsOutputPutCheck());
     }
     
 }

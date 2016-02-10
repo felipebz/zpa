@@ -1,6 +1,6 @@
 begin
   select *
-    from tab x; -- violation
+    from tab x; -- Noncompliant {{This statement has only one reference to the table "tab". Remove the alias "x" to improve the readability.}} [[sc=14;ec=15]]
     
   select *
     from tab xxxx, -- should be ignored because the accepted length is 4

@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class EmptyStringAssignmentCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("empty_string_assignment.sql", new EmptyStringAssignmentCheck());
-        String message = "Replace this empty string by NULL.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("empty_string_assignment.sql"), new EmptyStringAssignmentCheck());
     }
     
 }

@@ -19,22 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class CollapsibleIfStatementsCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("collapsible_if_statements.sql", new CollapsibleIfStatementsCheck());
-        String message = "Merge this if statement with the enclosing one.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(4).withMessage(message)
-            .next().atLine(10).withMessage(message)
-            .next().atLine(11).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("collapsible_if_statements.sql"), new CollapsibleIfStatementsCheck());
     }
     
 }

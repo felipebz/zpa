@@ -1,10 +1,9 @@
--- noncompliant
 begin
   select empno
     into var
     from emp;
 exception
-  when too_many_rows then
+  when too_many_rows then -- Noncompliant {{Fill this TOO_MANY_ROWS exception handler.}}
     null;
 end;
 
@@ -13,7 +12,7 @@ begin
     into var
     from emp;
 exception
-  when no_data_found or too_many_rows then
+  when no_data_found or too_many_rows then -- Noncompliant
     null;
 end;
 

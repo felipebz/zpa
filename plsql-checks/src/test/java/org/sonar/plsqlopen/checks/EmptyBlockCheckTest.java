@@ -19,20 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class EmptyBlockCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("empty_block.sql", new EmptyBlockCheck());
-        String message = "Either remove or fill this block of code.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("empty_block.sql"), new EmptyBlockCheck());
     }
 
 }

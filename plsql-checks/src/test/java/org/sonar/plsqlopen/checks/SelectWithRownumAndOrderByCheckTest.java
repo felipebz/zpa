@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class SelectWithRownumAndOrderByCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("select_with_rownum_and_order_by.sql", new SelectWithRownumAndOrderByCheck());
-        final String message = "Move this ROWNUM comparation to a more external level to guarantee the ordering.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(5).withMessage(message)
-            .next().atLine(11).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("select_with_rownum_and_order_by.sql"), new SelectWithRownumAndOrderByCheck());
     }
     
 }

@@ -19,19 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class NotFoundCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("not_found.sql", new NotFoundCheck());
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage("Use %NOTFOUND instead of NOT ...%FOUND.")
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("not_found.sql"), new NotFoundCheck());
     }
     
 }

@@ -1,5 +1,5 @@
 begin
-  var := not cur%found; -- violation
+  var := not cur%found; -- Noncompliant {{Use %NOTFOUND instead of NOT ...%FOUND.}}
   
   var := cur%notfound;
   var := not cur.found;

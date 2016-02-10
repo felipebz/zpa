@@ -19,23 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class FunctionWithOutParameterCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("function_with_out_parameter.sql", new FunctionWithOutParameterCheck());
-        String message = "Rewrite this function to not depend on OUT parameters.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().atLine(2).withMessage(message)
-            .next().atLine(9).withMessage(message)
-            .next().atLine(18).withMessage(message)
-            .next().atLine(24).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("function_with_out_parameter.sql"), new FunctionWithOutParameterCheck());
     }
     
 }

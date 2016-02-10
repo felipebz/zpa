@@ -19,21 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.Collection;
-
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 
 public class ConcatenationWithNullCheckTest extends BaseCheckTest {
     
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("concatenation_with_null.sql", new ConcatenationWithNullCheck());
-        final String message = "Review this concatenation with NULL value.";
-        AnalyzerMessagesVerifier.verify(messages)
-            .next().startsAt(2, 15).endsAt(2, 19).withMessage(message)
-            .next().startsAt(3, 15).endsAt(3, 17).withMessage(message)
-            .noMore();
+        PlSqlCheckVerifier.verify(getPath("concatenation_with_null.sql"), new ConcatenationWithNullCheck());
     }
 
 }
