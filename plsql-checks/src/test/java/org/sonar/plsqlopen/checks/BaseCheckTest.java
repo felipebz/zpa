@@ -41,7 +41,7 @@ import com.sonar.sslr.api.Grammar;
 
 public class BaseCheckTest {
 
-    private final String defaultResourceFolder = "src/test/resources/checks/";
+    private static final String defaultResourceFolder = "src/test/resources/checks/";
     private DefaultFileSystem fs = new DefaultFileSystem(new File("."));
     
     @Before

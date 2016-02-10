@@ -106,8 +106,8 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
     }
     
     class TableReference {
-        public AstNode table;
-        public AstNode alias;
+        public final AstNode table;
+        public final AstNode alias;
         
         public TableReference(AstNode table, AstNode alias) {
             this.table = table;
