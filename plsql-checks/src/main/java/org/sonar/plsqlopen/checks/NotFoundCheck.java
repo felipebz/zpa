@@ -23,7 +23,6 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -62,9 +61,7 @@ public class NotFoundCheck extends AbstractBaseCheck  {
     }
     
     private static boolean parentIsNotExpression(AstNode parent) {
-        return parent != null &&
-               parent.is(PlSqlGrammar.UNARY_EXPRESSION) && 
-               parent.getFirstChild().is(PlSqlKeyword.NOT);
+        return parent != null && parent.is(PlSqlGrammar.NOT_EXPRESSION);
     }
 
 }

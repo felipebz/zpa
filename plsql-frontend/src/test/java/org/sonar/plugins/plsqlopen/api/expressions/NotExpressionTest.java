@@ -26,41 +26,26 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class BooleanExpressionTest extends RuleTest {
-
+public class NotExpressionTest extends RuleTest {
+    
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.EXPRESSION);
+        setRootRule(PlSqlGrammar.NOT_EXPRESSION);
     }
     
     @Test
-    public void matchesSimpleAndExpression() {
-        assertThat(p).matches("true and true");
+    public void matchesSimpleNotExpression() {
+        assertThat(p).matches("not x");
     }
     
     @Test
-    public void matchesSimpleOrExpression() {
-        assertThat(p).matches("true or true");
+    public void matchesNotExpression() {
+        assertThat(p).matches("not x = a");
     }
     
     @Test
-    public void matchesMultipleExpression() {
-        assertThat(p).matches("true and true or true");
+    public void matchesNotExpressionWithParenthesis() {
+        assertThat(p).matches("not (x = a)");
     }
-    
-    @Test
-    public void matchesMultipleExpressionWithNotOperator() {
-        assertThat(p).matches("true and not false");
-    }
-    
-    @Test
-    public void matchesExpressionWithVariables() {
-        assertThat(p).matches("var and var");
-    }
-    
-    @Test
-    public void matchesExpressionWithFunctionCall() {
-        assertThat(p).matches("func(var) and func(var)");
-    }
-    
+
 }
