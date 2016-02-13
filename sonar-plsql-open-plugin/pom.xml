@@ -16,7 +16,7 @@
 
   <properties>
     <sonar.pluginClass>org.sonar.plsqlopen.PlSqlPlugin</sonar.pluginClass>
-    <sonar.pluginName>PL/SQL</sonar.pluginName>
+    <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
   </properties>
 
   <dependencies>
