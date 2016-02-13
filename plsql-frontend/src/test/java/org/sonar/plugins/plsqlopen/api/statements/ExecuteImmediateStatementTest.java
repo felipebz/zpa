@@ -49,6 +49,11 @@ public class ExecuteImmediateStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesExecuteImmediateIntoField() {
+        assertThat(p).matches("execute immediate 'command' into tab(i).field;");
+    }
+    
+    @Test
     public void matchesExecuteImmediateBulkCollectIntoVariable() {
         assertThat(p).matches("execute immediate 'command' bulk collect into var;");
     }
