@@ -169,6 +169,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     AUTONOMOUS_TRANSACTION_PRAGMA,
     EXCEPTION_INIT_PRAGMA,
     SERIALLY_REUSABLE_PRAGMA,
+    INTERFACE_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     
@@ -888,10 +889,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(SERIALLY_REUSABLE_PRAGMA).is(PRAGMA, SERIALLY_REUSABLE, SEMICOLON);
         
+        b.rule(INTERFACE_PRAGMA).is(
+                PRAGMA, INTERFACE, 
+                LPARENTHESIS, IDENTIFIER_NAME, COMMA, IDENTIFIER_NAME, COMMA, INTEGER_LITERAL, RPARENTHESIS, SEMICOLON);
+        
         b.rule(PRAGMA_DECLARATION).is(b.firstOf(
                 EXCEPTION_INIT_PRAGMA,
                 AUTONOMOUS_TRANSACTION_PRAGMA,
-                SERIALLY_REUSABLE_PRAGMA));
+                SERIALLY_REUSABLE_PRAGMA,
+                INTERFACE_PRAGMA));
         
         b.rule(DECLARE_SECTION).is(b.oneOrMore(b.firstOf(
                 PRAGMA_DECLARATION,

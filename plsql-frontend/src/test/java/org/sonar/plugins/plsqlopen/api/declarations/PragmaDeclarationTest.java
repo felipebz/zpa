@@ -47,5 +47,10 @@ public class PragmaDeclarationTest extends RuleTest {
     public void matchesSeriallyReusable() {
         assertThat(p).matches("pragma serially_reusable;");
     }
+    
+    @Test
+    public void matchesInterface() {
+        assertThat(p).matches("pragma interface(c, func, 1);");
+    }
 
 }
