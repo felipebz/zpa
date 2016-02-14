@@ -1,0 +1,29 @@
+Usar a built-in COUNT com variáveis locais é confuso e na maioria das vezes é um erro de programação.
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+DECLARE
+  v_empno emp.empno%TYPE;
+  ...
+BEGIN
+  
+  -- Como a variável v_empno é NULL nesse ponto, esse COUNT sempre retornará 0.
+  SELECT COUNT(v_empno)
+    INTO i
+    FROM employee
+   WHERE employee.deptno = v_deptno;
+END;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+BEGIN
+  SELECT COUNT(*)
+    INTO i
+    FROM employee
+   WHERE employee.deptno = v_deptno;
+END;
+</pre>
+  

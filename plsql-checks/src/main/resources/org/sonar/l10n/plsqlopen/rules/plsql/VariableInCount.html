@@ -1,0 +1,29 @@
+Using the COUNT built-in with local variable is misleading and in the most of time it is a coding error.
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+DECLARE
+  v_empno emp.empno%TYPE;
+  ...
+BEGIN
+  
+  -- Because the v_empno is NULL at this point, this COUNT always returns 0.
+  SELECT COUNT(v_empno)
+    INTO i
+    FROM employee
+   WHERE employee.deptno = v_deptno;
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+BEGIN
+  SELECT COUNT(*)
+    INTO i
+    FROM employee
+   WHERE employee.deptno = v_deptno;
+END;
+</pre>
+  
