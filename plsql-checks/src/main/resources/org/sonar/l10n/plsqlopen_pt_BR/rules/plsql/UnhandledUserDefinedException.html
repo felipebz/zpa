@@ -1,0 +1,51 @@
+<p>
+Quando uma exceção é declarada e não é tratada no código, lançar essa exceção causa o erro 
+"ORA-06510: PL/SQL: unhandled user-defined exception" no banco de dados ou o erro "User-defined exception" no
+Oracle Forms. 
+</p>
+
+<p>
+É uma boa prática sempre tratar exceções personalizadas.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception; -- isso causará um "user-defined exception"
+END;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception;
+EXCEPTION
+  WHEN my_exception THEN
+    ...
+END;
+</pre>
+
+<p>
+Essa verificação também registrará uma violação se a exceção é tratada por um OTHERS e que tem uma referência a SQLERRM.
+Nessa situação, a variável SQLERRM retornará "User-defined exception", o que não é muito útil.
+</p>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception;
+EXCEPTION
+  WHEN OTHERS THEN
+    log(SQLERRM);
+END;
+</pre>

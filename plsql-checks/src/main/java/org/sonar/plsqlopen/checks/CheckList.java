@@ -77,6 +77,7 @@ public class CheckList {
             UnnecessaryNullStatementCheck.class,
             DuplicateConditionIfElsifCheck.class,
             UnnecessaryAliasInQueryCheck.class,
-            VariableInCountCheck.class);
+            VariableInCountCheck.class,
+            UnhandledUserDefinedExceptionCheck.class);
     }
 }

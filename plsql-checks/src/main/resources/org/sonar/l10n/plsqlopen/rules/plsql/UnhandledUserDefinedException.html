@@ -1,0 +1,51 @@
+<p>
+When a custom exception is declared and not handled in the code, raising this exception will cause the error 
+"ORA-06510: PL/SQL: unhandled user-defined exception" in the database or the error "User-defined exception" in
+Oracle Forms. 
+</p>
+
+<p>
+It is a good practice to handle custom exceptions. 
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception; -- this will cause a "user-defined exception"
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception;
+EXCEPTION
+  WHEN my_exception THEN
+    ...
+END;
+</pre>
+
+<p>
+This check will also trigger a violation if the exception is handled by a OTHERS handler and it has a reference to SQLERRM.
+In this case, the SQLERRM will return "User-defined exception", which is not very useful.
+</p>
+
+<pre>
+DECLARE
+  my_exception EXCEPTION;
+BEGIN
+  ...
+  RAISE my_exception;
+EXCEPTION
+  WHEN OTHERS THEN
+    log(SQLERRM);
+END;
+</pre>
