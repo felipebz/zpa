@@ -39,6 +39,11 @@ public class FetchStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesFetchCursorInPackage() {
+        assertThat(p).matches("fetch pack.foo into bar;");
+    }
+    
+    @Test
     public void matchesFetchHostCursorInto() {
         assertThat(p).matches("fetch :foo into bar;");
     }

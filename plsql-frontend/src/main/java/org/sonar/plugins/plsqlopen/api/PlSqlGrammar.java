@@ -445,19 +445,19 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(OPEN_STATEMENT).is(
                 b.optional(LABEL), 
-                OPEN, IDENTIFIER_NAME,
+                OPEN, MEMBER_EXPRESSION,
                 b.optional(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
                 SEMICOLON);
         
         b.rule(OPEN_FOR_STATEMENT).is(
                 b.optional(LABEL), 
-                OPEN, PRIMARY_EXPRESSION, FOR, EXPRESSION,
+                OPEN, MEMBER_EXPRESSION, FOR, EXPRESSION,
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                 SEMICOLON);
         
         b.rule(FETCH_STATEMENT).is(
                 b.optional(LABEL), 
-                FETCH, PRIMARY_EXPRESSION,
+                FETCH, MEMBER_EXPRESSION,
                 b.firstOf(
                         b.sequence(INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                         b.sequence(
@@ -465,7 +465,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 b.optional(LIMIT, EXPRESSION))),
                 SEMICOLON);
         
-        b.rule(CLOSE_STATEMENT).is(b.optional(LABEL), CLOSE, PRIMARY_EXPRESSION, SEMICOLON);
+        b.rule(CLOSE_STATEMENT).is(b.optional(LABEL), CLOSE, MEMBER_EXPRESSION, SEMICOLON);
         
         b.rule(PIPE_ROW_STATEMENT).is(b.optional(LABEL), PIPE, ROW, LPARENTHESIS, EXPRESSION, RPARENTHESIS, SEMICOLON);
         

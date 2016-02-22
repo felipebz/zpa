@@ -39,6 +39,11 @@ public class OpenStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesOpenCursorInPackage() {
+        assertThat(p).matches("open pack.cur;");
+    }
+    
+    @Test
     public void matchesOpenWithParameter() {
         assertThat(p).matches("open cur(foo);");
     }

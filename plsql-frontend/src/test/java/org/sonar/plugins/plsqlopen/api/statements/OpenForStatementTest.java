@@ -39,6 +39,11 @@ public class OpenForStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesOpenCursorInPackage() {
+        assertThat(p).matches("open pack.cur for myquery;");
+    }
+    
+    @Test
     public void matchesOpenForSelectExpression() {
         assertThat(p).matches("open cur for select 1 from dual;");
     }

@@ -39,6 +39,11 @@ public class CloseStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesCloseCursorInPackage() {
+        assertThat(p).matches("close pack.foo;");
+    }
+    
+    @Test
     public void matchesSimpleCloseHostCursor() {
         assertThat(p).matches("close :foo;");
     }
