@@ -180,6 +180,8 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
     }
     
     private void visitCursor(AstNode node) {
+        AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
+        createSymbol(identifier, Symbol.Kind.CURSOR);
         enterScope(node, null);
     }
     

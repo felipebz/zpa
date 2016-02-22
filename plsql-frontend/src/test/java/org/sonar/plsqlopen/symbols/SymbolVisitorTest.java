@@ -114,7 +114,9 @@ public class SymbolVisitorTest {
         verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(4, 3)));
         verify(symboltableBuilder).newSymbol(offset(6, 7), offset(6, 8));
         verify(symboltableBuilder).newSymbol(offset(11, 22), offset(11, 23));
+        verify(symboltableBuilder).newSymbol(offset(12, 10), offset(12, 13));
         verify(symboltableBuilder).newSymbol(offset(12, 14), offset(12, 15));
+        verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(15, 8)));
         verify(symboltableBuilder).newSymbol(offset(18, 21), offset(18, 22));
         verify(symboltableBuilder).newSymbol(offset(24, 3), offset(24, 6));
         verify(symboltableBuilder).newSymbol(offset(28, 3), offset(28, 6));

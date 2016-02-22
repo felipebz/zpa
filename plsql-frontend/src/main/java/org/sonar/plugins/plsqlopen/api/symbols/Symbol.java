@@ -28,7 +28,8 @@ import com.sonar.sslr.api.AstNode;
 public class Symbol {
     public enum Kind {
         VARIABLE("variable"),
-        PARAMETER("parameter"),;
+        PARAMETER("parameter"),
+        CURSOR("cursor");
 
         private final String value;
 

@@ -12,7 +12,7 @@ create procedure foo(x number) is
   cursor cur(c number) is
     select 1 from dual;
 begin
-  null;
+  open cur;
 end;
 /
 create function bar(x number) return number is
