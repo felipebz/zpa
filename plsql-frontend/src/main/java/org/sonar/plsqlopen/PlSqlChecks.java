@@ -29,16 +29,15 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.squidbridge.SquidAstVisitor;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.sonar.sslr.api.Grammar;
 
 public class PlSqlChecks {
 
     private final CheckFactory checkFactory;
-    private Set<Checks<SquidAstVisitor<Grammar>>> checksByRepository = new HashSet<>();
+    private Set<Checks<PlSqlCheck>> checksByRepository = new HashSet<>();
 
     private PlSqlChecks(CheckFactory checkFactory) {
       this.checkFactory = checkFactory;
@@ -51,7 +50,7 @@ public class PlSqlChecks {
     @SuppressWarnings("rawtypes")
     public PlSqlChecks addChecks(String repositoryKey, List<Class> checkClass) {
       checksByRepository.add(checkFactory
-        .<SquidAstVisitor<Grammar>>create(repositoryKey)
+        .<PlSqlCheck>create(repositoryKey)
         .addAnnotatedChecks(checkClass));
 
       return this;
@@ -68,10 +67,10 @@ public class PlSqlChecks {
       return this;
     }
 
-    public List<SquidAstVisitor<Grammar>> all() {
-      List<SquidAstVisitor<Grammar>> allVisitors = new ArrayList<>();
+    public List<PlSqlCheck> all() {
+      List<PlSqlCheck> allVisitors = new ArrayList<>();
 
-      for (Checks<SquidAstVisitor<Grammar>> checks : checksByRepository) {
+      for (Checks<PlSqlCheck> checks : checksByRepository) {
         allVisitors.addAll(checks.all());
       }
 
@@ -79,10 +78,10 @@ public class PlSqlChecks {
     }
 
     @Nullable
-    public RuleKey ruleKey(SquidAstVisitor<Grammar> check) {
+    public RuleKey ruleKey(PlSqlCheck check) {
       RuleKey ruleKey;
 
-      for (Checks<SquidAstVisitor<Grammar>> checks : checksByRepository) {
+      for (Checks<PlSqlCheck> checks : checksByRepository) {
         ruleKey = checks.ruleKey(check);
 
         if (ruleKey != null) {
@@ -93,7 +92,7 @@ public class PlSqlChecks {
     }
     
     @VisibleForTesting
-    public Set<Checks<SquidAstVisitor<Grammar>>> getChecks() {
+    public Set<Checks<PlSqlCheck>> getChecks() {
         return checksByRepository;
     }
     

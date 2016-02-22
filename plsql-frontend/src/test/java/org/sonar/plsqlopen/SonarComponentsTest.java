@@ -45,10 +45,9 @@ import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.squidbridge.SquidAstVisitor;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.collect.Lists;
-import com.sonar.sslr.api.Grammar;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SonarComponentsTest {
@@ -73,10 +72,9 @@ public class SonarComponentsTest {
         assertThat(sonarComponents.issuableFor(mock(InputFile.class))).isEqualTo(issuable);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void addIssue() throws Exception {
-        SquidAstVisitor<Grammar> expectedCheck = new CustomCheck();
+        PlSqlCheck expectedCheck = new CustomCheck();
         
         DefaultFileSystem fileSystem = new DefaultFileSystem(new File(""));
         InputFile inputFile = new DefaultInputFile("file.sql");
@@ -91,7 +89,7 @@ public class SonarComponentsTest {
         when(issueBuilder.effortToFix(anyDouble())).thenReturn(issueBuilder);
         when(resourcePerspectives.as(eq(Issuable.class), any(InputFile.class))).thenReturn(issuable);
         when(this.checks.all()).thenReturn(Lists.newArrayList(expectedCheck));
-        when(this.checks.ruleKey(any(SquidAstVisitor.class))).thenReturn(mock(RuleKey.class));
+        when(this.checks.ruleKey(any(PlSqlCheck.class))).thenReturn(mock(RuleKey.class));
 
         SonarComponents sonarComponents = new SonarComponents(resourcePerspectives, context, fileSystem);
         sonarComponents.setChecks(checks);
@@ -123,7 +121,7 @@ public class SonarComponentsTest {
         assertThat(sonarComponents.inputFromIOFile(new File("unknown"))).isNull();
     }
     
-    private static class CustomCheck extends SquidAstVisitor<Grammar> {
+    private static class CustomCheck extends PlSqlCheck {
 
     }
     

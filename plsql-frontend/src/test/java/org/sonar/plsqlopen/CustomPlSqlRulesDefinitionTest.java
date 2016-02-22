@@ -26,10 +26,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.CustomPlSqlRulesDefinition;
-import org.sonar.squidbridge.checks.SquidCheck;
-
-import com.sonar.sslr.api.Grammar;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 public class CustomPlSqlRulesDefinitionTest {
 
@@ -66,7 +63,7 @@ public class CustomPlSqlRulesDefinitionTest {
         name = RULE_NAME,
         description = "desc",
         tags = { "bug" })
-    public class MyCustomRule extends SquidCheck<Grammar> {
+    public class MyCustomRule extends PlSqlCheck {
         @RuleProperty(
             key = "customParam",
             description = "Custom parameter",

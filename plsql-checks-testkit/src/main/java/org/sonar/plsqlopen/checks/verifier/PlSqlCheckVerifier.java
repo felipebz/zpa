@@ -39,7 +39,7 @@ import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
-import org.sonar.plsqlopen.checks.AbstractBaseCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.squidbridge.SquidAstVisitor;
@@ -117,7 +117,7 @@ public class PlSqlCheckVerifier {
         
         SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
         
-        AbstractBaseCheck expectedIssueCollector = new ExpectedIssueCollector(plSqlCheckVerifier);
+        PlSqlCheck expectedIssueCollector = new ExpectedIssueCollector(plSqlCheckVerifier);
         
         PlSqlAstScanner.scanSingleFile(new File(filename), components, ImmutableList.of(new SymbolVisitor(), check, expectedIssueCollector));
         Collection<AnalyzerMessage> issues = ((SonarComponents.Test) components).getIssues();
@@ -283,7 +283,7 @@ public class PlSqlCheckVerifier {
         }
     }
     
-    private static class ExpectedIssueCollector extends AbstractBaseCheck implements AstAndTokenVisitor {
+    private static class ExpectedIssueCollector extends PlSqlCheck implements AstAndTokenVisitor {
 
         private final PlSqlCheckVerifier verifier;
 

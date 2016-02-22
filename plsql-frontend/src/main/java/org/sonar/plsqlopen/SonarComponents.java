@@ -38,10 +38,9 @@ import org.sonar.api.issue.Issuable;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.source.Symbolizable;
-import org.sonar.squidbridge.SquidAstVisitor;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.sonar.sslr.api.Grammar;
 
 public class SonarComponents implements BatchExtension {
 
@@ -76,8 +75,7 @@ public class SonarComponents implements BatchExtension {
     }
 
     public void reportIssue(AnalyzerMessage message, InputFile inputFile) {    
-        @SuppressWarnings("unchecked")
-        RuleKey ruleKey = checks.ruleKey((SquidAstVisitor<Grammar>) message.getCheck());
+        RuleKey ruleKey = checks.ruleKey((PlSqlCheck) message.getCheck());
 
         if (IS_SONARQUBE_52) {
             reportIssueAfterSQ52(inputFile, ruleKey, message);

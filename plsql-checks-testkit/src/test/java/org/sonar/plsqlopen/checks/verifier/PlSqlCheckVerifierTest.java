@@ -32,7 +32,7 @@ import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.AnalyzerMessage.TextSpan;
-import org.sonar.plsqlopen.checks.AbstractBaseCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.squidbridge.api.AnalysisException;
 
@@ -46,19 +46,19 @@ public class PlSqlCheckVerifierTest {
     private static final String FILENAME_ISSUES = "src/test/resources/check_verifier.sql";
     private static final String FILENAME_NO_ISSUE = "src/test/resources/check_verifier_no_issue.sql";
 
-    private static AbstractBaseCheck getNoEffectCheck() {
-        return new AbstractBaseCheck() { };
+    private static PlSqlCheck getNoEffectCheck() {
+        return new PlSqlCheck() { };
     }
     
     @Test
     public void verify_line_issues() {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues();
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues();
         PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
     }
 
     @Test
     public void verify_unexpected_issue() {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues().withIssue(4, "extra message");
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues().withIssue(4, "extra message");
 
         try {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
@@ -70,7 +70,7 @@ public class PlSqlCheckVerifierTest {
 
     @Test
     public void verify_combined_missing_expected_and_unexpected_issues() {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues().withIssue(4, "extra message")
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues().withIssue(4, "extra message")
                 .withoutIssue(1);
 
         try {
@@ -83,7 +83,7 @@ public class PlSqlCheckVerifierTest {
 
     @Test
     public void verify_missing_expected_issue() {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues().withoutIssue(1);
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues().withoutIssue(1);
 
         try {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
@@ -152,7 +152,7 @@ public class PlSqlCheckVerifierTest {
 
     @Test
     public void verify_should_fail_when_using_incorrect_secondaryLocation() throws IOException {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues();
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues();
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor);
             Fail.fail("Test should fail");
@@ -163,7 +163,7 @@ public class PlSqlCheckVerifierTest {
 
     @Test
     public void verify_should_fail_when_using_incorrect_secondaryLocation2() throws IOException {
-        AbstractBaseCheck visitor = new FakeCheck().withDefaultIssues();
+        PlSqlCheck visitor = new FakeCheck().withDefaultIssues();
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor);
             Fail.fail("Test should fail");
@@ -172,7 +172,7 @@ public class PlSqlCheckVerifierTest {
         }
     }
     
-    private static class FakeCheck extends AbstractBaseCheck {
+    private static class FakeCheck extends PlSqlCheck {
 
         Multimap<Integer, String> issues = LinkedListMultimap.create();
         Multimap<Integer, AnalyzerMessage> preciseIssues = LinkedListMultimap.create();

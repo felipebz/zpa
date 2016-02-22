@@ -30,11 +30,9 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Rule;
-import org.sonar.squidbridge.SquidAstVisitor;
-import org.sonar.squidbridge.checks.SquidCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.collect.ImmutableList;
-import com.sonar.sslr.api.Grammar;
 
 public class PlSqlChecksTest {
     
@@ -65,7 +63,7 @@ public class PlSqlChecksTest {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
         checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.<Class>of(MyRule.class));
         
-        SquidAstVisitor<Grammar> defaultCheck = check(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY);
+        PlSqlCheck defaultCheck = check(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY);
         
         assertThat(checks.all()).hasSize(1);
         assertThat(checks.ruleKey(defaultCheck)).isNotNull();
@@ -78,7 +76,7 @@ public class PlSqlChecksTest {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
         checks.addCustomChecks(new CustomPlSqlRulesDefinition[] { customRulesDefinition });
         
-        SquidAstVisitor<Grammar> customCheck = check(checks, CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY);
+        PlSqlCheck customCheck = check(checks, CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY);
         
         assertThat(checks.all()).hasSize(1);
         assertThat(checks.ruleKey(customCheck)).isNotNull();
@@ -102,13 +100,13 @@ public class PlSqlChecksTest {
         assertThat(checks.ruleKey(new MyCustomRule())).isNull();
     }
     
-    public SquidAstVisitor<Grammar> check(PlSqlChecks plSqlChecks, String repository, String rule) {
+    public PlSqlCheck check(PlSqlChecks plSqlChecks, String repository, String rule) {
         RuleKey key = RuleKey.of(repository, rule);
         
-        SquidAstVisitor<Grammar> check;
+        PlSqlCheck check;
 
-        for (Checks<SquidAstVisitor<Grammar>> checks : plSqlChecks.getChecks()) {
-            check = (SquidAstVisitor<Grammar>)checks.of(key);
+        for (Checks<PlSqlCheck> checks : plSqlChecks.getChecks()) {
+            check = (PlSqlCheck)checks.of(key);
 
             if (check != null) {
                 return check;
@@ -118,11 +116,11 @@ public class PlSqlChecksTest {
     }
 
     @Rule(key = DEFAULT_RULE_KEY, name = "This is the default rule", description = "desc")
-    public static class MyRule extends SquidCheck<Grammar> {
+    public static class MyRule extends PlSqlCheck {
     }
     
     @Rule(key = CUSTOM_RULE_KEY, name = "This is a custom rule", description = "desc")
-    public static class MyCustomRule extends SquidCheck<Grammar> {
+    public static class MyCustomRule extends PlSqlCheck {
     }
 
     public static class MyCustomPlSqlRulesDefinition extends CustomPlSqlRulesDefinition {

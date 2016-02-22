@@ -24,7 +24,7 @@ import java.nio.charset.Charset;
 import org.sonar.api.source.Symbolizable;
 import org.sonar.api.source.Symbolizable.SymbolTableBuilder;
 import org.sonar.plsqlopen.SourceFileOffsets;
-import org.sonar.plsqlopen.checks.AbstractBaseCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.squid.CharsetAwareVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -36,7 +36,7 @@ import com.google.common.base.Preconditions;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
-public class SymbolVisitor extends AbstractBaseCheck implements CharsetAwareVisitor {
+public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
 
     private static final AstNodeType[] scopeHolders = { 
             PlSqlGrammar.CREATE_PROCEDURE,
