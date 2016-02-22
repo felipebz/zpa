@@ -120,6 +120,8 @@ public class SymbolVisitorTest {
         verify(symboltableBuilder).newSymbol(offset(18, 21), offset(18, 22));
         verify(symboltableBuilder).newSymbol(offset(24, 3), offset(24, 6));
         verify(symboltableBuilder).newSymbol(offset(28, 3), offset(28, 6));
+        verify(symboltableBuilder).newSymbol(offset(32, 3), offset(32, 5));
+        verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(36, 8)));
         
         verify(symboltableBuilder).build();
         verifyNoMoreInteractions(symboltableBuilder);

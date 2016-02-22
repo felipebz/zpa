@@ -28,3 +28,11 @@ create package body pkg as
   var number;
 end;
 /
+declare
+  ex exception;
+begin
+  null;
+exception
+  when ex then
+    null;
+end;
