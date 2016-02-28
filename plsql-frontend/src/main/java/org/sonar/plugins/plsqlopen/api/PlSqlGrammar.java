@@ -60,7 +60,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NOT_EXPRESSION,
     BOOLEAN_EXPRESSION,
     PRIMARY_EXPRESSION, 
-    BRACKED_EXPRESSION, 
+    BRACKED_EXPRESSION,
+    MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION, 
     OBJECT_REFERENCE, 
     POSTFIX_EXPRESSION, 
@@ -649,10 +650,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(BRACKED_EXPRESSION).is(b.firstOf(
                 PRIMARY_EXPRESSION,
-                b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
+                b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild();
+        
+        b.rule(MULTIPLE_VALUE_EXPRESSION).is(b.firstOf(
+                BRACKED_EXPRESSION,
+                b.sequence(LPARENTHESIS, EXPRESSION, b.oneOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild();
         
         b.rule(MEMBER_EXPRESSION).is(
-                BRACKED_EXPRESSION,
+                MULTIPLE_VALUE_EXPRESSION,
                 b.zeroOrMore(
                         b.firstOf(DOT, MOD, REMOTE),
                         b.nextNot(ROWTYPE),

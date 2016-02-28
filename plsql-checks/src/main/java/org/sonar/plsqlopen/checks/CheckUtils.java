@@ -76,22 +76,32 @@ public class CheckUtils {
     }
 
     public static boolean equalNodes(AstNode node1, AstNode node2) {
-        if (!node1.getType().equals(node2.getType()) || node1.getNumberOfChildren() != node2.getNumberOfChildren()) {
+        AstNode first = skipParenthesis(node1);
+        AstNode second = skipParenthesis(node2);
+        
+        if (!first.getType().equals(second.getType()) || first.getNumberOfChildren() != second.getNumberOfChildren()) {
             return false;
         }
 
-        if (node1.getNumberOfChildren() == 0) {
-            return node1.getToken().getValue().equals(node2.getToken().getValue());
+        if (first.getNumberOfChildren() == 0) {
+            return first.getToken().getValue().equals(second.getToken().getValue());
         }
 
-        List<AstNode> children1 = node1.getChildren();
-        List<AstNode> children2 = node2.getChildren();
+        List<AstNode> children1 = first.getChildren();
+        List<AstNode> children2 = second.getChildren();
         for (int i = 0; i < children1.size(); i++) {
             if (!equalNodes(children1.get(i), children2.get(i))) {
                 return false;
             }
         }
         return true;
+    }
+    
+    public static AstNode skipParenthesis(AstNode node) {
+        if (node.is(PlSqlGrammar.BRACKED_EXPRESSION)) {
+            return node.getChildren().get(1);
+        }
+        return node;
     }
     
     public static boolean isTerminationStatement(AstNode node) {

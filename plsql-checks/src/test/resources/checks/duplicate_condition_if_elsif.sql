@@ -11,6 +11,8 @@ begin
     null;
   elsif bar then -- Noncompliant
     null;
+  elsif (bar) then -- Noncompliant
+    null;
   end if;
   
   -- correct
