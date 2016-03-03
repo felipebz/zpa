@@ -5,8 +5,21 @@ install: true
 jdk:
   - oraclejdk7
 
-script:
-  - mvn verify -B -e -V
+script: ./travis.sh
+env:
+  - TESTS=ci
+
+  - TESTS=ruling
+    SQ_VERSION=LTS
+
+  - TESTS=ruling
+    SQ_VERSION=LATEST_RELEASE
+
+  - TESTS=ruling
+    SQ_VERSION=DEV
+
+matrix:
+  fast_finish: true
 
 cache:
   directories:
