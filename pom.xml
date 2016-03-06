@@ -44,6 +44,7 @@
     <module>sslr-plsql-toolkit</module>
     <module>sonar-compat</module>
     <module>plsql-checks-testkit</module>
+    <module>its</module>
   </modules>
   
   <scm>
