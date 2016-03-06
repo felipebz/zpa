@@ -37,6 +37,12 @@ import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlHighlighter {
 
+    // See https://github.com/SonarSource/sonarqube/blob/branch-5.1/sonar-plugin-api/src/main/java/org/sonar/api/batch/sensor/highlighting/TypeOfText.java
+    private static final String STRUCTURED_COMMENT = "j";
+    private static final String COMMENT = "cd";
+    private static final String STRING = "s";
+    private static final String KEYWORD = "k";
+
     private Lexer lexer;
     private Charset charset;
     
@@ -61,15 +67,17 @@ public class PlSqlHighlighter {
     private static void highlightComments(Highlightable.HighlightingBuilder highlighting, List<Token> tokens, SourceFileOffsets offsets) {
         String code;
         for (Token token : tokens) {
-            if (!token.getTrivia().isEmpty()) {
-                for (Trivia trivia : token.getTrivia()) {
-                    if (trivia.getToken().getValue().startsWith("/**")) {
-                        code = "j";
-                    } else {
-                        code = "cd";
-                    }
-                    highlight(highlighting, offsets.startOffset(trivia.getToken()), offsets.endOffset(trivia.getToken()), code);
+            if (token.getTrivia().isEmpty()) {
+                continue;
+            }
+            
+            for (Trivia trivia : token.getTrivia()) {
+                if (trivia.getToken().getValue().startsWith("/**")) {
+                    code = STRUCTURED_COMMENT;
+                } else {
+                    code = COMMENT;
                 }
+                highlight(highlighting, offsets.startOffset(trivia.getToken()), offsets.endOffset(trivia.getToken()), code);
             }
         }
     }
@@ -77,10 +85,10 @@ public class PlSqlHighlighter {
     private void highlightStringsAndKeywords(Highlightable.HighlightingBuilder highlighting, List<Token> tokens, SourceFileOffsets offsets) {
         for (Token token : tokens) {
             if (isLiteral(token.getType())) {
-                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), "s");
+                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), STRING);
             }
             if (isKeyword(token.getType())) {
-                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), "k");
+                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), KEYWORD);
             }
         }
     }
