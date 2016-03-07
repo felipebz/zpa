@@ -3,7 +3,7 @@ begin
     into var
     from emp;
 exception
-  when too_many_rows then -- Noncompliant {{Fill this TOO_MANY_ROWS exception handler.}}
+  when too_many_rows then -- Noncompliant {{Handle the variables used in the SELECT INTO statements here so their values do not become undefined.}}
     null;
 end;
 

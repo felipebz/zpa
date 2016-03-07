@@ -1,7 +1,7 @@
 begin
   if foo then
     null;
-  elsif foo then -- Noncompliant {{This branch can not be reached because the condition duplicates a previous condition in the same sequence of "if/else if" statements.}}
+  elsif foo then -- Noncompliant {{This code can not be reached because the condition duplicates a previous condition in the same sequence of "if/else if" statements.}}
     null;
   end if;
   

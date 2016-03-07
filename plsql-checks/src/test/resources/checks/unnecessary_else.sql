@@ -1,7 +1,7 @@
 begin
   if (foo = bar) then
     return;
-  else -- Noncompliant {{Statements unnecessarily nested within ELSE clause.}}
+  else -- Noncompliant {{The content of this ELSE clause will always be executed, so it doesn't need to be wrapped in an ELSE.}}
     foo := null;
   end if;
   

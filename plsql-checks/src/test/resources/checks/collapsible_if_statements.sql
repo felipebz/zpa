@@ -1,7 +1,7 @@
 begin
   -- can be collapsed
   if x = 1 then
-    if y = 2 then -- Noncompliant {{Merge this if statement with the enclosing one.}}
+    if y = 2 then -- Noncompliant {{This IF statement can be merged with the enclosing one.}}
       null;
     end if;
   end if;
