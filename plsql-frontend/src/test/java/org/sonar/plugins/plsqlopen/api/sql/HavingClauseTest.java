@@ -23,14 +23,14 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
 public class HavingClauseTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.HAVING_CLAUSE);
+        setRootRule(DmlGrammar.HAVING_CLAUSE);
     }
 
     @Test

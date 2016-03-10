@@ -23,14 +23,14 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.DdlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
 public class CreateTableTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.CREATE_TABLE);
+        setRootRule(DdlGrammar.CREATE_TABLE);
     }
     
     @Test

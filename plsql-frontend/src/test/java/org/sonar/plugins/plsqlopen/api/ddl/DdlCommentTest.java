@@ -23,14 +23,14 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.DdlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
 public class DdlCommentTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.DDL_COMMENT);
+        setRootRule(DdlGrammar.DDL_COMMENT);
     }
     
     @Test

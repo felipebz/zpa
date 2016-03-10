@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
@@ -44,7 +45,7 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
 
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.SELECT_COLUMN);
+        subscribeTo(DmlGrammar.SELECT_COLUMN);
     }
 
     @Override

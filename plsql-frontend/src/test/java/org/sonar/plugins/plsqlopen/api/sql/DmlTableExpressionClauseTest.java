@@ -23,14 +23,14 @@ import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
 public class DmlTableExpressionClauseTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE);
+        setRootRule(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE);
     }
     
     @Test

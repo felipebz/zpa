@@ -25,6 +25,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
@@ -51,7 +52,7 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
     public int acceptedLength = DEFAULT_ACCEPTED_LENGTH;
     
     private AstNodeType[] dmlStatements = new AstNodeType[] {
-            PlSqlGrammar.SELECT_EXPRESSION,
+            DmlGrammar.SELECT_EXPRESSION,
             PlSqlGrammar.UPDATE_STATEMENT,
             PlSqlGrammar.DELETE_STATEMENT
     };
@@ -70,9 +71,9 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
         }
         
         ListMultimap<String, TableReference> tableReferences = ArrayListMultimap.create();
-        for (AstNode fromClause : node.getDescendants(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE)) {
-            AstNode table = fromClause.getFirstChild(PlSqlGrammar.TABLE_REFERENCE);
-            AstNode alias = fromClause.getFirstChild(PlSqlGrammar.ALIAS);
+        for (AstNode fromClause : node.getDescendants(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)) {
+            AstNode table = fromClause.getFirstChild(DmlGrammar.TABLE_REFERENCE);
+            AstNode alias = fromClause.getFirstChild(DmlGrammar.ALIAS);
 
             
             if (table != null) {

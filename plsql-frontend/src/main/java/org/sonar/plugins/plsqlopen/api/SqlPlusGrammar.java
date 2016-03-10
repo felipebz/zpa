@@ -17,40 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.sql;
+package org.sonar.plugins.plsqlopen.api;
 
-import static org.sonar.sslr.tests.Assertions.assertThat;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SHOW;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.DmlGrammar;
-import org.sonar.plugins.plsqlopen.api.RuleTest;
+import org.sonar.sslr.grammar.GrammarRuleKey;
+import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
-public class ConnectByClauseTest extends RuleTest {
+public enum SqlPlusGrammar implements GrammarRuleKey {
 
-    @Before
-    public void init() {
-        setRootRule(DmlGrammar.CONNECT_BY_CLAUSE);
-    }
-
-    @Test
-    public void matchesSimpleConnectBy() {
-        assertThat(p).matches("connect by foo = bar");
+    SQLPLUS_COMMAND,
+    SQLPLUS_SHOW;
+    
+    public static void buildOn(LexerfulGrammarBuilder b) {
+        createSqlPlusCommands(b);
     }
     
-    @Test
-    public void matchesConnectByWithPrior() {
-        assertThat(p).matches("connect by prior foo = bar");
+    private static void createSqlPlusCommands(LexerfulGrammarBuilder b) {
+        b.rule(SQLPLUS_SHOW).is(SHOW, b.tillNewLine());
+        
+        b.rule(SQLPLUS_COMMAND).is(SQLPLUS_SHOW);
     }
     
-    @Test
-    public void matchesConnectByWithPriorAlternative() {
-        assertThat(p).matches("connect by foo = prior bar");
-    }
-    
-    @Test
-    public void matchesConnectByNoCycle() {
-        assertThat(p).matches("connect by nocycle foo = bar");
-    }
-
 }

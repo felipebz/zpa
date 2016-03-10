@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -42,7 +43,7 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
 
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.SELECT_COLUMN);
+        subscribeTo(DmlGrammar.SELECT_COLUMN);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
         }
         
         AstNode selectExpression = node.getParent();
-        if (selectExpression.getFirstChild(PlSqlGrammar.FROM_CLAUSE).getChildren(PlSqlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size() > 1 &&
+        if (selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size() > 1 &&
                 candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
             getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());

@@ -25,6 +25,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.checks.common.BaseMethodCallChecker;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
@@ -47,7 +48,7 @@ public class VariableInCountCheck extends BaseMethodCallChecker {
 
     @Override
     protected boolean isMethod(AstNode currentNode, AstNode identifier) {
-        return currentNode.getParent().is(PlSqlGrammar.SELECT_COLUMN) &&
+        return currentNode.getParent().is(DmlGrammar.SELECT_COLUMN) &&
                identifier.is(PlSqlGrammar.IDENTIFIER_NAME) &&
                "COUNT".equalsIgnoreCase(identifier.getTokenOriginalValue());
     }

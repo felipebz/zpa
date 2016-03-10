@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -44,7 +45,7 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
 
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.SELECT_EXPRESSION);
+        subscribeTo(DmlGrammar.SELECT_EXPRESSION);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
             return;
         }
         
-        AstSelect whereClause = node.select().children(PlSqlGrammar.WHERE_CLAUSE);
+        AstSelect whereClause = node.select().children(DmlGrammar.WHERE_CLAUSE);
         if (whereClause.isEmpty()) {
             return;
         }
@@ -74,7 +75,7 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
     }
 
     private static boolean hasOrderByClause(AstNode node) {
-        return node.hasDirectChildren(PlSqlGrammar.ORDER_BY_CLAUSE);
+        return node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE);
     }
 
 }
