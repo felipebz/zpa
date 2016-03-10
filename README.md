@@ -13,7 +13,7 @@ This plugin adds PL/SQL support to the [SonarQube](https://www.sonarqube.org). S
 - Run an analysis with [SonarQube Scanner](http://docs.sonarqube.org/display/SONAR/Analyzing+with+SonarQube+Scanner).
 
 ## Contribute
-You are welcome to contribute. PL/SQL and Oracle SQL are big languages and there are many pieces missing in the [grammar](https://github.com/felipebz/sonar-plsql/blob/master/plsql-squid/src/main/java/br/com/felipezorzo/sonar/plsql/api/PlSqlGrammar.java).
+You are welcome to contribute. PL/SQL and Oracle SQL are big languages and there are many pieces missing in the [grammar](https://github.com/felipebz/sonar-plsql/blob/master/plsql-frontend/src/main/java/org/sonar/plugins/plsqlopen/api/PlSqlGrammar.java).
 
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
