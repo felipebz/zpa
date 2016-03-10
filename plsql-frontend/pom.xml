@@ -10,7 +10,7 @@
 
   <artifactId>plsql-frontend</artifactId>
 
-  <name>PL/SQL :: Squid</name>
+  <name>PL/SQL :: Frontend</name>
 
   <dependencies>
     <dependency>
