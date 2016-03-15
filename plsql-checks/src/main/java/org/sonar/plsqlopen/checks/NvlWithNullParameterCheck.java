@@ -19,12 +19,10 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.List;
-
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.common.BaseMethodCallChecker;
+import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -40,21 +38,26 @@ import com.sonar.sslr.api.AstNode;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class NvlWithNullParameterCheck extends BaseMethodCallChecker {
+public class NvlWithNullParameterCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "NvlWithNullParameter";
 
     @Override
-    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
-        return identifier.is(PlSqlGrammar.IDENTIFIER_NAME) &&
-               "NVL".equalsIgnoreCase(identifier.getTokenOriginalValue());
+    public void init() {
+        subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT);
     }
-
+    
     @Override
-    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
-        for (AstNode argument : arguments) {
+    public void visitNode(AstNode node) {
+        MethodMatcher nvl = MethodMatcher.create().name("nvl").addParameter().addParameter();
+        
+        if (!nvl.matches(node)) {
+            return;
+        }
+        
+        for (AstNode argument : nvl.getArguments(node)) {
             AstNode argumentValue = argument.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, argumentValue.getTokenValue());
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, argumentValue.getTokenValue());
             }
         }
     }

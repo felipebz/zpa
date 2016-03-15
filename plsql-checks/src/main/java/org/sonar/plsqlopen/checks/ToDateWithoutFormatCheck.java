@@ -19,12 +19,10 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.List;
-
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.common.BaseMethodCallChecker;
+import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -40,19 +38,20 @@ import com.sonar.sslr.api.AstNode;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.TIME_ZONE_RELATED_PORTABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class ToDateWithoutFormatCheck extends BaseMethodCallChecker {
+public class ToDateWithoutFormatCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ToDateWithoutFormat";
 
     @Override
-    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
-        return identifier.is(PlSqlGrammar.IDENTIFIER_NAME) && 
-               "TO_DATE".equalsIgnoreCase(identifier.getTokenOriginalValue());
+    public void init() {
+        subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT);
     }
-
+    
     @Override
-    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
-        if (arguments.size() == 1) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
+    public void visitNode(AstNode node) {
+        MethodMatcher toDate = MethodMatcher.create().name("to_date").addParameter();
+        
+        if (toDate.matches(node)) {
+            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
     }
 

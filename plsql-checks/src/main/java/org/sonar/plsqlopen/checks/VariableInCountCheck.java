@@ -24,7 +24,7 @@ import java.util.List;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.common.BaseMethodCallChecker;
+import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
@@ -43,17 +43,25 @@ import com.sonar.sslr.api.AstNode;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
-public class VariableInCountCheck extends BaseMethodCallChecker {
+public class VariableInCountCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableInCount";
-
+    
     @Override
-    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
-        return currentNode.getParent().is(DmlGrammar.SELECT_COLUMN) &&
-               identifier.is(PlSqlGrammar.IDENTIFIER_NAME) &&
-               "COUNT".equalsIgnoreCase(identifier.getTokenOriginalValue());
+    public void init() {
+        subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT);
     }
-
+    
     @Override
+    public void visitNode(AstNode node) {
+        MethodMatcher count = MethodMatcher.create().name("count").addParameter();
+        
+        if (!node.getParent().is(DmlGrammar.SELECT_COLUMN) || !count.matches(node)) {
+            return;
+        }
+        
+        checkArguments(node, count.getArguments(node));
+    }
+    
     protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         if (arguments.size() != 1) {
             return;

@@ -19,19 +19,15 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.List;
-
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.common.BaseMethodCallChecker;
+import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -41,30 +37,33 @@ import com.sonar.sslr.api.AstNode;
 @SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.INSTRUCTION_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
-public class DbmsOutputPutCheck extends BaseMethodCallChecker {
+public class DbmsOutputPutCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DbmsOutputPut";
-    private static final String DBMS_OUTPUT = "DBMS_OUTPUT";
-    private static final List<String> PROCEDURES = ImmutableList.of("PUT", "PUT_LINE");
-
+    
     @Override
-    protected boolean isMethod(AstNode currentNode, AstNode identifier) {
-        if (identifier.is(PlSqlGrammar.MEMBER_EXPRESSION)) {
-            List<AstNode> members = identifier.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME);
-            if (members.size() >= 2) {
-                members = Lists.reverse(members);
-                String methodName = members.get(0).getTokenOriginalValue().toUpperCase();
-                String packageName = members.get(1).getTokenOriginalValue();
-                if (DBMS_OUTPUT.equalsIgnoreCase(packageName) && PROCEDURES.contains(methodName)) {
-                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), currentNode);
-                }
-            }
-        }
-        return false;
+    public void init() {
+        subscribeTo(PlSqlGrammar.METHOD_CALL);
     }
-
+    
     @Override
-    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
-        // not used
+    public void visitNode(AstNode node) {
+        MethodMatcher put = MethodMatcher.create()
+                .schema("sys").schemaIsOptional()
+                .packageName("dbms_output")
+                .name("put")
+                .addParameter();
+        
+        MethodMatcher putLine = MethodMatcher.create()
+                .schema("sys").schemaIsOptional()
+                .packageName("dbms_output")
+                .name("put_line")
+                .addParameter();
+        
+        if (!put.matches(node) && !putLine.matches(node)) {
+            return;
+        }
+        
+        getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
     }
 
 }
