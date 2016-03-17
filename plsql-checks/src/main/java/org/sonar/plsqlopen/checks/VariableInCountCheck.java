@@ -48,7 +48,7 @@ public class VariableInCountCheck extends AbstractBaseCheck {
     
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT);
+        subscribeTo(PlSqlGrammar.METHOD_CALL);
     }
     
     @Override
