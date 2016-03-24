@@ -126,6 +126,12 @@ public class MethodMatcherTest extends RuleTest {
     }
     
     @Test
+    public void detectHostMethodCall() {
+        MethodMatcher matcher = MethodMatcher.create().name("func").withNoParameterConstraint();
+        matches(matcher, ":func(x)");
+    }
+    
+    @Test
     public void shouldFailIfNameIsCalledMoreThanOnce() {
         MethodMatcher matcher = MethodMatcher.create().name("name");
         exception.expect(IllegalStateException.class);

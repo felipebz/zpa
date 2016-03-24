@@ -133,7 +133,11 @@ public class MethodMatcher {
     
     private static AstNode normalize(AstNode node) {
         if (node.is(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT)) {
-            return normalize(node.getFirstChild());
+            AstNode child = normalize(node.getFirstChild());
+            if (child.getFirstChild().is(PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE)) {
+                child = child.getFirstChild();
+            }
+            return child;
         }
         return node;
     }
