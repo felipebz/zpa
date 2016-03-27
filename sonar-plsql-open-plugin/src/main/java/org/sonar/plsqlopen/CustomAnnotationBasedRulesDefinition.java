@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.sonar.api.server.rule.RulesDefinition.NewParam;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.NewRule;
@@ -109,7 +108,7 @@ public class CustomAnnotationBasedRulesDefinition {
             throw new IllegalArgumentException("No Rule annotation was found on " + ruleClass);
         }
         String ruleKey = ruleAnnotation.key();
-        if (StringUtils.isEmpty(ruleKey)) {
+        if (ruleKey.isEmpty()) {
             if (failIfNoExplicitKey) {
                 throw new IllegalArgumentException("No key is defined in Rule annotation of " + ruleClass);
             }
