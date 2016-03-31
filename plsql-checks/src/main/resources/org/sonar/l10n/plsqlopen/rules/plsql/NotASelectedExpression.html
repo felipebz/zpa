@@ -1,0 +1,51 @@
+<p>
+In a SELECT DISTINCT with an ORDER BY clause, if you specify a value in the ORDER BY that does not exists 
+in the SELECT clause, Oracle will raise the exception <code>ORA-01791: not a SELECTed expression</code>. 
+</p>
+
+<p>See this example:</p>
+
+<pre>
+SELECT DISTINCT item.name
+  FROM item
+ ORDER BY item.group_id
+</pre>
+
+<p>
+The <code>item.id</code> column is not in the SELECT clause, so Oracle will raise an ORA-01791. The corrected version can be: 
+</p>
+
+<pre>
+SELECT DISTINCT item.name, item.group_id
+  FROM item
+ ORDER BY item.group_id
+</pre>
+
+<p>
+If the column in SELECT clause has an alias, you also can use the alias in the ORDER BY clause:
+</p>
+
+<pre>
+-- valid queries
+SELECT DISTINCT item.name AS full_name
+  FROM item
+ ORDER BY item.name;
+ 
+SELECT DISTINCT item.name AS full_name
+  FROM item
+ ORDER BY full_name;
+</pre>
+
+<p>
+Be aware that until the version 11.2.0.4, Oracle accepted some incorrect values in ORDER BY, like:
+</p>
+
+<pre>
+SELECT DISTINCT UPPER(item.name) AS full_name, item.group_id
+  FROM item
+ ORDER BY item.name -- should be "UPPER(item.name)" or "full_name" 
+</pre>
+
+<p>
+You should fix the queries to avoid compatibility issues with newer versions of the Oracle database.
+</p>

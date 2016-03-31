@@ -1,0 +1,51 @@
+<p>
+Em um SELECT DISTINCT com uma cláusula ORDER BY, se você especificar um valor no ORDER BY que não existe 
+na cláusula SELECT, o Oracle retornará a exceção <code>ORA-01791: not a SELECTed expression</code>. 
+</p>
+
+<p>Veja esse exemplo:</p>
+
+<pre>
+SELECT DISTINCT item.name
+  FROM item
+ ORDER BY item.group_id
+</pre>
+
+<p>
+A coluna <code>item.id</code> não está na cláusula SELECT, então o Oracle causará um ORA-01791. A versão corrigida pode ser: 
+</p>
+
+<pre>
+SELECT DISTINCT item.name, item.group_id
+  FROM item
+ ORDER BY item.group_id
+</pre>
+
+<p>
+Se uma coluna na cláusula SELECT tem um alias, você também pode usar o alias na cláusula ORDER BY:
+</p>
+
+<pre>
+-- consultas válidas
+SELECT DISTINCT item.name AS full_name
+  FROM item
+ ORDER BY item.name;
+ 
+SELECT DISTINCT item.name AS full_name
+  FROM item
+ ORDER BY full_name;
+</pre>
+
+<p>
+Esteja ciente de que até a versão 11.2.0.4, o Oracle aceitava alguns valores incorretos em ORDER BY, como:
+</p>
+
+<pre>
+SELECT DISTINCT UPPER(item.name) AS full_name, item.group_id
+  FROM item
+ ORDER BY item.name -- deveria ser "UPPER(item.name)" ou "full_name" 
+</pre>
+
+<p>
+Você deve corrigir as consultas para evitar problemas de compatibilidade com versões mais novas do Oracle.
+</p>

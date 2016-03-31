@@ -79,6 +79,7 @@ public class CheckList {
             UnnecessaryAliasInQueryCheck.class,
             VariableInCountCheck.class,
             UnhandledUserDefinedExceptionCheck.class,
-            UnusedCursorCheck.class);
+            UnusedCursorCheck.class,
+            NotASelectedExpressionCheck.class);
     }
 }
