@@ -94,7 +94,6 @@ public enum PlSqlKeyword implements TokenType {
     PRIOR("prior", true),
     PROCEDURE("procedure", true),
     PUBLIC("public", true),
-    RANGE_KEYWORD("range", true),
     RECORD("record", true),
     RESOURCE("resource", true),
     REVOKE("revoke", true),
@@ -126,6 +125,7 @@ public enum PlSqlKeyword implements TokenType {
     DECIMAL("decimal"),
     TYPE("type"),
     USE("use"),
+    RANGE_KEYWORD("range"),
 
     // non reserved keywords
     NUMBER("number"),
