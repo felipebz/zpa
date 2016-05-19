@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 
@@ -44,6 +45,8 @@ public class CheckUtils {
             PlSqlGrammar.CREATE_FUNCTION,
             PlSqlGrammar.FUNCTION_DECLARATION,
             PlSqlGrammar.CREATE_PACKAGE_BODY};
+    
+    private static final MethodMatcher NVL_MATCHER = MethodMatcher.create().name("nvl").addParameter().addParameter();
     
     private CheckUtils() {
     }
@@ -76,8 +79,8 @@ public class CheckUtils {
     }
 
     public static boolean equalNodes(AstNode node1, AstNode node2) {
-        AstNode first = skipParenthesis(node1);
-        AstNode second = skipParenthesis(node2);
+        AstNode first = skipExpressionsWithoutEffect(node1);
+        AstNode second = skipExpressionsWithoutEffect(node2);
         
         if (!first.getType().equals(second.getType()) || first.getNumberOfChildren() != second.getNumberOfChildren()) {
             return false;
@@ -97,9 +100,25 @@ public class CheckUtils {
         return true;
     }
     
+    public static AstNode skipExpressionsWithoutEffect(AstNode node) {
+        AstNode newNode = skipParenthesis(node);
+        newNode = skipNvlWithNull(newNode);
+        return newNode;
+    }
+    
     public static AstNode skipParenthesis(AstNode node) {
         if (node.is(PlSqlGrammar.BRACKED_EXPRESSION)) {
             return node.getChildren().get(1);
+        }
+        return node;
+    }
+    
+    public static AstNode skipNvlWithNull(AstNode node) {
+        if (NVL_MATCHER.matches(node)) {
+            List<AstNode> arguments = NVL_MATCHER.getArguments(node);
+            if (isNullLiteralOrEmptyString(arguments.get(1).getFirstChild())) {
+                return arguments.get(0).getFirstChild();
+            }
         }
         return node;
     }
