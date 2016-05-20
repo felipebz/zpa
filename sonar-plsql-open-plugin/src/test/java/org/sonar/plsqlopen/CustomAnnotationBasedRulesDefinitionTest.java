@@ -155,16 +155,6 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void classWithoutSqaleAnnotation() throws Exception {
-        @Rule(key = "key1", name = "name1", description = "description1")
-        class RuleClass {
-        }
-
-        thrown.expect(IllegalArgumentException.class);
-        buildRepository(true, RuleClass.class);
-    }
-
-    @Test
     public void classWithNosqaleAnnotation() throws Exception {
 
         @Rule(key = "key1", name = "name1", description = "description1")
@@ -180,13 +170,11 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     public void classWithSqaleConstantRemediation() throws Exception {
 
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleConstantRemediation("10min")
         class RuleClass {
         }
 
         RulesDefinition.Rule rule = buildSingleRuleRepository(RuleClass.class);
-        assertThat(rule.debtSubCharacteristic()).isEqualTo(SubCharacteristics.CPU_EFFICIENCY);
         assertRemediation(rule, Type.CONSTANT_ISSUE, null, "10min", null);
     }
 
@@ -194,7 +182,6 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     public void classWithSqaleLinearRemediation() throws Exception {
 
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleLinearRemediation(coeff = "2h", effortToFixDescription = "Effort to test one uncovered condition")
         class RuleClass {
         }
@@ -207,7 +194,6 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     public void classWithSqaleLinearWithOffsetRemediation() throws Exception {
 
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleLinearWithOffsetRemediation(coeff = "5min", offset = "1h",
         effortToFixDescription = "Effort to test one uncovered condition")
         class RuleClass {
@@ -220,7 +206,6 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     @Test
     public void classWithSeveralSqaleRemediationAnnotations() throws Exception {
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleConstantRemediation("10min")
         @SqaleLinearRemediation(coeff = "2h", effortToFixDescription = "Effort to test one uncovered condition")
         class RuleClass {
@@ -233,7 +218,6 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     @Test
     public void invalidSqaleAnnotation() throws Exception {
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleConstantRemediation("xxx")
         class MyInvalidRuleClass {
         }
@@ -244,18 +228,8 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void loadMethodWithClassWithoutSqaleAnnotation() throws Exception {
-        @Rule(key = "key1", name = "name1", description = "description1")
-        class RuleClass {
-        }
-        thrown.expect(IllegalArgumentException.class);
-        load(RuleClass.class);
-    }
-
-    @Test
     public void loadMethodWithClassWithSqaleAnnotations() throws Exception {
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleSubCharacteristic(SubCharacteristics.CPU_EFFICIENCY)
         @SqaleConstantRemediation("10min")
         class RuleClass {
         }

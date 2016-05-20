@@ -68,15 +68,14 @@ public class PlSqlSquidSensorTest {
       Project project = mock(Project.class);
       assertThat(sensor.toString()).isEqualTo("PlSqlSquidSensor");
       assertThat(sensor.shouldExecuteOnProject(project)).isFalse();
-      fs.add(new DefaultInputFile("test.sql").setLanguage(PlSql.KEY));
+      fs.add(new DefaultInputFile(".", "test.sql").setLanguage(PlSql.KEY));
       assertThat(sensor.shouldExecuteOnProject(project)).isTrue();
     }
     
     @Test
     public void shouldAnalyse() {
       String relativePath = "src/test/resources/br/com/felipezorzo/sonar/plsql/code.sql";
-      DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage(PlSql.KEY);
-      inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
+      DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage(PlSql.KEY);
       fs.add(inputFile);
 
       Issuable issuable = mock(Issuable.class);

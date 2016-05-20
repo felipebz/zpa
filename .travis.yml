@@ -3,14 +3,11 @@ sudo: false
 install: true
 
 jdk:
-  - oraclejdk7
+  - oraclejdk8
 
 script: ./travis.sh
 env:
   - TESTS=ci
-
-  - TESTS=ruling
-    SQ_VERSION=LTS
 
   - TESTS=ruling
     SQ_VERSION=LATEST_RELEASE

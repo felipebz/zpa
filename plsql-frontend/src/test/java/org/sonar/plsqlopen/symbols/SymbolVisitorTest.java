@@ -59,8 +59,7 @@ public class SymbolVisitorTest {
     
     private void scanFile(String filename) {
         String relativePath = filename;
-        DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
-        inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
+        DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage("plsqlopen");
         DefaultFileSystem fs = new DefaultFileSystem(new File("."));
         fs.add(inputFile);
         

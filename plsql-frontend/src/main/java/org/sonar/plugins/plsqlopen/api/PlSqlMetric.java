@@ -19,7 +19,6 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.sonar.squidbridge.measures.CalculatedMetricFormula;
 import org.sonar.squidbridge.measures.MetricDef;
 
@@ -54,6 +53,6 @@ public enum PlSqlMetric implements MetricDef {
 
     @Override
     public CalculatedMetricFormula getCalculatedMetricFormula() {
-        throw new NotImplementedException();
+        return null;
     }
 }

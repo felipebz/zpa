@@ -55,8 +55,7 @@ public class BaseCheckTest {
     
     protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
         String relativePath = defaultResourceFolder + filename;
-        DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
-        inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
+        DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage("plsqlopen");
         fs.add(inputFile);
         
         SensorContext context = mock(SensorContext.class);

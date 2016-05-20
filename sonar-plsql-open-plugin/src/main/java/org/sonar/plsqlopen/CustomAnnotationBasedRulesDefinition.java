@@ -84,9 +84,6 @@ public class CustomAnnotationBasedRulesDefinition {
             NewRule rule = newRule(ruleClass, failIfNoExplicitKey);
             externalDescriptionLoader.addHtmlDescription(rule);
             rule.setTemplate(AnnotationUtils.getAnnotation(ruleClass, RuleTemplate.class) != null);
-            if (!isSqaleAnnotated(ruleClass) && failIfSqaleNotFound) {
-                throw new IllegalArgumentException("No SqaleSubCharacteristic annotation was found on " + ruleClass);
-            }
             try {
                 setupSqaleModel(rule, ruleClass);
             } catch (RuntimeException e) {

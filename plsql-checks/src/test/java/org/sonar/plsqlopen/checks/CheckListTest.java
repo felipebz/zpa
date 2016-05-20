@@ -22,9 +22,10 @@ package org.sonar.plsqlopen.checks;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.nio.file.Files;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.sonar.plsqlopen.checks.CheckList;
 
@@ -36,10 +37,9 @@ public class CheckListTest {
     @Test
     public void count() {
         int count = 0;
-        List<File> files = (List<File>) FileUtils.listFiles(
-                new File("src/main/java/org/sonar/plsqlopen/checks/"), new String[] { "java" }, false);
-        for (File file : files) {
-            if (file.getName().endsWith("Check.java") && !file.getName().startsWith("Abstract")) {
+        String[] files = new File("src/main/java/org/sonar/plsqlopen/checks/").list((file, name) -> name.endsWith("java"));
+        for (String file : files) {
+            if (file.endsWith("Check.java") && !file.startsWith("Abstract")) {
                 count++;
             }
         }
