@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.checks.verifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +35,6 @@ import org.apache.commons.lang.StringUtils;
 import org.assertj.core.api.Fail;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
@@ -122,9 +120,7 @@ public class PlSqlCheckVerifier {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.fileSystem().add(inputFile);
         
-        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
-        
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, context.fileSystem()).getTestInstance();
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
         PlSqlCheck expectedIssueCollector = new ExpectedIssueCollector(plSqlCheckVerifier);
         

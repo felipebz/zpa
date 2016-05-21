@@ -21,18 +21,15 @@ package org.sonar.plsqlopen.symbols;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
@@ -60,9 +57,7 @@ public class SymbolVisitorTest {
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
-        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
-        
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, context.fileSystem()).getTestInstance();
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
         SymbolVisitor symbolVisitor = new SymbolVisitor();
         

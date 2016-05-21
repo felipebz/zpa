@@ -19,8 +19,6 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import static org.mockito.Mockito.mock;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.Locale;
@@ -29,7 +27,6 @@ import org.junit.Before;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
@@ -61,9 +58,7 @@ public class BaseCheckTest {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);
         
-        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
-        
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, context.fileSystem()).getTestInstance();
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
         PlSqlAstScanner.scanSingleFile(new File(relativePath), components, 
                 ImmutableList.of(new SymbolVisitor(), check));
