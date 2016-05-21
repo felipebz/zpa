@@ -44,7 +44,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class SonarComponents implements BatchExtension {
 
-    private static final boolean IS_SONARQUBE_52 = isSonarQube52();
     private static final Logger LOG = LoggerFactory.getLogger(SonarComponents.class);
 
     private final ResourcePerspectives resourcePerspectives;
@@ -76,16 +75,11 @@ public class SonarComponents implements BatchExtension {
 
     public void reportIssue(AnalyzerMessage message, InputFile inputFile) {    
         RuleKey ruleKey = checks.ruleKey((PlSqlCheck) message.getCheck());
-
-        if (IS_SONARQUBE_52) {
-            reportIssueAfterSQ52(inputFile, ruleKey, message);
-        } else {
-            reportIssueBeforeSQ52(inputFile, ruleKey, message.getText(Locale.ENGLISH), message.getLine());
-        }
+        reportIssue(inputFile, ruleKey, message);
     }
 
     @VisibleForTesting
-    void reportIssueAfterSQ52(InputFile inputFile, RuleKey key, AnalyzerMessage message) {
+    void reportIssue(InputFile inputFile, RuleKey key, AnalyzerMessage message) {
         PlSqlIssue issue = PlSqlIssue.create(context, key, message.getCost());
         String text = message.getText(Locale.ENGLISH);
         Integer line = message.getLine();
@@ -123,27 +117,7 @@ public class SonarComponents implements BatchExtension {
         }
         issue.save();
     }
-
-    private void reportIssueBeforeSQ52(InputFile inputFile, RuleKey key, String message, @Nullable Integer line) {
-        Issuable issuable = issuableFor(inputFile);
-
-        if (issuable != null) {
-            Issue issue = issuable.newIssueBuilder().ruleKey(key)
-                    .line(line)
-                    .message(message).build();
-            issuable.addIssue(issue);
-        }
-    }
-
-    private static boolean isSonarQube52() {
-        try {
-            Issuable.IssueBuilder.class.getMethod("newLocation");
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
-
+    
     @VisibleForTesting
     public SonarComponents getTestInstance() {
         return new Test(resourcePerspectives, context, fs);

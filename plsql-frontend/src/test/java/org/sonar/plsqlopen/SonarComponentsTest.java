@@ -112,7 +112,7 @@ public class SonarComponentsTest {
         verify(issuable, times(5)).addIssue(any(Issue.class));
         
         try {
-            sonarComponents.reportIssueAfterSQ52(inputFile, mock(RuleKey.class), mock(AnalyzerMessage.class));
+            sonarComponents.reportIssue(inputFile, mock(RuleKey.class), mock(AnalyzerMessage.class));
             fail("NoClassDefFoundError expected");
         } catch (NoClassDefFoundError e) {
             assertThat(e.getMessage()).isEqualTo("org/sonar/api/batch/fs/InputComponent");
