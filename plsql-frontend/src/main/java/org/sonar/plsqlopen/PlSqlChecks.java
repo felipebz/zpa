@@ -48,7 +48,7 @@ public class PlSqlChecks {
     }
 
     @SuppressWarnings("rawtypes")
-    public PlSqlChecks addChecks(String repositoryKey, List<Class> checkClass) {
+    public PlSqlChecks addChecks(String repositoryKey, Iterable<Class> checkClass) {
       checksByRepository.add(checkFactory
         .<PlSqlCheck>create(repositoryKey)
         .addAnnotatedChecks(checkClass));

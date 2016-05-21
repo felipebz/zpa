@@ -234,12 +234,12 @@ public class CustomAnnotationBasedRulesDefinitionTest {
         assertThat(repository.rules()).hasSize(1);
     }
 
-    private void assertRemediation(RulesDefinition.Rule rule, Type type, String coeff, String offset, String effortDesc) {
+    private void assertRemediation(RulesDefinition.Rule rule, Type type, String gapMultiplier, String baseEffort, String gapDescription) {
         DebtRemediationFunction remediationFunction = rule.debtRemediationFunction();
         assertThat(remediationFunction.type()).isEqualTo(type);
-        assertThat(remediationFunction.coefficient()).isEqualTo(coeff);
-        assertThat(remediationFunction.offset()).isEqualTo(offset);
-        assertThat(rule.effortToFixDescription()).isEqualTo(effortDesc);
+        assertThat(remediationFunction.gapMultiplier()).isEqualTo(gapMultiplier);
+        assertThat(remediationFunction.baseEffort()).isEqualTo(baseEffort);
+        assertThat(rule.gapDescription()).isEqualTo(gapDescription);
     }
 
     private void assertParam(Param param, String expectedKey, String expectedDescription) {

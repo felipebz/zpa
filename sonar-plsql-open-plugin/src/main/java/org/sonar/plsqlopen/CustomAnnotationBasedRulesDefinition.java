@@ -33,12 +33,10 @@ import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.NewRule;
 import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.squidbridge.annotations.NoSqale;
 import org.sonar.squidbridge.annotations.RuleTemplate;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import org.sonar.squidbridge.annotations.SqaleLinearRemediation;
 import org.sonar.squidbridge.annotations.SqaleLinearWithOffsetRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import org.sonar.squidbridge.rules.ExternalDescriptionLoader;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -94,10 +92,6 @@ public class CustomAnnotationBasedRulesDefinition {
         setupExternalNames(newRules);
     }
 
-    private boolean isSqaleAnnotated(Class<?> ruleClass) {
-        return getSqaleSubCharAnnotation(ruleClass) != null || getNoSqaleAnnotation(ruleClass) != null;
-    }
-
     @VisibleForTesting
     NewRule newRule(Class<?> ruleClass, boolean failIfNoExplicitKey) {
         org.sonar.check.Rule ruleAnnotation = AnnotationUtils.getAnnotation(ruleClass, org.sonar.check.Rule.class);
@@ -132,11 +126,6 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     private void setupSqaleModel(NewRule rule, Class<?> ruleClass) {
-        SqaleSubCharacteristic subChar = getSqaleSubCharAnnotation(ruleClass);
-        if (subChar != null) {
-            rule.setDebtSubCharacteristic(subChar.value());
-        }
-
         SqaleConstantRemediation constant = AnnotationUtils.getAnnotation(ruleClass, SqaleConstantRemediation.class);
         SqaleLinearRemediation linear = AnnotationUtils.getAnnotation(ruleClass, SqaleLinearRemediation.class);
         SqaleLinearWithOffsetRemediation linearWithOffset = AnnotationUtils.getAnnotation(ruleClass,
@@ -152,23 +141,15 @@ public class CustomAnnotationBasedRulesDefinition {
         }
         if (linear != null) {
             rule.setDebtRemediationFunction(rule.debtRemediationFunctions().linear(linear.coeff()));
-            rule.setEffortToFixDescription(linear.effortToFixDescription());
+            rule.setGapDescription(linear.effortToFixDescription());
         }
         if (linearWithOffset != null) {
             rule.setDebtRemediationFunction(rule.debtRemediationFunctions().linearWithOffset(linearWithOffset.coeff(),
                     linearWithOffset.offset()));
-            rule.setEffortToFixDescription(linearWithOffset.effortToFixDescription());
+            rule.setGapDescription(linearWithOffset.effortToFixDescription());
         }
     }
 
-    private SqaleSubCharacteristic getSqaleSubCharAnnotation(Class<?> ruleClass) {
-        return AnnotationUtils.getAnnotation(ruleClass, SqaleSubCharacteristic.class);
-    }
-
-    private NoSqale getNoSqaleAnnotation(Class<?> ruleClass) {
-        return AnnotationUtils.getAnnotation(ruleClass, NoSqale.class);
-    }
-    
     public static String getLocalizedFolderName(String baseName, Locale locale) {
         ResourceBundle.Control control = ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT);
         

@@ -35,8 +35,8 @@ public class PlSqlIssue {
       this.newIssue = newIssue;
     }
 
-    public static PlSqlIssue create(SensorContext context, RuleKey ruleKey, @Nullable Double effortToFix) {
-        NewIssue newIssue = context.newIssue().forRule(ruleKey).effortToFix(effortToFix);
+    public static PlSqlIssue create(SensorContext context, RuleKey ruleKey, @Nullable Double gap) {
+        NewIssue newIssue = context.newIssue().forRule(ruleKey).gap(gap);
         return new PlSqlIssue(newIssue);
     }
 
