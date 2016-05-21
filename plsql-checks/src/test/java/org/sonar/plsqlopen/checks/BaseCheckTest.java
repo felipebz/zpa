@@ -26,9 +26,9 @@ import java.util.Collection;
 import java.util.Locale;
 
 import org.junit.Before;
-import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
@@ -55,15 +55,17 @@ public class BaseCheckTest {
     
     protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
         String relativePath = defaultResourceFolder + filename;
-        DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage("plsqlopen");
+        DefaultInputFile inputFile = new DefaultInputFile("key", relativePath).setLanguage("plsqlopen");
         fs.add(inputFile);
         
-        SensorContext context = mock(SensorContext.class);
+        SensorContextTester context = SensorContextTester.create(new File("."));
+        context.setFileSystem(fs);
+        
         ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
         
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
+        SonarComponents components = new SonarComponents(resourcePerspectives, context, context.fileSystem()).getTestInstance();
         
-        PlSqlAstScanner.scanSingleFile(new File(defaultResourceFolder + filename), components, 
+        PlSqlAstScanner.scanSingleFile(new File(relativePath), components, 
                 ImmutableList.of(new SymbolVisitor(), check));
         return ((SonarComponents.Test) components).getIssues();
     }

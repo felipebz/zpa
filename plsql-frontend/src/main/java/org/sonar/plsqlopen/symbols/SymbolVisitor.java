@@ -21,6 +21,8 @@ package org.sonar.plsqlopen.symbols;
 
 import java.nio.charset.Charset;
 
+import org.sonar.api.batch.sensor.symbol.NewSymbol;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.source.Symbolizable;
 import org.sonar.api.source.Symbolizable.SymbolTableBuilder;
 import org.sonar.plsqlopen.SourceFileOffsets;
@@ -53,8 +55,7 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
     private Scope currentScope;
     private Charset charset;
     private SourceFileOffsets offsets;
-    private Symbolizable symbolizable;
-    private SymbolTableBuilder symbolTableBuilder;
+    private NewSymbolTable symbolizable;
     
     @Override
     public void setCharset(Charset charset) {
@@ -71,9 +72,6 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
         symbolTable = new SymbolTableImpl();
         offsets = new SourceFileOffsets(getPlSqlContext().getFile(), charset);
         symbolizable = getPlSqlContext().getSymbolizable();
-        if (symbolizable != null) {
-            symbolTableBuilder = symbolizable.newSymbolTableBuilder();
-        }
         
         // ast is null when the file has a parsing error
         if (ast != null) {
@@ -103,21 +101,20 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
             for (Symbol symbol : symbolTable.getSymbols()) {
                 AstNode symbolNode = symbol.declaration();
                 
-                org.sonar.api.source.Symbol newSymbol = symbolTableBuilder.newSymbol(
+                NewSymbol newSymbol = symbolizable.newSymbol(
                         offsets.startOffset(symbolNode.getToken()), offsets.endOffset(symbolNode.getToken()));
                 
                 for (AstNode usage : symbol.usages()) {
-                    symbolTableBuilder.newReference(newSymbol, offsets.startOffset(usage.getToken()));
+                    newSymbol.newReference(offsets.startOffset(usage.getToken()), offsets.endOffset(usage.getToken()));
                 }
             }
-            symbolizable.setSymbolTable(symbolTableBuilder.build());
+            symbolizable.save();
         }
         
         symbolTable = null;
         currentScope = null;
         offsets = null;
         symbolizable = null;
-        symbolTableBuilder = null;
     }
 
     private void visit(AstNode ast) {

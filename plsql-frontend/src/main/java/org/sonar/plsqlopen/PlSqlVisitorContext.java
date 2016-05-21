@@ -22,6 +22,7 @@ package org.sonar.plsqlopen;
 import java.io.File;
 import java.util.List;
 
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.source.Symbolizable;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
@@ -39,7 +40,7 @@ public interface PlSqlVisitorContext {
     
     void setSymbolTable(SymbolTable symbolTable);
     
-    Symbolizable getSymbolizable();
+    NewSymbolTable getSymbolizable();
     
     void setCurrentScope(Scope scope);
     
