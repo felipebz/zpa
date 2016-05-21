@@ -72,12 +72,12 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     @SuppressWarnings("rawtypes")
-    public void addRuleClasses(boolean failIfSqaleNotFound, Iterable<Class> ruleClasses) {
-        addRuleClasses(failIfSqaleNotFound, true, ruleClasses);
+    public void addRuleClasses(Iterable<Class> ruleClasses) {
+        addRuleClasses(true, ruleClasses);
     }
 
     @SuppressWarnings("rawtypes")
-    public void addRuleClasses(boolean failIfSqaleNotFound, boolean failIfNoExplicitKey, Iterable<Class> ruleClasses) {
+    public void addRuleClasses(boolean failIfNoExplicitKey, Iterable<Class> ruleClasses) {
         new RulesDefinitionAnnotationLoader().load(repository, Iterables.toArray(ruleClasses, Class.class));
         List<NewRule> newRules = new ArrayList<>();
         for (Class<?> ruleClass : ruleClasses) {

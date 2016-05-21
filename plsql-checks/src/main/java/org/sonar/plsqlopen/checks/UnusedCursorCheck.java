@@ -22,7 +22,6 @@ package org.sonar.plsqlopen.checks;
 import java.util.List;
 import java.util.Set;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
@@ -30,8 +29,6 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -39,7 +36,6 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.UNUSED
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.UNDERSTANDABILITY)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
 public class UnusedCursorCheck extends AbstractBaseCheck {

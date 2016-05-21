@@ -21,14 +21,11 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.List;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -36,7 +33,6 @@ import com.sonar.sslr.api.AstNode;
     key = RaiseStandardExceptionCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.API_ABUSE)
 @SqaleConstantRemediation("20min")
 @ActivatedByDefault
 public class RaiseStandardExceptionCheck extends AbstractBaseCheck {

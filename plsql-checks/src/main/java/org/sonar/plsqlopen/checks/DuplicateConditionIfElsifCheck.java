@@ -22,14 +22,11 @@ package org.sonar.plsqlopen.checks;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -38,7 +35,6 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
 public class DuplicateConditionIfElsifCheck extends AbstractBaseCheck {

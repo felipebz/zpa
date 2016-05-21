@@ -23,13 +23,11 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
 import org.sonar.sslr.ast.AstSelect;
 
 import com.sonar.sslr.api.AstNode;
@@ -39,7 +37,6 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.CLUMSY
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.READABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
 public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {

@@ -19,22 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = CommitRollbackCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_RELIABILITY)
 @SqaleConstantRemediation("30min")
 @ActivatedByDefault
 public class CommitRollbackCheck extends AbstractBaseCheck {

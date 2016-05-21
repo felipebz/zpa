@@ -21,7 +21,6 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.Deque;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
@@ -29,15 +28,12 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = UnhandledUserDefinedExceptionCheck.CHECK_KEY,
     priority = Priority.CRITICAL
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("5min")
 public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnhandledUserDefinedException";
