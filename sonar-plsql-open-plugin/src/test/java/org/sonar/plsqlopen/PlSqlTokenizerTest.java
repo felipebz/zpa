@@ -37,7 +37,7 @@ public class PlSqlTokenizerTest {
 
     @Test
     public void shouldWorkOnValidInput() throws URISyntaxException {
-      File file = new File(getClass().getResource("/br/com/felipezorzo/sonar/plsql/code.sql").toURI());
+      File file = new File(getClass().getResource("/org/sonar/plsqlopen/code.sql").toURI());
       SourceCode source = new SourceCode(new SourceCode.FileCodeLoader(file, "key"));
       Tokens cpdTokens = new Tokens();
       PlSqlTokenizer tokenizer = new PlSqlTokenizer(Charset.forName("UTF-8"));

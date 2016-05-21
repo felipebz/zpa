@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,7 @@ import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
@@ -43,6 +45,9 @@ import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.PlSqlSquidSensor;
 import org.sonar.plsqlopen.checks.CheckList;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 public class PlSqlSquidSensorTest {
 
@@ -60,7 +65,7 @@ public class PlSqlSquidSensorTest {
       CheckFactory checkFactory = new CheckFactory(activeRules);
       perspectives = mock(ResourcePerspectives.class);
       SonarComponents components = mock(SonarComponents.class);
-      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory, components);
+      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory, components, SensorContextTester.create(new File(".")));
     }
     
     @Test
@@ -73,9 +78,10 @@ public class PlSqlSquidSensorTest {
     }
     
     @Test
-    public void shouldAnalyse() {
-      String relativePath = "src/test/resources/br/com/felipezorzo/sonar/plsql/code.sql";
-      DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage(PlSql.KEY);
+    public void shouldAnalyse() throws IOException {
+      String relativePath = "src/test/resources/org/sonar/plsqlopen/code.sql";
+      DefaultInputFile inputFile = new DefaultInputFile(".", relativePath).setLanguage(PlSql.KEY)
+              .initMetadata(Files.toString(new File(relativePath), Charsets.UTF_8));
       fs.add(inputFile);
 
       Issuable issuable = mock(Issuable.class);

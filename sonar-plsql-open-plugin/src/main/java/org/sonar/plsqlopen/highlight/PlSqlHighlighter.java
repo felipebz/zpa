@@ -20,11 +20,13 @@
 package org.sonar.plsqlopen.highlight;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.List;
 
-import org.sonar.api.source.Highlightable;
-import org.sonar.plsqlopen.SourceFileOffsets;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
+import org.sonar.api.batch.sensor.highlighting.TypeOfText;
+import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -37,35 +39,28 @@ import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlHighlighter {
 
-    // See https://github.com/SonarSource/sonarqube/blob/branch-5.1/sonar-plugin-api/src/main/java/org/sonar/api/batch/sensor/highlighting/TypeOfText.java
-    private static final String STRUCTURED_COMMENT = "j";
-    private static final String COMMENT = "cd";
-    private static final String STRING = "s";
-    private static final String KEYWORD = "k";
-
     private Lexer lexer;
-    private Charset charset;
+    private NewHighlighting highlighting;
     
     public PlSqlHighlighter(PlSqlConfiguration conf){
         this.lexer = PlSqlLexer.create(conf);
-        this.charset = conf.getCharset();
     }
     
-    public void highlight(Highlightable highlightable, File file) {
-        SourceFileOffsets offsets = new SourceFileOffsets(file, charset);
+    public void highlight(SensorContext context, InputFile inputFile) {
+        highlighting = context.newHighlighting().onFile(inputFile);
+        File file = inputFile.file();
         List<Token> tokens = lexer.lex(file);
-        doHighlight(highlightable, tokens, offsets);
+        doHighlight(tokens);
     }
     
-    private void doHighlight(Highlightable highlightable, List<Token> tokens, SourceFileOffsets offsets) {
-        Highlightable.HighlightingBuilder highlighting = highlightable.newHighlighting();
-        highlightStringsAndKeywords(highlighting, tokens, offsets);
-        highlightComments(highlighting, tokens, offsets);
-        highlighting.done();
+    private void doHighlight(List<Token> tokens) {
+        highlightStringsAndKeywords(tokens);
+        highlightComments(tokens);
+        highlighting.save();
     }
     
-    private static void highlightComments(Highlightable.HighlightingBuilder highlighting, List<Token> tokens, SourceFileOffsets offsets) {
-        String code;
+    private void highlightComments(List<Token> tokens) {
+        TypeOfText code;
         for (Token token : tokens) {
             if (token.getTrivia().isEmpty()) {
                 continue;
@@ -73,28 +68,29 @@ public class PlSqlHighlighter {
             
             for (Trivia trivia : token.getTrivia()) {
                 if (trivia.getToken().getValue().startsWith("/**")) {
-                    code = STRUCTURED_COMMENT;
+                    code = TypeOfText.STRUCTURED_COMMENT;
                 } else {
-                    code = COMMENT;
+                    code = TypeOfText.COMMENT;
                 }
-                highlight(highlighting, offsets.startOffset(trivia.getToken()), offsets.endOffset(trivia.getToken()), code);
+                highlight(trivia.getToken(), code);
             }
         }
     }
     
-    private void highlightStringsAndKeywords(Highlightable.HighlightingBuilder highlighting, List<Token> tokens, SourceFileOffsets offsets) {
+    private void highlightStringsAndKeywords(List<Token> tokens) {
         for (Token token : tokens) {
             if (isLiteral(token.getType())) {
-                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), STRING);
+                highlight(token, TypeOfText.STRING);
             }
             if (isKeyword(token.getType())) {
-                highlight(highlighting, offsets.startOffset(token), offsets.endOffset(token), KEYWORD);
+                highlight(token, TypeOfText.KEYWORD);
             }
         }
     }
     
-    private static void highlight(Highlightable.HighlightingBuilder highlighting, int startOffset, int endOffset, String code) {
-        highlighting.highlight(startOffset, endOffset, code);
+    private void highlight(Token token, TypeOfText code) {
+        TokenLocation location = TokenLocation.from(token);
+        highlighting.highlight(location.line(), location.column(), location.endLine(), location.endColumn(), code);
     }
     
     public boolean isLiteral(TokenType type) {
@@ -114,6 +110,5 @@ public class PlSqlHighlighter {
         }
         return false;
     }
-
 
 }

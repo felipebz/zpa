@@ -31,6 +31,7 @@ import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.CheckFactory;
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.PersistenceMode;
@@ -66,20 +67,24 @@ public class PlSqlSquidSensor implements Sensor {
     private FileSystem fileSystem;
     private ResourcePerspectives resourcePerspectives;
     private SonarComponents components;
+    private org.sonar.api.batch.sensor.SensorContext newContext;
     
     public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
-            CheckFactory checkFactory, SonarComponents components) {
-        this(fileSystem, perspectives, checkFactory, components, null);
+            CheckFactory checkFactory, SonarComponents components, org.sonar.api.batch.sensor.SensorContext newContext) {
+        this(fileSystem, perspectives, checkFactory, components, newContext, null);
     }
 
     public PlSqlSquidSensor(FileSystem fileSystem, ResourcePerspectives perspectives,
-            CheckFactory checkFactory, SonarComponents components, @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
+            CheckFactory checkFactory, SonarComponents components, 
+            org.sonar.api.batch.sensor.SensorContext newContext,
+            @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
         this.fileSystem = fileSystem;
         this.resourcePerspectives = perspectives;
         this.components = components;
+        this.newContext = newContext;
         components.setChecks(checks);
     }
 
@@ -154,10 +159,10 @@ public class PlSqlSquidSensor implements Sensor {
     private void highlight(InputFile inputFile) {
         PlSqlHighlighter highlighter = new PlSqlHighlighter(createConfiguration());
         
-        Highlightable perspective = resourcePerspectives.as(Highlightable.class, inputFile);
+        NewHighlighting newHighlighting = newContext.newHighlighting();
         
-        if (perspective != null) {
-            highlighter.highlight(perspective, inputFile.file());
+        if (newHighlighting != null) {
+            highlighter.highlight(newContext, inputFile);
         }
     }
 
