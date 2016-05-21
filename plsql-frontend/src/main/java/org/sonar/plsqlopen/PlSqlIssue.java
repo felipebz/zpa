@@ -21,7 +21,7 @@ package org.sonar.plsqlopen;
 
 import javax.annotation.Nullable;
 
-import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.sensor.issue.NewIssue;
