@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.List;
 
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
-import org.sonar.api.source.Symbolizable;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.api.CodeCheck;

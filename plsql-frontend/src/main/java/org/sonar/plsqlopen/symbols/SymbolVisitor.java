@@ -23,8 +23,6 @@ import java.nio.charset.Charset;
 
 import org.sonar.api.batch.sensor.symbol.NewSymbol;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
-import org.sonar.api.source.Symbolizable;
-import org.sonar.api.source.Symbolizable.SymbolTableBuilder;
 import org.sonar.plsqlopen.SourceFileOffsets;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.squid.CharsetAwareVisitor;

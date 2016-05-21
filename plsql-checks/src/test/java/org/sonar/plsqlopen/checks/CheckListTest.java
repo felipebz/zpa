@@ -22,12 +22,8 @@ package org.sonar.plsqlopen.checks;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.FilenameFilter;
-import java.nio.file.Files;
-import java.util.List;
 
 import org.junit.Test;
-import org.sonar.plsqlopen.checks.CheckList;
 
 public class CheckListTest {
 
