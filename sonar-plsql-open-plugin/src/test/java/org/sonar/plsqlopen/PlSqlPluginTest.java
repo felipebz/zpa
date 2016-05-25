@@ -29,7 +29,7 @@ public class PlSqlPluginTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testGetExtensions() {
-      assertThat(new PlSqlPlugin().getExtensions()).hasSize(7);
+      assertThat(new PlSqlPlugin().getExtensions()).hasSize(6);
     }
     
 }

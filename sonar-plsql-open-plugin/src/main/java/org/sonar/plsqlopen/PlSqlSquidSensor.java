@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,11 +33,13 @@ import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.ce.measure.RangeDistributionBuilder;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighter;
+import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
@@ -49,7 +53,10 @@ import org.sonar.squidbridge.indexer.QueryByParent;
 import org.sonar.squidbridge.indexer.QueryByType;
 
 import com.google.common.collect.Lists;
+import com.sonar.sslr.api.GenericTokenType;
 import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.Token;
+import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlSquidSensor implements Sensor {
 
@@ -112,6 +119,7 @@ public class PlSqlSquidSensor implements Sensor {
             saveFunctionsComplexityDistribution(inputFile, squidFile);
             saveMeasures(inputFile, squidFile);
             saveHighlighting(inputFile);
+            saveCpdTokens(inputFile);
         }
     }
 
@@ -179,6 +187,21 @@ public class PlSqlSquidSensor implements Sensor {
         if (newHighlighting != null) {
             highlighter.highlight(context, inputFile);
         }
+    }
+
+    private void saveCpdTokens(InputFile inputFile) {
+        NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
+        Lexer lexer = PlSqlLexer.create(new PlSqlConfiguration(Charset.defaultCharset()));
+        String fileName = inputFile.absolutePath();
+        List<Token> tokens = lexer.lex(new File(fileName));
+        for (Token token : tokens) {
+            if (token.getType() == GenericTokenType.EOF) {
+                continue;
+            }
+            TokenLocation location = TokenLocation.from(token);
+            newCpdTokens.addToken(location.line(), location.column(), location.endLine(), location.endColumn(), token.getValue());
+        }
+        newCpdTokens.save();
     }
 
     @Override
