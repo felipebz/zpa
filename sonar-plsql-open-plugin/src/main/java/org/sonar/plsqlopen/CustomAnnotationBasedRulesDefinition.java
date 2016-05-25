@@ -125,7 +125,7 @@ public class CustomAnnotationBasedRulesDefinition {
         }
     }
 
-    private void setupSqaleModel(NewRule rule, Class<?> ruleClass) {
+    private static void setupSqaleModel(NewRule rule, Class<?> ruleClass) {
         SqaleConstantRemediation constant = AnnotationUtils.getAnnotation(ruleClass, SqaleConstantRemediation.class);
         SqaleLinearRemediation linear = AnnotationUtils.getAnnotation(ruleClass, SqaleLinearRemediation.class);
         SqaleLinearWithOffsetRemediation linearWithOffset = AnnotationUtils.getAnnotation(ruleClass,

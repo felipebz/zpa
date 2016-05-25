@@ -34,7 +34,6 @@ import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
-import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.ce.measure.RangeDistributionBuilder;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.plsqlopen.checks.CheckList;
@@ -181,12 +180,7 @@ public class PlSqlSquidSensor implements Sensor {
     
     private void saveHighlighting(InputFile inputFile) {
         PlSqlHighlighter highlighter = new PlSqlHighlighter(createConfiguration());
-        
-        NewHighlighting newHighlighting = context.newHighlighting();
-        
-        if (newHighlighting != null) {
-            highlighter.highlight(context, inputFile);
-        }
+        highlighter.highlight(context, inputFile);
     }
 
     private void saveCpdTokens(InputFile inputFile) {
