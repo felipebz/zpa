@@ -32,7 +32,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.AstScanner.Builder;
 import org.sonar.squidbridge.ProgressAstScanner;
-import org.sonar.squidbridge.SourceCodeBuilderCallback;
 import org.sonar.squidbridge.SourceCodeBuilderVisitor;
 import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
@@ -47,7 +46,6 @@ import org.sonar.squidbridge.metrics.CounterVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
 
 import com.google.common.collect.ImmutableList;
-import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
@@ -146,14 +144,12 @@ public class PlSqlAstScanner {
                 PlSqlGrammar.PROCEDURE_DECLARATION,
                 PlSqlGrammar.FUNCTION_DECLARATION };
         
-        builder.withSquidAstVisitor(new SourceCodeBuilderVisitor<>(new SourceCodeBuilderCallback() {
-            @Override
-            public SourceCode createSourceCode(SourceCode parentSourceCode, AstNode astNode) {
+        builder.withSquidAstVisitor(new SourceCodeBuilderVisitor<>(
+        	(parentSourceCode, astNode) -> {
                 String functionName = astNode.getFirstChild(PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME).getTokenValue();
                 SourceFunction function = new SourceFunction(functionName + ":" + astNode.getToken().getLine());
                 function.setStartAtLine(astNode.getTokenLine());
                 return function;
-            }
         }, methodDeclarations));
 
         builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
