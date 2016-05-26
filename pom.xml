@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>29</version>
+    <version>34</version>
   </parent>
 
   <groupId>org.sonar.plsqlopen</groupId>
@@ -72,8 +72,6 @@
     <guava.version>10.0.1</guava.version>
     <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jdk.min.version>1.8</jdk.min.version>
-    <animal-sniffer.signature.artifactId>java18</animal-sniffer.signature.artifactId>
   </properties>
 
   <dependencyManagement>
