@@ -24,14 +24,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -39,7 +39,7 @@ import com.google.common.annotations.VisibleForTesting;
 @BatchSide
 public class SonarComponents {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SonarComponents.class);
+    private static final Logger LOG = Loggers.get(SonarComponents.class);
 
     private final SensorContext context;
     private PlSqlChecks checks;
