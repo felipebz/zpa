@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>29</version>
+    <version>34</version>
   </parent>
 
   <groupId>org.sonar.plsqlopen</groupId>
@@ -42,7 +42,6 @@
     <module>plsql-checks</module>
     <module>sonar-plsql-open-plugin</module>
     <module>sslr-plsql-toolkit</module>
-    <module>sonar-compat</module>
     <module>plsql-checks-testkit</module>
     <module>its</module>
   </modules>
@@ -68,7 +67,7 @@
     <license.owner>Felipe Zorzo</license.owner>
     <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
-    <sonar.version>4.5.5</sonar.version>
+    <sonar.version>5.6</sonar.version>
     <sslr.version>1.21</sslr.version>
     <guava.version>10.0.1</guava.version>
     <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
@@ -78,12 +77,12 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.codehaus.sonar</groupId>
+        <groupId>org.sonarsource.sonarqube</groupId>
         <artifactId>sonar-plugin-api</artifactId>
         <version>${sonar.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.codehaus.sonar</groupId>
+        <groupId>org.sonarqube.sonarsource</groupId>
         <artifactId>sonar-testing-harness</artifactId>
         <version>${sonar.version}</version>
       </dependency>
@@ -106,6 +105,12 @@
         <groupId>org.sonarsource.sslr-squid-bridge</groupId>
         <artifactId>sslr-squid-bridge</artifactId>
         <version>2.6.1</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.codehaus.sonar</groupId>
+                <artifactId>sonar-plugin-api</artifactId>
+            </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -115,81 +120,85 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.6.2</version>
+        <version>1.7.12</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
-        <version>1.6.2</version>
+        <version>1.7.12</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>log4j-over-slf4j</artifactId>
-        <version>1.6.2</version>
+        <version>1.7.12</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>0.9.30</version>
+        <version>1.1.3</version>
       </dependency>
       <dependency>
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
         <version>2.6</version>
-        <scope>provided</scope>
       </dependency>
       <dependency>
 		<groupId>org.assertj</groupId>
 		<artifactId>assertj-core</artifactId>
-		<version>2.1.0</version>
+		<version>3.4.1</version>
       </dependency>
       <dependency>
 	    <groupId>org.mockito</groupId>
 	    <artifactId>mockito-core</artifactId>
 	    <version>1.10.19</version>
 	  </dependency>
-	  <dependency>
-	    <groupId>org.apache.maven</groupId>
-	    <artifactId>maven-project</artifactId>
-	    <version>2.2.1</version>
-	  </dependency>  
     </dependencies>
   </dependencyManagement>
   
-  <build>
-    <pluginManagement>
-      <plugins>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <versionRange>[1.9.0,)</versionRange>
-                    <goals>
-                      <goal>check</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore></ignore>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.16</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
+  <profiles>
+	<profile>
+	  <id>m2e</id>
+	  <activation>
+        <property>
+          <name>m2e.version</name>
+        </property>
+      </activation>
+      <build>
+	    <pluginManagement>
+	      <plugins>
+	        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+	        <plugin>
+	          <groupId>org.eclipse.m2e</groupId>
+	          <artifactId>lifecycle-mapping</artifactId>
+	          <version>1.0.0</version>
+	          <configuration>
+	            <lifecycleMappingMetadata>
+	              <pluginExecutions>
+	                <pluginExecution>
+	                  <pluginExecutionFilter>
+	                    <groupId>com.mycila.maven-license-plugin</groupId>
+	                    <artifactId>maven-license-plugin</artifactId>
+	                    <versionRange>[1.9.0,)</versionRange>
+	                    <goals>
+	                      <goal>check</goal>
+	                    </goals>
+	                  </pluginExecutionFilter>
+	                  <action>
+	                    <ignore></ignore>
+	                  </action>
+	                </pluginExecution>
+	              </pluginExecutions>
+	            </lifecycleMappingMetadata>
+	          </configuration>
+	        </plugin>
+	        <plugin>
+	          <groupId>org.apache.maven.plugins</groupId>
+	          <artifactId>maven-surefire-plugin</artifactId>
+	          <version>2.16</version>
+	        </plugin>
+	      </plugins>
+	    </pluginManagement>
+	  </build>
+	</profile>
+  </profiles>
 </project>

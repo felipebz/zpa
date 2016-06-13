@@ -19,15 +19,12 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -35,7 +32,6 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MINOR,
     tags = Tags.OBSOLETE
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.DATA_CHANGEABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
 public class CharacterDatatypeUsageCheck extends AbstractBaseCheck {

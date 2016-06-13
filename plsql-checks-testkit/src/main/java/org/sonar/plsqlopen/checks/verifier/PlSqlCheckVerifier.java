@@ -20,9 +20,9 @@
 package org.sonar.plsqlopen.checks.verifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,10 +33,8 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.assertj.core.api.Fail;
-import org.sonar.api.batch.SensorContext;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
@@ -44,6 +42,7 @@ import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.squidbridge.SquidAstVisitor;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
@@ -54,6 +53,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
+import com.google.common.io.Files;
 import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.Token;
@@ -106,20 +106,25 @@ public class PlSqlCheckVerifier {
     }
 
     private static void scanFile(String filename, SquidAstVisitor<Grammar> check, PlSqlCheckVerifier plSqlCheckVerifier) {
-        String relativePath = filename;
-        DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
-        inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
-        DefaultFileSystem fs = new DefaultFileSystem(new File("."));
-        fs.add(inputFile);
+        File file = new File(filename);
         
-        SensorContext context = mock(SensorContext.class);
-        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
+        DefaultInputFile inputFile;
         
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
+        try {
+            inputFile = new DefaultInputFile("key", filename).setLanguage("plsqlopen")
+                    .initMetadata(Files.toString(file, Charsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        
+        SensorContextTester context = SensorContextTester.create(new File("."));
+        context.fileSystem().add(inputFile);
+        
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
         PlSqlCheck expectedIssueCollector = new ExpectedIssueCollector(plSqlCheckVerifier);
         
-        PlSqlAstScanner.scanSingleFile(new File(filename), components, ImmutableList.of(new SymbolVisitor(), check, expectedIssueCollector));
+        PlSqlAstScanner.scanSingleFile(file, components, ImmutableList.of(new SymbolVisitor(), check, expectedIssueCollector));
         Collection<AnalyzerMessage> issues = ((SonarComponents.Test) components).getIssues();
         
         plSqlCheckVerifier.checkIssues(issues);

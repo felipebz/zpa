@@ -24,46 +24,34 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonar.api.BatchExtension;
-import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.InputPath;
-import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.issue.Issuable;
-import org.sonar.api.issue.Issue;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.source.Symbolizable;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 import com.google.common.annotations.VisibleForTesting;
 
-public class SonarComponents implements BatchExtension {
+@BatchSide
+public class SonarComponents {
 
-    private static final boolean IS_SONARQUBE_52 = isSonarQube52();
-    private static final Logger LOG = LoggerFactory.getLogger(SonarComponents.class);
+    private static final Logger LOG = Loggers.get(SonarComponents.class);
 
-    private final ResourcePerspectives resourcePerspectives;
     private final SensorContext context;
     private PlSqlChecks checks;
     private FileSystem fs;
-
-    public SonarComponents(ResourcePerspectives resourcePerspectives, SensorContext context, FileSystem fs) {
-        this.resourcePerspectives = resourcePerspectives;
+    
+    public SonarComponents(SensorContext context) {
         this.context = context;
-        this.fs = fs;
+        this.fs = context.fileSystem();
     }
     
-    public Issuable issuableFor(InputPath inputPath) {
-        return resourcePerspectives.as(Issuable.class, inputPath);
-    }
-    
-    public Symbolizable symbolizableFor(InputPath inputPath) {
-        return resourcePerspectives.as(Symbolizable.class, inputPath);
+    public NewSymbolTable symbolizableFor(InputFile inputPath) {
+        return context.newSymbolTable().onFile(inputPath);
     }
     
     public void setChecks(PlSqlChecks checks) {
@@ -76,16 +64,11 @@ public class SonarComponents implements BatchExtension {
 
     public void reportIssue(AnalyzerMessage message, InputFile inputFile) {    
         RuleKey ruleKey = checks.ruleKey((PlSqlCheck) message.getCheck());
-
-        if (IS_SONARQUBE_52) {
-            reportIssueAfterSQ52(inputFile, ruleKey, message);
-        } else {
-            reportIssueBeforeSQ52(inputFile, ruleKey, message.getText(Locale.ENGLISH), message.getLine());
-        }
+        reportIssue(inputFile, ruleKey, message);
     }
 
     @VisibleForTesting
-    void reportIssueAfterSQ52(InputFile inputFile, RuleKey key, AnalyzerMessage message) {
+    void reportIssue(InputFile inputFile, RuleKey key, AnalyzerMessage message) {
         PlSqlIssue issue = PlSqlIssue.create(context, key, message.getCost());
         String text = message.getText(Locale.ENGLISH);
         Integer line = message.getLine();
@@ -123,38 +106,18 @@ public class SonarComponents implements BatchExtension {
         }
         issue.save();
     }
-
-    private void reportIssueBeforeSQ52(InputFile inputFile, RuleKey key, String message, @Nullable Integer line) {
-        Issuable issuable = issuableFor(inputFile);
-
-        if (issuable != null) {
-            Issue issue = issuable.newIssueBuilder().ruleKey(key)
-                    .line(line)
-                    .message(message).build();
-            issuable.addIssue(issue);
-        }
-    }
-
-    private static boolean isSonarQube52() {
-        try {
-            Issuable.IssueBuilder.class.getMethod("newLocation");
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
-
+    
     @VisibleForTesting
     public SonarComponents getTestInstance() {
-        return new Test(resourcePerspectives, context, fs);
+        return new Test(context);
     }
 
     public class Test extends SonarComponents {
 
         private Collection<AnalyzerMessage> messages = new HashSet<>();
 
-        public Test(ResourcePerspectives resourcePerspectives, SensorContext context, FileSystem fs) {
-            super(resourcePerspectives, context, fs);
+        public Test(SensorContext context) {
+            super(context);
         }
 
         @Override

@@ -21,7 +21,7 @@ package org.sonar.plsqlopen;
 
 import javax.annotation.Nullable;
 
-import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.sensor.issue.NewIssue;
@@ -35,8 +35,8 @@ public class PlSqlIssue {
       this.newIssue = newIssue;
     }
 
-    public static PlSqlIssue create(SensorContext context, RuleKey ruleKey, @Nullable Double effortToFix) {
-        NewIssue newIssue = context.newIssue().forRule(ruleKey).effortToFix(effortToFix);
+    public static PlSqlIssue create(SensorContext context, RuleKey ruleKey, @Nullable Double gap) {
+        NewIssue newIssue = context.newIssue().forRule(ruleKey).gap(gap);
         return new PlSqlIssue(newIssue);
     }
 

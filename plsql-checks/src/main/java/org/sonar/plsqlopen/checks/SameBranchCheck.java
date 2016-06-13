@@ -22,14 +22,11 @@ package org.sonar.plsqlopen.checks;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -37,7 +34,6 @@ import com.sonar.sslr.api.AstNode;
     key = SameBranchCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.LOGIC_RELIABILITY)
 @SqaleConstantRemediation("10min")
 @ActivatedByDefault
 public class SameBranchCheck extends AbstractBaseCheck {

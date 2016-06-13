@@ -29,13 +29,13 @@
       <artifactId>sslr-squid-bridge</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.sonar</groupId>
+      <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-duplications</artifactId>
       <version>${sonar.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.sonar</groupId>
+      <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -43,7 +43,6 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
@@ -74,11 +73,6 @@
         <artifactId>mockito-core</artifactId>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-project</artifactId>
-        <scope>test</scope>
-      </dependency> 
   </dependencies>
 
 </project>

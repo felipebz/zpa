@@ -20,11 +20,15 @@
 package org.sonar.plsqlopen;
 
 import com.google.common.collect.ImmutableList;
-import org.sonar.api.BatchExtension;
+
+import org.sonar.api.ExtensionPoint;
+import org.sonar.api.batch.BatchSide;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.squidbridge.annotations.AnnotationBasedRulesDefinition;
 
-public abstract class CustomPlSqlRulesDefinition implements RulesDefinition, BatchExtension {
+@ExtensionPoint
+@BatchSide
+public abstract class CustomPlSqlRulesDefinition implements RulesDefinition {
 
     @Override
     public void define(RulesDefinition.Context context) {

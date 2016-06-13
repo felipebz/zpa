@@ -19,13 +19,10 @@
  */
 package org.sonar.plsqlopen.symbols;
 
-import java.nio.charset.Charset;
-
-import org.sonar.api.source.Symbolizable;
-import org.sonar.api.source.Symbolizable.SymbolTableBuilder;
-import org.sonar.plsqlopen.SourceFileOffsets;
+import org.sonar.api.batch.sensor.symbol.NewSymbol;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.squid.CharsetAwareVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
@@ -36,7 +33,7 @@ import com.google.common.base.Preconditions;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
-public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
+public class SymbolVisitor extends PlSqlCheck {
 
     private static final AstNodeType[] scopeHolders = { 
             PlSqlGrammar.CREATE_PROCEDURE,
@@ -51,15 +48,7 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
     
     private SymbolTableImpl symbolTable;
     private Scope currentScope;
-    private Charset charset;
-    private SourceFileOffsets offsets;
-    private Symbolizable symbolizable;
-    private SymbolTableBuilder symbolTableBuilder;
-    
-    @Override
-    public void setCharset(Charset charset) {
-        this.charset = charset;
-    }
+    private NewSymbolTable symbolizable;
     
     @Override
     public void init() {
@@ -69,11 +58,7 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
     @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
-        offsets = new SourceFileOffsets(getPlSqlContext().getFile(), charset);
         symbolizable = getPlSqlContext().getSymbolizable();
-        if (symbolizable != null) {
-            symbolTableBuilder = symbolizable.newSymbolTableBuilder();
-        }
         
         // ast is null when the file has a parsing error
         if (ast != null) {
@@ -103,21 +88,21 @@ public class SymbolVisitor extends PlSqlCheck implements CharsetAwareVisitor {
             for (Symbol symbol : symbolTable.getSymbols()) {
                 AstNode symbolNode = symbol.declaration();
                 
-                org.sonar.api.source.Symbol newSymbol = symbolTableBuilder.newSymbol(
-                        offsets.startOffset(symbolNode.getToken()), offsets.endOffset(symbolNode.getToken()));
+                TokenLocation symbolLocation = TokenLocation.from(symbolNode.getToken());
+                NewSymbol newSymbol = symbolizable.newSymbol(symbolLocation.line(), symbolLocation.column(), 
+                        symbolLocation.endLine(), symbolLocation.endColumn());
                 
                 for (AstNode usage : symbol.usages()) {
-                    symbolTableBuilder.newReference(newSymbol, offsets.startOffset(usage.getToken()));
+                    TokenLocation usageLocation = TokenLocation.from(usage.getToken());
+                    newSymbol.newReference(usageLocation.line(), usageLocation.column(), usageLocation.endLine(), usageLocation.endColumn());
                 }
             }
-            symbolizable.setSymbolTable(symbolTableBuilder.build());
+            symbolizable.save();
         }
         
         symbolTable = null;
         currentScope = null;
-        offsets = null;
         symbolizable = null;
-        symbolTableBuilder = null;
     }
 
     private void visit(AstNode ast) {

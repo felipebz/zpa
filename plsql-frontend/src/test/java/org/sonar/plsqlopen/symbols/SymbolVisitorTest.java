@@ -19,28 +19,17 @@
  */
 package org.sonar.plsqlopen.symbols;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
-import org.sonar.api.batch.SensorContext;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.source.Symbol;
-import org.sonar.api.source.Symbolizable;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
@@ -52,88 +41,75 @@ public class SymbolVisitorTest {
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
   
-    private List<String> lines;
+    private SensorContextTester context;
     private String eol;
-    private Symbolizable symbolizable = mock(Symbolizable.class);
-    private Symbolizable.SymbolTableBuilder symboltableBuilder = mock(Symbolizable.SymbolTableBuilder.class);
+    private File baseDir;
     
-    private void scanFile(String filename) {
-        String relativePath = filename;
-        DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage("plsqlopen");
-        inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
-        DefaultFileSystem fs = new DefaultFileSystem(new File("."));
-        fs.add(inputFile);
+    private void scanFile() throws IOException {
+        baseDir = temp.newFolder();
+        File file = new File(baseDir, "test.sql");
+        String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), Charsets.UTF_8);
+        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
         
-        when(symbolizable.newSymbolTableBuilder()).thenReturn(symboltableBuilder);
+        DefaultInputFile inputFile = new DefaultInputFile("key", "test.sql").setLanguage("plsqlopen")
+                .initMetadata(Files.toString(file, Charsets.UTF_8));
         
-        SensorContext context = mock(SensorContext.class);
-        ResourcePerspectives resourcePerspectives = mock(ResourcePerspectives.class);
-        when(resourcePerspectives.as(Mockito.eq(Symbolizable.class), Mockito.any(InputFile.class))).thenReturn(symbolizable);
+        context = SensorContextTester.create(baseDir);
+        context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(resourcePerspectives, context, fs).getTestInstance();
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
         SymbolVisitor symbolVisitor = new SymbolVisitor();
         
-        PlSqlAstScanner.scanSingleFile(new File(filename), components, symbolVisitor);
-    }
-    
-    private File generateTestFile() throws IOException {
-        File file = temp.newFile();
-        String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), Charsets.UTF_8);
-        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
-        return file;
+        PlSqlAstScanner.scanSingleFile(inputFile.file(), components, symbolVisitor);
     }
     
     @Test
     public void shouldAnalyse_lf() throws IOException {
         eol = "\n";
-        File file = generateTestFile();
-        verifySymbols(file);
+        verifySymbols();
     }
     
     @Test
     public void shouldAnalyse_crlf() throws IOException {
         eol = "\r\n";
-        File file = generateTestFile();
-        verifySymbols(file);
+        verifySymbols();
     }
     
     @Test
     public void shouldAnalyse_cr() throws IOException {
         eol = "\r";
-        File file = generateTestFile();
-        verifySymbols(file);
+        verifySymbols();
     }
     
-    private void verifySymbols(File file) throws IOException {
-        lines = Files.readLines(file, Charsets.UTF_8);
+    private void verifySymbols() throws IOException {
+        scanFile();
         
-        scanFile(file.getAbsolutePath());
+        String key = "key:test.sql";
         
-        verify(symboltableBuilder).newSymbol(offset(2, 3), offset(2, 4));
-        verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(4, 3)));
-        verify(symboltableBuilder).newSymbol(offset(6, 7), offset(6, 8));
-        verify(symboltableBuilder).newSymbol(offset(11, 22), offset(11, 23));
-        verify(symboltableBuilder).newSymbol(offset(12, 10), offset(12, 13));
-        verify(symboltableBuilder).newSymbol(offset(12, 14), offset(12, 15));
-        verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(15, 8)));
-        verify(symboltableBuilder).newSymbol(offset(18, 21), offset(18, 22));
-        verify(symboltableBuilder).newSymbol(offset(24, 3), offset(24, 6));
-        verify(symboltableBuilder).newSymbol(offset(28, 3), offset(28, 6));
-        verify(symboltableBuilder).newSymbol(offset(32, 3), offset(32, 5));
-        verify(symboltableBuilder).newReference(any(Symbol.class), eq(offset(36, 8)));
+        assertThat(context.referencesForSymbolAt(key, 2, lineOffset(3)))
+            .extracting("start.line", "start.lineOffset")
+             .containsExactly(tuple(4, lineOffset(3)));
+
+        assertThat(context.referencesForSymbolAt(key, 7, lineOffset(7))).isEmpty();
+        assertThat(context.referencesForSymbolAt(key, 11, lineOffset(12))).isEmpty();
         
-        verify(symboltableBuilder).build();
-        verifyNoMoreInteractions(symboltableBuilder);
+        assertThat(context.referencesForSymbolAt(key, 12, lineOffset(10)))
+            .extracting("start.line", "start.lineOffset")
+            .containsExactly(tuple(15, lineOffset(8)));
+        
+        assertThat(context.referencesForSymbolAt(key, 12, lineOffset(14))).isEmpty();
+        assertThat(context.referencesForSymbolAt(key, 18, lineOffset(21))).isEmpty();
+        assertThat(context.referencesForSymbolAt(key, 24, lineOffset(3))).isEmpty();
+        assertThat(context.referencesForSymbolAt(key, 28, lineOffset(3))).isEmpty();
+        
+        assertThat(context.referencesForSymbolAt(key, 32, lineOffset(3)))
+            .extracting("start.line", "start.lineOffset")
+            .containsExactly(tuple(36, lineOffset(8)));
     }
     
-    private int offset(int line, int column) {
-        int result = 0;
-        for (int i = 0; i < line - 1; i++) {
-            result += lines.get(i).length() + eol.length();
-        }
-        result += column - 1;
-        return result;
+    private int lineOffset(int offset) {
+        return offset - 1;
     }
     
 }

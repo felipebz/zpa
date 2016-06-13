@@ -19,22 +19,18 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = DbmsOutputPutCheck.CHECK_KEY,
     priority = Priority.MINOR
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.INSTRUCTION_RELIABILITY)
 @SqaleConstantRemediation("5min")
 @ActivatedByDefault
 public class DbmsOutputPutCheck extends AbstractBaseCheck {

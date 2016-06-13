@@ -106,7 +106,7 @@ public class MethodMatcher {
         AstNode node = normalize(originalNode);
         LinkedList<AstNode> nodes = Lists.newLinkedList(node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME));
         
-        if (nodes.size() == 0) {
+        if (nodes.isEmpty()) {
             return false;
         }
         

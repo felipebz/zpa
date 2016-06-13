@@ -19,53 +19,21 @@
  */
 package org.sonar.plsqlopen.matchers;
 
-public abstract class NameCriteria {
+@FunctionalInterface
+public interface NameCriteria {
 
-    public abstract boolean matches(String name);
+    public boolean matches(String name);
 
     public static NameCriteria any() {
-        return new AnyNameCriteria();
+        return name -> true;
     }
 
     public static NameCriteria is(String exactName) {
-        return new ExactNameCriteria(exactName);
+    	return exactName::equalsIgnoreCase;
     }
 
     public static NameCriteria startsWith(String prefix) {
-        return new PrefixNameCriteria(prefix);
+        return name -> name.toUpperCase().startsWith(prefix.toUpperCase());
     }
-
-    private static class ExactNameCriteria extends NameCriteria {
-        private String exactName;
-
-        public ExactNameCriteria(String exactName) {
-            this.exactName = exactName;
-        }
-
-        @Override
-        public boolean matches(String name) {
-            return exactName.equalsIgnoreCase(name);
-        }
-    }
-
-    private static class PrefixNameCriteria extends NameCriteria {
-        private String prefix;
-
-        public PrefixNameCriteria(String prefix) {
-            this.prefix = prefix;
-        }
-
-        @Override
-        public boolean matches(String name) {
-            return name.toUpperCase().startsWith(prefix.toUpperCase());
-        }
-
-    }
-
-    private static class AnyNameCriteria extends NameCriteria {
-        @Override
-        public boolean matches(String name) {
-            return true;
-        }
-    }
+    
 }

@@ -21,30 +21,31 @@ package org.sonar.plsqlopen;
 
 import javax.annotation.Nullable;
 
+import org.sonar.api.profiles.AnnotationProfileParser;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.rules.RuleFinder;
+import org.sonar.api.rules.ActiveRule;
 import org.sonar.api.utils.ValidationMessages;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.squidbridge.annotations.AnnotationBasedProfileBuilder;
 
 public class PlSqlProfile extends ProfileDefinition {
 
-    private final RuleFinder ruleFinder;
+    private final AnnotationProfileParser annotationProfileParser;
 
-    public PlSqlProfile(RuleFinder ruleFinder) {
-      this.ruleFinder = ruleFinder;
+    public PlSqlProfile(AnnotationProfileParser annotationProfileParser) {
+      this.annotationProfileParser = annotationProfileParser;
     }
 
     @Override
     public RulesProfile createProfile(@Nullable ValidationMessages validation) {
-      AnnotationBasedProfileBuilder annotationBasedProfileBuilder = new AnnotationBasedProfileBuilder(ruleFinder);
-      return annotationBasedProfileBuilder.build(
-          CheckList.REPOSITORY_KEY,
-          CheckList.SONAR_WAY_PROFILE,
-          PlSql.KEY,
-          CheckList.getChecks(),
-          validation);
-    }
+      RulesProfile sonarRules = annotationProfileParser.parse(CheckList.REPOSITORY_KEY, CheckList.SONAR_WAY_PROFILE, PlSql.KEY,
+              CheckList.getChecks(), validation);
 
+      RulesProfile profile = RulesProfile.create(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
+      for (ActiveRule activeRule : sonarRules.getActiveRules()) {
+          profile.addActiveRule(activeRule);
+      }
+
+      return profile;
+    }
 }

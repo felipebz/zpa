@@ -21,7 +21,6 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.List;
 
-import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
@@ -31,8 +30,6 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleSubCharacteristic;
-
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -40,7 +37,6 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleSubCharacteristic(RulesDefinition.SubCharacteristics.ERRORS)
 @SqaleConstantRemediation("2min")
 @ActivatedByDefault
 public class VariableInCountCheck extends AbstractBaseCheck {

@@ -21,83 +21,69 @@ package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.sonar.api.batch.SensorContext;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
-import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.issue.Issuable;
+import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.measures.CoreMetrics;
-import org.sonar.api.resources.Project;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.plsqlopen.PlSqlSquidSensor;
 import org.sonar.plsqlopen.checks.CheckList;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 public class PlSqlSquidSensorTest {
 
     private PlSqlSquidSensor sensor;
-    private DefaultFileSystem fs = new DefaultFileSystem(new File("."));
-    ResourcePerspectives perspectives;
-
+    private SensorContextTester context;
+    
     @Before
     public void setUp() {
-      ActiveRules activeRules = (new ActiveRulesBuilder())
-          .create(RuleKey.of(CheckList.REPOSITORY_KEY, "EmptyBlock"))
-          .setName("Print Statement Usage")
-          .activate()
-          .build();
-      CheckFactory checkFactory = new CheckFactory(activeRules);
-      perspectives = mock(ResourcePerspectives.class);
-      SonarComponents components = mock(SonarComponents.class);
-      sensor = new PlSqlSquidSensor(fs, perspectives, checkFactory, components);
+        ActiveRules activeRules = (new ActiveRulesBuilder())
+                .create(RuleKey.of(CheckList.REPOSITORY_KEY, "EmptyBlock"))
+                .setName("Print Statement Usage")
+                .activate()
+                .build();
+        CheckFactory checkFactory = new CheckFactory(activeRules);
+        SonarComponents components = mock(SonarComponents.class);
+        context = SensorContextTester.create(new File("."));
+        sensor = new PlSqlSquidSensor(checkFactory, components);
     }
     
     @Test
-    public void shouldExecuteInPlSqlProject() {
-      Project project = mock(Project.class);
-      assertThat(sensor.toString()).isEqualTo("PlSqlSquidSensor");
-      assertThat(sensor.shouldExecuteOnProject(project)).isFalse();
-      fs.add(new DefaultInputFile("test.sql").setLanguage(PlSql.KEY));
-      assertThat(sensor.shouldExecuteOnProject(project)).isTrue();
+    public void testDescriptor() {
+        DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
+        sensor.describe(descriptor);
+        assertThat(descriptor.name()).isEqualTo("PlsqlSquidSensor");
+        assertThat(descriptor.languages()).containsOnly(PlSql.KEY);
     }
     
     @Test
-    public void shouldAnalyse() {
-      String relativePath = "src/test/resources/br/com/felipezorzo/sonar/plsql/code.sql";
-      DefaultInputFile inputFile = new DefaultInputFile(relativePath).setLanguage(PlSql.KEY);
-      inputFile.setAbsolutePath((new File(relativePath)).getAbsolutePath());
-      fs.add(inputFile);
+    public void shouldAnalyse() throws IOException {
+      String relativePath = "src/test/resources/org/sonar/plsqlopen/code.sql";
+      DefaultInputFile inputFile = new DefaultInputFile("key", relativePath).setLanguage(PlSql.KEY)
+              .initMetadata(Files.toString(new File(relativePath), Charsets.UTF_8));
+      
+      context.fileSystem().add(inputFile);
+      
+      sensor.execute(context);
+      
+      String key = "key:" + relativePath;
 
-      Issuable issuable = mock(Issuable.class);
-      Issuable.IssueBuilder issueBuilder = mock(Issuable.IssueBuilder.class);
-      when(perspectives.as(Mockito.eq(Issuable.class), Mockito.any(InputFile.class))).thenReturn(issuable);
-      when(issuable.newIssueBuilder()).thenReturn(issueBuilder);
-      when(issueBuilder.ruleKey(Mockito.any(RuleKey.class))).thenReturn(issueBuilder);
-      when(issueBuilder.line(Mockito.any(Integer.class))).thenReturn(issueBuilder);
-      when(issueBuilder.message(Mockito.any(String.class))).thenReturn(issueBuilder);
-
-      Project project = new Project("key");
-      SensorContext context = mock(SensorContext.class);
-      sensor.analyse(project, context);
-
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.FILES), Mockito.eq(1.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.LINES), Mockito.eq(25.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.NCLOC), Mockito.eq(18.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.COMMENT_LINES), Mockito.eq(2.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.COMPLEXITY), Mockito.eq(6.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.FUNCTIONS), Mockito.eq(2.0));
-      verify(context).saveMeasure(Mockito.any(InputFile.class), Mockito.eq(CoreMetrics.STATEMENTS), Mockito.eq(8.0));
+      assertThat(context.measure(key, CoreMetrics.FILES).value()).isEqualTo(1);
+      assertThat(context.measure(key, CoreMetrics.NCLOC).value()).isEqualTo(18);
+      assertThat(context.measure(key, CoreMetrics.COMMENT_LINES).value()).isEqualTo(2);
+      assertThat(context.measure(key, CoreMetrics.COMPLEXITY).value()).isEqualTo(6);
+      assertThat(context.measure(key, CoreMetrics.FUNCTIONS).value()).isEqualTo(2);
+      assertThat(context.measure(key, CoreMetrics.STATEMENTS).value()).isEqualTo(8);
 
     }
     

@@ -22,6 +22,8 @@ package org.sonar.plsqlopen;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
+import org.sonar.api.Plugin;
+import org.sonar.api.SonarQubeVersion;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
 public class PlSqlPluginTest {
@@ -29,7 +31,10 @@ public class PlSqlPluginTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testGetExtensions() {
-      assertThat(new PlSqlPlugin().getExtensions()).hasSize(7);
+        Plugin.Context context = new Plugin.Context(SonarQubeVersion.V5_6);
+        PlSqlPlugin plugin = new PlSqlPlugin();
+        plugin.define(context);
+        assertThat(context.getExtensions()).hasSize(6);
     }
     
 }

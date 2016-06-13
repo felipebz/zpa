@@ -21,7 +21,6 @@ package org.sonar.plugins.plsqlopen.api;
 
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.lang.StringUtils;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.sslr.grammar.GrammarRuleKey;
@@ -37,6 +36,6 @@ public class RuleTest {
     }
     
     protected static String lines(String... lines) {
-        return StringUtils.join(lines, '\n');
+        return String.join("\n", lines);
     }
 }
