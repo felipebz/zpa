@@ -19,35 +19,30 @@
  */
 package org.sonar.plsqlopen;
 
-import com.google.common.collect.ImmutableList;
-
-import org.sonar.api.SonarPlugin;
+import org.sonar.api.Plugin;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
-import java.util.List;
+public class PlSqlPlugin implements Plugin {
 
-public class PlSqlPlugin extends SonarPlugin {
+    public static final String FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
 
-  public static final String FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
-
-  @SuppressWarnings("rawtypes")
-  @Override
-  public List getExtensions() {
-    return ImmutableList.of(
-        PropertyDefinition.builder(FILE_SUFFIXES_KEY)
-          .name("File Suffixes")
-          .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
-          .category("PL/SQL")
-          .onQualifiers(Qualifiers.PROJECT)
-          .defaultValue("sql,pkg,pks,pkb")
-          .build(),
-        
+    @Override
+    public void define(Context context) {
+        context.addExtensions(
+            PropertyDefinition.builder(FILE_SUFFIXES_KEY)
+                .name("File Suffixes")
+                .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
+                .category("PL/SQL")
+                .onQualifiers(Qualifiers.PROJECT)
+                .defaultValue("sql,pkg,pks,pkb")
+                .build(),
+          
         PlSql.class,
         PlSqlProfile.class,
         PlSqlSquidSensor.class,
         PlSqlRuleRepository.class,
-        SonarComponents.class);
-  }
+        SonarComponents.class);        
+    }
 
 }
