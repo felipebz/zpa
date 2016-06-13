@@ -4,7 +4,7 @@ Continuous Integration | Status
 **AppVeyor** (Windows build and [deployment](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts)) | [![Build status](https://ci.appveyor.com/api/projects/status/6tpemq3g7d0drub8/branch/master?svg=true)](https://ci.appveyor.com/project/felipebz/sonar-plsql/branch/master)
 
 ## SonarQube PL/SQL Community plugin
-This plugin adds PL/SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 4.5.5 and newer.
+This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 5.6 and newer.
 
 ## Installation
 - Download the latest [sonar-plsql-open-plugin-1.0-SNAPSHOT.jar from AppVeyor](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) packages into the SONARQUBE_HOME/extensions/plugins directory;

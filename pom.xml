@@ -67,7 +67,7 @@
     <license.owner>Felipe Zorzo</license.owner>
     <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
-    <sonar.version>5.6-RC2</sonar.version>
+    <sonar.version>5.6</sonar.version>
     <sslr.version>1.21</sslr.version>
     <guava.version>10.0.1</guava.version>
     <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
