@@ -67,6 +67,7 @@ public class PlSqlSquidSensor implements Sensor {
     private AstScanner<Grammar> scanner;
     private SonarComponents components;
     private SensorContext context;
+    private PlSqlConfiguration configuration;
     
     public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components) {
         this(checkFactory, components, null);
@@ -94,17 +95,14 @@ public class PlSqlSquidSensor implements Sensor {
         List<SquidAstVisitor<Grammar>> visitors = new ArrayList<>();
         visitors.add(new SymbolVisitor());
         visitors.addAll(checks.all());
+        configuration = new PlSqlConfiguration(context.fileSystem().encoding());
         
-        this.scanner = PlSqlAstScanner.create(createConfiguration(), components, visitors);
+        this.scanner = PlSqlAstScanner.create(configuration, components, visitors);
         FilePredicates p = context.fileSystem().predicates();
         scanner.scanFiles(Lists.newArrayList(context.fileSystem().files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
 
         Collection<SourceCode> squidSourceFiles = scanner.getIndex().search(new QueryByType(SourceFile.class));
         save(squidSourceFiles);
-    }
-
-    private PlSqlConfiguration createConfiguration() {
-        return new PlSqlConfiguration(context.fileSystem().encoding());
     }
 
     private void save(Collection<SourceCode> squidSourceFiles) {
@@ -179,13 +177,13 @@ public class PlSqlSquidSensor implements Sensor {
     }
     
     private void saveHighlighting(InputFile inputFile) {
-        PlSqlHighlighter highlighter = new PlSqlHighlighter(createConfiguration());
+        PlSqlHighlighter highlighter = new PlSqlHighlighter(configuration);
         highlighter.highlight(context, inputFile);
     }
 
     private void saveCpdTokens(InputFile inputFile) {
         NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
-        Lexer lexer = PlSqlLexer.create(new PlSqlConfiguration(Charset.defaultCharset()));
+        Lexer lexer = PlSqlLexer.create(configuration);
         String fileName = inputFile.absolutePath();
         List<Token> tokens = lexer.lex(new File(fileName));
         for (Token token : tokens) {
