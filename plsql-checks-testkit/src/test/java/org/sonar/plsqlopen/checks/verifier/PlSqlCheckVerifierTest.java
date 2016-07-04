@@ -64,7 +64,7 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
             Fail.fail("Test should fail");
         } catch (AssertionError e) {
-            assertThat(e).hasMessage("Unexpected at [4]");
+            assertThat(e).hasMessage("Unexpected issue at line 4: \"extra message\"");
         }
     }
 
@@ -77,7 +77,7 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
             Fail.fail("Test should fail");
         } catch (AssertionError e) {
-            assertThat(e).hasMessage("Expected {1=[{MESSAGE=message}]}, Unexpected at [4]");
+            assertThat(e).hasMessage("Missing issue at line 1");
         }
     }
 
@@ -89,29 +89,20 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor);
             Fail.fail("Test should fail");
         } catch (AssertionError e) {
-            assertThat(e).hasMessage("Expected {1=[{MESSAGE=message}]}");
+            assertThat(e).hasMessage("Missing issue at line 1");
         }
     }
 
-    @Test
-    public void verify_no_issue_fail_if_noncompliant() {
-        try {
-            PlSqlCheckVerifier.verifyNoIssue(FILENAME_ISSUES, getNoEffectCheck());
-            Fail.fail("Test should fail");
-        } catch (AssertionError e) {
-            assertThat(e).hasMessage("The file should not declare noncompliants when no issues are expected");
-        }
-    }
 
     @Test
     public void verify_no_issue() {
-        PlSqlCheckVerifier.verifyNoIssue(FILENAME_NO_ISSUE, getNoEffectCheck());
+        PlSqlCheckVerifier.verify(FILENAME_NO_ISSUE, getNoEffectCheck());
     }
 
     @Test
     public void verify_should_fail_when_using_incorrect_shift() throws IOException {
         try {
-            PlSqlCheckVerifier.verifyNoIssue("src/test/resources/check_verifier_incorrect_shift.sql", getNoEffectCheck());
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_shift.sql", getNoEffectCheck());
             Fail.fail("Test should fail");
         } catch (AnalysisException e) {
             assertThat(e.getCause()).hasMessage("Use only '@+N' or '@-N' to shifts messages.");
@@ -121,32 +112,22 @@ public class PlSqlCheckVerifierTest {
     @Test
     public void verify_should_fail_when_using_incorrect_attribute() throws IOException {
         try {
-            PlSqlCheckVerifier.verifyNoIssue("src/test/resources/check_verifier_incorrect_attribute.sql",
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
                     getNoEffectCheck());
             Fail.fail("Test should fail");
         } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("// Noncompliant attributes not valid: invalid=1");
+            assertThat(e.getCause()).hasMessage("Invalid param at line 1: invalid");
         }
     }
 
     @Test
     public void verify_should_fail_when_using_incorrect_attribute2() throws IOException {
         try {
-            PlSqlCheckVerifier.verifyNoIssue("src/test/resources/check_verifier_incorrect_attribute2.sql",
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
                     getNoEffectCheck());
             Fail.fail("Test should fail");
         } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("// Noncompliant attributes not valid: invalid=1=2");
-        }
-    }
-
-    @Test
-    public void verify_should_fail_when_using_incorrect_endLine() throws IOException {
-        try {
-            PlSqlCheckVerifier.verifyNoIssue("src/test/resources/check_verifier_incorrect_endline.sql", getNoEffectCheck());
-            Fail.fail("Test should fail");
-        } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("endLine attribute should be relative to the line and must be +N with N integer");
+            assertThat(e.getCause()).hasMessage("Invalid param at line 1: invalid");
         }
     }
 
@@ -157,7 +138,7 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor);
             Fail.fail("Test should fail");
         } catch (AssertionError e) {
-            assertThat(e).hasMessage("Secondary locations: expected: [] unexpected:[3]");
+            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[[]4]> but was:<[[3, ]4]>");
         }
     }
 
@@ -168,7 +149,7 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor);
             Fail.fail("Test should fail");
         } catch (AssertionError e) {
-            assertThat(e).hasMessage("Secondary locations: expected: [5] unexpected:[]");
+            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[3, 4[, 5]]> but was:<[3, 4[]]>");
         }
     }
     
@@ -189,7 +170,8 @@ public class PlSqlCheckVerifierTest {
                 .withPreciseIssue(withMultipleLocation)
                 .withPreciseIssue(new AnalyzerMessage(this, "no message", 9))
                 .withPreciseIssue(new AnalyzerMessage(this, "message12", new AnalyzerMessage.TextSpan(11, 5, 12, 11)))
-                .withIssue(14, "message17");
+                .withIssue(14, "message17")
+                .withPreciseIssue(new AnalyzerMessage(this, "baseline", new AnalyzerMessage.TextSpan(15, 5, 15, 9)));
         }
         
         private FakeCheck withIssue(int line, String message) {

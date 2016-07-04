@@ -5,12 +5,14 @@ begin -- test method
     null;
     null;
     -- Noncompliant@-1 {{message3}}
-    null; -- Noncompliant {{message4}} [[sc=9;endColumn=10;secondary=3,4]] bla bla bla
+    null; -- Noncompliant {{message4}} [[sc=9;ec=10;secondary=3,4]] bla bla bla
     null; -- Noncompliant
     -- Noncompliant@-4
-    func(foo, -- Noncompliant [[sc==5;el=+1;ec=11]]
+    func(foo, -- Noncompliant [[sc=5;el=+1;ec=11]]
       bar);
     -- Noncompliant@+1 blabla
     null;
+    null; -- Noncompliant {{baseline}}
+--  ^^^^
 end;
 /
