@@ -1,9 +1,16 @@
 begin
   -- noncompliant code
-  var := (foo = null); -- Noncompliant {{Fix this comparison or change to "IS NULL".}} [[sc=11;ec=21]]
-  var := (foo = ''); -- Noncompliant [[sc=11;ec=19]]
-  var := (foo <> null); -- Noncompliant {{Fix this comparison or change to "IS NOT NULL".}} [[sc=11;ec=22]]
-  var := (foo <> ''); -- Noncompliant [[sc=11;ec=20]]
+  var := (foo = null); -- Noncompliant {{Fix this comparison or change to "IS NULL".}}
+--        ^^^^^^^^^^
+
+  var := (foo = ''); -- Noncompliant
+--        ^^^^^^^^
+
+  var := (foo <> null); -- Noncompliant {{Fix this comparison or change to "IS NOT NULL".}}
+--        ^^^^^^^^^^^
+
+  var := (foo <> ''); -- Noncompliant
+--        ^^^^^^^^^
   
   -- valid code
   var := (foo is null);

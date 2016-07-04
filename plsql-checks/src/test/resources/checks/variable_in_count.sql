@@ -2,7 +2,8 @@ declare
   foo number;
 begin
 
-  select count(foo) -- Noncompliant {{Looks like there is a "foo" variable in this context. Review if this COUNT is correct.}} [[sc=10;ec=20]]
+  select count(foo) -- Noncompliant {{Looks like there is a "foo" variable in this context. Review if this COUNT is correct.}}
+--       ^^^^^^^^^^
     from tab;
     
   -- don't report an error here, we don't have enough information to know if "bar" is a variable or a column of table "tab"

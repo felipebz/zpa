@@ -1,5 +1,6 @@
 begin
-  var := ((x = 1)); -- Noncompliant {{Remove those useless parenthesis.}} [[sc=11;ec=18]]
+  var := ((x = 1)); -- Noncompliant {{Remove those useless parenthesis.}}
+--        ^^^^^^^
   
   -- valid
   var := (x = 1);

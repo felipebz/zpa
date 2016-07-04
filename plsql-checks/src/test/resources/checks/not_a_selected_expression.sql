@@ -1,10 +1,12 @@
 select distinct emp.name
   from emp
- order by emp.id; -- Noncompliant [[sc=11;ec=17]] {{This value does not exists in the SELECT clause. Fix this expression or add this value in the SELECT.}}
+ order by emp.id; -- Noncompliant {{This value does not exists in the SELECT clause. Fix this expression or add this value in the SELECT.}}
+--        ^^^^^^
  
 select distinct substr(emp.name, 0, 10) emp_name
   from emp
- order by emp.name; -- Noncompliant [[sc=11;ec=19]]
+ order by emp.name; -- Noncompliant
+--        ^^^^^^^^
 
 select distinct emp.name emp_name
   from emp

@@ -1,5 +1,6 @@
 begin
-  select col, -- Noncompliant {{Specify the table of column "col".}} [[sc=10;ec=13]]
+  select col, -- Noncompliant {{Specify the table of column "col".}}
+--       ^^^
          tab.col,
          func(col),
          'text'

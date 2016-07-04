@@ -1,24 +1,22 @@
 begin
   select *
-    from tab x; -- Noncompliant {{This statement has only one reference to the table "tab". Remove the alias "x" to improve the readability.}} [[sc=14;ec=15]]
+    from tab x; -- Noncompliant {{This statement has only one reference to the table "tab". Remove the alias "x" to improve the readability.}}
+--           ^
     
-  select *
-    from tab x, -- Noncompliant [[sc=14;ec=15]]
-         tab2;
-         
-  select *
-    from tab x -- Noncompliant [[sc=14;ec=15]]
-   where exists (select 1 from tab2);
+  select * from tab x, tab2; -- Noncompliant
+--                  ^
+  
+  select * from tab x where exists (select 1 from tab2); -- Noncompliant
+--                  ^
    
-  select (select 1 from tab x) -- Noncompliant [[sc=29;ec=30]]
-    from tab2;
+  select (select 1 from tab x) from tab2; -- Noncompliant
+--                          ^
     
-  update tab x -- Noncompliant [[sc=14;ec=15]]
-     set foo = bar
-   where exists (select 1 from tab2);
+  update tab x set foo = bar where exists (select 1 from tab2); -- Noncompliant
+--           ^
    
-  delete tab x -- Noncompliant [[sc=14;ec=15]]
-   where exists (select 1 from tab2);
+  delete tab x where exists (select 1 from tab2); -- Noncompliant
+--           ^
     
   -- correct
   select *

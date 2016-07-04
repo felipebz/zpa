@@ -1,10 +1,12 @@
-create procedure foo(a number, b number) is -- Noncompliant {{Remove this unused "b" parameter.}} [[sc=32;ec=40]]
+create procedure foo(a number, b number) is -- Noncompliant {{Remove this unused "b" parameter.}}
+--                             ^^^^^^^^
 begin
   print(a);
 end;
 /
 
-create function bar(a number, b number) return number is  -- Noncompliant [[sc=31;ec=39]]
+create function bar(a number, b number) return number is  -- Noncompliant
+--                            ^^^^^^^^
 begin
   return a;
 end;
@@ -13,8 +15,10 @@ end;
 create package test is
   procedure foo(a number, b number); -- don't report violation on headings
   
-   procedure foo(a number, b number) is -- Noncompliant [[sc=28;ec=36]]
-     cursor cur(x number) is -- Noncompliant {{Remove this unused "x" parameter.}} [[sc=17;ec=25]]
+   procedure foo(a number, b number) is -- Noncompliant
+--                         ^^^^^^^^
+     cursor cur(x number) is -- Noncompliant {{Remove this unused "x" parameter.}}
+--              ^^^^^^^^
        select 1 from dual;
    begin
      print(a);

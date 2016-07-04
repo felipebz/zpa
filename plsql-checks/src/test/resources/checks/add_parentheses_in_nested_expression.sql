@@ -1,7 +1,10 @@
 begin
-  var := (x = 1 or x = 2 and y = 3); -- Noncompliant {{Add parentheses around this AND condition to make the operator precedence explicit.}} [[sc=20;ec=35]]
-  var := (x = 1 or x = 2 and y = 3 or -- Noncompliant [[sc=20;ec=35]] 
-         x = 4 and y = 5); -- Noncompliant [[sc=10;ec=25]]
+  var := (x = 1 or x = 2 and y = 3); -- Noncompliant {{Add parentheses around this AND condition to make the operator precedence explicit.}}
+--                 ^^^^^^^^^^^^^^^
+  var := (x = 1 or x = 2 and y = 3 or -- Noncompliant 
+--                 ^^^^^^^^^^^^^^^
+         x = 4 and y = 5); -- Noncompliant
+--       ^^^^^^^^^^^^^^^
   
   select 1
     into var
