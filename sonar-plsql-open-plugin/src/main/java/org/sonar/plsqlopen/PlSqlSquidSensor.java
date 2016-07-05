@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

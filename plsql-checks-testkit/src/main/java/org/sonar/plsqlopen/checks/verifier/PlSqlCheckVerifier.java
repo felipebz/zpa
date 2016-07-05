@@ -145,7 +145,7 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
 
     private static Iterator<AnalyzerMessage> getActualIssues(SonarComponents components) {
         Collection<AnalyzerMessage> issues = ((SonarComponents.Test) components).getIssues();
-        List<AnalyzerMessage> sortedIssues = Ordering.natural().onResultOf((AnalyzerMessage issue) -> line(issue)).sortedCopy(issues);
+        List<AnalyzerMessage> sortedIssues = Ordering.natural().onResultOf(PlSqlCheckVerifier::line).sortedCopy(issues);
         return sortedIssues.iterator();
     }
 
