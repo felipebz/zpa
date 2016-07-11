@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -34,6 +35,12 @@ import com.sonar.sslr.api.AstNode;
 @ActivatedByDefault
 public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "QueryWithoutExceptionHandling";
+    
+    @RuleProperty (
+        key = "strict",
+        defaultValue = "true"
+    )
+    public boolean strictMode = true;
 
     @Override
     public void init() {
@@ -42,10 +49,16 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
     
     @Override
     public void visitNode(AstNode node) {
-        AstNode parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION);
-        
-        if (!hasExceptionHandling(parentBlock)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+        if (strictMode) {
+            AstNode parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION);
+            
+            if (!hasExceptionHandling(parentBlock)) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            }
+        } else {
+            if (!getPlSqlContext().getCurrentScope().hasExceptionHandler()) {
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            }
         }
     }
 

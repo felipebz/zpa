@@ -35,12 +35,14 @@ public class Scope {
     private final Scope outer;
     private final AstNode node;
     private final boolean autonomousTransaction;
+    private final boolean hasExceptionHandler;
     protected List<Symbol> symbols = new ArrayList<>();
 
-    public Scope(Scope outer, AstNode node, boolean autonomousTransaction) {
+    public Scope(Scope outer, AstNode node, boolean autonomousTransaction, boolean hasExceptionHandler) {
         this.outer = outer;
         this.node = node;
         this.autonomousTransaction = autonomousTransaction;
+        this.hasExceptionHandler = hasExceptionHandler;
     }
 
     public AstNode tree() {
@@ -53,6 +55,10 @@ public class Scope {
     
     public boolean isAutonomousTransaction() {
         return autonomousTransaction;
+    }
+    
+    public boolean hasExceptionHandler() {
+        return hasExceptionHandler;
     }
     
     public List<Symbol> getSymbols() {

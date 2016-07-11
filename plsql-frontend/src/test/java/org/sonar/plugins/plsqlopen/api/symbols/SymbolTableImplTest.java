@@ -51,10 +51,10 @@ public class SymbolTableImplTest {
     @Test
     public void returnScopeForSymbol() {
         AstNode node1 = mock(AstNode.class);
-        Scope scope1 = new Scope(null, node1, false);
+        Scope scope1 = new Scope(null, node1, false, false);
         
         AstNode node2 = mock(AstNode.class);
-        Scope scope2 = new Scope(null, node2, false);
+        Scope scope2 = new Scope(null, node2, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
         symbolTable.addScope(scope1);
@@ -74,7 +74,7 @@ public class SymbolTableImplTest {
     public void returnSymbolForNode() {
         AstNode node = mock(AstNode.class);
         AstNode node2 = mock(AstNode.class);
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
         Symbol symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope);
@@ -93,7 +93,7 @@ public class SymbolTableImplTest {
     public void returnScopeForSymbolForNode() {
         AstNode node = mock(AstNode.class);
         AstNode node2 = mock(AstNode.class);
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
         symbolTable.declareSymbol(node, Kind.CURSOR, scope);
@@ -104,7 +104,7 @@ public class SymbolTableImplTest {
     
     @Test
     public void getSymbolsByKind() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
         Symbol symbol1 = symbolTable.declareSymbol(mock(AstNode.class), Kind.CURSOR, scope);
@@ -117,7 +117,7 @@ public class SymbolTableImplTest {
     
     @Test
     public void getSymbolsByName() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         AstNode node1 = mock(AstNode.class);
         when(node1.getTokenOriginalValue()).thenReturn("foo");

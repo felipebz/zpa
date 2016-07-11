@@ -33,7 +33,7 @@ public class ScopeTest {
     @Test
     public void testScope() {
         AstNode node = mock(AstNode.class);
-        Scope scope = new Scope(null, node, false);
+        Scope scope = new Scope(null, node, false, false);
         assertThat(scope.outer()).isNull();
         assertThat(scope.tree()).isEqualTo(node);
         assertThat(scope.isAutonomousTransaction()).isFalse();
@@ -41,7 +41,7 @@ public class ScopeTest {
     
     @Test
     public void getSymbolsInScope() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         Symbol symbol1 = createSymbol(scope, "foo", Kind.VARIABLE);
         scope.addSymbol(symbol1);
@@ -54,7 +54,7 @@ public class ScopeTest {
     
     @Test
     public void getSymbolsByKind() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         Symbol symbol1 = createSymbol(scope, "foo", Kind.VARIABLE);
         scope.addSymbol(symbol1);
@@ -68,7 +68,7 @@ public class ScopeTest {
     
     @Test
     public void getSymbolsAcessibleInScope() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         Symbol symbol1 = createSymbol(scope, "foo", Kind.VARIABLE);
         scope.addSymbol(symbol1);
@@ -83,11 +83,11 @@ public class ScopeTest {
     
     @Test
     public void getSymbolsAcessibleInScopeConsideringOuterScope() {
-        Scope outerScope = new Scope(null, null, false);
+        Scope outerScope = new Scope(null, null, false, false);
         Symbol symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE);
         outerScope.addSymbol(symbol1);
         
-        Scope innerScope = new Scope(outerScope, null, false);
+        Scope innerScope = new Scope(outerScope, null, false, false);
         Symbol symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE);
         innerScope.addSymbol(symbol2);
         
@@ -98,7 +98,7 @@ public class ScopeTest {
     
     @Test
     public void getSymbol() {
-        Scope scope = new Scope(null, null, false);
+        Scope scope = new Scope(null, null, false, false);
         
         Symbol symbol1 = createSymbol(scope, "foo", Kind.VARIABLE);
         scope.addSymbol(symbol1);
@@ -114,11 +114,11 @@ public class ScopeTest {
     
     @Test
     public void getSymbolConsideringOuterScope() {
-        Scope outerScope = new Scope(null, null, false);
+        Scope outerScope = new Scope(null, null, false, false);
         Symbol symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE);
         outerScope.addSymbol(symbol1);
         
-        Scope innerScope = new Scope(outerScope, null, false);
+        Scope innerScope = new Scope(outerScope, null, false, false);
         Symbol symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE);
         innerScope.addSymbol(symbol2);
         

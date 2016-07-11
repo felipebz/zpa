@@ -29,4 +29,11 @@ public class QueryWithoutExceptionHandlingCheckTest extends BaseCheckTest {
         PlSqlCheckVerifier.verify(getPath("query_without_exception_handling.sql"), new QueryWithoutExceptionHandlingCheck());
     }
     
+    @Test
+    public void testNoStrict() {
+        QueryWithoutExceptionHandlingCheck check = new QueryWithoutExceptionHandlingCheck();
+        check.strictMode = false;
+        PlSqlCheckVerifier.verify(getPath("query_without_exception_handling_no_strict.sql"), check);
+    }
+    
 }

@@ -148,7 +148,10 @@ public class SymbolVisitor extends PlSqlCheck {
                 .children(PlSqlGrammar.DECLARE_SECTION)
                 .children(PlSqlGrammar.PRAGMA_DECLARATION)
                 .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty();
-        enterScope(node, autonomousTransaction);
+        boolean exceptionHandler = node.select()
+                .children(PlSqlGrammar.STATEMENTS_SECTION)
+                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty();
+        enterScope(node, autonomousTransaction, exceptionHandler);
     }
     
     private void visitFunction(AstNode node) {
@@ -156,26 +159,31 @@ public class SymbolVisitor extends PlSqlCheck {
                 .children(PlSqlGrammar.DECLARE_SECTION)
                 .children(PlSqlGrammar.PRAGMA_DECLARATION)
                 .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty();
-        
-        enterScope(node, autonomousTransaction);
+        boolean exceptionHandler = node.select()
+                .children(PlSqlGrammar.STATEMENTS_SECTION)
+                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty();
+        enterScope(node, autonomousTransaction, exceptionHandler);
     }
     
     private void visitPackage(AstNode node) {
-        enterScope(node, false);
+        enterScope(node, false, false);
     }
     
     private void visitCursor(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
         createSymbol(identifier, Symbol.Kind.CURSOR);
-        enterScope(node, null);
+        enterScope(node, null, null);
     }
     
     private void visitBlock(AstNode node) {
-        enterScope(node, null);
+        boolean exceptionHandler = node.select()
+                .children(PlSqlGrammar.STATEMENTS_SECTION)
+                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty();
+        enterScope(node, null, exceptionHandler);
     }
     
     private void visitFor(AstNode node) {
-        enterScope(node, null);
+        enterScope(node, null, null);
         AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
         createSymbol(identifier, Symbol.Kind.VARIABLE);
     }
@@ -204,7 +212,7 @@ public class SymbolVisitor extends PlSqlCheck {
         return symbolTable.declareSymbol(identifier, kind, currentScope);
     }
     
-    private void enterScope(AstNode node, Boolean autonomousTransaction) {
+    private void enterScope(AstNode node, Boolean autonomousTransaction, Boolean exceptionHandler) {
         boolean autonomous = false;
         
         if (autonomousTransaction != null) {
@@ -213,7 +221,15 @@ public class SymbolVisitor extends PlSqlCheck {
             autonomous = currentScope.isAutonomousTransaction();
         }
         
-        currentScope = new Scope(currentScope, node, autonomous);
+        boolean exception = false;
+        
+        if (currentScope != null) {
+            exception = currentScope.hasExceptionHandler() ? true : Boolean.TRUE.equals(exceptionHandler);
+        } else if (exceptionHandler != null) {
+            exception = exceptionHandler;  
+        }
+        
+        currentScope = new Scope(currentScope, node, autonomous, exception);
         symbolTable.addScope(currentScope);
     }
     
