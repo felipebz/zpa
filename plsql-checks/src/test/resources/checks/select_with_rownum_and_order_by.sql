@@ -27,4 +27,10 @@ begin
     into var
     from user
    order by date;
+   
+  select name
+    into var
+    from user
+   where foo = (select foo from bar where rownum = 1)
+   order by date;
 end;
