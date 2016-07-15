@@ -102,6 +102,10 @@ public class PlSqlSquidSensor implements Sensor {
 
         Collection<SourceCode> squidSourceFiles = scanner.getIndex().search(new QueryByType(SourceFile.class));
         save(squidSourceFiles);
+        
+        for (InputFile inputFile : context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.TEST), p.hasLanguage(PlSql.KEY)))) {
+            saveHighlighting(inputFile);
+        }
     }
 
     private void save(Collection<SourceCode> squidSourceFiles) {
