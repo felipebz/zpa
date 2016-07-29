@@ -17,24 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen;
+package org.sonar.plsqlopen.metadata;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class FormsMetadata {
 
-import org.junit.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarQubeVersion;
-import org.sonar.plsqlopen.PlSqlPlugin;
+    private String[] lovs;
 
-public class PlSqlPluginTest {
+    public String[] getLovs() {
+        return lovs;
+    }
 
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testGetExtensions() {
-        Plugin.Context context = new Plugin.Context(SonarQubeVersion.V5_6);
-        PlSqlPlugin plugin = new PlSqlPlugin();
-        plugin.define(context);
-        assertThat(context.getExtensions()).hasSize(7);
+    public void setLovs(String[] lovs) {
+        this.lovs = lovs;
     }
     
 }

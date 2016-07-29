@@ -34,6 +34,7 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.ce.measure.RangeDistributionBuilder;
+import org.sonar.api.config.Settings;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighter;
@@ -68,16 +69,17 @@ public class PlSqlSquidSensor implements Sensor {
     private SensorContext context;
     private PlSqlConfiguration configuration;
     
-    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components) {
-        this(checkFactory, components, null);
+    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components, Settings settings) {
+        this(checkFactory, components, settings, null);
     }
 
-    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components,
+    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components, Settings settings,
             @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
         this.components = components;
+        this.components.loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
         components.setChecks(checks);
     }
     

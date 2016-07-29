@@ -22,6 +22,7 @@ package org.sonar.plsqlopen;
 import java.util.List;
 
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
@@ -70,6 +71,11 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
         return scope;
     }
 
+    @Override
+    public FormsMetadata getMetadata() {
+        return components.getMetadata();
+    }
+    
     @Override
     public void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters) {
         createLineViolation(check, message, node.getToken(), messageParameters);

@@ -20,6 +20,9 @@
 package org.sonar.plsqlopen;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
@@ -33,8 +36,12 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 
 @BatchSide
 public class SonarComponents {
@@ -44,10 +51,20 @@ public class SonarComponents {
     private final SensorContext context;
     private PlSqlChecks checks;
     private FileSystem fs;
+    private FormsMetadata metadata;
     
     public SonarComponents(SensorContext context) {
         this.context = context;
         this.fs = context.fileSystem();
+    }
+    
+    public FormsMetadata getMetadata() {
+        return this.metadata;
+    }
+    
+    @VisibleForTesting
+    public void setMetadata(FormsMetadata metadata) {
+        this.metadata = metadata;
     }
     
     public NewSymbolTable symbolizableFor(InputFile inputPath) {
@@ -105,6 +122,20 @@ public class SonarComponents {
             }
         }
         issue.save();
+    }
+    
+    public void loadMetadataFile(String metadataFile) {
+        if (Strings.isNullOrEmpty(metadataFile)) {
+            return;
+        }
+        
+        try (JsonReader reader = new JsonReader(new FileReader(metadataFile))) {
+            this.metadata = new Gson().fromJson(reader, FormsMetadata.class);
+        } catch (FileNotFoundException e) {
+            LOG.error("The metadata file {} was not found. {}", metadataFile, e);
+        } catch (IOException e) {
+            LOG.error("Error reading the metadata file at {}. {}", metadataFile, e);
+        }
     }
     
     @VisibleForTesting

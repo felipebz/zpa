@@ -39,6 +39,7 @@ import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 
 import com.google.common.collect.Lists;
 
@@ -98,6 +99,15 @@ public class SonarComponentsTest {
         SonarComponents sonarComponents = new SonarComponents(context);
         assertThat(sonarComponents.inputFromIOFile(new File("file.sql"))).isNotNull();
         assertThat(sonarComponents.inputFromIOFile(new File("unknown"))).isNull();
+    }
+    
+    @Test
+    public void canReadSimpleMetadaFile() {
+        SonarComponents sonarComponents = new SonarComponents(context);
+        sonarComponents.loadMetadataFile("src/test/resources/metadata/simple.json");
+        FormsMetadata metadata = sonarComponents.getMetadata();
+        
+        assertThat(metadata.getLovs()).containsExactly("foo", "bar");
     }
     
     private static class CustomCheck extends PlSqlCheck {

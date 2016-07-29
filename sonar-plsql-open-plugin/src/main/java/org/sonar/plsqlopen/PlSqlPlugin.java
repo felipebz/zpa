@@ -26,6 +26,7 @@ import org.sonar.api.resources.Qualifiers;
 public class PlSqlPlugin implements Plugin {
 
     public static final String FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
+    public static final String FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
 
     @Override
     public void define(Context context) {
@@ -37,12 +38,18 @@ public class PlSqlPlugin implements Plugin {
                 .onQualifiers(Qualifiers.PROJECT)
                 .defaultValue("sql,pkg,pks,pkb")
                 .build(),
+            PropertyDefinition.builder(FORMS_METADATA_KEY)
+                .name("Oracle Forms metadata file")
+                .description("Path to the JSON file with the Oracle Forms metadata.")
+                .category("PL/SQL")
+                .onQualifiers(Qualifiers.PROJECT)
+                .build(),
           
-        PlSql.class,
-        PlSqlProfile.class,
-        PlSqlSquidSensor.class,
-        PlSqlRuleRepository.class,
-        SonarComponents.class);        
+            PlSql.class,
+            PlSqlProfile.class,
+            PlSqlSquidSensor.class,
+            PlSqlRuleRepository.class,
+            SonarComponents.class);        
     }
 
 }

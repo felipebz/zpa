@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.List;
 
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 import org.sonar.squidbridge.api.CodeCheck;
@@ -44,6 +45,8 @@ public interface PlSqlVisitorContext {
     void setCurrentScope(Scope scope);
     
     Scope getCurrentScope();
+    
+    FormsMetadata getMetadata();
 
     void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
     
