@@ -21,8 +21,17 @@ package org.sonar.plsqlopen.metadata;
 
 public class FormsMetadata {
 
-    private String[] lovs;
+    private String[] alerts = new String[0];
+    private String[] lovs = new String[0];
 
+    public String[] getAlerts() {
+        return alerts;
+    }
+
+    public void setAlerts(String[] alerts) {
+        this.alerts = alerts;
+    }
+    
     public String[] getLovs() {
         return lovs;
     }

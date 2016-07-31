@@ -1,0 +1,4 @@
+{
+    alerts: ["foo", "bar"],  
+    lovs: ["foo", "bar"]
+}

@@ -104,9 +104,10 @@ public class SonarComponentsTest {
     @Test
     public void canReadSimpleMetadaFile() {
         SonarComponents sonarComponents = new SonarComponents(context);
-        sonarComponents.loadMetadataFile("src/test/resources/metadata/simple.json");
+        sonarComponents.loadMetadataFile("src/test/resources/metadata/metadata.json");
         FormsMetadata metadata = sonarComponents.getFormsMetadata();
         
+        assertThat(metadata.getAlerts()).containsExactly("foo", "bar");
         assertThat(metadata.getLovs()).containsExactly("foo", "bar");
     }
     
