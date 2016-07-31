@@ -72,8 +72,8 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     }
 
     @Override
-    public FormsMetadata getMetadata() {
-        return components.getMetadata();
+    public FormsMetadata getFormsMetadata() {
+        return components.getFormsMetadata();
     }
     
     @Override

@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
+import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
@@ -93,7 +94,10 @@ public class PlSqlAstScanner {
                 if (visitor instanceof CharsetAwareVisitor) {
                     ((CharsetAwareVisitor) visitor).setCharset(conf.getCharset());
                 }
-                builder.withSquidAstVisitor(visitor);
+                
+                if (!(visitor instanceof FormsMetadataAwareCheck) || components.getFormsMetadata() != null) {
+                    builder.withSquidAstVisitor(visitor);
+                }
             }
         }
 

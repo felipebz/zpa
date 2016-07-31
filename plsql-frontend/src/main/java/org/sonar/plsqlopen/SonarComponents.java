@@ -51,20 +51,20 @@ public class SonarComponents {
     private final SensorContext context;
     private PlSqlChecks checks;
     private FileSystem fs;
-    private FormsMetadata metadata;
+    private FormsMetadata formsMetadata;
     
     public SonarComponents(SensorContext context) {
         this.context = context;
         this.fs = context.fileSystem();
     }
     
-    public FormsMetadata getMetadata() {
-        return this.metadata;
+    public FormsMetadata getFormsMetadata() {
+        return this.formsMetadata;
     }
     
     @VisibleForTesting
-    public void setMetadata(FormsMetadata metadata) {
-        this.metadata = metadata;
+    public void setFormsMetadata(FormsMetadata metadata) {
+        this.formsMetadata = metadata;
     }
     
     public NewSymbolTable symbolizableFor(InputFile inputPath) {
@@ -130,11 +130,11 @@ public class SonarComponents {
         }
         
         try (JsonReader reader = new JsonReader(new FileReader(metadataFile))) {
-            this.metadata = new Gson().fromJson(reader, FormsMetadata.class);
+            this.formsMetadata = new Gson().fromJson(reader, FormsMetadata.class);
         } catch (FileNotFoundException e) {
-            LOG.error("The metadata file {} was not found. {}", metadataFile, e);
+            LOG.warn("The metadata file {} was not found.", metadataFile);
         } catch (IOException e) {
-            LOG.error("Error reading the metadata file at {}. {}", metadataFile, e);
+            LOG.error("Error reading the metadata file at {}.", metadataFile, e);
         }
     }
     

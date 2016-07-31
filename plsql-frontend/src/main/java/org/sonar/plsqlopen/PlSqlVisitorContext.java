@@ -46,8 +46,8 @@ public interface PlSqlVisitorContext {
     
     Scope getCurrentScope();
     
-    FormsMetadata getMetadata();
-
+    FormsMetadata getFormsMetadata();
+    
     void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
     
     void createLineViolation(CodeCheck check, String message, Token token, Object... messageParameters);

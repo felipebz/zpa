@@ -35,6 +35,7 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.squidbridge.checks.SquidCheck;
@@ -54,6 +55,10 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
     private List<TestIssue> expectedIssues = new ArrayList<>();
 
     public static void verify(String filename, PlSqlCheck check) {
+        verify(filename, check, null);
+    }
+    
+    public static void verify(String filename, PlSqlCheck check, FormsMetadata metadata) {
         File file = new File(filename);
         PlSqlCheckVerifier verifier = new PlSqlCheckVerifier();
         
@@ -70,10 +75,10 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         context.fileSystem().add(inputFile);
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
+        components.setFormsMetadata(metadata);
         
         PlSqlAstScanner.scanSingleFile(file, components, ImmutableList.of(new SymbolVisitor(), check, verifier));
         
-
         Iterator<AnalyzerMessage> actualIssues = getActualIssues(components);
         List<TestIssue> expectedIssues = Ordering.natural().onResultOf((TestIssue issue) -> issue.line()).sortedCopy(verifier.expectedIssues);
 
