@@ -63,23 +63,23 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
 
     @Override
     public void visitNode(AstNode node) {
-        for (Verifier verifier : verifiers) {
-            if (verifier.matcher.matches(node)) {
-                AstNode argument = verifier.matcher.getArguments(node).get(verifier.argumentToCheck);
-                String value = argument.getTokenOriginalValue().replace("'", "");
-                
-                boolean reportIssue = false;
-                if (verifier.type == ObjectType.ALERT) {
-                    reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
-                } else if (verifier.type == ObjectType.LOV) {
-                    reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
-                }
-                
-                if (reportIssue) {
-                    getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), argument, value, verifier.matcher.getMethodName().toUpperCase());
-                }
-                
+        Verifier verifier = verifiers.stream().filter(v -> v.matcher.matches(node)).findFirst().orElse(null);
+        
+        if (verifier != null) {
+            AstNode argument = verifier.matcher.getArguments(node).get(verifier.argumentToCheck);
+            String value = argument.getTokenOriginalValue().replace("'", "");
+            
+            boolean reportIssue = false;
+            if (verifier.type == ObjectType.ALERT) {
+                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+            } else if (verifier.type == ObjectType.LOV) {
+                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
             }
+            
+            if (reportIssue) {
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), argument, value, verifier.matcher.getMethodName().toUpperCase());
+            }
+            
         }
     }
     
