@@ -19,34 +19,18 @@
  */
 package org.sonar.plsqlopen.metadata;
 
-public class FormsMetadata {
-
-    private String[] alerts = new String[0];
-    private Block[] blocks = new Block[0];
-    private String[] lovs = new String[0];
-
-    public String[] getAlerts() {
-        return alerts;
-    }
-
-    public void setAlerts(String[] alerts) {
-        this.alerts = alerts;
-    }
+public class Block {
+    private String name;
     
-    public Block[] getBlocks() {
-        return blocks;
+    public Block(String name) {
+        this.name = name;
     }
 
-    public void setBlocks(Block[] blocks) {
-        this.blocks = blocks;
-    }
-    
-    public String[] getLovs() {
-        return lovs;
+    public String getName() {
+        return name;
     }
 
-    public void setLovs(String[] lovs) {
-        this.lovs = lovs;
+    public void setName(String name) {
+        this.name = name;
     }
-    
 }

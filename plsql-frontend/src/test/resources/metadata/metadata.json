@@ -1,4 +1,8 @@
 {
-    alerts: ["foo", "bar"],  
+    alerts: ["foo", "bar"],
+    blocks: [
+        { name: "foo" },
+        { name: "bar" }
+    ],
     lovs: ["foo", "bar"]
 }

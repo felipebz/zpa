@@ -108,6 +108,9 @@ public class SonarComponentsTest {
         FormsMetadata metadata = sonarComponents.getFormsMetadata();
         
         assertThat(metadata.getAlerts()).containsExactly("foo", "bar");
+        assertThat(metadata.getBlocks()).hasSize(2);
+        assertThat(metadata.getBlocks()[0].getName()).isEqualTo("foo");
+        assertThat(metadata.getBlocks()[1].getName()).isEqualTo("bar");
         assertThat(metadata.getLovs()).containsExactly("foo", "bar");
     }
     
