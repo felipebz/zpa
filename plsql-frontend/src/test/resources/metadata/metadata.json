@@ -1,8 +1,8 @@
 {
     alerts: ["foo", "bar"],
     blocks: [
-        { name: "foo" },
-        { name: "bar" }
+        { name: "foo", items: ["item1", "item2"] },
+        { name: "bar", items: ["item1", "item2"] }
     ],
     lovs: ["foo", "bar"]
 }

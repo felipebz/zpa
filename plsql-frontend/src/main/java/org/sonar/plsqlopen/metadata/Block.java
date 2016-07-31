@@ -21,9 +21,11 @@ package org.sonar.plsqlopen.metadata;
 
 public class Block {
     private String name;
+    private String[] items;
     
-    public Block(String name) {
+    public Block(String name, String[] items) {
         this.name = name;
+        this.setItems(items);
     }
 
     public String getName() {
@@ -32,5 +34,13 @@ public class Block {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String[] getItems() {
+        return items;
+    }
+
+    public void setItems(String[] items) {
+        this.items = items;
     }
 }
