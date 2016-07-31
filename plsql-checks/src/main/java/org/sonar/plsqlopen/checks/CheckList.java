@@ -80,6 +80,7 @@ public class CheckList {
             VariableInCountCheck.class,
             UnhandledUserDefinedExceptionCheck.class,
             UnusedCursorCheck.class,
-            NotASelectedExpressionCheck.class);
+            NotASelectedExpressionCheck.class,
+            InvalidReferenceToObjectCheck.class);
     }
 }

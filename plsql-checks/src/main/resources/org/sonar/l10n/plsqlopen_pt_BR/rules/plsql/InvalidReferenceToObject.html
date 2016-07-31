@@ -1,0 +1,13 @@
+<p>
+No Oracle Forms, vários procedimentos e funções precisam de uma refererência a um objeto (blocos, itens, alertas...).
+Infelizmente, a única forma de passar uma referência a um objeto é usando uma variável VARCHAR2 e essas referências
+não são verificadas pelo compilador.
+</p>
+
+<p>Atualmente essa regra verifica os seguintes métodos:</p>
+
+<ul>
+<li>SHOW_LOV</li>
+</ul>
+
+<p><strong>Nota</strong>: essa regra é desativada automaticamente quando a propriedade <code>sonar.plsql.forms.metadata</code> do projeto não está definida.</p>.

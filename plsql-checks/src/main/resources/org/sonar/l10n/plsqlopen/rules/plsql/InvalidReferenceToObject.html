@@ -1,0 +1,13 @@
+<p>
+In Oracle Forms, many procedures and functions need a reference to an object (blocks, itens, alerts...).
+Unfortunately, the only way to pass a reference to an object is using a VARCHAR2 variable and these references
+are not checked by the compiler. 
+</p>
+
+<p>Currently this rule checks the following methods:</p>
+
+<ul>
+<li>SHOW_LOV</li>
+</ul>
+
+<p><strong>Note</strong>: this rule is automatically disabled when the project's <code>sonar.plsql.forms.metadata</code> is not specified.</p>.

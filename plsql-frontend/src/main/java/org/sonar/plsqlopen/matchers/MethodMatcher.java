@@ -31,48 +31,53 @@ import com.sonar.sslr.api.AstNode;
 
 public class MethodMatcher {
 
-    private NameCriteria methodName;
-    private NameCriteria packageName;
-    private NameCriteria schemaName;
+    private NameCriteria methodNameCriteria;
+    private NameCriteria packageNameCriteria;
+    private NameCriteria schemaNameCriteria;
     private int parameterCount;
     private boolean shouldCheckParameters = true;
     private boolean schemaIsOptional = false;
+    private String methodName;
 
     private MethodMatcher() {
         // instances should be created using the create method
+    }
+    
+    public String getMethodName() {
+        return methodName;
     }
     
     public static MethodMatcher create() {
         return new MethodMatcher();
     }
     
-    public MethodMatcher name(String methodName) {
-        return name(NameCriteria.is(methodName));
+    public MethodMatcher name(String methodNameCriteria) {
+        return name(NameCriteria.is(methodNameCriteria));
     }
     
-    public MethodMatcher name(NameCriteria methodName) {
-        Preconditions.checkState(this.methodName == null);
-        this.methodName = methodName;
+    public MethodMatcher name(NameCriteria methodNameCriteria) {
+        Preconditions.checkState(this.methodNameCriteria == null);
+        this.methodNameCriteria = methodNameCriteria;
         return this;
     }
     
-    public MethodMatcher packageName(String packageName) {
-        return packageName(NameCriteria.is(packageName));
+    public MethodMatcher packageName(String packageNameCriteria) {
+        return packageName(NameCriteria.is(packageNameCriteria));
     }
     
-    public MethodMatcher packageName(NameCriteria packageName) {
-        Preconditions.checkState(this.packageName == null);
-        this.packageName = packageName;
+    public MethodMatcher packageName(NameCriteria packageNameCriteria) {
+        Preconditions.checkState(this.packageNameCriteria == null);
+        this.packageNameCriteria = packageNameCriteria;
         return this;
     }
     
-    public MethodMatcher schema(String schemaName) {
-        return schema(NameCriteria.is(schemaName));
+    public MethodMatcher schema(String schemaNameCriteria) {
+        return schema(NameCriteria.is(schemaNameCriteria));
     }
     
-    public MethodMatcher schema(NameCriteria schemaName) {
-        Preconditions.checkState(this.schemaName == null);
-        this.schemaName = schemaName;
+    public MethodMatcher schema(NameCriteria schemaNameCriteria) {
+        Preconditions.checkState(this.schemaNameCriteria == null);
+        this.schemaNameCriteria = schemaNameCriteria;
         return this;
     }
     
@@ -112,23 +117,23 @@ public class MethodMatcher {
         
         boolean matches = true;
         
-        matches &= nameAcceptable(nodes.removeLast(), methodName);
+        matches &= nameAcceptable(nodes.removeLast(), methodNameCriteria);
         
-        if (packageName != null) {
-            matches &= !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), packageName);
+        if (packageNameCriteria != null) {
+            matches &= !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), packageNameCriteria);
         }
         
-        if (schemaName != null) {
+        if (schemaNameCriteria != null) {
             matches &= (schemaIsOptional && nodes.isEmpty()) || 
-                    (!nodes.isEmpty() && nameAcceptable(nodes.removeLast(), schemaName));
+                    (!nodes.isEmpty() && nameAcceptable(nodes.removeLast(), schemaNameCriteria));
         }
         
         return matches && nodes.isEmpty() && argumentsAcceptable(originalNode);
     }
 
-    private static boolean nameAcceptable(AstNode node, NameCriteria criteria) {
-        String name = node.getTokenOriginalValue();
-        return criteria.matches(name);
+    private boolean nameAcceptable(AstNode node, NameCriteria criteria) {
+        methodName = node.getTokenOriginalValue();
+        return criteria.matches(methodName);
     }
 
     private boolean argumentsAcceptable(AstNode node) {
