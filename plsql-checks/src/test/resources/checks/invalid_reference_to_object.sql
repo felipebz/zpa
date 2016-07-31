@@ -1,4 +1,5 @@
 begin
+  find_alert(var); -- ignore variables
   find_alert('foo');
   find_alert('invalid'); -- Noncompliant {{Invalid reference to the object "invalid" in this FIND_ALERT call.}}
 --           ^^^^^^^^^
@@ -14,6 +15,28 @@ begin
   show_alert('foo');
   show_alert('invalid'); -- Noncompliant
 --           ^^^^^^^^^
+
+
+  find_block('foo');
+  find_block('invalid'); -- Noncompliant
+--           ^^^^^^^^^
+
+  get_block_property('foo', order_by);
+  get_block_property('invalid', order_by); -- Noncompliant
+--                   ^^^^^^^^^
+
+  go_block('foo');
+  go_block('invalid'); -- Noncompliant
+--         ^^^^^^^^^
+
+  set_block_property('foo', order_by, 'col');
+  set_block_property('invalid', order_by, 'col'); -- Noncompliant
+--                   ^^^^^^^^^
+
+  set_block_property('foo', blockscrollbar_position, x, y);
+  set_block_property('invalid', blockscrollbar_position, x, y); -- Noncompliant
+--                   ^^^^^^^^^
+
 
   find_lov('foo');
   find_lov('invalid'); -- Noncompliant

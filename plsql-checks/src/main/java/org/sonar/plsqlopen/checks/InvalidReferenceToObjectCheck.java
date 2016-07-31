@@ -54,7 +54,13 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             new Verifier(MethodMatcher.create().name("set_lov_column_property").addParameters(4), ObjectType.LOV),
             new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(3), ObjectType.LOV),
             new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(4), ObjectType.LOV),
-            new Verifier(MethodMatcher.create().name("show_lov").addParameter(), ObjectType.LOV)
+            new Verifier(MethodMatcher.create().name("show_lov").addParameter(), ObjectType.LOV),
+            
+            new Verifier(MethodMatcher.create().name("find_block").addParameter(), ObjectType.BLOCK),
+            new Verifier(MethodMatcher.create().name("get_block_property").addParameters(2), ObjectType.BLOCK),
+            new Verifier(MethodMatcher.create().name("go_block").addParameter(), ObjectType.BLOCK),
+            new Verifier(MethodMatcher.create().name("set_block_property").addParameters(3), ObjectType.BLOCK),
+            new Verifier(MethodMatcher.create().name("set_block_property").addParameters(4), ObjectType.BLOCK)
         );
 
     @Override
@@ -68,11 +74,17 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         
         if (verifier != null) {
             AstNode argument = verifier.matcher.getArguments(node).get(verifier.argumentToCheck);
+            if (!isVarcharLiteral(argument)) {
+                return;
+            }
+            
             String value = argument.getTokenOriginalValue().replace("'", "");
             
             boolean reportIssue = false;
             if (verifier.type == ObjectType.ALERT) {
                 reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+            } else if (verifier.type == ObjectType.BLOCK) {
+                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
             } else if (verifier.type == ObjectType.LOV) {
                 reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
             }
@@ -84,7 +96,15 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         }
     }
     
-    private enum ObjectType { ALERT, LOV }
+    private static boolean isVarcharLiteral(AstNode argument) {
+        AstNode child = argument.getFirstChild();
+        if (child.is(PlSqlGrammar.LITERAL)) {
+            return child.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL);
+        }
+        return false;
+    }
+
+    private enum ObjectType { ALERT, BLOCK, LOV }
     
     private class Verifier {
         public final MethodMatcher matcher;
