@@ -30,7 +30,7 @@ public class InvalidReferenceToObjectCheckTest extends BaseCheckTest {
     public void test() {
         FormsMetadata metadata = new FormsMetadata();
         metadata.setAlerts(new String[] {"foo"});
-        metadata.setBlocks(new Block[] { new Block("foo") });
+        metadata.setBlocks(new Block[] { new Block("foo", new String[] {"item1"}) });
         metadata.setLovs(new String[] {"foo"});
         PlSqlCheckVerifier.verify(getPath("invalid_reference_to_object.sql"), new InvalidReferenceToObjectCheck(), metadata);
     }

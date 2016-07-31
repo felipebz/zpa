@@ -26,6 +26,7 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
+import org.sonar.plsqlopen.metadata.Block;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -60,7 +61,30 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             new Verifier(MethodMatcher.create().name("get_block_property").addParameters(2), ObjectType.BLOCK),
             new Verifier(MethodMatcher.create().name("go_block").addParameter(), ObjectType.BLOCK),
             new Verifier(MethodMatcher.create().name("set_block_property").addParameters(3), ObjectType.BLOCK),
-            new Verifier(MethodMatcher.create().name("set_block_property").addParameters(4), ObjectType.BLOCK)
+            new Verifier(MethodMatcher.create().name("set_block_property").addParameters(4), ObjectType.BLOCK),
+            
+            new Verifier(MethodMatcher.create().name("checkbox_checked").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("convert_other_value").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("display_item").addParameters(2), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("find_item").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("get_item_instance_property").addParameters(3), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("get_item_property").addParameters(2), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("get_radio_button_property").addParameters(3), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("go_item").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("image_scroll").addParameters(3), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("image_zoom").addParameters(2), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("image_zoom").addParameters(3), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("play_sound").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("read_image_file").addParameters(3), 3, ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("read_sound_file").addParameters(3), 3, ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("recalculate").addParameter(), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("set_item_instance_property").addParameters(4), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("set_item_property").addParameters(3), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("set_item_property").addParameters(4), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("set_radio_button_property").addParameters(4), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("set_radio_button_property").addParameters(5), ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("write_image_file").addParameters(5), 3, ObjectType.ITEM),
+            new Verifier(MethodMatcher.create().name("write_sound_file").addParameters(5), 3, ObjectType.ITEM)
         );
 
     @Override
@@ -82,11 +106,13 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             
             boolean reportIssue = false;
             if (verifier.type == ObjectType.ALERT) {
-                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+                reportIssue = validateAlert(value);
             } else if (verifier.type == ObjectType.BLOCK) {
-                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
+                reportIssue = validateBlock(value);
+            } else if (verifier.type == ObjectType.ITEM) {
+                reportIssue = validateItem(value);
             } else if (verifier.type == ObjectType.LOV) {
-                reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
+                reportIssue = validateLov(value);
             }
             
             if (reportIssue) {
@@ -94,6 +120,31 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             }
             
         }
+    }
+
+    private boolean validateAlert(String value) {
+        return !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+    }
+    
+    private boolean validateBlock(String value) {
+        return !Stream.of(getPlSqlContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
+    }
+    
+    private boolean validateItem(String value) {
+        boolean reportIssue = true;
+        for (Block block : getPlSqlContext().getFormsMetadata().getBlocks()) {
+            if (Stream.of(block.getItems()).anyMatch(item -> {
+                    String fullName = block.getName() + "." + item;
+                    return fullName.equalsIgnoreCase(value);
+                })) {
+                reportIssue = false;
+            }
+        }
+        return reportIssue;
+    }
+    
+    private boolean validateLov(String value) {
+        return !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
     }
     
     private static boolean isVarcharLiteral(AstNode argument) {
@@ -104,7 +155,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         return false;
     }
 
-    private enum ObjectType { ALERT, BLOCK, LOV }
+    private enum ObjectType { ALERT, BLOCK, ITEM, LOV }
     
     private class Verifier {
         public final MethodMatcher matcher;
@@ -112,8 +163,12 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         public final ObjectType type;
 
         public Verifier(MethodMatcher matcher, ObjectType type) {
+            this(matcher, 1, type);
+        }
+        
+        public Verifier(MethodMatcher matcher, int argumentToCheck, ObjectType type) {
             this.matcher = matcher;
-            this.argumentToCheck = 0;
+            this.argumentToCheck = argumentToCheck - 1;
             this.type = type;
         }
     }
