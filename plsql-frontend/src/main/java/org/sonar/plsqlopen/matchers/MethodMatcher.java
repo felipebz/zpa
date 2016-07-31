@@ -98,6 +98,12 @@ public class MethodMatcher {
         return this;
     }
     
+    public MethodMatcher addParameters(int quantity) {
+        Preconditions.checkState(this.shouldCheckParameters);
+        this.parameterCount += quantity;
+        return this;
+    }
+    
     public List<AstNode> getArguments(AstNode node) {
         AstNode arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS);
         if (arguments != null) {

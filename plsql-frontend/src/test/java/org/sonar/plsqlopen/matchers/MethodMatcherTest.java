@@ -113,6 +113,13 @@ public class MethodMatcherTest extends RuleTest {
     }
     
     @Test
+    public void detectMethodWithMoreParameters2() {
+        MethodMatcher matcher = MethodMatcher.create().name("func").addParameters(3);
+        matches(matcher, "func(x, y, z)");
+        notMatches(matcher, "func(x)");
+    }
+    
+    @Test
     public void detectMethodInPackageWithParameters() {
         MethodMatcher matcher = MethodMatcher.create().packageName("pack").name("func").addParameter().addParameter().addParameter();
         matches(matcher, "pack.func(x, y, z)");
@@ -160,8 +167,22 @@ public class MethodMatcherTest extends RuleTest {
     }
     
     @Test
+    public void shouldFailIfAddParametersIsCalledAfterWithNoParameterConstraint() {
+        MethodMatcher matcher = MethodMatcher.create().withNoParameterConstraint();
+        exception.expect(IllegalStateException.class);
+        matcher.addParameters(2);
+    }
+    
+    @Test
     public void shouldFailIfWithNoParameterConstraintIsCalledAfterAddParameter() {
         MethodMatcher matcher = MethodMatcher.create().addParameter();
+        exception.expect(IllegalStateException.class);
+        matcher.withNoParameterConstraint();
+    }
+    
+    @Test
+    public void shouldFailIfWithNoParameterConstraintIsCalledAfterAddParameters() {
+        MethodMatcher matcher = MethodMatcher.create().addParameters(2);
         exception.expect(IllegalStateException.class);
         matcher.withNoParameterConstraint();
     }

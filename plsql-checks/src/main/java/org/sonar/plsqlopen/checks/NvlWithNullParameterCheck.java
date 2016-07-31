@@ -44,7 +44,7 @@ public class NvlWithNullParameterCheck extends AbstractBaseCheck {
     
     @Override
     public void visitNode(AstNode node) {
-        MethodMatcher nvl = MethodMatcher.create().name("nvl").addParameter().addParameter();
+        MethodMatcher nvl = MethodMatcher.create().name("nvl").addParameters(2);
         
         if (!nvl.matches(node)) {
             return;
