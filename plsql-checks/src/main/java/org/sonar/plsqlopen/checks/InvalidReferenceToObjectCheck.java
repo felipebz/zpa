@@ -44,6 +44,11 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     public static final String CHECK_KEY = "InvalidReferenceToObject";
     
     private final List<Verifier> verifiers = ImmutableList.of(
+            new Verifier(MethodMatcher.create().name("find_alert").addParameter(), 0, ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("set_alert_button_property").addParameters(4), 0, ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("set_alert_property").addParameters(3), 0, ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("show_alert").addParameter(), 0, ObjectType.ALERT),
+            
             new Verifier(MethodMatcher.create().name("show_lov").addParameter(), 0, ObjectType.LOV)
         );
 
@@ -60,7 +65,9 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
                 String value = argument.getTokenOriginalValue().replace("'", "");
                 
                 boolean reportIssue = false;
-                if (verifier.type == ObjectType.LOV) {
+                if (verifier.type == ObjectType.ALERT) {
+                    reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+                } else if (verifier.type == ObjectType.LOV) {
                     reportIssue = !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
                 }
                 
@@ -72,7 +79,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         }
     }
     
-    private enum ObjectType { LOV }
+    private enum ObjectType { ALERT, LOV }
     
     private class Verifier {
         public final MethodMatcher matcher;
