@@ -19,6 +19,10 @@ begin
   find_lov('invalid'); -- Noncompliant
 --         ^^^^^^^^^
 
+  get_lov_property('foo', title);
+  get_lov_property('invalid', title); -- Noncompliant
+--                 ^^^^^^^^^
+
   set_lov_column_property('foo', 1, title, 'title');
   set_lov_column_property('invalid', 1, title, 'title'); -- Noncompliant
 --                        ^^^^^^^^^

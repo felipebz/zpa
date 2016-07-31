@@ -50,6 +50,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             new Verifier(MethodMatcher.create().name("show_alert").addParameter(), ObjectType.ALERT),
             
             new Verifier(MethodMatcher.create().name("find_lov").addParameter(), ObjectType.LOV),
+            new Verifier(MethodMatcher.create().name("get_lov_property").addParameters(2), ObjectType.LOV),
             new Verifier(MethodMatcher.create().name("set_lov_column_property").addParameters(4), ObjectType.LOV),
             new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(3), ObjectType.LOV),
             new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(4), ObjectType.LOV),
