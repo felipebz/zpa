@@ -44,12 +44,16 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     public static final String CHECK_KEY = "InvalidReferenceToObject";
     
     private final List<Verifier> verifiers = ImmutableList.of(
-            new Verifier(MethodMatcher.create().name("find_alert").addParameter(), 0, ObjectType.ALERT),
-            new Verifier(MethodMatcher.create().name("set_alert_button_property").addParameters(4), 0, ObjectType.ALERT),
-            new Verifier(MethodMatcher.create().name("set_alert_property").addParameters(3), 0, ObjectType.ALERT),
-            new Verifier(MethodMatcher.create().name("show_alert").addParameter(), 0, ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("find_alert").addParameter(), ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("set_alert_button_property").addParameters(4), ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("set_alert_property").addParameters(3), ObjectType.ALERT),
+            new Verifier(MethodMatcher.create().name("show_alert").addParameter(), ObjectType.ALERT),
             
-            new Verifier(MethodMatcher.create().name("show_lov").addParameter(), 0, ObjectType.LOV)
+            new Verifier(MethodMatcher.create().name("find_lov").addParameter(), ObjectType.LOV),
+            new Verifier(MethodMatcher.create().name("set_lov_column_property").addParameters(4), ObjectType.LOV),
+            new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(3), ObjectType.LOV),
+            new Verifier(MethodMatcher.create().name("set_lov_property").addParameters(4), ObjectType.LOV),
+            new Verifier(MethodMatcher.create().name("show_lov").addParameter(), ObjectType.LOV)
         );
 
     @Override
@@ -86,9 +90,9 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         public final int argumentToCheck;
         public final ObjectType type;
 
-        public Verifier(MethodMatcher matcher, int argumentToCheck, ObjectType type) {
+        public Verifier(MethodMatcher matcher, ObjectType type) {
             this.matcher = matcher;
-            this.argumentToCheck = argumentToCheck;
+            this.argumentToCheck = 0;
             this.type = type;
         }
     }
