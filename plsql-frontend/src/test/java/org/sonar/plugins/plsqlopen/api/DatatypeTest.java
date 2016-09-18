@@ -39,6 +39,7 @@ public class DatatypeTest extends RuleTest {
         assertThat(p).matches("clob character set any_cs");
         assertThat(p).matches("clob character set str%charset");
         assertThat(p).matches("varchar2(10)");
+        assertThat(p).matches("varchar2(10 char)");
         assertThat(p).matches("varchar2(10) character set any_cs");
         assertThat(p).matches("varchar2(10) character set str%charset");
         assertThat(p).matches("date");

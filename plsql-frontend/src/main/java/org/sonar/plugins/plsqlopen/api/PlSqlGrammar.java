@@ -249,7 +249,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         UROWID,
                         VARCHAR,
                         VARCHAR2), 
-                b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS),
+                b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
                 b.optional(CHARACTER_SET_CLAUSE));
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);

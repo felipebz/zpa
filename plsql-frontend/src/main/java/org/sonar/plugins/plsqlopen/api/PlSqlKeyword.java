@@ -290,7 +290,8 @@ public enum PlSqlKeyword implements TokenType {
     KEEP("keep"),
     DENSE_RANK("dense_rank"),
     INTERFACE("interface"),
-    SQLERRM("sqlerrm");
+    SQLERRM("sqlerrm"),
+    BYTE("byte");
 
     private final String value;
     private final boolean reserved;
