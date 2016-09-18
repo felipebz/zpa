@@ -44,7 +44,9 @@ public class DatatypeTest extends RuleTest {
         assertThat(p).matches("varchar2(10) character set str%charset");
         assertThat(p).matches("date");
         assertThat(p).matches("timestamp");
+        assertThat(p).matches("timestamp(3)");
         assertThat(p).matches("timestamp with time zone");
+        assertThat(p).matches("timestamp(3) with time zone");
         assertThat(p).matches("timestamp with local time zone");
     }
     

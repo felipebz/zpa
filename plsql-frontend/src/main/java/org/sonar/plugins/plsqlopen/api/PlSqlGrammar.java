@@ -256,7 +256,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DATE_DATATYPE).is(b.firstOf(
                 DATE,
-                b.sequence(TIMESTAMP, b.optional(WITH, b.optional(LOCAL), TIME, ZONE))));
+                b.sequence(TIMESTAMP, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), b.optional(WITH, b.optional(LOCAL), TIME, ZONE))));
         
         b.rule(ANCHORED_DATATYPE).is(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE));
 
