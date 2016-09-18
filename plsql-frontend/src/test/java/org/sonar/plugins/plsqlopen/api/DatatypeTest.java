@@ -48,6 +48,12 @@ public class DatatypeTest extends RuleTest {
         assertThat(p).matches("timestamp with time zone");
         assertThat(p).matches("timestamp(3) with time zone");
         assertThat(p).matches("timestamp with local time zone");
+        assertThat(p).matches("interval year to month");
+        assertThat(p).matches("interval year(2) to month");
+        assertThat(p).matches("interval day to second");
+        assertThat(p).matches("interval day(2) to second");
+        assertThat(p).matches("interval day to second(6)");
+        assertThat(p).matches("interval day(2) to second(6)");
     }
     
 }

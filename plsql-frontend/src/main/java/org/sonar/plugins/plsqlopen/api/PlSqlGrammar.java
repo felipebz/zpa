@@ -256,7 +256,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DATE_DATATYPE).is(b.firstOf(
                 DATE,
-                b.sequence(TIMESTAMP, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), b.optional(WITH, b.optional(LOCAL), TIME, ZONE))));
+                b.sequence(TIMESTAMP, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), b.optional(WITH, b.optional(LOCAL), TIME, ZONE)),
+                b.sequence(INTERVAL, YEAR, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), TO, MONTH),
+                b.sequence(INTERVAL, DAY, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), 
+                        TO, SECOND, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS))));
         
         b.rule(ANCHORED_DATATYPE).is(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE));
 
@@ -507,7 +510,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 DELETE)
                         )).skipIfOneChild();
         
-        b.rule(EXTRACT_DATETIME_EXPRESSION).is(EXTRACT, LPARENTHESIS, IDENTIFIER, FROM, EXPRESSION, RPARENTHESIS);
+        b.rule(EXTRACT_DATETIME_EXPRESSION).is(EXTRACT, LPARENTHESIS, IDENTIFIER_NAME, FROM, EXPRESSION, RPARENTHESIS);
         
         b.rule(XMLSERIALIZE_EXPRESSION).is(
                 XMLSERIALIZE, LPARENTHESIS,
