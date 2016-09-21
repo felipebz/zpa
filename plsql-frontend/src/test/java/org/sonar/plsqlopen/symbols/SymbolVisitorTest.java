@@ -106,6 +106,10 @@ public class SymbolVisitorTest {
         assertThat(context.referencesForSymbolAt(key, 32, lineOffset(3)))
             .extracting("start.line", "start.lineOffset")
             .containsExactly(tuple(36, lineOffset(8)));
+        
+        assertThat(context.referencesForSymbolAt(key, 41, lineOffset(3)))
+        .extracting("start.line", "start.lineOffset")
+        .containsExactly(tuple(43, lineOffset(3)));
     }
     
     private int lineOffset(int offset) {

@@ -152,6 +152,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NON_RESERVED_KEYWORD,
     EXECUTE_PLSQL_BUFFER,
     
+    // Triggers
+    SIMPLE_DML_TRIGGER,
+    INSTEAD_OF_DML_TRIGGER,
+    COMPOUND_DML_TRIGGER,
+    SYSTEM_TRIGGER,
+    DML_EVENT_CLAUSE,
+    REFERENCING_CLAUSE, 
+    TRIGGER_EDITION_CLAUSE, 
+    TRIGGER_ORDERING_CLAUSE,
+    
     // Program units
     COMPILATION_UNIT,
     UNIT_NAME,
@@ -164,6 +174,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
     CREATE_VIEW,
+    CREATE_TRIGGER,
     
     // Top-level components
     FILE_INPUT;
@@ -188,6 +199,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createStatements(b);
         createExpressions(b);
         createDeclarations(b);
+        createTrigger(b);
         createProgramUnits(b);
         DdlGrammar.buildOn(b);
         DmlGrammar.buildOn(b);
@@ -747,6 +759,50 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 REF_CURSOR_DECLARATION)));
     }
     
+    private static void createTrigger(LexerfulGrammarBuilder b) {
+        b.rule(CREATE_TRIGGER).is(
+                CREATE, b.optional(OR, REPLACE),
+                b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
+                TRIGGER, UNIT_NAME,
+                //b.firstOf(SIMPLE_DML_TRIGGER, INSTEAD_OF_DML_TRIGGER, COMPOUND_DML_TRIGGER, SYSTEM_TRIGGER)
+                SIMPLE_DML_TRIGGER);
+        
+        b.rule(SIMPLE_DML_TRIGGER).is(
+                b.firstOf(BEFORE, AFTER),
+                DML_EVENT_CLAUSE, b.zeroOrMore(OR, DML_EVENT_CLAUSE), ON, UNIT_NAME,
+                b.optional(REFERENCING_CLAUSE),
+                b.optional(FOR, EACH, ROW),
+                b.optional(TRIGGER_EDITION_CLAUSE),
+                b.optional(TRIGGER_ORDERING_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(WHEN, LPARENTHESIS, EXPRESSION, RPARENTHESIS),
+                b.zeroOrMore(DECLARE, DECLARE_SECTION), STATEMENTS_SECTION
+                );
+        
+        b.rule(DML_EVENT_CLAUSE).is(b.firstOf(
+                DELETE,
+                INSERT,
+                b.sequence(UPDATE, b.optional(OF, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)))
+                ));
+        
+        b.rule(REFERENCING_CLAUSE).is(
+                REFERENCING,
+                b.oneOrMore(
+                        b.firstOf(
+                                b.sequence(OLD, b.optional(AS), IDENTIFIER_NAME),
+                                b.sequence(NEW, b.optional(AS), IDENTIFIER_NAME),
+                                b.sequence(PARENT, b.optional(AS), IDENTIFIER_NAME)
+                        )));
+        
+        b.rule(TRIGGER_EDITION_CLAUSE).is(
+                b.optional(b.firstOf(FORWARD, REVERSE)),
+                CROSSEDITION);
+        
+        b.rule(TRIGGER_ORDERING_CLAUSE).is(
+                b.firstOf(FOLLOWS, PRECEDES),
+                UNIT_NAME, b.zeroOrMore(COMMA, UNIT_NAME));
+    }
+    
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
         b.rule(EXECUTE_PLSQL_BUFFER).is(DIVISION);
         
@@ -822,6 +878,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_FUNCTION, 
                 CREATE_PACKAGE,
                 CREATE_PACKAGE_BODY,
-                CREATE_VIEW));
+                CREATE_VIEW,
+                CREATE_TRIGGER));
     }
 }

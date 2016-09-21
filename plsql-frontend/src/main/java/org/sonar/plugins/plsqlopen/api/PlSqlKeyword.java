@@ -296,7 +296,23 @@ public enum PlSqlKeyword implements TokenType {
     YEAR("year"),
     MONTH("month"),
     DAY("day"),
-    SECOND("second");
+    SECOND("second"),
+    EDITIONABLE("editionable"),
+    NONEDITIONABLE("noneditionable"),
+    TRIGGER("trigger"),
+    BEFORE("before"),
+    AFTER("after"),
+    EACH("each"),
+    ENABLE("enable"),
+    DISABLE("disable"),
+    REFERENCING("referencing"),
+    OLD("old"),
+    NEW("new"),
+    PARENT("parent"),
+    FORWARD("forward"),
+    CROSSEDITION("crossedition"),
+    FOLLOWS("follows"),
+    PRECEDES("precedes");
 
     private final String value;
     private final boolean reserved;

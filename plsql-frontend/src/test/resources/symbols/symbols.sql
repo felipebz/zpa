@@ -36,3 +36,10 @@ exception
   when ex then
     null;
 end;
+create trigger baz before insert or delete on tab for each row
+declare
+  var number;
+begin
+  var := old.id;
+end;
+/

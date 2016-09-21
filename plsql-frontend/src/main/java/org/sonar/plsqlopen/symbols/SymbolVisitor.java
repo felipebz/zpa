@@ -42,6 +42,7 @@ public class SymbolVisitor extends PlSqlCheck {
             PlSqlGrammar.FUNCTION_DECLARATION,
             PlSqlGrammar.CREATE_PACKAGE,
             PlSqlGrammar.CREATE_PACKAGE_BODY,
+            PlSqlGrammar.CREATE_TRIGGER,
             PlSqlGrammar.BLOCK_STATEMENT,
             PlSqlGrammar.FOR_STATEMENT,
             PlSqlGrammar.CURSOR_DECLARATION};
@@ -122,10 +123,10 @@ public class SymbolVisitor extends PlSqlCheck {
 
     private void visitNodeInternal(AstNode node) {
         
-        if (node.is(PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION)) {
-            visitProcedure(node);
-        } else if (node.is(PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION)) {
-            visitFunction(node);
+        if (node.is(PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION,
+                PlSqlGrammar.CREATE_TRIGGER)) {
+            visitUnit(node);
         } else if (node.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)) {
             visitPackage(node);
         } else if (node.is(PlSqlGrammar.CURSOR_DECLARATION)) {
@@ -143,18 +144,7 @@ public class SymbolVisitor extends PlSqlCheck {
         }
     }
     
-    private void visitProcedure(AstNode node) {
-        boolean autonomousTransaction = node.select()
-                .children(PlSqlGrammar.DECLARE_SECTION)
-                .children(PlSqlGrammar.PRAGMA_DECLARATION)
-                .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty();
-        boolean exceptionHandler = node.select()
-                .children(PlSqlGrammar.STATEMENTS_SECTION)
-                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty();
-        enterScope(node, autonomousTransaction, exceptionHandler);
-    }
-    
-    private void visitFunction(AstNode node) {
+    private void visitUnit(AstNode node) {
         boolean autonomousTransaction = node.select()
                 .children(PlSqlGrammar.DECLARE_SECTION)
                 .children(PlSqlGrammar.PRAGMA_DECLARATION)
