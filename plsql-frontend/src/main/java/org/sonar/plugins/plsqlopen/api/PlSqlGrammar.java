@@ -21,6 +21,7 @@ package org.sonar.plugins.plsqlopen.api;
 
 import static com.sonar.sslr.api.GenericTokenType.EOF;
 import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
+import static org.sonar.plugins.plsqlopen.api.DclGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DdlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DmlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
@@ -190,8 +191,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 COMPILATION_UNIT,
                 SQLPLUS_COMMAND,
-                DML_COMMAND,
+                DCL_COMMAND,
                 DDL_COMMAND,
+                DML_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -203,6 +205,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         createProgramUnits(b);
         DdlGrammar.buildOn(b);
         DmlGrammar.buildOn(b);
+        DclGrammar.buildOn(b);
         SqlPlusGrammar.buildOn(b);
         
         b.setRootRule(FILE_INPUT);

@@ -312,7 +312,11 @@ public enum PlSqlKeyword implements TokenType {
     FORWARD("forward"),
     CROSSEDITION("crossedition"),
     FOLLOWS("follows"),
-    PRECEDES("precedes");
+    PRECEDES("precedes"),
+    ADMIN("admin"),
+    DELEGATE("delegate"),
+    CONTAINER("container"),
+    HIERARCHY("hierarchy");
 
     private final String value;
     private final boolean reserved;
