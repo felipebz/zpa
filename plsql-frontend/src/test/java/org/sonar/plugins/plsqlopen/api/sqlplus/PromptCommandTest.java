@@ -17,30 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api;
+package org.sonar.plugins.plsqlopen.api.sqlplus;
 
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SHOW;
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PROMPT;
+import static org.sonar.sslr.tests.Assertions.assertThat;
 
-import org.sonar.sslr.grammar.GrammarRuleKey;
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
+import org.junit.Before;
+import org.junit.Test;
+import org.sonar.plugins.plsqlopen.api.RuleTest;
+import org.sonar.plugins.plsqlopen.api.SqlPlusGrammar;
 
-public enum SqlPlusGrammar implements GrammarRuleKey {
+public class PromptCommandTest extends RuleTest {
 
-    SQLPLUS_COMMAND,
-    SQLPLUS_PROMPT,
-    SQLPLUS_SHOW;
-    
-    public static void buildOn(LexerfulGrammarBuilder b) {
-        createSqlPlusCommands(b);
+    @Before
+    public void init() {
+        setRootRule(SqlPlusGrammar.SQLPLUS_PROMPT);
     }
     
-    private static void createSqlPlusCommands(LexerfulGrammarBuilder b) {
-        b.rule(SQLPLUS_PROMPT).is(PROMPT, b.tillNewLine());
-        
-        b.rule(SQLPLUS_SHOW).is(SHOW, b.tillNewLine());
-        
-        b.rule(SQLPLUS_COMMAND).is(b.firstOf(SQLPLUS_PROMPT, SQLPLUS_SHOW));
+    @Test
+    public void matches() {
+        assertThat(p).matches("prompt foo\n");
     }
-    
+
 }

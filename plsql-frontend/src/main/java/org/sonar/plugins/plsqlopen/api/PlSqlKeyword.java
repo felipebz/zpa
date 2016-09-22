@@ -316,7 +316,8 @@ public enum PlSqlKeyword implements TokenType {
     ADMIN("admin"),
     DELEGATE("delegate"),
     CONTAINER("container"),
-    HIERARCHY("hierarchy");
+    HIERARCHY("hierarchy"),
+    PROMPT("prompt");
 
     private final String value;
     private final boolean reserved;
