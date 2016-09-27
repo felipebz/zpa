@@ -71,9 +71,9 @@ public enum DdlGrammar implements GrammarRuleKey {
                 CREATE, b.optional(GLOBAL, TEMPORARY), TABLE, UNIT_NAME,
                 b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
-                SEMICOLON);
+                b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(DDL_COMMENT);
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE));
     }
 
 }
