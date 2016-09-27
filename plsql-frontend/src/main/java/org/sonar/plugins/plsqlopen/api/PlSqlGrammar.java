@@ -291,7 +291,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DATE_DATATYPE,
                 ANCHORED_DATATYPE,
                 CUSTOM_DATATYPE,
-                REF_DATATYPE));
+                REF_DATATYPE), b.optional(NOT, NULL));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
@@ -699,13 +699,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(
                                 DATATYPE,
-                                b.optional(b.optional(NOT, NULL), DEFAULT_VALUE_ASSIGNMENT)),
+                                b.optional(DEFAULT_VALUE_ASSIGNMENT)),
                         EXCEPTION),                                           
                 SEMICOLON);
         
         b.rule(CUSTOM_SUBTYPE).is(
                 SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
-                b.optional(NOT, NULL),
                 b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
                 SEMICOLON);
         
@@ -721,7 +720,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(RECORD_FIELD_DECLARATION).is(
                 IDENTIFIER_NAME, DATATYPE,
-                b.optional(b.optional(NOT, NULL), DEFAULT_VALUE_ASSIGNMENT));
+                b.optional(DEFAULT_VALUE_ASSIGNMENT));
         
         b.rule(RECORD_DECLARATION).is(
                 TYPE, IDENTIFIER_NAME, IS, RECORD,

@@ -127,9 +127,4 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var exception;");
     }
     
-    @Test
-    public void notMatchesDeclarationWithIncompleteNotNullConstraint() {
-        assertThat(p).notMatches("var number not null;");
-    }
-    
 }
