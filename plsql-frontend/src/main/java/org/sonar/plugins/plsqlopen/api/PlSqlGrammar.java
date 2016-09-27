@@ -139,6 +139,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RECORD_FIELD_DECLARATION,
     RECORD_DECLARATION,
     TABLE_OF_DECLARATION,
+    VARRAY_DECLARATION,
     REF_CURSOR_DECLARATION,
     AUTONOMOUS_TRANSACTION_PRAGMA,
     EXCEPTION_INIT_PRAGMA,
@@ -732,6 +733,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(INDEX, BY, DATATYPE),
                 SEMICOLON);
         
+        b.rule(VARRAY_DECLARATION).is(
+                TYPE, IDENTIFIER_NAME, IS, 
+                b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)), 
+                LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS, 
+                OF, DATATYPE, SEMICOLON);
+        
         b.rule(REF_CURSOR_DECLARATION).is(TYPE, IDENTIFIER_NAME, IS, REF, CURSOR, b.optional(RETURN, DATATYPE), SEMICOLON);
         
         b.rule(AUTONOMOUS_TRANSACTION_PRAGMA).is(PRAGMA, AUTONOMOUS_TRANSACTION, SEMICOLON);
@@ -759,6 +766,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CURSOR_DECLARATION,
                 RECORD_DECLARATION,
                 TABLE_OF_DECLARATION,
+                VARRAY_DECLARATION,
                 REF_CURSOR_DECLARATION)));
     }
     
