@@ -56,7 +56,7 @@ public class PlSqlLexer {
     
     public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
     
-    public static final String DATE_LITERAL = "(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
+    public static final String DATE_LITERAL = "(?i)(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
     
     public static final String SIMPLE_IDENTIFIER = and("[\\w\\p{L}]", o2n("[\\w\\p{L}#$]"));
     
