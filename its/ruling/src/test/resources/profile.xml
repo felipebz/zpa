@@ -1,0 +1,11 @@
+<profile>
+    <name>rules</name>
+    <language>plsqlopen</language>
+    <rules>
+        <rule>
+            <repositoryKey>plsql</repositoryKey>
+            <key>ParsingError</key>
+            <priority>INFO</priority>
+        </rule>
+    </rules>
+</profile>

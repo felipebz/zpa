@@ -38,3 +38,4 @@ target/
 
 # TeXlipse plugin
 .texlipse
+.sonar
