@@ -15,7 +15,9 @@ ci)
   mvn verify -B -e -V
   ;;
 
-ruling)
+it)
+  git submodule update --init --recursive
+
   mvn package -Dsource.skip=true -Denforcer.skip=true -Danimal.sniffer.skip=true -Dmaven.test.skip=true -e -B
 
   cd its

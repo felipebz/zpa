@@ -9,10 +9,13 @@ script: ./travis.sh
 env:
   - TESTS=ci
 
-  - TESTS=ruling
+  - TESTS=it
+    SQ_VERSION=LTS
+
+  - TESTS=it
     SQ_VERSION=LATEST_RELEASE
 
-  - TESTS=ruling
+  - TESTS=it
     SQ_VERSION=DEV
 
 matrix:
