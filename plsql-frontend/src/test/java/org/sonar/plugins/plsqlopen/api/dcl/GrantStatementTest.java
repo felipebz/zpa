@@ -39,6 +39,11 @@ public class GrantStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesGrantToPublic() {
+        assertThat(p).matches("grant connect to public;");
+    }
+    
+    @Test
     public void matchesSystemGrantWithLongPrivilegeName() {
         assertThat(p).matches("grant execute any procedure to user1;");
     }
@@ -91,6 +96,11 @@ public class GrantStatementTest extends RuleTest {
     @Test
     public void matchesSimpleGrantOnObject() {
         assertThat(p).matches("grant execute on proc to user1;");
+    }
+    
+    @Test
+    public void matchesGrantOnObjectToPublic() {
+        assertThat(p).matches("grant execute on proc to public;");
     }
     
     @Test

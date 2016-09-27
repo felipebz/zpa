@@ -57,7 +57,7 @@ public enum DclGrammar implements GrammarRuleKey {
         b.rule(GRANT_SYSTEM_PRIVILEGES).is(
                 b.oneOrMore(PRIVILEGE_PART), 
                 b.zeroOrMore(COMMA, b.oneOrMore(PRIVILEGE_PART)),
-                TO, UNIT_NAME, b.zeroOrMore(COMMA, UNIT_NAME),
+                TO, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD),
                 b.optional(IDENTIFIED, BY, b.anyToken(), b.zeroOrMore(COMMA, b.anyToken())),
                 b.optional(WITH, b.firstOf(ADMIN, DELEGATE), OPTION),
                 b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)));
@@ -66,7 +66,7 @@ public enum DclGrammar implements GrammarRuleKey {
                 b.oneOrMore(PRIVILEGE_PART), b.optional(PRIVILEGE_COLUMNS), 
                 b.zeroOrMore(COMMA, b.oneOrMore(PRIVILEGE_PART, b.optional(PRIVILEGE_COLUMNS))),
                 b.optional(ON, b.oneOrMore(b.anyTokenButNot(TO))),
-                TO, UNIT_NAME, b.zeroOrMore(COMMA, UNIT_NAME),
+                TO, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD),
                 b.optional(WITH, HIERARCHY, OPTION),
                 b.optional(WITH, GRANT, OPTION));
         
