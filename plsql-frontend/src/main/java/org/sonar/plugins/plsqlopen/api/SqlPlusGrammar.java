@@ -19,28 +19,69 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SHOW;
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PROMPT;
-
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
 public enum SqlPlusGrammar implements GrammarRuleKey {
 
-    SQLPLUS_COMMAND,
-    SQLPLUS_PROMPT,
-    SQLPLUS_SHOW;
+    SQLPLUS_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
         createSqlPlusCommands(b);
     }
     
     private static void createSqlPlusCommands(LexerfulGrammarBuilder b) {
-        b.rule(SQLPLUS_PROMPT).is(PROMPT, b.tillNewLine());
-        
-        b.rule(SQLPLUS_SHOW).is(SHOW, b.tillNewLine());
-        
-        b.rule(SQLPLUS_COMMAND).is(b.firstOf(SQLPLUS_PROMPT, SQLPLUS_SHOW));
+        b.rule(SQLPLUS_COMMAND).is(
+                b.firstOf(
+                        "@",
+                        "A", "APPEND",
+                        "ACC", "ACCEPT",
+                        "ARCHIVE",
+                        "ATTR", "ATTRIBUTE",
+                        "BRE", "BREAK",
+                        "BTI", "BTITLE",
+                        "C", "CHANGE",
+                        "CL", "CLEAR",
+                        "COL", "COLUMN",
+                        "COMP", "COMPUTE",
+                        "CONN", "CONNECT",
+                        "COPY",
+                        "DEF", "DEFINE",
+                        "DEL",
+                        "DESC", "DESCRIBE",
+                        "DISC", "DISCONNECT",
+                        "ED", "EDIT",
+                        "EXEC", "EXECUTE",
+                        "EXIT", "QUIT",
+                        "GET",
+                        "HELP", "?",
+                        "HO", "HOST",
+                        "I", "INPUT",
+                        "L", "LIST",
+                        "PASSW", "PASSWORD",
+                        "PAU", "PAUSE",
+                        "PRINT",
+                        "PRO", "PROMPT",
+                        "RECOVER",
+                        "REM", "REMARK",
+                        "REPF", "REPFOOTER",
+                        "REPH", "REPHEADER",
+                        "R", "RUN",
+                        "SAV", "SAVE",
+                        "SET",
+                        "SHO", "SHOW",
+                        "SHUTDOWN",
+                        "SPO", "SPOOL",
+                        "STA", "START",
+                        "STARTUP",
+                        "STORE",
+                        "TIMI", "TIMING",
+                        "TTI", "TTITLE",
+                        "UNDEF", "UNDEFINE",
+                        "VAR", "VARIABLE",
+                        "WHENEVER",
+                        "XQUERY"),
+                b.tillNewLine());
     }
     
 }
