@@ -39,6 +39,11 @@ public class ExitStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesExitFromLabel() {
+        assertThat(p).matches("exit foo;");
+    }
+    
+    @Test
     public void matchesExitWhen() {
         assertThat(p).matches("exit when true;");
     }
@@ -46,6 +51,11 @@ public class ExitStatementTest extends RuleTest {
     @Test
     public void matchesLabeledExit() {
         assertThat(p).matches("<<foo>> exit;");
+    }
+    
+    @Test
+    public void matchesLongExit() {
+        assertThat(p).matches("exit foo when true;");
     }
 
 }

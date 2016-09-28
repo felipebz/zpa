@@ -334,9 +334,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(LOOP_STATEMENT).is(b.optional(LABEL), LOOP, STATEMENTS, END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(EXIT_STATEMENT).is(b.optional(LABEL), EXIT, b.optional(WHEN, EXPRESSION), SEMICOLON);
+        b.rule(EXIT_STATEMENT).is(b.optional(LABEL), EXIT, b.optional(IDENTIFIER_NAME), b.optional(WHEN, EXPRESSION), SEMICOLON);
         
-        b.rule(CONTINUE_STATEMENT).is(b.optional(LABEL), CONTINUE, b.optional(WHEN, EXPRESSION), SEMICOLON);
+        b.rule(CONTINUE_STATEMENT).is(b.optional(LABEL), CONTINUE, b.optional(IDENTIFIER_NAME), b.optional(WHEN, EXPRESSION), SEMICOLON);
         
         b.rule(FOR_STATEMENT).is(
                 b.optional(LABEL), 

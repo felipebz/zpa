@@ -39,6 +39,11 @@ public class ContinueStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesContinueFromLabel() {
+        assertThat(p).matches("continue foo;");
+    }
+    
+    @Test
     public void matchesContinueWhen() {
         assertThat(p).matches("continue when true;");
     }
@@ -46,6 +51,11 @@ public class ContinueStatementTest extends RuleTest {
     @Test
     public void matchesLabeledContinue() {
         assertThat(p).matches("<<foo>> continue;");
+    }
+    
+    @Test
+    public void matchesLongContinue() {
+        assertThat(p).matches("continue foo when true;");
     }
 
 }
