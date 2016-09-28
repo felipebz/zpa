@@ -65,4 +65,13 @@ public class CreateTriggerTest extends RuleTest {
                 + "begin null; end;");
     }
     
+    @Test
+    public void matchesTriggerWithDeclareWithoutDeclarations() {
+        assertThat(p).matches(""
+                + "create trigger foo "
+                + "before insert on tab "
+                + "declare "
+                + "begin null; end;");
+    }
+    
 }

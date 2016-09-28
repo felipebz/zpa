@@ -786,7 +786,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(TRIGGER_ORDERING_CLAUSE),
                 b.optional(b.firstOf(ENABLE, DISABLE)),
                 b.optional(WHEN, LPARENTHESIS, EXPRESSION, RPARENTHESIS),
-                b.zeroOrMore(DECLARE, DECLARE_SECTION), STATEMENTS_SECTION
+                b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
                 );
         
         b.rule(DML_EVENT_CLAUSE).is(b.firstOf(
