@@ -44,6 +44,11 @@ public class UpdateStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesUpdateWithWhereCurrentOf() {
+        assertThat(p).matches("update tab set x = 1 where current of cur;");
+    }
+    
+    @Test
     public void matchesUpdateMultipleColumns() {
         assertThat(p).matches("update tab set x = 1, y = 1;");
     }

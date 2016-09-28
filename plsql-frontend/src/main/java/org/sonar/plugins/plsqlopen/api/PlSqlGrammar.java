@@ -402,7 +402,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(UPDATE_STATEMENT).is(
                 b.optional(LABEL), 
                 UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
-                b.optional(WHERE_CLAUSE),
+                b.optional(b.firstOf(
+                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
+                        WHERE_CLAUSE)), 
                 SEMICOLON);
         
         b.rule(DELETE_STATEMENT).is(
@@ -410,8 +412,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DELETE, b.optional(FROM), 
                 DML_TABLE_EXPRESSION_CLAUSE,
                 b.optional(b.firstOf(
-                        WHERE_CLAUSE,
-                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME))), 
+                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
+                        WHERE_CLAUSE)),
                 SEMICOLON);
         
         b.rule(CALL_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON);
