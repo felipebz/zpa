@@ -105,6 +105,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     LOOP_STATEMENT,
     EXIT_STATEMENT,
     CONTINUE_STATEMENT,
+    GOTO_STATEMENT,
     FOR_STATEMENT,
     WHILE_STATEMENT,
     RETURN_STATEMENT,
@@ -338,6 +339,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CONTINUE_STATEMENT).is(b.optional(LABEL), CONTINUE, b.optional(IDENTIFIER_NAME), b.optional(WHEN, EXPRESSION), SEMICOLON);
         
+        b.rule(GOTO_STATEMENT).is(b.optional(LABEL), GOTO, b.optional(IDENTIFIER_NAME), SEMICOLON);
+        
         b.rule(FOR_STATEMENT).is(
                 b.optional(LABEL), 
                 FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE),
@@ -464,6 +467,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        LOOP_STATEMENT, 
                                        EXIT_STATEMENT, 
                                        CONTINUE_STATEMENT,
+                                       GOTO_STATEMENT,
                                        FOR_STATEMENT,
                                        WHILE_STATEMENT,
                                        RETURN_STATEMENT,
