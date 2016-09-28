@@ -8,9 +8,6 @@
 'project:pljson/install.sql':[
 8,
 ],
-'project:pljson/src/addons/json_helper.sql':[
-272,
-],
 'project:pljson/src/addons/json_util_pkg.sql':[
 73,
 ],
@@ -34,9 +31,6 @@
 ],
 'project:pljson/src/json_list_body.typ':[
 23,
-],
-'project:pljson/src/json_parser.sql':[
-243,
 ],
 'project:pljson/src/json_value.typ':[
 2,
