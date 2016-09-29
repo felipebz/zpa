@@ -56,6 +56,16 @@ public class SimpleDmlTriggerTest extends RuleTest {
     }
     
     @Test
+    public void matchesInsertOfWithOneColumn() {
+        assertThat(p).matches("before insert of col1 on tab" + body);
+    }
+    
+    @Test
+    public void matchesDeleteOfWithOneColumn() {
+        assertThat(p).matches("before delete of col1 on tab" + body);
+    }
+    
+    @Test
     public void matchesUpdateWithMultipleColumns() {
         assertThat(p).matches("before update of col1, col2 on tab" + body);
     }

@@ -795,11 +795,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
                 );
         
-        b.rule(DML_EVENT_CLAUSE).is(b.firstOf(
-                DELETE,
-                INSERT,
-                b.sequence(UPDATE, b.optional(OF, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)))
-                ));
+        b.rule(DML_EVENT_CLAUSE).is(
+                b.firstOf(
+                        DELETE,
+                        INSERT,
+                        UPDATE), 
+                b.optional(OF, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
+                );
         
         b.rule(REFERENCING_CLAUSE).is(
                 REFERENCING,
