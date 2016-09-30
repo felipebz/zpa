@@ -318,7 +318,9 @@ public enum PlSqlKeyword implements TokenType {
     CONTAINER("container"),
     HIERARCHY("hierarchy"),
     VARRAY("varray"),
-    VARYING("varying");
+    VARYING("varying"),
+    PARALLEL_ENABLE("parallel_enable"),
+    RESULT_CACHE("result_cache");
 
     private final String value;
     private final boolean reserved;

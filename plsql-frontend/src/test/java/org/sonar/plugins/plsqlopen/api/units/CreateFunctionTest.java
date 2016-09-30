@@ -150,6 +150,24 @@ public class CreateFunctionTest extends RuleTest {
     }
     
     @Test
+    public void matchesParallelEnableFunction() {
+        assertThat(p).matches(""
+                + "create function test return number parallel_enable is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
+    
+    @Test
+    public void matchesResultCacheFunction() {
+        assertThat(p).matches(""
+                + "create function test return number result_cache is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
+    
+    @Test
     public void matchesFunctionWithTimestamp() {
         assertThat(p).matches(""
                 + "create function test timestamp '2015-01-01' return number is\n"

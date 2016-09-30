@@ -844,7 +844,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE, b.optional(OR, REPLACE),
                 FUNCTION, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                RETURN, DATATYPE, b.optional(DETERMINISTIC), b.optional(PIPELINED),
+                RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE, RESULT_CACHE)),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(IS, AS),
                 b.firstOf(
