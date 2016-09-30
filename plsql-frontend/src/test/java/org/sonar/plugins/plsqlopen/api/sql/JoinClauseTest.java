@@ -39,8 +39,18 @@ public class JoinClauseTest extends RuleTest {
     }
     
     @Test
+    public void matchesSimpleJoinWithTableAlias() {
+        assertThat(p).matches("foo f join bar b on f.a = b.a");
+    }
+    
+    @Test
     public void matchesInnerJoin() {
         assertThat(p).matches("foo inner join bar on foo.a = bar.a");
+    }
+    
+    @Test
+    public void matchesInnerJoinWithTableAlias() {
+        assertThat(p).matches("foo f inner join bar b on f.a = b.a");
     }
     
     @Test
@@ -49,8 +59,19 @@ public class JoinClauseTest extends RuleTest {
     }
     
     @Test
+    public void matchesJoinWithUsingWithTableAlias() {
+        assertThat(p).matches("foo f join bar b using (a)");
+    }
+    
+    
+    @Test
     public void matchesInnerJoinWithUsing() {
         assertThat(p).matches("foo inner join bar using (a)");
+    }
+    
+    @Test
+    public void matchesInnerJoinWithUsingWithTableAlias() {
+        assertThat(p).matches("foo f inner join bar n using (a)");
     }
     
     @Test
@@ -64,8 +85,18 @@ public class JoinClauseTest extends RuleTest {
     }
     
     @Test
+    public void matchesCrossJoinWithTableAlias() {
+        assertThat(p).matches("foo f cross join ba br");
+    }
+    
+    @Test
     public void matchesNaturalJoin() {
         assertThat(p).matches("foo natural join bar");
+    }
+    
+    @Test
+    public void matchesNaturalJoinWithTableAlias() {
+        assertThat(p).matches("foo f natural join bar b");
     }
     
     @Test
@@ -79,8 +110,18 @@ public class JoinClauseTest extends RuleTest {
     }
     
     @Test
+    public void matchesFullJoinWithTableAlias() {
+        assertThat(p).matches("foo f full join bar b on f.a = b.a");
+    }
+    
+    @Test
     public void matchesFullJoinWithUsing() {
         assertThat(p).matches("foo full join bar using (a)");
+    }
+    
+    @Test
+    public void matchesFullJoinWithUsingWithTableAlias() {
+        assertThat(p).matches("foo f full join bar b using (a)");
     }
     
     @Test
@@ -99,6 +140,11 @@ public class JoinClauseTest extends RuleTest {
     }
     
     @Test
+    public void matchesRightJoinWithTableAlias() {
+        assertThat(p).matches("foo f right join bar b on f.a = b.a");
+    }
+    
+    @Test
     public void matchesRightOuterJoin() {
         assertThat(p).matches("foo right outer join bar on foo.a = bar.a");
     }
@@ -106,6 +152,11 @@ public class JoinClauseTest extends RuleTest {
     @Test
     public void matchesLeftJoin() {
         assertThat(p).matches("foo left join bar on foo.a = bar.a");
+    }
+    
+    @Test
+    public void matchesLeftJoinWithTableAlias() {
+        assertThat(p).matches("foo f left join bar b on f.a = b.a");
     }
     
     @Test
@@ -151,5 +202,16 @@ public class JoinClauseTest extends RuleTest {
         assertThat(p).matches("foo left join bar partition by a, b on foo.a = bar.a");
         assertThat(p).matches("foo left join bar partition by (a, b) on foo.a = bar.a");
     }
-
+    
+    @Test
+    public void matchesJoinSubqueryWithTable() {
+        assertThat(p).matches("(select a from foo) f join bar b on f.a = b.a");
+    }
+    
+    @Test
+    public void matchesJoinTableWithSubquery() {
+        assertThat(p).matches("foo join (select a from bar) b on foo.a = b.a");
+    }
+    
+    
 }

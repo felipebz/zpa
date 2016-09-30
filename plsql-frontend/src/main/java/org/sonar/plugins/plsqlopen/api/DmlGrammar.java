@@ -110,12 +110,12 @@ public enum DmlGrammar implements GrammarRuleKey {
                         b.sequence(LPARENTHESIS, IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER), RPARENTHESIS)));
         
         b.rule(INNER_CROSS_JOIN_CLAUSE).is(b.firstOf(
-                b.sequence(b.optional(INNER), JOIN, TABLE_REFERENCE, ON_OR_USING_EXPRESSION),
+                b.sequence(b.optional(INNER), JOIN, DML_TABLE_EXPRESSION_CLAUSE, ON_OR_USING_EXPRESSION),
                 b.sequence(
                         b.firstOf(
                                 CROSS,
                                 b.sequence(NATURAL, b.optional(INNER))),
-                        JOIN, TABLE_REFERENCE)
+                        JOIN, DML_TABLE_EXPRESSION_CLAUSE)
                 ));
         
         b.rule(OUTER_JOIN_CLAUSE).is(
@@ -123,10 +123,10 @@ public enum DmlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(OUTER_JOIN_TYPE, JOIN),
                         b.sequence(NATURAL, b.optional(OUTER_JOIN_TYPE), JOIN)),
-                TABLE_REFERENCE, b.optional(QUERY_PARTITION_CLAUSE),
-                b.optional(ON_OR_USING_EXPRESSION));
+                b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.optional(QUERY_PARTITION_CLAUSE),
+                b.optional(ON_OR_USING_EXPRESSION)));
         
-        b.rule(JOIN_CLAUSE).is(TABLE_REFERENCE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
+        b.rule(JOIN_CLAUSE).is(DML_TABLE_EXPRESSION_CLAUSE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
         
         b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
         
@@ -135,7 +135,7 @@ public enum DmlGrammar implements GrammarRuleKey {
                         b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                         b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                         OBJECT_REFERENCE),
-                b.optional(ALIAS));
+                b.optional(b.sequence(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN)), ALIAS )));
         
         b.rule(FROM_CLAUSE).is(
                 FROM, 
