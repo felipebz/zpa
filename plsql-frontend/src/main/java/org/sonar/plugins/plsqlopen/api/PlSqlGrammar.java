@@ -580,7 +580,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
         
-        b.rule(METHOD_CALL).is(MEMBER_EXPRESSION, ARGUMENTS);
+        b.rule(METHOD_CALL).is(MEMBER_EXPRESSION, b.oneOrMore(ARGUMENTS));
         
         b.rule(CALL_EXPRESSION).is(b.firstOf(
                 EXTRACT_DATETIME_EXPRESSION,

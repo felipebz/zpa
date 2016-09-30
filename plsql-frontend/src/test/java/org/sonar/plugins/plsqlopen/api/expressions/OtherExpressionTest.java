@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class OtherBooleanExpressionTest extends RuleTest {
+public class OtherExpressionTest extends RuleTest {
 
     @Before
     public void init() {
@@ -135,6 +135,11 @@ public class OtherBooleanExpressionTest extends RuleTest {
     @Test
     public void matchesGreaterThenOrEqualTo() {
         assertThat(p).matches("2 >= 1");
+    }
+    
+    @Test
+    public void matchesMultidimensionalCollection() {
+        assertThat(p).matches("foo(1)(1)");
     }
 
 }
