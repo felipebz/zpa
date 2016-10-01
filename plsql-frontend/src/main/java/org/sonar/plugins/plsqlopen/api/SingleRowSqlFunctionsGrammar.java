@@ -39,9 +39,11 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
     XMLFOREST_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
     CAST_EXPRESSION,
+    TRIM_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
+        createCharacterFunctions(b);
         createConversionFunctions(b);
         createDateFunctions(b);
         createXmlFunctions(b);
@@ -52,7 +54,15 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
                 XMLELEMENT_EXPRESSION,
                 XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
-                CAST_EXPRESSION)).skip();
+                CAST_EXPRESSION,
+                TRIM_EXPRESSION)).skip();
+    }
+
+    private static void createCharacterFunctions(LexerfulGrammarBuilder b) {
+        b.rule(TRIM_EXPRESSION).is(
+                TRIM, LPARENTHESIS,
+                b.optional(b.optional(b.firstOf(LEADING, TRAILING, BOTH)), EXPRESSION, FROM),
+                EXPRESSION, RPARENTHESIS);
     }
 
     private static void createConversionFunctions(LexerfulGrammarBuilder b) {

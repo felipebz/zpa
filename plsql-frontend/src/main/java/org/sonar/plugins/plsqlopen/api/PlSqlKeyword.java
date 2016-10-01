@@ -323,7 +323,11 @@ public enum PlSqlKeyword implements TokenType {
     RESULT_CACHE("result_cache"),
     LISTAGG("listagg"),
     WITHIN("within"),
-    ESCAPE("escape");
+    ESCAPE("escape"),
+    TRIM("trim"),
+    LEADING("leading"),
+    TRAILING("trailing"),
+    BOTH("both");
 
     private final String value;
     private final boolean reserved;
