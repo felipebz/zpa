@@ -74,8 +74,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     UNARY_EXPRESSION, 
     MULTIPLICATIVE_EXPRESSION, 
     ADDITIVE_EXPRESSION, 
-    CONCATENATION_EXPRESSION, 
-    RELATIONAL_OPERATOR,
+    CONCATENATION_EXPRESSION,
     COMPARISON_EXPRESSION, 
     EXPONENTIATION_EXPRESSION, 
     ARGUMENT, 
@@ -204,6 +203,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         SqlPlusGrammar.buildOn(b);
         SingleRowSqlFunctionsGrammar.buildOn(b);
         AggregateSqlFunctionsGrammar.buildOn(b);
+        ConditionsGrammar.buildOn(b);
         
         b.setRootRule(FILE_INPUT);
         b.buildWithMemoizationOfMatchesForAllRules();
@@ -584,30 +584,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CONCATENATION_EXPRESSION).is(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION, ADDITIVE_EXPRESSION)).skipIfOneChild();
        
-        b.rule(RELATIONAL_OPERATOR).is(b.firstOf(
-                EQUALS,
-                NOTEQUALS, 
-                NOTEQUALS2, 
-                NOTEQUALS3, 
-                NOTEQUALS4, 
-                LESSTHAN, 
-                GREATERTHAN, 
-                LESSTHANOREQUAL, 
-                GREATERTHANOREQUAL));
-        
-        b.rule(COMPARISON_EXPRESSION).is(CONCATENATION_EXPRESSION, 
-                b.zeroOrMore(b.firstOf(
-                        b.sequence(
-                                b.firstOf(
-                                    RELATIONAL_OPERATOR, 
-                                    b.sequence(b.optional(NOT), LIKE)),
-                                CONCATENATION_EXPRESSION),
-                        b.sequence(
-                                b.optional(NOT),
-                                BETWEEN, 
-                                CONCATENATION_EXPRESSION, 
-                                AND, 
-                                CONCATENATION_EXPRESSION)))).skipIfOneChild();   
+        b.rule(COMPARISON_EXPRESSION).is(b.firstOf(
+                ConditionsGrammar.CONDITION,
+                CONCATENATION_EXPRESSION)).skipIfOneChild();   
         
         b.rule(NOT_EXPRESSION).is(b.optional(NOT), COMPARISON_EXPRESSION).skipIfOneChild();
         b.rule(AND_EXPRESSION).is(NOT_EXPRESSION, b.zeroOrMore(AND, NOT_EXPRESSION)).skipIfOneChild();

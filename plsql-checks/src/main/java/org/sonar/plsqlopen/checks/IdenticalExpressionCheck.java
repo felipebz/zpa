@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
@@ -44,17 +45,19 @@ public class IdenticalExpressionCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        AstNode operator = node.getFirstChild(PlSqlGrammar.RELATIONAL_OPERATOR);
+        AstNode operator = node.getFirstChild(ConditionsGrammar.RELATIONAL_OPERATOR);
         if (operator != null) {
+        
             AstNode leftSide = node.getFirstChild();
             AstNode rightSide = node.getLastChild();
-
+    
             if (CheckUtils.equalNodes(leftSide, rightSide)) {
                 getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         leftSide,
                         ImmutableList.of(newLocation("Original", rightSide)),
                         operator.getTokenValue());
             }
+            
         }
     }
 }

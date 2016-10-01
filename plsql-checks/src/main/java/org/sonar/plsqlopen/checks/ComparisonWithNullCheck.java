@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
@@ -50,7 +51,7 @@ public class ComparisonWithNullCheck extends AbstractBaseCheck {
         for (AstNode child : children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
                 String suggestion;
-                AstNode operator = node.getFirstChild(PlSqlGrammar.RELATIONAL_OPERATOR);
+                AstNode operator = node.getFirstChild(ConditionsGrammar.RELATIONAL_OPERATOR);
                 if (operator.getFirstChild().is(PlSqlPunctuator.EQUALS)) {
                     suggestion = "IS NULL";
                 } else {
