@@ -320,7 +320,9 @@ public enum PlSqlKeyword implements TokenType {
     VARRAY("varray"),
     VARYING("varying"),
     PARALLEL_ENABLE("parallel_enable"),
-    RESULT_CACHE("result_cache");
+    RESULT_CACHE("result_cache"),
+    LISTAGG("listagg"),
+    WITHIN("within");
 
     private final String value;
     private final boolean reserved;

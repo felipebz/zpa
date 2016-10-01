@@ -203,6 +203,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         DclGrammar.buildOn(b);
         SqlPlusGrammar.buildOn(b);
         SingleRowSqlFunctionsGrammar.buildOn(b);
+        AggregateSqlFunctionsGrammar.buildOn(b);
         
         b.setRootRule(FILE_INPUT);
         b.buildWithMemoizationOfMatchesForAllRules();
@@ -534,6 +535,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CALL_EXPRESSION).is(b.firstOf(
                 SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
+                AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
                 METHOD_CALL)).skipIfOneChild();
         
         b.rule(OBJECT_REFERENCE).is(
