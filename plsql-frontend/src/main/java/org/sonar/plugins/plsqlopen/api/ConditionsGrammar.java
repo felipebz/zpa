@@ -55,7 +55,8 @@ public enum ConditionsGrammar implements GrammarRuleKey {
         b.rule(LIKE_CONDITION).is(
                 CONCATENATION_EXPRESSION,
                 b.optional(NOT), LIKE,
-                CONCATENATION_EXPRESSION).skip();
+                CONCATENATION_EXPRESSION,
+                b.optional(ESCAPE, CONCATENATION_EXPRESSION)).skip();
         
         b.rule(BETWEEN_CONDITION).is(
                 CONCATENATION_EXPRESSION,

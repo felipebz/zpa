@@ -322,7 +322,8 @@ public enum PlSqlKeyword implements TokenType {
     PARALLEL_ENABLE("parallel_enable"),
     RESULT_CACHE("result_cache"),
     LISTAGG("listagg"),
-    WITHIN("within");
+    WITHIN("within"),
+    ESCAPE("escape");
 
     private final String value;
     private final boolean reserved;

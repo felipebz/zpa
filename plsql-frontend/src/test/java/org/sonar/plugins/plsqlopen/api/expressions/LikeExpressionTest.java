@@ -42,5 +42,10 @@ public class LikeExpressionTest extends RuleTest {
     public void matchesNotLike() {
         assertThat(p).matches("var not like 'test'");
     }
+    
+    @Test
+    public void matchesLikeWithEscape() {
+        assertThat(p).matches("var like 'test|_foo' escape '|'");
+    }
 
 }
