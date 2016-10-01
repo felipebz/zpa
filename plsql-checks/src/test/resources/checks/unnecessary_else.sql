@@ -1,7 +1,7 @@
 begin
   if (foo = bar) then
     return;
-  else -- Noncompliant {{The content of this ELSE clause will always be executed, so it doesn't need to be wrapped in an ELSE.}}
+  else -- Noncompliant {{This ELSE can be replaced by an END IF. When the corresponding IF is executed, the code execution will be stopped. Either way, the code within this ELSE will always run, regardless of the ELSE block.}}
     foo := null;
   end if;
   
