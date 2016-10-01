@@ -30,7 +30,7 @@ public class XmlAttributesExpressionTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.XMLATTRIBUTES_EXPRESSION);
+        setRootRule(PlSqlGrammar.EXPRESSION);
     }
     
     @Test
