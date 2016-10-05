@@ -37,6 +37,7 @@ public enum PlSqlKeyword implements TokenType {
     BY("by", true),
     CASE("case", true),
     CHECK("check", true),
+    COMPILE("compile", true),
     CLUSTERS("clusters", true),
     CLUSTER("cluster", true),
     COLAUTH("colauth", true),
@@ -87,6 +88,7 @@ public enum PlSqlKeyword implements TokenType {
     OVERLAPS("overlaps", true),
     PROCEDURE("procedure", true),
     PUBLIC("public", true),
+    RENAME("rename", true),
     RESOURCE("resource", true),
     REVOKE("revoke", true),
     SELECT("select", true),
@@ -327,7 +329,11 @@ public enum PlSqlKeyword implements TokenType {
     TRIM("trim"),
     LEADING("leading"),
     TRAILING("trailing"),
-    BOTH("both");
+    BOTH("both"),
+    DEBUG("debug"),
+    REUSE("reuse"),
+    SETTINGS("settings"),
+    SPECIFICATION("specification");
 
     private final String value;
     private final boolean reserved;

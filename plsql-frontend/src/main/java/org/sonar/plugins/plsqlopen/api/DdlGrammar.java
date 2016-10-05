@@ -32,7 +32,12 @@ public enum DdlGrammar implements GrammarRuleKey {
     DDL_COMMAND,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
-    CREATE_TABLE;
+    CREATE_TABLE,
+    ALTER_PLSQL_UNIT,
+    ALTER_PROCEDURE_FUNCTION,
+    COMPILE_CLAUSE,
+    ALTER_TRIGGER,
+    ALTER_PACKAGE;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
         createDdlCommands(b);
@@ -73,7 +78,31 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
                 b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE));
+        b.rule(COMPILE_CLAUSE).is(COMPILE, b.optional(DEBUG), b.optional(REUSE, SETTINGS));
+        
+        b.rule(ALTER_TRIGGER).is(
+                TRIGGER, UNIT_NAME,
+                b.firstOf(ENABLE, 
+                          DISABLE, 
+                          b.sequence(RENAME, TO, IDENTIFIER_NAME), 
+                          COMPILE_CLAUSE)
+                );
+        
+        b.rule(ALTER_PROCEDURE_FUNCTION).is(
+                b.firstOf(PROCEDURE, FUNCTION)
+                , UNIT_NAME, COMPILE_CLAUSE
+                );
+        
+        b.rule(ALTER_PACKAGE).is(
+                PACKAGE, UNIT_NAME, COMPILE, 
+                b.optional(DEBUG), 
+                b.optional(b.firstOf(PACKAGE, SPECIFICATION, BODY)),
+                b.optional(REUSE, SETTINGS)
+                );
+        
+        b.rule(ALTER_PLSQL_UNIT).is(ALTER, b.firstOf(ALTER_TRIGGER, ALTER_PROCEDURE_FUNCTION, ALTER_PACKAGE), b.optional(SEMICOLON));
+        
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT));
     }
 
 }
