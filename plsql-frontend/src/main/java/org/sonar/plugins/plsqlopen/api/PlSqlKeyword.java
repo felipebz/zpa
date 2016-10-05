@@ -32,7 +32,6 @@ public enum PlSqlKeyword implements TokenType {
     ANY("any", true),
     AS("as", true),
     ASC("asc", true),
-    AT("at", true),
     BEGIN("begin", true),
     BETWEEN("between", true),
     BY("by", true),
@@ -123,6 +122,7 @@ public enum PlSqlKeyword implements TokenType {
     // non reserved keywords
     ARRAY("array"),
     ARROW("arrow"),
+    AT("at"),
     CURRENT("current"),
     DELETE("delete"),
     FORM("form"),
