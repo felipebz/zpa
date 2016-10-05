@@ -26,7 +26,6 @@ import static org.junit.Assert.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
@@ -64,7 +63,7 @@ public class PlSqlLexerTest {
         assertThatIsToken("'I''m a string'", PlSqlTokenType.STRING_LITERAL);
     }
     
-    @Test @Ignore
+    @Test
     public void stringLiteralWithUserDefinedDelimiters() {
         assertThatIsToken("q'!I'm a string!'", PlSqlTokenType.STRING_LITERAL);
         assertThatIsToken("q'[I'm a string]'", PlSqlTokenType.STRING_LITERAL);

@@ -24,6 +24,7 @@ import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.commentRegexp;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.o2n;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.or;
 import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.regexp;
+import static com.sonar.sslr.impl.channel.RegexpChannelBuilder.g;
 
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -54,7 +55,12 @@ public class PlSqlLexer {
             + "\\d++(\\.\\d*+)?[Ee](\\+|-)?\\d++"
             + ")";
     
-    public static final String STRING_LITERAL = "(?:'([^']|'')*+')";
+    private static final String CUSTOM_DELIMITER_START = "[^\\s]"; // any except spacing
+    private static final String CUSTOM_DELIMITER_END = "(\\3|}|]|>|\\)"; // same as the start, }, ], > or )
+    public static final String STRING_LITERAL = "(?i)(?:"
+            + or("'([^']|'')*+'", // simple text literal
+                 "n?q'" + g(CUSTOM_DELIMITER_START) +  ".*" + CUSTOM_DELIMITER_END + ")'") // text with user-defined delimiter
+            + ")";
     
     public static final String DATE_LITERAL = "(?i)(?:DATE '\\d{4}-\\d{2}-\\d{2}')";
     
