@@ -62,7 +62,7 @@ public class PlSqlRulingTest {
         .setSourceDirs(".")
         .setProperty("dump.old", FileLocation.of("src/test/resources/expected").getFile().getAbsolutePath())
         .setProperty("dump.new", FileLocation.of("target/actual").getFile().getAbsolutePath())
-        .setProperty("sonar.plsql.file.suffixes", "sql,typ")
+        .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab")
         .setProperty("sonar.cpd.skip", "true")
         .setProperty("sonar.analysis.mode", "preview")
         .setProperty("sonar.issuesReport.html.enable", "true")

@@ -1,3 +1,9 @@
 [submodule "its/sources/pljson"]
 	path = its/sources/pljson
 	url = https://github.com/pljson/pljson.git
+[submodule "its/sources/alexandria-plsql-utils"]
+	path = its/sources/alexandria-plsql-utils
+	url = https://github.com/mortenbra/alexandria-plsql-utils.git
+[submodule "its/sources/utPLSQL"]
+	path = its/sources/utPLSQL
+	url = https://github.com/utPLSQL/utPLSQL.git
