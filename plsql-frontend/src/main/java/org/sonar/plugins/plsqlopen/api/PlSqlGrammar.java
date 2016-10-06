@@ -427,7 +427,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(OPEN_STATEMENT).is(
                 b.optional(LABEL), 
                 OPEN, MEMBER_EXPRESSION,
-                b.optional(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                b.optional(ARGUMENTS),
                 SEMICOLON);
         
         b.rule(OPEN_FOR_STATEMENT).is(
