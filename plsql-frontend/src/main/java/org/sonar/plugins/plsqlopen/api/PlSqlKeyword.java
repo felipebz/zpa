@@ -333,7 +333,8 @@ public enum PlSqlKeyword implements TokenType {
     REUSE("reuse"),
     SETTINGS("settings"),
     SPECIFICATION("specification"),
-    RENAME("rename");
+    RENAME("rename"),
+    CONNECT_BY_ROOT("connect_by_root");
 
     private final String value;
     private final boolean reserved;

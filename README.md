@@ -26,6 +26,10 @@ To run the integrations tests, first update the submodules:
 
     git submodule update --init --recursive
     
+Build the plugin:
+
+    mvn clean package
+    
 Then run the tests:
     
     mvn test -Pit -Dsonar.runtimeVersion=LATEST_RELEASE
