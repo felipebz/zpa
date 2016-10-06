@@ -78,7 +78,7 @@ public class AlterPlsqlUnitTest extends RuleTest {
         assertThat(p).matches("alter package foo compile body;");
     }
     
-        @Test
+    @Test
     public void matchesAlterPackageCompileBodyDebug() {
         assertThat(p).matches("alter package foo compile debug body;");
     }
