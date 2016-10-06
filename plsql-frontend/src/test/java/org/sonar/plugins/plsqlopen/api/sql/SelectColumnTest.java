@@ -104,5 +104,11 @@ public class SelectColumnTest extends RuleTest {
     public void matchesSubqueryAsColumn() {
         assertThat(p).matches("(select 1 from dual) col");
     }
+    
+    @Test
+    public void matchesColumnWithConnectByRoot() {
+        assertThat(p).matches("connect_by_root foo");
+        assertThat(p).matches("connect_by_root foo alias");
+    }
 
 }
