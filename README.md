@@ -15,6 +15,21 @@ This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.so
 ## Contribute
 You are welcome to contribute. PL/SQL and Oracle SQL are big languages and there are many pieces missing in the [grammar](https://github.com/felipebz/sonar-plsql/blob/master/plsql-frontend/src/main/java/org/sonar/plugins/plsqlopen/api/PlSqlGrammar.java).
 
+### Running the integration tests
+
+There are two sets of integration tests:
+
+- [plugin](https://github.com/felipebz/sonar-plsql/tree/master/its/plugin): checks if the metrics are imported correctly in SonarQube
+- [ruling](https://github.com/felipebz/sonar-plsql/tree/master/its/ruling): checks the quality of parser and rules against real-world code
+
+To run the integrations tests, first update the submodules:
+
+    git submodule update --init --recursive
+    
+Then run the tests:
+    
+    mvn test -Pit -Dsonar.runtimeVersion=LATEST_RELEASE
+
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
 the [commercial plugin from SonarSource](http://www.sonarsource.com/products/plugins/languages/plsql/).
