@@ -57,5 +57,15 @@ public class CaseExpressionTest extends RuleTest {
     public void matchesCaseWithMemberIdentifier() {
         assertThat(p).matches("case foo.bar when 1 then 1 end");
     }
+    
+    @Test
+    public void matchesCaseWithSelectorExpression() {
+        assertThat(p).matches("case foo + bar when 1 then 1 end");
+    }
+    
+    @Test
+    public void matchesBooleanSearchedCase() {
+        assertThat(p).matches("case when foo is not null and bar is null then 1 end");
+    }
 
 }

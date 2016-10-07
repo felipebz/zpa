@@ -409,6 +409,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(EXECUTE_IMMEDIATE_STATEMENT).is(
                 b.optional(LABEL), 
+                b.optional(FORALL_STATEMENT),
                 EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
                 b.optional(b.optional(BULK, COLLECT), INTO, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
@@ -442,8 +443,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(CASE_STATEMENT).is(
                 b.optional(LABEL), 
-                CASE, b.optional(OBJECT_REFERENCE),
-                b.oneOrMore(WHEN, EXPRESSION, THEN, STATEMENTS),
+                CASE, b.firstOf(b.sequence(EXPRESSION, b.oneOrMore(WHEN, EXPRESSION, THEN, STATEMENTS)),
+                                b.oneOrMore(WHEN, BOOLEAN_EXPRESSION, THEN, STATEMENTS)),
                 b.optional(ELSE, STATEMENTS),
                 END, CASE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
@@ -549,8 +550,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(EXISTS_EXPRESSION).is(EXISTS , LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS).skipIfOneChild();
         
         b.rule(CASE_EXPRESSION).is(
-                CASE, b.optional(OBJECT_REFERENCE),
-                b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION),
+                CASE, b.firstOf(b.sequence(EXPRESSION, b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION)),
+                                b.oneOrMore(WHEN, BOOLEAN_EXPRESSION, THEN, EXPRESSION)),
                 b.optional(ELSE, EXPRESSION),
                 END);
         

@@ -97,5 +97,10 @@ public class ExecuteImmediateStatementTest extends RuleTest {
     public void matchesLabeledExecuteImmediate() {
         assertThat(p).matches("<<label>> execute immediate 'command';");
     }
+    
+    @Test
+    public void matchesExecuteImmediateWithForall() {
+        assertThat(p).matches("forall foo in indices of bar execute immediate 'command';");
+    }
 
 }
