@@ -409,6 +409,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(EXECUTE_IMMEDIATE_STATEMENT).is(
                 b.optional(LABEL), 
+                b.optional(FORALL_STATEMENT),
                 EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
                 b.optional(b.optional(BULK, COLLECT), INTO, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
