@@ -21,7 +21,7 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import com.sonar.sslr.api.AstNode;
@@ -38,12 +38,12 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
 
     @Override
     public void init() {
-        subscribeTo(PlSqlGrammar.INSERT_STATEMENT);
+        subscribeTo(DmlGrammar.INSERT_EXPRESSION);
     }
 
     @Override
     public void visitNode(AstNode node) {
-        if (!node.hasDirectChildren(PlSqlGrammar.INSERT_COLUMNS)) {
+        if (!node.hasDirectChildren(DmlGrammar.INSERT_COLUMNS)) {
             getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
     }

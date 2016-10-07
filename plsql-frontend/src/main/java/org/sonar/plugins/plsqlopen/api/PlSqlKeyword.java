@@ -297,6 +297,8 @@ public enum PlSqlKeyword implements TokenType {
     YEAR("year"),
     MONTH("month"),
     DAY("day"),
+    HOUR("hour"),
+    MINUTE("minute"),
     SECOND("second"),
     EDITIONABLE("editionable"),
     NONEDITIONABLE("noneditionable"),

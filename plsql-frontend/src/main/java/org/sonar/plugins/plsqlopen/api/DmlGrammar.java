@@ -58,13 +58,29 @@ public enum DmlGrammar implements GrammarRuleKey {
     HIERARCHICAL_QUERY_CLAUSE,
     SUBQUERY_FACTORING_CLAUSE,
     SELECT_EXPRESSION,
+    DELETE_EXPRESSION,
+    UPDATE_COLUMN,
+    UPDATE_EXPRESSION,
+    INSERT_COLUMNS,
+    INSERT_EXPRESSION,
     DML_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
-        createDmlStatements(b);
+        createSelectExpression(b);
+        createDeleteExpression(b);
+        createUpdateExpression(b);
+        createInsertExpression(b);
+        
+        b.rule(DML_COMMAND).is(
+                b.firstOf(
+                        SELECT_EXPRESSION, 
+                        DELETE_EXPRESSION, 
+                        UPDATE_EXPRESSION, 
+                        INSERT_EXPRESSION), 
+                b.optional(SEMICOLON));
     }
     
-    private static void createDmlStatements(LexerfulGrammarBuilder b) {
+    private static void createSelectExpression(LexerfulGrammarBuilder b) {
         
         b.rule(TABLE_REFERENCE).is(
                 b.optional(IDENTIFIER_NAME, DOT),
@@ -193,8 +209,37 @@ public enum DmlGrammar implements GrammarRuleKey {
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
                 b.optional(FOR_UPDATE_CLAUSE));
+    }
+    
+    private static void createDeleteExpression(LexerfulGrammarBuilder b) {
+        b.rule(DELETE_EXPRESSION).is(
+                DELETE, b.optional(FROM), 
+                DML_TABLE_EXPRESSION_CLAUSE,
+                b.optional(b.firstOf(
+                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
+                        WHERE_CLAUSE)));
+    }
+    
+    private static void createUpdateExpression(LexerfulGrammarBuilder b) {
+        b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, EXPRESSION);
         
-        b.rule(DML_COMMAND).is(SELECT_EXPRESSION, b.optional(SEMICOLON));
+        b.rule(UPDATE_EXPRESSION).is(
+                UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                b.optional(b.firstOf(
+                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
+                        WHERE_CLAUSE)));
+    }
+    
+    private static void createInsertExpression(LexerfulGrammarBuilder b) {
+        b.rule(INSERT_COLUMNS).is(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS);
+        
+        b.rule(INSERT_EXPRESSION).is(
+                INSERT, INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME),
+                b.optional(INSERT_COLUMNS),
+                b.firstOf(
+                        b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                        b.sequence(VALUES, EXPRESSION),
+                        SELECT_EXPRESSION));
     }
 
 }
