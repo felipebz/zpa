@@ -1,0 +1,1 @@
+mvn org.jacoco:jacoco-maven-plugin:prepare-agent-integration install -Dsonar.runtimeVersion="LTS" -Dmaven.test.redirectTestOutputToFile=false verify -e -B -V
