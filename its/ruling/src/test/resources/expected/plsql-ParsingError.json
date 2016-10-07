@@ -5,9 +5,6 @@
 'project:alexandria-plsql-utils/demos/02_create_temp_directory.sql':[
 4,
 ],
-'project:alexandria-plsql-utils/demos/csv_util_pkg_demo.sql':[
-8,
-],
 'project:alexandria-plsql-utils/demos/string_util_pkg_demo.sql':[
 39,
 ],

@@ -24,6 +24,7 @@ import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 import static org.sonar.plugins.plsqlopen.api.DclGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DdlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DmlGrammar.*;
+import static org.sonar.plugins.plsqlopen.api.TclGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*;
@@ -109,9 +110,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     SAVEPOINT_STATEMENT,
     RAISE_STATEMENT,
     SELECT_STATEMENT,
-    INSERT_COLUMNS,
     INSERT_STATEMENT,
-    UPDATE_COLUMN,
     UPDATE_STATEMENT,
     DELETE_STATEMENT,
     CALL_STATEMENT,
@@ -191,6 +190,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DCL_COMMAND,
                 DDL_COMMAND,
                 DML_COMMAND,
+                TCL_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -203,6 +203,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         DdlGrammar.buildOn(b);
         DmlGrammar.buildOn(b);
         DclGrammar.buildOn(b);
+        TclGrammar.buildOn(b);
         SqlPlusGrammar.buildOn(b);
         SingleRowSqlFunctionsGrammar.buildOn(b);
         AggregateSqlFunctionsGrammar.buildOn(b);
@@ -377,62 +378,21 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(RETURN_STATEMENT).is(b.optional(LABEL), RETURN, b.optional(EXPRESSION), SEMICOLON);
         
-        b.rule(COMMIT_STATEMENT).is(
-                b.optional(LABEL), 
-                COMMIT,
-                b.optional(WORK),
-                b.optional(b.firstOf(
-                        b.sequence(FORCE, STRING_LITERAL, b.optional(COMMA, INTEGER_LITERAL)),
-                        b.sequence(
-                                b.optional(COMMENT, STRING_LITERAL),
-                                b.optional(WRITE, b.optional(b.firstOf(IMMEDIATE, BATCH)), b.optional(b.firstOf(WAIT, NOWAIT)))))),
-                SEMICOLON);
+        b.rule(COMMIT_STATEMENT).is(b.optional(LABEL), COMMIT_EXPRESSION, SEMICOLON);
         
-        b.rule(ROLLBACK_STATEMENT).is(
-                b.optional(LABEL), 
-                ROLLBACK,
-                b.optional(WORK),
-                b.optional(b.firstOf(
-                        b.sequence(FORCE, STRING_LITERAL),
-                        b.sequence(TO, b.optional(SAVEPOINT), IDENTIFIER_NAME))),
-                SEMICOLON);
+        b.rule(ROLLBACK_STATEMENT).is(b.optional(LABEL), ROLLBACK_EXPRESSION, SEMICOLON);
         
-        b.rule(SAVEPOINT_STATEMENT).is(b.optional(LABEL), SAVEPOINT, IDENTIFIER_NAME, SEMICOLON);
+        b.rule(SAVEPOINT_STATEMENT).is(b.optional(LABEL), SAVEPOINT_EXPRESSION, SEMICOLON);
         
         b.rule(RAISE_STATEMENT).is(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON);
         
         b.rule(SELECT_STATEMENT).is(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON);
         
-        b.rule(INSERT_COLUMNS).is(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS);
+        b.rule(INSERT_STATEMENT).is(b.optional(LABEL), INSERT_EXPRESSION, SEMICOLON);
         
-        b.rule(INSERT_STATEMENT).is(
-                b.optional(LABEL), 
-                INSERT, INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME),
-                b.optional(INSERT_COLUMNS),
-                b.firstOf(
-                        b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
-                        b.sequence(VALUES, EXPRESSION),
-                        SELECT_EXPRESSION),
-                SEMICOLON);
+        b.rule(UPDATE_STATEMENT).is(b.optional(LABEL), UPDATE_EXPRESSION, SEMICOLON);
         
-        b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, EXPRESSION);
-        
-        b.rule(UPDATE_STATEMENT).is(
-                b.optional(LABEL), 
-                UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
-                b.optional(b.firstOf(
-                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
-                        WHERE_CLAUSE)), 
-                SEMICOLON);
-        
-        b.rule(DELETE_STATEMENT).is(
-                b.optional(LABEL), 
-                DELETE, b.optional(FROM), 
-                DML_TABLE_EXPRESSION_CLAUSE,
-                b.optional(b.firstOf(
-                        b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
-                        WHERE_CLAUSE)),
-                SEMICOLON);
+        b.rule(DELETE_STATEMENT).is(b.optional(LABEL), DELETE_EXPRESSION, SEMICOLON);
         
         b.rule(CALL_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON);
         
