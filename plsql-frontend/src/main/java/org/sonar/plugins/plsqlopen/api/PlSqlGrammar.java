@@ -56,6 +56,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NULL_LITERAL,
     NUMERIC_LITERAL,
     CHARACTER_LITERAL,
+    INTERVAL_LITERAL,
     
     // Expressions
     EXPRESSION,
@@ -216,8 +217,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
         b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
         b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
+        b.rule(INTERVAL_LITERAL).is(INTERVAL_YEAR_TO_MONTH_LITERAL);
         
-        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL));
+        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL));
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {

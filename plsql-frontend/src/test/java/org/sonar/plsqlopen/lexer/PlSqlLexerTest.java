@@ -127,6 +127,15 @@ public class PlSqlLexerTest {
         assertThatIsToken("date '2015-01-01'", PlSqlTokenType.DATE_LITERAL);
     }
     
+    @Test
+    public void intervalYearToMonthLiteral() {
+        assertThatIsToken("INTERVAL '4' YEAR", PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL);
+        assertThatIsToken("interval '4' year", PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL);
+        assertThatIsToken("INTERVAL '4' MONTH", PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL);
+        assertThatIsToken("INTERVAL '4' YEAR(3)", PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL);
+        assertThatIsToken("INTERVAL '4-2' YEAR TO MONTH", PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL);
+    }
+    
     private void assertThatIsToken(String sourceCode, TokenType tokenType) {
         assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType));
     }

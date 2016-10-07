@@ -27,7 +27,8 @@ public enum PlSqlTokenType implements TokenType {
     INTEGER_LITERAL,
     SCIENTIFIC_LITERAL,
     REAL_LITERAL,
-    DATE_LITERAL;
+    DATE_LITERAL,
+    INTERVAL_YEAR_TO_MONTH_LITERAL;
 
     @Override
     public String getName() {
