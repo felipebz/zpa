@@ -14,9 +14,6 @@
 'project:alexandria-plsql-utils/extras/as_pdf3.pks':[
 285,
 ],
-'project:alexandria-plsql-utils/extras/as_pdf3_demo.sql':[
-208,
-],
 'project:alexandria-plsql-utils/ora/ooxml_util_pkg.pkb':[
 83,
 ],
@@ -49,9 +46,6 @@
 ],
 'project:pljson/install.sql':[
 8,
-],
-'project:pljson/src/addons/json_util_pkg.sql':[
-73,
 ],
 'project:pljson/src/addons/pljson_table_impl.typ':[
 2,

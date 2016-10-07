@@ -59,6 +59,11 @@ public class PlSqlLexerTest {
     }
     
     @Test
+    public void simpleStringLiteralWithLineBreak() {
+        assertThatIsToken("'First\nSecond'", PlSqlTokenType.STRING_LITERAL);
+    }
+    
+    @Test
     public void stringLiteralWithDoubleQuotationMarks() {
         assertThatIsToken("'I''m a string'", PlSqlTokenType.STRING_LITERAL);
     }
@@ -76,6 +81,11 @@ public class PlSqlLexerTest {
         assertThatIsToken("nq'{I'm a string}'", PlSqlTokenType.STRING_LITERAL);
         assertThatIsToken("nq'<I'm a string>'", PlSqlTokenType.STRING_LITERAL);
         assertThatIsToken("nq'(I'm a string)'", PlSqlTokenType.STRING_LITERAL);
+    }
+    
+    @Test
+    public void stringLiteralWithUserDefinedDelimitersAndLineBreak() {
+        assertThatIsToken("q'!First\nSecond!'", PlSqlTokenType.STRING_LITERAL);
     }
     
     @Test
