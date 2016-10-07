@@ -68,8 +68,6 @@ public class PlSqlLexer {
     
     public static final String QUOTED_IDENTIFIER = "\".+?\"";
     
-    public static final String INTERVAL_YEAR_TO_MONTH_LITERAL = "(?i)(?:INTERVAL ?'\\d+(-\\d{1,2})?' ?(YEAR|MONTH)(\\(\\d\\))? ?(TO (YEAR|MONTH))?)";
-    
     private PlSqlLexer() {
     }
 
@@ -81,7 +79,6 @@ public class PlSqlLexer {
                 .withFailIfNoChannelToConsumeOneCharacter(true)
                 .withChannel(new BlackHoleChannel("\\s"))
                 .withChannel(commentRegexp(COMMENT))
-                .withChannel(regexp(PlSqlTokenType.INTERVAL_YEAR_TO_MONTH_LITERAL, INTERVAL_YEAR_TO_MONTH_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.SCIENTIFIC_LITERAL, SCIENTIFIC_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.REAL_LITERAL, REAL_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))

@@ -56,6 +56,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     NULL_LITERAL,
     NUMERIC_LITERAL,
     CHARACTER_LITERAL,
+    INTERVAL_YEAR_TO_MONTH_LITERAL,
+    INTERVAL_DAY_TO_SECOND_LITERAL,
     INTERVAL_LITERAL,
     
     // Expressions
@@ -213,11 +215,30 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     }
 
     private static void createLiterals(LexerfulGrammarBuilder b) {
+        b.rule(INTERVAL_YEAR_TO_MONTH_LITERAL).is(
+                INTERVAL, CHARACTER_LITERAL, 
+                b.firstOf(YEAR, MONTH), b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS),
+                b.optional(TO, b.firstOf(YEAR, MONTH)));
+        
+        b.rule(INTERVAL_DAY_TO_SECOND_LITERAL).is(
+                INTERVAL, CHARACTER_LITERAL, 
+                b.firstOf(
+                    b.sequence(b.firstOf(DAY, HOUR, MINUTE), b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS)),
+                    b.sequence(SECOND, b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS))
+                ),
+                b.optional(TO, 
+                    b.firstOf(
+                        DAY, 
+                        HOUR,
+                        MINUTE,
+                        b.sequence(SECOND, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS))
+                    )));
+        
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
         b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
         b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
-        b.rule(INTERVAL_LITERAL).is(INTERVAL_YEAR_TO_MONTH_LITERAL);
+        b.rule(INTERVAL_LITERAL).is(b.firstOf(INTERVAL_YEAR_TO_MONTH_LITERAL, INTERVAL_DAY_TO_SECOND_LITERAL));
         
         b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL));
     }
