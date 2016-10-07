@@ -26,51 +26,46 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class UpdateStatementTest extends RuleTest {
+public class ForallStatementTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.UPDATE_STATEMENT);
+        setRootRule(PlSqlGrammar.FORALL_STATEMENT);
     }
     
     @Test
-    public void matchesSimpleUpdate() {
-        assertThat(p).matches("update tab set x = 1;");
+    public void matchesForallWithFixedRange() {
+        assertThat(p).matches("forall foo in 1 .. 2");
+    }
+    
+   @Test
+    public void matchesForallWithVariablesRange() {
+        assertThat(p).matches("forall x in foo .. bar.count");
     }
     
     @Test
-    public void matchesUpdateWithWhere() {
-        assertThat(p).matches("update tab set x = 1 where y = 1;");
+    public void matchesForallIndicesOf() {
+        assertThat(p).matches("forall foo in indices of bar");
     }
     
     @Test
-    public void matchesUpdateWithWhereCurrentOf() {
-        assertThat(p).matches("update tab set x = 1 where current of cur;");
+    public void matchesForallIndicesOfWithRange() {
+        assertThat(p).matches("forall foo in indices of bar between 1 and 2");
     }
     
     @Test
-    public void matchesUpdateMultipleColumns() {
-        assertThat(p).matches("update tab set x = 1, y = 1;");
+    public void matchesForallValuesOf() {
+        assertThat(p).matches("forall foo in values of bar");
     }
     
     @Test
-    public void matchesUpdateWithAlias() {
-        assertThat(p).matches("update tab t set t.x = 1;");
+    public void matchesForallValuesWithSaveExceptions() {
+        assertThat(p).matches("forall foo in values of bar save exceptions");
     }
     
     @Test
-    public void matchesUpdateWithSchema() {
-        assertThat(p).matches("update sch.tab set sch.tab.x = 1;");
-    }
-    
-    @Test
-    public void matchesLabeledUpdate() {
-        assertThat(p).matches("<<foo>> update tab set x = 1;");
-    }
-    
-    @Test
-    public void matchesForallUpdate() {
-        assertThat(p).matches("forall foo in 1 .. bar.count update tab set x = 1;");
+    public void matchesForallIndicesWithSaveExceptions() {
+        assertThat(p).matches("forall foo in indices of bar between 1 and 2 save exceptions");
     }
 
 }

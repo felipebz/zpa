@@ -82,5 +82,10 @@ public class InsertStatementTest extends RuleTest {
     public void matchesLabeledInsert() {
         assertThat(p).matches("<<foo>> insert into tab values (1);");
     }
+    
+    @Test
+    public void matchesForallInsert() {
+        assertThat(p).matches("forall x in values of bar insert into tab values (1);");
+    }
 
 }
