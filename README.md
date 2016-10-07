@@ -32,7 +32,7 @@ Build the plugin:
     
 Then run the tests:
     
-    mvn test -Pit -Dsonar.runtimeVersion=LATEST_RELEASE
+    mvn test -Pit -Dsonar.runtimeVersion=LATEST_RELEASE -Dmaven.test.redirectTestOutputToFile=false
 
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
