@@ -19,6 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
+import static com.sonar.sslr.api.GenericTokenType.EOF;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
@@ -37,7 +38,8 @@ public enum DdlGrammar implements GrammarRuleKey {
     ALTER_PROCEDURE_FUNCTION,
     COMPILE_CLAUSE,
     ALTER_TRIGGER,
-    ALTER_PACKAGE;
+    ALTER_PACKAGE,
+    DROP_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
         createDdlCommands(b);
@@ -102,7 +104,9 @@ public enum DdlGrammar implements GrammarRuleKey {
         
         b.rule(ALTER_PLSQL_UNIT).is(ALTER, b.firstOf(ALTER_TRIGGER, ALTER_PROCEDURE_FUNCTION, ALTER_PACKAGE), b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT));
+        b.rule(DROP_COMMAND).is(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON));
+        
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND));
     }
 
 }

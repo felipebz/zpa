@@ -1,7 +1,4 @@
 {
-'project:alexandria-plsql-utils/demos/01_create_demo_tables.sql':[
-22,
-],
 'project:alexandria-plsql-utils/demos/02_create_temp_directory.sql':[
 4,
 ],
@@ -41,9 +38,6 @@
 'project:pljson/examples/ex13.sql':[
 25,
 ],
-'project:pljson/examples/ex_pljson_table.sql':[
-39,
-],
 'project:pljson/install.sql':[
 8,
 ],
@@ -73,9 +67,6 @@
 ],
 'project:pljson/src/json_value_body.typ':[
 3,
-],
-'project:pljson/testsuite/testall.sql':[
-49,
 ],
 'project:utPLSQL/examples/filepath1.pkg':[
 1,
@@ -139,9 +130,6 @@
 ],
 'project:utPLSQL/source/ut_i_synonyms.sql':[
 24,
-],
-'project:utPLSQL/source/ut_i_uninstall.sql':[
-16,
 ],
 'project:utPLSQL/source/ut_outcome.pks':[
 50,
