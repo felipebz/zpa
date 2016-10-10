@@ -67,5 +67,10 @@ public class UpdateStatementTest extends RuleTest {
     public void matchesLabeledUpdate() {
         assertThat(p).matches("<<foo>> update tab set x = 1;");
     }
+    
+    @Test
+    public void matchesForallUpdate() {
+        assertThat(p).matches("forall foo in 1 .. bar.count update tab set x = 1;");
+    }
 
 }

@@ -336,7 +336,11 @@ public enum PlSqlKeyword implements TokenType {
     SETTINGS("settings"),
     SPECIFICATION("specification"),
     RENAME("rename"),
-    CONNECT_BY_ROOT("connect_by_root");
+    CONNECT_BY_ROOT("connect_by_root"),
+    FORALL("forall"),
+    INDICES("indices"),
+    SAVE("save"),
+    EXCEPTIONS("exceptions");
 
     private final String value;
     private final boolean reserved;

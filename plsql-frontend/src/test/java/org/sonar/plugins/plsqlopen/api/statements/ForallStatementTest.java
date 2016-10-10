@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.expressions;
+package org.sonar.plugins.plsqlopen.api.statements;
 
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
@@ -26,46 +26,46 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class CaseExpressionTest extends RuleTest {
+public class ForallStatementTest extends RuleTest {
 
     @Before
     public void init() {
-        setRootRule(PlSqlGrammar.CASE_EXPRESSION);
-    }
-
-    @Test
-    public void matchesSimpleSearchedCase() {
-        assertThat(p).matches("case when x = 1 then 1 end");
+        setRootRule(PlSqlGrammar.FORALL_STATEMENT);
     }
     
     @Test
-    public void matchesSimpleCase() {
-        assertThat(p).matches("case x when 1 then 1 end");
+    public void matchesForallWithFixedRange() {
+        assertThat(p).matches("forall foo in 1 .. 2");
+    }
+    
+   @Test
+    public void matchesForallWithVariablesRange() {
+        assertThat(p).matches("forall x in foo .. bar.count");
     }
     
     @Test
-    public void matchesCaseWithMultipleWhen() {
-        assertThat(p).matches("case x when 1 then 1 when 2 then 2 end");
+    public void matchesForallIndicesOf() {
+        assertThat(p).matches("forall foo in indices of bar");
     }
     
     @Test
-    public void matchesCaseWithElse() {
-        assertThat(p).matches("case x when 1 then 1 else 2 end");
+    public void matchesForallIndicesOfWithRange() {
+        assertThat(p).matches("forall foo in indices of bar between 1 and 2");
     }
     
     @Test
-    public void matchesCaseWithMemberIdentifier() {
-        assertThat(p).matches("case foo.bar when 1 then 1 end");
+    public void matchesForallValuesOf() {
+        assertThat(p).matches("forall foo in values of bar");
     }
     
     @Test
-    public void matchesCaseWithSelectorExpression() {
-        assertThat(p).matches("case foo + bar when 1 then 1 end");
+    public void matchesForallValuesWithSaveExceptions() {
+        assertThat(p).matches("forall foo in values of bar save exceptions");
     }
     
     @Test
-    public void matchesBooleanSearchedCase() {
-        assertThat(p).matches("case when foo is not null and bar is null then 1 end");
+    public void matchesForallIndicesWithSaveExceptions() {
+        assertThat(p).matches("forall foo in indices of bar between 1 and 2 save exceptions");
     }
 
 }

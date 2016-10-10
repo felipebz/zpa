@@ -73,4 +73,8 @@ public class DeleteStatementTest extends RuleTest {
         assertThat(p).matches("delete (select * from dual);");
     }
 
+    @Test
+    public void matchesForallDelete() {
+        assertThat(p).matches("forall x in indices of bar delete tab;");
+    }
 }

@@ -67,5 +67,16 @@ public class CaseStatementTest extends RuleTest {
     public void matchesLabeledCase() {
         assertThat(p).matches("<<foo>> case when x = 1 then foo := bar; end case foo;");
     }
+    
+    @Test
+    public void matchesCaseWithSelectorExpression() {
+        assertThat(p).matches("case foo + bar when 1 then foo := bar; end case;");
+    }
+    
+    @Test
+    public void matchesBooleanExpressionSearchedCase() {
+        assertThat(p).matches("case when foo is not null and bar is null then foo := bar; end case;");
+    }
+    
 
 }
