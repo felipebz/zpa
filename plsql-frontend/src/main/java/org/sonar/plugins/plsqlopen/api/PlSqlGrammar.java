@@ -411,8 +411,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LABEL), 
                 b.optional(FORALL_STATEMENT),
                 EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
-                b.optional(b.optional(BULK, COLLECT), INTO, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
+                b.optional(INTO_CLAUSE),
                 b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
+                b.optional(RETURNING_INTO_CLAUSE),
                 SEMICOLON);
         
         b.rule(OPEN_STATEMENT).is(
@@ -430,11 +431,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(FETCH_STATEMENT).is(
                 b.optional(LABEL), 
                 FETCH, MEMBER_EXPRESSION,
-                b.firstOf(
-                        b.sequence(INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
-                        b.sequence(
-                                BULK, COLLECT, INTO, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER),
-                                b.optional(LIMIT, EXPRESSION))),
+                INTO_CLAUSE, b.optional(LIMIT, EXPRESSION),
                 SEMICOLON);
         
         b.rule(CLOSE_STATEMENT).is(b.optional(LABEL), CLOSE, MEMBER_EXPRESSION, SEMICOLON);

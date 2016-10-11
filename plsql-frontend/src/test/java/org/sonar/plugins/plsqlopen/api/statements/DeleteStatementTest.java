@@ -77,4 +77,9 @@ public class DeleteStatementTest extends RuleTest {
     public void matchesForallDelete() {
         assertThat(p).matches("forall x in indices of bar delete tab;");
     }
+    
+    @Test
+    public void matchesDeleteWithReturningInto() {
+        assertThat(p).matches("delete from tab returning x bulk collect into y;");
+    }
 }

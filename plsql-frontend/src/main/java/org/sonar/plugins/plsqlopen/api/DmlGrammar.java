@@ -57,6 +57,7 @@ public enum DmlGrammar implements GrammarRuleKey {
     START_WITH_CLAUSE,
     HIERARCHICAL_QUERY_CLAUSE,
     SUBQUERY_FACTORING_CLAUSE,
+    RETURNING_INTO_CLAUSE,
     SELECT_EXPRESSION,
     DELETE_EXPRESSION,
     UPDATE_COLUMN,
@@ -151,7 +152,7 @@ public enum DmlGrammar implements GrammarRuleKey {
                         b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                         b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                         OBJECT_REFERENCE),
-                b.optional(b.sequence(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN)), ALIAS )));
+                b.optional(b.sequence(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING)), ALIAS )));
         
         b.rule(FROM_CLAUSE).is(
                 FROM, 
@@ -212,12 +213,18 @@ public enum DmlGrammar implements GrammarRuleKey {
     }
     
     private static void createDeleteExpression(LexerfulGrammarBuilder b) {
+        b.rule(RETURNING_INTO_CLAUSE).is(
+                b.firstOf(RETURNING, RETURN),
+                b.optional(OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
+                INTO_CLAUSE);
+        
         b.rule(DELETE_EXPRESSION).is(
                 DELETE, b.optional(FROM), 
                 DML_TABLE_EXPRESSION_CLAUSE,
                 b.optional(b.firstOf(
                         b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
-                        WHERE_CLAUSE)));
+                        WHERE_CLAUSE)),
+                b.optional(RETURNING_INTO_CLAUSE));
     }
     
     private static void createUpdateExpression(LexerfulGrammarBuilder b) {
@@ -227,7 +234,8 @@ public enum DmlGrammar implements GrammarRuleKey {
                 UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                 b.optional(b.firstOf(
                         b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
-                        WHERE_CLAUSE)));
+                        WHERE_CLAUSE)),
+                b.optional(RETURNING_INTO_CLAUSE));
     }
     
     private static void createInsertExpression(LexerfulGrammarBuilder b) {
@@ -239,7 +247,8 @@ public enum DmlGrammar implements GrammarRuleKey {
                 b.firstOf(
                         b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
                         b.sequence(VALUES, EXPRESSION),
-                        SELECT_EXPRESSION));
+                        SELECT_EXPRESSION),
+                b.optional(RETURNING_INTO_CLAUSE));
     }
 
 }
