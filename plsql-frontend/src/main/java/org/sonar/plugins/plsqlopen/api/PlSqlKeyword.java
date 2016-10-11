@@ -341,7 +341,8 @@ public enum PlSqlKeyword implements TokenType {
     FORALL("forall"),
     INDICES("indices"),
     SAVE("save"),
-    EXCEPTIONS("exceptions");
+    EXCEPTIONS("exceptions"),
+    RESTRICT_REFERENCES("restrict_references");
 
     private final String value;
     private final boolean reserved;

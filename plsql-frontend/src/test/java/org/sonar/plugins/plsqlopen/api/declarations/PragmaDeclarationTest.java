@@ -52,5 +52,10 @@ public class PragmaDeclarationTest extends RuleTest {
     public void matchesInterface() {
         assertThat(p).matches("pragma interface(c, func, 1);");
     }
+    
+    @Test
+    public void matchesRestrictReferencesPragma() {
+        assertThat(p).matches("pragma restrict_references(foo, rnds, wnds);");
+    }
 
 }
