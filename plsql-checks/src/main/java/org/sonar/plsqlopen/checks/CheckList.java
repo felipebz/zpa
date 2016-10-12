@@ -81,6 +81,7 @@ public class CheckList {
             UnhandledUserDefinedExceptionCheck.class,
             UnusedCursorCheck.class,
             NotASelectedExpressionCheck.class,
-            InvalidReferenceToObjectCheck.class);
+            InvalidReferenceToObjectCheck.class,
+            CursorBodyInPackageSpecCheck.class);
     }
 }
