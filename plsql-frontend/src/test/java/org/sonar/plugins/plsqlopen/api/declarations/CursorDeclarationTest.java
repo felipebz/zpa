@@ -62,5 +62,15 @@ public class CursorDeclarationTest extends RuleTest {
     public void matchesCursorWithDefaultParameterAlternative() {
         assertThat(p).matches("cursor cur(x number := 1) is select 1 from dual;");
     }
+    
+    @Test
+    public void matchesCursorWithReturnType() {
+        assertThat(p).matches("cursor cur return my_type is select 1 from dual;");
+    }
+    
+    @Test
+    public void matchesCursorSpecification() {
+        assertThat(p).matches("cursor cur return my_type;");
+    }
 
 }
