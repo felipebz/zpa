@@ -342,7 +342,12 @@ public enum PlSqlKeyword implements TokenType {
     INDICES("indices"),
     SAVE("save"),
     EXCEPTIONS("exceptions"),
-    RESTRICT_REFERENCES("restrict_references");
+    RESTRICT_REFERENCES("restrict_references"),
+    TRANSACTION("transaction"),
+    SEGMENT("segment"),
+    ISOLATION("isolation"),
+    SERIALIZABLE("serializable"),
+    COMMITTED("committed");
 
     private final String value;
     private final boolean reserved;
