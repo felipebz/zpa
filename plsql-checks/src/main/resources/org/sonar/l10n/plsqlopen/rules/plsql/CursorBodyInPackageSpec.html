@@ -1,0 +1,34 @@
+<p>
+Cursor declarations can be splitted in two parts: specification and body. When declaring a cursor 
+in a package specification, the package specification should contains only the cursor specification 
+and the cursor body should be added to the package body. 
+</p>
+
+<p>
+In newer versions of Oracle Forms, the usage of cursors declared with body in a package specification 
+also causes the compilation error "internal error [Unexpected fragile external reference.]". 
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+create or replace package pkg is
+  cursor cur is
+    select dummy from dual;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+create or replace package pkg is
+  type cur_type is record(dummy varchar2(1));
+  cursor cur return cur_type;
+end;
+/
+create or replace package body pkg is
+  cursor cur return cur_type is
+    select dummy from dual;
+end;
+/
+</pre>

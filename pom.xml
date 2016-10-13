@@ -14,7 +14,7 @@
   <packaging>pom</packaging>
 
   <name>SonarQube PL/SQL Community Plugin</name>
-  <description>Enable analysis and reporting on PL/SQL projects.</description>
+  <description>Enables analysis and reporting on PL/SQL projects.</description>
   <url>https://github.com/felipebz/sonar-plsql</url>
   <inceptionYear>2015</inceptionYear>
   <organization>
