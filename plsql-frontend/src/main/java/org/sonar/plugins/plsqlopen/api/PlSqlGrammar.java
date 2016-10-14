@@ -190,11 +190,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(IDENTIFIER_NAME).is(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD));
         b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
                 COMPILATION_UNIT,
-                SQLPLUS_COMMAND,
                 DCL_COMMAND,
                 DDL_COMMAND,
                 DML_COMMAND,
                 TCL_COMMAND,
+                SQLPLUS_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
