@@ -19,16 +19,28 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
+import static com.sonar.sslr.api.GenericTokenType.IDENTIFIER;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.BATCH;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.COMMENT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.COMMIT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.COMMITTED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FORCE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.IMMEDIATE;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ISOLATION;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LEVEL;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NAME;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NOWAIT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ONLY;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.READ;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ROLLBACK;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SAVEPOINT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SEGMENT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SERIALIZABLE;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SET;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.TO;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.TRANSACTION;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.USE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.WAIT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.WORK;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.WRITE;
@@ -42,9 +54,12 @@ import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
 public enum TclGrammar implements GrammarRuleKey {
     
+    TRANSACTION_NAME,
+    
     COMMIT_EXPRESSION,
     ROLLBACK_EXPRESSION,
     SAVEPOINT_EXPRESSION,
+    SET_TRANSACTION_EXPRESSION,
     TCL_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -66,11 +81,25 @@ public enum TclGrammar implements GrammarRuleKey {
         
         b.rule(SAVEPOINT_EXPRESSION).is(SAVEPOINT, IDENTIFIER_NAME).skip();
         
+        b.rule(TRANSACTION_NAME).is(NAME, STRING_LITERAL);
+        
+        //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_10005.htm#SQLRF01705
+        b.rule(SET_TRANSACTION_EXPRESSION).is(
+                SET, TRANSACTION, 
+                b.firstOf(
+                        b.sequence(
+                                b.firstOf(b.sequence(READ, b.firstOf(ONLY, WRITE)), 
+                                          b.sequence(ISOLATION, LEVEL, b.firstOf(SERIALIZABLE, b.sequence(READ, COMMITTED))),
+                                          b.sequence(USE, ROLLBACK, SEGMENT, IDENTIFIER)),
+                                b.optional(TRANSACTION_NAME)),
+                        TRANSACTION_NAME));
+        
         b.rule(TCL_COMMAND).is(
                 b.firstOf(
                         COMMIT_EXPRESSION,
                         ROLLBACK_EXPRESSION,
-                        SAVEPOINT_EXPRESSION), 
+                        SAVEPOINT_EXPRESSION,
+                        SET_TRANSACTION_EXPRESSION), 
                 b.optional(SEMICOLON));
     }
 

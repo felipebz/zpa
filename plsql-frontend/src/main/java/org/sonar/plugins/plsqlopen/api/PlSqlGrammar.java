@@ -448,20 +448,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(ELSE, STATEMENTS),
                 END, CASE, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        b.rule(TRANSACTION_NAME).is(NAME, STRING_LITERAL);
-        
         //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_10005.htm#SQLRF01705
-        b.rule(SET_TRANSACTION_STATEMENT).is(
-                b.optional(LABEL), 
-                SET, TRANSACTION, 
-                b.firstOf(
-                        b.sequence(
-                                b.firstOf(b.sequence(READ, b.firstOf(ONLY, WRITE)), 
-                                          b.sequence(ISOLATION, LEVEL, b.firstOf(SERIALIZABLE, b.sequence(READ, COMMITTED))),
-                                          b.sequence(USE, ROLLBACK, SEGMENT, IDENTIFIER)),
-                                b.optional(TRANSACTION_NAME)),
-                        TRANSACTION_NAME), 
-                SEMICOLON);
+        b.rule(SET_TRANSACTION_STATEMENT).is(b.optional(LABEL), SET_TRANSACTION_EXPRESSION, SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
