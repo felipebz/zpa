@@ -23,6 +23,9 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import com.sonar.sslr.api.AstNode;
@@ -53,7 +56,16 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
         if (selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size() > 1 &&
                 candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());
+            
+            Scope scope = getPlSqlContext().getCurrentScope();
+            Symbol symbol = null;
+            if (scope != null) {
+                symbol = scope.getSymbol(candidate.getTokenOriginalValue(), Kind.VARIABLE, Kind.PARAMETER);
+            }
+            
+            if (symbol == null) {
+                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());
+            }
         }
     }
 
