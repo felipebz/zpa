@@ -25,6 +25,7 @@ import java.util.Set;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
@@ -56,7 +57,7 @@ public class UnusedCursorCheck extends AbstractBaseCheck {
     private void checkScope(Scope scope) {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.CURSOR);
         for (Symbol symbol : symbols) {
-            if (symbol.usages().isEmpty()) {
+            if (symbol.usages().isEmpty() && !symbol.declaration().getParent().hasDirectChildren(PlSqlKeyword.RETURN)) {
                 getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
                         symbol.declaration().getParent(), symbol.declaration().getTokenOriginalValue());
             }
