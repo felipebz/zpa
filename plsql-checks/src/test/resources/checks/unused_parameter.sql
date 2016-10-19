@@ -13,7 +13,8 @@ end;
 /
 
 create package test is
-  procedure foo(a number, b number); -- don't report violation on headings
+  procedure foo(a number, b number); -- don't report violation on declaration
+  cursor bar(a number) return my_type; -- don't report violation on declaration
   
    procedure foo(a number, b number) is -- Noncompliant
 --                         ^^^^^^^^

@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
@@ -46,10 +47,18 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
     public void leaveFile(AstNode astNode) {
         Set<Scope> scopes = getPlSqlContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
+            // procedure/function declaration (without implementation)
             if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION) &&
                 !scope.tree().hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
                 continue;
             }
+            
+            // cursor declaration (without implementation)
+            if (scope.tree().is(PlSqlGrammar.CURSOR_DECLARATION) &&
+                !scope.tree().hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
+                continue;
+            }
+            
             checkScope(scope);
         }
     }
