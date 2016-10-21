@@ -29,9 +29,6 @@
 'project:alexandria-plsql-utils/setup/grants.sql':[
 5,
 ],
-'project:alexandria-plsql-utils/setup/synonyms.sql':[
-7,
-],
 'project:alexandria-plsql-utils/setup/types.sql':[
 5,
 ],
@@ -46,9 +43,6 @@
 ],
 'project:pljson/src/addons/pljson_table_impl_body.typ':[
 2,
-],
-'project:pljson/src/grantsandsynonyms.sql':[
-3,
 ],
 'project:pljson/src/json.typ':[
 1,
@@ -76,9 +70,6 @@
 ],
 'project:utPLSQL/examples/str2list.pkg':[
 62,
-],
-'project:utPLSQL/examples/ut_mybooks_pkg.sql':[
-315,
 ],
 'project:utPLSQL/source/ut_argument.tab':[
 6,

@@ -347,7 +347,8 @@ public enum PlSqlKeyword implements TokenType {
     SEGMENT("segment"),
     ISOLATION("isolation"),
     SERIALIZABLE("serializable"),
-    COMMITTED("committed");
+    COMMITTED("committed"),
+    SYNONYM("synonym");
 
     private final String value;
     private final boolean reserved;
