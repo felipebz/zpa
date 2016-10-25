@@ -35,6 +35,7 @@ public enum ConditionsGrammar implements GrammarRuleKey {
     RELATIONAL_CONDITION,
     LIKE_CONDITION,
     BETWEEN_CONDITION,
+    MEMBER_CONDITION,
     CONDITION;
 
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -63,10 +64,13 @@ public enum ConditionsGrammar implements GrammarRuleKey {
                 b.optional(NOT), BETWEEN, 
                 CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION).skip();
         
+        b.rule(MEMBER_CONDITION).is(CONCATENATION_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), CONCATENATION_EXPRESSION).skip();
+        
         b.rule(CONDITION).is(b.firstOf(
                 RELATIONAL_CONDITION,
                 LIKE_CONDITION,
-                BETWEEN_CONDITION)).skip();
+                BETWEEN_CONDITION,
+                MEMBER_CONDITION)).skip();
     }
 
 }
