@@ -90,7 +90,7 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(ALIAS).is(IDENTIFIER_NAME);
         
-        b.rule(PARTITION_BY_CLAUSE).is(PARTITION, BY, EXPRESSION, b.optional(COMMA, EXPRESSION));
+        b.rule(PARTITION_BY_CLAUSE).is(PARTITION, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION));
         
         b.rule(WINDOWING_LIMIT).is(b.firstOf(
                 b.sequence(UNBOUNDED, b.firstOf(PRECEDING, FOLLOWING)),

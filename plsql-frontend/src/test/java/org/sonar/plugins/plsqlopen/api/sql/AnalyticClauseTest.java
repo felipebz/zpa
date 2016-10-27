@@ -45,7 +45,7 @@ public class AnalyticClauseTest extends RuleTest {
     
     @Test
     public void matchesOverPartitionByWithMultipleExpressions() {
-        assertThat(p).matches("over (partition by foo, bar)");
+        assertThat(p).matches("over (partition by foo, bar, baz)");
     }
     
     @Test
