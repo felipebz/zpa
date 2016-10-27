@@ -89,6 +89,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     AT_TIME_ZONE_EXPRESSION,
     VARIABLE_NAME,
     TRANSACTION_NAME,
+    NEW_OBJECT_EXPRESSION,
     
     // Statements
     LABEL,
@@ -561,11 +562,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(AT_TIME_ZONE_EXPRESSION).is(AT, b.firstOf(LOCAL, b.sequence(TIME, ZONE, EXPRESSION)));
         
+        b.rule(NEW_OBJECT_EXPRESSION).is(NEW, OBJECT_REFERENCE, b.optional(ARGUMENTS));
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         b.sequence(PRIOR, UNARY_EXPRESSION),
                         b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
+                        NEW_OBJECT_EXPRESSION,
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
                         CASE_EXPRESSION,
