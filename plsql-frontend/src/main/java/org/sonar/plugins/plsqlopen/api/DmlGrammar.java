@@ -123,8 +123,8 @@ public enum DmlGrammar implements GrammarRuleKey {
         b.rule(QUERY_PARTITION_CLAUSE).is(
                 PARTITION, BY,
                 b.firstOf(
-                        b.sequence(IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER)),
-                        b.sequence(LPARENTHESIS, IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER), RPARENTHESIS)));
+                        b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
+                        b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)));
         
         b.rule(INNER_CROSS_JOIN_CLAUSE).is(b.firstOf(
                 b.sequence(b.optional(INNER), JOIN, DML_TABLE_EXPRESSION_CLAUSE, ON_OR_USING_EXPRESSION),
