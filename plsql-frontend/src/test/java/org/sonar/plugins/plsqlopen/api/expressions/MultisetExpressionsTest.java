@@ -87,4 +87,44 @@ public class MultisetExpressionsTest extends RuleTest {
     public void matchesNotSubmultisetOf() {
         assertThat(p).matches("foo not submultiset of bar");
     }
+    
+    @Test
+    public void matchesMultisetExcept() {
+        assertThat(p).matches("foo multiset except bar");
+    }
+    
+    @Test
+    public void matchesMultisetExceptAll() {
+        assertThat(p).matches("foo multiset except all bar");
+    }
+    
+    @Test
+    public void matchesMultisetExceptDistinct() {
+        assertThat(p).matches("foo multiset except distinct bar");
+    }
+    
+    @Test
+    public void doesNotMatcheMultisetExceptAllDistinct() {
+        assertThat(p).notMatches("foo multiset except all distinct");
+    }
+    
+    @Test
+    public void matchesMultisetIntersect() {
+        assertThat(p).matches("foo multiset intersect bar");
+    }
+    
+    @Test
+    public void matchesMultisetIntersectWithFunctions() {
+        assertThat(p).matches("foo(1,2,3) multiset intersect bar('a', 'b', 'c')");
+    }
+    
+    @Test
+    public void matchesMultisetUnion() {
+        assertThat(p).matches("foo multiset union bar");
+    }
+    
+    @Test
+    public void matchesMultipleMultisetUnion() {
+        assertThat(p).matches("a multiset union b multiset union c multiset union d");
+    }
 }

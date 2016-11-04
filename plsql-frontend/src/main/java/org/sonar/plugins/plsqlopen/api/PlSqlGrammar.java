@@ -90,6 +90,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     VARIABLE_NAME,
     TRANSACTION_NAME,
     NEW_OBJECT_EXPRESSION,
+    MULTISET_EXPRESSION,
     
     // Statements
     LABEL,
@@ -564,11 +565,21 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NEW_OBJECT_EXPRESSION).is(NEW, OBJECT_REFERENCE, b.optional(ARGUMENTS));
         
+        //https://docs.oracle.com/cd/E11882_01/server.112/e41084/operators006.htm#SQLRF0032
+        b.rule(MULTISET_EXPRESSION).is(
+                OBJECT_REFERENCE, 
+                b.oneOrMore(
+                    MULTISET, 
+                    b.firstOf(EXCEPT, INTERSECT, UNION),
+                    b.optional(b.firstOf(ALL, DISTINCT)),
+                    OBJECT_REFERENCE));
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         b.sequence(PRIOR, UNARY_EXPRESSION),
                         b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
+                        MULTISET_EXPRESSION,
                         NEW_OBJECT_EXPRESSION,
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
