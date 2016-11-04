@@ -34,6 +34,26 @@ public class MultisetExpressionsTest extends RuleTest {
     }
     
     @Test
+    public void matchesIsASet() {
+        assertThat(p).matches("foo is a set");
+    }
+    
+    @Test
+    public void matchesIsNotASet() {
+        assertThat(p).matches("foo is not a set");
+    }
+    
+    @Test
+    public void matchesIsEmpty() {
+        assertThat(p).matches("foo is not a set");
+    }
+    
+    @Test
+    public void matchesIsNotEmpty() {
+        assertThat(p).matches("foo is not a set");
+    }
+    
+    @Test
     public void matchesMemberExpression() {
         assertThat(p).matches("foo member bar");
     }
@@ -46,5 +66,25 @@ public class MultisetExpressionsTest extends RuleTest {
     @Test
     public void matchesNotMemberOfExpression() {
         assertThat(p).matches("foo not member of bar");
+    }
+    
+    @Test
+    public void matchesSimpleSubmultiset() {
+        assertThat(p).matches("foo submultiset bar");
+    }
+    
+    @Test
+    public void matchesSubmultisetOf() {
+        assertThat(p).matches("foo submultiset of bar");
+    }
+    
+    @Test
+    public void matchesNotSubmultiset() {
+        assertThat(p).matches("foo not submultiset bar");
+    }
+    
+    @Test
+    public void matchesNotSubmultisetOf() {
+        assertThat(p).matches("foo not submultiset of bar");
     }
 }
