@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-public class MemberExpressionTest extends RuleTest {
+public class MultisetExpressionsTest extends RuleTest {
 
     @Before
     public void init() {
