@@ -78,5 +78,10 @@ public class AnalyticClauseTest extends RuleTest {
     public void matchesLongAnalyticClause() {
         assertThat(p).matches("over (partition by foo order by foo rows between unbounded preceding and unbounded following)");
     }
+    
+    @Test
+    public void matchesOverPartitionByExpression() {
+        assertThat(p).matches("over (partition by foo + bar)");
+    }
 
 }
