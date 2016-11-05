@@ -129,6 +129,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     STATEMENTS,
     FORALL_STATEMENT,
     SET_TRANSACTION_STATEMENT,
+    MERGE_STATEMENT,
     
     // Declarations
     DEFAULT_VALUE_ASSIGNMENT,
@@ -406,6 +407,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DELETE_STATEMENT).is(b.optional(LABEL), b.optional(FORALL_STATEMENT), DELETE_EXPRESSION, SEMICOLON);
         
+        b.rule(MERGE_STATEMENT).is(b.optional(LABEL), b.optional(FORALL_STATEMENT), MERGE_EXPRESSION, SEMICOLON);   
+        
         b.rule(CALL_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON);
         
         b.rule(UNNAMED_ACTUAL_PAMETER).is(
@@ -480,7 +483,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        CLOSE_STATEMENT,
                                        PIPE_ROW_STATEMENT,
                                        CASE_STATEMENT,
-                                       SET_TRANSACTION_STATEMENT));
+                                       SET_TRANSACTION_STATEMENT,
+                                       MERGE_STATEMENT));
         
         b.rule(STATEMENTS).is(b.oneOrMore(STATEMENT));
     }

@@ -353,7 +353,9 @@ public enum PlSqlKeyword implements TokenType {
     A("a"),
     EMPTY("empty"),
     SUBMULTISET("submultiset"),
-    EXCEPT("except");
+    EXCEPT("except"),
+    MERGE("merge"),
+    MATCHED("matched");
 
     private final String value;
     private final boolean reserved;
