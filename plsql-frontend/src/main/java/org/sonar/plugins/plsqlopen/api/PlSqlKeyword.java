@@ -349,7 +349,13 @@ public enum PlSqlKeyword implements TokenType {
     SERIALIZABLE("serializable"),
     COMMITTED("committed"),
     SYNONYM("synonym"),
-    MEMBER("member");
+    MEMBER("member"),
+    A("a"),
+    EMPTY("empty"),
+    SUBMULTISET("submultiset"),
+    EXCEPT("except"),
+    MERGE("merge"),
+    MATCHED("matched");
 
     private final String value;
     private final boolean reserved;

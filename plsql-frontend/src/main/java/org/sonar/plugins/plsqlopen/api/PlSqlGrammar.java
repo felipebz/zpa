@@ -90,6 +90,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     VARIABLE_NAME,
     TRANSACTION_NAME,
     NEW_OBJECT_EXPRESSION,
+    MULTISET_EXPRESSION,
     
     // Statements
     LABEL,
@@ -128,6 +129,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     STATEMENTS,
     FORALL_STATEMENT,
     SET_TRANSACTION_STATEMENT,
+    MERGE_STATEMENT,
     
     // Declarations
     DEFAULT_VALUE_ASSIGNMENT,
@@ -405,6 +407,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(DELETE_STATEMENT).is(b.optional(LABEL), b.optional(FORALL_STATEMENT), DELETE_EXPRESSION, SEMICOLON);
         
+        b.rule(MERGE_STATEMENT).is(b.optional(LABEL), b.optional(FORALL_STATEMENT), MERGE_EXPRESSION, SEMICOLON);   
+        
         b.rule(CALL_STATEMENT).is(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON);
         
         b.rule(UNNAMED_ACTUAL_PAMETER).is(
@@ -479,7 +483,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        CLOSE_STATEMENT,
                                        PIPE_ROW_STATEMENT,
                                        CASE_STATEMENT,
-                                       SET_TRANSACTION_STATEMENT));
+                                       SET_TRANSACTION_STATEMENT,
+                                       MERGE_STATEMENT));
         
         b.rule(STATEMENTS).is(b.oneOrMore(STATEMENT));
     }
@@ -564,11 +569,21 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NEW_OBJECT_EXPRESSION).is(NEW, OBJECT_REFERENCE, b.optional(ARGUMENTS));
         
+        //https://docs.oracle.com/cd/E11882_01/server.112/e41084/operators006.htm#SQLRF0032
+        b.rule(MULTISET_EXPRESSION).is(
+                OBJECT_REFERENCE, 
+                b.oneOrMore(
+                    MULTISET, 
+                    b.firstOf(EXCEPT, INTERSECT, UNION),
+                    b.optional(b.firstOf(ALL, DISTINCT)),
+                    OBJECT_REFERENCE));
+        
         b.rule(UNARY_EXPRESSION).is(b.firstOf(
                         b.sequence(PLUS, UNARY_EXPRESSION),
                         b.sequence(MINUS, UNARY_EXPRESSION),
                         b.sequence(PRIOR, UNARY_EXPRESSION),
                         b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
+                        MULTISET_EXPRESSION,
                         NEW_OBJECT_EXPRESSION,
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,

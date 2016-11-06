@@ -64,6 +64,9 @@ public enum DmlGrammar implements GrammarRuleKey {
     UPDATE_EXPRESSION,
     INSERT_COLUMNS,
     INSERT_EXPRESSION,
+    MERGE_EXPRESSION,
+    MERGE_UPDATE_CLAUSE,
+    MERGE_INSERT_CLAUSE,
     DML_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -71,13 +74,15 @@ public enum DmlGrammar implements GrammarRuleKey {
         createDeleteExpression(b);
         createUpdateExpression(b);
         createInsertExpression(b);
+        createMergeExpression(b);
         
         b.rule(DML_COMMAND).is(
                 b.firstOf(
                         SELECT_EXPRESSION, 
                         DELETE_EXPRESSION, 
                         UPDATE_EXPRESSION, 
-                        INSERT_EXPRESSION), 
+                        INSERT_EXPRESSION,
+                        MERGE_EXPRESSION), 
                 b.optional(SEMICOLON));
     }
     
@@ -123,8 +128,8 @@ public enum DmlGrammar implements GrammarRuleKey {
         b.rule(QUERY_PARTITION_CLAUSE).is(
                 PARTITION, BY,
                 b.firstOf(
-                        b.sequence(IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER)),
-                        b.sequence(LPARENTHESIS, IDENTIFIER, b.zeroOrMore(COMMA, IDENTIFIER), RPARENTHESIS)));
+                        b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
+                        b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)));
         
         b.rule(INNER_CROSS_JOIN_CLAUSE).is(b.firstOf(
                 b.sequence(b.optional(INNER), JOIN, DML_TABLE_EXPRESSION_CLAUSE, ON_OR_USING_EXPRESSION),
@@ -249,6 +254,24 @@ public enum DmlGrammar implements GrammarRuleKey {
                         b.sequence(VALUES, EXPRESSION),
                         SELECT_EXPRESSION),
                 b.optional(RETURNING_INTO_CLAUSE));
+    }
+
+    private static void createMergeExpression(LexerfulGrammarBuilder b) {
+        
+        b.rule(MERGE_UPDATE_CLAUSE).is(WHEN, MATCHED, THEN, UPDATE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN), 
+                        b.optional(WHERE_CLAUSE), b.optional(DELETE, WHERE_CLAUSE));
+        
+        b.rule(MERGE_INSERT_CLAUSE).is(WHEN, NOT, MATCHED, THEN, INSERT, 
+                        b.optional(LPARENTHESIS, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE), RPARENTHESIS),
+                        VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS, b.optional(WHERE_CLAUSE));
+        
+        //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
+        b.rule(MERGE_EXPRESSION).is(
+                MERGE, INTO, TABLE_REFERENCE, b.optional(b.nextNot(USING), IDENTIFIER_NAME),
+                USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
+                b.firstOf(
+                        b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE)),
+                        b.sequence(MERGE_INSERT_CLAUSE, b.optional(MERGE_UPDATE_CLAUSE))));
     }
 
 }

@@ -35,7 +35,11 @@ public enum ConditionsGrammar implements GrammarRuleKey {
     RELATIONAL_CONDITION,
     LIKE_CONDITION,
     BETWEEN_CONDITION,
+    MULTISET_CONDITION,
+    IS_A_SET_CONDITION,
+    IS_EMPTY_CONDITION,
     MEMBER_CONDITION,
+    SUBMULTISET_CONDITION,
     CONDITION;
 
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -64,13 +68,26 @@ public enum ConditionsGrammar implements GrammarRuleKey {
                 b.optional(NOT), BETWEEN, 
                 CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION).skip();
         
+        b.rule(IS_A_SET_CONDITION).is(CONCATENATION_EXPRESSION, IS, b.optional(NOT), A, SET);
+        
+        b.rule(IS_EMPTY_CONDITION).is(CONCATENATION_EXPRESSION, IS, b.optional(NOT), EMPTY);
+        
         b.rule(MEMBER_CONDITION).is(CONCATENATION_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), CONCATENATION_EXPRESSION).skip();
+        
+        b.rule(SUBMULTISET_CONDITION).is(CONCATENATION_EXPRESSION, b.optional(NOT), SUBMULTISET, b.optional(OF), CONCATENATION_EXPRESSION);
+        
+        https://docs.oracle.com/cloud/latest/db112/SQLRF/conditions006.htm#SQLRF52128
+        b.rule(MULTISET_CONDITION).is(b.firstOf(
+                IS_A_SET_CONDITION,
+                IS_EMPTY_CONDITION,
+                MEMBER_CONDITION, 
+                SUBMULTISET_CONDITION));
         
         b.rule(CONDITION).is(b.firstOf(
                 RELATIONAL_CONDITION,
                 LIKE_CONDITION,
                 BETWEEN_CONDITION,
-                MEMBER_CONDITION)).skip();
+                MULTISET_CONDITION)).skip();
     }
 
 }
