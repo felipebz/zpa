@@ -782,7 +782,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.firstOf(
                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
+                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON),
                         b.sequence(EXTERNAL, SEMICOLON))
                 );
         
@@ -796,7 +796,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.firstOf(
                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
+                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON))
                 );
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm
