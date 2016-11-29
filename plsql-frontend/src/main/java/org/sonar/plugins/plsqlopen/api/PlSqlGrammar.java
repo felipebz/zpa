@@ -793,10 +793,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE, RESULT_CACHE)),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON))
+                        b.sequence(
+                                b.firstOf(IS, AS),
+                                b.firstOf(
+                                        b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON))),
+                        b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON))
                 );
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm

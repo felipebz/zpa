@@ -175,5 +175,10 @@ public class CreateFunctionTest extends RuleTest {
                 + "return 0;\n"
                 + "end;");
     }
+    
+    @Test
+    public void matchesAggregateFunction() {
+        assertThat(p).matches("create function test return varchar2 aggregate using foo.bar;");
+    }
 
 }
