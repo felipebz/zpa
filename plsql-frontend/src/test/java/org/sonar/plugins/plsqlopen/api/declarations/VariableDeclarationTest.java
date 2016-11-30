@@ -69,6 +69,12 @@ public class VariableDeclarationTest extends RuleTest {
         assertThat(p).matches("var number not null := 1;");
         assertThat(p).matches("var number not null default 1;");
     }
+        
+    @Test
+    public void matchesDeclarationExplicitNullable() {
+        assertThat(p).matches("var number null := 1;");
+        assertThat(p).matches("var number null default 1;");
+    }
     
     @Test
     public void matchesTypeAnchoredDeclaration() {

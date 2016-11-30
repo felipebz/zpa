@@ -318,7 +318,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DATE_DATATYPE,
                 ANCHORED_DATATYPE,
                 CUSTOM_DATATYPE,
-                REF_DATATYPE), b.optional(NOT, NULL));
+                REF_DATATYPE), 
+                b.optional(b.firstOf(
+                        b.sequence(NOT, NULL), 
+                        NULL)));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
