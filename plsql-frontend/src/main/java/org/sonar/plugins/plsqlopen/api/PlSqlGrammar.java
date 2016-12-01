@@ -588,9 +588,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
                         MULTISET_EXPRESSION,
                         NEW_OBJECT_EXPRESSION,
+                        CASE_EXPRESSION,
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
-                        CASE_EXPRESSION,
                         EXISTS_EXPRESSION),
                 b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild();
         
