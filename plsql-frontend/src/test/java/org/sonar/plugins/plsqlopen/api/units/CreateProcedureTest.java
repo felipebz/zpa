@@ -107,7 +107,7 @@ public class CreateProcedureTest extends RuleTest {
     
     @Test
     public void matchesProcedureWithJavaCallSpec() {
-        assertThat(p).matches("create procedure test is language java 'javatest';");
+        assertThat(p).matches("create procedure test is language java name 'javatest';");
     }
     
     @Test

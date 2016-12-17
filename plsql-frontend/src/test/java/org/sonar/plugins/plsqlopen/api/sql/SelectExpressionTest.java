@@ -142,4 +142,19 @@ public class SelectExpressionTest extends RuleTest {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id");
     }
 
+    @Test
+    public void matchesSelectForUpdateBeforeOrderBy() {
+        assertThat(p).matches("select * from foo for update order by bar ");
+    }
+    
+    @Test
+    public void matchesSelectForUpdateAfterOrderBy() {
+        assertThat(p).matches("select * from foo order by baz for update");
+    }
+    
+    @Test
+    public void matchesSelectWithParenthesisForUpdate() {
+        assertThat(p).matches("(select 1 from dual) for update");
+    }
+    
 }

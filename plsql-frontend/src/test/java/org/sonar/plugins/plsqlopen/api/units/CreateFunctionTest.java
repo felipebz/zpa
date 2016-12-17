@@ -107,7 +107,7 @@ public class CreateFunctionTest extends RuleTest {
     
     @Test
     public void matchesFunctionWithJavaCallSpec() {
-        assertThat(p).matches("create function test return number is language java 'javatest';");
+        assertThat(p).matches("create function test return number is language java name 'javatest';");
     }
     
     @Test
@@ -174,6 +174,11 @@ public class CreateFunctionTest extends RuleTest {
                 + "begin\n"
                 + "return 0;\n"
                 + "end;");
+    }
+    
+    @Test
+    public void matchesAggregateFunction() {
+        assertThat(p).matches("create function test return varchar2 aggregate using foo.bar;");
     }
 
 }

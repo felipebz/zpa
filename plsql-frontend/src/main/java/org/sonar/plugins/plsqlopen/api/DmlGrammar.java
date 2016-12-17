@@ -211,7 +211,9 @@ public enum DmlGrammar implements GrammarRuleKey {
                                     b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
                             b.optional(HAVING_CLAUSE),
                             b.optional(HIERARCHICAL_QUERY_CLAUSE),
-                            b.optional(ORDER_BY_CLAUSE)),
+                            b.optional(b.firstOf(
+                                    b.sequence(ORDER_BY_CLAUSE,  b.optional(FOR_UPDATE_CLAUSE)), 
+                                    b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE))))),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                 b.optional(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
                 b.optional(FOR_UPDATE_CLAUSE));

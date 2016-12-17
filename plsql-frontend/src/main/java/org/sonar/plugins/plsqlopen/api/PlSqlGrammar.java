@@ -318,7 +318,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DATE_DATATYPE,
                 ANCHORED_DATATYPE,
                 CUSTOM_DATATYPE,
-                REF_DATATYPE), b.optional(NOT, NULL));
+                REF_DATATYPE), 
+                b.optional(b.firstOf(
+                        b.sequence(NOT, NULL), 
+                        NULL)));
     }
 
     private static void createStatements(LexerfulGrammarBuilder b) {
@@ -585,9 +588,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
                         MULTISET_EXPRESSION,
                         NEW_OBJECT_EXPRESSION,
+                        CASE_EXPRESSION,
                         IN_EXPRESSION,
                         SELECT_EXPRESSION,
-                        CASE_EXPRESSION,
                         EXISTS_EXPRESSION),
                 b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild();
         
@@ -782,7 +785,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.firstOf(
                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON),
+                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON),
                         b.sequence(EXTERNAL, SEMICOLON))
                 );
         
@@ -793,10 +796,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE, RESULT_CACHE)),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                b.firstOf(IS, AS),
                 b.firstOf(
-                        b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, STRING_LITERAL, SEMICOLON))
+                        b.sequence(
+                                b.firstOf(IS, AS),
+                                b.firstOf(
+                                        b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON))),
+                        b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON))
                 );
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm

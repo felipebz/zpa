@@ -35,7 +35,6 @@ public enum PlSqlKeyword implements TokenType {
     BEGIN("begin", true),
     BETWEEN("between", true),
     BY("by", true),
-    CASE("case", true),
     CHECK("check", true),
     CLUSTERS("clusters", true),
     CLUSTER("cluster", true),
@@ -355,7 +354,10 @@ public enum PlSqlKeyword implements TokenType {
     SUBMULTISET("submultiset"),
     EXCEPT("except"),
     MERGE("merge"),
-    MATCHED("matched");
+    MATCHED("matched"),
+    AGGREGATE("aggregate"),
+    CASE("case"),
+;
 
     private final String value;
     private final boolean reserved;
