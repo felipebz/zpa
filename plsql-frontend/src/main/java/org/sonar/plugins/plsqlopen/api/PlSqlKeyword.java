@@ -97,6 +97,7 @@ public enum PlSqlKeyword implements TokenType {
     TABAUTH("tabauth", true),
     THEN("then", true),
     TO("to", true),
+    
     UNION("union", true),
     UNIQUE("unique", true),
     UPDATE("update", true),
@@ -357,6 +358,15 @@ public enum PlSqlKeyword implements TokenType {
     MATCHED("matched"),
     AGGREGATE("aggregate"),
     CASE("case"),
+    TRUNCATE("truncate", true),
+    LOG("log"),
+    PURGE("purge"),
+    STORAGE("storage"),
+    PRIMARY("primary"),
+    KEY("key"),
+    CASCADE("cascade"),
+    ADD("add"),
+    MODIFY("modify"),
 ;
 
     private final String value;

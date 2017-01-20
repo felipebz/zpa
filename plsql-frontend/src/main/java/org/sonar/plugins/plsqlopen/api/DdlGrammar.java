@@ -31,9 +31,12 @@ public enum DdlGrammar implements GrammarRuleKey {
     
     DDL_COMMENT,
     DDL_COMMAND,
+    DDL_TABLE,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
+    ALTER_TABLE,
+    TRUNCATE_TABLE,
     ALTER_PLSQL_UNIT,
     ALTER_PROCEDURE_FUNCTION,
     COMPILE_CLAUSE,
@@ -81,6 +84,22 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
                 b.optional(SEMICOLON));
         
+        b.rule(ALTER_TABLE).is(
+                ALTER, TABLE, UNIT_NAME,
+                b.optional(RENAME, TO, UNIT_NAME),
+                b.optional(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME),
+                b.optional(ADD, MODIFY, DROP),
+                b.optional(LPARENTHESIS), b.optional(TABLE_RELATIONAL_PROPERTIES), b.optional(RPARENTHESIS),                
+                b.optional(DROP, PRIMARY, KEY, b.optional(CASCADE)),
+                b.optional(SEMICOLON));
+		
+        b.rule(TRUNCATE_TABLE).is(
+                TRUNCATE, TABLE, UNIT_NAME,  
+				b.optional(b.firstOf(PRESERVE, PURGE), MATERIALIZED, VIEW, LOG),
+				b.optional(b.firstOf(DROP, REUSE), STORAGE),
+                b.optional(SEMICOLON));
+
+        
         b.rule(COMPILE_CLAUSE).is(COMPILE, b.optional(DEBUG), b.optional(REUSE, SETTINGS));
         
         b.rule(ALTER_TRIGGER).is(
@@ -112,7 +131,9 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(PUBLIC), SYNONYM, UNIT_NAME,
                 FOR, DmlGrammar.TABLE_REFERENCE, b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM));
+        b.rule(DDL_TABLE).is(b.firstOf(CREATE_TABLE, ALTER_TABLE, TRUNCATE_TABLE));
+        		
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, DDL_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM));
     }
 
 }
