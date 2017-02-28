@@ -24,10 +24,11 @@ import com.sonar.orchestrator.build.SonarScanner;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.sonar.wsclient.issue.Issue;
-import org.sonar.wsclient.issue.IssueQuery;
+import org.sonarqube.ws.Issues.Issue;
+import org.sonarqube.ws.client.issue.SearchWsRequest;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +39,7 @@ public class IssueTest {
   public static Orchestrator orchestrator = Tests.ORCHESTRATOR;
 
   private static final String PROJECT_KEY = "metrics";
-  private static final String FILE_NAME = "source1.sql";
+  private static final String FILE_NAME = PROJECT_KEY + ":src/source1.sql";
 
 
   @BeforeClass
@@ -57,17 +58,19 @@ public class IssueTest {
   }
 
   @Test
-  public void one_issue_for_export_one_function_per_line() {
-    List<Issue> issues = orchestrator.getServer().wsClient().issueClient().find(IssueQuery.create()).list();
+  public void one_issue() {
+    List<Issue> issues = getIssues(PROJECT_KEY);
 
     assertThat(issues).hasSize(1);
-    assertThat(issues.get(0).ruleKey()).isEqualTo("plsql:EmptyBlock");
-    assertThat(issues.get(0).componentKey()).isEqualTo(keyFor(FILE_NAME));
+    assertThat(issues.get(0).getRule()).isEqualTo("plsql:EmptyBlock");
+    assertThat(issues.get(0).getComponent()).isEqualTo(FILE_NAME);
   }
 
   /* Helper methods */
-
-  private static String keyFor(String s) {
-    return PROJECT_KEY + (orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("4.2") ? ":src/" : ":") + s;
+  private List<Issue> getIssues(String componentKey) {
+      return Tests.newWsClient(orchestrator)
+              .issues()
+              .search(new SearchWsRequest().setComponentKeys(Collections.singletonList(componentKey)))
+              .getIssuesList();
   }
 }

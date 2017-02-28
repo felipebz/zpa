@@ -28,6 +28,9 @@ import java.io.File;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.WsClientFactories;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ MetricsTest.class, IssueTest.class, })
@@ -44,6 +47,12 @@ public class Tests {
     public static SonarScanner createSonarScanner() {
         SonarScanner build = SonarScanner.create();
         return build;
+    }
+    
+    public static WsClient newWsClient(Orchestrator orchestrator) {
+        return WsClientFactories.getDefault()
+                .newClient(HttpConnector.newBuilder()
+                        .url(orchestrator.getServer().getUrl()).build());
     }
 
 }

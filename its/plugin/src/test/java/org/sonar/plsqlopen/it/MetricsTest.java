@@ -24,12 +24,13 @@ import com.sonar.orchestrator.build.SonarScanner;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.sonar.wsclient.Sonar;
-import org.sonar.wsclient.services.Measure;
-import org.sonar.wsclient.services.Resource;
-import org.sonar.wsclient.services.ResourceQuery;
+import org.sonarqube.ws.WsMeasures.ComponentWsResponse;
+import org.sonarqube.ws.WsMeasures.Measure;
+import org.sonarqube.ws.client.measure.ComponentWsRequest;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,8 +40,7 @@ public class MetricsTest {
     public static Orchestrator orchestrator = Tests.ORCHESTRATOR;
 
     private static final String PROJECT_KEY = "metrics";
-    private static final String FILE_NAME = "source1.sql";
-    private static Sonar wsClient;
+    private static final String FILE_NAME = PROJECT_KEY + ":src/source1.sql";
 
     @BeforeClass
     public static void init() {
@@ -50,68 +50,73 @@ public class MetricsTest {
                 .setProjectKey(PROJECT_KEY).setProjectName(PROJECT_KEY).setProjectVersion("1.0").setSourceDirs("src")
                 .setProperty("sonar.sourceEncoding", "UTF-8").setProfile("empty-profile");
         orchestrator.executeBuild(build);
-
-        wsClient = orchestrator.getServer().getWsClient();
     }
 
     @Test
     public void project_level() {
         // Size
-        assertThat(getProjectMeasure("ncloc").getIntValue()).isEqualTo(10);
-        assertThat(getProjectMeasure("lines").getIntValue()).isEqualTo(11);
-        assertThat(getProjectMeasure("files").getIntValue()).isEqualTo(2);
-        assertThat(getProjectMeasure("directories").getIntValue()).isEqualTo(1);
-        assertThat(getProjectMeasure("statements").getIntValue()).isEqualTo(2);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(10);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(11);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(2);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "directories")).isEqualTo(1);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(2);
         // Documentation
-        assertThat(getProjectMeasure("comment_lines").getIntValue()).isEqualTo(1);
-        assertThat(getProjectMeasure("commented_out_code_lines")).isNull();
-        assertThat(getProjectMeasure("comment_lines_density").getValue()).isEqualTo(9.1);
-        assertThat(getProjectMeasure("public_documented_api_density")).isNull();
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1);
+        assertThat(getMeasureAsString(PROJECT_KEY, "commented_out_code_lines")).isNull();
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(9.1);
+        assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull();
         // Duplication
-        assertThat(getProjectMeasure("duplicated_lines").getValue()).isEqualTo(0.0);
-        assertThat(getProjectMeasure("duplicated_blocks").getValue()).isEqualTo(0.0);
-        assertThat(getProjectMeasure("duplicated_files").getValue()).isEqualTo(0.0);
-        assertThat(getProjectMeasure("duplicated_lines_density").getValue()).isEqualTo(0.0);
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero();
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_blocks")).isZero();
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_files")).isZero();
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero();
         // Rules
-        assertThat(getProjectMeasure("violations").getValue()).isEqualTo(0.0);
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero();
         // Tests
-        assertThat(getProjectMeasure("tests")).isNull();
-        assertThat(getProjectMeasure("coverage")).isNull();
+        assertThat(getMeasureAsString(PROJECT_KEY, "tests")).isNull();
+        assertThat(getMeasureAsString(PROJECT_KEY, "coverage")).isNull();
     }
 
     @Test
     public void file_level() {
         // Size
-        assertThat(getFileMeasure("ncloc").getIntValue()).isEqualTo(3);
-        assertThat(getFileMeasure("lines").getIntValue()).isEqualTo(3);
-        assertThat(getFileMeasure("statements").getIntValue()).isEqualTo(1);
+        assertThat(getMeasureAsInteger(FILE_NAME, "ncloc")).isEqualTo(3);
+        assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(3);
+        assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(1);
         // Documentation
-        assertThat(getFileMeasure("comment_lines").getIntValue()).isEqualTo(0);
-        assertThat(getFileMeasure("commented_out_code_lines")).isNull();
-        assertThat(getFileMeasure("comment_lines_density").getValue()).isEqualTo(0.0);
+        assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero();
+        assertThat(getMeasureAsInteger(FILE_NAME, "commented_out_code_lines")).isZero();
+        assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero();
         // Duplication
-        assertThat(getFileMeasure("duplicated_lines")).isNull();
-        assertThat(getFileMeasure("duplicated_blocks")).isNull();
-        assertThat(getFileMeasure("duplicated_files")).isNull();
-        assertThat(getFileMeasure("duplicated_lines_density")).isNull();
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero();
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_blocks")).isZero();
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_files")).isZero();
+        assertThat(getMeasureAsDouble(FILE_NAME, "duplicated_lines_density")).isZero();
         // Rules
-        assertThat(getFileMeasure("violations")).isNull();
+        assertThat(getMeasureAsInteger(FILE_NAME, "violations")).isZero();
     }
 
     /* Helper methods */
-
-    private Measure getProjectMeasure(String metricKey) {
-        Resource resource = wsClient.find(ResourceQuery.createForMetrics(PROJECT_KEY, metricKey));
-        return resource == null ? null : resource.getMeasure(metricKey);
+    private static Measure getMeasure(String componentKey, String metricKey) {
+        ComponentWsResponse response = Tests.newWsClient(orchestrator).measures()
+                .component(new ComponentWsRequest().setComponentKey(componentKey)
+                        .setMetricKeys(Collections.singletonList(metricKey)));
+        List<Measure> measures = response.getComponent().getMeasuresList();
+        return measures.size() == 1 ? measures.get(0) : null;
     }
 
-    private Measure getFileMeasure(String metricKey) {
-        Resource resource = wsClient.find(ResourceQuery.createForMetrics(keyFor(FILE_NAME), metricKey));
-        return resource == null ? null : resource.getMeasure(metricKey);
+    private static String getMeasureAsString(String componentKey, String metricKey) {
+        Measure measure = getMeasure(componentKey, metricKey);
+        return (measure == null) ? null : measure.getValue();
     }
 
-    private static String keyFor(String s) {
-        return PROJECT_KEY
-                + (orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("4.2") ? ":src/" : ":") + s;
+    private static Integer getMeasureAsInteger(String componentKey, String metricKey) {
+        Measure measure = getMeasure(componentKey, metricKey);
+        return (measure == null) ? null : Integer.parseInt(measure.getValue());
+    }
+
+    private static Double getMeasureAsDouble(String componentKey, String metricKey) {
+        Measure measure = getMeasure(componentKey, metricKey);
+        return (measure == null) ? null : Double.parseDouble(measure.getValue());
     }
 }
