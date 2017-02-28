@@ -76,7 +76,7 @@ public enum ConditionsGrammar implements GrammarRuleKey {
         
         b.rule(SUBMULTISET_CONDITION).is(CONCATENATION_EXPRESSION, b.optional(NOT), SUBMULTISET, b.optional(OF), CONCATENATION_EXPRESSION);
         
-        https://docs.oracle.com/cloud/latest/db112/SQLRF/conditions006.htm#SQLRF52128
+        //https://docs.oracle.com/cloud/latest/db112/SQLRF/conditions006.htm#SQLRF52128
         b.rule(MULTISET_CONDITION).is(b.firstOf(
                 IS_A_SET_CONDITION,
                 IS_EMPTY_CONDITION,

@@ -32,7 +32,7 @@ public class PlSql extends AbstractLanguage {
 
     private static final String[] DEFAULT_FILE_SUFFIXES = { "sql", "pkg", "pks", "pkb" };
 
-    private Settings settings;
+    private final Settings settings;
 
     public PlSql(Settings configuration) {
         super(KEY, "PL/SQL");
@@ -57,6 +57,16 @@ public class PlSql extends AbstractLanguage {
             }
         }
         return nonEmptyStrings.toArray(new String[nonEmptyStrings.size()]);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+    
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
 }

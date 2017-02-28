@@ -80,7 +80,7 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         PlSqlAstScanner.scanSingleFile(file, components, ImmutableList.of(new SymbolVisitor(), check, verifier));
         
         Iterator<AnalyzerMessage> actualIssues = getActualIssues(components);
-        List<TestIssue> expectedIssues = Ordering.natural().onResultOf((TestIssue issue) -> issue.line()).sortedCopy(verifier.expectedIssues);
+        List<TestIssue> expectedIssues = Ordering.natural().onResultOf(TestIssue::line).sortedCopy(verifier.expectedIssues);
 
         for (TestIssue expected : expectedIssues) {
             if (actualIssues.hasNext()) {

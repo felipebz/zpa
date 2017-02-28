@@ -115,13 +115,15 @@ public class PlSqlSquidSensor implements Sensor {
             SourceFile squidFile = (SourceFile) squidSourceFile;
 
             InputFile inputFile = context.fileSystem().inputFile(context.fileSystem().predicates()
-                    .is(new java.io.File(squidFile.getKey())));
+                    .is(new File(squidFile.getKey())));
 
-            saveFilesComplexityDistribution(inputFile, squidFile);
-            saveFunctionsComplexityDistribution(inputFile, squidFile);
-            saveMeasures(inputFile, squidFile);
-            saveHighlighting(inputFile);
-            saveCpdTokens(inputFile);
+            if (inputFile != null) {
+                saveFilesComplexityDistribution(inputFile, squidFile);
+                saveFunctionsComplexityDistribution(inputFile, squidFile);
+                saveMeasures(inputFile, squidFile);
+                saveHighlighting(inputFile);
+                saveCpdTokens(inputFile);
+            }
         }
     }
 
@@ -132,7 +134,7 @@ public class PlSqlSquidSensor implements Sensor {
                 .withValue(squidFile.getInt(PlSqlMetric.FILES))
                 .save();
         
-        context.<Integer>newMeasure() .on(sonarFile)
+        context.<Integer>newMeasure().on(sonarFile)
                 .forMetric(CoreMetrics.NCLOC)
                 .withValue(squidFile.getInt(PlSqlMetric.LINES_OF_CODE))
                 .save();
