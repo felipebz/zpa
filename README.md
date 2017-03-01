@@ -7,7 +7,7 @@ Continuous Integration | Status
 This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 5.6 and newer.
 
 ## Installation
-- Download the latest [sonar-plsql-open-plugin-1.0-SNAPSHOT.jar from AppVeyor](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) packages into the SONARQUBE_HOME/extensions/plugins directory;
+- Download the [latest release](https://github.com/felipebz/sonar-plsql/releases) or the [latest sonar-plsql-open-plugin-\*-SNAPSHOT.jar from AppVeyor](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) into the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
 - Navigate to the Update Center (<SonarQube URL>/updatecenter). The Update Center should list "PL/SQL (Community)" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](http://docs.sonarqube.org/display/SONAR/Analyzing+with+SonarQube+Scanner).
