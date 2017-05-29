@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
@@ -44,6 +45,7 @@ public class SymbolVisitorTest {
     private SensorContextTester context;
     private String eol;
     private File baseDir;
+    private String key;
     
     private void scanFile() throws IOException {
         baseDir = temp.newFolder();
@@ -51,9 +53,9 @@ public class SymbolVisitorTest {
         String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), Charsets.UTF_8);
         Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
         
-        DefaultInputFile inputFile = new DefaultInputFile("key", "test.sql").setLanguage("plsqlopen")
-                .initMetadata(Files.toString(file, Charsets.UTF_8));
-        
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", "test.sql").setLanguage("plsqlopen")
+                .initMetadata(Files.toString(file, Charsets.UTF_8)).setModuleBaseDir(baseDir.toPath()).build();
+        key = inputFile.key();
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
@@ -85,14 +87,12 @@ public class SymbolVisitorTest {
     private void verifySymbols() throws IOException {
         scanFile();
         
-        String key = "key:test.sql";
-        
         assertThat(context.referencesForSymbolAt(key, 2, lineOffset(3)))
             .extracting("start.line", "start.lineOffset")
              .containsExactly(tuple(4, lineOffset(3)));
 
-        assertThat(context.referencesForSymbolAt(key, 7, lineOffset(7))).isEmpty();
-        assertThat(context.referencesForSymbolAt(key, 11, lineOffset(12))).isEmpty();
+        assertThat(context.referencesForSymbolAt(key, 7, lineOffset(7))).isNull();
+        assertThat(context.referencesForSymbolAt(key, 11, lineOffset(12))).isNull();
         
         assertThat(context.referencesForSymbolAt(key, 12, lineOffset(10)))
             .extracting("start.line", "start.lineOffset")

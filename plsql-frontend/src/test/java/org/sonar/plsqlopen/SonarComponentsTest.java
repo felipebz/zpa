@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
@@ -58,8 +59,9 @@ public class SonarComponentsTest {
         PlSqlCheck expectedCheck = new CustomCheck();
         
         DefaultFileSystem fileSystem = new DefaultFileSystem(new File(""));
-        DefaultInputFile inputFile = new DefaultInputFile(".", "file.sql");
-        inputFile.setLines(3);
+        DefaultInputFile inputFile = new TestInputFileBuilder(".", "file.sql")
+                .setLines(3)
+                .build();
         fileSystem.add(inputFile);
 
         when(this.checks.all()).thenReturn(Lists.newArrayList(expectedCheck));
@@ -75,8 +77,8 @@ public class SonarComponentsTest {
 
         sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on wrong line", -5), inputFile);
         sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), inputFile);
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new DefaultInputFile(".", "."));
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new DefaultInputFile(".", "unknown_file"));
+        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new TestInputFileBuilder(".", ".").build());
+        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new TestInputFileBuilder(".", "unknown_file").build());
         sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "other message", 3), inputFile);
         
         //verify(issuable, times(5)).addIssue(any(Issue.class));
@@ -92,7 +94,7 @@ public class SonarComponentsTest {
     @Test
     public void testInputFromIOFile() throws Exception {
         DefaultFileSystem fileSystem = new DefaultFileSystem(new File(""));
-        DefaultInputFile inputFile = new DefaultInputFile(".", "file.sql");
+        DefaultInputFile inputFile = new TestInputFileBuilder(".", "file.sql").build();
         fileSystem.add(inputFile);
         when(context.fileSystem()).thenReturn(fileSystem);
         

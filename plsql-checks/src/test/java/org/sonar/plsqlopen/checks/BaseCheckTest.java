@@ -26,6 +26,7 @@ import java.util.Locale;
 import org.junit.Before;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
@@ -52,8 +53,8 @@ public class BaseCheckTest {
     
     protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
         String relativePath = defaultResourceFolder + filename;
-        DefaultInputFile inputFile = new DefaultInputFile("key", relativePath).setLanguage("plsqlopen");
-        fs.add(inputFile);
+        TestInputFileBuilder inputFile = new TestInputFileBuilder("key", relativePath).setLanguage("plsqlopen");
+        fs.add(inputFile.build());
         
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);

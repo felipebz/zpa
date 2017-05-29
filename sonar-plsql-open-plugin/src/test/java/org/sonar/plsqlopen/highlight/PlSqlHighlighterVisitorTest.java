@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.SonarComponents;
@@ -67,8 +68,8 @@ public class PlSqlHighlighterVisitorTest {
         String content = Files.toString(new File("src/test/resources/org/sonar/plsqlopen/highlight.sql"), Charsets.UTF_8);
         Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
         
-        DefaultInputFile inputFile = new DefaultInputFile("key", "test.sql").setLanguage("plsqlopen")
-                .initMetadata(Files.toString(file, Charsets.UTF_8));
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", "test.sql").setLanguage("plsqlopen")
+                .initMetadata(Files.toString(file, Charsets.UTF_8)).setModuleBaseDir(baseDir.toPath()).build();
         
         SensorContextTester context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
@@ -78,7 +79,7 @@ public class PlSqlHighlighterVisitorTest {
         
         PlSqlAstScanner.scanSingleFile(inputFile.file(), components, highlighter);
         
-        String key = "key:test.sql";
+        String key = inputFile.key();
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
         assertThat(context.highlightingTypeAt(key, 2, lineOffset(3))).containsExactly(TypeOfText.COMMENT);
         assertThat(context.highlightingTypeAt(key, 3, lineOffset(3))).containsExactly(TypeOfText.STRUCTURED_COMMENT);

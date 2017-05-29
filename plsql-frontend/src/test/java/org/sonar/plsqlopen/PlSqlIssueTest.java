@@ -32,6 +32,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
@@ -48,10 +49,10 @@ public class PlSqlIssueTest {
     
     @Before
     public void setup() {
-        file = new DefaultInputFile("module", "relPath");
-        file.setLines(3);
-        file.setOriginalLineOffsets(new int[] { 0, 10, 15 });
-        file.setLastValidOffset(25);
+        file = new TestInputFileBuilder("module", "relPath")
+                .setLines(3)
+                .setOriginalLineOffsets(new int[] { 0, 10, 15 })
+                .setLastValidOffset(25).build();
         ruleKey = RuleKey.of("squid", "ruleKey");
         sensorContext = mock(SensorContext.class);
         storage = mock(SensorStorage.class);

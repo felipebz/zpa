@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
@@ -65,8 +66,8 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         DefaultInputFile inputFile;
         
         try {
-            inputFile = new DefaultInputFile("key", filename).setLanguage("plsqlopen")
-                    .initMetadata(Files.toString(file, Charsets.UTF_8));
+            inputFile = new TestInputFileBuilder("key", filename).setLanguage("plsqlopen")
+                    .initMetadata(Files.toString(file, Charsets.UTF_8)).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -14,11 +14,6 @@
   <name>PL/SQL :: Sonar Plugin</name>
   <description>Enable analysis and reporting on PL/SQL projects.</description>
 
-  <properties>
-    <sonar.pluginClass>org.sonar.plsqlopen.PlSqlPlugin</sonar.pluginClass>
-    <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sslr</groupId>
@@ -74,5 +69,21 @@
         <scope>test</scope>
       </dependency>
   </dependencies>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
+        <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <configuration>
+          <pluginName>PL/SQL (Community)</pluginName>
+          <pluginClass>org.sonar.plsqlopen.PlSqlPlugin</pluginClass>
+          <skipDependenciesPackaging>false</skipDependenciesPackaging>
+          <sonarLintSupported>false</sonarLintSupported>
+          <sonarQubeMinVersion>${sonar.min.version}</sonarQubeMinVersion>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
