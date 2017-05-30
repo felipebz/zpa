@@ -19,72 +19,59 @@
  */
 package org.sonar.plsqlopen.highlight;
 
-import java.io.File;
-import java.util.List;
-
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plsqlopen.lexer.PlSqlLexer;
-import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 
+import com.sonar.sslr.api.AstAndTokenVisitor;
+import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.api.Trivia;
-import com.sonar.sslr.impl.Lexer;
 
-public class PlSqlHighlighter {
+public class PlSqlHighlighterVisitor extends PlSqlCheck implements AstAndTokenVisitor {
 
-    private Lexer lexer;
+    private SensorContext context;
     private NewHighlighting highlighting;
-    
-    public PlSqlHighlighter(PlSqlConfiguration conf){
-        this.lexer = PlSqlLexer.create(conf);
+
+    public PlSqlHighlighterVisitor(SensorContext context) {
+        this.context = context;
     }
     
-    public void highlight(SensorContext context, InputFile inputFile) {
+    @Override
+    public void visitFile(AstNode astNode) {
+        InputFile inputFile = context.fileSystem().inputFile(context.fileSystem().predicates()
+                .is(getContext().getFile()));
         highlighting = context.newHighlighting().onFile(inputFile);
-        File file = inputFile.file();
-        List<Token> tokens = lexer.lex(file);
-        doHighlight(tokens);
     }
     
-    private void doHighlight(List<Token> tokens) {
-        highlightStringsAndKeywords(tokens);
-        highlightComments(tokens);
+    @Override
+    public void leaveFile(AstNode astNode) {
         highlighting.save();
     }
     
-    private void highlightComments(List<Token> tokens) {
+    @Override
+    public void visitToken(Token token) {
         TypeOfText code;
-        for (Token token : tokens) {
-            if (token.getTrivia().isEmpty()) {
-                continue;
+        for (Trivia trivia : token.getTrivia()) {
+            if (trivia.getToken().getValue().startsWith("/**")) {
+                code = TypeOfText.STRUCTURED_COMMENT;
+            } else {
+                code = TypeOfText.COMMENT;
             }
-            
-            for (Trivia trivia : token.getTrivia()) {
-                if (trivia.getToken().getValue().startsWith("/**")) {
-                    code = TypeOfText.STRUCTURED_COMMENT;
-                } else {
-                    code = TypeOfText.COMMENT;
-                }
-                highlight(trivia.getToken(), code);
-            }
+            highlight(trivia.getToken(), code);
         }
-    }
-    
-    private void highlightStringsAndKeywords(List<Token> tokens) {
-        for (Token token : tokens) {
-            if (isLiteral(token.getType())) {
-                highlight(token, TypeOfText.STRING);
-            }
-            if (isKeyword(token.getType())) {
-                highlight(token, TypeOfText.KEYWORD);
-            }
+        
+        if (isLiteral(token.getType())) {
+            highlight(token, TypeOfText.STRING);
+        }
+        if (isKeyword(token.getType())) {
+            highlight(token, TypeOfText.KEYWORD);
         }
     }
     

@@ -37,7 +37,7 @@ import org.sonar.api.ce.measure.RangeDistributionBuilder;
 import org.sonar.api.config.Settings;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.plsqlopen.highlight.PlSqlHighlighter;
+import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
@@ -95,6 +95,7 @@ public class PlSqlSquidSensor implements Sensor {
         this.context = context;
         List<SquidAstVisitor<Grammar>> visitors = new ArrayList<>();
         visitors.add(new SymbolVisitor());
+        visitors.add(new PlSqlHighlighterVisitor(context));
         visitors.addAll(checks.all());
         configuration = new PlSqlConfiguration(context.fileSystem().encoding());
         
@@ -104,10 +105,6 @@ public class PlSqlSquidSensor implements Sensor {
 
         Collection<SourceCode> squidSourceFiles = scanner.getIndex().search(new QueryByType(SourceFile.class));
         save(squidSourceFiles);
-        
-        for (InputFile inputFile : context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.TEST), p.hasLanguage(PlSql.KEY)))) {
-            saveHighlighting(inputFile);
-        }
     }
 
     private void save(Collection<SourceCode> squidSourceFiles) {
@@ -121,7 +118,6 @@ public class PlSqlSquidSensor implements Sensor {
                 saveFilesComplexityDistribution(inputFile, squidFile);
                 saveFunctionsComplexityDistribution(inputFile, squidFile);
                 saveMeasures(inputFile, squidFile);
-                saveHighlighting(inputFile);
                 saveCpdTokens(inputFile);
             }
         }
@@ -183,11 +179,6 @@ public class PlSqlSquidSensor implements Sensor {
                 .save();
     }
     
-    private void saveHighlighting(InputFile inputFile) {
-        PlSqlHighlighter highlighter = new PlSqlHighlighter(configuration);
-        highlighter.highlight(context, inputFile);
-    }
-
     private void saveCpdTokens(InputFile inputFile) {
         NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
         Lexer lexer = PlSqlLexer.create(configuration);

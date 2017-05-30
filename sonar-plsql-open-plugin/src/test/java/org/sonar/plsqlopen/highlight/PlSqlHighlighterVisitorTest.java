@@ -30,12 +30,13 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plsqlopen.SonarComponents;
+import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class PlSqlHighlighterTest {
+public class PlSqlHighlighterVisitorTest {
 
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
@@ -71,9 +72,11 @@ public class PlSqlHighlighterTest {
         
         SensorContextTester context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
+        SonarComponents components = new SonarComponents(context).getTestInstance();
 
-        PlSqlHighlighter highlighter = new PlSqlHighlighter(new PlSqlConfiguration(Charsets.UTF_8));
-        highlighter.highlight(context, inputFile);
+        PlSqlHighlighterVisitor highlighter = new PlSqlHighlighterVisitor(context);
+        
+        PlSqlAstScanner.scanSingleFile(inputFile.file(), components, highlighter);
         
         String key = "key:test.sql";
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
