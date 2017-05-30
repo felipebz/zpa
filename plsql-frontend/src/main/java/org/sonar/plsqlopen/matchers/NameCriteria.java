@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.matchers;
 
+import java.util.Arrays;
+
 @FunctionalInterface
 public interface NameCriteria {
 
@@ -34,6 +36,10 @@ public interface NameCriteria {
 
     public static NameCriteria startsWith(String prefix) {
         return name -> name.toUpperCase().startsWith(prefix.toUpperCase());
+    }
+    
+    public static NameCriteria in(String... prefix) {
+        return name -> Arrays.asList(prefix).stream().anyMatch(name::equalsIgnoreCase);
     }
     
 }

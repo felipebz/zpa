@@ -54,6 +54,14 @@ public class MethodMatcherTest extends RuleTest {
     }
     
     @Test
+    public void detectAnyMethodInList() {        
+        MethodMatcher matcher = MethodMatcher.create().name(NameCriteria.in("func", "foo"));
+        matches(matcher, "func");
+        matches(matcher, "FOO");
+        notMatches(matcher, "bar");
+    }
+    
+    @Test
     public void detectMethodInPackage() {
         MethodMatcher matcher = MethodMatcher.create().packageName("pack").name("func");
         matches(matcher, "pack.func");
