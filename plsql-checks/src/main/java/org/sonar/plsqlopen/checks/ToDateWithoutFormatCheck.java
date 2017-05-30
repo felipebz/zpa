@@ -47,7 +47,7 @@ public class ToDateWithoutFormatCheck extends AbstractBaseCheck {
         MethodMatcher toDate = MethodMatcher.create().name("to_date").addParameter();
         
         if (toDate.matches(node)) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
     }
 

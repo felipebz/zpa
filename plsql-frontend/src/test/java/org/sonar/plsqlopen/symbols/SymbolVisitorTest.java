@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,10 +32,13 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.plsqlopen.SonarComponents;
+import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
+import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 public class SymbolVisitorTest {
@@ -50,20 +54,24 @@ public class SymbolVisitorTest {
     private void scanFile() throws IOException {
         baseDir = temp.newFolder();
         File file = new File(baseDir, "test.sql");
-        String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), Charsets.UTF_8);
-        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
+        String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), StandardCharsets.UTF_8);
+        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, StandardCharsets.UTF_8);
         
-        DefaultInputFile inputFile = new TestInputFileBuilder("key", "test.sql").setLanguage("plsqlopen")
-                .initMetadata(Files.toString(file, Charsets.UTF_8)).setModuleBaseDir(baseDir.toPath()).build();
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", "test.sql")
+                .setLanguage("plsqlopen")
+                .setCharset(StandardCharsets.UTF_8)
+                .initMetadata(Files.toString(file, StandardCharsets.UTF_8))
+                .setModuleBaseDir(baseDir.toPath())
+                .build();
         key = inputFile.key();
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(context).getTestInstance();
+        SymbolVisitor visitor = new SymbolVisitor();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(visitor), ImmutableList.of(inputFile), null);
+        scanner.scanFiles();
         
-        SymbolVisitor symbolVisitor = new SymbolVisitor();
-        
-        PlSqlAstScanner.scanSingleFile(inputFile.file(), components, symbolVisitor);
+        (new SymbolHighlighter()).highlight(context.newSymbolTable().onFile(inputFile), visitor.getSymbolTable());
     }
     
     @Test

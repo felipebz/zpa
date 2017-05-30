@@ -52,13 +52,13 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
         }
         
         String identifierName = identifier.getTokenOriginalValue();
-        Deque<Symbol> symbols = getPlSqlContext().getCurrentScope().getSymbolsAcessibleInScope(identifierName);
+        Deque<Symbol> symbols = getContext().getCurrentScope().getSymbolsAcessibleInScope(identifierName);
         
         if (!symbols.isEmpty()) {
             boolean checkException = exceptionShouldBeChecked(symbols.getFirst());
             
             if (checkException && !isHandled(identifierName)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, identifierName);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, identifierName);
             }
         }
     }
@@ -73,7 +73,7 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     }
     
     private boolean isHandled(String identifierName) {
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         
         Scope outerScope = scope;
         do {

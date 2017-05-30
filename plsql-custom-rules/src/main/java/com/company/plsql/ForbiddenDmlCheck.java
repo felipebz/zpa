@@ -29,7 +29,7 @@ public class ForbiddenDmlCheck extends AbstractBaseCheck {
         AstNode table = node.getFirstChild(DmlGrammar.TABLE_REFERENCE);
         
         if (table != null && table.getTokenOriginalValue().equalsIgnoreCase("user")) {
-            getPlSqlContext().createViolation(this, "Replace this query by a function of the USER_WRAPPER package.", table);
+            getContext().createViolation(this, "Replace this query by a function of the USER_WRAPPER package.", table);
         }
     }
 

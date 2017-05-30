@@ -28,25 +28,16 @@ import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 
-import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.api.Trivia;
 
-public class PlSqlHighlighterVisitor extends PlSqlCheck implements AstAndTokenVisitor {
+public class PlSqlHighlighterVisitor extends PlSqlCheck {
 
-    private SensorContext context;
     private NewHighlighting highlighting;
 
-    public PlSqlHighlighterVisitor(SensorContext context) {
-        this.context = context;
-    }
-    
-    @Override
-    public void visitFile(AstNode astNode) {
-        InputFile inputFile = context.fileSystem().inputFile(context.fileSystem().predicates()
-                .is(getContext().getFile()));
+    public PlSqlHighlighterVisitor(SensorContext context, InputFile inputFile) {
         highlighting = context.newHighlighting().onFile(inputFile);
     }
     

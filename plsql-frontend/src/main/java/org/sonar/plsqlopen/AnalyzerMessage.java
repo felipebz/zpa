@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.squidbridge.api.CheckMessage;
 import org.sonar.squidbridge.api.CodeVisitor;
 
@@ -36,11 +37,25 @@ public class AnalyzerMessage extends CheckMessage {
     private TextSpan textSpan;
     private final List<AnalyzerMessage> secondaryLocations = new ArrayList<>();
     
+    @Deprecated
     public AnalyzerMessage(CodeVisitor check, String message, int line, Object... messageArguments) {
         this(check, message, line > 0 ? new TextSpan(line, -1, line, -1) : null, messageArguments);
     }
     
+    @Deprecated
     public AnalyzerMessage(CodeVisitor check, String message, @Nullable TextSpan textSpan, Object... messageArguments) {
+        super(check, message, messageArguments);
+        this.textSpan = textSpan;
+        if (textSpan != null) {
+            setLine(textSpan.startLine);
+        }
+    }
+    
+    public AnalyzerMessage(PlSqlVisitor check, String message, int line, Object... messageArguments) {
+        this(check, message, line > 0 ? new TextSpan(line, -1, line, -1) : null, messageArguments);
+    }
+    
+    public AnalyzerMessage(PlSqlVisitor check, String message, @Nullable TextSpan textSpan, Object... messageArguments) {
         super(check, message, messageArguments);
         this.textSpan = textSpan;
         if (textSpan != null) {

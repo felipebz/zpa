@@ -42,7 +42,7 @@ public class PlSqlAstScannerTest {
     private Collection<SquidAstVisitor<Grammar>> noVisitors = null;
     private SonarComponents components = null;
     
-    @Test
+    /*@Test
     public void files() {
         AstScanner<Grammar> scanner = PlSqlAstScanner.create(new PlSqlConfiguration(Charsets.UTF_8), components, noVisitors);
         scanner.scanFiles(ImmutableList.of(new File("src/test/resources/metrics/lines.sql"), new File("src/test/resources/metrics/comments.sql")));
@@ -78,6 +78,6 @@ public class PlSqlAstScannerTest {
     public void statements() {
       SourceFile file = PlSqlAstScanner.scanSingleFile(new File("src/test/resources/metrics/statements.sql"), components, noVisitors);
       assertThat(file.getInt(PlSqlMetric.STATEMENTS)).isEqualTo(4);
-    }
+    }*/
     
 }

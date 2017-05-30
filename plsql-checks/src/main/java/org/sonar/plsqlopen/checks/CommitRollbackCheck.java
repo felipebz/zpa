@@ -44,7 +44,7 @@ public class CommitRollbackCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         
         Scope outerScope = scope;
         while (outerScope.outer() != null) {

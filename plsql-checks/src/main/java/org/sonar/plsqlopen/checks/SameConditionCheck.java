@@ -74,7 +74,7 @@ public class SameConditionCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherCondition = conditions.get(j);
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         condition,
                         ImmutableList.of(newLocation("Original", otherCondition)),
                         otherCondition.getToken().getLine());

@@ -44,7 +44,7 @@ public class UnnecessaryNullStatementCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         AstNode parent = node.getParent();
         if (parent.getPreviousSibling() != null || parent.getNextSibling() != null) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
     }
 }

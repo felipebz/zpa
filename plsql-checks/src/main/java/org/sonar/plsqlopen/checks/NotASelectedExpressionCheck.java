@@ -78,7 +78,7 @@ public class NotASelectedExpressionCheck extends AbstractBaseCheck {
         }
 
         if (!found) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), orderByItemValue);
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), orderByItemValue);
         }
     }
     

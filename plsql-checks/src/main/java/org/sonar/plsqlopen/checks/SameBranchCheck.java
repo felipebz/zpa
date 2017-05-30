@@ -83,7 +83,7 @@ public class SameBranchCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherBranch = branches.get(j);
             if (CheckUtils.equalNodes(otherBranch, branch)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         branch,
                         ImmutableList.of(newLocation("Original", otherBranch)),
                         otherBranch.getToken().getLine());

@@ -64,11 +64,11 @@ public class VariableInCountCheck extends AbstractBaseCheck {
         }
         
         String value = arguments.get(0).getTokenOriginalValue();
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         if (scope != null) {
             Symbol symbol = scope.getSymbol(value);
             if (symbol != null) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, value);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, value);
             }
         }
     }

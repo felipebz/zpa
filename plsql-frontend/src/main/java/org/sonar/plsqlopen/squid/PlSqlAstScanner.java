@@ -20,12 +20,21 @@
 package org.sonar.plsqlopen.squid;
 
 import java.io.File;
+import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.List;
 
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
+import org.sonar.plsqlopen.PlSqlFile;
+import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.SonarComponents;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -34,8 +43,8 @@ import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.AstScanner.Builder;
 import org.sonar.squidbridge.ProgressAstScanner;
 import org.sonar.squidbridge.SourceCodeBuilderVisitor;
-import org.sonar.squidbridge.SquidAstVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
+import org.sonar.squidbridge.api.AnalysisException;
 import org.sonar.squidbridge.api.SourceCode;
 import org.sonar.squidbridge.api.SourceFile;
 import org.sonar.squidbridge.api.SourceFunction;
@@ -46,123 +55,157 @@ import org.sonar.squidbridge.metrics.ComplexityVisitor;
 import org.sonar.squidbridge.metrics.CounterVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Throwables;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.impl.Parser;
 
 public class PlSqlAstScanner {
 
-    private PlSqlAstScanner() {
-    }
+    private static final Logger LOG = Loggers.get(PlSqlAstScanner.class);
     
-    public static SourceFile scanSingleFile(File file, SonarComponents components, SquidAstVisitor<Grammar> visitor) {
-        return scanSingleFile(file, components, ImmutableList.of(visitor));
+    private final SensorContext context;
+    private final Parser<Grammar> parser;
+    private final List<InputFile> inputFiles;
+    private final Collection<PlSqlCheck> checks;
+    private final SonarComponents components;
+
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, List<InputFile> inputFiles, SonarComponents components) {
+      this.context = context;
+      this.checks = checks;
+      this.inputFiles = inputFiles;
+      this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
+      this.components = components;
     }
 
-    public static SourceFile scanSingleFile(File file, SonarComponents components, Collection<SquidAstVisitor<Grammar>> visitors) {
-        if (!file.isFile()) {
-            throw new IllegalArgumentException("File '" + file + "' not found.");
+    public void scanFiles() {
+        for (InputFile plSqlFile : inputFiles) {
+            scanFile(plSqlFile);
         }
-        AstScanner<Grammar> scanner = create(new PlSqlConfiguration(StandardCharsets.UTF_8), components, visitors);
-        scanner.scanFile(file);
-        Collection<SourceCode> sources = scanner.getIndex().search(new QueryByType(SourceFile.class));
-        if (sources.size() != 1) {
-            throw new IllegalStateException("Only one SourceFile was expected whereas "
-                            + sources.size() + " has been returned.");
+    }
+
+    private void scanFile(InputFile inputFile) {
+        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
+        PlSqlAstWalker walker = new PlSqlAstWalker(checks);
+        
+        PlSqlVisitorContext visitorContext;
+        try {
+            visitorContext = new DefaultPlSqlVisitorContext<>(parser.parse(plSqlFile.content()), plSqlFile, components);
+        } catch (RecognitionException e) {
+            visitorContext = new DefaultPlSqlVisitorContext<>(plSqlFile, e, components);
+            LOG.error("Unable to parse file: " + inputFile.absolutePath());
+            LOG.error(e.getMessage());
+        } catch (Exception e) {
+            checkInterrupted(e);
+            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
+        } catch (Throwable e) {
+            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
         }
-        return (SourceFile) sources.iterator().next();
-    }
-    
-    public static AstScanner<Grammar> create(PlSqlConfiguration conf, SonarComponents components, Collection<SquidAstVisitor<Grammar>> visitors) {
-        final SquidAstVisitorContextImpl<Grammar> context = 
-                new DefaultPlSqlVisitorContext<>(new SourceProject("PL/SQL Project"), components);
-        final Parser<Grammar> parser = PlSqlParser.create(conf);
-
-        AstScanner.Builder<Grammar> builder = new ProgressAstScanner.Builder<>(
-                context).setBaseParser(parser);
         
-        builder.withMetrics(PlSqlMetric.values());
-        builder.setFilesMetric(PlSqlMetric.FILES);
-        setMethodAnalyser(builder);
-        setCommentAnalyser(builder);
-        setMetrics(builder);
-
-        /* External visitors (typically Check ones) */
-        if (visitors != null) {
-            for (SquidAstVisitor<Grammar> visitor : visitors) {
-                if (visitor instanceof CharsetAwareVisitor) {
-                    ((CharsetAwareVisitor) visitor).setCharset(conf.getCharset());
-                }
-                
-                if (!(visitor instanceof FormsMetadataAwareCheck) || components.getFormsMetadata() != null) {
-                    builder.withSquidAstVisitor(visitor);
-                }
-            }
+        try {
+            walker.walk(visitorContext);
+        } catch (Throwable e) {
+            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
         }
-
-        return builder.build();
     }
     
-    private static void setMetrics(Builder<Grammar> builder) {
-        builder.withSquidAstVisitor(new LinesVisitor<>(PlSqlMetric.LINES));
-        builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor(PlSqlMetric.LINES_OF_CODE));
-        builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
-                .withNoSonar(true)
-                .build());
-        
-        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
-                .setMetricDef(PlSqlMetric.STATEMENTS)
-                .subscribeTo(PlSqlGrammar.STATEMENT)
-                .build());
-        
-        AstNodeType[] complexityAstNodeType = new AstNodeType[] {
-                PlSqlGrammar.CREATE_PROCEDURE,
-                PlSqlGrammar.CREATE_FUNCTION,
-                PlSqlGrammar.ANONYMOUS_BLOCK,
-                
-                PlSqlGrammar.PROCEDURE_DECLARATION,
-                PlSqlGrammar.FUNCTION_DECLARATION,
-                
-                PlSqlGrammar.LOOP_STATEMENT,
-                PlSqlGrammar.CONTINUE_STATEMENT,
-                PlSqlGrammar.FOR_STATEMENT,
-                PlSqlGrammar.EXIT_STATEMENT,
-                PlSqlGrammar.IF_STATEMENT,
-                PlSqlGrammar.RAISE_STATEMENT,
-                PlSqlGrammar.RETURN_STATEMENT,
-                PlSqlGrammar.WHILE_STATEMENT,
-                
-                // this includes WHEN in exception handlers, exit/continue statements and CASE expressions
-                PlSqlKeyword.WHEN,
-                PlSqlKeyword.ELSIF
-        };
-        builder.withSquidAstVisitor(ComplexityVisitor.<Grammar> builder().setMetricDef(PlSqlMetric.COMPLEXITY)
-                .subscribeTo(complexityAstNodeType).build());
+    private static void checkInterrupted(Exception e) {
+        Throwable cause = Throwables.getRootCause(e);
+        if (cause instanceof InterruptedException || cause instanceof InterruptedIOException) {
+            throw new AnalysisException("Analysis cancelled", e);
+        }
     }
     
-    private static void setMethodAnalyser(AstScanner.Builder<Grammar> builder) {
-        PlSqlGrammar[] methodDeclarations = { 
-                PlSqlGrammar.CREATE_PROCEDURE,
-                PlSqlGrammar.CREATE_FUNCTION, 
-                PlSqlGrammar.PROCEDURE_DECLARATION,
-                PlSqlGrammar.FUNCTION_DECLARATION };
-        
-        builder.withSquidAstVisitor(new SourceCodeBuilderVisitor<>(
-        	(parentSourceCode, astNode) -> {
-                String functionName = astNode.getFirstChild(PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME).getTokenValue();
-                SourceFunction function = new SourceFunction(functionName + ":" + astNode.getToken().getLine());
-                function.setStartAtLine(astNode.getTokenLine());
-                return function;
-        }, methodDeclarations));
-
-        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
-                .setMetricDef(PlSqlMetric.METHODS)
-                .subscribeTo(methodDeclarations)
-                .build());
-    }
-
-    private static void setCommentAnalyser(AstScanner.Builder<Grammar> builder) {
-        builder.setCommentAnalyser(new PlSqlCommentAnalyzer());
-    }
+//    public static AstScanner<Grammar> create(PlSqlConfiguration conf, SonarComponents components, Collection<PlSqlCheck> visitors) {
+//        final SquidAstVisitorContextImpl<Grammar> context = 
+//                new DefaultPlSqlVisitorContext<>(new SourceProject("PL/SQL Project"), components);
+//        final Parser<Grammar> parser = PlSqlParser.create(conf);
+//
+//        AstScanner.Builder<Grammar> builder = new ProgressAstScanner.Builder<>(
+//                context).setBaseParser(parser);
+//        
+//        builder.withMetrics(PlSqlMetric.values());
+//        builder.setFilesMetric(PlSqlMetric.FILES);
+//        setMethodAnalyser(builder);
+//        setCommentAnalyser(builder);
+//        setMetrics(builder);
+//
+//        /* External visitors (typically Check ones) */
+//        if (visitors != null) {
+//            for (PlSqlCheck visitor : visitors) {
+//                if (visitor instanceof CharsetAwareVisitor) {
+//                    ((CharsetAwareVisitor) visitor).setCharset(conf.getCharset());
+//                }
+//                
+//                if (!(visitor instanceof FormsMetadataAwareCheck) || components.getFormsMetadata() != null) {
+//                    //builder.withSquidAstVisitor(visitor);
+//                }
+//            }
+//        }
+//
+//        return builder.build();
+//    }
+//    
+//    private static void setMetrics(Builder<Grammar> builder) {
+//        builder.withSquidAstVisitor(new LinesVisitor<>(PlSqlMetric.LINES));
+//        builder.withSquidAstVisitor(new PlSqlLinesOfCodeVisitor(PlSqlMetric.LINES_OF_CODE));
+//        builder.withSquidAstVisitor(CommentsVisitor.<Grammar>builder().withCommentMetric(PlSqlMetric.COMMENT_LINES)
+//                .withNoSonar(true)
+//                .build());
+//        
+//        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
+//                .setMetricDef(PlSqlMetric.STATEMENTS)
+//                .subscribeTo(PlSqlGrammar.STATEMENT)
+//                .build());
+//        
+//        AstNodeType[] complexityAstNodeType = new AstNodeType[] {
+//                PlSqlGrammar.CREATE_PROCEDURE,
+//                PlSqlGrammar.CREATE_FUNCTION,
+//                PlSqlGrammar.ANONYMOUS_BLOCK,
+//                
+//                PlSqlGrammar.PROCEDURE_DECLARATION,
+//                PlSqlGrammar.FUNCTION_DECLARATION,
+//                
+//                PlSqlGrammar.LOOP_STATEMENT,
+//                PlSqlGrammar.CONTINUE_STATEMENT,
+//                PlSqlGrammar.FOR_STATEMENT,
+//                PlSqlGrammar.EXIT_STATEMENT,
+//                PlSqlGrammar.IF_STATEMENT,
+//                PlSqlGrammar.RAISE_STATEMENT,
+//                PlSqlGrammar.RETURN_STATEMENT,
+//                PlSqlGrammar.WHILE_STATEMENT,
+//                
+//                // this includes WHEN in exception handlers, exit/continue statements and CASE expressions
+//                PlSqlKeyword.WHEN,
+//                PlSqlKeyword.ELSIF
+//        };
+//        builder.withSquidAstVisitor(ComplexityVisitor.<Grammar> builder().setMetricDef(PlSqlMetric.COMPLEXITY)
+//                .subscribeTo(complexityAstNodeType).build());
+//    }
+//    
+//    private static void setMethodAnalyser(AstScanner.Builder<Grammar> builder) {
+//        PlSqlGrammar[] methodDeclarations = { 
+//                PlSqlGrammar.CREATE_PROCEDURE,
+//                PlSqlGrammar.CREATE_FUNCTION, 
+//                PlSqlGrammar.PROCEDURE_DECLARATION,
+//                PlSqlGrammar.FUNCTION_DECLARATION };
+//        
+//        builder.withSquidAstVisitor(new SourceCodeBuilderVisitor<>(
+//        	(parentSourceCode, astNode) -> {
+//                String functionName = astNode.getFirstChild(PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME).getTokenValue();
+//                SourceFunction function = new SourceFunction(functionName + ":" + astNode.getToken().getLine());
+//                function.setStartAtLine(astNode.getTokenLine());
+//                return function;
+//        }, methodDeclarations));
+//
+//        builder.withSquidAstVisitor(CounterVisitor.<Grammar>builder()
+//                .setMetricDef(PlSqlMetric.METHODS)
+//                .subscribeTo(methodDeclarations)
+//                .build());
+//    }
+//
+//    private static void setCommentAnalyser(AstScanner.Builder<Grammar> builder) {
+//        builder.setCommentAnalyser(new PlSqlCommentAnalyzer());
+//    }
 }

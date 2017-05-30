@@ -19,20 +19,28 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.squidbridge.checks.SquidCheck;
 
+import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
 
-public abstract class PlSqlCheck extends SquidCheck<Grammar> {
-
-    protected PlSqlVisitorContext getPlSqlContext() {
-        return (PlSqlVisitorContext)getContext();
-    }
+public abstract class PlSqlCheck extends PlSqlVisitor {
 
     protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
         return new PlSqlVisitorContext.Location(message, node);
+    }
+    
+    /**
+     * @deprecated since 1.1.0. Use {@link #getContext()} instead.
+     * @return the context.
+     */
+    @Deprecated
+    public PlSqlVisitorContext getPlSqlContext() {
+        return getContext();
     }
 
 }

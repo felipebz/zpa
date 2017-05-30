@@ -50,7 +50,7 @@ public class VariableHidingCheck extends AbstractBaseCheck {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
         String name = identifier.getTokenOriginalValue();
         
-        Scope scope = getPlSqlContext().getSymbolTable().getScopeForSymbol(identifier);
+        Scope scope = getContext().getSymbolTable().getScopeForSymbol(identifier);
         if (scope != null) {
             Deque<Symbol> symbols = scope.getSymbolsAcessibleInScope(name);
             
@@ -58,7 +58,7 @@ public class VariableHidingCheck extends AbstractBaseCheck {
                 AstNode originalVariable = symbols.getLast().declaration();
                 
                 if (!originalVariable.equals(identifier)) {
-                    getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
+                    getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
                             identifier,
                             ImmutableList.of(newLocation("Original", originalVariable)),
                             name,

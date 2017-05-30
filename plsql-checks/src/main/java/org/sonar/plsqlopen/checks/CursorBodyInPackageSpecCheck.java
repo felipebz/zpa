@@ -45,10 +45,10 @@ public class CursorBodyInPackageSpecCheck extends AbstractBaseCheck {
     
     @Override
     public void visitNode(AstNode astNode) {
-        for (Symbol cursor : getPlSqlContext().getCurrentScope().getSymbols(Kind.CURSOR)) {
+        for (Symbol cursor : getContext().getCurrentScope().getSymbols(Kind.CURSOR)) {
             AstNode cursorDeclaration = cursor.declaration().getParent(); 
             if (cursorDeclaration.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), cursorDeclaration, cursor.name());
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), cursorDeclaration, cursor.name());
             }
         }
     }

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -73,7 +74,7 @@ public class PlSqlSquidSensorTest {
     public void shouldAnalyse() throws IOException {
       String relativePath = "src/test/resources/org/sonar/plsqlopen/code.sql";
       DefaultInputFile inputFile = new TestInputFileBuilder("key", relativePath).setLanguage(PlSql.KEY)
-              .initMetadata(Files.toString(new File(relativePath), Charsets.UTF_8)).build();
+              .initMetadata(Files.toString(new File(relativePath), StandardCharsets.UTF_8)).build();
       
       context.fileSystem().add(inputFile);
       

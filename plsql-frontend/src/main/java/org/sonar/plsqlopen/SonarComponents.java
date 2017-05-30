@@ -58,6 +58,10 @@ public class SonarComponents {
         this.fs = context.fileSystem();
     }
     
+    public SensorContext getContext() {
+        return context;
+    }
+    
     public FormsMetadata getFormsMetadata() {
         return this.formsMetadata;
     }
@@ -68,7 +72,7 @@ public class SonarComponents {
     }
     
     public NewSymbolTable symbolizableFor(InputFile inputPath) {
-        return context.newSymbolTable().onFile(inputPath);
+        return getContext().newSymbolTable().onFile(inputPath);
     }
     
     public void setChecks(PlSqlChecks checks) {
@@ -86,7 +90,7 @@ public class SonarComponents {
 
     @VisibleForTesting
     void reportIssue(InputFile inputFile, RuleKey key, AnalyzerMessage message) {
-        PlSqlIssue issue = PlSqlIssue.create(context, key, message.getCost());
+        PlSqlIssue issue = PlSqlIssue.create(getContext(), key, message.getCost());
         String text = message.getText(Locale.ENGLISH);
         Integer line = message.getLine();
         if (line == null) {
@@ -140,7 +144,7 @@ public class SonarComponents {
     
     @VisibleForTesting
     public SonarComponents getTestInstance() {
-        return new Test(context);
+        return new Test(getContext());
     }
 
     public class Test extends SonarComponents {

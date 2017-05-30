@@ -44,7 +44,7 @@ public class UnusedVariableCheck extends AbstractBaseCheck {
 
     @Override
     public void leaveFile(AstNode astNode) {
-        Set<Scope> scopes = getPlSqlContext().getSymbolTable().getScopes();
+        Set<Scope> scopes = getContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
             if (scope.tree().isNot(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT)) {
                 checkScope(scope);

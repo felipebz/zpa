@@ -194,7 +194,7 @@ public class PlSqlCheckVerifierTest {
         public void visitFile(AstNode astNode) {
             for (Integer line : issues.keySet()) {
                 for (String message : issues.get(line)) {
-                    getPlSqlContext().createViolation(this, message, mockLine(line));
+                    getContext().createViolation(this, message, mockLine(line));
                 }
             }
             
@@ -203,7 +203,7 @@ public class PlSqlCheckVerifierTest {
                 for (AnalyzerMessage secondaryLocation : analyzerMessage.getSecondaryLocations()) {
                     secLocations.add(new PlSqlVisitorContext.Location("", mockPreciseLocation(secondaryLocation)));
                 }
-                getPlSqlContext().createViolation(this, analyzerMessage.getText(Locale.ENGLISH), mockPreciseLocation(analyzerMessage), secLocations);
+                getContext().createViolation(this, analyzerMessage.getText(Locale.ENGLISH), mockPreciseLocation(analyzerMessage), secLocations);
             }
         }
         

@@ -86,7 +86,8 @@ public class SymbolTableImpl implements SymbolTable {
     /**
      * Returns all symbols in script
      */
-    public ImmutableList<Symbol> getSymbols() {
+    @Override
+    public List<Symbol> getSymbols() {
         return ImmutableList.copyOf(symbols);
     }
 

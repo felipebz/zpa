@@ -116,23 +116,23 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             }
             
             if (reportIssue) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), argument, value, verifier.matcher.getMethodName().toUpperCase());
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), argument, value, verifier.matcher.getMethodName().toUpperCase());
             }
             
         }
     }
 
     private boolean validateAlert(String value) {
-        return !Stream.of(getPlSqlContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+        return !Stream.of(getContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
     }
     
     private boolean validateBlock(String value) {
-        return !Stream.of(getPlSqlContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
+        return !Stream.of(getContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
     }
     
     private boolean validateItem(String value) {
         boolean reportIssue = true;
-        for (Block block : getPlSqlContext().getFormsMetadata().getBlocks()) {
+        for (Block block : getContext().getFormsMetadata().getBlocks()) {
             if (Stream.of(block.getItems()).anyMatch(item -> {
                     String fullName = block.getName() + "." + item;
                     return fullName.equalsIgnoreCase(value);
@@ -144,7 +144,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
     
     private boolean validateLov(String value) {
-        return !Stream.of(getPlSqlContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
+        return !Stream.of(getContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
     }
     
     private static boolean isVarcharLiteral(AstNode argument) {

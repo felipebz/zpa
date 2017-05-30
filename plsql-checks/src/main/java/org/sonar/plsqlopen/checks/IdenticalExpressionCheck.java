@@ -52,7 +52,7 @@ public class IdenticalExpressionCheck extends AbstractBaseCheck {
             AstNode rightSide = node.getLastChild();
     
             if (CheckUtils.equalNodes(leftSide, rightSide)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         leftSide,
                         ImmutableList.of(newLocation("Original", rightSide)),
                         operator.getTokenValue());

@@ -56,7 +56,7 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
                 getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
             }
         } else {
-            if (!getPlSqlContext().getCurrentScope().hasExceptionHandler()) {
+            if (!getContext().getCurrentScope().hasExceptionHandler()) {
                 getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
             }
         }

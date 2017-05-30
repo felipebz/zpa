@@ -20,6 +20,9 @@
 package org.sonar.plsqlopen.checks;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -51,18 +54,22 @@ public class BaseCheckTest {
         return defaultResourceFolder + filename;
     }
     
-    protected Collection<AnalyzerMessage> scanFile(String filename, SquidAstVisitor<Grammar> check) {
-        String relativePath = defaultResourceFolder + filename;
-        TestInputFileBuilder inputFile = new TestInputFileBuilder("key", relativePath).setLanguage("plsqlopen");
-        fs.add(inputFile.build());
+    protected Collection<AnalyzerMessage> scanFile(String filename, PlSqlCheck check) {
+        TestInputFileBuilder inputFile = new TestInputFileBuilder("key", filename)
+                .setLanguage("plsqlopen")
+                .setCharset(Charset.forName("UTF-8"))
+                .setModuleBaseDir(Paths.get(defaultResourceFolder));
+        DefaultInputFile file = inputFile.build();
+        fs.add(file);
         
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
         
-        PlSqlAstScanner.scanSingleFile(new File(relativePath), components, 
-                ImmutableList.of(new SymbolVisitor(), check));
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), ImmutableList.of(file), components);
+        scanner.scanFiles();
+
         return ((SonarComponents.Test) components).getIssues();
     }
     

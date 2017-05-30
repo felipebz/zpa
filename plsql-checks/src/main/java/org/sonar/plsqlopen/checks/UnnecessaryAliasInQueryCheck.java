@@ -94,7 +94,7 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
             }
             
             if (alias != null && alias.length() < acceptedLength) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         reference.alias,
                         reference.table.getTokenOriginalValue(),
                         reference.alias.getTokenOriginalValue());

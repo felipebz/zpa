@@ -57,14 +57,14 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
                 candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
             
-            Scope scope = getPlSqlContext().getCurrentScope();
+            Scope scope = getContext().getCurrentScope();
             Symbol symbol = null;
             if (scope != null) {
                 symbol = scope.getSymbol(candidate.getTokenOriginalValue(), Kind.VARIABLE, Kind.PARAMETER);
             }
             
             if (symbol == null) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());
             }
         }
     }

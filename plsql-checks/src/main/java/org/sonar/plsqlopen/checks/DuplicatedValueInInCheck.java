@@ -80,7 +80,7 @@ public class DuplicatedValueInInCheck extends AbstractBaseCheck {
             AstNode other = values.get(j);
             
             if (CheckUtils.equalNodes(current, other)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         current,
                         ImmutableList.of(newLocation("Original", other)),
                         current.getTokenOriginalValue());
