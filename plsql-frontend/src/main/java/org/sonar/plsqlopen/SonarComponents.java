@@ -31,6 +31,7 @@ import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
@@ -73,6 +74,10 @@ public class SonarComponents {
     
     public NewSymbolTable symbolizableFor(InputFile inputPath) {
         return getContext().newSymbolTable().onFile(inputPath);
+    }
+    
+    public NewHighlighting highlightingFor(InputFile inputPath) {
+        return getContext().newHighlighting().onFile(inputPath);
     }
     
     public void setChecks(PlSqlChecks checks) {

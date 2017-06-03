@@ -19,6 +19,9 @@
  */
 package org.sonar.plsqlopen.symbols;
 
+import org.sonar.api.batch.sensor.symbol.NewSymbol;
+import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
@@ -46,10 +49,7 @@ public class SymbolVisitor extends PlSqlCheck {
     
     private SymbolTableImpl symbolTable;
     private Scope currentScope;
-    
-    public SymbolTableImpl getSymbolTable() {
-        return symbolTable;
-    }
+    private NewSymbolTable symbolizable;
     
     @Override
     public void init() {
@@ -59,6 +59,7 @@ public class SymbolVisitor extends PlSqlCheck {
     @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
+        symbolizable = getContext().getSymbolizable();
         
         // ast is null when the file has a parsing error
         if (ast != null) {
@@ -70,17 +71,39 @@ public class SymbolVisitor extends PlSqlCheck {
     
     @Override
     public void visitNode(AstNode astNode) {
-        getContext().setCurrentScope(symbolTable.getScopeFor(astNode));
+        if (astNode.is(scopeHolders)) {
+            getContext().setCurrentScope(symbolTable.getScopeFor(astNode));
+        }
     }
     
     @Override
     public void leaveNode(AstNode astNode) {
-        getContext().setCurrentScope(getContext().getCurrentScope().outer());
+        if (astNode.is(scopeHolders)) {
+            getContext().setCurrentScope(getContext().getCurrentScope().outer());
+        }
     }
     
     @Override
     public void leaveFile(AstNode node) {
+        if (symbolizable != null) {
+            for (Symbol symbol : symbolTable.getSymbols()) {
+                AstNode symbolNode = symbol.declaration();
+                
+                TokenLocation symbolLocation = TokenLocation.from(symbolNode.getToken());
+                NewSymbol newSymbol = symbolizable.newSymbol(symbolLocation.line(), symbolLocation.column(), 
+                        symbolLocation.endLine(), symbolLocation.endColumn());
+                
+                for (AstNode usage : symbol.usages()) {
+                    TokenLocation usageLocation = TokenLocation.from(usage.getToken());
+                    newSymbol.newReference(usageLocation.line(), usageLocation.column(), usageLocation.endLine(), usageLocation.endColumn());
+                }
+            }
+            symbolizable.save();
+        }
+        
+        symbolTable = null;
         currentScope = null;
+        symbolizable = null;
     }
 
     private void visit(AstNode ast) {

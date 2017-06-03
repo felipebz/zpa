@@ -36,6 +36,7 @@ import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.parser.PlSqlParser;
+import org.sonar.plsqlopen.symbols.SymbolHighlighter;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
@@ -108,6 +109,8 @@ public class PlSqlAstScanner {
         } catch (Throwable e) {
             throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
         }
+        
+        //new SymbolHighlighter().highlight(context.newSymbolTable().onFile(inputFile), visitor.getSymbolTable());
     }
     
     private static void checkInterrupted(Exception e) {

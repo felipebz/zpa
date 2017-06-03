@@ -33,7 +33,7 @@ import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
+import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
@@ -67,11 +67,11 @@ public class SymbolVisitorTest {
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
-        SymbolVisitor visitor = new SymbolVisitor();
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(visitor), ImmutableList.of(inputFile), null);
-        scanner.scanFiles();
+        SonarComponents components = new SonarComponents(context).getTestInstance();
         
-        (new SymbolHighlighter()).highlight(context.newSymbolTable().onFile(inputFile), visitor.getSymbolTable());
+        SymbolVisitor visitor = new SymbolVisitor();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(visitor), ImmutableList.of(inputFile), components);
+        scanner.scanFiles();
     }
     
     @Test

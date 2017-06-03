@@ -22,6 +22,7 @@ package org.sonar.plsqlopen;
 import java.io.File;
 import java.util.List;
 
+import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
@@ -100,9 +101,14 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
         this.symbolTable = symbolTable;
     }
     
-    /*@Override*/
+    @Override
     public NewSymbolTable getSymbolizable() {
         return components.symbolizableFor(components.inputFromIOFile(getFileInternal()));
+    }
+    
+    @Override
+    public NewHighlighting getHighlighting() {
+        return components.highlightingFor(components.inputFromIOFile(getFileInternal()));
     }
     
     @Override
