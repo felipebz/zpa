@@ -42,6 +42,7 @@ import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plsqlopen.squid.SonarQubePlSqlFile;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
@@ -105,12 +106,10 @@ public class PlSqlSquidSensor implements Sensor {
         
         PlSqlAstScanner scan = new PlSqlAstScanner(context, visitors, inputFiles, components);
         scan.scanFiles();
-        /*this.scanner = PlSqlAstScanner.create(configuration, components, visitors);
-        FilePredicates p = context.fileSystem().predicates();
-        scanner.scanFiles(Lists.newArrayList(context.fileSystem().files(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY)))));
-
-        Collection<SourceCode> squidSourceFiles = scanner.getIndex().search(new QueryByType(SourceFile.class));
-        save(squidSourceFiles);*/
+        
+        for (InputFile file : inputFiles) {
+            saveCpdTokens(file);
+        }
     }
 
 //    private void save(Collection<SourceCode> squidSourceFiles) {
@@ -185,20 +184,20 @@ public class PlSqlSquidSensor implements Sensor {
 //                .save();
 //    }
 //    
-//    private void saveCpdTokens(InputFile inputFile) {
-//        NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
-//        Lexer lexer = PlSqlLexer.create(configuration);
-//        String fileName = inputFile.absolutePath();
-//        List<Token> tokens = lexer.lex(new File(fileName));
-//        for (Token token : tokens) {
-//            if (token.getType() == GenericTokenType.EOF) {
-//                continue;
-//            }
-//            TokenLocation location = TokenLocation.from(token);
-//            newCpdTokens.addToken(location.line(), location.column(), location.endLine(), location.endColumn(), token.getValue());
-//        }
-//        newCpdTokens.save();
-//    }
+    private void saveCpdTokens(InputFile inputFile) {
+        NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
+        Lexer lexer = PlSqlLexer.create(configuration);
+        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
+        List<Token> tokens = lexer.lex(plSqlFile.content());
+        for (Token token : tokens) {
+            if (token.getType() == GenericTokenType.EOF) {
+                continue;
+            }
+            TokenLocation location = TokenLocation.from(token);
+            newCpdTokens.addToken(location.line(), location.column(), location.endLine(), location.endColumn(), token.getValue());
+        }
+        newCpdTokens.save();
+    }
 
     @Override
     public String toString() {
