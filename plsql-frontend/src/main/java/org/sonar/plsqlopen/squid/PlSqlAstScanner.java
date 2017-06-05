@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.FileMetadata;
@@ -52,7 +53,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
 import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.AstScanner.Builder;
-import org.sonar.squidbridge.ProgressAstScanner;
 import org.sonar.squidbridge.SourceCodeBuilderVisitor;
 import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.AnalysisException;
@@ -82,6 +82,7 @@ public class PlSqlAstScanner {
     private final List<InputFile> inputFiles;
     private final Collection<PlSqlCheck> checks;
     private final SonarComponents components;
+    private final ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
 
     public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, List<InputFile> inputFiles, SonarComponents components) {
       this.context = context;
@@ -92,9 +93,12 @@ public class PlSqlAstScanner {
     }
 
     public void scanFiles() {
+        progressReport.start(inputFiles);
         for (InputFile plSqlFile : inputFiles) {
             scanFile(plSqlFile);
+            progressReport.nextFile();
         }
+        progressReport.stop();
     }
 
     private void scanFile(InputFile inputFile) {
