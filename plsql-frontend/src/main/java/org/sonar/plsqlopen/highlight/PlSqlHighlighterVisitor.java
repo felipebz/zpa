@@ -45,7 +45,9 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
     
     @Override
     public void leaveFile(AstNode astNode) {
-        highlighting.save();
+        if (highlighting != null) {
+            highlighting.save();
+        }
     }
     
     @Override
@@ -70,7 +72,9 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
     
     private void highlight(Token token, TypeOfText code) {
         TokenLocation location = TokenLocation.from(token);
-        highlighting.highlight(location.line(), location.column(), location.endLine(), location.endColumn(), code);
+        if (highlighting != null) {
+            highlighting.highlight(location.line(), location.column(), location.endLine(), location.endColumn(), code);
+        }
     }
     
     public boolean isLiteral(TokenType type) {

@@ -21,12 +21,18 @@ package org.sonar.plsqlopen.squid;
 
 import java.io.File;
 import java.io.InterruptedIOException;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.FileMetadata;
+import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.ce.measure.RangeDistributionBuilder;
+import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
@@ -35,6 +41,10 @@ import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plsqlopen.metrics.ComplexityVisitor;
+import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
+import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.symbols.SymbolHighlighter;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
@@ -52,7 +62,6 @@ import org.sonar.squidbridge.api.SourceFunction;
 import org.sonar.squidbridge.api.SourceProject;
 import org.sonar.squidbridge.indexer.QueryByType;
 import org.sonar.squidbridge.metrics.CommentsVisitor;
-import org.sonar.squidbridge.metrics.ComplexityVisitor;
 import org.sonar.squidbridge.metrics.CounterVisitor;
 import org.sonar.squidbridge.metrics.LinesVisitor;
 
@@ -65,6 +74,8 @@ import com.sonar.sslr.impl.Parser;
 public class PlSqlAstScanner {
 
     private static final Logger LOG = Loggers.get(PlSqlAstScanner.class);
+    private static final Number[] LIMITS_COMPLEXITY_METHODS = {5, 10, 20, 30, 60, 90, 100};
+    private static final Number[] LIMITS_COMPLEXITY_FILES = {0, 5, 10, 20, 30, 60, 90};
     
     private final SensorContext context;
     private final Parser<Grammar> parser;
@@ -88,7 +99,17 @@ public class PlSqlAstScanner {
 
     private void scanFile(InputFile inputFile) {
         PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
-        PlSqlAstWalker walker = new PlSqlAstWalker(checks);
+        
+        MetricsVisitor metricsVisitor = new MetricsVisitor();
+        ComplexityVisitor complexityVisitor = new ComplexityVisitor();
+        FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
+        
+        List<PlSqlCheck> checksToRun = new ArrayList<>(checks);
+        checksToRun.add(metricsVisitor);
+        checksToRun.add(complexityVisitor);
+        checksToRun.add(functionComplexityVisitor);
+        
+        PlSqlAstWalker walker = new PlSqlAstWalker(checksToRun);
         
         PlSqlVisitorContext visitorContext;
         try {
@@ -110,7 +131,21 @@ public class PlSqlAstScanner {
             throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
         }
         
-        //new SymbolHighlighter().highlight(context.newSymbolTable().onFile(inputFile), visitor.getSymbolTable());
+        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, metricsVisitor.getNumberOfStatements());
+        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, metricsVisitor.getLinesOfCode().size());
+        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, metricsVisitor.getLinesOfComments().size());
+        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, complexityVisitor.getComplexity());
+        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, functionComplexityVisitor.getNumberOfFunctions());
+        
+        RangeDistributionBuilder complexityDistribution = new RangeDistributionBuilder(LIMITS_COMPLEXITY_FILES);
+        complexityDistribution.add(complexityVisitor.getComplexity());
+        saveMetricOnFile(inputFile, CoreMetrics.FILE_COMPLEXITY_DISTRIBUTION, complexityDistribution.build());
+        
+        RangeDistributionBuilder functionComplexityDistribution = new RangeDistributionBuilder(LIMITS_COMPLEXITY_METHODS);
+        for (Integer functionComplexity : functionComplexityVisitor.getFunctionComplexities()) {
+            functionComplexityDistribution.add(functionComplexity);
+        }
+        saveMetricOnFile(inputFile, CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION, functionComplexityDistribution.build());
     }
     
     private static void checkInterrupted(Exception e) {
@@ -118,6 +153,14 @@ public class PlSqlAstScanner {
         if (cause instanceof InterruptedException || cause instanceof InterruptedIOException) {
             throw new AnalysisException("Analysis cancelled", e);
         }
+    }
+
+    private <T extends Serializable> void saveMetricOnFile(InputFile inputFile, Metric<T> metric, T value) {
+        context.<T>newMeasure()
+            .on(inputFile)
+            .forMetric(metric)
+            .withValue(value)
+            .save();
     }
     
 //    public static AstScanner<Grammar> create(PlSqlConfiguration conf, SonarComponents components, Collection<PlSqlCheck> visitors) {

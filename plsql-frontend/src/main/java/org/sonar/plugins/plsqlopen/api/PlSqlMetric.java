@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api;
 import org.sonar.squidbridge.measures.CalculatedMetricFormula;
 import org.sonar.squidbridge.measures.MetricDef;
 
+@Deprecated
 public enum PlSqlMetric implements MetricDef {
     FILES, 
     LINES, 

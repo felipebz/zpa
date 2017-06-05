@@ -61,9 +61,6 @@ import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlSquidSensor implements Sensor {
 
-    private static final Number[] LIMITS_COMPLEXITY_METHODS = {5, 10, 20, 30, 60, 90, 100};
-    private static final Number[] LIMITS_COMPLEXITY_FILES = {0, 5, 10, 20, 30, 60, 90};
-    
     private final PlSqlChecks checks;
 
     private AstScanner<Grammar> scanner;
