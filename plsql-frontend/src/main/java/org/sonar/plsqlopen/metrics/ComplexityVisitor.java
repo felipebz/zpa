@@ -1,10 +1,5 @@
 package org.sonar.plsqlopen.metrics;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;

@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +35,6 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 

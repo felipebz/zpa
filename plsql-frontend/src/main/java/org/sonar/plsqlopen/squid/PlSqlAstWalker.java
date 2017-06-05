@@ -6,17 +6,12 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 
-import com.sonar.sslr.api.AstAndTokenVisitor;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
-import com.sonar.sslr.api.AstVisitor;
 import com.sonar.sslr.api.Token;
 
 public class PlSqlAstWalker {

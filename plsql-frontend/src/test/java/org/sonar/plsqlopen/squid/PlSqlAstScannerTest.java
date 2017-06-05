@@ -19,22 +19,11 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
 import java.util.Collection;
 
-import org.junit.Test;
 import org.sonar.plsqlopen.SonarComponents;
-import org.sonar.plugins.plsqlopen.api.PlSqlMetric;
-import org.sonar.squidbridge.AstScanner;
 import org.sonar.squidbridge.SquidAstVisitor;
-import org.sonar.squidbridge.api.SourceFile;
-import org.sonar.squidbridge.api.SourceProject;
-import org.sonar.squidbridge.indexer.QueryByType;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.Grammar;
 
 public class PlSqlAstScannerTest {

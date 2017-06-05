@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,15 +41,11 @@ import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
-import org.sonar.squidbridge.checks.SquidCheck;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
-import com.sonar.sslr.api.AstAndTokenVisitor;
-import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
 
@@ -84,8 +79,6 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
         components.setFormsMetadata(metadata);
-        
-        //PlSqlAstScanner.scanSingleFile(file, components, ImmutableList.of(check, verifier));
         
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(new SymbolVisitor(), check, verifier), ImmutableList.of(inputFile), components);
         scanner.scanFiles();

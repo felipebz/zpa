@@ -21,7 +21,6 @@ package org.sonar.plsqlopen.checks;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Locale;
@@ -34,11 +33,8 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
-import org.sonar.squidbridge.SquidAstVisitor;
 
 import com.google.common.collect.ImmutableList;
-import com.sonar.sslr.api.Grammar;
 
 public class BaseCheckTest {
 

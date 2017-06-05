@@ -19,12 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.io.StringWriter;
-
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.squidbridge.AstScannerExceptionHandler;
 import org.sonar.squidbridge.annotations.ActivatedByDefault;
 import org.sonar.squidbridge.annotations.NoSqale;
 

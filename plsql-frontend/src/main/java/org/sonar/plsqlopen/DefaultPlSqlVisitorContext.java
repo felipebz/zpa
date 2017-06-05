@@ -26,19 +26,16 @@ import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
-import org.sonar.squidbridge.SquidAstVisitorContextImpl;
 import org.sonar.squidbridge.api.SourceProject;
 
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.api.Token;
 
-public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisitorContextImpl<G> implements PlSqlVisitorContext {
+public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
 
     private SonarComponents components;
     private SymbolTable symbolTable;
@@ -48,37 +45,24 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     private RecognitionException parsingException;
     
     public DefaultPlSqlVisitorContext(SourceProject project, SonarComponents components) {
-        super(project);
         this.components = components;
     }
     
     public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, SonarComponents components) {
         this(rootTree, plSqlFile, null, components);
-        /*SymbolVisitor symbolTableBuilderVisitor = new SymbolVisitor();
-        symbolTableBuilderVisitor.scanFile(this);
-        symbolTable = symbolTableBuilderVisitor.getSymbolTable();*/
     }
 
-    public DefaultPlSqlVisitorContext(PlSqlFile pythonFile, RecognitionException parsingException, SonarComponents components) {
-        this(null, pythonFile, parsingException, components);
+    public DefaultPlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, SonarComponents components) {
+        this(null, plsqlFile, parsingException, components);
     }
 
     private DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, RecognitionException parsingException, SonarComponents components) {
-        super(new SourceProject("noSquid"));
         this.rootTree = rootTree;
         this.plSqlFile = plSqlFile;
         this.parsingException = parsingException;
         this.components = components;
     }
     
-    private File getFileInternal() {
-        File file = getFile();
-        if (file == null) {
-            file = plSqlFile.file();
-        }
-        return file;
-    }
-
     public AstNode rootTree() {
         return rootTree;
     }
@@ -103,12 +87,12 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     
     @Override
     public NewSymbolTable getSymbolizable() {
-        return components.symbolizableFor(components.inputFromIOFile(getFileInternal()));
+        return components.symbolizableFor(plSqlFile.inputFile());
     }
     
     @Override
     public NewHighlighting getHighlighting() {
-        return components.highlightingFor(components.inputFromIOFile(getFileInternal()));
+        return components.highlightingFor(plSqlFile.inputFile());
     }
     
     @Override
@@ -129,10 +113,7 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     @Override
     public void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters) {
         AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, null, messageParameters);
-        components.reportIssue(checkMessage, components.inputFromIOFile(getFileInternal()));
-        if (peekSourceCode().getName() != null) {
-            log(checkMessage);
-        }
+        components.reportIssue(checkMessage, plSqlFile.inputFile());
     }
     
     @Override
@@ -151,10 +132,7 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
         if (line > 0) {
             checkMessage.setLine(line);
         }
-        components.reportIssue(checkMessage, components.inputFromIOFile(getFileInternal()));
-        if (peekSourceCode().getName() != null) {
-            log(checkMessage);
-        }
+        components.reportIssue(checkMessage, plSqlFile.inputFile());
     }
     
     @Override
@@ -170,10 +148,12 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
                     new AnalyzerMessage(check, location.msg, AnalyzerMessage.textSpanFor(location.node), messageParameters);
             checkMessage.addSecondaryLocation(secondaryLocation);
         }
-        components.reportIssue(checkMessage, components.inputFromIOFile(getFileInternal()));
-        if (peekSourceCode().getName() != null) {
-            log(checkMessage);
-        }
+        components.reportIssue(checkMessage, plSqlFile.inputFile());
+    }
+
+    @Override
+    public File getFile() {
+        return plSqlFile.file();
     }
 
 }

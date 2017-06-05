@@ -92,18 +92,6 @@ public class SonarComponentsTest {
     }
     
     @Test
-    public void testInputFromIOFile() throws Exception {
-        DefaultFileSystem fileSystem = new DefaultFileSystem(new File(""));
-        DefaultInputFile inputFile = new TestInputFileBuilder(".", "file.sql").build();
-        fileSystem.add(inputFile);
-        when(context.fileSystem()).thenReturn(fileSystem);
-        
-        SonarComponents sonarComponents = new SonarComponents(context);
-        assertThat(sonarComponents.inputFromIOFile(new File("file.sql"))).isNotNull();
-        assertThat(sonarComponents.inputFromIOFile(new File("unknown"))).isNull();
-    }
-    
-    @Test
     public void canReadSimpleMetadaFile() {
         SonarComponents sonarComponents = new SonarComponents(context);
         sonarComponents.loadMetadataFile("src/test/resources/metadata/metadata.json");

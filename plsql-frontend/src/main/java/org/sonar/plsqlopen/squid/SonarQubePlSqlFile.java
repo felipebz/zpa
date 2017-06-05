@@ -38,6 +38,7 @@ public abstract class SonarQubePlSqlFile implements PlSqlFile {
         return inputFile.file().getName();
     }
 
+    @Override
     public InputFile inputFile() {
         return inputFile;
     }

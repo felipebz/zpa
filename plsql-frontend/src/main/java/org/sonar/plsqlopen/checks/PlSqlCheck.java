@@ -19,13 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 public abstract class PlSqlCheck extends PlSqlVisitor {

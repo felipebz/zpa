@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
@@ -38,12 +37,10 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.config.MapSettings;
-import org.sonar.api.config.Settings;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.CheckList;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 public class PlSqlSquidSensorTest {

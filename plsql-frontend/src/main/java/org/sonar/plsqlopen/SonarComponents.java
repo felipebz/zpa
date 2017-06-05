@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -82,10 +81,6 @@ public class SonarComponents {
     
     public void setChecks(PlSqlChecks checks) {
         this.checks = checks;
-    }
-
-    public InputFile inputFromIOFile(File file) {
-        return fs.inputFile(fs.predicates().is(file));
     }
 
     public void reportIssue(AnalyzerMessage message, InputFile inputFile) {    

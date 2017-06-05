@@ -19,15 +19,12 @@
  */
 package org.sonar.plsqlopen.highlight;
 
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
-import org.sonar.plugins.plsqlopen.api.symbols.SymbolTableImpl;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;

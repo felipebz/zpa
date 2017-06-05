@@ -19,8 +19,6 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import org.sonar.squidbridge.CommentAnalyser;
-
 public class PlSqlCommentAnalyzer {
     
     public boolean isBlank(String line) {

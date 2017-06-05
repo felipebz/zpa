@@ -1,12 +1,9 @@
 package org.sonar.plsqlopen.checks;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;

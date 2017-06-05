@@ -28,8 +28,6 @@ import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
-import org.sonar.squidbridge.api.CodeCheck;
-import org.sonar.squidbridge.api.CodeVisitor;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.RecognitionException;
