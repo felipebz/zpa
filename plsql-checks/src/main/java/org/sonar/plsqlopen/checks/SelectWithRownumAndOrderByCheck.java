@@ -19,13 +19,14 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.List;
+
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.sslr.ast.AstSelect;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -51,19 +52,18 @@ public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
             return;
         }
         
-        AstSelect whereClause = node.select().children(DmlGrammar.WHERE_CLAUSE);
+        List<AstNode> whereClause = node.getChildren(DmlGrammar.WHERE_CLAUSE);
         if (whereClause.isEmpty()) {
             return;
         }
         
-        AstSelect whereComparisonConditions = whereClause.descendants(PlSqlGrammar.COMPARISON_EXPRESSION);
+        List<AstNode> whereComparisonConditions = whereClause.get(0).getDescendants(PlSqlGrammar.COMPARISON_EXPRESSION);
         if (whereComparisonConditions.isEmpty()) {
             return;
         }
         
         for (AstNode comparison : whereComparisonConditions) {
-            AstSelect children = comparison.select().children(PlSqlGrammar.VARIABLE_NAME);
-            for (AstNode child : children) {
+            for (AstNode child : comparison.getChildren(PlSqlGrammar.VARIABLE_NAME)) {
                 if ("rownum".equalsIgnoreCase(child.getTokenValue()) && 
                 		node.equals(child.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION))) {
                     getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), child);

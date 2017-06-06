@@ -19,12 +19,13 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.List;
+
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.sslr.ast.AstSelect;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -45,12 +46,11 @@ public class EmptyBlockCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode suiteNode) {
-        AstSelect suite = suiteNode.select();
-        AstSelect stmtLists = suite.children(PlSqlGrammar.STATEMENTS).children();
-        if (stmtLists.size() == 1) {
-            AstSelect nullStatementSelect = stmtLists.children(PlSqlGrammar.NULL_STATEMENT);
+        List<AstNode> statements = suiteNode.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT);
+        if (statements.size() == 1) {
+            List<AstNode> nullStatementSelect = statements.get(0).getChildren(PlSqlGrammar.NULL_STATEMENT);
             if (!nullStatementSelect.isEmpty()) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), stmtLists.get(0));
+                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), statements.get(0));
             }
         }
     }

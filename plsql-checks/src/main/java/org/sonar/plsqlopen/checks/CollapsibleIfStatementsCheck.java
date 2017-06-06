@@ -28,7 +28,6 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.sslr.ast.AstSelect;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -64,7 +63,7 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
     private static AstNode singleIfChild(AstNode suite) {
         List<AstNode> statements = suite.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
         if (statements.size() == 1) {
-            AstSelect nestedIf = statements.get(0).select().children(PlSqlGrammar.IF_STATEMENT);
+            List<AstNode> nestedIf = statements.get(0).getChildren(PlSqlGrammar.IF_STATEMENT);
             if (nestedIf.size() == 1) {
                 return nestedIf.get(0);
             }
