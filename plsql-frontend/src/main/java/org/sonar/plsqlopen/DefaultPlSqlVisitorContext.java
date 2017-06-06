@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
@@ -40,6 +42,7 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     private AstNode rootTree;
     private PlSqlFile plSqlFile;
     private RecognitionException parsingException;
+    private Collection<AnalyzerMessage> messages = new HashSet<>();
     
     public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, SonarComponents components) {
         this(rootTree, plSqlFile, null, components);
@@ -94,9 +97,14 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     }
     
     @Override
+    public Collection<AnalyzerMessage> getIssues() {
+        return messages;
+    }
+    
+    @Override
     public void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters) {
         AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, null, messageParameters);
-        components.reportIssue(checkMessage, plSqlFile.inputFile());
+        messages.add(checkMessage);
     }
     
     @Override
@@ -115,7 +123,7 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
         if (line > 0) {
             checkMessage.setLine(line);
         }
-        components.reportIssue(checkMessage, plSqlFile.inputFile());
+        messages.add(checkMessage);
     }
     
     @Override
@@ -131,7 +139,7 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
                     new AnalyzerMessage(check, location.msg, AnalyzerMessage.textSpanFor(location.node), messageParameters);
             checkMessage.addSecondaryLocation(secondaryLocation);
         }
-        components.reportIssue(checkMessage, plSqlFile.inputFile());
+        messages.add(checkMessage);
     }
 
     @Override

@@ -20,29 +20,13 @@
 package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Fail.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.io.File;
-
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.batch.sensor.internal.SensorStorage;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
-import org.sonar.api.rule.RuleKey;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
-
-import com.google.common.collect.Lists;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SonarComponentsTest {
@@ -52,44 +36,6 @@ public class SonarComponentsTest {
     
     @Mock
     private PlSqlChecks checks;
-    
-    @Ignore
-    @Test
-    public void addIssue() throws Exception {
-        PlSqlCheck expectedCheck = new CustomCheck();
-        
-        DefaultFileSystem fileSystem = new DefaultFileSystem(new File(""));
-        DefaultInputFile inputFile = new TestInputFileBuilder(".", "file.sql")
-                .setLines(3)
-                .build();
-        fileSystem.add(inputFile);
-
-        when(this.checks.all()).thenReturn(Lists.newArrayList(expectedCheck));
-        when(this.checks.ruleKey(any(PlSqlCheck.class))).thenReturn(mock(RuleKey.class));
-        
-        SensorStorage storage = mock(SensorStorage.class);
-        DefaultIssue newIssue = new DefaultIssue(storage);
-        when(context.fileSystem()).thenReturn(fileSystem);
-        when(context.newIssue()).thenReturn(newIssue);
-
-        SonarComponents sonarComponents = new SonarComponents(context);
-        sonarComponents.setChecks(checks);
-
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on wrong line", -5), inputFile);
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), inputFile);
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new TestInputFileBuilder(".", ".").build());
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "message on line", 2), new TestInputFileBuilder(".", "unknown_file").build());
-        sonarComponents.reportIssue(new AnalyzerMessage(expectedCheck, "other message", 3), inputFile);
-        
-        //verify(issuable, times(5)).addIssue(any(Issue.class));
-        
-        try {
-            sonarComponents.reportIssue(inputFile, mock(RuleKey.class), mock(AnalyzerMessage.class));
-            fail("NoClassDefFoundError expected");
-        } catch (NoClassDefFoundError e) {
-            assertThat(e.getMessage()).isEqualTo("org/sonar/api/batch/fs/InputComponent");
-        }
-    }
     
     @Test
     public void canReadSimpleMetadaFile() {
@@ -104,10 +50,6 @@ public class SonarComponentsTest {
         assertThat(metadata.getBlocks()[1].getName()).isEqualTo("bar");
         assertThat(metadata.getBlocks()[1].getItems()).containsExactly("item1", "item2");
         assertThat(metadata.getLovs()).containsExactly("foo", "bar");
-    }
-    
-    private static class CustomCheck extends PlSqlCheck {
-
     }
     
 }

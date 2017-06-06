@@ -61,12 +61,10 @@ public class BaseCheckTest {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);
         
-        SonarComponents components = new SonarComponents(context).getTestInstance();
+        SonarComponents components = new SonarComponents(context);
         
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), components);
-        scanner.scanFile(file);
-
-        return ((SonarComponents.Test) components).getIssues();
+        return scanner.scanFile(file);
     }
     
 }

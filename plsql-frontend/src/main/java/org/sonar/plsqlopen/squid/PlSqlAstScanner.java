@@ -24,7 +24,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.measure.Metric;
@@ -33,6 +32,7 @@ import org.sonar.api.ce.measure.RangeDistributionBuilder;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
 import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
@@ -61,7 +61,6 @@ public class PlSqlAstScanner {
     private final Parser<Grammar> parser;
     private final Collection<PlSqlCheck> checks;
     private final SonarComponents components;
-    private final ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
 
     public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, SonarComponents components) {
       this.context = context;
@@ -70,17 +69,8 @@ public class PlSqlAstScanner {
       this.components = components;
     }
     
-    public void scanFiles(List<InputFile> inputFiles) {
-        progressReport.start(inputFiles);
-        for (InputFile plSqlFile : inputFiles) {
-            scanFile(plSqlFile);
-            progressReport.nextFile();
-        }
-        progressReport.stop();
-    }
-
     @VisibleForTesting
-    public void scanFile(InputFile inputFile) {
+    public Collection<AnalyzerMessage> scanFile(InputFile inputFile) {
         PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
         
         MetricsVisitor metricsVisitor = new MetricsVisitor();
@@ -132,6 +122,8 @@ public class PlSqlAstScanner {
             functionComplexityDistribution.add(functionComplexity);
         }
         saveMetricOnFile(inputFile, CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION, functionComplexityDistribution.build());
+        
+        return visitorContext.getIssues();
     }
     
     private static void checkInterrupted(Exception e) {

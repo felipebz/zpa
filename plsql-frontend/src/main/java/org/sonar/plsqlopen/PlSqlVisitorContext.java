@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
@@ -50,6 +51,8 @@ public interface PlSqlVisitorContext {
     Scope getCurrentScope();
     
     FormsMetadata getFormsMetadata();
+    
+    Collection<AnalyzerMessage> getIssues();
     
     void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters);
     

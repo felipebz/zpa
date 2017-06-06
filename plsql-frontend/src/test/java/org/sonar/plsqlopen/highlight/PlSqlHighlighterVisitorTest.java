@@ -79,7 +79,7 @@ public class PlSqlHighlighterVisitorTest {
         SensorContextTester context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(context).getTestInstance();
+        SonarComponents components = new SonarComponents(context);
 
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), components);
         scanner.scanFile(inputFile);

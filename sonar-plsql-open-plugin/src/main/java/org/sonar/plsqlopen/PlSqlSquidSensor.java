@@ -20,7 +20,10 @@
 package org.sonar.plsqlopen;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -32,12 +35,18 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.config.Settings;
+import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plsqlopen.squid.ProgressReport;
 import org.sonar.plsqlopen.squid.SonarQubePlSqlFile;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.sonar.sslr.api.GenericTokenType;
 import com.sonar.sslr.api.Token;
@@ -45,6 +54,7 @@ import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlSquidSensor implements Sensor {
 
+    private static final Logger LOG = Loggers.get(PlSqlSquidSensor.class);
     private final PlSqlChecks checks;
 
     private SonarComponents components;
@@ -62,7 +72,6 @@ public class PlSqlSquidSensor implements Sensor {
                 .addCustomChecks(customRulesDefinition);
         this.components = components;
         this.components.loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
-        components.setChecks(checks);
     }
     
     @Override
@@ -80,12 +89,64 @@ public class PlSqlSquidSensor implements Sensor {
         FilePredicates p = context.fileSystem().predicates();
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
-        PlSqlAstScanner scan = new PlSqlAstScanner(context, checks.all(), components);
-        scan.scanFiles(inputFiles);
+        ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), components);
+        
+        progressReport.start(inputFiles);
+        for (InputFile inputFile : inputFiles) {
+            Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
+            for (AnalyzerMessage analyzerMessage : issues) {
+                reportIssue(inputFile, analyzerMessage);
+            }
+            
+            progressReport.nextFile();
+        }
+        progressReport.stop();
         
         for (InputFile file : inputFiles) {
             saveCpdTokens(file);
         }
+    }
+    
+    @VisibleForTesting
+    void reportIssue(InputFile inputFile, AnalyzerMessage message) {
+        RuleKey key = checks.ruleKey((PlSqlCheck) message.getCheck());
+        PlSqlIssue issue = PlSqlIssue.create(context, key, message.getCost());
+        String text = message.getText(Locale.ENGLISH);
+        Integer line = message.getLine();
+        if (line == null) {
+            // either an issue at file or folder level
+            issue.setPrimaryLocationOnFile(inputFile, text);
+        } else {
+            AnalyzerMessage.TextSpan location = message.getLocation();
+            if (location != null) {
+                int column = message.getLocation().startCharacter;
+                int endLine = message.getLocation().endLine;
+                int endColumn = message.getLocation().endCharacter;
+                
+                try {
+                    issue.setPrimaryLocation(inputFile, text, line, column, endLine, endColumn);
+                } catch (IllegalArgumentException e) {
+                    // the previous setPrimaryLocation will fail if it is a multiline token
+                    // for now, just fall back to old method
+                    LOG.debug("Fail to set primary location", e);
+                    issue.setPrimaryLocation(inputFile, text, line, -1, 0, -1);
+                }
+            } else {
+                issue.setPrimaryLocation(inputFile, text, line, -1, 0, -1);
+            }
+        }
+        for (AnalyzerMessage location : message.getSecondaryLocations()) {
+            AnalyzerMessage.TextSpan secondarySpan = location.getLocation();
+            
+            String secondaryText = location.getText(Locale.ENGLISH);
+            try {
+                issue.addSecondaryLocation(inputFile, secondarySpan.startLine, secondarySpan.startCharacter, secondarySpan.endLine, secondarySpan.endCharacter, secondaryText);
+            } catch (IllegalArgumentException e) {
+                LOG.debug("addSecondaryLocation FAIL", e);
+            }
+        }
+        issue.save();
     }
 
     private void saveCpdTokens(InputFile inputFile) {

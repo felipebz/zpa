@@ -22,7 +22,6 @@ package org.sonar.plsqlopen;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Locale;
-import java.util.MissingResourceException;
 
 import org.junit.Before;
 import org.junit.Test;

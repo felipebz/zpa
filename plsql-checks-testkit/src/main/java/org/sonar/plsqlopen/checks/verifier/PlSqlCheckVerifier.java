@@ -76,13 +76,13 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(context).getTestInstance();
+        SonarComponents components = new SonarComponents(context);
         components.setFormsMetadata(metadata);
         
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), components);
-        scanner.scanFile(inputFile);
+        Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
         
-        Iterator<AnalyzerMessage> actualIssues = getActualIssues(components);
+        Iterator<AnalyzerMessage> actualIssues = getActualIssues(issues);
         List<TestIssue> expectedIssues = Ordering.natural().onResultOf(TestIssue::line).sortedCopy(verifier.expectedIssues);
 
         for (TestIssue expected : expectedIssues) {
@@ -151,8 +151,7 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         return Ordering.natural().sortedCopy(result);
     }
 
-    private static Iterator<AnalyzerMessage> getActualIssues(SonarComponents components) {
-        Collection<AnalyzerMessage> issues = ((SonarComponents.Test) components).getIssues();
+    private static Iterator<AnalyzerMessage> getActualIssues(Collection<AnalyzerMessage> issues) {
         List<AnalyzerMessage> sortedIssues = Ordering.natural().onResultOf(PlSqlCheckVerifier::line).sortedCopy(issues);
         return sortedIssues.iterator();
     }
