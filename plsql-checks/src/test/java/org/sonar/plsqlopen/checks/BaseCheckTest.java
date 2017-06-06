@@ -63,8 +63,8 @@ public class BaseCheckTest {
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), ImmutableList.of(file), components);
-        scanner.scanFiles();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), components);
+        scanner.scanFile(file);
 
         return ((SonarComponents.Test) components).getIssues();
     }

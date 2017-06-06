@@ -40,7 +40,6 @@ import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -80,8 +79,8 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         SonarComponents components = new SonarComponents(context).getTestInstance();
         components.setFormsMetadata(metadata);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(new SymbolVisitor(), check, verifier), ImmutableList.of(inputFile), components);
-        scanner.scanFiles();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), components);
+        scanner.scanFile(inputFile);
         
         Iterator<AnalyzerMessage> actualIssues = getActualIssues(components);
         List<TestIssue> expectedIssues = Ordering.natural().onResultOf(TestIssue::line).sortedCopy(verifier.expectedIssues);

@@ -33,13 +33,10 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.config.Settings;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plsqlopen.squid.SonarQubePlSqlFile;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
 import com.google.common.collect.Lists;
 import com.sonar.sslr.api.GenericTokenType;
@@ -78,17 +75,13 @@ public class PlSqlSquidSensor implements Sensor {
     @Override
     public void execute(SensorContext context) {
         this.context = context;
-        List<PlSqlCheck> visitors = new ArrayList<>();
-        visitors.add(new SymbolVisitor());
-        visitors.add(new PlSqlHighlighterVisitor());
-        visitors.addAll(checks.all());
         configuration = new PlSqlConfiguration(context.fileSystem().encoding());
         
         FilePredicates p = context.fileSystem().predicates();
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
-        PlSqlAstScanner scan = new PlSqlAstScanner(context, visitors, inputFiles, components);
-        scan.scanFiles();
+        PlSqlAstScanner scan = new PlSqlAstScanner(context, checks.all(), components);
+        scan.scanFiles(inputFiles);
         
         for (InputFile file : inputFiles) {
             saveCpdTokens(file);

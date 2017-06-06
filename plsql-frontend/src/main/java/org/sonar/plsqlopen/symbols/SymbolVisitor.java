@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.symbols;
 
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.symbol.NewSymbol;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.TokenLocation;
@@ -51,6 +53,10 @@ public class SymbolVisitor extends PlSqlCheck {
     private Scope currentScope;
     private NewSymbolTable symbolizable;
     
+    public SymbolVisitor(SensorContext context, InputFile inputFile) {
+        symbolizable = context.newSymbolTable().onFile(inputFile);
+    }
+
     @Override
     public void init() {
         subscribeTo(scopeHolders);
@@ -59,7 +65,6 @@ public class SymbolVisitor extends PlSqlCheck {
     @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
-        symbolizable = getContext().getSymbolizable();
         
         // ast is null when the file has a parsing error
         if (ast != null) {

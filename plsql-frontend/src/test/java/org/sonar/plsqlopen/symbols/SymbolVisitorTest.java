@@ -66,9 +66,8 @@ public class SymbolVisitorTest {
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
         
-        SymbolVisitor visitor = new SymbolVisitor();
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(visitor), ImmutableList.of(inputFile), components);
-        scanner.scanFiles();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), components);
+        scanner.scanFile(inputFile);
     }
     
     @Test

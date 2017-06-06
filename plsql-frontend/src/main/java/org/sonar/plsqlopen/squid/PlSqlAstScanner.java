@@ -38,11 +38,14 @@ import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.metrics.ComplexityVisitor;
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
+import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
@@ -56,20 +59,18 @@ public class PlSqlAstScanner {
     
     private final SensorContext context;
     private final Parser<Grammar> parser;
-    private final List<InputFile> inputFiles;
     private final Collection<PlSqlCheck> checks;
     private final SonarComponents components;
     private final ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, List<InputFile> inputFiles, SonarComponents components) {
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, SonarComponents components) {
       this.context = context;
       this.checks = checks;
-      this.inputFiles = inputFiles;
       this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
       this.components = components;
     }
-
-    public void scanFiles() {
+    
+    public void scanFiles(List<InputFile> inputFiles) {
         progressReport.start(inputFiles);
         for (InputFile plSqlFile : inputFiles) {
             scanFile(plSqlFile);
@@ -78,14 +79,18 @@ public class PlSqlAstScanner {
         progressReport.stop();
     }
 
-    private void scanFile(InputFile inputFile) {
+    @VisibleForTesting
+    public void scanFile(InputFile inputFile) {
         PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
         
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
         FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
         
-        List<PlSqlCheck> checksToRun = new ArrayList<>(checks);
+        List<PlSqlCheck> checksToRun = new ArrayList<>();
+        checksToRun.add(new SymbolVisitor(context, inputFile));
+        checksToRun.addAll(checks);
+        checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
         checksToRun.add(metricsVisitor);
         checksToRun.add(complexityVisitor);
         checksToRun.add(functionComplexityVisitor);

@@ -22,8 +22,6 @@ package org.sonar.plsqlopen;
 import java.io.File;
 import java.util.List;
 
-import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
-import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
@@ -78,16 +76,6 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     @Override
     public void setSymbolTable(SymbolTable symbolTable) {
         this.symbolTable = symbolTable;
-    }
-    
-    @Override
-    public NewSymbolTable getSymbolizable() {
-        return components.symbolizableFor(plSqlFile.inputFile());
-    }
-    
-    @Override
-    public NewHighlighting getHighlighting() {
-        return components.highlightingFor(plSqlFile.inputFile());
     }
     
     @Override

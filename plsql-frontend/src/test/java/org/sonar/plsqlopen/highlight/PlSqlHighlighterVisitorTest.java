@@ -81,9 +81,8 @@ public class PlSqlHighlighterVisitorTest {
         
         SonarComponents components = new SonarComponents(context).getTestInstance();
 
-        PlSqlHighlighterVisitor highlighter = new PlSqlHighlighterVisitor();
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(highlighter), ImmutableList.of(inputFile), components);
-        scanner.scanFiles();
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), components);
+        scanner.scanFile(inputFile);
         
         String key = inputFile.key();
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);

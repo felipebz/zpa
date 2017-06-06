@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.highlight;
 
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.plsqlopen.TokenLocation;
@@ -35,9 +37,8 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
 
     private NewHighlighting highlighting;
 
-    @Override
-    public void visitFile(AstNode ast) {
-        highlighting = getContext().getHighlighting();
+    public PlSqlHighlighterVisitor(SensorContext context, InputFile inputFile) {
+        highlighting = context.newHighlighting().onFile(inputFile);
     }
     
     @Override
