@@ -23,15 +23,15 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = DeclareSectionWithoutDeclarationsCheck.CHECK_KEY,
     priority = Priority.INFO
 )
-@SqaleConstantRemediation("1min")
+@ConstantRemediation("1min")
 @ActivatedByDefault
 public class DeclareSectionWithoutDeclarationsCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DeclareSectionWithoutDeclarations";

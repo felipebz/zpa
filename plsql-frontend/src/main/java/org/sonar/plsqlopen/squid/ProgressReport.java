@@ -3,9 +3,9 @@ package org.sonar.plsqlopen.squid;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 public class ProgressReport implements Runnable {
 
@@ -29,7 +29,7 @@ public class ProgressReport implements Runnable {
     }
 
     public ProgressReport(String threadName, long period, String adjective) {
-        this(threadName, period, LoggerFactory.getLogger(ProgressReport.class), adjective);
+        this(threadName, period, Loggers.get(ProgressReport.class), adjective);
     }
 
     public ProgressReport(String threadName, long period) {

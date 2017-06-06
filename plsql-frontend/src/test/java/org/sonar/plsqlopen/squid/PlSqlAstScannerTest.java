@@ -22,13 +22,11 @@ package org.sonar.plsqlopen.squid;
 import java.util.Collection;
 
 import org.sonar.plsqlopen.SonarComponents;
-import org.sonar.squidbridge.SquidAstVisitor;
-
-import com.sonar.sslr.api.Grammar;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 
 public class PlSqlAstScannerTest {
     
-    private Collection<SquidAstVisitor<Grammar>> noVisitors = null;
+    private Collection<PlSqlCheck> noVisitors = null;
     private SonarComponents components = null;
     
     /*@Test

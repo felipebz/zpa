@@ -21,8 +21,7 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.NoSqale;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 
 import com.sonar.sslr.api.RecognitionException;
 
@@ -30,7 +29,6 @@ import com.sonar.sslr.api.RecognitionException;
     key = ParsingErrorCheck.CHECK_KEY,
     priority = Priority.INFO
 )
-@NoSqale
 @ActivatedByDefault
 public class ParsingErrorCheck extends AbstractBaseCheck {
 

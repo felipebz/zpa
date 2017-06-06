@@ -21,12 +21,16 @@ package org.sonar.plsqlopen.squid;
 
 import java.nio.charset.Charset;
 
-import org.sonar.squidbridge.api.SquidConfiguration;
+public class PlSqlConfiguration {
 
-public class PlSqlConfiguration extends SquidConfiguration {
+    private Charset charset = Charset.defaultCharset();
 
     public PlSqlConfiguration(Charset charset) {
-        super(charset);
+        this.charset = charset;
+    }
+
+    public Charset getCharset() {
+        return charset;
     }
 
 }

@@ -28,7 +28,6 @@ import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
-import org.sonar.squidbridge.api.SourceProject;
 
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
@@ -43,10 +42,6 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     private AstNode rootTree;
     private PlSqlFile plSqlFile;
     private RecognitionException parsingException;
-    
-    public DefaultPlSqlVisitorContext(SourceProject project, SonarComponents components) {
-        this.components = components;
-    }
     
     public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, SonarComponents components) {
         this(rootTree, plSqlFile, null, components);

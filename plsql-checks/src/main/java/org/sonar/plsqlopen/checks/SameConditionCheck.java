@@ -26,8 +26,8 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -36,7 +36,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class SameConditionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "SameCondition";

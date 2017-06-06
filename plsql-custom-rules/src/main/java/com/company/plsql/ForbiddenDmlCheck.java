@@ -2,10 +2,10 @@ package com.company.plsql;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plsqlopen.checks.AbstractBaseCheck;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -15,7 +15,7 @@ import com.sonar.sslr.api.AstNode;
     key = "ForbiddenDmlCheck",
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("10min")
+@ConstantRemediation("10min")
 @ActivatedByDefault
 public class ForbiddenDmlCheck extends AbstractBaseCheck {
     

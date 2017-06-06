@@ -24,8 +24,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -33,7 +33,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.PERFORMANCE
 )
-@SqaleConstantRemediation("30min")
+@ConstantRemediation("30min")
 @ActivatedByDefault
 public class SelectAllColumnsCheck extends AbstractBaseCheck {
 

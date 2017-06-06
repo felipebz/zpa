@@ -27,14 +27,14 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = UnhandledUserDefinedExceptionCheck.CHECK_KEY,
     priority = Priority.CRITICAL
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnhandledUserDefinedException";
 

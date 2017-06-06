@@ -42,7 +42,6 @@ import org.sonar.plsqlopen.metrics.ComplexityVisitor;
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
-import org.sonar.squidbridge.api.AnalysisException;
 
 import com.google.common.base.Throwables;
 import com.sonar.sslr.api.Grammar;

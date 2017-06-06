@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -33,7 +33,7 @@ import com.sonar.sslr.api.AstNode;
     key = CursorBodyInPackageSpecCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("10min")
+@ConstantRemediation("10min")
 public class CursorBodyInPackageSpecCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "CursorBodyInPackageSpec";

@@ -22,8 +22,8 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -31,7 +31,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.OBSOLETE
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class InequalityUsageCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "InequalityUsage";

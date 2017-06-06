@@ -28,8 +28,8 @@ import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plsqlopen.metadata.Block;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
@@ -38,7 +38,7 @@ import com.sonar.sslr.api.AstNode;
     key = InvalidReferenceToObjectCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements FormsMetadataAwareCheck {
 

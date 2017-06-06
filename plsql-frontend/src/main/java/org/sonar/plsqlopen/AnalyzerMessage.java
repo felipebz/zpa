@@ -27,8 +27,6 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
-import org.sonar.squidbridge.api.CheckMessage;
-import org.sonar.squidbridge.api.CodeVisitor;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
@@ -43,19 +41,6 @@ public class AnalyzerMessage {
     private Object[] messageArguments;
     private Double cost;
     private Integer line;
-    
-    @Deprecated
-    public AnalyzerMessage(CodeVisitor check, String message, int line, Object... messageArguments) {
-        this(check, message, line > 0 ? new TextSpan(line, -1, line, -1) : null, messageArguments);
-    }
-    
-    @Deprecated
-    public AnalyzerMessage(CodeVisitor check, String message, @Nullable TextSpan textSpan, Object... messageArguments) {
-        this.textSpan = textSpan;
-        if (textSpan != null) {
-            setLine(textSpan.startLine);
-        }
-    }
     
     public AnalyzerMessage(PlSqlVisitor check, String message, int line, Object... messageArguments) {
         this(check, message, line > 0 ? new TextSpan(line, -1, line, -1) : null, messageArguments);

@@ -22,15 +22,15 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = VariableInitializationWithFunctionCallCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class VariableInitializationWithFunctionCallCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableInitializationWithFunctionCall";

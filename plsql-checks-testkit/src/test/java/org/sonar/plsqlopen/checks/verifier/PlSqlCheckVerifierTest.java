@@ -33,8 +33,8 @@ import org.junit.Test;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.AnalyzerMessage.TextSpan;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.squid.AnalysisException;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.squidbridge.api.AnalysisException;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;

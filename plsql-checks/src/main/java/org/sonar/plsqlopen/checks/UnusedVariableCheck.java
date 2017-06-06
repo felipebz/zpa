@@ -27,8 +27,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -36,7 +36,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.UNUSED
 )
-@SqaleConstantRemediation("2min")
+@ConstantRemediation("2min")
 @ActivatedByDefault
 public class UnusedVariableCheck extends AbstractBaseCheck {
 

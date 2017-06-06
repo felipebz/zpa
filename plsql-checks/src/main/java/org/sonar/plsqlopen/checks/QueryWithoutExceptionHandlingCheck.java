@@ -23,15 +23,15 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = QueryWithoutExceptionHandlingCheck.CHECK_KEY,
     priority = Priority.CRITICAL
 )
-@SqaleConstantRemediation("20min")
+@ConstantRemediation("20min")
 @ActivatedByDefault
 public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "QueryWithoutExceptionHandling";
