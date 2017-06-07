@@ -36,9 +36,9 @@ import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
 import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.metrics.ComplexityVisitor;
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
@@ -60,13 +60,13 @@ public class PlSqlAstScanner {
     private final SensorContext context;
     private final Parser<Grammar> parser;
     private final Collection<PlSqlCheck> checks;
-    private final SonarComponents components;
+    private final FormsMetadata formsMetadata;
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, SonarComponents components) {
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, FormsMetadata formsMetadata) {
       this.context = context;
       this.checks = checks;
+      this.formsMetadata = formsMetadata;
       this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
-      this.components = components;
     }
     
     @VisibleForTesting
@@ -89,9 +89,9 @@ public class PlSqlAstScanner {
         
         PlSqlVisitorContext visitorContext;
         try {
-            visitorContext = new DefaultPlSqlVisitorContext(parser.parse(plSqlFile.content()), plSqlFile, components);
+            visitorContext = new DefaultPlSqlVisitorContext(parser.parse(plSqlFile.content()), plSqlFile, formsMetadata);
         } catch (RecognitionException e) {
-            visitorContext = new DefaultPlSqlVisitorContext(plSqlFile, e, components);
+            visitorContext = new DefaultPlSqlVisitorContext(plSqlFile, e, formsMetadata);
             LOG.error("Unable to parse file: " + inputFile.absolutePath());
             LOG.error(e.getMessage());
         } catch (Exception e) {

@@ -36,7 +36,7 @@ import com.sonar.sslr.api.Token;
 
 public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
 
-    private SonarComponents components;
+    private FormsMetadata formsMetadata;
     private SymbolTable symbolTable;
     private Scope scope;
     private AstNode rootTree;
@@ -44,19 +44,19 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     private RecognitionException parsingException;
     private Collection<AnalyzerMessage> messages = new HashSet<>();
     
-    public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, SonarComponents components) {
-        this(rootTree, plSqlFile, null, components);
+    public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, FormsMetadata formsMetadata) {
+        this(rootTree, plSqlFile, null, formsMetadata);
     }
 
-    public DefaultPlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, SonarComponents components) {
-        this(null, plsqlFile, parsingException, components);
+    public DefaultPlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata formsMetadata) {
+        this(null, plsqlFile, parsingException, formsMetadata);
     }
 
-    private DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, RecognitionException parsingException, SonarComponents components) {
+    private DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, RecognitionException parsingException, FormsMetadata formsMetadata) {
         this.rootTree = rootTree;
         this.plSqlFile = plSqlFile;
         this.parsingException = parsingException;
-        this.components = components;
+        this.formsMetadata = formsMetadata;
     }
     
     public AstNode rootTree() {
@@ -93,7 +93,7 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
 
     @Override
     public FormsMetadata getFormsMetadata() {
-        return components.getFormsMetadata();
+        return formsMetadata;
     }
     
     @Override

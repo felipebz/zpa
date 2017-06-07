@@ -32,7 +32,6 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
 import com.google.common.collect.ImmutableList;
@@ -64,9 +63,7 @@ public class SymbolVisitorTest {
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(context);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), components);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), null);
         scanner.scanFile(inputFile);
     }
     

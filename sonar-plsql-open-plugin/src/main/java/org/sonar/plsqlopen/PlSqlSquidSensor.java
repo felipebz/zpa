@@ -19,6 +19,9 @@
  */
 package org.sonar.plsqlopen;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,13 +44,17 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.lexer.PlSqlLexer;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plsqlopen.squid.ProgressReport;
 import org.sonar.plsqlopen.squid.SonarQubePlSqlFile;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 import com.sonar.sslr.api.GenericTokenType;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.impl.Lexer;
@@ -57,21 +64,25 @@ public class PlSqlSquidSensor implements Sensor {
     private static final Logger LOG = Loggers.get(PlSqlSquidSensor.class);
     private final PlSqlChecks checks;
 
-    private SonarComponents components;
     private SensorContext context;
     private PlSqlConfiguration configuration;
+    private FormsMetadata formsMetadata;
     
-    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components, Settings settings) {
-        this(checkFactory, components, settings, null);
+    public PlSqlSquidSensor(CheckFactory checkFactory, Settings settings) {
+        this(checkFactory, settings, null);
     }
 
-    public PlSqlSquidSensor(CheckFactory checkFactory, SonarComponents components, Settings settings,
+    public PlSqlSquidSensor(CheckFactory checkFactory, Settings settings,
             @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
-        this.components = components;
-        this.components.loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
+        loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
+    }
+    
+    @VisibleForTesting
+    FormsMetadata getFormsMetadata() {
+        return formsMetadata;
     }
     
     @Override
@@ -90,7 +101,7 @@ public class PlSqlSquidSensor implements Sensor {
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
         ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), components);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), formsMetadata);
         
         progressReport.start(inputFiles);
         for (InputFile inputFile : inputFiles) {
@@ -105,6 +116,20 @@ public class PlSqlSquidSensor implements Sensor {
         
         for (InputFile file : inputFiles) {
             saveCpdTokens(file);
+        }
+    }
+    
+    public void loadMetadataFile(String metadataFile) {
+        if (Strings.isNullOrEmpty(metadataFile)) {
+            return;
+        }
+        
+        try (JsonReader reader = new JsonReader(new FileReader(metadataFile))) {
+            this.formsMetadata = new Gson().fromJson(reader, FormsMetadata.class);
+        } catch (FileNotFoundException e) {
+            LOG.warn("The metadata file {} was not found.", metadataFile, e);
+        } catch (IOException e) {
+            LOG.error("Error reading the metadata file at {}.", metadataFile, e);
         }
     }
     

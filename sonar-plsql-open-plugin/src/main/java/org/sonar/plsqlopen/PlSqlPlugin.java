@@ -48,8 +48,7 @@ public class PlSqlPlugin implements Plugin {
             PlSql.class,
             PlSqlProfile.class,
             PlSqlSquidSensor.class,
-            PlSqlRuleRepository.class,
-            SonarComponents.class);        
+            PlSqlRuleRepository.class);        
     }
 
 }

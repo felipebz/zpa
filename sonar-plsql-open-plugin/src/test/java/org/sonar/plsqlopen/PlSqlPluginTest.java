@@ -36,7 +36,7 @@ public class PlSqlPluginTest {
         Plugin.Context context = new Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER));
         PlSqlPlugin plugin = new PlSqlPlugin();
         plugin.define(context);
-        assertThat(context.getExtensions()).hasSize(7);
+        assertThat(context.getExtensions()).hasSize(6);
     }
     
 }
