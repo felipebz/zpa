@@ -22,15 +22,15 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = UselessParenthesisCheck.CHECK_KEY,
     priority = Priority.MINOR
 )
-@SqaleConstantRemediation("2min")
+@ConstantRemediation("2min")
 @ActivatedByDefault
 public class UselessParenthesisCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UselessParenthesis";
@@ -45,7 +45,7 @@ public class UselessParenthesisCheck extends AbstractBaseCheck {
         AstNode parent = node.getParent();
         if (parent.is(PlSqlGrammar.BRACKED_EXPRESSION) && 
             parent.getNumberOfChildren() == 3) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
         }
     }
 

@@ -19,31 +19,56 @@
  */
 package org.sonar.plsqlopen;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
-import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
-import org.sonar.squidbridge.SquidAstVisitorContextImpl;
-import org.sonar.squidbridge.api.CodeCheck;
-import org.sonar.squidbridge.api.CodeVisitor;
-import org.sonar.squidbridge.api.SourceProject;
 
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.api.Token;
 
-public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisitorContextImpl<G> implements PlSqlVisitorContext {
+public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
 
-    private SonarComponents components;
+    private FormsMetadata formsMetadata;
     private SymbolTable symbolTable;
     private Scope scope;
+    private AstNode rootTree;
+    private PlSqlFile plSqlFile;
+    private RecognitionException parsingException;
+    private Collection<AnalyzerMessage> messages = new HashSet<>();
     
-    public DefaultPlSqlVisitorContext(SourceProject project, SonarComponents components) {
-        super(project);
-        this.components = components;
+    public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, FormsMetadata formsMetadata) {
+        this(rootTree, plSqlFile, null, formsMetadata);
+    }
+
+    public DefaultPlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata formsMetadata) {
+        this(null, plsqlFile, parsingException, formsMetadata);
+    }
+
+    private DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, RecognitionException parsingException, FormsMetadata formsMetadata) {
+        this.rootTree = rootTree;
+        this.plSqlFile = plSqlFile;
+        this.parsingException = parsingException;
+        this.formsMetadata = formsMetadata;
+    }
+    
+    public AstNode rootTree() {
+        return rootTree;
+    }
+
+    public PlSqlFile plSqlFile() {
+        return plSqlFile;
+    }
+
+    public RecognitionException parsingException() {
+        return parsingException;
     }
     
     @Override
@@ -54,11 +79,6 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
     @Override
     public void setSymbolTable(SymbolTable symbolTable) {
         this.symbolTable = symbolTable;
-    }
-    
-    @Override
-    public NewSymbolTable getSymbolizable() {
-        return components.symbolizableFor(components.inputFromIOFile(getFile()));
     }
     
     @Override
@@ -73,44 +93,58 @@ public class DefaultPlSqlVisitorContext<G extends Grammar> extends SquidAstVisit
 
     @Override
     public FormsMetadata getFormsMetadata() {
-        return components.getFormsMetadata();
+        return formsMetadata;
     }
     
     @Override
-    public void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters) {
+    public Collection<AnalyzerMessage> getIssues() {
+        return messages;
+    }
+    
+    @Override
+    public void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters) {
+        AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, null, messageParameters);
+        messages.add(checkMessage);
+    }
+    
+    @Override
+    public void createLineViolation(PlSqlVisitor check, String message, AstNode node, Object... messageParameters) {
         createLineViolation(check, message, node.getToken(), messageParameters);
     }
     
     @Override
-    public void createLineViolation(CodeCheck check, String message, Token token, Object... messageParameters) {
+    public void createLineViolation(PlSqlVisitor check, String message, Token token, Object... messageParameters) {
       createLineViolation(check, message, token.getLine(), messageParameters);
     }
     
     @Override
-    public void createLineViolation(CodeCheck check, String message, int line, Object... messageParameters) {
+    public void createLineViolation(PlSqlVisitor check, String message, int line, Object... messageParameters) {
         AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, null, messageParameters);
         if (line > 0) {
             checkMessage.setLine(line);
         }
-        components.reportIssue(checkMessage, components.inputFromIOFile(getFile()));
-        log(checkMessage);
+        messages.add(checkMessage);
     }
     
     @Override
-    public void createViolation(CodeVisitor check, String message, AstNode node, Object... messageParameters) {
+    public void createViolation(PlSqlVisitor check, String message, AstNode node, Object... messageParameters) {
         createViolation(check, message, node, ImmutableList.<Location>of(), messageParameters);
     }
     
     @Override
-    public void createViolation(CodeVisitor check, String message, AstNode node, List<Location> secondary, Object... messageParameters) {
+    public void createViolation(PlSqlVisitor check, String message, AstNode node, List<Location> secondary, Object... messageParameters) {
         AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, AnalyzerMessage.textSpanFor(node), messageParameters);
         for (Location location : secondary) {
             AnalyzerMessage secondaryLocation = 
                     new AnalyzerMessage(check, location.msg, AnalyzerMessage.textSpanFor(location.node), messageParameters);
             checkMessage.addSecondaryLocation(secondaryLocation);
         }
-        components.reportIssue(checkMessage, components.inputFromIOFile(getFile()));
-        log(checkMessage);
+        messages.add(checkMessage);
+    }
+
+    @Override
+    public File getFile() {
+        return plSqlFile.file();
     }
 
 }

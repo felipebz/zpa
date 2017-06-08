@@ -25,8 +25,8 @@ import java.util.List;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -35,7 +35,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class DuplicateConditionIfElsifCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DuplicateConditionIfElsif";
@@ -78,7 +78,7 @@ public class DuplicateConditionIfElsifCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherCondition = conditions.get(j);
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         condition,
                         ImmutableList.of(newLocation("Original", otherCondition)),
                         otherCondition.getToken().getLine());

@@ -26,8 +26,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -35,7 +35,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class ComparisonWithNullCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ComparisonWithNull";
@@ -58,7 +58,7 @@ public class ComparisonWithNullCheck extends AbstractBaseCheck {
                     suggestion = "IS NOT NULL";  
                 }
                 
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, suggestion);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, suggestion);
                 continue;
             }
         }

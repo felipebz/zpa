@@ -19,29 +19,24 @@
  */
 package org.sonar.plsqlopen;
 
-import com.google.common.collect.ImmutableList;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Locale;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.server.debt.DebtRemediationFunction;
 import org.sonar.api.server.debt.DebtRemediationFunction.Type;
-import org.sonar.api.server.rule.*;
+import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition;
-import org.sonar.squidbridge.annotations.NoSqale;
-import org.sonar.squidbridge.annotations.RuleTemplate;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleLinearRemediation;
-import org.sonar.squidbridge.annotations.SqaleLinearWithOffsetRemediation;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
-import java.util.Locale;
-import java.util.MissingResourceException;
+import com.google.common.collect.ImmutableList;
 
 public class CustomAnnotationBasedRulesDefinitionTest {
 
@@ -130,44 +125,10 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void noNameAndNoResourceBundle() throws Exception {
-        @Rule(key = "ruleWithExternalInfo")
-        class RuleClass {
-        }
-
-        thrown.expect(MissingResourceException.class);
-        buildRepository("languageWithoutBundle", false, RuleClass.class);
-    }
-
-    @Test
-    public void ruleTemplate() throws Exception {
-        @Rule(key = "key1", name = "name1", description = "description1")
-        @NoSqale
-        @RuleTemplate
-        class RuleClass {
-        }
-
-        RulesDefinition.Rule rule = buildSingleRuleRepository(RuleClass.class);
-        assertThat(rule.template()).isTrue();
-    }
-
-    @Test
-    public void classWithNosqaleAnnotation() throws Exception {
-
-        @Rule(key = "key1", name = "name1", description = "description1")
-        @NoSqale
-        class RuleClass {
-        }
-
-        Repository repository = buildRepository(RuleClass.class);
-        assertThat(repository.rules()).hasSize(1);
-    }
-
-    @Test
     public void classWithSqaleConstantRemediation() throws Exception {
 
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleConstantRemediation("10min")
+        @ConstantRemediation("10min")
         class RuleClass {
         }
 
@@ -176,58 +137,20 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void classWithSqaleLinearRemediation() throws Exception {
-
-        @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleLinearRemediation(coeff = "2h", effortToFixDescription = "Effort to test one uncovered condition")
-        class RuleClass {
-        }
-
-        RulesDefinition.Rule rule = buildSingleRuleRepository(RuleClass.class);
-        assertRemediation(rule, Type.LINEAR, "2h", null, "Effort to test one uncovered condition");
-    }
-
-    @Test
-    public void classWithSqaleLinearWithOffsetRemediation() throws Exception {
-
-        @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleLinearWithOffsetRemediation(coeff = "5min", offset = "1h",
-        effortToFixDescription = "Effort to test one uncovered condition")
-        class RuleClass {
-        }
-
-        RulesDefinition.Rule rule = buildSingleRuleRepository(RuleClass.class);
-        assertRemediation(rule, Type.LINEAR_OFFSET, "5min", "1h", "Effort to test one uncovered condition");
-    }
-
-    @Test
-    public void classWithSeveralSqaleRemediationAnnotations() throws Exception {
-        @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleConstantRemediation("10min")
-        @SqaleLinearRemediation(coeff = "2h", effortToFixDescription = "Effort to test one uncovered condition")
-        class RuleClass {
-        }
-
-        thrown.expect(IllegalArgumentException.class);
-        buildSingleRuleRepository(RuleClass.class);
-    }
-
-    @Test
     public void invalidSqaleAnnotation() throws Exception {
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleConstantRemediation("xxx")
+        @ConstantRemediation("xxx")
         class MyInvalidRuleClass {
         }
 
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("MyInvalidRuleClass");
         buildSingleRuleRepository(MyInvalidRuleClass.class);
     }
 
     @Test
     public void loadMethodWithClassWithSqaleAnnotations() throws Exception {
         @Rule(key = "key1", name = "name1", description = "description1")
-        @SqaleConstantRemediation("10min")
+        @ConstantRemediation("10min")
         class RuleClass {
         }
         Repository repository = load(RuleClass.class);

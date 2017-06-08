@@ -22,15 +22,15 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = ConcatenationWithNullCheck.CHECK_KEY,
     priority = Priority.MINOR
 )
-@SqaleConstantRemediation("1min")
+@ConstantRemediation("1min")
 @ActivatedByDefault
 public class ConcatenationWithNullCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "ConcatenationWithNull";
@@ -44,7 +44,7 @@ public class ConcatenationWithNullCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         for (AstNode child : node.getChildren()) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), child);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), child);
             }
         }
     }

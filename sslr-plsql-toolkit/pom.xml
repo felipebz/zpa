@@ -65,7 +65,6 @@
                 <include>${project.groupId}:plsql-frontend</include>
                 <include>org.sonarsource.sslr:sslr-core</include>
                 <include>org.sonarsource.sslr:sslr-xpath</include>
-                <include>org.sonarsource.sslr-squid-bridge:sslr-squid-bridge</include>
                 <include>jaxen:jaxen</include>
                 <include>org.sonarsource.sslr:sslr-toolkit</include>
                 <include>org.codehaus.sonar:sonar-colorizer</include>

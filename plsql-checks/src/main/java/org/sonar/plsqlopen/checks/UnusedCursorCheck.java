@@ -28,8 +28,8 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -37,7 +37,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.UNUSED
 )
-@SqaleConstantRemediation("2min")
+@ConstantRemediation("2min")
 @ActivatedByDefault
 public class UnusedCursorCheck extends AbstractBaseCheck {
 
@@ -45,7 +45,7 @@ public class UnusedCursorCheck extends AbstractBaseCheck {
 
     @Override
     public void leaveFile(AstNode astNode) {
-        Set<Scope> scopes = getPlSqlContext().getSymbolTable().getScopes();
+        Set<Scope> scopes = getContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
             if (scope.tree().is(PlSqlGrammar.CREATE_PACKAGE)) {
                 continue;
@@ -58,7 +58,7 @@ public class UnusedCursorCheck extends AbstractBaseCheck {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.CURSOR);
         for (Symbol symbol : symbols) {
             if (symbol.usages().isEmpty() && !symbol.declaration().getParent().hasDirectChildren(PlSqlKeyword.RETURN)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
                         symbol.declaration().getParent(), symbol.declaration().getTokenOriginalValue());
             }
         }

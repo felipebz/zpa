@@ -24,6 +24,8 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,29 +33,24 @@ import java.util.List;
 import java.util.Locale;
 
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
-import org.sonar.squidbridge.checks.SquidCheck;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
-import com.sonar.sslr.api.AstAndTokenVisitor;
-import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
 
-public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTokenVisitor {
+public class PlSqlCheckVerifier extends PlSqlCheck {
 
     private List<TestIssue> expectedIssues = new ArrayList<>();
-
+    
     public static void verify(String filename, PlSqlCheck check) {
         verify(filename, check, null);
     }
@@ -65,8 +62,12 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         DefaultInputFile inputFile;
         
         try {
-            inputFile = new DefaultInputFile("key", filename).setLanguage("plsqlopen")
-                    .initMetadata(Files.toString(file, Charsets.UTF_8));
+            inputFile = new TestInputFileBuilder("key", filename)
+                    .setLanguage("plsqlopen")
+                    .setCharset(StandardCharsets.UTF_8)
+                    .initMetadata(Files.toString(file, StandardCharsets.UTF_8))
+                    .setModuleBaseDir(Paths.get(""))
+                    .build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -74,12 +75,10 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.fileSystem().add(inputFile);
         
-        SonarComponents components = new SonarComponents(context).getTestInstance();
-        components.setFormsMetadata(metadata);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), metadata);
+        Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
         
-        PlSqlAstScanner.scanSingleFile(file, components, ImmutableList.of(new SymbolVisitor(), check, verifier));
-        
-        Iterator<AnalyzerMessage> actualIssues = getActualIssues(components);
+        Iterator<AnalyzerMessage> actualIssues = getActualIssues(issues);
         List<TestIssue> expectedIssues = Ordering.natural().onResultOf(TestIssue::line).sortedCopy(verifier.expectedIssues);
 
         for (TestIssue expected : expectedIssues) {
@@ -148,8 +147,7 @@ public class PlSqlCheckVerifier extends SquidCheck<Grammar> implements AstAndTok
         return Ordering.natural().sortedCopy(result);
     }
 
-    private static Iterator<AnalyzerMessage> getActualIssues(SonarComponents components) {
-        Collection<AnalyzerMessage> issues = ((SonarComponents.Test) components).getIssues();
+    private static Iterator<AnalyzerMessage> getActualIssues(Collection<AnalyzerMessage> issues) {
         List<AnalyzerMessage> sortedIssues = Ordering.natural().onResultOf(PlSqlCheckVerifier::line).sortedCopy(issues);
         return sortedIssues.iterator();
     }

@@ -28,8 +28,8 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -37,7 +37,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.BLOCKER,
     tags = Tags.BUG
 )
-@SqaleConstantRemediation("2min")
+@ConstantRemediation("2min")
 @ActivatedByDefault
 public class VariableInCountCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableInCount";
@@ -64,11 +64,11 @@ public class VariableInCountCheck extends AbstractBaseCheck {
         }
         
         String value = arguments.get(0).getTokenOriginalValue();
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         if (scope != null) {
             Symbol symbol = scope.getSymbol(value);
             if (symbol != null) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, value);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, value);
             }
         }
     }

@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.symbols;
 
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.symbol.NewSymbol;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.TokenLocation;
@@ -51,6 +53,10 @@ public class SymbolVisitor extends PlSqlCheck {
     private Scope currentScope;
     private NewSymbolTable symbolizable;
     
+    public SymbolVisitor(SensorContext context, InputFile inputFile) {
+        symbolizable = context.newSymbolTable().onFile(inputFile);
+    }
+
     @Override
     public void init() {
         subscribeTo(scopeHolders);
@@ -59,27 +65,26 @@ public class SymbolVisitor extends PlSqlCheck {
     @Override
     public void visitFile(AstNode ast) {
         symbolTable = new SymbolTableImpl();
-        symbolizable = getPlSqlContext().getSymbolizable();
         
         // ast is null when the file has a parsing error
         if (ast != null) {
             visit(ast);
         }
         
-        getPlSqlContext().setSymbolTable(symbolTable);
+        getContext().setSymbolTable(symbolTable);
     }
     
     @Override
     public void visitNode(AstNode astNode) {
         if (astNode.is(scopeHolders)) {
-            getPlSqlContext().setCurrentScope(symbolTable.getScopeFor(astNode));
+            getContext().setCurrentScope(symbolTable.getScopeFor(astNode));
         }
     }
     
     @Override
     public void leaveNode(AstNode astNode) {
         if (astNode.is(scopeHolders)) {
-            getPlSqlContext().setCurrentScope(getPlSqlContext().getCurrentScope().outer());
+            getContext().setCurrentScope(getContext().getCurrentScope().outer());
         }
     }
     

@@ -25,8 +25,8 @@ import java.util.List;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -34,7 +34,7 @@ import com.sonar.sslr.api.AstNode;
     key = SameBranchCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("10min")
+@ConstantRemediation("10min")
 @ActivatedByDefault
 public class SameBranchCheck extends AbstractBaseCheck {
 
@@ -83,7 +83,7 @@ public class SameBranchCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherBranch = branches.get(j);
             if (CheckUtils.equalNodes(otherBranch, branch)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
                         branch,
                         ImmutableList.of(newLocation("Original", otherBranch)),
                         otherBranch.getToken().getLine());

@@ -27,14 +27,14 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = UnhandledUserDefinedExceptionCheck.CHECK_KEY,
     priority = Priority.CRITICAL
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnhandledUserDefinedException";
 
@@ -52,13 +52,13 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
         }
         
         String identifierName = identifier.getTokenOriginalValue();
-        Deque<Symbol> symbols = getPlSqlContext().getCurrentScope().getSymbolsAcessibleInScope(identifierName);
+        Deque<Symbol> symbols = getContext().getCurrentScope().getSymbolsAcessibleInScope(identifierName);
         
         if (!symbols.isEmpty()) {
             boolean checkException = exceptionShouldBeChecked(symbols.getFirst());
             
             if (checkException && !isHandled(identifierName)) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, identifierName);
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, identifierName);
             }
         }
     }
@@ -73,7 +73,7 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     }
     
     private boolean isHandled(String identifierName) {
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         
         Scope outerScope = scope;
         do {

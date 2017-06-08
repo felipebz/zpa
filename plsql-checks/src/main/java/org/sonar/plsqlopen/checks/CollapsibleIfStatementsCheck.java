@@ -26,9 +26,8 @@ import javax.annotation.Nullable;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.sslr.ast.AstSelect;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -37,7 +36,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.CLUMSY
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault
 public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
 
@@ -64,7 +63,7 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
     private static AstNode singleIfChild(AstNode suite) {
         List<AstNode> statements = suite.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
         if (statements.size() == 1) {
-            AstSelect nestedIf = statements.get(0).select().children(PlSqlGrammar.IF_STATEMENT);
+            List<AstNode> nestedIf = statements.get(0).getChildren(PlSqlGrammar.IF_STATEMENT);
             if (nestedIf.size() == 1) {
                 return nestedIf.get(0);
             }

@@ -23,17 +23,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.plsqlopen.SonarComponents;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
-import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 public class PlSqlHighlighterVisitorTest {
@@ -64,21 +65,23 @@ public class PlSqlHighlighterVisitorTest {
     private void verifyHighlighting() throws IOException {
     	File baseDir = temp.newFolder();
         File file = new File(baseDir, "test.sql");
-        String content = Files.toString(new File("src/test/resources/org/sonar/plsqlopen/highlight.sql"), Charsets.UTF_8);
-        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, Charsets.UTF_8);
+        String content = Files.toString(new File("src/test/resources/highlight/highlight.sql"), StandardCharsets.UTF_8);
+        Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, StandardCharsets.UTF_8);
         
-        DefaultInputFile inputFile = new DefaultInputFile("key", "test.sql").setLanguage("plsqlopen")
-                .initMetadata(Files.toString(file, Charsets.UTF_8));
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", "test.sql")
+                .setLanguage("plsqlopen")
+                .setCharset(StandardCharsets.UTF_8)
+                .initMetadata(Files.toString(file, StandardCharsets.UTF_8))
+                .setModuleBaseDir(baseDir.toPath())
+                .build();
         
         SensorContextTester context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
-        SonarComponents components = new SonarComponents(context).getTestInstance();
-
-        PlSqlHighlighterVisitor highlighter = new PlSqlHighlighterVisitor(context);
         
-        PlSqlAstScanner.scanSingleFile(inputFile.file(), components, highlighter);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), null);
+        scanner.scanFile(inputFile);
         
-        String key = "key:test.sql";
+        String key = inputFile.key();
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
         assertThat(context.highlightingTypeAt(key, 2, lineOffset(3))).containsExactly(TypeOfText.COMMENT);
         assertThat(context.highlightingTypeAt(key, 3, lineOffset(3))).containsExactly(TypeOfText.STRUCTURED_COMMENT);

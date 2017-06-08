@@ -19,32 +19,76 @@
  */
 package org.sonar.plsqlopen;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-import org.sonar.squidbridge.api.CheckMessage;
-import org.sonar.squidbridge.api.CodeVisitor;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 
-public class AnalyzerMessage extends CheckMessage {
+public class AnalyzerMessage {
 
     @Nullable
     private TextSpan textSpan;
     private final List<AnalyzerMessage> secondaryLocations = new ArrayList<>();
+    private PlSqlVisitor check;
+    private String message;
+    private Object[] messageArguments;
+    private Double cost;
+    private Integer line;
     
-    public AnalyzerMessage(CodeVisitor check, String message, int line, Object... messageArguments) {
+    public AnalyzerMessage(PlSqlVisitor check, String message, int line, Object... messageArguments) {
         this(check, message, line > 0 ? new TextSpan(line, -1, line, -1) : null, messageArguments);
     }
     
-    public AnalyzerMessage(CodeVisitor check, String message, @Nullable TextSpan textSpan, Object... messageArguments) {
-        super(check, message, messageArguments);
+    public AnalyzerMessage(PlSqlVisitor check, String message, @Nullable TextSpan textSpan, Object... messageArguments) {
+        this.check = check;
+        this.message = message;
         this.textSpan = textSpan;
+        this.messageArguments = messageArguments;
         if (textSpan != null) {
             setLine(textSpan.startLine);
+        }
+    }
+    
+    public PlSqlVisitor getCheck() {
+        return check;
+    }
+
+    public String getDefaultMessage() {
+        return message;
+    }
+
+    public Object[] getMessageArguments() {
+        return messageArguments;
+    }
+
+    public void setCost(double cost) {
+        this.cost = cost;
+    }
+
+    public Double getCost() {
+        return cost;
+    }
+    
+    public void setLine(int line) {
+        this.line = line;
+    }
+
+    public Integer getLine() {
+        return line;
+    }
+
+    public String getText(Locale locale) {
+        if (messageArguments.length == 0) {
+            return message;
+        } else {
+            return MessageFormat.format(message, messageArguments);
         }
     }
     

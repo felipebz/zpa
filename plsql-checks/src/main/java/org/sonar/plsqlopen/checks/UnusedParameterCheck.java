@@ -28,8 +28,8 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -37,7 +37,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR,
     tags = Tags.UNUSED
 )
-@SqaleConstantRemediation("30min")
+@ConstantRemediation("30min")
 @ActivatedByDefault
 public class UnusedParameterCheck extends AbstractBaseCheck {
 
@@ -45,7 +45,7 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
 
     @Override
     public void leaveFile(AstNode astNode) {
-        Set<Scope> scopes = getPlSqlContext().getSymbolTable().getScopes();
+        Set<Scope> scopes = getContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
             // procedure/function declaration (without implementation)
             if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION) &&
@@ -67,7 +67,7 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.PARAMETER);
         for (Symbol symbol : symbols) {
             if (symbol.usages().isEmpty()) {
-                getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
                         symbol.declaration().getParent(), symbol.declaration().getTokenOriginalValue());
             }
         }

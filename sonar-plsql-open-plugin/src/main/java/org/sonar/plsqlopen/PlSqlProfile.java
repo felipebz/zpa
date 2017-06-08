@@ -23,28 +23,45 @@ import javax.annotation.Nullable;
 
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonar.api.profiles.RulesProfile;
+import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RuleFinder;
+import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.ValidationMessages;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.squidbridge.annotations.AnnotationBasedProfileBuilder;
 
 public class PlSqlProfile extends ProfileDefinition {
 
     private final RuleFinder ruleFinder;
 
     public PlSqlProfile(RuleFinder ruleFinder) {
-      this.ruleFinder = ruleFinder;
+        this.ruleFinder = ruleFinder;
     }
 
     @Override
     public RulesProfile createProfile(@Nullable ValidationMessages validation) {
-      AnnotationBasedProfileBuilder annotationBasedProfileBuilder = new AnnotationBasedProfileBuilder(ruleFinder);
-      return annotationBasedProfileBuilder.build(
-          CheckList.REPOSITORY_KEY,
-          CheckList.SONAR_WAY_PROFILE,
-          PlSql.KEY,
-          CheckList.getChecks(),
-          validation);
+        RulesProfile profile = RulesProfile.create(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
+        for (Class<?> ruleClass : CheckList.getChecks()) {
+            addRule(ruleClass, profile, CheckList.REPOSITORY_KEY, validation);
+        }
+        return profile;
+    }
+    
+    private void addRule(Class<?> ruleClass, RulesProfile profile, String repositoryKey, ValidationMessages messages) {
+        if (AnnotationUtils.getAnnotation(ruleClass, ActivatedByDefault.class) != null) {
+            org.sonar.check.Rule ruleAnnotation = AnnotationUtils.getAnnotation(ruleClass, org.sonar.check.Rule.class);
+            if (ruleAnnotation == null) {
+                messages.addWarningText("Class " + ruleClass + " has no Rule annotation");
+                return;
+            }
+            String ruleKey = ruleAnnotation.key();
+            Rule rule = ruleFinder.findByKey(repositoryKey, ruleKey);
+            if (rule == null) {
+                messages.addWarningText("Rule not found: [repository=" + repositoryKey + ", key=" + ruleKey + "]");
+            } else {
+                profile.activateRule(rule, null);
+            }
+        }
     }
 
 }

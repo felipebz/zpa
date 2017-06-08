@@ -19,45 +19,41 @@
  */
 package org.sonar.plsqlopen;
 
-import java.lang.annotation.Annotation;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 import org.sonar.api.server.rule.RulesDefinition.NewParam;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.NewRule;
 import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.squidbridge.annotations.RuleTemplate;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
-import org.sonar.squidbridge.annotations.SqaleLinearRemediation;
-import org.sonar.squidbridge.annotations.SqaleLinearWithOffsetRemediation;
-import org.sonar.squidbridge.rules.ExternalDescriptionLoader;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Predicates;
+import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import com.google.common.io.Resources;
 
 public class CustomAnnotationBasedRulesDefinition {
 
     private final NewRepository repository;
     private final String languageKey;
-    private final ExternalDescriptionLoader externalDescriptionLoader;
     private final Locale locale;
+    private final String externalDescriptionBasePath;
 
     public CustomAnnotationBasedRulesDefinition(NewRepository repository, String languageKey) {
         this.repository = repository;
         this.languageKey = languageKey;
         this.locale = Locale.getDefault();
         String externalDescriptionBasePath = getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale);
-        externalDescriptionBasePath = String.format("%s/rules/%s", externalDescriptionBasePath, repository.key());
-        this.externalDescriptionLoader = new ExternalDescriptionLoader(repository, externalDescriptionBasePath);
+        this.externalDescriptionBasePath = String.format("%s/rules/%s", externalDescriptionBasePath, repository.key());
+        
     }
     
     /**
@@ -80,8 +76,7 @@ public class CustomAnnotationBasedRulesDefinition {
         List<NewRule> newRules = new ArrayList<>();
         for (Class<?> ruleClass : ruleClasses) {
             NewRule rule = newRule(ruleClass, failIfNoExplicitKey);
-            externalDescriptionLoader.addHtmlDescription(rule);
-            rule.setTemplate(AnnotationUtils.getAnnotation(ruleClass, RuleTemplate.class) != null);
+            addHtmlDescription(rule);
             try {
                 setupSqaleModel(rule, ruleClass);
             } catch (RuntimeException e) {
@@ -90,6 +85,22 @@ public class CustomAnnotationBasedRulesDefinition {
             newRules.add(rule);
         }
         setupExternalNames(newRules);
+    }
+
+    public void addHtmlDescription(NewRule rule) {
+        URL resource = CustomAnnotationBasedRulesDefinition.class.getResource(externalDescriptionBasePath + "/" + rule.key() + ".html");
+        if (resource != null) {
+            addHtmlDescription(rule, resource);
+        }
+    }
+
+    @VisibleForTesting
+    void addHtmlDescription(NewRule rule, URL resource) {
+        try {
+            rule.setHtmlDescription(Resources.toString(resource, Charsets.UTF_8));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read: " + resource, e);
+        }
     }
 
     @VisibleForTesting
@@ -109,7 +120,12 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     private void setupExternalNames(Collection<NewRule> rules) {
-        ResourceBundle bundle = ResourceBundle.getBundle("org.sonar.l10n." + languageKey, locale);
+        ResourceBundle bundle = null;
+        try {
+            bundle = ResourceBundle.getBundle("org.sonar.l10n." + languageKey, locale);
+        } catch (MissingResourceException e) {
+            return;
+        }
         for (NewRule rule : rules) {
             String baseKey = "rule." + repository.key() + "." + rule.key();
             String nameKey = baseKey + ".name";
@@ -126,27 +142,10 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     private static void setupSqaleModel(NewRule rule, Class<?> ruleClass) {
-        SqaleConstantRemediation constant = AnnotationUtils.getAnnotation(ruleClass, SqaleConstantRemediation.class);
-        SqaleLinearRemediation linear = AnnotationUtils.getAnnotation(ruleClass, SqaleLinearRemediation.class);
-        SqaleLinearWithOffsetRemediation linearWithOffset = AnnotationUtils.getAnnotation(ruleClass,
-                SqaleLinearWithOffsetRemediation.class);
-
-        Set<Annotation> remediations = Sets.newHashSet(constant, linear, linearWithOffset);
-        if (Iterables.size(Iterables.filter(remediations, Predicates.notNull())) > 1) {
-            throw new IllegalArgumentException("Found more than one SQALE remediation annotations on " + ruleClass);
-        }
-
+        ConstantRemediation constant = AnnotationUtils.getAnnotation(ruleClass, ConstantRemediation.class);
+        
         if (constant != null) {
             rule.setDebtRemediationFunction(rule.debtRemediationFunctions().constantPerIssue(constant.value()));
-        }
-        if (linear != null) {
-            rule.setDebtRemediationFunction(rule.debtRemediationFunctions().linear(linear.coeff()));
-            rule.setGapDescription(linear.effortToFixDescription());
-        }
-        if (linearWithOffset != null) {
-            rule.setDebtRemediationFunction(rule.debtRemediationFunctions().linearWithOffset(linearWithOffset.coeff(),
-                    linearWithOffset.offset()));
-            rule.setGapDescription(linearWithOffset.effortToFixDescription());
         }
     }
 

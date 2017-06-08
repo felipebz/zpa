@@ -26,8 +26,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -35,7 +35,7 @@ import com.sonar.sslr.api.AstNode;
     key = VariableHidingCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("5min")
+@ConstantRemediation("5min")
 @ActivatedByDefault 
 public class VariableHidingCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableHiding";
@@ -50,7 +50,7 @@ public class VariableHidingCheck extends AbstractBaseCheck {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
         String name = identifier.getTokenOriginalValue();
         
-        Scope scope = getPlSqlContext().getSymbolTable().getScopeForSymbol(identifier);
+        Scope scope = getContext().getSymbolTable().getScopeForSymbol(identifier);
         if (scope != null) {
             Deque<Symbol> symbols = scope.getSymbolsAcessibleInScope(name);
             
@@ -58,7 +58,7 @@ public class VariableHidingCheck extends AbstractBaseCheck {
                 AstNode originalVariable = symbols.getLast().declaration();
                 
                 if (!originalVariable.equals(identifier)) {
-                    getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
+                    getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
                             identifier,
                             ImmutableList.of(newLocation("Original", originalVariable)),
                             name,

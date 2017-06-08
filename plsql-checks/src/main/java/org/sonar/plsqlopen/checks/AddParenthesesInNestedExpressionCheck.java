@@ -23,16 +23,16 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = AddParenthesesInNestedExpressionCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("2min")
+@ConstantRemediation("2min")
 @ActivatedByDefault
 public class AddParenthesesInNestedExpressionCheck extends AbstractBaseCheck {
 
@@ -47,7 +47,7 @@ public class AddParenthesesInNestedExpressionCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         List<AstNode> andExpressions = node.getChildren(PlSqlGrammar.AND_EXPRESSION);
         for (AstNode andExpression : andExpressions) {
-            getPlSqlContext().createViolation(this, getLocalizedMessage(CHECK_KEY), andExpression);
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), andExpression);
         }
     }
 

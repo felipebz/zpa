@@ -23,7 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarQubeVersion;
+import org.sonar.api.SonarQubeSide;
+import org.sonar.api.internal.SonarRuntimeImpl;
+import org.sonar.api.utils.Version;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
 public class PlSqlPluginTest {
@@ -31,10 +33,10 @@ public class PlSqlPluginTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testGetExtensions() {
-        Plugin.Context context = new Plugin.Context(SonarQubeVersion.V5_6);
+        Plugin.Context context = new Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER));
         PlSqlPlugin plugin = new PlSqlPlugin();
         plugin.define(context);
-        assertThat(context.getExtensions()).hasSize(7);
+        assertThat(context.getExtensions()).hasSize(6);
     }
     
 }

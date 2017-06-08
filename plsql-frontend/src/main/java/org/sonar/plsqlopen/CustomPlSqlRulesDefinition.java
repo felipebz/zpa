@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import org.sonar.api.ExtensionPoint;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonar.squidbridge.annotations.AnnotationBasedRulesDefinition;
 
 @ExtensionPoint
 @BatchSide
@@ -36,7 +35,7 @@ public abstract class CustomPlSqlRulesDefinition implements RulesDefinition {
                 .setName(repositoryName());
 
         // Load metadata from check classes' annotations
-        new AnnotationBasedRulesDefinition(repo, "plsqlopen").addRuleClasses(false,
+        new CustomAnnotationBasedRulesDefinition(repo, "plsqlopen").addRuleClasses(false,
                 ImmutableList.copyOf(checkClasses()));
 
         repo.done();

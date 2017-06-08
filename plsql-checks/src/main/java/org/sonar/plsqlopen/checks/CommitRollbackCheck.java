@@ -23,15 +23,15 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.squidbridge.annotations.ActivatedByDefault;
-import org.sonar.squidbridge.annotations.SqaleConstantRemediation;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = CommitRollbackCheck.CHECK_KEY,
     priority = Priority.MAJOR
 )
-@SqaleConstantRemediation("30min")
+@ConstantRemediation("30min")
 @ActivatedByDefault
 public class CommitRollbackCheck extends AbstractBaseCheck {
 
@@ -44,7 +44,7 @@ public class CommitRollbackCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        Scope scope = getPlSqlContext().getCurrentScope();
+        Scope scope = getContext().getCurrentScope();
         
         Scope outerScope = scope;
         while (outerScope.outer() != null) {

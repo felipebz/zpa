@@ -20,19 +20,25 @@
 package org.sonar.plsqlopen;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
-import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
-import org.sonar.squidbridge.api.CodeCheck;
-import org.sonar.squidbridge.api.CodeVisitor;
 
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.api.Token;
 
 public interface PlSqlVisitorContext {
+    
+    public AstNode rootTree();
+    
+    public PlSqlFile plSqlFile();
+    
+    public RecognitionException parsingException();
     
     SymbolTable getSymbolTable();
     
@@ -40,23 +46,25 @@ public interface PlSqlVisitorContext {
     
     void setSymbolTable(SymbolTable symbolTable);
     
-    NewSymbolTable getSymbolizable();
-    
     void setCurrentScope(Scope scope);
     
     Scope getCurrentScope();
     
     FormsMetadata getFormsMetadata();
     
-    void createLineViolation(CodeCheck check, String message, AstNode node, Object... messageParameters);
+    Collection<AnalyzerMessage> getIssues();
     
-    void createLineViolation(CodeCheck check, String message, Token token, Object... messageParameters);
+    void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters);
     
-    void createLineViolation(CodeCheck check, String message, int line, Object... messageParameters);
+    void createLineViolation(PlSqlVisitor check, String message, AstNode node, Object... messageParameters);
     
-    void createViolation(CodeVisitor check, String message, AstNode node, Object... messageParameters);
+    void createLineViolation(PlSqlVisitor check, String message, Token token, Object... messageParameters);
     
-    void createViolation(CodeVisitor check, String message, AstNode node, List<Location> secondary,
+    void createLineViolation(PlSqlVisitor check, String message, int line, Object... messageParameters);
+    
+    void createViolation(PlSqlVisitor check, String message, AstNode node, Object... messageParameters);
+    
+    void createViolation(PlSqlVisitor check, String message, AstNode node, List<Location> secondary,
             Object... messageParameters);
 
     class Location {

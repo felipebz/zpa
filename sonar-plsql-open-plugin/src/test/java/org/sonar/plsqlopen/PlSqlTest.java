@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
@@ -32,7 +33,7 @@ public class PlSqlTest {
     
     @Test
     public void test() {
-        PlSql language = new PlSql(new Settings());
+        PlSql language = new PlSql(new MapSettings());
         assertThat(language.getKey()).isEqualTo("plsqlopen");
         assertThat(language.getName()).isEqualTo("PL/SQL");
         assertThat(language.getFileSuffixes())
@@ -48,7 +49,7 @@ public class PlSqlTest {
         Map<String, String> props = new HashMap<>();
         props.put(PlSqlPlugin.FILE_SUFFIXES_KEY, "sql, custom");
 
-        Settings settings = new Settings();
+        Settings settings = new MapSettings();
         settings.addProperties(props);
 
         PlSql language = new PlSql(settings);

@@ -19,11 +19,8 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import org.sonar.squidbridge.CommentAnalyser;
-
-public class PlSqlCommentAnalyzer extends CommentAnalyser {
+public class PlSqlCommentAnalyzer {
     
-    @Override
     public boolean isBlank(String line) {
         for (int i = 0; i < line.length(); i++) {
             if (Character.isLetterOrDigit(line.charAt(i))) {
@@ -33,7 +30,6 @@ public class PlSqlCommentAnalyzer extends CommentAnalyser {
         return true;
     }
 
-    @Override
     public String getContents(String comment) {
         if (comment.startsWith("--")) {
             return comment.substring(2);
