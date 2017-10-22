@@ -69,7 +69,7 @@
     <guava.version>10.0.1</guava.version>
     <gson.version>2.7</gson.version>
     <sonar-packaging.version>1.18.0.372</sonar-packaging.version>
-    <jar.plugin.version>2.6</jar.plugin.version>
+    <jar.plugin.version>3.0.2</jar.plugin.version>
     <jarjar.plugin.version>1.9</jarjar.plugin.version>
     <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -176,7 +176,7 @@
           <plugin>
             <groupId>com.mycila</groupId>
             <artifactId>license-maven-plugin</artifactId>
-            <version>2.11</version>
+            <version>3.0</version>
             <dependencies>
               <dependency>
                 <groupId>org.sonarsource.license-headers</groupId>
@@ -219,7 +219,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.6.1</version>
+        <version>3.7.0</version>
         <configuration>
           <source>${jdk.min.version}</source>
           <target>${jdk.min.version}</target>
@@ -282,7 +282,7 @@
 	        <plugin>
 	          <groupId>org.apache.maven.plugins</groupId>
 	          <artifactId>maven-surefire-plugin</artifactId>
-	          <version>2.16</version>
+	          <version>2.20.1</version>
 	        </plugin>
 	      </plugins>
 	    </pluginManagement>
