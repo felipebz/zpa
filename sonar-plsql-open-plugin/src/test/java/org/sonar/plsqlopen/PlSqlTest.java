@@ -21,12 +21,9 @@ package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Test;
-import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
+import org.sonar.api.config.internal.MapSettings;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
 public class PlSqlTest {
@@ -46,11 +43,8 @@ public class PlSqlTest {
     
     @Test
     public void custom_file_suffixes() {
-        Map<String, String> props = new HashMap<>();
-        props.put(PlSqlPlugin.FILE_SUFFIXES_KEY, "sql, custom");
-
-        Settings settings = new MapSettings();
-        settings.addProperties(props);
+        MapSettings settings = new MapSettings();
+        settings.setProperty(PlSqlPlugin.FILE_SUFFIXES_KEY, "sql, custom");
 
         PlSql language = new PlSql(settings);
         assertThat(language.getFileSuffixes()).hasSize(2).contains("custom");
