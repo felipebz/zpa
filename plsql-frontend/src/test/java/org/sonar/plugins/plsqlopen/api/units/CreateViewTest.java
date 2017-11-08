@@ -122,4 +122,13 @@ public class CreateViewTest extends RuleTest {
                 "from warehouse_table;"));
     }
 
+    @Test
+    public void matchesDecode() {
+    	assertThat(p).matches("create or replace view foo as select decode(bp.reference,null,sp.name1,bp.name1) p_name1 from bp, sp;");
+    }
+    
+    @Test
+    public void matchesDecodeWithRefColumn() {
+    	assertThat(p).matches("create or replace view foo as select decode(bp.ref,null,sp.name1,bp.name1) p_name1 from bp, sp;");
+    }
 }

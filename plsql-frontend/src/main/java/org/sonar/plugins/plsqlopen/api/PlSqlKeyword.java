@@ -106,7 +106,6 @@ public enum PlSqlKeyword implements TokenType {
     WHEN("when", true),
     WHERE("where", true),
     WITH("with", true),
-    REF("ref", true),
     OUT("out", true),
     SET("set", true),
     BULK("bulk", true),
@@ -117,6 +116,7 @@ public enum PlSqlKeyword implements TokenType {
     TYPE("type"),
     USE("use"),
     RANGE_KEYWORD("range"),
+    REF("ref"),
 
     // non reserved keywords
     ARRAY("array"),

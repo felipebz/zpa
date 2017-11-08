@@ -317,8 +317,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 BOOLEAN_DATATYPE,
                 DATE_DATATYPE,
                 ANCHORED_DATATYPE,
-                CUSTOM_DATATYPE,
-                REF_DATATYPE), 
+                REF_DATATYPE,
+                CUSTOM_DATATYPE), 
                 b.optional(b.firstOf(
                         b.sequence(NOT, NULL), 
                         NULL)));
