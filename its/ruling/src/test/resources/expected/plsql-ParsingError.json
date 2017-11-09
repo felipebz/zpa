@@ -23,9 +23,6 @@
 'project:alexandria-plsql-utils/ora/t_soap_envelope.pks':[
 1,
 ],
-'project:alexandria-plsql-utils/ora/xlsx_builder_pkg.pkb':[
-112,
-],
 'project:alexandria-plsql-utils/setup/grants.sql':[
 5,
 ],
