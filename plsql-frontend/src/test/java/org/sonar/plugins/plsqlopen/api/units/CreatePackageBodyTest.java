@@ -91,6 +91,17 @@ public class CreatePackageBodyTest extends RuleTest {
     }
     
     @Test
+    public void matchesPackageWithFunctionNamedExists() {
+    	assertThat(p).matches(""
+    			+ "create package body test is\n"
+    			+ "function exists return number is\n"
+    			+ "begin\n"
+    			+ "return null;\n"
+    			+ "end;\n"
+    			+ "end;");
+    }
+    
+    @Test
     public void matchesPackageWithInitializationSection() {
         assertThat(p).matches(""
                 + "create package body test is\n"

@@ -53,7 +53,6 @@ public enum PlSqlKeyword implements TokenType {
     END("end", true),
     EXCEPTION("exception", true),
     EXCLUSIVE("exclusive", true),
-    EXISTS("exists", true),
     FETCH("fetch", true),
     FOR("for", true),
     FROM("from", true),
@@ -117,7 +116,8 @@ public enum PlSqlKeyword implements TokenType {
     USE("use"),
     RANGE_KEYWORD("range"),
     REF("ref"),
-
+    EXISTS("exists"),
+    
     // non reserved keywords
     ARRAY("array"),
     ARROW("arrow"),
