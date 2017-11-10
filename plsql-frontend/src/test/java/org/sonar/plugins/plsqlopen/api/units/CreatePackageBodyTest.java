@@ -91,6 +91,21 @@ public class CreatePackageBodyTest extends RuleTest {
     }
     
     @Test
+    public void matchesPackageWithFunctionAndCursor() {
+    	assertThat(p).matches(""
+    			+ "create package body test is\n"
+    			+ "function func return number as\n"
+    			+ "cursor c_data is\n"
+    			+ "		(\n"
+    			+ "		select abc from dual\n"
+    			+ "		) order by abc;\n"
+    			+ "begin\n"
+    			+ "return null;\n"
+    			+ "end;\n"
+    			+ "end;");
+    }
+    
+    @Test
     public void matchesPackageWithInitializationSection() {
         assertThat(p).matches(""
                 + "create package body test is\n"
