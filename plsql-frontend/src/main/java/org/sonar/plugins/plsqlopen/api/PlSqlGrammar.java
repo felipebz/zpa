@@ -668,7 +668,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CURSOR, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(CURSOR_PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 b.optional(RETURN, DATATYPE),
-                b.optional(IS, SELECT_EXPRESSION, b.optional(ORDER_BY_CLAUSE)), SEMICOLON);
+                b.optional(IS, SELECT_EXPRESSION), SEMICOLON);
         
         b.rule(RECORD_FIELD_DECLARATION).is(
                 IDENTIFIER_NAME, DATATYPE,
