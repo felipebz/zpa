@@ -34,6 +34,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
+import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
@@ -76,10 +77,14 @@ public class PlSqlAstScanner {
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
         FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
-        
+
         List<PlSqlCheck> checksToRun = new ArrayList<>();
         checksToRun.add(new SymbolVisitor(context, inputFile));
-        checksToRun.addAll(checks);
+        
+        checks.stream()
+              .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
+              .forEach(checksToRun::add);
+        
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
         checksToRun.add(metricsVisitor);
         checksToRun.add(complexityVisitor);
