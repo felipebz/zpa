@@ -92,7 +92,6 @@ public enum PlSqlKeyword implements TokenType {
     SIZE("size", true),
     SQL("sql", true),
     START("start", true),
-    SUBTYPE("subtype", true),
     TABAUTH("tabauth", true),
     THEN("then", true),
     TO("to", true),
@@ -117,6 +116,7 @@ public enum PlSqlKeyword implements TokenType {
     RANGE_KEYWORD("range"),
     REF("ref"),
     EXISTS("exists"),
+    SUBTYPE("subtype"),
     
     // non reserved keywords
     ARRAY("array"),
