@@ -91,6 +91,7 @@ public enum PlSqlKeyword implements TokenType {
     SELECT("select", true),
     SHARE("share", true),
     SIZE("size", true),
+    SOME("some", true),
     SQL("sql", true),
     START("start", true),
     SUBTYPE("subtype", true),

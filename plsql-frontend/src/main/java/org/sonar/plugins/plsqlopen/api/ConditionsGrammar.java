@@ -52,7 +52,8 @@ public enum ConditionsGrammar implements GrammarRuleKey {
                 LESSTHAN, 
                 GREATERTHAN, 
                 LESSTHANOREQUAL, 
-                GREATERTHANOREQUAL));
+                GREATERTHANOREQUAL),
+        		b.optional(b.firstOf(ANY, SOME, ALL)));
         
         b.rule(RELATIONAL_CONDITION).is(
                 CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR, CONCATENATION_EXPRESSION).skip();
