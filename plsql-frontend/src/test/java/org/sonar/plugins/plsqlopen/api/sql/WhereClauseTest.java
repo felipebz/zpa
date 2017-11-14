@@ -77,5 +77,9 @@ public class WhereClauseTest extends RuleTest {
     public void matchesNotExists() {
         assertThat(p).matches("where not exists (select 1 from dual)");
     }
-
+    
+    @Test
+    public void matchesAny() {
+    	assertThat(p).matches("where data = any (select 1,2,3 from dual)");
+    }
 }
