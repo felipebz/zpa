@@ -342,7 +342,10 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(MERGE_INSERT_CLAUSE).is(WHEN, NOT, MATCHED, THEN, INSERT, 
                         b.optional(LPARENTHESIS, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE), RPARENTHESIS),
-                        VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS, b.optional(WHERE_CLAUSE));
+                        VALUES,b.firstOf(
+                        		b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                        		IDENTIFIER_NAME),
+                        b.optional(WHERE_CLAUSE));
         
         //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
         b.rule(MERGE_EXPRESSION).is(
