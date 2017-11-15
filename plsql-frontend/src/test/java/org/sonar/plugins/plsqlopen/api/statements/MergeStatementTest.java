@@ -42,6 +42,14 @@ public class MergeStatementTest extends RuleTest {
     }
     
     @Test
+    public void matchesMergeValuesWithRecord() {
+    	assertThat(p).matches("merge into dest_tab "
+    			+ "using source_tab on (1 = 2) "
+    			+ "when matched then update set col = val "
+    			+ "when not matched then insert values rec;");
+    }
+    
+    @Test
     public void matchesMergeWithInsertFirst() {
         assertThat(p).matches("merge into dest_tab "
                 + "using source_tab on (1 = 2) "
