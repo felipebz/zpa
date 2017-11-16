@@ -833,8 +833,18 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 
         // http://docs.oracle.com/cd/B28359_01/server.111/b28286/statements_8004.htm
         b.rule(CREATE_VIEW).is(
-                CREATE, b.optional(OR, REPLACE), b.optional(b.optional(NO), FORCE),
-                VIEW, UNIT_NAME,
+                CREATE,b.optional(
+                		b.firstOf(
+                				b.sequence(MATERIALIZED, VIEW, UNIT_NAME,
+                						b.zeroOrMore(
+                								b.firstOf(
+                										b.sequence(PCTFREE, INTEGER_LITERAL),
+                										b.sequence(PCTUSED, INTEGER_LITERAL),
+                										b.sequence(INITRANS, INTEGER_LITERAL),
+                										b.sequence(TABLESPACE, IDENTIFIER_NAME)
+                										)),
+                						b.optional(b.sequence(b.optional(NO), REFRESH, COMPLETE, b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)))),
+                				b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 AS,
                 SELECT_EXPRESSION,
