@@ -44,6 +44,10 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     private RecognitionException parsingException;
     private Collection<AnalyzerMessage> messages = new HashSet<>();
     
+    public DefaultPlSqlVisitorContext(AstNode rootTree) {
+        this(rootTree, null, null, null);
+    }
+    
     public DefaultPlSqlVisitorContext(AstNode rootTree, PlSqlFile plSqlFile, FormsMetadata formsMetadata) {
         this(rootTree, plSqlFile, null, formsMetadata);
     }
