@@ -136,4 +136,22 @@ public class CreateViewTest extends RuleTest {
     public void matchesViewWithOrder() {
     	assertThat(p).matches("create or replace view foo as (select abc,1 from dual) order by abc;");
     }
+    
+    @Test
+    public void matchesMaterializedView() {
+    	assertThat(p).matches("create materialized view foo as select 1 from dual;");
+    }
+    @Test
+    public void matchesMaterializedViewComplex() {
+    	assertThat(p).matches("create materialized view foo pctfree 0 tablespace dat3 refresh complete start with sysdate+2/24 next trunc(sysdate)+1 as select 1 from dual;");
+    }
+    @Test
+    public void matchesMaterializedViewWithTablespaceAndRefresh() {
+    	assertThat(p).matches("create materialized view foo tablespace dat3 refresh complete as select 1 from dual;");
+    }
+    
+    @Test
+    public void notMatchesMaterializedView() {
+    	assertThat(p).notMatches("create materialized force view foo as select 1 from dual;");
+    }
 }

@@ -43,6 +43,15 @@ public class CreateFunctionTest extends RuleTest {
     }
     
     @Test
+    public void matchesSimpleFunctionWithNameRefresh() {
+    	assertThat(p).matches(""
+    			+ "create function refresh return number is\n"
+    			+ "begin\n"
+    			+ "return 0;\n"
+    			+ "end;");
+    }
+    
+    @Test
     public void matchesSimpleFunctionAlternative() {
         assertThat(p).matches(""
                 + "create function test return number as\n"
