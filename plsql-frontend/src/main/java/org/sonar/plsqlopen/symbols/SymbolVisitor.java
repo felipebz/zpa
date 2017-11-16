@@ -53,6 +53,10 @@ public class SymbolVisitor extends PlSqlCheck {
     private Scope currentScope;
     private NewSymbolTable symbolizable;
     
+    public SymbolVisitor() {
+        // don't need context and inputFile
+    }
+    
     public SymbolVisitor(SensorContext context, InputFile inputFile) {
         symbolizable = context.newSymbolTable().onFile(inputFile);
     }
@@ -211,7 +215,7 @@ public class SymbolVisitor extends PlSqlCheck {
         boolean autonomous = false;
         
         if (autonomousTransaction != null) {
-          autonomous = autonomousTransaction;  
+            autonomous = autonomousTransaction;  
         } else if (currentScope != null) {
             autonomous = currentScope.isAutonomousTransaction();
         }
