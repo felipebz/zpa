@@ -20,7 +20,7 @@ public class PlSqlVisitor {
     }
     
     public void init() {
-     // default implementation does nothing
+        // default implementation does nothing
     }
 
     public void visitFile(AstNode node) {
