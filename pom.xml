@@ -243,6 +243,19 @@
     </plugins>
   </build>
   
+  <distributionManagement>
+    <repository>
+      <id>central</id>
+      <name>oss-jfrog-artifactory-releases</name>
+      <url>https://oss.jfrog.org/artifactory/oss-release-local</url>
+    </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <name>oss-jfrog-artifactory-snapshots</name>
+      <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
+  
   <profiles>
 	<profile>
 	  <id>m2e</id>

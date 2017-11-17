@@ -15,12 +15,13 @@
   
   <modules>
     <module>plugin</module>
-    <module>ruling  </module>
+    <module>ruling</module>
   </modules>
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skipTests>true</skipTests>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <dependencyManagement>

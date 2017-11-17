@@ -12,7 +12,11 @@ configureTravis
 case "$TESTS" in
 
 ci)
-  mvn verify -B -e -V
+  if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    mvn source:jar javadoc:jar deploy --settings=.settings.xml -B -e -V
+  else
+    mvn verify -B -e -V
+  fi
   ;;
 
 it)
