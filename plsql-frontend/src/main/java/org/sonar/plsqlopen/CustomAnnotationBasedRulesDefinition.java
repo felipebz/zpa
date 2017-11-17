@@ -57,8 +57,11 @@ public class CustomAnnotationBasedRulesDefinition {
     }
     
     /**
-     * Adds annotated rule classes to an instance of NewRepository. Fails if one
+     * Adds annotated rule classes to an instance of NewRepository. Fails if one of
      * the classes has no SQALE annotation.
+     * @param repository repository of rules 
+     * @param languageKey language identifier
+     * @param ruleClasses classes to add
      */
     @SuppressWarnings("rawtypes")
     public static void load(NewRepository repository, String languageKey, Iterable<Class> ruleClasses) {

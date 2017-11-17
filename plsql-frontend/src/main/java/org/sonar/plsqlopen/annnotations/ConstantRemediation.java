@@ -10,7 +10,8 @@ import java.lang.annotation.Target;
 public @interface ConstantRemediation {
     
     /**
-     * e.g. "10min" or "2h"
+     * Value of the remediation
+     * @return e.g. "10min" or "2h"
      */
     String value();
 

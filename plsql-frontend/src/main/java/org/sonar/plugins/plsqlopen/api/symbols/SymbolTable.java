@@ -28,11 +28,6 @@ import com.sonar.sslr.api.AstNode;
 
 public interface SymbolTable {
 
-    /**
-     *
-     * @param kind kind of symbols to look for
-     * @return list of symbols with the given kind
-     */
     List<Symbol> getSymbols();
     
     List<Symbol> getSymbols(Symbol.Kind kind);

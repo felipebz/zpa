@@ -41,19 +41,10 @@ public abstract class CustomPlSqlRulesDefinition implements RulesDefinition {
         repo.done();
     }
 
-    /**
-     * Name of the custom rule repository.
-     */
     public abstract String repositoryName();
 
-    /**
-     * Key of the custom rule repository.
-     */
     public abstract String repositoryKey();
 
-    /**
-     * Array of the custom rules classes.
-     */
     @SuppressWarnings("rawtypes")
     public abstract Class[] checkClasses();
     
