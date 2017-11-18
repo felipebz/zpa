@@ -51,5 +51,10 @@ public class AnchoredDatatypeTest extends RuleTest {
     public void matchesSimpleRowtypeAttribute() {
         assertThat(p).matches("name%rowtype");
     }
+    
+    @Test
+    public void matchesTypeAsColumnName() {
+        assertThat(p).matches("tab.type%type");
+    }
 
 }

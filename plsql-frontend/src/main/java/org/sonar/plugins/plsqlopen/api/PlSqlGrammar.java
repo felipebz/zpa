@@ -511,9 +511,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(MEMBER_EXPRESSION).is(
                 MULTIPLE_VALUE_EXPRESSION,
                 b.zeroOrMore(
-                        b.firstOf(DOT, MOD, REMOTE),
-                        b.nextNot(ROWTYPE),
-                        b.nextNot(TYPE),
+                        b.firstOf(DOT, 
+                                  REMOTE,
+                                  b.sequence(MOD, b.nextNot(ROWTYPE), b.nextNot(TYPE))),
                         b.firstOf(
                                 IDENTIFIER_NAME,
                                 COUNT,
