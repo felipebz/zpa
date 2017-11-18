@@ -24,7 +24,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -36,28 +35,22 @@ import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
-import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.config.Settings;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.lexer.PlSqlLexer;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plsqlopen.squid.ProgressReport;
-import org.sonar.plsqlopen.squid.SonarQubePlSqlFile;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
-import com.sonar.sslr.api.GenericTokenType;
-import com.sonar.sslr.api.Token;
-import com.sonar.sslr.impl.Lexer;
 
 public class PlSqlSquidSensor implements Sensor {
 
@@ -65,7 +58,6 @@ public class PlSqlSquidSensor implements Sensor {
     private final PlSqlChecks checks;
 
     private SensorContext context;
-    private PlSqlConfiguration configuration;
     private FormsMetadata formsMetadata;
     
     public PlSqlSquidSensor(CheckFactory checkFactory, Settings settings) {
@@ -95,7 +87,6 @@ public class PlSqlSquidSensor implements Sensor {
     @Override
     public void execute(SensorContext context) {
         this.context = context;
-        configuration = new PlSqlConfiguration(context.fileSystem().encoding());
         
         FilePredicates p = context.fileSystem().predicates();
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
@@ -113,10 +104,6 @@ public class PlSqlSquidSensor implements Sensor {
             progressReport.nextFile();
         }
         progressReport.stop();
-        
-        for (InputFile file : inputFiles) {
-            saveCpdTokens(file);
-        }
     }
     
     public void loadMetadataFile(String metadataFile) {
@@ -173,22 +160,7 @@ public class PlSqlSquidSensor implements Sensor {
         }
         issue.save();
     }
-
-    private void saveCpdTokens(InputFile inputFile) {
-        NewCpdTokens newCpdTokens = context.newCpdTokens().onFile(inputFile);
-        Lexer lexer = PlSqlLexer.create(configuration);
-        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
-        List<Token> tokens = lexer.lex(plSqlFile.content());
-        for (Token token : tokens) {
-            if (token.getType() == GenericTokenType.EOF) {
-                continue;
-            }
-            TokenLocation location = TokenLocation.from(token);
-            newCpdTokens.addToken(location.line(), location.column(), location.endLine(), location.endColumn(), token.getValue());
-        }
-        newCpdTokens.save();
-    }
-
+    
     @Override
     public String toString() {
         return getClass().getSimpleName();

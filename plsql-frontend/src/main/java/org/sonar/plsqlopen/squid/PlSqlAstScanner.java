@@ -42,6 +42,7 @@ import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.metrics.ComplexityVisitor;
+import org.sonar.plsqlopen.metrics.CpdVisitor;
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
@@ -90,6 +91,7 @@ public class PlSqlAstScanner {
         checksToRun.add(metricsVisitor);
         checksToRun.add(complexityVisitor);
         checksToRun.add(functionComplexityVisitor);
+        checksToRun.add(new CpdVisitor(context, inputFile));
         
         PlSqlAstWalker walker = new PlSqlAstWalker(checksToRun);
         
