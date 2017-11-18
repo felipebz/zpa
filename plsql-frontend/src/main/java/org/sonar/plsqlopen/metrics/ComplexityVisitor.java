@@ -1,12 +1,12 @@
 package org.sonar.plsqlopen.metrics;
 
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 
 import com.sonar.sslr.api.AstNode;
 
-public class ComplexityVisitor extends PlSqlCheck {
+public class ComplexityVisitor extends PlSqlVisitor {
 
     private int complexity;
     

@@ -3,7 +3,7 @@ package org.sonar.plsqlopen.metrics;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.squid.PlSqlCommentAnalyzer;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 
@@ -11,7 +11,7 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
 
-public class MetricsVisitor extends PlSqlCheck {
+public class MetricsVisitor extends PlSqlVisitor {
     
     private static final PlSqlCommentAnalyzer COMMENT_ANALYSER = new PlSqlCommentAnalyzer();
     
