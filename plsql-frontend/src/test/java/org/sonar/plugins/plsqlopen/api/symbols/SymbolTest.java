@@ -76,7 +76,7 @@ public class SymbolTest {
     private Symbol createSymbol(Scope scope, String name, Kind kind) {
         AstNode node = mock(AstNode.class);
         when(node.getTokenOriginalValue()).thenReturn(name);
-        return new Symbol(node, kind, scope);
+        return new Symbol(node, kind, scope, null);
     }
     
 }

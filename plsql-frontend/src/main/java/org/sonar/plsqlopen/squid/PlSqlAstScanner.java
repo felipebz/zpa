@@ -46,6 +46,7 @@ import org.sonar.plsqlopen.metrics.CpdVisitor;
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
+import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -81,7 +82,7 @@ public class PlSqlAstScanner {
         FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
 
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
-        checksToRun.add(new SymbolVisitor(context, inputFile));
+        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
         
         checks.stream()
               .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))

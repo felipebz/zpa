@@ -22,6 +22,8 @@ package org.sonar.plugins.plsqlopen.api.symbols;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
+
 import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
@@ -48,12 +50,18 @@ public class Symbol {
     private Scope scope;
     private List<AstNode> usages = new LinkedList<>();
     private List<AstNode> modifiers = new LinkedList<>();
+    private PlSqlType type;
 
-    public Symbol(AstNode declaration, Kind kind, Scope scope) {
+    public Symbol(AstNode declaration, Kind kind, Scope scope, PlSqlType type) {
         this.declaration = declaration;
         this.name = declaration.getTokenOriginalValue();
         this.kind = kind;
         this.scope = scope;
+        if (type != null) {
+            this.type = type;
+        } else {
+            this.type = new PlSqlType(Type.UNKNOWN);
+        }
     }
 
     public ImmutableList<AstNode> modifiers() {
@@ -103,6 +111,10 @@ public class Symbol {
 
     public Kind kind() {
         return kind;
+    }
+    
+    public PlSqlType type() {
+        return type;
     }
 
     @Override

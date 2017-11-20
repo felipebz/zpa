@@ -77,7 +77,7 @@ public class SymbolTableImplTest {
         Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
-        Symbol symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope);
+        Symbol symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, null);
         
         assertThat(symbolTable.getSymbolFor(node)).isEqualTo(symbol);
         assertThat(symbolTable.getSymbolFor(node2)).isNull();
@@ -96,7 +96,7 @@ public class SymbolTableImplTest {
         Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
-        symbolTable.declareSymbol(node, Kind.CURSOR, scope);
+        symbolTable.declareSymbol(node, Kind.CURSOR, scope, null);
         
         assertThat(symbolTable.getScopeForSymbol(node)).isEqualTo(scope);
         assertThat(symbolTable.getScopeForSymbol(node2)).isNull();
@@ -107,8 +107,8 @@ public class SymbolTableImplTest {
         Scope scope = new Scope(null, null, false, false);
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
-        Symbol symbol1 = symbolTable.declareSymbol(mock(AstNode.class), Kind.CURSOR, scope);
-        Symbol symbol2 = symbolTable.declareSymbol(mock(AstNode.class), Kind.VARIABLE, scope);
+        Symbol symbol1 = symbolTable.declareSymbol(mock(AstNode.class), Kind.CURSOR, scope, null);
+        Symbol symbol2 = symbolTable.declareSymbol(mock(AstNode.class), Kind.VARIABLE, scope, null);
         
         assertThat(symbolTable.getSymbols(Kind.CURSOR)).containsExactly(symbol1);
         assertThat(symbolTable.getSymbols(Kind.VARIABLE)).containsExactly(symbol2);
@@ -126,8 +126,8 @@ public class SymbolTableImplTest {
         when(node2.getTokenOriginalValue()).thenReturn("FOO");
         
         SymbolTableImpl symbolTable = new SymbolTableImpl();
-        Symbol symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope);
-        Symbol symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope);
+        Symbol symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, null);
+        Symbol symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, null);
         
         assertThat(symbolTable.getSymbols("foo")).containsExactly(symbol1, symbol2);
         assertThat(symbolTable.getSymbols("bar")).isEmpty();

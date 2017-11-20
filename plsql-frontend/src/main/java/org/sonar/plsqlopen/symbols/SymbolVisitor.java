@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTableImpl;
@@ -52,13 +53,15 @@ public class SymbolVisitor extends PlSqlCheck {
     private SymbolTableImpl symbolTable;
     private Scope currentScope;
     private NewSymbolTable symbolizable;
+    private DefaultTypeSolver typeSolver;
     
     public SymbolVisitor() {
         // don't need context and inputFile
     }
     
-    public SymbolVisitor(SensorContext context, InputFile inputFile) {
+    public SymbolVisitor(SensorContext context, InputFile inputFile, DefaultTypeSolver typeSolver) {
         symbolizable = context.newSymbolTable().onFile(inputFile);
+        this.typeSolver = typeSolver;
     }
 
     @Override
@@ -170,7 +173,7 @@ public class SymbolVisitor extends PlSqlCheck {
     
     private void visitCursor(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-        createSymbol(identifier, Symbol.Kind.CURSOR);
+        createSymbol(identifier, Symbol.Kind.CURSOR, null);
         enterScope(node, null, null);
     }
     
@@ -184,17 +187,23 @@ public class SymbolVisitor extends PlSqlCheck {
     private void visitFor(AstNode node) {
         enterScope(node, null, null);
         AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
-        createSymbol(identifier, Symbol.Kind.VARIABLE);
+        createSymbol(identifier, Symbol.Kind.VARIABLE, null);
     }
     
     private void visitVariableDeclaration(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-        createSymbol(identifier, Symbol.Kind.VARIABLE);
+        AstNode datatype = node.getFirstChild(PlSqlGrammar.DATATYPE);
+        
+        PlSqlType type = solveType(datatype);
+        createSymbol(identifier, Symbol.Kind.VARIABLE, type);
     }
     
     private void visitParameterDeclaration(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-        createSymbol(identifier, Symbol.Kind.PARAMETER).addModifiers(node.getChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT));
+        AstNode datatype = node.getFirstChild(PlSqlGrammar.DATATYPE);
+        
+        PlSqlType type = solveType(datatype);
+        createSymbol(identifier, Symbol.Kind.PARAMETER, type).addModifiers(node.getChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT));
     }
     
     private void visitVariableName(AstNode node) {
@@ -207,8 +216,8 @@ public class SymbolVisitor extends PlSqlCheck {
         }
     }
     
-    private Symbol createSymbol(AstNode identifier, Symbol.Kind kind) {
-        return symbolTable.declareSymbol(identifier, kind, currentScope);
+    private Symbol createSymbol(AstNode identifier, Symbol.Kind kind, PlSqlType type) {
+        return symbolTable.declareSymbol(identifier, kind, currentScope, type);
     }
     
     private void enterScope(AstNode node, Boolean autonomousTransaction, Boolean exceptionHandler) {
@@ -235,6 +244,14 @@ public class SymbolVisitor extends PlSqlCheck {
     private void leaveScope() {
         Preconditions.checkState(currentScope != null, "Current scope should never be null when calling method \"leaveScope\"");
         currentScope = currentScope.outer();
+    }
+    
+    private PlSqlType solveType(AstNode node) {
+        PlSqlType type = null;
+        if (typeSolver != null) {
+            type = typeSolver.solve(node);
+        }
+        return type;
     }
 
 }

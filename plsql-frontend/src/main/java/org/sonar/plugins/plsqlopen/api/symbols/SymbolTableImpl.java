@@ -76,8 +76,8 @@ public class SymbolTableImpl implements SymbolTable {
         return null;
     }
 
-    public Symbol declareSymbol(AstNode name, Symbol.Kind kind, Scope scope) {
-        Symbol symbol = new Symbol(name, kind, scope);
+    public Symbol declareSymbol(AstNode name, Symbol.Kind kind, Scope scope, PlSqlType type) {
+        Symbol symbol = new Symbol(name, kind, scope, type);
         symbols.add(symbol);
         scope.addSymbol(symbol);
         return symbol;
