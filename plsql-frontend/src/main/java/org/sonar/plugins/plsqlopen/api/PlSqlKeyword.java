@@ -64,6 +64,7 @@ public enum PlSqlKeyword implements TokenType {
     IDENTIFIED("identified", true),
     IF("if", true),
     IN("in", true),
+    INCREMENT("increment", true),
     INDEX("index", true),
     INDEXES("indexes", true),
     INITRANS("initrans", true),
@@ -364,6 +365,13 @@ public enum PlSqlKeyword implements TokenType {
     MATCHED("matched"),
     AGGREGATE("aggregate"),
     CASE("case"),
+    SEQUENCE("sequence"),
+    MAXVALUE("maxvalue"),
+    MINVALUE("minvalue"),
+    NOCACHE("nocache"),    
+    NOORDER("noorder"),    
+    CYCLE("cycle"),
+    CACHE("cache"),    
 ;
 
     private final String value;

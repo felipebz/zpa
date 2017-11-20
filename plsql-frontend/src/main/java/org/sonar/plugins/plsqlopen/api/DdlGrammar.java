@@ -40,7 +40,8 @@ public enum DdlGrammar implements GrammarRuleKey {
     ALTER_TRIGGER,
     ALTER_PACKAGE,
     DROP_COMMAND,
-    CREATE_SYNONYM;
+    CREATE_SYNONYM,
+    CREATE_SEQUENCE;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
         createDdlCommands(b);
@@ -112,7 +113,18 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(PUBLIC), SYNONYM, UNIT_NAME,
                 FOR, DmlGrammar.TABLE_REFERENCE, b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM));
+        b.rule(CREATE_SEQUENCE).is(
+        		CREATE, SEQUENCE, UNIT_NAME, 
+        		b.optional(START, WITH,NUMERIC_LITERAL),
+        		b.optional(MAXVALUE, NUMERIC_LITERAL),
+        		b.optional(MINVALUE, NUMERIC_LITERAL),
+        		b.optional(INCREMENT, BY,NUMERIC_LITERAL),
+        		b.optional(b.firstOf(CYCLE, NOCYCLE)),
+        		b.optional(b.firstOf(NOCACHE, b.sequence(CACHE, NUMERIC_LITERAL)),
+        		b.optional(b.firstOf(ORDER, NOORDER))),
+        		b.optional(SEMICOLON));
+        
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM, CREATE_SEQUENCE));
     }
 
 }
