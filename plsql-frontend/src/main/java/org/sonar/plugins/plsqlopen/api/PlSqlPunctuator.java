@@ -52,7 +52,8 @@ public enum PlSqlPunctuator implements TokenType {
     NOTEQUALS3("~="),
     NOTEQUALS4("^="),
     LESSTHANOREQUAL("<="),
-    GREATERTHANOREQUAL(">=");
+    GREATERTHANOREQUAL(">="),
+    DOUBLEDOLLAR("$$");
 
     private final String value;
 
