@@ -55,7 +55,7 @@ public class VariableInCountCheck extends AbstractBaseCheck {
             return;
         }
         
-        checkArguments(node, count.getArguments(node));
+        checkArguments(node, count.getArgumentsValues(node));
     }
     
     protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {

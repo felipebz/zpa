@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.matchers;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -111,6 +113,10 @@ public class MethodMatcher {
         }
         
         return new ArrayList<>();
+    }
+    
+    public List<AstNode> getArgumentsValues(AstNode node) {
+        return getArguments(node).stream().map(AstNode::getLastChild).collect(toList());
     }
 
     public boolean matches(AstNode originalNode) {

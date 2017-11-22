@@ -48,7 +48,7 @@ public class ToDateWithoutFormatCheck extends AbstractBaseCheck {
         MethodMatcher toDate = MethodMatcher.create().name("to_date").addParameter();
         
         if (toDate.matches(node)) {
-        	AstNode argument = toDate.getArguments(node).get(0).getLastChild();
+        	AstNode argument = toDate.getArgumentsValues(node).get(0);
 			if(!CheckUtils.isNullLiteralOrEmptyString(argument)) {
 				getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
 			}

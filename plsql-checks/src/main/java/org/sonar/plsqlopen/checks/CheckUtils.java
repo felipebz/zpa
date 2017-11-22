@@ -115,9 +115,9 @@ public class CheckUtils {
     
     public static AstNode skipNvlWithNull(AstNode node) {
         if (NVL_MATCHER.matches(node)) {
-            List<AstNode> arguments = NVL_MATCHER.getArguments(node);
-            if (isNullLiteralOrEmptyString(arguments.get(1).getFirstChild())) {
-                return arguments.get(0).getFirstChild();
+            List<AstNode> arguments = NVL_MATCHER.getArgumentsValues(node);
+            if (isNullLiteralOrEmptyString(arguments.get(1))) {
+                return arguments.get(0);
             }
         }
         return node;

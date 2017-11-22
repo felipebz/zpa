@@ -97,7 +97,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
         Verifier verifier = verifiers.stream().filter(v -> v.matcher.matches(node)).findFirst().orElse(null);
         
         if (verifier != null) {
-            AstNode argument = verifier.matcher.getArguments(node).get(verifier.argumentToCheck);
+            AstNode argument = verifier.matcher.getArgumentsValues(node).get(verifier.argumentToCheck);
             if (!isVarcharLiteral(argument)) {
                 return;
             }
@@ -148,9 +148,8 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
     
     private static boolean isVarcharLiteral(AstNode argument) {
-        AstNode child = argument.getFirstChild();
-        if (child.is(PlSqlGrammar.LITERAL)) {
-            return child.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL);
+        if (argument.is(PlSqlGrammar.LITERAL)) {
+            return argument.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL);
         }
         return false;
     }

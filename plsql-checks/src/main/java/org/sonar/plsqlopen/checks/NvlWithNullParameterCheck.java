@@ -50,10 +50,9 @@ public class NvlWithNullParameterCheck extends AbstractBaseCheck {
             return;
         }
         
-        for (AstNode argument : nvl.getArguments(node)) {
-            AstNode argumentValue = argument.getLastChild();
-            if (CheckUtils.isNullLiteralOrEmptyString(argumentValue)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, argumentValue.getTokenValue());
+        for (AstNode argument : nvl.getArgumentsValues(node)) {
+            if (CheckUtils.isNullLiteralOrEmptyString(argument)) {
+                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, argument.getTokenValue());
             }
         }
     }
