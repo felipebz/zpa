@@ -39,6 +39,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     
     // Data types
     DATATYPE,
+    DATATYPE_LENGTH,
     CHARACTER_SET_CLAUSE,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
@@ -60,6 +61,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     INTERVAL_YEAR_TO_MONTH_LITERAL,
     INTERVAL_DAY_TO_SECOND_LITERAL,
     INTERVAL_LITERAL,
+    INQUIRY_DIRECTIVE,
     
     // Expressions
     EXPRESSION,
@@ -247,11 +249,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
         b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
         b.rule(INTERVAL_LITERAL).is(b.firstOf(INTERVAL_YEAR_TO_MONTH_LITERAL, INTERVAL_DAY_TO_SECOND_LITERAL));
+        b.rule(INQUIRY_DIRECTIVE).is(DOUBLEDOLLAR, IDENTIFIER_NAME);
         
-        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL));
+        b.rule(LITERAL).is(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL, INQUIRY_DIRECTIVE));
     }
     
     private static void createDatatypes(LexerfulGrammarBuilder b) {
+        b.rule(DATATYPE_LENGTH).is(b.firstOf(INTEGER_LITERAL, INQUIRY_DIRECTIVE)).skip();
+        
         b.rule(NUMERIC_DATATYPE).is(
                 b.firstOf(
                         BINARY_DOUBLE,
@@ -273,7 +278,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         REAL,
                         SIGNTYPE,
                         SMALLINT), 
-                b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(COMMA, INTEGER_LITERAL), RPARENTHESIS));
+                b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(COMMA, DATATYPE_LENGTH), RPARENTHESIS));
         
         b.rule(CHARACTER_SET_CLAUSE).is(CHARACTER, SET, b.firstOf(ANY_CS, b.sequence(IDENTIFIER_NAME, MOD, CHARSET)));
         
@@ -292,17 +297,17 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         UROWID,
                         VARCHAR,
                         VARCHAR2), 
-                b.optional(LPARENTHESIS, INTEGER_LITERAL, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
+                b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
                 b.optional(CHARACTER_SET_CLAUSE));
         
         b.rule(BOOLEAN_DATATYPE).is(BOOLEAN);
         
         b.rule(DATE_DATATYPE).is(b.firstOf(
                 DATE,
-                b.sequence(TIMESTAMP, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), b.optional(WITH, b.optional(LOCAL), TIME, ZONE)),
-                b.sequence(INTERVAL, YEAR, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), TO, MONTH),
-                b.sequence(INTERVAL, DAY, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), 
-                        TO, SECOND, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS))));
+                b.sequence(TIMESTAMP, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS), b.optional(WITH, b.optional(LOCAL), TIME, ZONE)),
+                b.sequence(INTERVAL, YEAR, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS), TO, MONTH),
+                b.sequence(INTERVAL, DAY, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS), 
+                        TO, SECOND, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS))));
         
         b.rule(ANCHORED_DATATYPE).is(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE));
 

@@ -36,12 +36,15 @@ public class DatatypeTest extends RuleTest {
         assertThat(p).matches("number");
         assertThat(p).matches("number(10)");
         assertThat(p).matches("number(10, 2)");
+        assertThat(p).matches("number($$len)");
+        assertThat(p).matches("number($$len, $$decimals)");
         assertThat(p).matches("clob character set any_cs");
         assertThat(p).matches("clob character set str%charset");
         assertThat(p).matches("varchar2(10)");
         assertThat(p).matches("varchar2(10 char)");
         assertThat(p).matches("varchar2(10) character set any_cs");
         assertThat(p).matches("varchar2(10) character set str%charset");
+        assertThat(p).matches("varchar2($$len)");
         assertThat(p).matches("date");
         assertThat(p).matches("timestamp");
         assertThat(p).matches("timestamp(3)");
