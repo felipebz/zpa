@@ -21,10 +21,11 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.matchers.MethodMatcher;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plsqlopen.matchers.MethodMatcher;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -47,8 +48,10 @@ public class ToDateWithoutFormatCheck extends AbstractBaseCheck {
         MethodMatcher toDate = MethodMatcher.create().name("to_date").addParameter();
         
         if (toDate.matches(node)) {
-            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+        	AstNode argument = toDate.getArguments(node).get(0).getLastChild();
+			if(!CheckUtils.isNullLiteralOrEmptyString(argument)) {
+				getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+			}
         }
     }
-
 }
