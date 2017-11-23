@@ -371,8 +371,11 @@ public enum PlSqlKeyword implements TokenType {
     NOCACHE("nocache"),    
     NOORDER("noorder"),    
     CYCLE("cycle"),
-    CACHE("cache"),    
-;
+    CACHE("cache"),
+    REFERENCES("references"),
+    CASCADE("cascade"),
+    PRIMARY("primary"),
+    KEY("key");
 
     private final String value;
     private final boolean reserved;

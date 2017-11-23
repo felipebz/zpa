@@ -31,6 +31,8 @@ public enum DdlGrammar implements GrammarRuleKey {
     
     DDL_COMMENT,
     DDL_COMMAND,
+    REFERENCES_CLAUSE,
+    INLINE_CONSTRAINT,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
@@ -68,11 +70,27 @@ public enum DdlGrammar implements GrammarRuleKey {
                         ),
                 IS, CHARACTER_LITERAL, b.optional(SEMICOLON));
         
+        b.rule(REFERENCES_CLAUSE).is(
+                REFERENCES, MEMBER_EXPRESSION,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                b.optional(ON, DELETE, b.firstOf(CASCADE, b.sequence(SET, NULL)))
+                );
+        
+        b.rule(INLINE_CONSTRAINT).is(
+                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.firstOf(
+                        b.sequence(b.optional(NOT), NULL),
+                        UNIQUE,
+                        b.sequence(PRIMARY, KEY),
+                        REFERENCES_CLAUSE,
+                        b.sequence(CHECK, EXPRESSION)));
+        
         b.rule(TABLE_COLUMN_DEFINITION).is(
                 IDENTIFIER_NAME, DATATYPE,
                 b.optional(SORT),
                 b.optional(DEFAULT, EXPRESSION),
-                b.optional(ENCRYPT));
+                b.optional(ENCRYPT),
+                b.zeroOrMore(INLINE_CONSTRAINT));
         
         b.rule(TABLE_RELATIONAL_PROPERTIES).is(b.oneOrMore(TABLE_COLUMN_DEFINITION, b.optional(COMMA)));
         

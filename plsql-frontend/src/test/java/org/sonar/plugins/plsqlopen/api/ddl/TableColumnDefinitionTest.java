@@ -59,14 +59,14 @@ public class TableColumnDefinitionTest extends RuleTest {
         assertThat(p).matches("id number encrypt using 'AES256'");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesInlineConstraint() {
         assertThat(p).matches("id number constraint pktab primary key");
     }
     
-    @Test @Ignore
+    @Test
     public void matchesMultipleConstraints() {
-        assertThat(p).matches("id number constraint pktab primary key constraint check (id > 0)");
+        assertThat(p).matches("id number constraint pktab primary key check (id > 0)");
     }
     
     @Test @Ignore
