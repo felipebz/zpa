@@ -31,8 +31,10 @@ public enum DdlGrammar implements GrammarRuleKey {
     
     DDL_COMMENT,
     DDL_COMMAND,
+    ONE_OR_MORE_IDENTIFIERS,
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
+    OUT_OF_LINE_CONSTRAINT,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
@@ -70,9 +72,11 @@ public enum DdlGrammar implements GrammarRuleKey {
                         ),
                 IS, CHARACTER_LITERAL, b.optional(SEMICOLON));
         
+        b.rule(ONE_OR_MORE_IDENTIFIERS).is(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS).skip();
+        
         b.rule(REFERENCES_CLAUSE).is(
                 REFERENCES, MEMBER_EXPRESSION,
-                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                b.optional(ONE_OR_MORE_IDENTIFIERS),
                 b.optional(ON, DELETE, b.firstOf(CASCADE, b.sequence(SET, NULL)))
                 );
         
@@ -92,7 +96,15 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(ENCRYPT),
                 b.zeroOrMore(INLINE_CONSTRAINT));
         
-        b.rule(TABLE_RELATIONAL_PROPERTIES).is(b.oneOrMore(TABLE_COLUMN_DEFINITION, b.optional(COMMA)));
+        b.rule(OUT_OF_LINE_CONSTRAINT).is(
+                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.firstOf(
+                        b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
+                        b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS),
+                        b.sequence(FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE),
+                        b.sequence(CHECK, EXPRESSION)));
+        
+        b.rule(TABLE_RELATIONAL_PROPERTIES).is(b.oneOrMore(b.firstOf(OUT_OF_LINE_CONSTRAINT, TABLE_COLUMN_DEFINITION), b.optional(COMMA)));
         
         b.rule(CREATE_TABLE).is(
                 CREATE, b.optional(GLOBAL, TEMPORARY), TABLE, UNIT_NAME,

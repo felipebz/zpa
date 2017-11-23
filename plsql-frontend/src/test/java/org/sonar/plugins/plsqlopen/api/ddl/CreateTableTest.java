@@ -62,5 +62,10 @@ public class CreateTableTest extends RuleTest {
     public void matchesTemporaryTableOnCommitPreserveRows() {
         assertThat(p).matches("create global temporary table tab (id number) on commit preserve rows;");
     }
+    
+    @Test
+    public void matchesCreateTableWithOutOfLineConstraint() {
+        assertThat(p).matches("create table tab (id number, constraint pk primary key(id));");
+    }
 
 }
