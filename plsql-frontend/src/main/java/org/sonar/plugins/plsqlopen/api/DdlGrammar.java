@@ -38,6 +38,7 @@ public enum DdlGrammar implements GrammarRuleKey {
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
+    ALTER_TABLE,
     ALTER_PLSQL_UNIT,
     ALTER_PROCEDURE_FUNCTION,
     COMPILE_CLAUSE,
@@ -100,7 +101,7 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(CONSTRAINT, IDENTIFIER_NAME),
                 b.firstOf(
                         b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
-                        b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS),
+                        b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS, b.optional( b.sequence(USING, INDEX))),
                         b.sequence(FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE),
                         b.sequence(CHECK, EXPRESSION)));
         
@@ -111,6 +112,9 @@ public enum DdlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
                 b.optional(SEMICOLON));
+        
+        b.rule(ALTER_TABLE).is(
+        		ALTER, TABLE, UNIT_NAME, b.firstOf(ADD, DROP),  TABLE_RELATIONAL_PROPERTIES, b.optional(SEMICOLON));
         
         b.rule(COMPILE_CLAUSE).is(COMPILE, b.optional(DEBUG), b.optional(REUSE, SETTINGS));
         
@@ -154,7 +158,7 @@ public enum DdlGrammar implements GrammarRuleKey {
         		b.optional(b.firstOf(ORDER, NOORDER))),
         		b.optional(SEMICOLON));
         
-        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM, CREATE_SEQUENCE));
+        b.rule(DDL_COMMAND).is(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM, CREATE_SEQUENCE));
     }
 
 }
