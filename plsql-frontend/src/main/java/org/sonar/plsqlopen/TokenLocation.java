@@ -19,9 +19,12 @@
  */
 package org.sonar.plsqlopen;
 
+import java.util.regex.Pattern;
+
 import com.sonar.sslr.api.Token;
 
-public class TokenLocation {
+public class TokenLocation { 
+    private static final Pattern pattern = Pattern.compile("\r?\n|\r");
     
     private int line;
     private int column;
@@ -52,7 +55,7 @@ public class TokenLocation {
     }
     
     public static TokenLocation from(Token token) {
-        String[] lines = token.getValue().split("\\r\\n|\\n|\\r");
+        String[] lines = pattern.split(token.getValue());
         int endLineOffset = token.getColumn() + token.getValue().length();
         int endLine = token.getLine() + lines.length - 1;
         if (endLine != token.getLine()) {
