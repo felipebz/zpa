@@ -125,6 +125,7 @@ public enum PlSqlKeyword implements TokenType {
     EXISTS("exists"),
     SUBTYPE("subtype"),
     REFRESH("refresh"),
+	ADD("add"),
     
     // non reserved keywords
     ARRAY("array"),
