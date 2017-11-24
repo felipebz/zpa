@@ -30,9 +30,12 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.AstNodeType;
 
 public class MethodMatcher {
 
+    private static final AstNodeType[] VARIABLE_OR_IDENTIFIER = { PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME };
+    
     private NameCriteria methodNameCriteria;
     private NameCriteria packageNameCriteria;
     private NameCriteria schemaNameCriteria;
@@ -121,7 +124,7 @@ public class MethodMatcher {
 
     public boolean matches(AstNode originalNode) {
         AstNode node = normalize(originalNode);
-        LinkedList<AstNode> nodes = Lists.newLinkedList(node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME));
+        LinkedList<AstNode> nodes = Lists.newLinkedList(node.getChildren(VARIABLE_OR_IDENTIFIER));
         
         if (nodes.isEmpty()) {
             return false;
@@ -153,9 +156,9 @@ public class MethodMatcher {
     }
     
     private static AstNode normalize(AstNode node) {
-        if (node.is(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.CALL_STATEMENT)) {
+        if (node.getType() == PlSqlGrammar.METHOD_CALL || node.getType() == PlSqlGrammar.CALL_STATEMENT) {
             AstNode child = normalize(node.getFirstChild());
-            if (child.getFirstChild().is(PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE)) {
+            if (child.getFirstChild().getType() == PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE) {
                 child = child.getFirstChild();
             }
             return child;
