@@ -30,7 +30,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
-import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.api.Trivia;
 
 public class PlSqlHighlighterVisitor extends PlSqlCheck {
@@ -60,10 +59,10 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
             highlight(trivia.getToken(), code);
         }
         
-        if (isLiteral(token.getType())) {
+        if (token.getType() instanceof PlSqlTokenType) {
             highlight(token, TypeOfText.STRING);
         }
-        if (isKeyword(token.getType())) {
+        if (token.getType() instanceof PlSqlKeyword) {
             highlight(token, TypeOfText.KEYWORD);
         }
     }
@@ -73,24 +72,6 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
         if (highlighting != null) {
             highlighting.highlight(location.line(), location.column(), location.endLine(), location.endColumn(), code);
         }
-    }
-    
-    public boolean isLiteral(TokenType type) {
-        for (TokenType literalType : PlSqlTokenType.values()) {
-            if (literalType.equals(type)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public boolean isKeyword(TokenType type) {
-        for (TokenType keywordType : PlSqlKeyword.values()) {
-            if (keywordType.equals(type)) {
-                return true;
-            }
-        }
-        return false;
     }
 
 }
