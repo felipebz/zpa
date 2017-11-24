@@ -135,24 +135,35 @@ public class SymbolVisitor extends PlSqlCheck {
 
     private void visitNodeInternal(AstNode node) {
         
-        if (node.is(PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION,
-                PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION,
-                PlSqlGrammar.CREATE_TRIGGER)) {
-            visitUnit(node);
-        } else if (node.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)) {
-            visitPackage(node);
-        } else if (node.is(PlSqlGrammar.CURSOR_DECLARATION)) {
-            visitCursor(node);
-        } else if (node.is(PlSqlGrammar.BLOCK_STATEMENT)) {
-            visitBlock(node);
-        } else if (node.is(PlSqlGrammar.FOR_STATEMENT)) {
-            visitFor(node);
-        } else if (node.is(PlSqlGrammar.VARIABLE_DECLARATION)) {
+        if (node.getType() == PlSqlGrammar.VARIABLE_DECLARATION) {
             visitVariableDeclaration(node);
-        } else if (node.is(PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_PARAMETER_DECLARATION)) {
-            visitParameterDeclaration(node);
-        } else if (node.is(PlSqlGrammar.VARIABLE_NAME)) {
+        
+        } else if (node.getType() == PlSqlGrammar.VARIABLE_NAME) {
             visitVariableName(node);
+        
+        } else if (node.getType() == PlSqlGrammar.CURSOR_DECLARATION) {
+            visitCursor(node);
+        
+        } else if (node.getType() == PlSqlGrammar.BLOCK_STATEMENT) {
+            visitBlock(node);
+        
+        } else if (node.getType() == PlSqlGrammar.FOR_STATEMENT) {
+            visitFor(node);
+        
+        } else if (node.getType() == PlSqlGrammar.PARAMETER_DECLARATION ||
+                node.getType() == PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
+            visitParameterDeclaration(node);
+        
+        } else if (node.getType() == PlSqlGrammar.CREATE_PROCEDURE ||
+                node.getType() == PlSqlGrammar.PROCEDURE_DECLARATION ||
+                node.getType() == PlSqlGrammar.CREATE_FUNCTION ||
+                node.getType() == PlSqlGrammar.FUNCTION_DECLARATION ||
+                node.getType() == PlSqlGrammar.CREATE_TRIGGER) {
+            visitUnit(node);
+        
+        } else if (node.getType() == PlSqlGrammar.CREATE_PACKAGE || 
+                node.getType() == PlSqlGrammar.CREATE_PACKAGE_BODY) {
+            visitPackage(node);
         }
     }
     
