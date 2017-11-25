@@ -46,6 +46,12 @@ public class CheckUtils {
             PlSqlGrammar.FUNCTION_DECLARATION,
             PlSqlGrammar.CREATE_PACKAGE_BODY};
     
+    private static final AstNodeType[] NULL_LITERAL = { PlSqlGrammar.NULL_LITERAL };
+    
+    private static final AstNodeType[] CHARACTER_LITERAL = { PlSqlGrammar.CHARACTER_LITERAL };
+    
+    private static final AstNodeType[] WHEN = { PlSqlKeyword.WHEN };
+    
     private static final MethodMatcher NVL_MATCHER = MethodMatcher.create().name("nvl").addParameter().addParameter();
     
     private CheckUtils() {
@@ -57,7 +63,7 @@ public class CheckUtils {
     
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
         if (node != null) {
-            if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) {
+            if (node.hasDirectChildren(NULL_LITERAL)) {
                 return true;
             }
 
@@ -70,7 +76,7 @@ public class CheckUtils {
     }
 
     public static boolean isEmptyString(AstNode node) {
-        AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
+        AstNode characterLiteral = node.getFirstChild(CHARACTER_LITERAL);
         if (characterLiteral != null && "''".equals(characterLiteral.getTokenValue())) {
             return true;
         }
@@ -107,7 +113,7 @@ public class CheckUtils {
     }
     
     public static AstNode skipParenthesis(AstNode node) {
-        if (node.is(PlSqlGrammar.BRACKED_EXPRESSION)) {
+        if (node.getType() == PlSqlGrammar.BRACKED_EXPRESSION) {
             return node.getChildren().get(1);
         }
         return node;
@@ -124,7 +130,7 @@ public class CheckUtils {
     }
     
     public static boolean isTerminationStatement(AstNode node) {
-        return node.is(TERMINATION_STATEMENTS) && !node.hasDirectChildren(PlSqlKeyword.WHEN);
+        return node.is(TERMINATION_STATEMENTS) && !node.hasDirectChildren(WHEN);
     }
     
     public static boolean isProgramUnit(@Nullable AstNode node) {
