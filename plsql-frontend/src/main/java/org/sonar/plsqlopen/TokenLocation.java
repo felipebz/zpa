@@ -55,11 +55,21 @@ public class TokenLocation {
     }
     
     public static TokenLocation from(Token token) {
-        String[] lines = pattern.split(token.getValue());
+        int lineCount = 0;
+        int lastLineLength = 0;
+        
+        if (token.getValue().contains("\n") || token.getValue().contains("\r")) {
+            String[] lines = pattern.split(token.getValue());
+            lineCount = lines.length;
+            lastLineLength = lines[lines.length - 1].length();;
+        } else {
+            lineCount = 1;
+        }
+        
         int endLineOffset = token.getColumn() + token.getValue().length();
-        int endLine = token.getLine() + lines.length - 1;
+        int endLine = token.getLine() + lineCount - 1;
         if (endLine != token.getLine()) {
-            endLineOffset = lines[lines.length - 1].length();
+            endLineOffset = lastLineLength;
         }
         return new TokenLocation(token.getLine(), token.getColumn(), endLine, endLineOffset);
     }
