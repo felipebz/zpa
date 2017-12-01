@@ -34,6 +34,7 @@ import org.sonar.api.server.rule.RulesDefinition.NewRule;
 import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plsqlopen.annnotations.RuleTemplate;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -80,6 +81,7 @@ public class CustomAnnotationBasedRulesDefinition {
         for (Class<?> ruleClass : ruleClasses) {
             NewRule rule = newRule(ruleClass, failIfNoExplicitKey);
             addHtmlDescription(rule);
+            rule.setTemplate(AnnotationUtils.getAnnotation(ruleClass, RuleTemplate.class) != null);
             try {
                 setupSqaleModel(rule, ruleClass);
             } catch (RuntimeException e) {

@@ -108,6 +108,7 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
     @Override
     public void createFileViolation(PlSqlVisitor check, String message, Object... messageParameters) {
         AnalyzerMessage checkMessage = new AnalyzerMessage(check, message, null, messageParameters);
+        checkMessage.setLine(0);
         messages.add(checkMessage);
     }
     

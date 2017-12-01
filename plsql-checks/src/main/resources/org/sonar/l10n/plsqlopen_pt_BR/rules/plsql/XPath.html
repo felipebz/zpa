@@ -1,0 +1,7 @@
+<p>Essa regra permite a definição de regras personalizadas usando expressões XPath.</p>
+<p>Os problemas são criados dependendo do retorno da expressão XPath. Se a expressão XPath retornar:</p>
+<ul>
+  <li>um único nó ou uma lista de nós AST, então um problema é criado para cada nó com a mensagem definida</li>
+  <li>um boolean, então um problema a nível de arquivo é criado com a mensagem definida se o boolean for verdadeiro</li>
+  <li>qualquer outra situação, nenhum problema é criado</li>
+</ul>

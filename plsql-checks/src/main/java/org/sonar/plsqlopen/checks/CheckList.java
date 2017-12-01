@@ -82,6 +82,7 @@ public class CheckList {
             UnusedCursorCheck.class,
             NotASelectedExpressionCheck.class,
             InvalidReferenceToObjectCheck.class,
-            CursorBodyInPackageSpecCheck.class);
+            CursorBodyInPackageSpecCheck.class,
+            XPathCheck.class);
     }
 }
