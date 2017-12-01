@@ -77,7 +77,7 @@ public class PlSqlLexer {
                 .builder()
                 .withCharset(conf.getCharset())
                 .withFailIfNoChannelToConsumeOneCharacter(true)
-                .withChannel(new BlackHoleChannel("\\s"))
+                .withChannel(new BlackHoleChannel("\\s(?!&)"))
                 .withChannel(commentRegexp(COMMENT))
                 .withChannel(regexp(PlSqlTokenType.SCIENTIFIC_LITERAL, SCIENTIFIC_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.REAL_LITERAL, REAL_LITERAL))
@@ -86,6 +86,7 @@ public class PlSqlLexer {
                 .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
                 .withChannel(new IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false, PlSqlKeyword.values()))
                 .withChannel(new PunctuatorChannel(PlSqlPunctuator.values()))
+                .withChannel(new BlackHoleChannel(and("\\s&&?", SIMPLE_IDENTIFIER)))
                 .withChannel(new UnknownCharacterChannel())
                 .build();
     }
