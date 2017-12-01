@@ -28,14 +28,19 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.AstNodeType;
 
 public class Scope {
 
+    private static final AstNodeType[] nameTypes = { PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME };
     private final Scope outer;
     private final AstNode node;
     private final boolean autonomousTransaction;
     private final boolean hasExceptionHandler;
+    private String identifier;
     protected List<Symbol> symbols = new ArrayList<>();
 
     public Scope(Scope outer, AstNode node, boolean autonomousTransaction, boolean hasExceptionHandler) {
@@ -51,6 +56,17 @@ public class Scope {
 
     public Scope outer() {
         return outer;
+    }
+    
+    public String identifier() {
+        if (identifier == null && node != null) {
+            identifier = "";
+            AstNode identifierNode = node.getFirstChild(nameTypes);
+            if (identifierNode != null) {
+                this.identifier = identifierNode.getTokenOriginalValue();
+            }
+        }
+        return identifier;
     }
     
     public boolean isAutonomousTransaction() {
