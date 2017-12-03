@@ -29,4 +29,11 @@ public class UnusedParameterCheckTest extends BaseCheckTest {
         PlSqlCheckVerifier.verify(getPath("unused_parameter.sql"), new UnusedParameterCheck());
     }
     
+    @Test
+    public void testIgnoreMethodsByName() {
+    	UnusedParameterCheck check = new UnusedParameterCheck();
+    	check.ignoreMethods = "(on_.*|fullmatch)";
+		PlSqlCheckVerifier.verify(getPath("unused_parameter_ignore_methods.sql"), check);
+    }
+    
 }

@@ -21,9 +21,11 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
@@ -43,6 +45,21 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "UnusedParameter";
 
+    @RuleProperty (
+            key = "ignoreMethods",
+            defaultValue = ""
+        )
+    public String ignoreMethods = "";
+	private Pattern ignoreRegex;
+    
+    
+    @Override
+    public void init() {
+    	if(!"".equals(ignoreMethods)) {
+    		ignoreRegex = Pattern.compile(ignoreMethods);
+    	}
+    }
+    
     @Override
     public void leaveFile(AstNode astNode) {
         Set<Scope> scopes = getContext().getSymbolTable().getScopes();
@@ -57,6 +74,12 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
             if (scope.tree().is(PlSqlGrammar.CURSOR_DECLARATION) &&
                 !scope.tree().hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
                 continue;
+            }
+            
+            // ignore methods by name
+            if(ignoreRegex != null && scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION,
+                    PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.CREATE_FUNCTION) && ignoreRegex.matcher(scope.identifier()).matches()) {
+            	continue;
             }
             
             checkScope(scope);
