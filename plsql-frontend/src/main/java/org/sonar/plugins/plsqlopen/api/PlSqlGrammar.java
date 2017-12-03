@@ -686,6 +686,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(TABLE_OF_DECLARATION).is(
                 TYPE, IDENTIFIER_NAME, IS, TABLE, OF, DATATYPE,
+                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, DATATYPE, b.optional(NOT, NULL),
                 b.optional(INDEX, BY, DATATYPE),
                 SEMICOLON);
         

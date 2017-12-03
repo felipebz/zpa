@@ -39,6 +39,11 @@ public class TableOfDeclarationTest extends RuleTest {
     }
     
     @Test
+    public void matchesSimpleDeclarationNotNull() {
+        assertThat(p).matches("type foo is table of bar not null;");
+    }
+    
+    @Test
     public void matchesIndexedDeclaration() {
         assertThat(p).matches("type foo is table of bar index by binary_integer;");
     }
