@@ -39,6 +39,11 @@ public class VarrayDeclarationTest extends RuleTest {
     }
     
     @Test
+    public void matchesSimpleVarrayNotNull() {
+        assertThat(p).matches("type foo is varray(5) of number(2) not null;");
+    }
+    
+    @Test
     public void matchesVaryingArray() {
         assertThat(p).matches("type foo is varying array(5) of number(2);");
     }

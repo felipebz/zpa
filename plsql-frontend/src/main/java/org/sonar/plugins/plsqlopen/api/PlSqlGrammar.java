@@ -694,6 +694,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)), 
                 LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS, 
                 OF, DATATYPE, SEMICOLON);
+                OF, DATATYPE, b.optional(NOT, NULL), SEMICOLON);
         
         b.rule(REF_CURSOR_DECLARATION).is(TYPE, IDENTIFIER_NAME, IS, REF, CURSOR, b.optional(RETURN, DATATYPE), SEMICOLON);
         
