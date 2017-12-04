@@ -238,9 +238,8 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(FROM_CLAUSE).is(
                 FROM, 
-                b.firstOf(
-                        JOIN_CLAUSE,
-                        b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.zeroOrMore(COMMA, DML_TABLE_EXPRESSION_CLAUSE))));
+                b.oneOrMore(b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                        b.zeroOrMore(COMMA, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE))));
         
         b.rule(WHERE_CLAUSE).is(WHERE, EXPRESSION);
         
