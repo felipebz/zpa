@@ -46,6 +46,8 @@ public class SymbolVisitor extends PlSqlCheck {
             PlSqlGrammar.CREATE_PACKAGE,
             PlSqlGrammar.CREATE_PACKAGE_BODY,
             PlSqlGrammar.CREATE_TRIGGER,
+            PlSqlGrammar.TYPE_CONSTRUCTOR_SPEC,
+            PlSqlGrammar.CREATE_TYPE,
             PlSqlGrammar.BLOCK_STATEMENT,
             PlSqlGrammar.FOR_STATEMENT,
             PlSqlGrammar.CURSOR_DECLARATION};
@@ -158,7 +160,9 @@ public class SymbolVisitor extends PlSqlCheck {
                 node.getType() == PlSqlGrammar.PROCEDURE_DECLARATION ||
                 node.getType() == PlSqlGrammar.CREATE_FUNCTION ||
                 node.getType() == PlSqlGrammar.FUNCTION_DECLARATION ||
-                node.getType() == PlSqlGrammar.CREATE_TRIGGER) {
+                node.getType() == PlSqlGrammar.CREATE_TRIGGER ||
+                node.getType() == PlSqlGrammar.CREATE_TYPE ||
+                node.getType() == PlSqlGrammar.TYPE_CONSTRUCTOR_SPEC) {
             visitUnit(node);
         
         } else if (node.getType() == PlSqlGrammar.CREATE_PACKAGE || 

@@ -141,7 +141,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CURSOR_DECLARATION,
     RECORD_FIELD_DECLARATION,
     RECORD_DECLARATION,
+    NESTED_TABLE_DEFINITION,
     TABLE_OF_DECLARATION,
+    VARRAY_TYPE_DEFINITION,
     VARRAY_DECLARATION,
     REF_CURSOR_DECLARATION,
     AUTONOMOUS_TRANSACTION_PRAGMA,
@@ -180,7 +182,15 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
     CREATE_VIEW,
+    TYPE_ATTRIBUTE,
+    INHERITANCE_CLAUSE,
+    TYPE_SUBPROGRAM_SPEC,
+    TYPE_CONSTRUCTOR_SPEC,
+    MAP_ORDER_FUNCTION_SPEC,
+    TYPE_ELEMENT_SPEC,
+    OBJECT_TYPE_DEFINITION,
     CREATE_TRIGGER,
+    CREATE_TYPE,
     
     // Top-level components
     FILE_INPUT;
@@ -631,24 +641,24 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
                 );
         
-     // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
+        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
                 PROCEDURE, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                b.firstOf(
+                b.optional(b.firstOf(
                         SEMICOLON,
                         b.sequence(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION))
-                );
+                ));
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/function.htm
         b.rule(FUNCTION_DECLARATION).is(
                 FUNCTION, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED)),
-                b.firstOf(
+                b.optional(b.firstOf(
                         SEMICOLON,
                         b.sequence(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION))
-                );
+                ));
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
                 b.optional(CONSTANT),
@@ -684,18 +694,20 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 LPARENTHESIS, RECORD_FIELD_DECLARATION, b.zeroOrMore(COMMA, RECORD_FIELD_DECLARATION), RPARENTHESIS,
                 SEMICOLON);
         
+        b.rule(NESTED_TABLE_DEFINITION).is(TABLE, OF, DATATYPE, b.optional(NOT, NULL));
+        
         b.rule(TABLE_OF_DECLARATION).is(
-                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, DATATYPE,
-                TYPE, IDENTIFIER_NAME, IS, TABLE, OF, DATATYPE, b.optional(NOT, NULL),
+                TYPE, IDENTIFIER_NAME, IS, NESTED_TABLE_DEFINITION,
                 b.optional(INDEX, BY, DATATYPE),
                 SEMICOLON);
         
-        b.rule(VARRAY_DECLARATION).is(
-                TYPE, IDENTIFIER_NAME, IS, 
+        b.rule(VARRAY_TYPE_DEFINITION).is(
                 b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)), 
                 LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS, 
-                OF, DATATYPE, SEMICOLON);
-                OF, DATATYPE, b.optional(NOT, NULL), SEMICOLON);
+                OF, DATATYPE, b.optional(NOT, NULL));
+        
+        b.rule(VARRAY_DECLARATION).is(
+                TYPE, IDENTIFIER_NAME, IS, VARRAY_TYPE_DEFINITION, SEMICOLON);
         
         b.rule(REF_CURSOR_DECLARATION).is(TYPE, IDENTIFIER_NAME, IS, REF, CURSOR, b.optional(RETURN, DATATYPE), SEMICOLON);
         
@@ -859,6 +871,53 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(ORDER_BY_CLAUSE),
                 b.optional(SEMICOLON));
         
+        b.rule(TYPE_ATTRIBUTE).is(IDENTIFIER_NAME, DATATYPE);
+        
+        b.rule(INHERITANCE_CLAUSE).is(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE));
+        
+        b.rule(TYPE_SUBPROGRAM_SPEC).is(
+                b.firstOf(MEMBER, STATIC),
+                b.firstOf(PROCEDURE_DECLARATION, FUNCTION_DECLARATION));
+        
+        b.rule(TYPE_CONSTRUCTOR_SPEC).is(
+                b.optional(FINAL),
+                b.optional(INSTANTIABLE),
+                CONSTRUCTOR, FUNCTION, IDENTIFIER_NAME,
+                b.optional(
+                        LPARENTHESIS,
+                        b.optional(SELF, IN, OUT, DATATYPE, COMMA),
+                        b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)),
+                        RPARENTHESIS),
+                RETURN, SELF, AS, RESULT);
+        
+        b.rule(MAP_ORDER_FUNCTION_SPEC).is(
+                b.firstOf(MAP, ORDER),
+                MEMBER, FUNCTION_DECLARATION);
+        
+        b.rule(TYPE_ELEMENT_SPEC).is(
+                b.optional(INHERITANCE_CLAUSE),
+                b.firstOf(TYPE_SUBPROGRAM_SPEC, TYPE_CONSTRUCTOR_SPEC, MAP_ORDER_FUNCTION_SPEC));
+        
+        b.rule(OBJECT_TYPE_DEFINITION).is(
+                b.firstOf(
+                        b.sequence(b.firstOf(IS, AS), OBJECT),
+                        b.sequence(UNDER, UNIT_NAME)),
+                LPARENTHESIS, b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA)), RPARENTHESIS,
+                b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)));
+        
+        b.rule(CREATE_TYPE).is(
+                CREATE, b.optional(OR, REPLACE),
+                TYPE, UNIT_NAME,
+                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.optional(b.firstOf(
+                        OBJECT_TYPE_DEFINITION, 
+                        b.sequence(
+                            b.firstOf(IS, AS),
+                            b.firstOf(
+                                    VARRAY_TYPE_DEFINITION,
+                                    NESTED_TABLE_DEFINITION)))),
+                b.optional(SEMICOLON));
+        
         b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
         
         b.rule(COMPILATION_UNIT).is(b.firstOf(
@@ -868,6 +927,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_PACKAGE,
                 CREATE_PACKAGE_BODY,
                 CREATE_VIEW,
-                CREATE_TRIGGER));
+                CREATE_TRIGGER,
+                CREATE_TYPE));
     }
 }

@@ -377,7 +377,17 @@ public enum PlSqlKeyword implements TokenType {
     CASCADE("cascade"),
     PRIMARY("primary"),
     KEY("key"),
-    FOREIGN("foreign");
+    FOREIGN("foreign"),
+    OBJECT("object"),
+    UNDER("under"),
+    FINAL("final"),
+    INSTANTIABLE("instantiable"),
+    OVERRIDING("overriding"),
+    STATIC("static"),
+    MAP("map"),
+    CONSTRUCTOR("constructor"),
+    SELF("self"),
+    RESULT("result");
 
     private final String value;
     private final boolean reserved;
