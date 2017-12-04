@@ -59,7 +59,7 @@ public class PlSqlLexer {
     private static final String CUSTOM_DELIMITER_END = "(\\3|}|]|>|\\)"; // same as the start, }, ], > or )
     public static final String STRING_LITERAL = "(?is)(?:"
             + or("'([^']|'')*+'", // simple text literal
-                 "n?q'" + g(CUSTOM_DELIMITER_START) +  ".*" + CUSTOM_DELIMITER_END + ")'") // text with user-defined delimiter
+                 "n?q?'" + g(CUSTOM_DELIMITER_START) +  ".*" + CUSTOM_DELIMITER_END + ")'") // text with user-defined delimiter
             + ")";
     
     public static final String DATE_LITERAL = "(?i)(?:DATE '\\d{4}-\\d{2}-\\d{2}')";

@@ -64,6 +64,11 @@ public class PlSqlLexerTest {
     }
     
     @Test
+    public void simpleNationalCharsetStringLiteral() {
+        assertThatIsToken("n'Test'", PlSqlTokenType.STRING_LITERAL);
+    }
+    
+    @Test
     public void stringLiteralWithDoubleQuotationMarks() {
         assertThatIsToken("'I''m a string'", PlSqlTokenType.STRING_LITERAL);
     }
