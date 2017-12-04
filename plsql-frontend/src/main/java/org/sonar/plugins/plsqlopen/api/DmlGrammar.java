@@ -234,7 +234,7 @@ public enum DmlGrammar implements GrammarRuleKey {
                         b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                         b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                         OBJECT_REFERENCE),
-                b.optional(b.sequence(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING)), ALIAS )));
+                b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING)), ALIAS));
         
         b.rule(FROM_CLAUSE).is(
                 FROM, 
