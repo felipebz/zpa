@@ -184,13 +184,14 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_VIEW,
     TYPE_ATTRIBUTE,
     INHERITANCE_CLAUSE,
-    TYPE_SUBPROGRAM_SPEC,
-    TYPE_CONSTRUCTOR_SPEC,
-    MAP_ORDER_FUNCTION_SPEC,
+    TYPE_SUBPROGRAM,
+    TYPE_CONSTRUCTOR,
+    MAP_ORDER_FUNCTION,
     TYPE_ELEMENT_SPEC,
     OBJECT_TYPE_DEFINITION,
     CREATE_TRIGGER,
     CREATE_TYPE,
+    CREATE_TYPE_BODY,
     
     // Top-level components
     FILE_INPUT;
@@ -875,11 +876,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(INHERITANCE_CLAUSE).is(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE));
         
-        b.rule(TYPE_SUBPROGRAM_SPEC).is(
+        b.rule(TYPE_SUBPROGRAM).is(
                 b.firstOf(MEMBER, STATIC),
                 b.firstOf(PROCEDURE_DECLARATION, FUNCTION_DECLARATION));
         
-        b.rule(TYPE_CONSTRUCTOR_SPEC).is(
+        b.rule(TYPE_CONSTRUCTOR).is(
                 b.optional(FINAL),
                 b.optional(INSTANTIABLE),
                 CONSTRUCTOR, FUNCTION, IDENTIFIER_NAME,
@@ -888,15 +889,16 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.optional(SELF, IN, OUT, DATATYPE, COMMA),
                         b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)),
                         RPARENTHESIS),
-                RETURN, SELF, AS, RESULT);
+                RETURN, SELF, AS, RESULT,
+                b.optional(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION));
         
-        b.rule(MAP_ORDER_FUNCTION_SPEC).is(
+        b.rule(MAP_ORDER_FUNCTION).is(
                 b.firstOf(MAP, ORDER),
                 MEMBER, FUNCTION_DECLARATION);
         
         b.rule(TYPE_ELEMENT_SPEC).is(
                 b.optional(INHERITANCE_CLAUSE),
-                b.firstOf(TYPE_SUBPROGRAM_SPEC, TYPE_CONSTRUCTOR_SPEC, MAP_ORDER_FUNCTION_SPEC));
+                b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION));
         
         b.rule(OBJECT_TYPE_DEFINITION).is(
                 b.firstOf(
@@ -918,6 +920,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                     NESTED_TABLE_DEFINITION)))),
                 b.optional(SEMICOLON));
         
+        b.rule(CREATE_TYPE_BODY).is(
+                CREATE, b.optional(OR, REPLACE),
+                TYPE, BODY, UNIT_NAME,
+                b.firstOf(IS, AS),
+                b.oneOrMore(b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION), b.optional(COMMA)),
+                END, b.optional(SEMICOLON));
+        
         b.rule(ANONYMOUS_BLOCK).is(BLOCK_STATEMENT);
         
         b.rule(COMPILATION_UNIT).is(b.firstOf(
@@ -928,6 +937,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_PACKAGE_BODY,
                 CREATE_VIEW,
                 CREATE_TRIGGER,
+                CREATE_TYPE_BODY,
                 CREATE_TYPE));
     }
 }
