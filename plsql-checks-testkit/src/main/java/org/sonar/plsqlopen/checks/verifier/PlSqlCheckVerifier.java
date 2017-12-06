@@ -35,6 +35,7 @@ import java.util.Locale;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
+import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
@@ -75,7 +76,7 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.fileSystem().add(inputFile);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), metadata);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), new NoSonarFilter(), metadata);
         Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
         
         Iterator<AnalyzerMessage> actualIssues = getActualIssues(issues);

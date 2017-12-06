@@ -30,6 +30,7 @@ import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
+import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.plsqlopen.AnalyzerMessage;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 
@@ -60,7 +61,7 @@ public class BaseCheckTest {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), null);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), new NoSonarFilter(), null);
         return scanner.scanFile(file);
     }
     

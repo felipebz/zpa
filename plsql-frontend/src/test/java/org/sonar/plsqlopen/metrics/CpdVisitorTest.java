@@ -8,7 +8,7 @@ import static org.fest.assertions.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-
+import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.duplications.internal.pmd.TokensLine;
@@ -39,7 +39,7 @@ public class CpdVisitorTest {
         context = SensorContextTester.create(dir);
         context.fileSystem().add(inputFile);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), null);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), new NoSonarFilter(), null);
         scanner.scanFile(inputFile);
     }
 

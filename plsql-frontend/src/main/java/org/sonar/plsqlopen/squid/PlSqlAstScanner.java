@@ -29,6 +29,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.ce.measure.RangeDistributionBuilder;
+import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -65,12 +66,14 @@ public class PlSqlAstScanner {
     private final Parser<Grammar> parser;
     private final Collection<PlSqlCheck> checks;
     private final FormsMetadata formsMetadata;
+    private NoSonarFilter noSonarFilter;
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, FormsMetadata formsMetadata) {
-      this.context = context;
-      this.checks = checks;
-      this.formsMetadata = formsMetadata;
-      this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, FormsMetadata formsMetadata) {
+        this.context = context;
+        this.checks = checks;
+        this.noSonarFilter = noSonarFilter;
+        this.formsMetadata = formsMetadata;
+        this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
     }
     
     @VisibleForTesting
@@ -131,6 +134,8 @@ public class PlSqlAstScanner {
             functionComplexityDistribution.add(functionComplexity);
         }
         saveMetricOnFile(inputFile, CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION, functionComplexityDistribution.build());
+        
+        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
         
         return visitorContext.getIssues();
     }

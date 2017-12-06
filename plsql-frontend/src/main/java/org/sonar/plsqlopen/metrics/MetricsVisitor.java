@@ -18,6 +18,7 @@ public class MetricsVisitor extends PlSqlVisitor {
     private int numberOfStatements;
     private Set<Integer> linesOfCode = new HashSet<>();
     private Set<Integer> linesOfComments = new HashSet<>();
+    private Set<Integer> noSonar = new HashSet<>();
     
     @Override
     public void init() {
@@ -51,7 +52,10 @@ public class MetricsVisitor extends PlSqlVisitor {
         int line = trivia.getToken().getLine();
 
         for (String commentLine : commentLines) {
-            if (!COMMENT_ANALYSER.isBlank(commentLine)) {
+            if (commentLine.contains("NOSONAR")) {
+                linesOfComments.remove(line);
+                noSonar.add(line);
+            } else if (!COMMENT_ANALYSER.isBlank(commentLine)) {
                 linesOfComments.add(line);
             }
             line++;
@@ -68,6 +72,10 @@ public class MetricsVisitor extends PlSqlVisitor {
     
     public Set<Integer> getLinesOfComments() {
         return linesOfComments;
+    }
+
+    public Set<Integer> getLinesWithNoSonar() {
+        return noSonar;
     }
 
 }

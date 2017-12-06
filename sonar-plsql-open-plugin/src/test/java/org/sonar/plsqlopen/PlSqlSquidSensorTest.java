@@ -36,6 +36,7 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.CheckList;
@@ -57,7 +58,7 @@ public class PlSqlSquidSensorTest {
                 .build();
         CheckFactory checkFactory = new CheckFactory(activeRules);
         context = SensorContextTester.create(new File("."));
-        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings());
+        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings(), new NoSonarFilter());
     }
     
     @Test
