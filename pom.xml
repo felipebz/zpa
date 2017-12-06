@@ -41,8 +41,8 @@
   </modules>
   
   <scm>
-    <connection>scm:git:git@github.com:felipebz/sonar-plsql.git</connection>
-    <developerConnection>scm:git:git@github.com:felipebz/sonar-plsql.git</developerConnection>
+    <connection>scm:git:https://github.com/felipebz/sonar-plsql.git</connection>
+    <developerConnection>scm:git:https://github.com/felipebz/sonar-plsql.git</developerConnection>
     <url>https://github.com/felipebz/sonar-plsql</url>
   </scm>
   
