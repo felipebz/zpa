@@ -10,7 +10,7 @@ begin
   print(a);
 end;
 /
-function on_event(p_event in integer)
+create function on_event(p_event in integer)
     return integer
 as
 begin
