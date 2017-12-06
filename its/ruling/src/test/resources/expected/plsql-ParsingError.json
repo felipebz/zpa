@@ -17,9 +17,6 @@
 'project:alexandria-plsql-utils/setup/grants.sql':[
 5,
 ],
-'project:pljson/install.sql':[
-8,
-],
 'project:utPLSQL/examples/filepath1.pkg':[
 104,
 ],

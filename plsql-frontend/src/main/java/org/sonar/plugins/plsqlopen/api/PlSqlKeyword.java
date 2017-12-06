@@ -387,7 +387,10 @@ public enum PlSqlKeyword implements TokenType {
     MAP("map"),
     CONSTRUCTOR("constructor"),
     SELF("self"),
-    RESULT("result");
+    RESULT("result"),
+    SESSION("session"),
+    ROLE("role"),
+    NONE("none");
 
     private final String value;
     private final boolean reserved;

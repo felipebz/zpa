@@ -25,6 +25,7 @@ import static org.sonar.plugins.plsqlopen.api.DclGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DdlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.DmlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.TclGrammar.*;
+import static org.sonar.plugins.plsqlopen.api.SessionControlGrammar.SESSION_CONTROL_COMMAND;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*;
@@ -211,6 +212,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 DML_COMMAND,
                 TCL_COMMAND,
                 SQLPLUS_COMMAND,
+                SESSION_CONTROL_COMMAND,
                 EXECUTE_PLSQL_BUFFER)), EOF);
 
         createLiterals(b);
@@ -225,6 +227,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         DclGrammar.buildOn(b);
         TclGrammar.buildOn(b);
         SqlPlusGrammar.buildOn(b);
+        SessionControlGrammar.buildOn(b);
         SingleRowSqlFunctionsGrammar.buildOn(b);
         AggregateSqlFunctionsGrammar.buildOn(b);
         ConditionsGrammar.buildOn(b);
