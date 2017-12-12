@@ -91,6 +91,17 @@ public class CreatePackageBodyTest extends RuleTest {
     }
     
     @Test
+    public void matchesPackageWithFunctionAndResultCache() {
+        assertThat(p).matches(""
+                + "create package body test is\n"
+                + "function func return number result_cache relies_on (tbl_test1,tbl_test2) is\n"
+                + "begin\n"
+                + "return null;\n"
+                + "end;\n"
+                + "end;");
+    }
+    
+    @Test
     public void matchesPackageWithFunctionAndCursor() {
     	assertThat(p).matches(""
     			+ "create package body test is\n"
