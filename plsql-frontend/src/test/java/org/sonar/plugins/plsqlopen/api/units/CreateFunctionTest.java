@@ -177,6 +177,15 @@ public class CreateFunctionTest extends RuleTest {
     }
     
     @Test
+    public void matchesResultCacheWithReliesOnFunction() {
+        assertThat(p).matches(""
+                + "create function test return number result_cache relies_on(tbl_test1, tbl_test2) is\n"
+                + "begin\n"
+                + "return 0;\n"
+                + "end;");
+    }
+    
+    @Test
     public void matchesFunctionWithTimestamp() {
         assertThat(p).matches(""
                 + "create function test timestamp '2015-01-01' return number is\n"

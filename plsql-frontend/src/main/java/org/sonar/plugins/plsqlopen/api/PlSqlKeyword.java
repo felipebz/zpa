@@ -333,6 +333,7 @@ public enum PlSqlKeyword implements TokenType {
     VARYING("varying"),
     PARALLEL_ENABLE("parallel_enable"),
     RESULT_CACHE("result_cache"),
+    RELIES_ON("relies_on"),
     LISTAGG("listagg"),
     WITHIN("within"),
     ESCAPE("escape"),

@@ -659,6 +659,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 FUNCTION, IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED)),
+                b.optional(RESULT_CACHE,b.optional(RELIES_ON,LPARENTHESIS,b.oneOrMore(OBJECT_REFERENCE,b.optional(COMMA)),RPARENTHESIS)),
                 b.optional(b.firstOf(
                         SEMICOLON,
                         b.sequence(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION))
@@ -817,7 +818,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE, b.optional(OR, REPLACE),
                 FUNCTION, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE, RESULT_CACHE)),
+                RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE)),
+                b.optional(RESULT_CACHE,b.optional(RELIES_ON,LPARENTHESIS,b.oneOrMore(OBJECT_REFERENCE,b.optional(COMMA)),RPARENTHESIS)),
                 b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.firstOf(
                         b.sequence(
