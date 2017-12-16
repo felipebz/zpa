@@ -19,7 +19,6 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import static org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.BOOLEAN_EXPRESSION;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.EXPRESSION;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME;
@@ -227,7 +226,7 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(JOIN_CLAUSE).is(DML_TABLE_EXPRESSION_CLAUSE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)));
         
-        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME));
+        b.rule(SELECT_COLUMN).is(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME, b.nextNot(COLLECT)));
         
         b.rule(DML_TABLE_EXPRESSION_CLAUSE).is(
                 b.firstOf(

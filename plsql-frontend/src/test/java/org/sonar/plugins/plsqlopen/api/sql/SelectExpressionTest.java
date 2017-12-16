@@ -163,4 +163,14 @@ public class SelectExpressionTest extends RuleTest {
         assertThat(p).matches("(select 1 from dual) for update");
     }
     
+    @Test
+    public void matchesSelectUsingBulkAsAnAlias() {
+        assertThat(p).matches("select 1 bulk into var from dual");
+    }
+    
+    @Test
+    public void matchesSelectBulkCollectUsingBulkAsAnAlias() {
+        assertThat(p).matches("select 1 bulk bulk collect into var from dual");
+    }
+    
 }

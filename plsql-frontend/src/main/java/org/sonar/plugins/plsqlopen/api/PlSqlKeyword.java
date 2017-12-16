@@ -113,7 +113,6 @@ public enum PlSqlKeyword implements TokenType {
     WITH("with", true),
     OUT("out", true),
     SET("set", true),
-    BULK("bulk", true),
     
     // actually these keywords are reserved according the documentation, but Oracle accepts as identifiers in some situations
     TABLE("table"),
@@ -131,6 +130,7 @@ public enum PlSqlKeyword implements TokenType {
     ARRAY("array"),
     ARROW("arrow"),
     AT("at"),
+    BULK("bulk"),
     COMPILE("compile"),
     CURRENT("current"),
     DELETE("delete"),
