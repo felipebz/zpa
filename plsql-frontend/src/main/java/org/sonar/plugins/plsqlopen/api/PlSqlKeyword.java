@@ -391,7 +391,8 @@ public enum PlSqlKeyword implements TokenType {
     RESULT("result"),
     SESSION("session"),
     ROLE("role"),
-    NONE("none");
+    NONE("none"),
+    XMLAGG("xmlagg");
 
     private final String value;
     private final boolean reserved;

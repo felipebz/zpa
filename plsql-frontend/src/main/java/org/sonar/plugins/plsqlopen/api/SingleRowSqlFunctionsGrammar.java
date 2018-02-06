@@ -23,6 +23,7 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
 import static org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*;
+import static org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE;
 
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
@@ -38,6 +39,7 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
     XMLELEMENT_EXPRESSION,
     XMLFOREST_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
+    XMLAGG_EXPRESSION,
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
@@ -54,6 +56,7 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
                 XMLELEMENT_EXPRESSION,
                 XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
+                XMLAGG_EXPRESSION,
                 CAST_EXPRESSION,
                 TRIM_EXPRESSION)).skip();
     }
@@ -107,6 +110,11 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
                         ),
                 b.optional(COMMA, XMLATTRIBUTES_EXPRESSION),
                 b.zeroOrMore(COMMA, EXPRESSION, b.optional(AS, IDENTIFIER_NAME)),
+                RPARENTHESIS);
+        
+        b.rule(XMLAGG_EXPRESSION).is(
+                XMLAGG, LPARENTHESIS,
+                EXPRESSION, b.optional(ORDER_BY_CLAUSE),
                 RPARENTHESIS);
         
         b.rule(XMLFOREST_EXPRESSION).is(
