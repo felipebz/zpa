@@ -57,6 +57,7 @@ public class PlSqlSquidSensor implements Sensor {
 
     private static final Logger LOG = Loggers.get(PlSqlSquidSensor.class);
     private final PlSqlChecks checks;
+    private final boolean isErrorRecoveryEnabled;
 
     private SensorContext context;
     private FormsMetadata formsMetadata;
@@ -73,6 +74,7 @@ public class PlSqlSquidSensor implements Sensor {
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
         loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
+        isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY);
     }
     
     @VisibleForTesting
@@ -95,7 +97,7 @@ public class PlSqlSquidSensor implements Sensor {
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
         ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), noSonarFilter, formsMetadata);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled);
         
         progressReport.start(inputFiles);
         for (InputFile inputFile : inputFiles) {

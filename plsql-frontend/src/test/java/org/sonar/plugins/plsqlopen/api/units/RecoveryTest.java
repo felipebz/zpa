@@ -17,30 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.squid;
+package org.sonar.plugins.plsqlopen.api.units;
 
-import java.nio.charset.Charset;
+import static org.sonar.sslr.tests.Assertions.assertThat;
 
-public class PlSqlConfiguration {
+import org.junit.Test;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.RuleTest;
 
-    private Charset charset = Charset.defaultCharset();
-    private boolean isErrorRecoveryEnabled;
-    
-    public PlSqlConfiguration(Charset charset) {
-        this(charset, false);
-    }
+public class RecoveryTest extends RuleTest {
 
-    public PlSqlConfiguration(Charset charset, boolean recovery) {
-        this.charset = charset;
-        this.isErrorRecoveryEnabled = recovery;
-    }
-
-    public Charset getCharset() {
-        return charset;
+    @Test
+    public void doNotRecover() {
+        setErrorRecoveryEnabled(false);
+        setRootRule(PlSqlGrammar.FILE_INPUT);
+        assertThat(p).notMatches("unrecognized command");
     }
     
-    public boolean isErrorRecoveryEnabled() {
-        return isErrorRecoveryEnabled;
+    @Test
+    public void matchesRecovery() {
+        setErrorRecoveryEnabled(true);
+        setRootRule(PlSqlGrammar.FILE_INPUT);
+        assertThat(p).matches("unrecognized command");
     }
 
 }

@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen;
 
 import org.sonar.api.Plugin;
+import org.sonar.api.PropertyType;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
@@ -27,6 +28,7 @@ public class PlSqlPlugin implements Plugin {
 
     public static final String FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
     public static final String FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
+    public static final String ERROR_RECOVERY_KEY = "sonar.plsql.errorRecoveryEnabled";
 
     @Override
     public void define(Context context) {
@@ -43,6 +45,14 @@ public class PlSqlPlugin implements Plugin {
                 .description("Path to the JSON file with the Oracle Forms metadata.")
                 .category("PL/SQL")
                 .onQualifiers(Qualifiers.PROJECT)
+                .build(),
+            PropertyDefinition.builder(ERROR_RECOVERY_KEY)
+                .name("Parse error recovery")
+                .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
+                .category("PL/SQL")
+                .onQualifiers(Qualifiers.PROJECT)
+                .type(PropertyType.BOOLEAN)
+                .defaultValue("true")
                 .build(),
           
             PlSql.class,

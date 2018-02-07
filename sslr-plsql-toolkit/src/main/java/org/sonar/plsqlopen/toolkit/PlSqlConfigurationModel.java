@@ -43,12 +43,18 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
     private static final Logger LOG = LoggerFactory.getLogger(PlSqlConfigurationModel.class);
 
     private static final String CHARSET_PROPERTY_KEY = "sonar.sourceEncoding";
+    private static final String ERROR_RECOVERY_PROPERTY_KEY = "sonar.plsql.errorRecoveryEnabled";
 
     @VisibleForTesting
     ConfigurationProperty charsetProperty = new ConfigurationProperty("Charset",
             CHARSET_PROPERTY_KEY,
             getPropertyOrDefaultValue(CHARSET_PROPERTY_KEY, "UTF-8"),
             Validators.charsetValidator());
+    
+    @VisibleForTesting
+    ConfigurationProperty errorRecoveryProperty = new ConfigurationProperty("Error recovery",
+            ERROR_RECOVERY_PROPERTY_KEY,
+            getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "false"));
 
     @Override
     public Charset getCharset() {
@@ -57,7 +63,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @Override
     public List<ConfigurationProperty> getProperties() {
-        return ImmutableList.of(charsetProperty);
+        return ImmutableList.of(charsetProperty, errorRecoveryProperty);
     }
 
     @Override
@@ -72,7 +78,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @VisibleForTesting
     PlSqlConfiguration getConfiguration() {
-        return new PlSqlConfiguration(Charset.forName(charsetProperty.getValue()));
+        return new PlSqlConfiguration(Charset.forName(charsetProperty.getValue()), Boolean.valueOf(errorRecoveryProperty.getValue()));
     }
 
     @VisibleForTesting

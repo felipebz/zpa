@@ -61,7 +61,7 @@ public class BaseCheckTest {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.setFileSystem(fs);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), new NoSonarFilter(), null);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), new NoSonarFilter(), null, false);
         return scanner.scanFile(file);
     }
     

@@ -33,6 +33,7 @@ import static org.sonar.plugins.plsqlopen.api.SqlPlusGrammar.*;
 
 import java.util.List;
 
+import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
 
@@ -195,9 +196,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     CREATE_TYPE_BODY,
     
     // Top-level components
+    VALID_INPUT,
+    RECOVERY,
     FILE_INPUT;
 
-    public static LexerfulGrammarBuilder create() {
+    public static LexerfulGrammarBuilder create(PlSqlConfiguration conf) {
         LexerfulGrammarBuilder b = LexerfulGrammarBuilder.create();
 
         List<PlSqlKeyword> keywords = PlSqlKeyword.getNonReservedKeywords();
@@ -205,7 +208,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(NON_RESERVED_KEYWORD).is(b.firstOf(keywords.get(0), keywords.get(1), (Object[]) rest));
         
         b.rule(IDENTIFIER_NAME).is(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD));
-        b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
+        
+        b.rule(VALID_INPUT).is(b.firstOf(
                 COMPILATION_UNIT,
                 DCL_COMMAND,
                 DDL_COMMAND,
@@ -213,7 +217,20 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 TCL_COMMAND,
                 SQLPLUS_COMMAND,
                 SESSION_CONTROL_COMMAND,
-                EXECUTE_PLSQL_BUFFER)), EOF);
+                EXECUTE_PLSQL_BUFFER)).skip();
+        
+        if (conf.isErrorRecoveryEnabled()) {
+            b.rule(RECOVERY).is(b.oneOrMore(
+                    b.nextNot(b.firstOf(VALID_INPUT, EOF)),
+                    b.anyToken()));
+            
+            b.rule(FILE_INPUT).is(b.oneOrMore(b.firstOf(
+                    VALID_INPUT,
+                    RECOVERY)), EOF);
+        } else {
+            b.rule(RECOVERY).is(b.nothing());
+            b.rule(FILE_INPUT).is(b.oneOrMore(VALID_INPUT), EOF);
+        }
 
         createLiterals(b);
         createDatatypes(b);

@@ -68,12 +68,12 @@ public class PlSqlAstScanner {
     private final FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, FormsMetadata formsMetadata) {
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled) {
         this.context = context;
         this.checks = checks;
         this.noSonarFilter = noSonarFilter;
         this.formsMetadata = formsMetadata;
-        this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding()));
+        this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
     }
     
     @VisibleForTesting

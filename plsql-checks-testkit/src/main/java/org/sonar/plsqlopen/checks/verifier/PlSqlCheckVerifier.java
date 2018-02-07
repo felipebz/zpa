@@ -76,7 +76,7 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         SensorContextTester context = SensorContextTester.create(new File("."));
         context.fileSystem().add(inputFile);
         
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), new NoSonarFilter(), metadata);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), new NoSonarFilter(), metadata, false);
         Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
         
         Iterator<AnalyzerMessage> actualIssues = getActualIssues(issues);

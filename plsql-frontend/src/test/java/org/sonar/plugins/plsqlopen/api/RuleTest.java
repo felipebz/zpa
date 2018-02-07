@@ -29,10 +29,17 @@ import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
 
 public class RuleTest {
-    protected Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
-
+    private boolean errorRecoveryEnabled;
+    
+    protected Parser<Grammar> p;
+    
     protected void setRootRule(GrammarRuleKey ruleKey) {
+        p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
         p.setRootRule(p.getGrammar().rule(ruleKey));
+    }
+    
+    protected void setErrorRecoveryEnabled(boolean value) {
+        errorRecoveryEnabled = value;
     }
     
     protected static String lines(String... lines) {

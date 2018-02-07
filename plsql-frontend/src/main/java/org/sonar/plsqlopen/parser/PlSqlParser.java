@@ -32,7 +32,7 @@ public final class PlSqlParser {
     }
 
     public static Parser<Grammar> create(PlSqlConfiguration conf) {
-        return Parser.builder(PlSqlGrammar.create().build())
+        return Parser.builder(PlSqlGrammar.create(conf).build())
                 .withLexer(PlSqlLexer.create(conf)).build();
     }
 }
