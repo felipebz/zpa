@@ -25,6 +25,11 @@ public class CreateTypeTest extends RuleTest {
     }
     
     @Test
+    public void matchesCreateTypeForce() {
+        assertThat(p).matches("create type foo force as object (x number(5));");
+    }
+    
+    @Test
     public void matchesSimpleCreateTypeUnder() {
         assertThat(p).matches("create type foo under bar (x number(5));");
     }
