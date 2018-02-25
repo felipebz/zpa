@@ -899,6 +899,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(INHERITANCE_CLAUSE).is(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE));
         
         b.rule(TYPE_SUBPROGRAM).is(
+                b.optional(INHERITANCE_CLAUSE),
                 b.firstOf(MEMBER, STATIC),
                 b.firstOf(PROCEDURE_DECLARATION, FUNCTION_DECLARATION));
         
