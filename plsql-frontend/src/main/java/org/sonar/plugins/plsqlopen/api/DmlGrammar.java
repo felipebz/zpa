@@ -39,6 +39,7 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DELETE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DENSE_RANK;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DESC;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DISTINCT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FETCH;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FIRST;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FOLLOWING;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FOR;
@@ -59,16 +60,20 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MATCHED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MERGE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MINUS_KEYWORD;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NATURAL;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NEXT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NOCYCLE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NOT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NOWAIT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.NULLS;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.OF;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.OFFSET;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ON;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ONLY;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ORDER;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.OUTER;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.OVER;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PARTITION;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PERCENT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PRECEDING;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RANGE_KEYWORD;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RETURN;
@@ -82,6 +87,7 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SIBLINGS;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.SKIP;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.START;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.THEN;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.TIES;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNBOUNDED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNION;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNIQUE;
@@ -128,6 +134,9 @@ public enum DmlGrammar implements GrammarRuleKey {
     HAVING_CLAUSE,
     ORDER_BY_ITEM,
     ORDER_BY_CLAUSE,
+    OFFSET_CLAUSE,
+    FETCH_ROW_CLAUSE,
+    ROW_LIMITING_CLAUSE,
     FOR_UPDATE_CLAUSE,
     CONNECT_BY_CLAUSE,
     START_WITH_CLAUSE,
@@ -255,6 +264,14 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(ORDER_BY_CLAUSE).is(
                 ORDER, b.optional(SIBLINGS), BY, ORDER_BY_ITEM, b.zeroOrMore(COMMA, ORDER_BY_ITEM));
+
+        b.rule(OFFSET_CLAUSE).is(OFFSET, EXPRESSION, b.firstOf(ROW, ROWS));
+
+        b.rule(FETCH_ROW_CLAUSE).is(FETCH, b.firstOf(FIRST, NEXT), b.optional(EXPRESSION, b.optional(PERCENT)), b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)));
+        
+        b.rule(ROW_LIMITING_CLAUSE).is(b.firstOf(
+                b.sequence(OFFSET_CLAUSE, b.optional(FETCH_ROW_CLAUSE)),
+                FETCH_ROW_CLAUSE));
         
         b.rule(FOR_UPDATE_CLAUSE).is(
                 FOR, UPDATE,
@@ -287,9 +304,10 @@ public enum DmlGrammar implements GrammarRuleKey {
                             b.optional(HAVING_CLAUSE),
                             b.optional(HIERARCHICAL_QUERY_CLAUSE),
                             b.optional(b.firstOf(
-                                    b.sequence(ORDER_BY_CLAUSE,  b.optional(FOR_UPDATE_CLAUSE)), 
+                                    b.sequence(ORDER_BY_CLAUSE, b.optional(FOR_UPDATE_CLAUSE)),                                     
+                                    b.sequence(ORDER_BY_CLAUSE, b.optional(ROW_LIMITING_CLAUSE)), 
                                     b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE))))),
-                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(ORDER_BY_CLAUSE))),
+                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(ORDER_BY_CLAUSE, b.optional(ROW_LIMITING_CLAUSE)))),
                 b.optional(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
                 b.optional(FOR_UPDATE_CLAUSE));
     }
