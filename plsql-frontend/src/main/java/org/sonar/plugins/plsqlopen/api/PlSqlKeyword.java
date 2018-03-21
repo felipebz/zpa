@@ -392,7 +392,31 @@ public enum PlSqlKeyword implements TokenType {
     SESSION("session"),
     ROLE("role"),
     NONE("none"),
-    XMLAGG("xmlagg");
+    XMLAGG("xmlagg"),
+    COMPOUND("compound"),
+    INSTEAD("instead"),
+    STATEMENT_KEYWORD("statement"),
+    NESTED("nested"),
+    SCHEMA("schema"),
+    PLUGGABLE("pluggable"),
+    DATABASE("database"),
+    ANALYZE("analyze"),
+    ASSOCIATE("associate"),
+    DISASSOCIATE("disassociate"),
+    STATISTICS("statistics"),
+    AUDIT("audit"),
+    NOAUDIT("noaudit"),
+    TRUNCATE("truncate"),
+    DDL("ddl"),
+    STARTUP("startup"),
+    SHUTDOWN("shutdown"),
+    DB_ROLE_CHANGE("db_role_change"),
+    SERVERERROR("servererror"),
+    LOGON("logon"),
+    LOGOFF("logoff"),
+    SUSPEND("suspend"),
+    CLONE("clone"),
+    UNPLUG("unplug");
 
     private final String value;
     private final boolean reserved;
