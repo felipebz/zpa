@@ -171,6 +171,12 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     REFERENCING_CLAUSE, 
     TRIGGER_EDITION_CLAUSE, 
     TRIGGER_ORDERING_CLAUSE,
+    COMPOUND_TRIGGER_BLOCK,
+    TIMING_POINT_SECTION,
+    TIMING_POINT,
+    TPS_BODY,
+    DDL_EVENT,
+    DATABASE_EVENT,
     
     // Program units
     COMPILATION_UNIT,
@@ -771,8 +777,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE, b.optional(OR, REPLACE),
                 b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 TRIGGER, UNIT_NAME,
-                //b.firstOf(SIMPLE_DML_TRIGGER, INSTEAD_OF_DML_TRIGGER, COMPOUND_DML_TRIGGER, SYSTEM_TRIGGER)
-                SIMPLE_DML_TRIGGER);
+                b.firstOf(SIMPLE_DML_TRIGGER, INSTEAD_OF_DML_TRIGGER, COMPOUND_DML_TRIGGER, SYSTEM_TRIGGER)
+                );
         
         b.rule(SIMPLE_DML_TRIGGER).is(
                 b.firstOf(BEFORE, AFTER),
@@ -784,6 +790,51 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(b.firstOf(ENABLE, DISABLE)),
                 b.optional(WHEN, LPARENTHESIS, EXPRESSION, RPARENTHESIS),
                 b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
+                );
+        
+        b.rule(INSTEAD_OF_DML_TRIGGER).is(
+                INSTEAD, OF,
+                b.firstOf(
+                        DELETE,
+                        INSERT,
+                        UPDATE),
+                b.zeroOrMore(OR, b.firstOf(
+                                         DELETE,
+                                         INSERT,
+                                         UPDATE)),
+                ON,
+                b.optional(NESTED, TABLE, IDENTIFIER_NAME, OF),
+                UNIT_NAME,
+                b.optional(REFERENCING_CLAUSE),
+                b.optional(FOR, EACH, ROW),
+                b.optional(TRIGGER_EDITION_CLAUSE),
+                b.optional(TRIGGER_ORDERING_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
+                );
+        
+        b.rule(COMPOUND_DML_TRIGGER).is(
+                FOR, DML_EVENT_CLAUSE, b.zeroOrMore(OR, DML_EVENT_CLAUSE), ON, UNIT_NAME,
+                b.optional(REFERENCING_CLAUSE),
+                b.optional(TRIGGER_EDITION_CLAUSE),
+                b.optional(TRIGGER_ORDERING_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(WHEN, LPARENTHESIS, EXPRESSION, RPARENTHESIS),
+                COMPOUND_TRIGGER_BLOCK
+                );
+         
+        b.rule(SYSTEM_TRIGGER).is(
+                b.firstOf(
+                        b.sequence(b.firstOf(BEFORE, AFTER, b.sequence(INSTEAD, OF)),
+                                DDL_EVENT, b.zeroOrMore(OR, DDL_EVENT)),
+                        b.sequence(DATABASE_EVENT, b.zeroOrMore(OR, DATABASE_EVENT))),
+                ON,
+                b.firstOf(
+                        b.sequence(b.optional(IDENTIFIER_NAME, DOT), SCHEMA), 
+                        b.sequence(b.optional(PLUGGABLE), DATABASE)),
+                b.optional(TRIGGER_ORDERING_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION               
                 );
         
         b.rule(DML_EVENT_CLAUSE).is(
@@ -810,6 +861,60 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(TRIGGER_ORDERING_CLAUSE).is(
                 b.firstOf(FOLLOWS, PRECEDES),
                 UNIT_NAME, b.zeroOrMore(COMMA, UNIT_NAME));
+
+        b.rule(COMPOUND_TRIGGER_BLOCK).is(
+                COMPOUND, TRIGGER,
+                b.optional(DECLARE_SECTION),
+                b.oneOrMore(TIMING_POINT_SECTION),
+                END, UNIT_NAME, SEMICOLON);     
+         
+        b.rule(TIMING_POINT_SECTION).is(
+                TIMING_POINT, IS, BEGIN, TPS_BODY, END, TIMING_POINT, SEMICOLON); 
+          
+        b.rule(TIMING_POINT).is(
+                b.firstOf(
+                        b.sequence(BEFORE, STATEMENT_KEYWORD),
+                        b.sequence(BEFORE, EACH, ROW),
+                        b.sequence(AFTER, STATEMENT_KEYWORD),
+                        b.sequence(AFTER, EACH, ROW),
+                        b.sequence(INSTEAD, OF, EACH, ROW)
+                ));
+
+        b.rule(TPS_BODY).is(
+                b.oneOrMore(STATEMENT),
+                b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)));
+        
+        b.rule(DDL_EVENT).is(
+                b.firstOf(
+                        ALTER,
+                        ANALYZE,
+                        b.sequence(ASSOCIATE, STATISTICS),
+                        AUDIT,
+                        COMMENT,
+                        CREATE,
+                        b.sequence(DISASSOCIATE, STATISTICS),
+                        DROP,
+                        GRANT,
+                        NOAUDIT,
+                        RENAME,
+                        REVOKE,
+                        TRUNCATE,
+                        DDL)
+                );
+         
+        b.rule(DATABASE_EVENT).is(
+                b.firstOf(
+                        b.sequence(AFTER, STARTUP),
+                        b.sequence(BEFORE, SHUTDOWN),
+                        b.sequence(AFTER, DB_ROLE_CHANGE),
+                        b.sequence(AFTER, SERVERERROR),
+                        b.sequence(AFTER, LOGON),
+                        b.sequence(BEFORE, LOGOFF),
+                        b.sequence(AFTER, SUSPEND),
+                        b.sequence(AFTER, CLONE),
+                        b.sequence(BEFORE, UNPLUG),
+                        b.sequence(b.firstOf(BEFORE, AFTER), SET, CONTAINER))
+                );       
     }
     
     private static void createProgramUnits(LexerfulGrammarBuilder b) {
