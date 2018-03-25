@@ -74,4 +74,45 @@ public class CreateTriggerTest extends RuleTest {
                 + "begin null; end;");
     }
     
+    @Test
+    public void matchesSystemDdlTrigger() {
+        assertThat(p).matches(""
+                + "create trigger foo "
+                + "before alter or analyze or associate statistics or audit or comment or create "
+                + "on foo.schema "
+                + "begin null; end;");
+    }  
+    
+    @Test
+    public void matchesSystemDatabaseTrigger() {
+        assertThat(p).matches(""
+                + "create trigger foo "
+                + "after startup or before logoff or after db_role_change "
+                + "on pluggable database "
+                + "begin null; end;");
+    }   
+    
+    @Test
+    public void matchesInsteadOfDmlTrigger() {
+        assertThat(p).matches(""
+                + "create trigger foo "
+                + "instead of insert or update on foo.bar "
+                + "for each row enable "
+                + "begin null; end;");
+    }   
+        
+    @Test
+    public void matchesCompoundDmlTrigger() {
+        assertThat(p).matches(""
+                + "create trigger foo "
+                + "for insert or update of bar on foo.bar "
+                + "compound trigger "
+                + "before each row is "
+                + "begin null; end before each row;"
+                + "after each row is "
+                + "begin null; end after each row;"
+                + "after statement is "
+                + "begin null; end after statement;"
+                + "end foo;");
+    }  
 }
