@@ -173,4 +173,13 @@ public class SelectExpressionTest extends RuleTest {
         assertThat(p).matches("select 1 bulk bulk collect into var from dual");
     }
     
+    @Test
+    public void matchesSelectWithFetchFirstRowsOnly() {
+        assertThat(p).matches("select 1 from dual fetch first 1 row only");
+    }    
+    
+    @Test
+    public void matchesSelectWithOrderByAndFetchFirstRows() {
+        assertThat(p).matches("select 1 from dual order by 1 fetch first 1 row only");
+    }    
 }
