@@ -393,6 +393,9 @@ public enum PlSqlKeyword implements TokenType {
     ROLE("role"),
     NONE("none"),
     XMLAGG("xmlagg"),
+    OFFSET("offset"),
+    PERCENT("percent"),
+    TIES("ties"),
     COMPOUND("compound"),
     INSTEAD("instead"),
     STATEMENT_KEYWORD("statement"),
@@ -418,6 +421,7 @@ public enum PlSqlKeyword implements TokenType {
     CLONE("clone"),
     UNPLUG("unplug");
 
+    
     private final String value;
     private final boolean reserved;
 
