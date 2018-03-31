@@ -6,8 +6,15 @@ end;
 /
 
 begin
-  raise;
+  raise_application_error(-20999, 'Custom error message');
   
+  var := 1; -- Noncompliant
+end;
+/
+
+begin
+  raise;
+
   var := 1; -- Noncompliant
 end;
 /
@@ -56,6 +63,11 @@ end;
 
 begin
   raise;
+end;
+/
+
+begin
+  raise_application_error(-20999, 'Custom error message');
 end;
 /
 

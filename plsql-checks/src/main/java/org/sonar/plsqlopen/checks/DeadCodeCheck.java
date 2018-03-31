@@ -41,6 +41,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
     @Override
     public void init() {
         subscribeTo(CheckUtils.getTerminationStatements());
+        subscribeTo(PlSqlGrammar.METHOD_CALL);
     }
 
     @Override
@@ -57,7 +58,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
         if (node == null || CheckUtils.isProgramUnit(node)) {
             return false;
         }
-        if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT)) {
+        if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)) {
             return true;
         }
         if (node.is(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {

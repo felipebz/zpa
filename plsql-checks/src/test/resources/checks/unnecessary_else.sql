@@ -22,6 +22,12 @@ begin
   else -- Noncompliant
     foo := null;
   end if;
+
+  if (foo = bar) then
+    raise_application_error(-20999, 'Custom error message');
+  else -- Noncompliant
+    foo := null;
+  end if;
 end;
 
 

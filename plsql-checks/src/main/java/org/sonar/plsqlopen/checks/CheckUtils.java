@@ -53,6 +53,8 @@ public class CheckUtils {
     private static final AstNodeType[] WHEN = { PlSqlKeyword.WHEN };
     
     private static final MethodMatcher NVL_MATCHER = MethodMatcher.create().name("nvl").addParameter().addParameter();
+
+    private static final MethodMatcher RAISE_APPLICATION_ERROR_MATCHER = MethodMatcher.create().name("raise_application_error").withNoParameterConstraint();
     
     private CheckUtils() {
     }
@@ -130,7 +132,7 @@ public class CheckUtils {
     }
     
     public static boolean isTerminationStatement(AstNode node) {
-        return node.is(TERMINATION_STATEMENTS) && !node.hasDirectChildren(WHEN);
+        return (node.is(TERMINATION_STATEMENTS) || RAISE_APPLICATION_ERROR_MATCHER.matches(node)) && !node.hasDirectChildren(WHEN);
     }
     
     public static boolean isProgramUnit(@Nullable AstNode node) {
