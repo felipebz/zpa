@@ -32,6 +32,11 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
 
     // internals
     XML_COLUMN,
+    XML_NAMESPACE,
+    XMLNAMESPACES_CLAUSE,
+    XMLTABLE_OPTIONS,
+    XML_PASSING_CLAUSE,
+    XML_TABLE_COLUMN,
     
     // functions
     EXTRACT_DATETIME_EXPRESSION,
@@ -40,6 +45,14 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
     XMLFOREST_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
     XMLAGG_EXPRESSION,
+    XMLEXISTS_EXPRESSION,
+    XMLQUERY_EXPRESSION,
+    XMLROOT_EXPRESSION,
+    XMLCAST_EXPRESSION,
+    XMLCOLATTVAL_EXPRESSION,
+    XMLPARSE_EXPRESSION,
+    XMLPI_EXPRESSION,
+    XMLTABLE_EXPRESSION,
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
@@ -57,6 +70,14 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
                 XMLFOREST_EXPRESSION,
                 XMLSERIALIZE_EXPRESSION,
                 XMLAGG_EXPRESSION,
+                XMLEXISTS_EXPRESSION,
+                XMLQUERY_EXPRESSION,
+                XMLROOT_EXPRESSION,
+                XMLCAST_EXPRESSION,
+                XMLCOLATTVAL_EXPRESSION,
+                XMLPARSE_EXPRESSION,
+                XMLPI_EXPRESSION,
+                XMLTABLE_EXPRESSION,
                 CAST_EXPRESSION,
                 TRIM_EXPRESSION)).skip();
     }
@@ -93,7 +114,7 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
         
         b.rule(XML_COLUMN).is(
                 EXPRESSION, b.optional(AS, b.firstOf(b.sequence(EVALNAME, EXPRESSION), IDENTIFIER_NAME)));
-        
+
         b.rule(XMLATTRIBUTES_EXPRESSION).is(
                 XMLATTRIBUTES, LPARENTHESIS,
                 b.optional(b.firstOf(ENTITYESCAPING, NOENTITYESCAPING)),
@@ -120,6 +141,84 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
         b.rule(XMLFOREST_EXPRESSION).is(
                 XMLFOREST, LPARENTHESIS,
                 XML_COLUMN, b.zeroOrMore(COMMA, XML_COLUMN),
+                RPARENTHESIS);
+        
+        b.rule(XML_PASSING_CLAUSE).is(
+                PASSING, b.optional(BY, VALUE),
+                IDENTIFIER_NAME, b.optional(AS, IDENTIFIER_NAME),
+                b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(AS, IDENTIFIER_NAME)));
+        
+        b.rule(XMLEXISTS_EXPRESSION).is(
+                XMLEXISTS, LPARENTHESIS, STRING_LITERAL,
+                b.optional(XML_PASSING_CLAUSE),
+                RPARENTHESIS);
+        
+        b.rule(XMLQUERY_EXPRESSION).is(
+                XMLQUERY, LPARENTHESIS, STRING_LITERAL,
+                b.optional(XML_PASSING_CLAUSE),
+                RETURNING, CONTENT,
+                b.optional(NULL, ON, EMPTY),
+                RPARENTHESIS);
+        
+        b.rule(XMLROOT_EXPRESSION).is(
+                XMLROOT, LPARENTHESIS,
+                EXPRESSION, COMMA,
+                VERSION, b.firstOf(b.sequence(NO, VALUE), EXPRESSION),
+                b.optional(COMMA, STANDALONE, b.firstOf(YES, b.sequence(NO, b.optional(VALUE)))),
+                RPARENTHESIS);
+        
+        b.rule(XMLCAST_EXPRESSION).is(
+                XMLCAST, LPARENTHESIS,
+                EXPRESSION, AS, DATATYPE,
+                RPARENTHESIS);
+        
+        b.rule(XMLCOLATTVAL_EXPRESSION).is(
+                XMLCOLATTVAL, LPARENTHESIS,
+                XML_COLUMN, b.zeroOrMore(COMMA, XML_COLUMN),
+                RPARENTHESIS);
+        
+        b.rule(XMLPARSE_EXPRESSION).is(
+                XMLPARSE, LPARENTHESIS,
+                b.firstOf(DOCUMENT, CONTENT), EXPRESSION, b.optional(WELLFORMED),
+                RPARENTHESIS);
+        
+        b.rule(XMLPI_EXPRESSION).is(
+                XMLPI, LPARENTHESIS,
+                b.firstOf(
+                        b.sequence(EVALNAME, EXPRESSION),
+                        b.sequence(b.optional(NAME), IDENTIFIER_NAME)),
+                b.optional(COMMA, EXPRESSION),
+                RPARENTHESIS);
+        
+        b.rule(XML_NAMESPACE).is(
+                b.firstOf(
+                        b.sequence(DEFAULT, STRING_LITERAL),
+                        b.sequence(STRING_LITERAL, AS, IDENTIFIER_NAME)));
+
+        b.rule(XMLNAMESPACES_CLAUSE).is(
+                XMLNAMESPACES, LPARENTHESIS,
+                XML_NAMESPACE, b.zeroOrMore(COMMA, XML_NAMESPACE),
+                RPARENTHESIS);
+        
+        b.rule(XML_TABLE_COLUMN).is(
+                IDENTIFIER_NAME,
+                b.firstOf(
+                        b.sequence(FOR, ORDINALITY),
+                        b.sequence(
+                                b.firstOf(
+                                        DATATYPE,
+                                        b.sequence(XMLTYPE, b.optional(LPARENTHESIS, SEQUENCE, RPARENTHESIS, BY, REF))),
+                                b.optional(PATH, STRING_LITERAL),
+                                b.optional(DEFAULT, STRING_LITERAL))));
+        
+        b.rule(XMLTABLE_OPTIONS).is(
+                b.optional(XML_PASSING_CLAUSE),
+                b.optional(RETURNING, SEQUENCE, BY, REF),
+                b.optional(COLUMNS, XML_TABLE_COLUMN, b.zeroOrMore(COMMA, XML_TABLE_COLUMN)));
+        
+        b.rule(XMLTABLE_EXPRESSION).is(
+                XMLTABLE, LPARENTHESIS,                
+                b.optional(XMLNAMESPACES_CLAUSE, COMMA), STRING_LITERAL, XMLTABLE_OPTIONS,
                 RPARENTHESIS);
     }
 

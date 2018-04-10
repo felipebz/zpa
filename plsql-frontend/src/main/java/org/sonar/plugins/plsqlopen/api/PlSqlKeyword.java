@@ -177,6 +177,7 @@ public enum PlSqlKeyword implements TokenType {
     VARCHAR2("varchar2"),
     BOOLEAN("boolean"),
     DATE("date"),
+    XMLTYPE("xmltype"),
     ROWCOUNT("rowcount"),
     BULK_ROWCOUNT("bulk_rowcount"),
     COUNT("count"),
@@ -254,6 +255,7 @@ public enum PlSqlKeyword implements TokenType {
     ENCODING("encoding"),
     VERSION("version"),
     NO("no"),
+    YES("yes"),
     IDENT("ident"),
     HIDE("hide"),
     SHOW("show"),
@@ -272,6 +274,20 @@ public enum PlSqlKeyword implements TokenType {
     NAME("name"),
     EVALNAME("evalname"),
     XMLFOREST("xmlforest"),
+    XMLEXISTS("xmlexists"),
+    XMLQUERY("xmlquery"),
+    XMLROOT("xmlroot"),
+    XMLCAST("xmlcast"),
+    XMLCOLATTVAL("xmlcolattval"),
+    XMLPARSE("xmlparse"),
+    XMLPI("xmlpi"),
+    XMLTABLE("xmltable"),
+    XMLNAMESPACES("xmlnamespaces"),
+    STANDALONE("standalone"),
+    WELLFORMED("wellformed"),
+    PASSING("passing"),
+    ORDINALITY("ordinality"),
+    PATH("path"),
     JOIN("join"),
     ROWNUM("rownum"),
     LEVEL("level"),
@@ -419,7 +435,8 @@ public enum PlSqlKeyword implements TokenType {
     LOGOFF("logoff"),
     SUSPEND("suspend"),
     CLONE("clone"),
-    UNPLUG("unplug");
+    UNPLUG("unplug"),
+    VALUE("value");
 
     
     private final String value;
