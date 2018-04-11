@@ -570,7 +570,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 FOUND,
                                 NOTFOUND,
                                 ISOPEN,
-                                DELETE)
+                                DELETE,
+                                TRIM,
+                                EXTEND,
+                                NEXTVAL,
+                                CURRVAL)
                         )).skipIfOneChild();
         
         b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
