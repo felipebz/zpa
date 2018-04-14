@@ -168,4 +168,21 @@ public class MergeStatementTest extends RuleTest {
                 + "when matched then update set col = val "
                 + "when not matched then insert values (val);");
     }
+    
+    @Test
+    public void matchesMergeWithErrorLoggingClause() {
+         assertThat(p).matches("merge into dest_tab d "
+                + "using source_tab s on (d.id = s.id) "
+                + "when matched then update set col = val "
+                + "when not matched then insert values (val)"
+                + "log errors into error_tab reject limit 10;");       
+    }
+      
+    @Test
+    public void matchesMergeWithDefaultValues() {
+         assertThat(p).matches("merge into dest_tab d "
+                + "using source_tab s on (d.id = s.id) "
+                + "when matched then update set col1 = val, col2 = s.val, col3 = default "                 
+                + "when not matched then insert values (val, s.val, default);");       
+    }   
 }

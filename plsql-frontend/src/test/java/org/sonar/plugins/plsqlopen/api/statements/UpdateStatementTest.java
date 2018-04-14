@@ -77,5 +77,10 @@ public class UpdateStatementTest extends RuleTest {
     public void matchesUpdateWithReturningInto() {
         assertThat(p).matches("update tab set x = 1 returning x into y;");
     }
-
+    
+    @Test
+    public void matchesUpdateDefaultValue() {
+        assertThat(p).matches("update tab set x = default;");
+    }
+    
 }

@@ -35,10 +35,12 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.COLLECT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.CONNECT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.CROSS;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.CURRENT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DEFAULT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DELETE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DENSE_RANK;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DESC;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.DISTINCT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.ERRORS;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FETCH;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FIRST;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.FOLLOWING;
@@ -55,7 +57,9 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.JOIN;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.KEEP;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LAST;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LEFT;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LIMIT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LOCKED;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.LOG;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MATCHED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MERGE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.MINUS_KEYWORD;
@@ -76,6 +80,7 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PARTITION;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PERCENT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PRECEDING;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RANGE_KEYWORD;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.REJECT;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RETURN;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RETURNING;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.RIGHT;
@@ -91,6 +96,7 @@ import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.TIES;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNBOUNDED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNION;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNIQUE;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UNLIMITED;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.UPDATE;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.USING;
 import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.VALUES;
@@ -152,6 +158,7 @@ public enum DmlGrammar implements GrammarRuleKey {
     MERGE_EXPRESSION,
     MERGE_UPDATE_CLAUSE,
     MERGE_INSERT_CLAUSE,
+    ERROR_LOGGING_CLAUSE,
     DML_COMMAND;
     
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -328,7 +335,7 @@ public enum DmlGrammar implements GrammarRuleKey {
     }
     
     private static void createUpdateExpression(LexerfulGrammarBuilder b) {
-        b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, EXPRESSION);
+        b.rule(UPDATE_COLUMN).is(OBJECT_REFERENCE, EQUALS, b.firstOf(EXPRESSION, DEFAULT));
         
         b.rule(UPDATE_EXPRESSION).is(
                 UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
@@ -358,18 +365,23 @@ public enum DmlGrammar implements GrammarRuleKey {
         
         b.rule(MERGE_INSERT_CLAUSE).is(WHEN, NOT, MATCHED, THEN, INSERT, 
                         b.optional(LPARENTHESIS, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE), RPARENTHESIS),
-                        VALUES,b.firstOf(
-                        		b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                        VALUES, b.firstOf(
+                        		b.sequence(LPARENTHESIS, b.firstOf(EXPRESSION, DEFAULT), b.zeroOrMore(COMMA, b.firstOf(EXPRESSION, DEFAULT)), RPARENTHESIS),
                         		IDENTIFIER_NAME),
                         b.optional(WHERE_CLAUSE));
+        
+        b.rule(ERROR_LOGGING_CLAUSE).is(
+                LOG, ERRORS,
+                b.optional(INTO, TABLE_REFERENCE),
+                b.optional(REJECT, LIMIT, b.firstOf(EXPRESSION, UNLIMITED)));
         
         //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
         b.rule(MERGE_EXPRESSION).is(
                 MERGE, INTO, TABLE_REFERENCE, b.optional(b.nextNot(USING), IDENTIFIER_NAME),
                 USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                 b.firstOf(
-                        b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE)),
-                        b.sequence(MERGE_INSERT_CLAUSE, b.optional(MERGE_UPDATE_CLAUSE))));
+                        b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
+                        b.sequence(MERGE_INSERT_CLAUSE, b.optional(MERGE_UPDATE_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE))));
     }
 
 }
