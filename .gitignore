@@ -39,3 +39,7 @@ target/
 # TeXlipse plugin
 .texlipse
 .sonar
+
+# IntelliJ IDEA
+.idea
+*.iml
