@@ -59,6 +59,42 @@ public class CreateFunctionTest extends RuleTest {
                 + "return 0;\n"
                 + "end;");
     }
+
+    @Test
+    public void matchesEditionableFunction() {
+        assertThat(p).matches(""
+            + "create editionable function test return number is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesNonEditionableFunction() {
+        assertThat(p).matches(""
+            + "create noneditionable function test return number is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesFunctionWithSharingMetadata() {
+        assertThat(p).matches(""
+            + "create function test return number sharing = metadata is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesFunctionWithSharingNone() {
+        assertThat(p).matches(""
+            + "create editionable function test return number sharing = none is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
+    }
     
     @Test
     public void matchesSimpleCreateOrReplaceFunction() {
@@ -112,6 +148,24 @@ public class CreateFunctionTest extends RuleTest {
                 + "begin\n"
                 + "return 0;\n"
                 + "end;");
+    }
+
+    @Test
+    public void matchesFunctionWithDefaultCollation() {
+        assertThat(p).matches(""
+            + "create function test return number default collation using_nls_comp is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesFunctionWithAccessibleBy() {
+        assertThat(p).matches(""
+            + "create function test return number accessible by (procedure proc) is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;");
     }
     
     @Test

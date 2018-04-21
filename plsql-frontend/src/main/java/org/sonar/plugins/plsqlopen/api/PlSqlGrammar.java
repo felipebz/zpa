@@ -947,14 +947,26 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(EXTERNAL, SEMICOLON))
                 );
         
-        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_function.htm
+        // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-FUNCTION-statement.html
         b.rule(CREATE_FUNCTION).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 FUNCTION, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE)),
-                b.optional(RESULT_CACHE,b.optional(RELIES_ON,LPARENTHESIS,b.oneOrMore(OBJECT_REFERENCE,b.optional(COMMA)),RPARENTHESIS)),
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                RETURN, DATATYPE,
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                b.zeroOrMore(b.firstOf(
+                        DETERMINISTIC,
+                        PIPELINED,
+                        PARALLEL_ENABLE,
+                        b.sequence(
+                            RESULT_CACHE,
+                            b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
+                        b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                        b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                        b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
+                            b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
+                            UNIT_NAME,
+                            RPARENTHESIS))),
                 b.firstOf(
                         b.sequence(
                                 b.firstOf(IS, AS),
