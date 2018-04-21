@@ -926,12 +926,20 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(UNIT_NAME).is(b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME);
         
-        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_procedure.htm
+        // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PROCEDURE-statement.html
         b.rule(CREATE_PROCEDURE).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 PROCEDURE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                b.zeroOrMore(b.firstOf(
+                        b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                        b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                        b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
+                            b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
+                            UNIT_NAME,
+                            RPARENTHESIS))
+                ),
                 b.firstOf(IS, AS),
                 b.firstOf(
                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),

@@ -443,9 +443,13 @@ public enum PlSqlKeyword implements TokenType {
     SUSPEND("suspend"),
     CLONE("clone"),
     UNPLUG("unplug"),
-    VALUE("value");
+    VALUE("value"),
+    SHARING("sharing"),
+    METADATA("metadata"),
+    COLLATION("collation"),
+    USING_NLS_COMP("using_nls_comp"),
+    ACCESSIBLE("accessible");
 
-    
     private final String value;
     private final boolean reserved;
 

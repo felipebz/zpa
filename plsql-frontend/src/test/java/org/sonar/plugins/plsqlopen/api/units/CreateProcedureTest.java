@@ -50,7 +50,61 @@ public class CreateProcedureTest extends RuleTest {
                 + "null;\n"
                 + "end;");
     }
-    
+
+    @Test
+    public void matchesEditionableProcedure() {
+        assertThat(p).matches(""
+            + "create editionable procedure test is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesNonEditionableProcedure() {
+        assertThat(p).matches(""
+            + "create noneditionable procedure test is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesProcedureWithSharingMetadata() {
+        assertThat(p).matches(""
+            + "create procedure test sharing = metadata is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesProcedureWithSharingNone() {
+        assertThat(p).matches(""
+            + "create procedure test sharing = none is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesProcedureWithDefaultCollation() {
+        assertThat(p).matches(""
+            + "create procedure test default collation using_nls_comp is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesProcedureWithAccesibleBy() {
+        assertThat(p).matches(""
+            + "create procedure test accessible by (function func) is\n"
+            + "begin\n"
+            + "null;\n"
+            + "end;");
+    }
+
     @Test
     public void matchesSimpleCreateOrReplaceProcedure() {
         assertThat(p).matches(""
