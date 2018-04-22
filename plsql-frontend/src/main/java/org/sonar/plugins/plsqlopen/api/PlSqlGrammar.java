@@ -1088,7 +1088,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(SEMICOLON));
         
         b.rule(CREATE_TYPE_BODY).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 TYPE, BODY, UNIT_NAME,
                 b.firstOf(IS, AS),
                 b.oneOrMore(b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION), b.optional(COMMA)),

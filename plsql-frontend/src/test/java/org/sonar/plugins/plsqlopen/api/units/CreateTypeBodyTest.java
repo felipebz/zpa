@@ -13,7 +13,25 @@ public class CreateTypeBodyTest extends RuleTest {
     public void init() {
         setRootRule(PlSqlGrammar.CREATE_TYPE_BODY);
     }
-    
+
+    @Test
+    public void matchesEditionableTypeBody() {
+        assertThat(p).matches(
+            "create editionable type body foo as "
+                + "member procedure foo is "
+                + "begin null; end; "
+                + "end;");
+    }
+
+    @Test
+    public void matchesNonEditionableTypeBody() {
+        assertThat(p).matches(
+            "create noneditionable type body foo as "
+                + "member procedure foo is "
+                + "begin null; end; "
+                + "end;");
+    }
+
     @Test
     public void matchesTypeBodyWithProcedure() {
         assertThat(p).matches(
