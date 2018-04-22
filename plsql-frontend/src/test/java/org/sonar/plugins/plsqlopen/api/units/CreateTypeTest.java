@@ -23,6 +23,36 @@ public class CreateTypeTest extends RuleTest {
     public void matchesSimpleCreateTypeObject() {
         assertThat(p).matches("create type foo as object (x number(5));");
     }
+
+    @Test
+    public void matchesCreateEditionableType() {
+        assertThat(p).matches("create editionable type foo as object (x number(5));");
+    }
+
+    @Test
+    public void matchesCreateNonEditionableType() {
+        assertThat(p).matches("create noneditionable type foo as object (x number(5));");
+    }
+
+    @Test
+    public void matchesCreateTypeWithSharingMetadata() {
+        assertThat(p).matches("create type foo sharing = metadata as object (x number(5));");
+    }
+
+    @Test
+    public void matchesCreateTypeWithSharingNone() {
+        assertThat(p).matches("create type foo sharing = none as object (x number(5));");
+    }
+
+    @Test
+    public void matchesCreateTypeWithDefaultCollation() {
+        assertThat(p).matches("create type foo default collation using_nls_comp as object (x number(5));");
+    }
+
+    @Test
+    public void matchesCreateTypeWithAccesibleBy() {
+        assertThat(p).matches("create type foo accessible by (type other_type) as object (x number(5));");
+    }
     
     @Test
     public void matchesCreateTypeForce() {

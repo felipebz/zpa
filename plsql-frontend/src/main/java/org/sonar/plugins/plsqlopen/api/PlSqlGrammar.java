@@ -1022,7 +1022,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 										b.sequence(TABLESPACE, IDENTIFIER_NAME)
                 										)),
                 						b.optional(b.sequence(b.optional(NO), REFRESH, COMPLETE, b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)))),
-                				b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)), b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
+                				b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),  b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 AS,
                 SELECT_EXPRESSION,
@@ -1067,10 +1067,17 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)));
         
         b.rule(CREATE_TYPE).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 TYPE, UNIT_NAME,
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                 b.optional(FORCE),
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                b.zeroOrMore(b.firstOf(
+                    b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                    b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                    b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
+                        b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
+                        UNIT_NAME,
+                        RPARENTHESIS))),
                 b.optional(b.firstOf(
                         OBJECT_TYPE_DEFINITION, 
                         b.sequence(
