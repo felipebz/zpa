@@ -42,6 +42,26 @@ public class CreateSynonymTest extends RuleTest {
     public void matchesCreatePublicSynonym() {
         assertThat(p).matches("create public synonym foo for bar;");
     }
+
+    @Test
+    public void matchesEditionableSynonym() {
+        assertThat(p).matches("create editionable synonym foo for bar;");
+    }
+
+    @Test
+    public void matchesNonEditionableSynonym() {
+        assertThat(p).matches("create noneditionable synonym foo for bar;");
+    }
+
+    @Test
+    public void matchesSynonymWithSharingMetada() {
+        assertThat(p).matches("create synonym foo sharing = metadata for bar;");
+    }
+
+    @Test
+    public void matchesSynonymWithSharingNone() {
+        assertThat(p).matches("create synonym foo sharing = none for bar;");
+    }
     
     @Test
     public void matchesCreateorReplaceSynonym() {

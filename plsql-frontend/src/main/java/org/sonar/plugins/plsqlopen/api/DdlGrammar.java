@@ -143,8 +143,9 @@ public enum DdlGrammar implements GrammarRuleKey {
         b.rule(DROP_COMMAND).is(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON));
         
         b.rule(CREATE_SYNONYM).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 b.optional(PUBLIC), SYNONYM, UNIT_NAME,
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                 FOR, DmlGrammar.TABLE_REFERENCE, b.optional(SEMICOLON));
         
         b.rule(CREATE_SEQUENCE).is(
