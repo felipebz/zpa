@@ -67,6 +67,34 @@ public class CreatePackageTest extends RuleTest {
                 + "create package schema.test is\n"
                 + "end;");
     }
+
+    @Test
+    public void matchesEditionablePackage() {
+        assertThat(p).matches(""
+            + "create editionable package test is\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesNonEditionablePackage() {
+        assertThat(p).matches(""
+            + "create noneditionable package test is\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesPackageWithSharingMetadata() {
+        assertThat(p).matches(""
+            + "create package test sharing = metadata is\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesPackageWithSharingNone() {
+        assertThat(p).matches(""
+            + "create package test sharing = none is\n"
+            + "end;");
+    }
     
     @Test
     public void matchesPackageWithAuthidCurrentUser() {
@@ -80,6 +108,20 @@ public class CreatePackageTest extends RuleTest {
         assertThat(p).matches(""
                 + "create package test authid definer is\n"
                 + "end;");
+    }
+
+    @Test
+    public void matchesPackageWithDefaultCollation() {
+        assertThat(p).matches(""
+            + "create package test default collation using_nls_comp is\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesPackageWithAccessibleBy() {
+        assertThat(p).matches(""
+            + "create package test accessible by (package other_package) is\n"
+            + "end;");
     }
     
     @Test

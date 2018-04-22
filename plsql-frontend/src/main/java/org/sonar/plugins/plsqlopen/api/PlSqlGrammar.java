@@ -976,11 +976,18 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON))
                 );
         
-        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package.htm
+        // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-statement.html
         b.rule(CREATE_PACKAGE).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 PACKAGE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
-                b.optional(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                b.zeroOrMore(b.firstOf(
+                    b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                    b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                    b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
+                        b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
+                        UNIT_NAME,
+                        RPARENTHESIS))),
                 b.firstOf(IS, AS),
                 b.optional(DECLARE_SECTION),
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
