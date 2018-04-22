@@ -53,6 +53,16 @@ public class CreateViewTest extends RuleTest {
     public void matchesViewWithSchema() {
         assertThat(p).matches("create view sch.foo as select 1 from dual;");
     }
+
+    @Test
+    public void matchesEditionableView() {
+        assertThat(p).matches("create editionable view foo as select 1 from dual;");
+    }
+
+    @Test
+    public void matchesNonEditionableView() {
+        assertThat(p).matches("create noneditionable view foo as select 1 from dual;");
+    }
     
     @Test
     public void matchesForceView() {

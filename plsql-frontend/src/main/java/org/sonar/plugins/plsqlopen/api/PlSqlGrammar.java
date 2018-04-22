@@ -1009,7 +1009,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         )
                 );
                 
-        // http://docs.oracle.com/cd/B28359_01/server.111/b28286/statements_8004.htm
+        // https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/CREATE-VIEW.html
         b.rule(CREATE_VIEW).is(
                 CREATE,b.optional(
                 		b.firstOf(
@@ -1022,7 +1022,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 										b.sequence(TABLESPACE, IDENTIFIER_NAME)
                 										)),
                 						b.optional(b.sequence(b.optional(NO), REFRESH, COMPLETE, b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)))),
-                				b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
+                				b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)), b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 AS,
                 SELECT_EXPRESSION,
