@@ -53,6 +53,20 @@ public class CreatePackageBodyTest extends RuleTest {
                 + "create package body test is\n"
                 + "end test;");
     }
+
+    @Test
+    public void matchesEditionablePackageBody() {
+        assertThat(p).matches(""
+            + "create editionable package body test is\n"
+            + "end;");
+    }
+
+    @Test
+    public void matchesNonEditionablePackageBody() {
+        assertThat(p).matches(""
+            + "create noneditionable package body test is\n"
+            + "end;");
+    }
     
     @Test
     public void matchesSimpleCreateOrReplacePackageBody() {

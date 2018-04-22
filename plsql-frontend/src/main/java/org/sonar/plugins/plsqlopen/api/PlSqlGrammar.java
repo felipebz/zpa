@@ -992,9 +992,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(DECLARE_SECTION),
                 END, b.optional(IDENTIFIER_NAME), SEMICOLON);
         
-        // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/create_package_body.htm
+        // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-BODY-statement.html
         b.rule(CREATE_PACKAGE_BODY).is(
-                CREATE, b.optional(OR, REPLACE),
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 PACKAGE, BODY, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.firstOf(IS, AS),
                 b.optional(DECLARE_SECTION),
