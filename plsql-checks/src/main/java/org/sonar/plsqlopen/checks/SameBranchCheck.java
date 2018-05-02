@@ -80,15 +80,14 @@ public class SameBranchCheck extends AbstractBaseCheck {
     
     private void checkBranch(List<AstNode> branches, int index) {
         AstNode branch = branches.get(index);
-        for (int j = 0; j < index; j++) {
-            AstNode otherBranch = branches.get(j);
-            if (CheckUtils.equalNodes(otherBranch, branch)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                        branch,
-                        ImmutableList.of(newLocation("Original", otherBranch)),
-                        otherBranch.getToken().getLine());
-                return;
-            }
+        final int previousBranchIndex = index - 1;
+        AstNode otherBranch = branches.get(previousBranchIndex);
+        if (CheckUtils.equalNodes(otherBranch, branch)) {
+            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
+                    branch,
+                    ImmutableList.of(newLocation("Original", otherBranch)),
+                    otherBranch.getToken().getLine());
+            return;
         }
     }
 
