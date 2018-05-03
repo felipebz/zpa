@@ -6,9 +6,9 @@ na pior é um erro de programação. Se a mesma lógica é realmente necessária
 IF var BETWEEN 0 AND 10 THEN
   do_the_thing();
 ELSIF var BETWEEN 10 AND 20 THEN
-  do_the_other_thing();
-ELSIF var BETWEEN 20 AND 50 THEN
   do_the_thing(); -- Noncompliant; duplicates first condition
+ELSIF var BETWEEN 20 AND 50 THEN
+  do_the_another_thing();
 ELSE
   do_the_rest()
 END IF;
@@ -16,10 +16,10 @@ END IF;
 
 <h2>Código correto</h2>
 <pre>
-IF (var BETWEEN 0 AND 10) OR (var BETWEEN 20 AND 50) THEN
+IF (var BETWEEN 0 AND 20) THEN
   do_the_thing();
 ELSIF var BETWEEN 10 AND 20 THEN
-  do_the_other_thing();
+  do_the_another_thing();
 ELSE
   do_the_rest()
 END IF;
@@ -31,9 +31,9 @@ END IF;
 IF var BETWEEN 0 AND 10 THEN
   do_the_thing();
 ELSIF var BETWEEN 10 AND 20 THEN
-  do_the_other_thing();
+  do_the_second_thing();
 ELSIF var BETWEEN 20 AND 50 THEN
-  do_the_third_thing();
+  do_the_another_thing();
 ELSE
   do_the_rest()
 END IF;

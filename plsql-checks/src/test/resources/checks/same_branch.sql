@@ -19,4 +19,13 @@ begin
     var := (1); -- Noncompliant [[secondary=17]]
 --  ^^^^^^^^^^^
   end if;
+
+  -- compliant
+  if x then
+    var := 1;
+  elsif y then
+    var := 2;
+  elsif z then
+    var := 1;
+  end if;
 end;
