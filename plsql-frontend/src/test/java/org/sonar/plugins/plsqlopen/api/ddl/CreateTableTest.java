@@ -54,6 +54,11 @@ public class CreateTableTest extends RuleTest {
     }
     
     @Test
+    public void matchesTemporaryTableWithTablespace() {
+        assertThat(p).matches("create global temporary table tab (id number) tablespace table_space;");
+    }
+    
+    @Test
     public void matchesTemporaryTableOnCommitDeleteRows() {
         assertThat(p).matches("create global temporary table tab (id number) on commit delete rows;");
     }
