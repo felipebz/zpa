@@ -110,6 +110,7 @@ public enum DdlGrammar implements GrammarRuleKey {
         b.rule(CREATE_TABLE).is(
                 CREATE, b.optional(GLOBAL, TEMPORARY), TABLE, UNIT_NAME,
                 b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
+                b.optional(TABLESPACE, IDENTIFIER_NAME),
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
                 b.optional(SEMICOLON));
         
