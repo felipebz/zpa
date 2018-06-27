@@ -361,6 +361,7 @@ public enum DdlGrammar implements GrammarRuleKey {
         						LPARENTHESIS,
         						b.oneOrMore(
         								b.firstOf(
+        										METHOD_CALL,
 		        								IDENTIFIER_NAME,
 		        								MAXVALUE),
 		        								b.optional(COMMA)),
