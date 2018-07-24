@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.resources.AbstractLanguage;
 
 public class PlSql extends AbstractLanguage {
@@ -32,17 +32,13 @@ public class PlSql extends AbstractLanguage {
 
     private static final String[] DEFAULT_FILE_SUFFIXES = { "sql", "pkg", "pks", "pkb" };
 
-    private final Settings settings;
+    private final Configuration settings;
 
-    public PlSql(Settings configuration) {
+    public PlSql(Configuration configuration) {
         super(KEY, "PL/SQL");
         this.settings = configuration;
     }
-
-    public Settings getSettings() {
-        return this.settings;
-    }
-
+    
     @Override
     public String[] getFileSuffixes() {
         String[] suffixes = filterEmptyStrings(settings.getStringArray(PlSqlPlugin.FILE_SUFFIXES_KEY));

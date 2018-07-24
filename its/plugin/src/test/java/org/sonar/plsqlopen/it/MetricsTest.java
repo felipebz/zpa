@@ -99,7 +99,7 @@ public class MetricsTest {
     /* Helper methods */
     private static Measure getMeasure(String componentKey, String metricKey) {
         ComponentWsResponse response = Tests.newWsClient(orchestrator).measures()
-                .component(new ComponentWsRequest().setComponentKey(componentKey)
+                .component(new ComponentWsRequest().setComponent(componentKey)
                         .setMetricKeys(Collections.singletonList(metricKey)));
         List<Measure> measures = response.getComponent().getMeasuresList();
         return measures.size() == 1 ? measures.get(0) : null;

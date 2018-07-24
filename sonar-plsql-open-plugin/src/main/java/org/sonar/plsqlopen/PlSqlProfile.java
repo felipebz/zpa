@@ -19,48 +19,32 @@
  */
 package org.sonar.plsqlopen;
 
-import javax.annotation.Nullable;
-
-import org.sonar.api.profiles.ProfileDefinition;
-import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.rules.Rule;
-import org.sonar.api.rules.RuleFinder;
+import org.sonar.api.rules.RuleAnnotationUtils;
+import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.api.utils.ValidationMessages;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.checks.CheckList;
 
-public class PlSqlProfile extends ProfileDefinition {
+public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
 
-    private final RuleFinder ruleFinder;
-
-    public PlSqlProfile(RuleFinder ruleFinder) {
-        this.ruleFinder = ruleFinder;
-    }
+    public static final String SONAR_WAY_PROFILE_PATH = "org/sonar/l10n/flex/rules/flex/Sonar_way_profile.json";
 
     @Override
-    public RulesProfile createProfile(@Nullable ValidationMessages validation) {
-        RulesProfile profile = RulesProfile.create(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
+    public void define(Context context) {
+        NewBuiltInQualityProfile profile = context.createBuiltInQualityProfile(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
+        profile.setDefault(true);
+        
         for (Class<?> ruleClass : CheckList.getChecks()) {
-            addRule(ruleClass, profile, CheckList.REPOSITORY_KEY, validation);
+            addRule(ruleClass, profile, CheckList.REPOSITORY_KEY);
         }
-        return profile;
+        
+        profile.done();
     }
     
-    private void addRule(Class<?> ruleClass, RulesProfile profile, String repositoryKey, ValidationMessages messages) {
+    private void addRule(Class<?> ruleClass, NewBuiltInQualityProfile profile, String repositoryKey) {
         if (AnnotationUtils.getAnnotation(ruleClass, ActivatedByDefault.class) != null) {
-            org.sonar.check.Rule ruleAnnotation = AnnotationUtils.getAnnotation(ruleClass, org.sonar.check.Rule.class);
-            if (ruleAnnotation == null) {
-                messages.addWarningText("Class " + ruleClass + " has no Rule annotation");
-                return;
-            }
-            String ruleKey = ruleAnnotation.key();
-            Rule rule = ruleFinder.findByKey(repositoryKey, ruleKey);
-            if (rule == null) {
-                messages.addWarningText("Rule not found: [repository=" + repositoryKey + ", key=" + ruleKey + "]");
-            } else {
-                profile.activateRule(rule, null);
-            }
+            String ruleKey = RuleAnnotationUtils.getRuleKey(ruleClass);
+            profile.activateRule(CheckList.REPOSITORY_KEY, ruleKey);
         }
     }
 

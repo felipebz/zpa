@@ -22,11 +22,11 @@ package org.sonar.plsqlopen;
 import com.google.common.collect.ImmutableList;
 
 import org.sonar.api.ExtensionPoint;
-import org.sonar.api.batch.BatchSide;
+import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.server.rule.RulesDefinition;
 
 @ExtensionPoint
-@BatchSide
+@ScannerSide
 public abstract class CustomPlSqlRulesDefinition implements RulesDefinition {
 
     @Override

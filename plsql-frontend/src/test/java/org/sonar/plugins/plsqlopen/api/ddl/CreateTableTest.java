@@ -19,8 +19,6 @@
  */
 package org.sonar.plugins.plsqlopen.api.ddl;
 
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.INTEGER;
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.PCTFREE;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;

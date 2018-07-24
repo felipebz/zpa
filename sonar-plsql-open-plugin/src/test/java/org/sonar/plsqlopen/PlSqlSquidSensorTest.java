@@ -58,7 +58,7 @@ public class PlSqlSquidSensorTest {
                 .build();
         CheckFactory checkFactory = new CheckFactory(activeRules);
         context = SensorContextTester.create(new File("."));
-        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings(), new NoSonarFilter());
+        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings().asConfig(), new NoSonarFilter());
     }
     
     @Test

@@ -22,7 +22,6 @@ package org.sonar.plugins.plsqlopen.api.ddl;
 import static org.sonar.sslr.tests.Assertions.assertThat;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.DdlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;

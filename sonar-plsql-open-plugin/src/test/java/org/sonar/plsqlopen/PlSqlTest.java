@@ -22,7 +22,6 @@ package org.sonar.plsqlopen;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
-import org.sonar.api.config.Settings;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonar.plsqlopen.PlSqlPlugin;
 
@@ -30,7 +29,7 @@ public class PlSqlTest {
     
     @Test
     public void test() {
-        PlSql language = new PlSql(new MapSettings());
+        PlSql language = new PlSql(new MapSettings().asConfig());
         assertThat(language.getKey()).isEqualTo("plsqlopen");
         assertThat(language.getName()).isEqualTo("PL/SQL");
         assertThat(language.getFileSuffixes())
@@ -46,7 +45,7 @@ public class PlSqlTest {
         MapSettings settings = new MapSettings();
         settings.setProperty(PlSqlPlugin.FILE_SUFFIXES_KEY, "sql, custom");
 
-        PlSql language = new PlSql(settings);
+        PlSql language = new PlSql(settings.asConfig());
         assertThat(language.getFileSuffixes()).hasSize(2).contains("custom");
     }
     

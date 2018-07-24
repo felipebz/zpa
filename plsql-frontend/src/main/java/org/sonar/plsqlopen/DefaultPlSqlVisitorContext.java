@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -145,11 +144,6 @@ public class DefaultPlSqlVisitorContext implements PlSqlVisitorContext {
             checkMessage.addSecondaryLocation(secondaryLocation);
         }
         messages.add(checkMessage);
-    }
-
-    @Override
-    public File getFile() {
-        return plSqlFile.file();
     }
 
 }

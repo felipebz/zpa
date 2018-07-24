@@ -28,7 +28,6 @@ import java.util.List;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.ce.measure.RangeDistributionBuilder;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
@@ -59,8 +58,6 @@ import com.sonar.sslr.impl.Parser;
 public class PlSqlAstScanner {
 
     private static final Logger LOG = Loggers.get(PlSqlAstScanner.class);
-    private static final Number[] LIMITS_COMPLEXITY_METHODS = {5, 10, 20, 30, 60, 90, 100};
-    private static final Number[] LIMITS_COMPLEXITY_FILES = {0, 5, 10, 20, 30, 60, 90};
     
     private final SensorContext context;
     private final Parser<Grammar> parser;
@@ -104,19 +101,19 @@ public class PlSqlAstScanner {
             visitorContext = new DefaultPlSqlVisitorContext(parser.parse(plSqlFile.content()), plSqlFile, formsMetadata);
         } catch (RecognitionException e) {
             visitorContext = new DefaultPlSqlVisitorContext(plSqlFile, e, formsMetadata);
-            LOG.error("Unable to parse file: " + inputFile.absolutePath());
+            LOG.error("Unable to parse file: " + inputFile.toString());
             LOG.error(e.getMessage());
         } catch (Exception e) {
             checkInterrupted(e);
-            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
+            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
         } catch (Throwable e) {
-            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
+            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
         }
         
         try {
             walker.walk(visitorContext);
         } catch (Throwable e) {
-            throw new AnalysisException("Unable to analyze file: " + inputFile.absolutePath(), e);
+            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
         }
         
         saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, metricsVisitor.getNumberOfStatements());
@@ -124,16 +121,6 @@ public class PlSqlAstScanner {
         saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, metricsVisitor.getLinesOfComments().size());
         saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, complexityVisitor.getComplexity());
         saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, functionComplexityVisitor.getNumberOfFunctions());
-        
-        RangeDistributionBuilder complexityDistribution = new RangeDistributionBuilder(LIMITS_COMPLEXITY_FILES);
-        complexityDistribution.add(complexityVisitor.getComplexity());
-        saveMetricOnFile(inputFile, CoreMetrics.FILE_COMPLEXITY_DISTRIBUTION, complexityDistribution.build());
-        
-        RangeDistributionBuilder functionComplexityDistribution = new RangeDistributionBuilder(LIMITS_COMPLEXITY_METHODS);
-        for (Integer functionComplexity : functionComplexityVisitor.getFunctionComplexities()) {
-            functionComplexityDistribution.add(functionComplexity);
-        }
-        saveMetricOnFile(inputFile, CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION, functionComplexityDistribution.build());
         
         noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
         

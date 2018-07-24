@@ -43,7 +43,7 @@ public class ProgressReport implements Runnable {
                 Thread.sleep(period);
                 synchronized (this) {
                     log(currentFileNumber + "/" + count + " files " + adjective + ", current file: "
-                            + currentFile.relativePath());
+                            + currentFile.toString());
                 }
             } catch (InterruptedException e) {
                 break;

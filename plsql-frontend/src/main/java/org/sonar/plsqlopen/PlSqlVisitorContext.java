@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
@@ -41,8 +40,6 @@ public interface PlSqlVisitorContext {
     public RecognitionException parsingException();
     
     SymbolTable getSymbolTable();
-    
-    File getFile();
     
     void setSymbolTable(SymbolTable symbolTable);
     

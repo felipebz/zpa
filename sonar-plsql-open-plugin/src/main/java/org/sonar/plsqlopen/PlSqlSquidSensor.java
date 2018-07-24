@@ -35,7 +35,7 @@ import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
@@ -44,7 +44,6 @@ import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plsqlopen.squid.ProgressReport;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -63,18 +62,18 @@ public class PlSqlSquidSensor implements Sensor {
     private FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
     
-    public PlSqlSquidSensor(CheckFactory checkFactory, Settings settings, NoSonarFilter noSonarFilter) {
+    public PlSqlSquidSensor(CheckFactory checkFactory, Configuration settings, NoSonarFilter noSonarFilter) {
         this(checkFactory, settings, noSonarFilter, null);
     }
 
-    public PlSqlSquidSensor(CheckFactory checkFactory, Settings settings, NoSonarFilter noSonarFilter,
+    public PlSqlSquidSensor(CheckFactory checkFactory, Configuration settings, NoSonarFilter noSonarFilter,
             @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
         this.noSonarFilter = noSonarFilter;
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
-        loadMetadataFile(settings.getString(PlSqlPlugin.FORMS_METADATA_KEY));
-        isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY);
+        loadMetadataFile(settings.get(PlSqlPlugin.FORMS_METADATA_KEY).orElse(null));
+        isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY).orElse(false);
     }
     
     @VisibleForTesting
