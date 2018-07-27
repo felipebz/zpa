@@ -19,6 +19,7 @@ public class MetricsVisitor extends PlSqlVisitor {
     private Set<Integer> linesOfCode = new HashSet<>();
     private Set<Integer> linesOfComments = new HashSet<>();
     private Set<Integer> noSonar = new HashSet<>();
+    private Set<Integer> executableLines = new HashSet<>();
     
     @Override
     public void init() {
@@ -29,6 +30,7 @@ public class MetricsVisitor extends PlSqlVisitor {
     public void visitNode(AstNode node) {
         if (node.is(PlSqlGrammar.STATEMENT)) {
             numberOfStatements++;
+            executableLines.add(node.getTokenLine());
         }
     }
     
@@ -76,6 +78,10 @@ public class MetricsVisitor extends PlSqlVisitor {
 
     public Set<Integer> getLinesWithNoSonar() {
         return noSonar;
+    }
+    
+    public Set<Integer> getExecutableLines() {
+        return executableLines;
     }
 
 }

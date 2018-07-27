@@ -30,6 +30,8 @@ import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
+import org.sonar.api.measures.FileLinesContext;
+import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.AnalyzerMessage;
@@ -64,12 +66,20 @@ public class PlSqlAstScanner {
     private final Collection<PlSqlCheck> checks;
     private final FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
+	private FileLinesContextFactory fileLinesContextFactory;
+    
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, 
+    		FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled) {
+        this(context, checks, noSonarFilter,formsMetadata, isErrorRecoveryEnabled, null);
+    }
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled) {
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, 
+    		FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled, FileLinesContextFactory fileLinesContextFactory) {
         this.context = context;
         this.checks = checks;
         this.noSonarFilter = noSonarFilter;
         this.formsMetadata = formsMetadata;
+		this.fileLinesContextFactory = fileLinesContextFactory;
         this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
     }
     
@@ -121,6 +131,14 @@ public class PlSqlAstScanner {
         saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, metricsVisitor.getLinesOfComments().size());
         saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, complexityVisitor.getComplexity());
         saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, functionComplexityVisitor.getNumberOfFunctions());
+        
+		if (fileLinesContextFactory != null) {
+			FileLinesContext fileLinesContext = fileLinesContextFactory.createFor(inputFile);
+			for (int line : metricsVisitor.getExecutableLines()) {
+				fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1);
+			}
+			fileLinesContext.save();
+		}
         
         noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
         

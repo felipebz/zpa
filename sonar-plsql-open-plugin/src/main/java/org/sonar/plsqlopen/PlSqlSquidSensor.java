@@ -37,6 +37,7 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.NoSonarFilter;
+import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -61,14 +62,17 @@ public class PlSqlSquidSensor implements Sensor {
     private SensorContext context;
     private FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
+	private FileLinesContextFactory fileLinesContextFactory;
     
     public PlSqlSquidSensor(CheckFactory checkFactory, Configuration settings, NoSonarFilter noSonarFilter) {
-        this(checkFactory, settings, noSonarFilter, null);
+        this(checkFactory, settings, noSonarFilter, null, null);
     }
 
     public PlSqlSquidSensor(CheckFactory checkFactory, Configuration settings, NoSonarFilter noSonarFilter,
+    		FileLinesContextFactory fileLinesContextFactory, 
             @Nullable CustomPlSqlRulesDefinition[] customRulesDefinition) {
         this.noSonarFilter = noSonarFilter;
+		this.fileLinesContextFactory = fileLinesContextFactory;
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
@@ -96,7 +100,7 @@ public class PlSqlSquidSensor implements Sensor {
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
         ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
         
         progressReport.start(inputFiles);
         for (InputFile inputFile : inputFiles) {
