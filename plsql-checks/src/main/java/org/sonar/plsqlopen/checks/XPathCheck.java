@@ -25,6 +25,7 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 import org.sonar.plsqlopen.annnotations.RuleTemplate;
+import org.sonar.plsqlopen.squid.AnalysisException;
 
 import com.google.common.base.Strings;
 import com.sonar.sslr.api.AstNode;
@@ -52,7 +53,7 @@ public class XPathCheck extends AbstractBaseCheck {
             try {
                 query = AstNodeXPathQuery.create(xpathQuery);
             } catch (RuntimeException e) {
-                throw new IllegalStateException(
+                throw new AnalysisException(
                         "Unable to initialize the XPath engine, perhaps because of an invalid query: " + xpathQuery, e);
             }
         }
@@ -67,9 +68,9 @@ public class XPathCheck extends AbstractBaseCheck {
             for (Object object : objects) {
                 if (object instanceof AstNode) {
                     AstNode astNode = (AstNode) object;
-                    getContext().createViolation(this, message, astNode);
+                    addIssue(astNode, message);
                 } else if (object instanceof Boolean && (Boolean) object) {
-                    getContext().createFileViolation(this, message);
+                    addFileIssue(message);
                 }
             }
         }

@@ -56,8 +56,8 @@ public class UnusedVariableCheck extends AbstractBaseCheck {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.VARIABLE);
         for (Symbol symbol : symbols) {
             if (symbol.usages().isEmpty()) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY),
-                        symbol.declaration(), symbol.declaration().getTokenOriginalValue());
+                addIssue(symbol.declaration(), getLocalizedMessage(CHECK_KEY),
+                        symbol.declaration().getTokenOriginalValue());
             }
         }
     }

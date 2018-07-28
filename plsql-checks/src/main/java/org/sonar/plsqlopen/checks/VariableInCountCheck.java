@@ -68,7 +68,7 @@ public class VariableInCountCheck extends AbstractBaseCheck {
         if (scope != null) {
             Symbol symbol = scope.getSymbol(value);
             if (symbol != null) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), currentNode, value);
+                addIssue(currentNode, getLocalizedMessage(CHECK_KEY), value);
             }
         }
     }

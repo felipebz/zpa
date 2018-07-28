@@ -59,7 +59,7 @@ public class DbmsOutputPutCheck extends AbstractBaseCheck {
             return;
         }
         
-        getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+        addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
     }
 
 }

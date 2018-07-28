@@ -45,7 +45,7 @@ public class InequalityUsageCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        getContext().createLineViolation(this, String.format(getLocalizedMessage(CHECK_KEY), node.getTokenValue()), node);
+        addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine(), node.getTokenValue());
     }
 
 }

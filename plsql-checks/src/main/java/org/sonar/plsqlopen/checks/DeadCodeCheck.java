@@ -73,7 +73,7 @@ public class DeadCodeCheck extends AbstractBaseCheck {
         }
         AstNode nextSibling = node.getNextSibling();
         if (nextSibling != null && nextSibling.is(PlSqlGrammar.STATEMENT)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), nextSibling);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), nextSibling.getTokenLine());
             return true;
         }
         return false;

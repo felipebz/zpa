@@ -22,9 +22,25 @@ package org.sonar.plsqlopen.checks;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import org.sonar.plsqlopen.PlSqlVisitorContext;
+
+import com.sonar.sslr.api.AstNode;
+
 public abstract class AbstractBaseCheck extends PlSqlCheck {
     
     private ResourceBundle bundle;
+    
+    /***
+     * Creates an issue location.
+     * @param message Description.
+     * @param node Node related to the location.
+     * @return The new issue location.
+     * @deprecated since 2.2. Use {@link IssueLocation}.
+     */
+    @Deprecated
+    protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
+        return new PlSqlVisitorContext.Location(message, node);
+    }
     
     protected String getLocalizedMessage(String checkKey) {
         if (bundle == null) {

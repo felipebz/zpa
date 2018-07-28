@@ -44,7 +44,7 @@ public class DeclareSectionWithoutDeclarationsCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         if (node.hasDirectChildren(PlSqlKeyword.DECLARE) && !node.hasDescendant(PlSqlGrammar.DECLARE_SECTION)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
 }

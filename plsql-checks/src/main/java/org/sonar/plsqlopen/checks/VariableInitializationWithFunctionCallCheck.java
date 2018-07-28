@@ -45,7 +45,7 @@ public class VariableInitializationWithFunctionCallCheck extends AbstractBaseChe
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION)) {
             AstNode expression = node.getLastChild();
             if (expression.is(PlSqlGrammar.METHOD_CALL)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
     }

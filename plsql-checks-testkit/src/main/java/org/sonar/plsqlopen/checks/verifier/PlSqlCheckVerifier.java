@@ -23,28 +23,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
-import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.issue.NoSonarFilter;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
+import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
-import org.sonar.plsqlopen.squid.PlSqlAstScanner;
+import org.sonar.plsqlopen.squid.PlSqlAstWalker;
+import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
-import com.google.common.io.Files;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
 
@@ -52,34 +45,22 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
 
     private List<TestIssue> expectedIssues = new ArrayList<>();
     
-    public static void verify(String filename, PlSqlCheck check) {
-        verify(filename, check, null);
+    public static List<PreciseIssue> scanFileForIssues(File file, FormsMetadata metadata, PlSqlCheck check) {
+        PlSqlAstWalker walker = new PlSqlAstWalker(Arrays.asList(new SymbolVisitor(), check));
+        walker.walk((TestPlSqlVisitorRunner.createContext(file, metadata)));
+        return check.issues();
     }
     
-    public static void verify(String filename, PlSqlCheck check, FormsMetadata metadata) {
-        File file = new File(filename);
+    public static void verify(String path, PlSqlCheck check) {
+        verify(path, check, null);
+    }
+    
+    public static void verify(String path, PlSqlCheck check, FormsMetadata metadata) {
         PlSqlCheckVerifier verifier = new PlSqlCheckVerifier();
-        
-        DefaultInputFile inputFile;
-        
-        try {
-            inputFile = new TestInputFileBuilder("key", filename)
-                    .setLanguage("plsqlopen")
-                    .setCharset(StandardCharsets.UTF_8)
-                    .initMetadata(Files.toString(file, StandardCharsets.UTF_8))
-                    .setModuleBaseDir(Paths.get(""))
-                    .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        
-        SensorContextTester context = SensorContextTester.create(new File("."));
-        context.fileSystem().add(inputFile);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check, verifier), new NoSonarFilter(), metadata, false);
-        Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
-        
-        Iterator<AnalyzerMessage> actualIssues = getActualIssues(issues);
+        File file = new File(path);
+        TestPlSqlVisitorRunner.scanFile(file, metadata, verifier);
+
+        Iterator<PreciseIssue> actualIssues = getActualIssues(file, metadata, check);
         List<TestIssue> expectedIssues = Ordering.natural().onResultOf(TestIssue::line).sortedCopy(verifier.expectedIssues);
 
         for (TestIssue expected : expectedIssues) {
@@ -91,45 +72,38 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         }
 
         if (actualIssues.hasNext()) {
-            AnalyzerMessage issue = actualIssues.next();
+            PreciseIssue issue = actualIssues.next();
             throw new AssertionError(
-                    "Unexpected issue at line " + line(issue) + ": \"" + issue.getText(Locale.ENGLISH) + "\"");
+                    "Unexpected issue at line " + line(issue) + ": \"" + issue.primaryLocation().message() + "\"");
         }
 
     }
 
-    private static int line(AnalyzerMessage issue) {
-        return issue.getLine();
-    }
-
-    private static void verifyIssue(TestIssue expected, AnalyzerMessage actual) {
+    private static void verifyIssue(TestIssue expected, PreciseIssue actual) {
         if (line(actual) > expected.line()) {
             fail("Missing issue at line " + expected.line());
         }
         if (line(actual) < expected.line()) {
-            fail("Unexpected issue at line " + line(actual) + ": \"" + actual.getText(Locale.ENGLISH) + "\"");
-        }
-        if ((expected.startColumn() != null || expected.endColumn() != null || expected.endLine() != null) && actual.getLocation() == null) {
-            fail("The current rule does not support precise location.");
+            fail("Unexpected issue at line " + line(actual) + ": \"" + actual.primaryLocation().message() + "\"");
         }
         if (expected.message() != null) {
-            assertThat(actual.getText(Locale.ENGLISH)).as("Bad message at line " + expected.line())
+            assertThat(actual.primaryLocation().message()).as("Bad message at line " + expected.line())
                     .isEqualTo(expected.message());
         }
         if (expected.effortToFix() != null) {
-            assertThat(actual.getCost()).as("Bad effortToFix at line " + expected.line())
+            assertThat(actual.cost().intValue()).as("Bad effortToFix at line " + expected.line())
                     .isEqualTo(expected.effortToFix());
         }
         if (expected.startColumn() != null) {
-            assertThat(actual.getLocation().startCharacter + 1).as("Bad start column at line " + expected.line())
+            assertThat(actual.primaryLocation().startLineOffset() + 1).as("Bad start column at line " + expected.line())
                     .isEqualTo(expected.startColumn());
         }
         if (expected.endColumn() != null) {
-            assertThat(actual.getLocation().endCharacter + 1).as("Bad end column at line " + expected.line())
+            assertThat(actual.primaryLocation().endLineOffset() + 1).as("Bad end column at line " + expected.line())
                     .isEqualTo(expected.endColumn());
         }
         if (expected.endLine() != null) {
-            assertThat(actual.getLocation().endLine).as("Bad end line at line " + expected.line())
+            assertThat(actual.primaryLocation().endLine()).as("Bad end line at line " + expected.line())
                     .isEqualTo(expected.endLine());
         }
         if (expected.secondaryLines() != null) {
@@ -138,19 +112,31 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
         }
     }
 
-    private static List<Integer> secondary(AnalyzerMessage issue) {
+    private static List<Integer> secondary(PreciseIssue issue) {
         List<Integer> result = new ArrayList<>();
 
-        for (AnalyzerMessage issueLocation : issue.getSecondaryLocations()) {
-            result.add(issueLocation.getLine());
+        for (IssueLocation issueLocation : issue.secondaryLocations()) {
+            result.add(issueLocation.startLine());
         }
 
         return Ordering.natural().sortedCopy(result);
     }
 
-    private static Iterator<AnalyzerMessage> getActualIssues(Collection<AnalyzerMessage> issues) {
-        List<AnalyzerMessage> sortedIssues = Ordering.natural().onResultOf(PlSqlCheckVerifier::line).sortedCopy(issues);
+    private static Iterator<PreciseIssue> getActualIssues(File file, FormsMetadata metadata, PlSqlCheck check) {
+        List<PreciseIssue> issues = scanFileForIssues(file, metadata, check);
+        List<PreciseIssue> sortedIssues = Ordering.natural().onResultOf(new IssueToLine()).sortedCopy(issues);
         return sortedIssues.iterator();
+    }
+
+    private static class IssueToLine implements Function<PreciseIssue, Integer> {
+        @Override
+        public Integer apply(PreciseIssue issue) {
+            return line(issue);
+        }
+    }
+
+    private static int line(PreciseIssue issue) {
+        return issue.primaryLocation().startLine();
     }
 
     @Override

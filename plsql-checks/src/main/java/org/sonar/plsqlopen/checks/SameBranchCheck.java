@@ -24,10 +24,10 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -83,10 +83,8 @@ public class SameBranchCheck extends AbstractBaseCheck {
         final int previousBranchIndex = index - 1;
         AstNode otherBranch = branches.get(previousBranchIndex);
         if (CheckUtils.equalNodes(otherBranch, branch)) {
-            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                    branch,
-                    ImmutableList.of(newLocation("Original", otherBranch)),
-                    otherBranch.getToken().getLine());
+            addIssue(branch, getLocalizedMessage(CHECK_KEY), otherBranch.getToken().getLine())
+                .secondary(otherBranch, "Original");
             return;
         }
     }

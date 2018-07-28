@@ -47,7 +47,7 @@ public class CharacterDatatypeUsageCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         AstNode datatype = node.getFirstChild();
         if (datatype.is(PlSqlKeyword.CHAR, PlSqlKeyword.VARCHAR)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, datatype.getTokenValue());
+            addIssue(node, getLocalizedMessage(CHECK_KEY), datatype.getTokenValue());
         }
     }
 

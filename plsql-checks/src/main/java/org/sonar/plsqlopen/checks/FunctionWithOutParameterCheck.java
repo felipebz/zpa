@@ -45,7 +45,7 @@ public class FunctionWithOutParameterCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         if (node.hasParent(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_FUNCTION) &&
             node.hasDirectChildren(PlSqlKeyword.OUT)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
 

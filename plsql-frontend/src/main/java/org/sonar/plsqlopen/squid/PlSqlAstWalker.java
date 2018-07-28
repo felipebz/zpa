@@ -46,9 +46,10 @@ public class PlSqlAstWalker {
     public void walk(PlSqlVisitorContext context) {
         for (PlSqlVisitor check : checks) {
             check.setContext(context);
+            check.startScan();
             check.init();
 
-            for (AstNodeType type : check.getAstNodeTypesToVisit()) {
+            for (AstNodeType type : check.subscribedKinds()) {
                 List<PlSqlVisitor> visitorsByType = getAstVisitors(type);
                 visitorsByType.add(check);
                 putAstVisitors(type, visitorsByType);

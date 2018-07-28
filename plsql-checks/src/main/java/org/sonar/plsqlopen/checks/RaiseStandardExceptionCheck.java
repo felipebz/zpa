@@ -73,7 +73,7 @@ public class RaiseStandardExceptionCheck extends AbstractBaseCheck {
             String exceptionName = exceptionIdentifier.getTokenOriginalValue();
             
             if (standardExceptions.contains(exceptionName.toUpperCase())) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), exceptionIdentifier, exceptionName);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), exceptionIdentifier.getTokenLine(), exceptionName);
             }
         }
     }

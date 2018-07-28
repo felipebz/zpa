@@ -53,11 +53,11 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
             AstNode parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION);
             
             if (!hasExceptionHandling(parentBlock)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         } else {
             if (!getContext().getCurrentScope().hasExceptionHandler()) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
     }

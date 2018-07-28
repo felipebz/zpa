@@ -54,7 +54,7 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
             }
             
             if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), candidate);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.getTokenLine());
             }
         }
     }

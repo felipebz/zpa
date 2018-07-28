@@ -94,8 +94,7 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
             }
             
             if (alias != null && alias.length() < acceptedLength) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                        reference.alias,
+                addIssue(reference.alias, getLocalizedMessage(CHECK_KEY), 
                         reference.table.getTokenOriginalValue(),
                         reference.alias.getTokenOriginalValue());
             }

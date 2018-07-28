@@ -19,23 +19,118 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import org.sonar.plsqlopen.PlSqlVisitorContext;
 
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Token;
 
-public abstract class PlSqlCheck extends PlSqlVisitor {
+public class PlSqlCheck extends PlSqlVisitor {
 
-    protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
-        return new PlSqlVisitorContext.Location(message, node);
+    private List<PreciseIssue> issues = new ArrayList<>();
+    
+    @Override
+    public void startScan() {
+        issues.clear();
     }
     
-    /**
-     * @deprecated since 1.1.0. Use {@link #getContext()} instead.
-     * @return the context.
-     */
-    @Deprecated
-    public PlSqlVisitorContext getPlSqlContext() {
-        return getContext();
+    public List<PreciseIssue> issues() {
+        return Collections.unmodifiableList(new ArrayList<>(issues));
     }
 
+    public List<PreciseIssue> scanFileForIssues(PlSqlVisitorContext context) {
+        issues.clear();
+        scanFile(context);
+        return issues();
+    }
+
+    public final PreciseIssue addIssue(AstNode node, String message) {
+        PreciseIssue newIssue = new PreciseIssue(IssueLocation.preciseLocation(node, message));
+        issues.add(newIssue);
+        return newIssue;
+    }
+    
+    public final PreciseIssue addIssue(AstNode node, String message, Object... messageParameters) {
+        return addIssue(node, MessageFormat.format(message, messageParameters));
+    }
+
+    public final PreciseIssue addIssue(IssueLocation primaryLocation) {
+        PreciseIssue newIssue = new PreciseIssue(primaryLocation);
+        issues.add(newIssue);
+        return newIssue;
+    }
+
+    public final PreciseIssue addLineIssue(String message, int lineNumber) {
+        PreciseIssue newIssue = new PreciseIssue(IssueLocation.atLineLevel(message, lineNumber));
+        issues.add(newIssue);
+        return newIssue;
+    }
+    
+    public final PreciseIssue addLineIssue(String message, int lineNumber, Object... messageParameters) {
+        return addLineIssue(MessageFormat.format(message, messageParameters), lineNumber);
+    }
+
+    public final PreciseIssue addFileIssue(String message) {
+        PreciseIssue newIssue = new PreciseIssue(IssueLocation.atFileLevel(message));
+        issues.add(newIssue);
+        return newIssue;
+    }
+    
+    public final PreciseIssue addFileIssue(String message, Object... messageParameters) {
+        return addFileIssue(MessageFormat.format(message, messageParameters));
+    }
+
+    public final PreciseIssue addIssue(Token token, String message) {
+        return addIssue(new AstNode(token), message);
+    }
+    
+    public final PreciseIssue addIssue(Token token, String message, Object... messageParameters) {
+        return addIssue(token, MessageFormat.format(message, messageParameters));
+    }
+
+    public static class PreciseIssue {
+
+        private final IssueLocation primaryLocation;
+        private Integer cost;
+        private final List<IssueLocation> secondaryLocations;
+
+        private PreciseIssue(IssueLocation primaryLocation) {
+            this.primaryLocation = primaryLocation;
+            this.secondaryLocations = new ArrayList<>();
+        }
+
+        @Nullable
+        public Integer cost() {
+            return cost;
+        }
+
+        public PreciseIssue withCost(int cost) {
+            this.cost = cost;
+            return this;
+        }
+
+        public IssueLocation primaryLocation() {
+            return primaryLocation;
+        }
+
+        public PreciseIssue secondary(AstNode node, @Nullable String message) {
+            secondaryLocations.add(IssueLocation.preciseLocation(node, message));
+            return this;
+        }
+
+        public PreciseIssue secondary(IssueLocation issueLocation) {
+            secondaryLocations.add(issueLocation);
+            return this;
+        }
+
+        public List<IssueLocation> secondaryLocations() {
+            return secondaryLocations;
+        }
+    }
 }

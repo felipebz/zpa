@@ -21,11 +21,11 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
+import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -52,10 +52,8 @@ public class IdenticalExpressionCheck extends AbstractBaseCheck {
             AstNode rightSide = node.getLastChild();
     
             if (CheckUtils.equalNodes(leftSide, rightSide)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                        leftSide,
-                        ImmutableList.of(newLocation("Original", rightSide)),
-                        operator.getTokenValue());
+                addIssue(leftSide, getLocalizedMessage(CHECK_KEY), operator.getTokenValue())
+                    .secondary(rightSide, "Original");
             }
             
         }

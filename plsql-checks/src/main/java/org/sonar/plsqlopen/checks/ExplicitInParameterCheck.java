@@ -44,7 +44,7 @@ public class ExplicitInParameterCheck extends AbstractBaseCheck {
     @Override
     public void visitNode(AstNode node) {
         if (!node.hasDirectChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
 

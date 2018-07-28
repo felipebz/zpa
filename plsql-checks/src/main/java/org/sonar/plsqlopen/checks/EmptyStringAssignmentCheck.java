@@ -46,7 +46,7 @@ public class EmptyStringAssignmentCheck extends AbstractBaseCheck {
         AstNode value = node.getLastChild(PlSqlGrammar.LITERAL);
         
         if (value != null && CheckUtils.isEmptyString(value)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), value);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), value.getTokenLine());
         }
     }
 

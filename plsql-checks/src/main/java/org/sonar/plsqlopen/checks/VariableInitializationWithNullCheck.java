@@ -45,7 +45,7 @@ public class VariableInitializationWithNullCheck extends AbstractBaseCheck {
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.RECORD_FIELD_DECLARATION)) {
             AstNode expression = node.getLastChild();
             if (CheckUtils.isNullLiteralOrEmptyString(expression)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
     }

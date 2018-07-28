@@ -19,10 +19,12 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.squid.PlSqlAstWalker;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
@@ -31,11 +33,14 @@ import com.sonar.sslr.api.Token;
 public class PlSqlVisitor {
 
     private PlSqlVisitorContext context;
-
     private final Set<AstNodeType> astNodeTypesToVisit = new HashSet<>();
-    
-    public Set<AstNodeType> getAstNodeTypesToVisit() {
+
+    public Set<AstNodeType> subscribedKinds() {
         return astNodeTypesToVisit;
+    }
+    
+    public void startScan() {
+        // default implementation does nothing
     }
     
     public void init() {
@@ -61,6 +66,10 @@ public class PlSqlVisitor {
     public void leaveNode(AstNode node) {
         // default implementation does nothing
     }
+
+    public PlSqlVisitorContext getContext() {
+        return context;
+    }
     
     public void subscribeTo(AstNodeType... astNodeTypes) {
         for (AstNodeType type : astNodeTypes) {
@@ -68,10 +77,12 @@ public class PlSqlVisitor {
         }
     }
 
-    public PlSqlVisitorContext getContext() {
-        return context;
+    public void scanFile(PlSqlVisitorContext context) {
+        
+        PlSqlAstWalker walker = new PlSqlAstWalker(Collections.singleton(this));
+        walker.walk(context);
     }
-    
+
     public void setContext(PlSqlVisitorContext context) {
         this.context = context;
     }

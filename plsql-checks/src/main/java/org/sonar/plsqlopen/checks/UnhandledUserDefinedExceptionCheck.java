@@ -58,7 +58,7 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
             boolean checkException = exceptionShouldBeChecked(symbols.getFirst());
             
             if (checkException && !isHandled(identifierName)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, identifierName);
+                addIssue(node, getLocalizedMessage(CHECK_KEY), identifierName);
             }
         }
     }

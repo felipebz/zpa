@@ -24,11 +24,11 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -80,10 +80,8 @@ public class DuplicatedValueInInCheck extends AbstractBaseCheck {
             AstNode other = values.get(j);
             
             if (CheckUtils.equalNodes(current, other)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                        current,
-                        ImmutableList.of(newLocation("Original", other)),
-                        current.getTokenOriginalValue());
+                addIssue(current, getLocalizedMessage(CHECK_KEY), current.getTokenOriginalValue())
+                    .secondary(other, "Original");
                 return;
             }
         }

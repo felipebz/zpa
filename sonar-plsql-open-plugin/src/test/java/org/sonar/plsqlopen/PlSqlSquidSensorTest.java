@@ -20,6 +20,10 @@
 package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +32,8 @@ import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -38,6 +44,8 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
+import org.sonar.api.measures.FileLinesContext;
+import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
@@ -48,6 +56,7 @@ public class PlSqlSquidSensorTest {
 
     private PlSqlSquidSensor sensor;
     private SensorContextTester context;
+    private FileLinesContext fileLinesContext;
     
     @Before
     public void setUp() {
@@ -58,7 +67,12 @@ public class PlSqlSquidSensorTest {
                 .build();
         CheckFactory checkFactory = new CheckFactory(activeRules);
         context = SensorContextTester.create(new File("."));
-        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings().asConfig(), new NoSonarFilter());
+        
+        FileLinesContextFactory fileLinesContextFactory = mock(FileLinesContextFactory.class);
+        fileLinesContext = mock(FileLinesContext.class);
+        when(fileLinesContextFactory.createFor(Mockito.any(InputFile.class))).thenReturn(fileLinesContext);
+    
+        sensor = new PlSqlSquidSensor(checkFactory, new MapSettings().asConfig(), new NoSonarFilter(), fileLinesContextFactory, null);
     }
     
     @Test
@@ -91,6 +105,8 @@ public class PlSqlSquidSensorTest {
       assertThat(context.measure(key, CoreMetrics.COMPLEXITY).value()).isEqualTo(6);
       assertThat(context.measure(key, CoreMetrics.FUNCTIONS).value()).isEqualTo(2);
       assertThat(context.measure(key, CoreMetrics.STATEMENTS).value()).isEqualTo(8);
+      verify(fileLinesContext, times(8)).setIntValue(Mockito.eq(CoreMetrics.EXECUTABLE_LINES_DATA_KEY), Mockito.anyInt(), Mockito.eq(1));
+      verify(fileLinesContext).save();
 
     }
     

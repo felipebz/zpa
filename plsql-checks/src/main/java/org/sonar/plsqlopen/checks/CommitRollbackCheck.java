@@ -52,7 +52,7 @@ public class CommitRollbackCheck extends AbstractBaseCheck {
         }
         
         if (!scope.isAutonomousTransaction() && !outerScope.tree().is(PlSqlGrammar.BLOCK_STATEMENT)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, node.getTokenValue());
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine(), node.getTokenValue());
         }
     }
 

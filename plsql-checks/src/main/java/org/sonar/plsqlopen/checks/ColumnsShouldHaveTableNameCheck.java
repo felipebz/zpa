@@ -64,7 +64,7 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
             }
             
             if (symbol == null) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), candidate, candidate.getTokenOriginalValue());
+                addIssue(candidate, getLocalizedMessage(CHECK_KEY), candidate.getTokenOriginalValue());
             }
         }
     }

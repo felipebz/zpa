@@ -53,7 +53,7 @@ public class ReturnOfBooleanExpressionCheck extends AbstractBaseCheck {
 
             if (firstBoolean != null && secondBoolean != null
                     && !firstBoolean.getTokenValue().equals(secondBoolean.getTokenValue())) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
     }

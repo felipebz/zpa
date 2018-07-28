@@ -55,7 +55,7 @@ public class TooManyRowsHandlerCheck extends AbstractBaseCheck {
                 // and have only one NULL_STATEMENT
                 List<AstNode> children = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren();
                 if (children.size() == 1 && children.get(0).getFirstChild().is(PlSqlGrammar.NULL_STATEMENT)) {
-                    getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                    addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
                 }
             }
         }

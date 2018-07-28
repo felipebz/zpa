@@ -58,7 +58,7 @@ public class ComparisonWithNullCheck extends AbstractBaseCheck {
                     suggestion = "IS NOT NULL";  
                 }
                 
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node, suggestion);
+                addIssue(node, getLocalizedMessage(CHECK_KEY), suggestion);
                 continue;
             }
         }

@@ -45,7 +45,7 @@ public class UnnecessaryElseCheck extends AbstractBaseCheck {
         AstNode ifStatement = node.getParent();
         
         if (!hasElsifClause(ifStatement) && hasTerminationStatement(ifStatement)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
     

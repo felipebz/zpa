@@ -51,7 +51,7 @@ public class NotFoundCheck extends AbstractBaseCheck  {
             AstNode percentCandidate = foundCandidate.getPreviousAstNode();
             
             if (percentCandidate.is(PlSqlPunctuator.MOD) && "FOUND".equals(foundCandidate.getTokenValue())) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
     }

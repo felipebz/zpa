@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.squid;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.InterruptedIOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,20 +28,25 @@ import java.util.Collection;
 import java.util.List;
 
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.issue.NewIssue;
+import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.DefaultPlSqlVisitorContext;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
+import org.sonar.plsqlopen.PlSqlChecks;
 import org.sonar.plsqlopen.PlSqlFile;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
@@ -53,6 +60,7 @@ import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
+import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.impl.Parser;
@@ -63,17 +71,13 @@ public class PlSqlAstScanner {
     
     private final SensorContext context;
     private final Parser<Grammar> parser;
-    private final Collection<PlSqlCheck> checks;
+    private final Collection<PlSqlVisitor> checks;
     private final FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
 	private FileLinesContextFactory fileLinesContextFactory;
-    
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, 
-    		FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled) {
-        this(context, checks, noSonarFilter,formsMetadata, isErrorRecoveryEnabled, null);
-    }
+    private PlSqlChecks plsqlChecks;
 
-    public PlSqlAstScanner(SensorContext context, Collection<PlSqlCheck> checks, NoSonarFilter noSonarFilter, 
+    public PlSqlAstScanner(SensorContext context, Collection<PlSqlVisitor> checks, NoSonarFilter noSonarFilter, 
     		FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled, FileLinesContextFactory fileLinesContextFactory) {
         this.context = context;
         this.checks = checks;
@@ -82,35 +86,27 @@ public class PlSqlAstScanner {
 		this.fileLinesContextFactory = fileLinesContextFactory;
         this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
     }
+
+    public PlSqlAstScanner(SensorContext context, PlSqlChecks checks, NoSonarFilter noSonarFilter, 
+            FormsMetadata formsMetadata, boolean isErrorRecoveryEnabled, FileLinesContextFactory fileLinesContextFactory) {
+        this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
+        this.plsqlChecks = checks;
+    }
     
     @VisibleForTesting
-    public Collection<AnalyzerMessage> scanFile(InputFile inputFile) {
+    public void scanFile(InputFile inputFile) {
         PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
         
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
         FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
 
-        List<PlSqlVisitor> checksToRun = new ArrayList<>();
-        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
-        
-        checks.stream()
-              .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
-              .forEach(checksToRun::add);
-        
-        checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
-        checksToRun.add(metricsVisitor);
-        checksToRun.add(complexityVisitor);
-        checksToRun.add(functionComplexityVisitor);
-        checksToRun.add(new CpdVisitor(context, inputFile));
-        
-        PlSqlAstWalker walker = new PlSqlAstWalker(checksToRun);
-        
-        PlSqlVisitorContext visitorContext;
+        PlSqlVisitorContext newVisitorContext;
         try {
-            visitorContext = new DefaultPlSqlVisitorContext(parser.parse(plSqlFile.content()), plSqlFile, formsMetadata);
+            AstNode root = parser.parse(plSqlFile.content());
+            newVisitorContext = new PlSqlVisitorContext(root, plSqlFile, formsMetadata);
         } catch (RecognitionException e) {
-            visitorContext = new DefaultPlSqlVisitorContext(plSqlFile, e, formsMetadata);
+            newVisitorContext = new PlSqlVisitorContext(plSqlFile, e, formsMetadata);
             LOG.error("Unable to parse file: " + inputFile.toString());
             LOG.error(e.getMessage());
         } catch (Exception e) {
@@ -120,10 +116,32 @@ public class PlSqlAstScanner {
             throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
         }
         
-        try {
-            walker.walk(visitorContext);
-        } catch (Throwable e) {
-            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
+        List<PlSqlVisitor> newChecksToRun = new ArrayList<>();
+        newChecksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
+        
+        newChecksToRun.addAll(
+                checks.stream()
+                    .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
+                    .filter(check -> check instanceof PlSqlCheck)
+                    .map(check -> (PlSqlVisitor) check)
+                    .collect(toList()));
+        
+        newChecksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
+        newChecksToRun.add(metricsVisitor);
+        newChecksToRun.add(complexityVisitor);
+        newChecksToRun.add(functionComplexityVisitor);
+        newChecksToRun.add(new CpdVisitor(context, inputFile));
+        
+        PlSqlAstWalker newWalker = new PlSqlAstWalker(newChecksToRun);
+        newWalker.walk(newVisitorContext);
+        
+        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
+        
+        for (PlSqlVisitor check : newChecksToRun) {
+            List<PreciseIssue> issues = ((PlSqlCheck)check).issues();
+            if (!issues.isEmpty()) {
+                saveIssues(inputFile, check, issues);
+            }
         }
         
         saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, metricsVisitor.getNumberOfStatements());
@@ -132,17 +150,54 @@ public class PlSqlAstScanner {
         saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, complexityVisitor.getComplexity());
         saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, functionComplexityVisitor.getNumberOfFunctions());
         
-		if (fileLinesContextFactory != null) {
-			FileLinesContext fileLinesContext = fileLinesContextFactory.createFor(inputFile);
-			for (int line : metricsVisitor.getExecutableLines()) {
-				fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1);
-			}
-			fileLinesContext.save();
-		}
-        
-        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
-        
-        return visitorContext.getIssues();
+        if (fileLinesContextFactory != null) {
+            FileLinesContext fileLinesContext = fileLinesContextFactory.createFor(inputFile);
+            for (int line : metricsVisitor.getExecutableLines()) {
+                fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1);
+            }
+            fileLinesContext.save();
+        }
+    }
+    
+    private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues) {
+        RuleKey ruleKey = plsqlChecks.ruleKey(check);
+        for (PreciseIssue preciseIssue : issues) {
+
+            NewIssue newIssue = context.newIssue().forRule(ruleKey);
+
+            Integer cost = preciseIssue.cost();
+            if (cost != null) {
+                newIssue.gap(cost.doubleValue());
+            }
+
+            newIssue.at(newLocation(inputFile, newIssue, preciseIssue.primaryLocation()));
+
+            for (IssueLocation secondaryLocation : preciseIssue.secondaryLocations()) {
+                newIssue.addLocation(newLocation(inputFile, newIssue, secondaryLocation));
+            }
+
+            newIssue.save();
+        }
+    }
+
+    private static NewIssueLocation newLocation(InputFile inputFile, NewIssue issue, IssueLocation location) {
+        NewIssueLocation newLocation = issue.newLocation().on(inputFile);
+        if (location.startLine() != IssueLocation.UNDEFINED_LINE) {
+            TextRange range;
+            if (location.startLineOffset() == IssueLocation.UNDEFINED_OFFSET) {
+                range = inputFile.selectLine(location.startLine());
+            } else {
+                range = inputFile.newRange(location.startLine(), location.startLineOffset(), location.endLine(),
+                        location.endLineOffset());
+            }
+            newLocation.at(range);
+        }
+
+        String message = location.message();
+        if (message != null) {
+            newLocation.message(message);
+        }
+        return newLocation;
     }
     
     private static void checkInterrupted(Exception e) {

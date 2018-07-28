@@ -38,7 +38,7 @@ public class ParsingErrorCheck extends AbstractBaseCheck {
     public void init() {
         RecognitionException parsingException = getContext().parsingException();
         if (parsingException != null) {
-            getContext().createLineViolation(this, parsingException.getMessage(), parsingException.getLine());
+            addLineIssue(parsingException.getMessage(), parsingException.getLine());
         }
     }
     

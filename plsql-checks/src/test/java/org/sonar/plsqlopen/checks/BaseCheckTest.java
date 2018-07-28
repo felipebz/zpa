@@ -19,27 +19,13 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.io.File;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Locale;
 
 import org.junit.Before;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
-import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
-import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.issue.NoSonarFilter;
-import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-
-import com.google.common.collect.ImmutableList;
 
 public class BaseCheckTest {
 
     private static final String defaultResourceFolder = "src/test/resources/checks/";
-    private DefaultFileSystem fs = new DefaultFileSystem(new File("."));
     
     @Before
     public void setUp() {
@@ -48,21 +34,6 @@ public class BaseCheckTest {
     
     protected String getPath(String filename) {
         return defaultResourceFolder + filename;
-    }
-    
-    protected Collection<AnalyzerMessage> scanFile(String filename, PlSqlCheck check) {
-        TestInputFileBuilder inputFile = new TestInputFileBuilder("key", filename)
-                .setLanguage("plsqlopen")
-                .setCharset(Charset.forName("UTF-8"))
-                .setModuleBaseDir(Paths.get(defaultResourceFolder));
-        DefaultInputFile file = inputFile.build();
-        fs.add(file);
-        
-        SensorContextTester context = SensorContextTester.create(new File("."));
-        context.setFileSystem(fs);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(check), new NoSonarFilter(), null, false);
-        return scanner.scanFile(file);
     }
     
 }

@@ -23,12 +23,12 @@ import java.util.Deque;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
+import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -58,11 +58,8 @@ public class VariableHidingCheck extends AbstractBaseCheck {
                 AstNode originalVariable = symbols.getLast().declaration();
                 
                 if (!originalVariable.equals(identifier)) {
-                    getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
-                            identifier,
-                            ImmutableList.of(newLocation("Original", originalVariable)),
-                            name,
-                            originalVariable.getTokenLine());
+                    addIssue(identifier, getLocalizedMessage(CHECK_KEY), name, originalVariable.getTokenLine())
+                        .secondary(originalVariable, "Original");
                 }
             }
         }

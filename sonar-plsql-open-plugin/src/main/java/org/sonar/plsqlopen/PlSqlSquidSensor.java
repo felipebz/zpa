@@ -23,9 +23,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -38,11 +37,9 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.FileLinesContextFactory;
-import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.ProgressReport;
@@ -59,7 +56,6 @@ public class PlSqlSquidSensor implements Sensor {
     private final PlSqlChecks checks;
     private final boolean isErrorRecoveryEnabled;
 
-    private SensorContext context;
     private FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
 	private FileLinesContextFactory fileLinesContextFactory;
@@ -93,21 +89,16 @@ public class PlSqlSquidSensor implements Sensor {
     }
 
     @Override
-    public void execute(SensorContext context) {
-        this.context = context;
-        
+    public void execute(SensorContext context) {        
         FilePredicates p = context.fileSystem().predicates();
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
         
         ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
+        PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
         
-        progressReport.start(inputFiles);
+        progressReport.start(inputFiles.stream().map(InputFile::toString).collect(Collectors.toList()));
         for (InputFile inputFile : inputFiles) {
-            Collection<AnalyzerMessage> issues = scanner.scanFile(inputFile);
-            for (AnalyzerMessage analyzerMessage : issues) {
-                reportIssue(inputFile, analyzerMessage);
-            }
+            scanner.scanFile(inputFile);
             
             progressReport.nextFile();
         }
@@ -126,47 +117,6 @@ public class PlSqlSquidSensor implements Sensor {
         } catch (IOException e) {
             LOG.error("Error reading the metadata file at {}.", metadataFile, e);
         }
-    }
-    
-    @VisibleForTesting
-    void reportIssue(InputFile inputFile, AnalyzerMessage message) {
-        RuleKey key = checks.ruleKey((PlSqlCheck) message.getCheck());
-        PlSqlIssue issue = PlSqlIssue.create(context, key, message.getCost());
-        String text = message.getText(Locale.ENGLISH);
-        Integer line = message.getLine();
-        if (line == null) {
-            // either an issue at file or folder level
-            issue.setPrimaryLocationOnFile(inputFile, text);
-        } else {
-            AnalyzerMessage.TextSpan location = message.getLocation();
-            if (location != null) {
-                int column = message.getLocation().startCharacter;
-                int endLine = message.getLocation().endLine;
-                int endColumn = message.getLocation().endCharacter;
-                
-                try {
-                    issue.setPrimaryLocation(inputFile, text, line, column, endLine, endColumn);
-                } catch (IllegalArgumentException e) {
-                    // the previous setPrimaryLocation will fail if it is a multiline token
-                    // for now, just fall back to old method
-                    LOG.debug("Fail to set primary location", e);
-                    issue.setPrimaryLocation(inputFile, text, line, -1, 0, -1);
-                }
-            } else {
-                issue.setPrimaryLocation(inputFile, text, line, -1, 0, -1);
-            }
-        }
-        for (AnalyzerMessage location : message.getSecondaryLocations()) {
-            AnalyzerMessage.TextSpan secondarySpan = location.getLocation();
-            
-            String secondaryText = location.getText(Locale.ENGLISH);
-            try {
-                issue.addSecondaryLocation(inputFile, secondarySpan.startLine, secondarySpan.startCharacter, secondarySpan.endLine, secondarySpan.endCharacter, secondaryText);
-            } catch (IllegalArgumentException e) {
-                LOG.debug("addSecondaryLocation FAIL", e);
-            }
-        }
-        issue.save();
     }
     
     @Override

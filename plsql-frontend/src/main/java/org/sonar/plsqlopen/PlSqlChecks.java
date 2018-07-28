@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -37,7 +37,7 @@ import com.google.common.collect.Lists;
 public class PlSqlChecks {
 
     private final CheckFactory checkFactory;
-    private Set<Checks<PlSqlCheck>> checksByRepository = new HashSet<>();
+    private Set<Checks<PlSqlVisitor>> checksByRepository = new HashSet<>();
 
     private PlSqlChecks(CheckFactory checkFactory) {
       this.checkFactory = checkFactory;
@@ -50,7 +50,7 @@ public class PlSqlChecks {
     @SuppressWarnings("rawtypes")
     public PlSqlChecks addChecks(String repositoryKey, Iterable<Class> checkClass) {
       checksByRepository.add(checkFactory
-        .<PlSqlCheck>create(repositoryKey)
+        .<PlSqlVisitor>create(repositoryKey)
         .addAnnotatedChecks(checkClass));
 
       return this;
@@ -67,10 +67,10 @@ public class PlSqlChecks {
       return this;
     }
 
-    public List<PlSqlCheck> all() {
-      List<PlSqlCheck> allVisitors = new ArrayList<>();
+    public List<PlSqlVisitor> all() {
+      List<PlSqlVisitor> allVisitors = new ArrayList<>();
 
-      for (Checks<PlSqlCheck> checks : checksByRepository) {
+      for (Checks<PlSqlVisitor> checks : checksByRepository) {
         allVisitors.addAll(checks.all());
       }
 
@@ -78,10 +78,10 @@ public class PlSqlChecks {
     }
 
     @Nullable
-    public RuleKey ruleKey(PlSqlCheck check) {
+    public RuleKey ruleKey(PlSqlVisitor check) {
       RuleKey ruleKey;
 
-      for (Checks<PlSqlCheck> checks : checksByRepository) {
+      for (Checks<PlSqlVisitor> checks : checksByRepository) {
         ruleKey = checks.ruleKey(check);
 
         if (ruleKey != null) {
@@ -92,7 +92,7 @@ public class PlSqlChecks {
     }
     
     @VisibleForTesting
-    public Set<Checks<PlSqlCheck>> getChecks() {
+    public Set<Checks<PlSqlVisitor>> getChecks() {
         return checksByRepository;
     }
     

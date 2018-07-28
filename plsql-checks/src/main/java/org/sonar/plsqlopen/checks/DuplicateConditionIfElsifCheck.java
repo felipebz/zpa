@@ -24,10 +24,10 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -78,10 +78,8 @@ public class DuplicateConditionIfElsifCheck extends AbstractBaseCheck {
         for (int j = 0; j < index; j++) {
             AstNode otherCondition = conditions.get(j);
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), 
-                        condition,
-                        ImmutableList.of(newLocation("Original", otherCondition)),
-                        otherCondition.getToken().getLine());
+                addIssue(condition, getLocalizedMessage(CHECK_KEY), otherCondition.getToken().getLine())
+                    .secondary(otherCondition, "Original");
                 return;
             }
         }

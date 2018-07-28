@@ -51,7 +51,7 @@ public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         AstNode singleIfChild = singleIfChild(node);
         if (singleIfChild != null && !hasElseOrElsif(node) && !hasElseOrElsif(singleIfChild)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), singleIfChild);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), singleIfChild.getTokenLine());
         }
     }
 

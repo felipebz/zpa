@@ -58,8 +58,8 @@ public class UnusedCursorCheck extends AbstractBaseCheck {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.CURSOR);
         for (Symbol symbol : symbols) {
             if (symbol.usages().isEmpty() && !symbol.declaration().getParent().hasDirectChildren(PlSqlKeyword.RETURN)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
-                        symbol.declaration().getParent(), symbol.declaration().getTokenOriginalValue());
+                addIssue(symbol.declaration().getParent(), getLocalizedMessage(CHECK_KEY),
+                        symbol.declaration().getTokenOriginalValue());
             }
         }
     }

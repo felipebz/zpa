@@ -90,8 +90,8 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
         List<Symbol> symbols = scope.getSymbols(Symbol.Kind.PARAMETER);
         for (Symbol symbol : symbols) {
             if (symbol.usages().isEmpty()) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY),
-                        symbol.declaration().getParent(), symbol.declaration().getTokenOriginalValue());
+                addIssue(symbol.declaration().getParent(), getLocalizedMessage(CHECK_KEY),
+                        symbol.declaration().getTokenOriginalValue());
             }
         }
     }

@@ -45,7 +45,7 @@ public class UselessParenthesisCheck extends AbstractBaseCheck {
         AstNode parent = node.getParent();
         if (parent.is(PlSqlGrammar.BRACKED_EXPRESSION) && 
             parent.getNumberOfChildren() == 3) {
-            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addIssue(node, getLocalizedMessage(CHECK_KEY));
         }
     }
 

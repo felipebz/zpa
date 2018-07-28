@@ -116,7 +116,8 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             }
             
             if (reportIssue) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), argument, value, verifier.matcher.getMethodName().toUpperCase());
+                addIssue(argument, getLocalizedMessage(CHECK_KEY), value, verifier.matcher.getMethodName().toUpperCase());
+                
             }
             
         }

@@ -48,7 +48,7 @@ public class CursorBodyInPackageSpecCheck extends AbstractBaseCheck {
         for (Symbol cursor : getContext().getCurrentScope().getSymbols(Kind.CURSOR)) {
             AstNode cursorDeclaration = cursor.declaration().getParent(); 
             if (cursorDeclaration.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), cursorDeclaration, cursor.name());
+                addIssue(cursorDeclaration, getLocalizedMessage(CHECK_KEY), cursor.name());
             }
         }
     }

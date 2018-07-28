@@ -21,18 +21,39 @@ package org.sonar.plsqlopen.checks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Collection;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
+import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.checks.PlSqlCheck.PreciseIssue;
+import org.sonar.plsqlopen.parser.PlSqlParser;
+import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+
+import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.RecognitionException;
+import com.sonar.sslr.impl.Parser;
 
 public class ParsingErrorCheckTest extends BaseCheckTest {
 
     @Test
     public void test() {
-        Collection<AnalyzerMessage> messages = scanFile("parsing_error.sql", new ParsingErrorCheck());
-        assertThat(messages).hasSize(1);
-        AnalyzerMessage issue = messages.iterator().next();
-        assertThat(issue.getLine()).isEqualTo(1);
+        File file = new File("src/test/resources/checks/parsing_error.sql");
+
+        Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
+        PlSqlVisitorContext context;
+        try {
+            parser.parse(file);
+            throw new IllegalStateException("Expected RecognitionException");
+        } catch (RecognitionException e) {
+            context = new PlSqlVisitorContext(null, e, null);
+        }
+
+        ParsingErrorCheck check = new ParsingErrorCheck();
+        List<PreciseIssue> issues = check.scanFileForIssues(context);
+        assertThat(issues).hasSize(1);
+        assertThat(issues.get(0).primaryLocation().startLine()).isEqualTo(1);
     }
 
 }

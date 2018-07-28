@@ -44,7 +44,7 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
     @Override
     public void visitNode(AstNode node) {
         if (!node.hasDirectChildren(DmlGrammar.INSERT_COLUMNS)) {
-            getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node);
+            addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
 }

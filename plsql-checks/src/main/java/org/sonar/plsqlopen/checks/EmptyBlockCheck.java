@@ -50,7 +50,7 @@ public class EmptyBlockCheck extends AbstractBaseCheck {
         if (statements.size() == 1) {
             List<AstNode> nullStatementSelect = statements.get(0).getChildren(PlSqlGrammar.NULL_STATEMENT);
             if (!nullStatementSelect.isEmpty()) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), statements.get(0));
+                addLineIssue(getLocalizedMessage(CHECK_KEY), statements.get(0).getTokenLine());
             }
         }
     }

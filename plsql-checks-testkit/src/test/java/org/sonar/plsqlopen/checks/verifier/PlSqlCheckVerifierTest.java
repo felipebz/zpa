@@ -24,17 +24,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.assertj.core.api.Fail;
 import org.junit.Test;
-import org.sonar.plsqlopen.AnalyzerMessage;
-import org.sonar.plsqlopen.AnalyzerMessage.TextSpan;
+import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.squid.AnalysisException;
-import org.sonar.plsqlopen.PlSqlVisitorContext;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
@@ -104,8 +101,8 @@ public class PlSqlCheckVerifierTest {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_shift.sql", getNoEffectCheck());
             Fail.fail("Test should fail");
-        } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("Use only '@+N' or '@-N' to shifts messages.");
+        } catch (AssertionError e) {
+            assertThat(e).hasMessage("Use only '@+N' or '@-N' to shifts messages.");
         }
     }
 
@@ -115,8 +112,8 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
                     getNoEffectCheck());
             Fail.fail("Test should fail");
-        } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("Invalid param at line 1: invalid");
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessage("Invalid param at line 1: invalid");
         }
     }
 
@@ -126,8 +123,8 @@ public class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
                     getNoEffectCheck());
             Fail.fail("Test should fail");
-        } catch (AnalysisException e) {
-            assertThat(e.getCause()).hasMessage("Invalid param at line 1: invalid");
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessage("Invalid param at line 1: invalid");
         }
     }
 
@@ -156,22 +153,23 @@ public class PlSqlCheckVerifierTest {
     private static class FakeCheck extends PlSqlCheck {
 
         Multimap<Integer, String> issues = LinkedListMultimap.create();
-        Multimap<Integer, AnalyzerMessage> preciseIssues = LinkedListMultimap.create();
+        Multimap<Integer, Set<IssueLocation>> preciseIssues = LinkedListMultimap.create();
 
         private FakeCheck withDefaultIssues() {
-            AnalyzerMessage withMultipleLocation = new AnalyzerMessage(this, "message4", new AnalyzerMessage.TextSpan(8, 9, 8, 10));
-            withMultipleLocation.getSecondaryLocations().add(new AnalyzerMessage(this, "no message", 3));
-            withMultipleLocation.getSecondaryLocations().add(new AnalyzerMessage(this, "no message", 4));
             return this.withIssue(1, "message")
                 .withIssue(2, "message1")
                 .withIssue(5, "message2")
                 .withIssue(6, "message3")
                 .withIssue(6, "message3")
-                .withPreciseIssue(withMultipleLocation)
-                .withPreciseIssue(new AnalyzerMessage(this, "no message", 9))
-                .withPreciseIssue(new AnalyzerMessage(this, "message12", new AnalyzerMessage.TextSpan(11, 5, 12, 11)))
+                .withPreciseIssue(
+                        IssueLocation.preciseLocation(mockNode(8, 9, 8, 10), "message4"),
+                        IssueLocation.atLineLevel("no message", 3),
+                        IssueLocation.atLineLevel("no message", 4)
+                        )
+                .withPreciseIssue(IssueLocation.atLineLevel("no message", 9))
+                .withPreciseIssue(IssueLocation.preciseLocation(mockNode(11, 5, 12, 11), "message12"))
                 .withIssue(14, "message17")
-                .withPreciseIssue(new AnalyzerMessage(this, "baseline", new AnalyzerMessage.TextSpan(15, 5, 15, 9)));
+                .withPreciseIssue(IssueLocation.preciseLocation(mockNode(15, 5, 15, 9), "baseline"));
         }
         
         private FakeCheck withIssue(int line, String message) {
@@ -179,8 +177,8 @@ public class PlSqlCheckVerifierTest {
             return this;
         }
         
-        private FakeCheck withPreciseIssue(AnalyzerMessage message) {
-            preciseIssues.put(message.getLine(), message);
+        private FakeCheck withPreciseIssue(IssueLocation... message) {
+            preciseIssues.put(message[0].startLine(), new LinkedHashSet<>(Arrays.asList(message)));
             return this;
         }
         
@@ -194,44 +192,35 @@ public class PlSqlCheckVerifierTest {
         public void visitFile(AstNode astNode) {
             for (Integer line : issues.keySet()) {
                 for (String message : issues.get(line)) {
-                    getContext().createViolation(this, message, mockLine(line));
+                    addLineIssue(message, line);
                 }
             }
             
-            for (AnalyzerMessage analyzerMessage : preciseIssues.values()) {
-                List<PlSqlVisitorContext.Location> secLocations = new ArrayList<>();
-                for (AnalyzerMessage secondaryLocation : analyzerMessage.getSecondaryLocations()) {
-                    secLocations.add(new PlSqlVisitorContext.Location("", mockPreciseLocation(secondaryLocation)));
+            for (Set<IssueLocation> locations : preciseIssues.values()) {
+                PreciseIssue issue = null;
+                for (IssueLocation location : locations) {
+                    if (issue == null) {
+                        issue = addIssue(location);
+                    } else {
+                        issue.secondary(location);
+                    }
                 }
-                getContext().createViolation(this, analyzerMessage.getText(Locale.ENGLISH), mockPreciseLocation(analyzerMessage), secLocations);
             }
         }
         
-        private static AstNode mockLine(int line) {
-            Token token = mock(Token.class);
-            when(token.getLine()).thenReturn(line);
-            when(token.getColumn()).thenReturn(1);
-            when(token.getOriginalValue()).thenReturn("");
-            
-            AstNode node = mock(AstNode.class);
-            when(node.getToken()).thenReturn(token);
-            when(node.getLastToken()).thenReturn(token);
-            
-            return node;
-        }
-        
-        private AstNode mockPreciseLocation(AnalyzerMessage message) {
-            TextSpan location = message.getLocation();
+        private AstNode mockNode(int startLine, int startCharacter, int endLine, int endCharacter) {
             
             Token token = mock(Token.class);
-            when(token.getLine()).thenReturn(location.startLine);
-            when(token.getColumn()).thenReturn(location.startCharacter - 1);
+            when(token.getLine()).thenReturn(startLine);
+            when(token.getColumn()).thenReturn(startCharacter - 1);
             when(token.getOriginalValue()).thenReturn("");
+            when(token.getValue()).thenReturn("");
             
             Token lastToken = mock(Token.class);
-            when(lastToken.getLine()).thenReturn(location.endLine);
-            when(lastToken.getColumn()).thenReturn(location.endCharacter - 1);
+            when(lastToken.getLine()).thenReturn(endLine);
+            when(lastToken.getColumn()).thenReturn(endCharacter - 1);
             when(lastToken.getOriginalValue()).thenReturn("");
+            when(lastToken.getValue()).thenReturn("");
             
             AstNode node = mock(AstNode.class);
             when(node.getToken()).thenReturn(token);

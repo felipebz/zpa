@@ -31,6 +31,7 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.checks.PlSqlVisitor;
 
 import com.google.common.collect.ImmutableList;
 
@@ -63,7 +64,7 @@ public class PlSqlChecksTest {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
         checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.<Class>of(MyRule.class));
         
-        PlSqlCheck defaultCheck = check(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY);
+        PlSqlVisitor defaultCheck = check(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY);
         
         assertThat(checks.all()).hasSize(1);
         assertThat(checks.ruleKey(defaultCheck)).isNotNull();
@@ -76,7 +77,7 @@ public class PlSqlChecksTest {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
         checks.addCustomChecks(new CustomPlSqlRulesDefinition[] { customRulesDefinition });
         
-        PlSqlCheck customCheck = check(checks, CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY);
+        PlSqlVisitor customCheck = check(checks, CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY);
         
         assertThat(checks.all()).hasSize(1);
         assertThat(checks.ruleKey(customCheck)).isNotNull();
@@ -100,13 +101,13 @@ public class PlSqlChecksTest {
         assertThat(checks.ruleKey(new MyCustomRule())).isNull();
     }
     
-    public PlSqlCheck check(PlSqlChecks plSqlChecks, String repository, String rule) {
+    public PlSqlVisitor check(PlSqlChecks plSqlChecks, String repository, String rule) {
         RuleKey key = RuleKey.of(repository, rule);
         
-        PlSqlCheck check;
+        PlSqlVisitor check;
 
-        for (Checks<PlSqlCheck> checks : plSqlChecks.getChecks()) {
-            check = (PlSqlCheck)checks.of(key);
+        for (Checks<PlSqlVisitor> checks : plSqlChecks.getChecks()) {
+            check = (PlSqlVisitor)checks.of(key);
 
             if (check != null) {
                 return check;

@@ -47,7 +47,7 @@ public class AddParenthesesInNestedExpressionCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         List<AstNode> andExpressions = node.getChildren(PlSqlGrammar.AND_EXPRESSION);
         for (AstNode andExpression : andExpressions) {
-            getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), andExpression);
+            addIssue(andExpression, getLocalizedMessage(CHECK_KEY));
         }
     }
 

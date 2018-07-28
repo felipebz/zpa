@@ -23,13 +23,13 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 
-public class CpdVisitor extends PlSqlVisitor {
+public class CpdVisitor extends PlSqlCheck {
     
     private NewCpdTokens newCpdTokens;
     

@@ -44,7 +44,7 @@ public class ConcatenationWithNullCheck extends AbstractBaseCheck {
     public void visitNode(AstNode node) {
         for (AstNode child : node.getChildren()) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
-                getContext().createViolation(this, getLocalizedMessage(CHECK_KEY), child);
+                addIssue(child, getLocalizedMessage(CHECK_KEY));
             }
         }
     }

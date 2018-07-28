@@ -19,53 +19,53 @@
  */
 package org.sonar.plsqlopen.metrics;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.List;
-import static org.fest.assertions.Assertions.assertThat;
-import org.junit.Before;
+
 import org.junit.Test;
-import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.duplications.internal.pmd.TokensLine;
-import org.sonar.plsqlopen.squid.PlSqlAstScanner;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 public class CpdVisitorTest {
 
-    private SensorContextTester context;
-    private DefaultInputFile inputFile;
-    private String key;
+    private static final String BASE_DIR = "src/test/resources/metrics";
+    private static final String FILE = "cpd.sql";
+    private SensorContextTester context = SensorContextTester.create(new File(BASE_DIR));
 
-    @Before
-    public void scanFile() throws IOException {
-        File dir = new File("src/test/resources/metrics");
+    @Test
+    public void scanFile() throws Exception {
+        
+        DefaultInputFile inputFile = inputFile(FILE);
+        context.fileSystem().add(inputFile);
+        
+        CpdVisitor visitor = new CpdVisitor(context, inputFile);
+        TestPlSqlVisitorRunner.scanFile(new File(Paths.get(BASE_DIR, FILE).toString()), null, visitor);
+        List<TokensLine> cpdTokenLines = context.cpdTokens(inputFile.key());
+        assertThat(cpdTokenLines).hasSize(17);
+    }
+    
+    private DefaultInputFile inputFile(String fileName) throws Exception {
+        File file = new File(BASE_DIR, fileName);
 
-        File file = new File(dir, "/cpd.sql");
-        inputFile = new TestInputFileBuilder("key", "cpd.sql")
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", "cpd.sql")
                 .setLanguage("plsqlopen")
                 .setCharset(StandardCharsets.UTF_8)
                 .initMetadata(Files.toString(file, StandardCharsets.UTF_8))
-                .setModuleBaseDir(dir.toPath())
+                .setModuleBaseDir(Paths.get(BASE_DIR))
                 .build();
-        key = inputFile.key();
 
-        context = SensorContextTester.create(dir);
         context.fileSystem().add(inputFile);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), new NoSonarFilter(), null, false);
-        scanner.scanFile(inputFile);
-    }
 
-    @Test
-    public void testCpdTokens() { 
-        List<TokensLine> cpdTokenLines = context.cpdTokens(key);
-        assertThat(cpdTokenLines).hasSize(17);
+        return inputFile;
     }
 
 }

@@ -47,7 +47,7 @@ public class ComparisonWithBooleanCheck extends AbstractBaseCheck {
         List<AstNode> children = node.getChildren(PlSqlGrammar.LITERAL);
         for (AstNode child : children) {
             if (child.getFirstChild().is(PlSqlGrammar.BOOLEAN_LITERAL)) {
-                getContext().createLineViolation(this, getLocalizedMessage(CHECK_KEY), node, child.getTokenValue());
+                addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine(), child.getTokenValue());
                 return;
             }
         }
