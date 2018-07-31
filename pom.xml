@@ -60,7 +60,7 @@
     <license.title>Sonar PL/SQL Plugin (Community)</license.title>
     <license.owner>Felipe Zorzo</license.owner>
     <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
-    <license.years>${project.inceptionYear}-2017</license.years>
+    <license.years>${project.inceptionYear}-2018</license.years>
     <license.name>GNU LGPL v3</license.name>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     <jdk.min.version>1.8</jdk.min.version>
