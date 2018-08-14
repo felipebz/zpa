@@ -58,13 +58,13 @@ public class SymbolVisitor extends PlSqlCheck {
     private NewSymbolTable symbolizable;
     private DefaultTypeSolver typeSolver;
     
-    public SymbolVisitor() {
-        // don't need context and inputFile
+    public SymbolVisitor(DefaultTypeSolver typeSolver) {
+    	this.typeSolver = typeSolver;
     }
     
     public SymbolVisitor(SensorContext context, InputFile inputFile, DefaultTypeSolver typeSolver) {
+    	this(typeSolver);
         symbolizable = context.newSymbolTable().onFile(inputFile);
-        this.typeSolver = typeSolver;
     }
 
     @Override

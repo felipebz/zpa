@@ -33,6 +33,7 @@ import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstWalker;
+import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 
 import com.google.common.base.Function;
@@ -46,7 +47,7 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
     private List<TestIssue> expectedIssues = new ArrayList<>();
     
     public static List<PreciseIssue> scanFileForIssues(File file, FormsMetadata metadata, PlSqlCheck check) {
-        PlSqlAstWalker walker = new PlSqlAstWalker(Arrays.asList(new SymbolVisitor(), check));
+        PlSqlAstWalker walker = new PlSqlAstWalker(Arrays.asList(new SymbolVisitor(new DefaultTypeSolver()), check));
         walker.walk((TestPlSqlVisitorRunner.createContext(file, metadata)));
         return check.issues();
     }
