@@ -40,6 +40,7 @@ public class PlSqlPlugin implements Plugin {
                 .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .defaultValue("sql,pkg,pks,pkb")
+                .multiValues(true)
                 .build(),
             PropertyDefinition.builder(FORMS_METADATA_KEY)
                 .name("Oracle Forms metadata file")
