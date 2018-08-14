@@ -73,7 +73,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @Override
     public List<Tokenizer> doGetTokenizers() {
-        return ImmutableList.of((Tokenizer) new KeywordsTokenizer("<span class=\"k\">", "</span>", PlSqlKeyword.keywordValues()));
+        return ImmutableList.of(new KeywordsTokenizer("<span class=\"k\">", "</span>", PlSqlKeyword.keywordValues()));
     }
 
     @VisibleForTesting
@@ -86,10 +86,10 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
         String propertyValue = System.getProperty(propertyKey);
 
         if (propertyValue == null) {
-            LOG.info("The property \"{0}\" is not set, using the default value \"{1}\".", propertyKey, defaultValue);
+            LOG.info("The property \"{}\" is not set, using the default value \"{}\".", propertyKey, defaultValue);
             return defaultValue;
         }
-        LOG.info("The property \"{0}\" is set, using its value \"{1}\".", propertyKey, propertyValue);
+        LOG.info("The property \"{}\" is set, using its value \"{}\".", propertyKey, propertyValue);
         return propertyValue;
     }
 

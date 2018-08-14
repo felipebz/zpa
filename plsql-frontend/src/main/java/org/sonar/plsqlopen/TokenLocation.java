@@ -61,7 +61,7 @@ public class TokenLocation {
         if (token.getValue().contains("\n") || token.getValue().contains("\r")) {
             String[] lines = pattern.split(token.getValue());
             lineCount = lines.length;
-            lastLineLength = lines[lines.length - 1].length();;
+            lastLineLength = lines[lines.length - 1].length();
         } else {
             lineCount = 1;
         }

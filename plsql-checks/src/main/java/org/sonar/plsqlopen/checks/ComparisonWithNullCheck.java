@@ -59,7 +59,6 @@ public class ComparisonWithNullCheck extends AbstractBaseCheck {
                 }
                 
                 addIssue(node, getLocalizedMessage(CHECK_KEY), suggestion);
-                continue;
             }
         }
     }

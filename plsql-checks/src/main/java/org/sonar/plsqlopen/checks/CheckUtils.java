@@ -79,11 +79,7 @@ public class CheckUtils {
 
     public static boolean isEmptyString(AstNode node) {
         AstNode characterLiteral = node.getFirstChild(CHARACTER_LITERAL);
-        if (characterLiteral != null && "''".equals(characterLiteral.getTokenValue())) {
-            return true;
-        }
-
-        return false;
+        return characterLiteral != null && "''".equals(characterLiteral.getTokenValue());
     }
 
     public static boolean equalNodes(AstNode node1, AstNode node2) {

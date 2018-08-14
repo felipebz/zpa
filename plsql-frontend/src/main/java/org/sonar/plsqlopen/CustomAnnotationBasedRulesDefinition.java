@@ -21,12 +21,7 @@ package org.sonar.plsqlopen;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import org.sonar.api.server.rule.RulesDefinition.NewParam;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
@@ -36,7 +31,6 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plsqlopen.annnotations.RuleTemplate;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
@@ -52,8 +46,8 @@ public class CustomAnnotationBasedRulesDefinition {
         this.repository = repository;
         this.languageKey = languageKey;
         this.locale = Locale.getDefault();
-        String externalDescriptionBasePath = getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale);
-        this.externalDescriptionBasePath = String.format("%s/rules/%s", externalDescriptionBasePath, repository.key());
+        this.externalDescriptionBasePath = String.format("%s/rules/%s",
+            getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale), repository.key());
         
     }
     
@@ -67,11 +61,6 @@ public class CustomAnnotationBasedRulesDefinition {
     @SuppressWarnings("rawtypes")
     public static void load(NewRepository repository, String languageKey, Iterable<Class> ruleClasses) {
         new CustomAnnotationBasedRulesDefinition(repository, languageKey).addRuleClasses(true, ruleClasses);
-    }
-
-    @SuppressWarnings("rawtypes")
-    public void addRuleClasses(Iterable<Class> ruleClasses) {
-        addRuleClasses(true, ruleClasses);
     }
 
     @SuppressWarnings("rawtypes")
@@ -99,8 +88,7 @@ public class CustomAnnotationBasedRulesDefinition {
         }
     }
 
-    @VisibleForTesting
-    void addHtmlDescription(NewRule rule, URL resource) {
+    private void addHtmlDescription(NewRule rule, URL resource) {
         try {
             rule.setHtmlDescription(Resources.toString(resource, Charsets.UTF_8));
         } catch (IOException e) {
@@ -108,8 +96,7 @@ public class CustomAnnotationBasedRulesDefinition {
         }
     }
 
-    @VisibleForTesting
-    NewRule newRule(Class<?> ruleClass, boolean failIfNoExplicitKey) {
+    private NewRule newRule(Class<?> ruleClass, boolean failIfNoExplicitKey) {
         org.sonar.check.Rule ruleAnnotation = AnnotationUtils.getAnnotation(ruleClass, org.sonar.check.Rule.class);
         if (ruleAnnotation == null) {
             throw new IllegalArgumentException("No Rule annotation was found on " + ruleClass);

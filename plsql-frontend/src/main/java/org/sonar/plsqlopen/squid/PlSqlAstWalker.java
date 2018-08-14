@@ -35,7 +35,7 @@ import com.sonar.sslr.api.Token;
 
 public class PlSqlAstWalker {
 
-    private final Map<AstNodeType, PlSqlVisitor[]> visitorsByNodeType = new IdentityHashMap<AstNodeType, PlSqlVisitor[]>();
+    private final Map<AstNodeType, PlSqlVisitor[]> visitorsByNodeType = new IdentityHashMap<>();
     private Collection<PlSqlVisitor> checks;
     private Token lastVisitedToken = null;
 
@@ -112,13 +112,13 @@ public class PlSqlAstWalker {
     }
 
     private void putAstVisitors(AstNodeType type, List<PlSqlVisitor> visitors) {
-        visitorsByNodeType.put(type, visitors.toArray(new PlSqlVisitor[visitors.size()]));
+        visitorsByNodeType.put(type, visitors.toArray(new PlSqlVisitor[0]));
     }
 
     private List<PlSqlVisitor> getAstVisitors(AstNodeType type) {
         PlSqlVisitor[] visitorsByType = visitorsByNodeType.get(type);
-        return visitorsByType == null ? new ArrayList<PlSqlVisitor>()
-                : new ArrayList<PlSqlVisitor>(Arrays.asList(visitorsByType));
+        return visitorsByType == null ? new ArrayList<>()
+                : new ArrayList<>(Arrays.asList(visitorsByType));
     }
 
 }

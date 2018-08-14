@@ -95,7 +95,7 @@ public class PlSqlAstScanner {
     
     @VisibleForTesting
     public void scanFile(InputFile inputFile) {
-        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile, context);
+        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile);
         
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
@@ -123,7 +123,6 @@ public class PlSqlAstScanner {
                 checks.stream()
                     .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
                     .filter(check -> check instanceof PlSqlCheck)
-                    .map(check -> (PlSqlVisitor) check)
                     .collect(toList()));
         
         newChecksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));

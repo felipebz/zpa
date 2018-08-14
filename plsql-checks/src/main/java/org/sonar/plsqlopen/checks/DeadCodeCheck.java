@@ -61,10 +61,8 @@ public class DeadCodeCheck extends AbstractBaseCheck {
         if (node.is(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)) {
             return true;
         }
-        if (node.is(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
-            return true;
-        }
-        return false;
+        return node.is(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) &&
+            !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER);
     }
     
     private boolean checkNode(AstNode node) {

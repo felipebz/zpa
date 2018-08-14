@@ -22,7 +22,6 @@ package org.sonar.plsqlopen.squid;
 import java.io.IOException;
 
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.plsqlopen.PlSqlFile;
 
 public class SonarQubePlSqlFile implements PlSqlFile {
@@ -33,7 +32,7 @@ public class SonarQubePlSqlFile implements PlSqlFile {
       this.inputFile = inputFile;
     }
 
-    public static PlSqlFile create(InputFile inputFile, SensorContext context) {
+    public static PlSqlFile create(InputFile inputFile) {
         return new SonarQubePlSqlFile(inputFile);
     }
 

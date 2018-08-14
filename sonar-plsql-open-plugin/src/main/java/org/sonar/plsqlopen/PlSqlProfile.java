@@ -27,8 +27,6 @@ import org.sonar.plsqlopen.checks.CheckList;
 
 public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
 
-    public static final String SONAR_WAY_PROFILE_PATH = "org/sonar/l10n/flex/rules/flex/Sonar_way_profile.json";
-
     @Override
     public void define(Context context) {
         NewBuiltInQualityProfile profile = context.createBuiltInQualityProfile(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
@@ -44,7 +42,7 @@ public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
     private void addRule(Class<?> ruleClass, NewBuiltInQualityProfile profile, String repositoryKey) {
         if (AnnotationUtils.getAnnotation(ruleClass, ActivatedByDefault.class) != null) {
             String ruleKey = RuleAnnotationUtils.getRuleKey(ruleClass);
-            profile.activateRule(CheckList.REPOSITORY_KEY, ruleKey);
+            profile.activateRule(repositoryKey, ruleKey);
         }
     }
 

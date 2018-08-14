@@ -124,11 +124,11 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
 
     private boolean validateAlert(String value) {
-        return !Stream.of(getContext().getFormsMetadata().getAlerts()).anyMatch(alert -> alert.equalsIgnoreCase(value));
+        return Stream.of(getContext().getFormsMetadata().getAlerts()).noneMatch(alert -> alert.equalsIgnoreCase(value));
     }
     
     private boolean validateBlock(String value) {
-        return !Stream.of(getContext().getFormsMetadata().getBlocks()).anyMatch(block -> block.getName().equalsIgnoreCase(value));
+        return Stream.of(getContext().getFormsMetadata().getBlocks()).noneMatch(block -> block.getName().equalsIgnoreCase(value));
     }
     
     private boolean validateItem(String value) {
@@ -145,7 +145,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
     
     private boolean validateLov(String value) {
-        return !Stream.of(getContext().getFormsMetadata().getLovs()).anyMatch(lov -> lov.equalsIgnoreCase(value));
+        return Stream.of(getContext().getFormsMetadata().getLovs()).noneMatch(lov -> lov.equalsIgnoreCase(value));
     }
     
     private static boolean isVarcharLiteral(AstNode argument) {
@@ -158,15 +158,15 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     private enum ObjectType { ALERT, BLOCK, ITEM, LOV }
     
     private class Verifier {
-        public final MethodMatcher matcher;
-        public final int argumentToCheck;
+        final MethodMatcher matcher;
+        final int argumentToCheck;
         public final ObjectType type;
 
-        public Verifier(MethodMatcher matcher, ObjectType type) {
+        Verifier(MethodMatcher matcher, ObjectType type) {
             this(matcher, 1, type);
         }
         
-        public Verifier(MethodMatcher matcher, int argumentToCheck, ObjectType type) {
+        Verifier(MethodMatcher matcher, int argumentToCheck, ObjectType type) {
             this.matcher = matcher;
             this.argumentToCheck = argumentToCheck - 1;
             this.type = type;

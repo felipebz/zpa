@@ -65,17 +65,11 @@ public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     
     private boolean exceptionShouldBeChecked(Symbol exceptionDeclaration) {
         AstNode scopeOfDeclaration = exceptionDeclaration.scope().tree();
-        if (scopeOfDeclaration.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)) {
-            return false;
-        }
-        
-        return true;
+        return !scopeOfDeclaration.is(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY);
     }
     
     private boolean isHandled(String identifierName) {
-        Scope scope = getContext().getCurrentScope();
-        
-        Scope outerScope = scope;
+        Scope outerScope = getContext().getCurrentScope();
         do {
             AstNode scopeNode = outerScope.tree();
             

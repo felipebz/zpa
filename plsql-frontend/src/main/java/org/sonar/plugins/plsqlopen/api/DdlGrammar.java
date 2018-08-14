@@ -270,9 +270,7 @@ public enum DdlGrammar implements GrammarRuleKey {
         								RPARENTHESIS),
         						IDENTIFIER_NAME)),
         				SUBSTITUTABLE_COLUMN_CLAUSE)));
-        
-//        b.rule(HASH_SUBPARTITION_QUANTITY);
-        
+
         b.rule(LIST_VALUES_CLAUSE).is(
         		b.sequence(
         				VALUES,

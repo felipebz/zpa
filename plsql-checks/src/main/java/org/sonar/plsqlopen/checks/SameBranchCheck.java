@@ -85,7 +85,6 @@ public class SameBranchCheck extends AbstractBaseCheck {
         if (CheckUtils.equalNodes(otherBranch, branch)) {
             addIssue(branch, getLocalizedMessage(CHECK_KEY), otherBranch.getToken().getLine())
                 .secondary(otherBranch, "Original");
-            return;
         }
     }
 

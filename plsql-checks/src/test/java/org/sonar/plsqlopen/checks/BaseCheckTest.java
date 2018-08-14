@@ -23,7 +23,7 @@ import java.util.Locale;
 
 import org.junit.Before;
 
-public class BaseCheckTest {
+public abstract class BaseCheckTest {
 
     private static final String defaultResourceFolder = "src/test/resources/checks/";
     

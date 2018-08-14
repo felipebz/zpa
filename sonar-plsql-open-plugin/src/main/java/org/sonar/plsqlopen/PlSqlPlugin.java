@@ -26,6 +26,7 @@ import org.sonar.api.resources.Qualifiers;
 
 public class PlSqlPlugin implements Plugin {
 
+    public static final String DEFAULT_CATEGORY = "PL/SQL";
     public static final String FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
     public static final String FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
     public static final String ERROR_RECOVERY_KEY = "sonar.plsql.errorRecoveryEnabled";
@@ -36,29 +37,29 @@ public class PlSqlPlugin implements Plugin {
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)
                 .name("File Suffixes")
                 .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
-                .category("PL/SQL")
+                .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .defaultValue("sql,pkg,pks,pkb")
                 .build(),
             PropertyDefinition.builder(FORMS_METADATA_KEY)
                 .name("Oracle Forms metadata file")
                 .description("Path to the JSON file with the Oracle Forms metadata.")
-                .category("PL/SQL")
+                .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .build(),
             PropertyDefinition.builder(ERROR_RECOVERY_KEY)
                 .name("Parse error recovery")
                 .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
-                .category("PL/SQL")
+                .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
                 .build(),
-          
+
             PlSql.class,
             PlSqlProfile.class,
             PlSqlSquidSensor.class,
-            PlSqlRuleRepository.class);        
+            PlSqlRuleRepository.class);
     }
 
 }

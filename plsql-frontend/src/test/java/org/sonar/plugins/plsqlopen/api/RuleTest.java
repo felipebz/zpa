@@ -28,7 +28,7 @@ import org.sonar.sslr.grammar.GrammarRuleKey;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
 
-public class RuleTest {
+public abstract class RuleTest {
     private boolean errorRecoveryEnabled;
     
     protected Parser<Grammar> p;
