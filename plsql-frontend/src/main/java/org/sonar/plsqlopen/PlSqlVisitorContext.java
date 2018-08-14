@@ -37,7 +37,7 @@ import com.sonar.sslr.api.Token;
 public class PlSqlVisitorContext {
 
     private final AstNode rootTree;
-    private final PlSqlFile plsqlFile;
+    private final PlSqlFile plSqlFile;
     private final RecognitionException parsingException;
     private SymbolTable symbolTable;
     private Scope scope;
@@ -46,18 +46,18 @@ public class PlSqlVisitorContext {
     public PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile, FormsMetadata metadata) {
         this(rootTree, plsqlFile, null, metadata);
     }
-    
+
     public PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile) {
-      this(rootTree, plsqlFile, null, null);
+        this(rootTree, plsqlFile, null, null);
     }
 
     public PlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata metadata) {
-      this(null, plsqlFile, parsingException, metadata);
+        this(null, plsqlFile, parsingException, metadata);
     }
     
     private PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata metadata) {
         this.rootTree = rootTree;
-        this.plsqlFile = plsqlFile;
+        this.plSqlFile = plsqlFile;
         this.parsingException = parsingException;
         this.formsMetadata = metadata;
     }
@@ -66,8 +66,8 @@ public class PlSqlVisitorContext {
         return rootTree;
     }
 
-    public PlSqlFile plsqlFile() {
-        return plsqlFile;
+    public PlSqlFile plSqlFile() {
+        return plSqlFile;
     }
 
     public RecognitionException parsingException() {
