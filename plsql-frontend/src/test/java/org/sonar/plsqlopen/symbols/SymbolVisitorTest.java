@@ -32,14 +32,12 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.issue.NoSonarFilter;
-import org.sonar.plsqlopen.squid.PlSqlAstScanner;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 public class SymbolVisitorTest {
-    
+
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
   
@@ -63,9 +61,9 @@ public class SymbolVisitorTest {
         key = inputFile.key();
         context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), new NoSonarFilter(), null, false, null);
-        scanner.scanFile(inputFile);
+
+        SymbolVisitor visitor = new SymbolVisitor(context, inputFile, new DefaultTypeSolver());
+        TestPlSqlVisitorRunner.scanFile(file, null, visitor);
     }
     
     @Test

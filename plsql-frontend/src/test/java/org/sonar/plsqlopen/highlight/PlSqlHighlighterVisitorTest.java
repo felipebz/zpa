@@ -32,10 +32,8 @@ import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.issue.NoSonarFilter;
-import org.sonar.plsqlopen.squid.PlSqlAstScanner;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 public class PlSqlHighlighterVisitorTest {
@@ -78,10 +76,10 @@ public class PlSqlHighlighterVisitorTest {
         
         SensorContextTester context = SensorContextTester.create(baseDir);
         context.fileSystem().add(inputFile);
-        
-        PlSqlAstScanner scanner = new PlSqlAstScanner(context, ImmutableList.of(), new NoSonarFilter(), null, false, null);
-        scanner.scanFile(inputFile);
-        
+
+        PlSqlHighlighterVisitor visitor = new PlSqlHighlighterVisitor(context, inputFile);
+        TestPlSqlVisitorRunner.scanFile(file, null, visitor);
+
         String key = inputFile.key();
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
         assertThat(context.highlightingTypeAt(key, 2, lineOffset(3))).containsExactly(TypeOfText.COMMENT);
