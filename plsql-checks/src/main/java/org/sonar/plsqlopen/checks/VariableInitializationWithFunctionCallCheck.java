@@ -43,8 +43,10 @@ public class VariableInitializationWithFunctionCallCheck extends AbstractBaseChe
     @Override
     public void visitNode(AstNode node) {
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION)) {
+            AstNode datatype = node.getParent().getFirstChild(PlSqlGrammar.DATATYPE);
+            
             AstNode expression = node.getLastChild();
-            if (expression.is(PlSqlGrammar.METHOD_CALL)) {
+            if (expression.is(PlSqlGrammar.METHOD_CALL) && !datatype.getTokenValue().equals(expression.getTokenValue())) {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
