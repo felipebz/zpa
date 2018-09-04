@@ -69,11 +69,17 @@ public class DefaultTypeSolverTest {
         PlSqlType type = solveTypeFrom("clob");
         assertThat(type.type()).isEqualTo(Type.LOB);
     }
-    
+
     @Test
     public void identifyBooleanType() {
         PlSqlType type = solveTypeFrom("boolean");
         assertThat(type.type()).isEqualTo(Type.BOOLEAN);
+    }
+
+    @Test
+    public void identifyRowtype() {
+        PlSqlType type = solveTypeFrom("tab%rowtype");
+        assertThat(type.type()).isEqualTo(Type.ROWTYPE);
     }
     
     @Test

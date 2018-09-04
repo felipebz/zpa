@@ -70,7 +70,8 @@ public class PlSqlType {
         NUMERIC,
         DATE,
         LOB,
-        BOOLEAN
+        BOOLEAN,
+        ROWTYPE
     }
 
 }
