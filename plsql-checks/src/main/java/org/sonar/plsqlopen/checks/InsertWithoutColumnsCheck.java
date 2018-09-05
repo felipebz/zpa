@@ -24,6 +24,10 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -44,6 +48,14 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
     @Override
     public void visitNode(AstNode node) {
         if (!node.hasDirectChildren(DmlGrammar.INSERT_COLUMNS)) {
+            AstNode value = node.getLastChild();
+
+            if (value.getType() == PlSqlGrammar.VARIABLE_NAME) {
+                Symbol variable = getContext().getCurrentScope().getSymbol(value.getTokenOriginalValue());
+                if (variable != null && variable.type().type() == Type.ROWTYPE)
+                    return;
+            }
+
             addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
         }
     }
