@@ -1,3 +1,5 @@
+declare
+  row emp%rowtype;
 begin
   -- violations
   select * -- Noncompliant {{SELECT * should not be used.}}
@@ -33,4 +35,8 @@ begin
     into var
     from emp
    where exists (select * from e); -- in a exists expression is acceptable too
+
+  select *
+    into row
+    from emp;
 end;

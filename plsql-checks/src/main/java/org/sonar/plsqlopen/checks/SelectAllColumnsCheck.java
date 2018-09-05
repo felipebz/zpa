@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.List;
+
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
@@ -26,6 +28,9 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -54,6 +59,17 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
             }
             
             if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
+                AstNode intoClause = node.getParent().getFirstChild(DmlGrammar.INTO_CLAUSE);
+                if (intoClause != null) {
+                    List<AstNode> variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
+                    if (variablesInInto.size() == 1) {
+                        Symbol variable = getContext().getCurrentScope().getSymbol(variablesInInto.get(0).getTokenOriginalValue());
+                        if (variable != null && variable.type().type() == Type.ROWTYPE) {
+                            return;
+                        }
+                    }
+                }
+
                 addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.getTokenLine());
             }
         }
