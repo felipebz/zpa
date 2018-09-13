@@ -91,7 +91,7 @@ public class PlSqlSquidSensor implements Sensor {
     @Override
     public void execute(SensorContext context) {        
         FilePredicates p = context.fileSystem().predicates();
-        ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(p.hasType(InputFile.Type.MAIN), p.hasLanguage(PlSql.KEY))));
+        ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.hasLanguage(PlSql.KEY)));
         
         ProgressReport progressReport = new ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10));
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);

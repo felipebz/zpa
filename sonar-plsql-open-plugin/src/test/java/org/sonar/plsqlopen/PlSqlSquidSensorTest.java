@@ -20,10 +20,7 @@
 package org.sonar.plsqlopen;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +36,7 @@ import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
+import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.config.internal.MapSettings;
@@ -97,7 +95,7 @@ public class PlSqlSquidSensorTest {
       
       sensor.execute(context);
       
-      String key = "key:" + relativePath;
+      String key = inputFile.key();
 
       //assertThat(context.measure(key, CoreMetrics.FILES).value()).isEqualTo(1);
       assertThat(context.measure(key, CoreMetrics.NCLOC).value()).isEqualTo(18);
@@ -107,7 +105,39 @@ public class PlSqlSquidSensorTest {
       assertThat(context.measure(key, CoreMetrics.STATEMENTS).value()).isEqualTo(8);
       verify(fileLinesContext, times(8)).setIntValue(Mockito.eq(CoreMetrics.EXECUTABLE_LINES_DATA_KEY), Mockito.anyInt(), Mockito.eq(1));
       verify(fileLinesContext).save();
+    }
 
+    @Test
+    public void shouldAnalyseTestFile() throws IOException {
+        String relativePath = "src/test/resources/org/sonar/plsqlopen/test.sql";
+        DefaultInputFile inputFile = new TestInputFileBuilder("key", relativePath)
+            .setLanguage(PlSql.KEY)
+            .setType(InputFile.Type.TEST)
+            .setCharset(StandardCharsets.UTF_8)
+            .initMetadata(Files.toString(new File(relativePath), StandardCharsets.UTF_8))
+            .setModuleBaseDir(Paths.get(""))
+            .build();
+
+        context.fileSystem().add(inputFile);
+
+        sensor.execute(context);
+
+        String key = inputFile.key();
+
+        // shouldn't save metrics for test files
+        assertThat(context.measure(key, CoreMetrics.NCLOC)).isNull();
+        assertThat(context.measure(key, CoreMetrics.COMMENT_LINES)).isNull();
+        assertThat(context.measure(key, CoreMetrics.COMPLEXITY)).isNull();
+        assertThat(context.measure(key, CoreMetrics.FUNCTIONS)).isNull();
+        assertThat(context.measure(key, CoreMetrics.STATEMENTS)).isNull();
+        verifyZeroInteractions(fileLinesContext);
+
+        // but should save highlighting data
+        assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
+        assertThat(context.highlightingTypeAt(key, 2, lineOffset(3))).containsExactly(TypeOfText.COMMENT);
+        assertThat(context.highlightingTypeAt(key, 3, lineOffset(3))).containsExactly(TypeOfText.STRUCTURED_COMMENT);
+        assertThat(context.highlightingTypeAt(key, 6, lineOffset(8))).containsExactly(TypeOfText.STRING);
+        assertThat(context.highlightingTypeAt(key, 7, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
     }
     
     @Test
@@ -122,6 +152,10 @@ public class PlSqlSquidSensorTest {
         assertThat(metadata.getBlocks()[1].getName()).isEqualTo("bar");
         assertThat(metadata.getBlocks()[1].getItems()).containsExactly("item1", "item2");
         assertThat(metadata.getLovs()).containsExactly("foo", "bar");
+    }
+
+    private int lineOffset(int offset) {
+        return offset - 1;
     }
     
 }

@@ -95,48 +95,41 @@ public class PlSqlAstScanner {
     
     @VisibleForTesting
     public void scanFile(InputFile inputFile) {
-        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile);
-        
+        if (inputFile.type() == InputFile.Type.MAIN) {
+            scanMainFile(inputFile);
+        } else {
+            scanTestFile(inputFile);
+        }
+    }
+
+    public void scanMainFile(InputFile inputFile) {
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
-        FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor(); 
+        FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor();
 
-        PlSqlVisitorContext newVisitorContext;
-        try {
-            AstNode root = parser.parse(plSqlFile.content());
-            newVisitorContext = new PlSqlVisitorContext(root, plSqlFile, formsMetadata);
-        } catch (RecognitionException e) {
-            newVisitorContext = new PlSqlVisitorContext(plSqlFile, e, formsMetadata);
-            LOG.error("Unable to parse file: " + inputFile.toString());
-            LOG.error(e.getMessage());
-        } catch (Exception e) {
-            checkInterrupted(e);
-            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
-        } catch (Throwable e) {
-            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
-        }
+        PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
+
+        List<PlSqlVisitor> checksToRun = new ArrayList<>();
+        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
         
-        List<PlSqlVisitor> newChecksToRun = new ArrayList<>();
-        newChecksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
-        
-        newChecksToRun.addAll(
+        checksToRun.addAll(
                 checks.stream()
                     .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
                     .filter(check -> check instanceof PlSqlCheck)
                     .collect(toList()));
         
-        newChecksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
-        newChecksToRun.add(metricsVisitor);
-        newChecksToRun.add(complexityVisitor);
-        newChecksToRun.add(functionComplexityVisitor);
-        newChecksToRun.add(new CpdVisitor(context, inputFile));
+        checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
+        checksToRun.add(metricsVisitor);
+        checksToRun.add(complexityVisitor);
+        checksToRun.add(functionComplexityVisitor);
+        checksToRun.add(new CpdVisitor(context, inputFile));
         
-        PlSqlAstWalker newWalker = new PlSqlAstWalker(newChecksToRun);
+        PlSqlAstWalker newWalker = new PlSqlAstWalker(checksToRun);
         newWalker.walk(newVisitorContext);
         
         noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
         
-        for (PlSqlVisitor check : newChecksToRun) {
+        for (PlSqlVisitor check : checksToRun) {
             List<PreciseIssue> issues = ((PlSqlCheck)check).issues();
             if (!issues.isEmpty()) {
                 saveIssues(inputFile, check, issues);
@@ -156,6 +149,36 @@ public class PlSqlAstScanner {
             }
             fileLinesContext.save();
         }
+    }
+
+    public void scanTestFile(InputFile inputFile) {
+        PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
+
+        List<PlSqlVisitor> checksToRun = new ArrayList<>();
+        checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
+
+        PlSqlAstWalker newWalker = new PlSqlAstWalker(checksToRun);
+        newWalker.walk(newVisitorContext);
+    }
+
+    private PlSqlVisitorContext getPlSqlVisitorContext(InputFile inputFile) {
+        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile);
+
+        PlSqlVisitorContext visitorContext;
+        try {
+            AstNode root = parser.parse(plSqlFile.content());
+            visitorContext = new PlSqlVisitorContext(root, plSqlFile, formsMetadata);
+        } catch (RecognitionException e) {
+            visitorContext = new PlSqlVisitorContext(plSqlFile, e, formsMetadata);
+            LOG.error("Unable to parse file: " + inputFile.toString());
+            LOG.error(e.getMessage());
+        } catch (Exception e) {
+            checkInterrupted(e);
+            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
+        } catch (Throwable e) {
+            throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
+        }
+        return visitorContext;
     }
     
     private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues) {
