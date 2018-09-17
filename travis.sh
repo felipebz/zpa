@@ -12,10 +12,11 @@ configureTravis
 case "$TESTS" in
 
 ci)
+  extra_args="jacoco:report org.eluder.coveralls:coveralls-maven-plugin:report"
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    mvn source:jar javadoc:jar deploy --settings=.settings.xml -B -e -V
+    mvn source:jar javadoc:jar deploy $extra_args --settings=.settings.xml -B -e -V
   else
-    mvn verify -B -e -V
+    mvn verify $extra_args -B -e -V
   fi
   ;;
 
