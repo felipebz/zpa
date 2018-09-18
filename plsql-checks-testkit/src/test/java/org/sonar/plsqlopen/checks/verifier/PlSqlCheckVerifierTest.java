@@ -150,6 +150,34 @@ public class PlSqlCheckVerifierTest {
         }
     }
     
+    @Test
+    public void verify_should_fail_when_precision_location_comment_is_invalid() throws IOException {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_comment.sql", new FakeCheck());
+            Fail.fail("Test should fail");
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessage("Line 3: comments asserting a precise location should start at column 1");
+        }
+    }
+    
+    @Test
+    public void verify_unexpected_precise_location() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location.sql", new FakeCheck());
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2");
+        }
+    }
+    
+    @Test
+    public void verify_unexpected_precise_location2() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location2.sql", new FakeCheck());
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2");
+        }
+    }
+    
     private static class FakeCheck extends PlSqlCheck {
 
         Multimap<Integer, String> issues = LinkedListMultimap.create();
@@ -200,7 +228,7 @@ public class PlSqlCheckVerifierTest {
                 PreciseIssue issue = null;
                 for (IssueLocation location : locations) {
                     if (issue == null) {
-                        issue = addIssue(location);
+                        issue = addIssue(location).withCost(3);
                     } else {
                         issue.secondary(location);
                     }

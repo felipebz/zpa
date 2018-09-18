@@ -23,8 +23,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.primitives.Ints;
-
 public class TestIssue {
 
     private String message;
@@ -49,12 +47,6 @@ public class TestIssue {
         return this;
     }
 
-    public TestIssue columns(int startColumn, int endColumn) {
-        startColumn(startColumn);
-        endColumn(endColumn);
-        return this;
-    }
-
     public TestIssue startColumn(int startColumn) {
         this.startColumn = startColumn;
         return this;
@@ -73,10 +65,6 @@ public class TestIssue {
     public TestIssue endLine(int endLine) {
         this.endLine = endLine;
         return this;
-    }
-
-    public TestIssue secondary(int... lines) {
-        return secondary(Ints.asList(lines));
     }
 
     public TestIssue secondary(List<Integer> secondaryLines) {

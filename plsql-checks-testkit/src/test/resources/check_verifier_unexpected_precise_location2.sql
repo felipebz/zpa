@@ -1,0 +1,5 @@
+begin -- Noncompliant
+  null;
+--^^^^
+end;
+/

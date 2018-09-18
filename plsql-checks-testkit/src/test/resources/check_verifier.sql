@@ -8,7 +8,7 @@ begin -- test method
     null; -- Noncompliant {{message4}} [[sc=9;ec=10;secondary=3,4]] bla bla bla
     null; -- Noncompliant
     -- Noncompliant@-4
-    func(foo, -- Noncompliant [[sc=5;el=+1;ec=11]]
+    func(foo, -- Noncompliant [[sc=5;el=+1;ec=11;effortToFix=3]]
       bar);
     -- Noncompliant@+1 blabla
     null;
