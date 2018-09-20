@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +33,6 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 
 public class PlSqlChecks {
 
@@ -60,7 +60,7 @@ public class PlSqlChecks {
       if (customRulesDefinitions != null) {
 
         for (CustomPlSqlRulesDefinition rulesDefinition : customRulesDefinitions) {
-          addChecks(rulesDefinition.repositoryKey(), Lists.newArrayList(rulesDefinition.checkClasses()));
+          addChecks(rulesDefinition.repositoryKey(), Arrays.asList(rulesDefinition.checkClasses()));
         }
       }
 

@@ -19,12 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
 
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 public class Symbol {
@@ -64,8 +64,8 @@ public class Symbol {
         }
     }
 
-    public ImmutableList<AstNode> modifiers() {
-        return ImmutableList.copyOf(modifiers);
+    public List<AstNode> modifiers() {
+        return Collections.unmodifiableList(modifiers);
     }
 
     public boolean hasModifier(String modifier) {

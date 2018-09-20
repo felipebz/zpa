@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.toolkit;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -34,7 +36,6 @@ import org.sonar.sslr.toolkit.ConfigurationProperty;
 import org.sonar.sslr.toolkit.Validators;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
 
@@ -63,7 +64,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @Override
     public List<ConfigurationProperty> getProperties() {
-        return ImmutableList.of(charsetProperty, errorRecoveryProperty);
+        return Collections.unmodifiableList(Arrays.asList(charsetProperty, errorRecoveryProperty));
     }
 
     @Override
@@ -73,7 +74,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @Override
     public List<Tokenizer> doGetTokenizers() {
-        return ImmutableList.of(new KeywordsTokenizer("<span class=\"k\">", "</span>", PlSqlKeyword.keywordValues()));
+        return Collections.singletonList(new KeywordsTokenizer("<span class=\"k\">", "</span>", PlSqlKeyword.keywordValues()));
     }
 
     @VisibleForTesting

@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.sonar.check.Priority;
@@ -26,7 +28,6 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -38,7 +39,7 @@ import com.sonar.sslr.api.AstNode;
 public class RaiseStandardExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "RaiseStandardException";
     
-    private final List<String> standardExceptions = ImmutableList.of(
+    private final List<String> standardExceptions = Collections.unmodifiableList(Arrays.asList(
             "ACCESS_INTO_NULL",
             "CASE_NOT_FOUND",
             "COLLECTION_IS_NULL",
@@ -59,7 +60,7 @@ public class RaiseStandardExceptionCheck extends AbstractBaseCheck {
             "TIMEOUT_ON_RESOURCE",
             "TOO_MANY_ROWS",
             "VALUE_ERROR",
-            "ZERO_DIVIDE");
+            "ZERO_DIVIDE"));
 
     @Override
     public void init() {

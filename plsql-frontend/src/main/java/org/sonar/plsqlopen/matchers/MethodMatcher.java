@@ -28,7 +28,6 @@ import java.util.List;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 
@@ -124,7 +123,7 @@ public class MethodMatcher {
 
     public boolean matches(AstNode originalNode) {
         AstNode node = normalize(originalNode);
-        LinkedList<AstNode> nodes = Lists.newLinkedList(node.getChildren(VARIABLE_OR_IDENTIFIER));
+        LinkedList<AstNode> nodes = new LinkedList<>(node.getChildren(VARIABLE_OR_IDENTIFIER));
         
         if (nodes.isEmpty()) {
             return false;

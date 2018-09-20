@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen;
 
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.List;
 
 import org.sonar.plsqlopen.checks.IssueLocation;
@@ -29,7 +30,6 @@ import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.api.Token;
@@ -135,7 +135,7 @@ public class PlSqlVisitorContext {
      */
     @Deprecated
     public void createViolation(PlSqlCheck check, String message, AstNode node, Object... messageParameters) {
-        createViolation(check, message, node, ImmutableList.<Location>of(), messageParameters);
+        createViolation(check, message, node, Collections.emptyList(), messageParameters);
     }
     
     /***

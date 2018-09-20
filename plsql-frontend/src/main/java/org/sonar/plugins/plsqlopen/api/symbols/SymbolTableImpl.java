@@ -20,14 +20,13 @@
 package org.sonar.plugins.plsqlopen.api.symbols;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.sonar.sslr.api.AstNode;
 
 public class SymbolTableImpl implements SymbolTable {
@@ -40,8 +39,8 @@ public class SymbolTableImpl implements SymbolTable {
     }
 
     @Override
-    public ImmutableSet<Scope> getScopes(){
-        return ImmutableSet.copyOf(scopes);
+    public Set<Scope> getScopes(){
+        return Collections.unmodifiableSet(scopes);
     }
 
     @Nullable
@@ -88,7 +87,7 @@ public class SymbolTableImpl implements SymbolTable {
      */
     @Override
     public List<Symbol> getSymbols() {
-        return ImmutableList.copyOf(symbols);
+        return Collections.unmodifiableList(symbols);
     }
 
     /**

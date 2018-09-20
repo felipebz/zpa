@@ -19,7 +19,8 @@
  */
 package org.sonar.plsqlopen;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.sonar.api.ExtensionPoint;
 import org.sonar.api.batch.ScannerSide;
@@ -36,7 +37,7 @@ public abstract class CustomPlSqlRulesDefinition implements RulesDefinition {
 
         // Load metadata from check classes' annotations
         new CustomAnnotationBasedRulesDefinition(repo, "plsqlopen").addRuleClasses(false,
-                ImmutableList.copyOf(checkClasses()));
+                Collections.unmodifiableList(Arrays.asList(checkClasses())));
 
         repo.done();
     }

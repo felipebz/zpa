@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -31,7 +33,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 
-import com.google.common.collect.ImmutableList;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -44,7 +45,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
 
     public static final String CHECK_KEY = "InvalidReferenceToObject";
     
-    private final List<Verifier> verifiers = ImmutableList.of(
+    private final List<Verifier> verifiers = Collections.unmodifiableList(Arrays.asList(
             new Verifier(MethodMatcher.create().name("find_alert").addParameter(), ObjectType.ALERT),
             new Verifier(MethodMatcher.create().name("set_alert_button_property").addParameters(4), ObjectType.ALERT),
             new Verifier(MethodMatcher.create().name("set_alert_property").addParameters(3), ObjectType.ALERT),
@@ -85,7 +86,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
             new Verifier(MethodMatcher.create().name("set_radio_button_property").addParameters(5), ObjectType.ITEM),
             new Verifier(MethodMatcher.create().name("write_image_file").addParameters(5), 3, ObjectType.ITEM),
             new Verifier(MethodMatcher.create().name("write_sound_file").addParameters(5), 3, ObjectType.ITEM)
-        );
+        ));
 
     @Override
     public void init() {

@@ -21,7 +21,13 @@ package org.sonar.plsqlopen;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 import org.sonar.api.server.rule.RulesDefinition.NewParam;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
@@ -31,8 +37,6 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plsqlopen.annnotations.RuleTemplate;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 
 public class CustomAnnotationBasedRulesDefinition {
@@ -65,7 +69,13 @@ public class CustomAnnotationBasedRulesDefinition {
 
     @SuppressWarnings("rawtypes")
     public void addRuleClasses(boolean failIfNoExplicitKey, Iterable<Class> ruleClasses) {
-        new RulesDefinitionAnnotationLoader().load(repository, Iterables.toArray(ruleClasses, Class.class));
+        
+        RulesDefinitionAnnotationLoader loader = new RulesDefinitionAnnotationLoader();
+        for (Class annotatedClass : ruleClasses) {
+            loader.load(repository, annotatedClass);
+        }
+        
+        
         List<NewRule> newRules = new ArrayList<>();
         for (Class<?> ruleClass : ruleClasses) {
             NewRule rule = newRule(ruleClass, failIfNoExplicitKey);
@@ -90,7 +100,7 @@ public class CustomAnnotationBasedRulesDefinition {
 
     private void addHtmlDescription(NewRule rule, URL resource) {
         try {
-            rule.setHtmlDescription(Resources.toString(resource, Charsets.UTF_8));
+            rule.setHtmlDescription(Resources.toString(resource, StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read: " + resource, e);
         }
