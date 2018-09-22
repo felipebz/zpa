@@ -26,12 +26,6 @@
       <artifactId>sslr-xpath</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-check-api</artifactId>
-      <version>${sonar.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
