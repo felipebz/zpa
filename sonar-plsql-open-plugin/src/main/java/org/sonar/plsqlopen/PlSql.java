@@ -22,7 +22,6 @@ package org.sonar.plsqlopen;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.resources.AbstractLanguage;
 
@@ -48,7 +47,7 @@ public class PlSql extends AbstractLanguage {
     private static String[] filterEmptyStrings(String[] stringArray) {
         List<String> nonEmptyStrings = new ArrayList<>();
         for (String string : stringArray) {
-            if (StringUtils.isNotBlank(string.trim())) {
+            if (string.trim().length() > 0) {
                 nonEmptyStrings.add(string.trim());
             }
         }
