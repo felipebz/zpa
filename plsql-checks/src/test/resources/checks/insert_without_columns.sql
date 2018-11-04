@@ -6,4 +6,9 @@ begin
   insert into tab (col) values (1);
 
   insert into tab values var;
+
+  for r_t in (select * from mytable) loop
+      insert into mytable values r_t;
+  end loop;
+
 end;

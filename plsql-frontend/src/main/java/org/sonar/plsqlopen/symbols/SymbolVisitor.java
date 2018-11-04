@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
@@ -204,13 +205,21 @@ public class SymbolVisitor extends PlSqlCheck {
     private void visitFor(AstNode node) {
         enterScope(node, null, null);
         AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
-        createSymbol(identifier, Symbol.Kind.VARIABLE, null);
+
+        PlSqlType.Type type;
+        if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
+            type = PlSqlType.Type.NUMERIC;
+        } else {
+            type = PlSqlType.Type.ROWTYPE;
+        }
+
+        createSymbol(identifier, Symbol.Kind.VARIABLE, new PlSqlType(type, identifier));
     }
     
     private void visitVariableDeclaration(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
         AstNode datatype = node.getFirstChild(PlSqlGrammar.DATATYPE);
-        
+
         PlSqlType type = solveType(datatype);
         createSymbol(identifier, Symbol.Kind.VARIABLE, type);
     }
