@@ -10,6 +10,7 @@
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<sonarplsqlopen.version>2.3.0-SNAPSHOT</sonarplsqlopen.version>
   </properties>
 
   <dependencies>
@@ -24,14 +25,14 @@
       <groupId>org.sonar.plsqlopen</groupId>
       <artifactId>sonar-plsql-open-plugin</artifactId>
       <type>sonar-plugin</type>
-      <version>2.0.0-SNAPSHOT</version>
+      <version>${sonarplsqlopen.version}</version>
       <scope>provided</scope>
     </dependency>
     
     <dependency>
       <groupId>org.sonar.plsqlopen</groupId>
       <artifactId>plsql-checks-testkit</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
+      <version>${sonarplsqlopen.version}</version>
       <scope>provided</scope>
     </dependency>
 

@@ -4,7 +4,7 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.plsqlopen.checks.AbstractBaseCheck;
+import org.sonar.plsqlopen.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 
 import com.sonar.sslr.api.AstNode;
@@ -17,7 +17,7 @@ import com.sonar.sslr.api.AstNode;
 )
 @ConstantRemediation("10min")
 @ActivatedByDefault
-public class ForbiddenDmlCheck extends AbstractBaseCheck {
+public class ForbiddenDmlCheck extends PlSqlCheck {
     
     @Override
     public void init() {
@@ -29,7 +29,7 @@ public class ForbiddenDmlCheck extends AbstractBaseCheck {
         AstNode table = node.getFirstChild(DmlGrammar.TABLE_REFERENCE);
         
         if (table != null && table.getTokenOriginalValue().equalsIgnoreCase("user")) {
-            getContext().createViolation(this, "Replace this query by a function of the USER_WRAPPER package.", table);
+            addIssue(table, "Replace this query by a function of the USER_WRAPPER package.");
         }
     }
 
