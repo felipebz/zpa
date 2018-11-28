@@ -13,8 +13,15 @@
   <artifactId>sonar-plsql-open-plugin</artifactId>
   <packaging>sonar-plugin</packaging>
 
-  <name>PL/SQL :: Sonar Plugin</name>
-  <description>Enable analysis and reporting on PL/SQL projects.</description>
+  <name>SonarQube PL/SQL Community Plugin</name>
+  <description>Enables analysis and reporting on PL/SQL projects.</description>
+  <url>https://github.com/felipebz/sonar-plsql</url>
+  
+  <scm>
+    <connection>scm:git:https://github.com/felipebz/sonar-plsql.git</connection>
+    <developerConnection>scm:git:https://github.com/felipebz/sonar-plsql.git</developerConnection>
+    <url>https://github.com/felipebz/sonar-plsql</url>
+  </scm>
 
   <dependencies>
     <dependency>
