@@ -50,6 +50,13 @@ public class DefaultTypeSolverTest {
         assertThat(type.type()).isEqualTo(Type.NUMERIC);
         assertThat(type.isNumeric()).isTrue();
     }
+
+    @Test
+    public void identifyTypeNotNull() {
+        PlSqlType type = solveTypeFrom("number not null");
+        assertThat(type.type()).isEqualTo(Type.NUMERIC);
+        assertThat(type.isNumeric()).isTrue();
+    }
     
     @Test
     public void identifyCharacterType() {
@@ -81,10 +88,23 @@ public class DefaultTypeSolverTest {
         PlSqlType type = solveTypeFrom("tab%rowtype");
         assertThat(type.type()).isEqualTo(Type.ROWTYPE);
     }
+
+    @Test
+    public void identifyRowtypeNotNull() {
+        PlSqlType type = solveTypeFrom("tab%rowtype not null");
+        assertThat(type.type()).isEqualTo(Type.ROWTYPE);
+    }
     
     @Test
     public void unknownType() {
         PlSqlType type = solveTypeFrom("tab.col%type");
+        assertThat(type.type()).isEqualTo(Type.UNKNOWN);
+        assertThat(type.isUnknown()).isTrue();
+    }
+
+    @Test
+    public void unknownTypeNotNull() {
+        PlSqlType type = solveTypeFrom("tab.col%type not null");
         assertThat(type.type()).isEqualTo(Type.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }

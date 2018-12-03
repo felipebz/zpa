@@ -41,9 +41,11 @@ public class DefaultTypeSolver {
                 type = Type.LOB;
             } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
                 type = Type.BOOLEAN;
-            } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE) &&
-                node.getLastChild().getLastChild().getType() == PlSqlKeyword.ROWTYPE) {
-                type = Type.ROWTYPE;
+            } else {
+                AstNode anchoredDatatype = node.getFirstChild(PlSqlGrammar.ANCHORED_DATATYPE);
+                if (anchoredDatatype != null && anchoredDatatype.getLastChild().getType() == PlSqlKeyword.ROWTYPE) {
+                    type = Type.ROWTYPE;
+                }
             }
         }
         return new PlSqlType(type, node);
