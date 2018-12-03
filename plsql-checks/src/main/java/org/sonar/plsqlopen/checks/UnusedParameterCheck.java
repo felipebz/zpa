@@ -26,12 +26,14 @@ import java.util.regex.Pattern;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plugins.plsqlopen.api.DmlGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -64,10 +66,19 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
     public void leaveFile(AstNode astNode) {
         Set<Scope> scopes = getContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
-            // procedure/function declaration (without implementation)
-            if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION) &&
-                !scope.tree().hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
-                continue;
+            // ignore procedure/function specification and overriding members
+            if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION)) {
+                // is specification?
+                if (!scope.tree().hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
+                    continue;
+                }
+
+                // is overriding something?
+                AstNode inheritanceClause = scope.tree().getParent().getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE);
+                if (inheritanceClause != null && inheritanceClause.getFirstChild().getType() != PlSqlKeyword.NOT &&
+                    inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)) {
+                    continue;
+                }
             }
             
             // cursor declaration (without implementation)

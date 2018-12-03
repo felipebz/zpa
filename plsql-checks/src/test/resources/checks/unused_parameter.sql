@@ -26,3 +26,20 @@ create package test is
    end;
 end;
 /
+create type t under super_t (
+  overriding member procedure foo(a number, b number); -- don't report violation on declaration
+)
+/
+create type body t as
+  not overriding member procedure foo(a number) as -- Noncompliant
+--                                    ^^^^^^^^
+  begin
+    null;
+  end;
+
+  overriding member procedure foo(a number, b number) as -- don't report violation on overriding member
+  begin
+    null;
+  end;
+end;
+/
