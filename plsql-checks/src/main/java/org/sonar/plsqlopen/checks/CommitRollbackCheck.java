@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
@@ -50,8 +51,10 @@ public class CommitRollbackCheck extends AbstractBaseCheck {
         while (outerScope.outer() != null) {
             outerScope = outerScope.outer();
         }
+
+        boolean isRollbackToSavepoint = node.is(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO);
         
-        if (!scope.isAutonomousTransaction() && !outerScope.tree().is(PlSqlGrammar.BLOCK_STATEMENT)) {
+        if (!isRollbackToSavepoint && !scope.isAutonomousTransaction() && !outerScope.tree().is(PlSqlGrammar.BLOCK_STATEMENT)) {
             addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine(), node.getTokenValue());
         }
     }

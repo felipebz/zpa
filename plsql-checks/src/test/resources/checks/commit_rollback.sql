@@ -11,6 +11,10 @@ begin
  
  begin
    rollback; -- Noncompliant {{Avoid ROLLBACK calls unless it is in an autonomous transaction.}}
+
+   -- should ignore rollback to savepoint
+   rollback to savepoint s1;
+   rollback to s1;
  end;
 end;
 /
