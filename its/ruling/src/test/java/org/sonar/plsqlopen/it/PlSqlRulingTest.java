@@ -44,25 +44,26 @@ public class PlSqlRulingTest {
       .setOrchestratorProperty("litsVersion", "0.6")
       .addPlugin("lits")
       .restoreProfileAtStartup(FileLocation.of("src/test/resources/profile.xml"))
+      .restoreProfileAtStartup(FileLocation.of("src/test/resources/forms_profile.xml"))
       .build();
 
-    public SonarScanner initializeBuild(String projectId) throws Exception {
-        return initializeBuild(projectId, null);
+    public SonarScanner initializeBuild(String projectId) {
+        return initializeBuild(projectId, null, "rules");
     }
 
     public SonarScanner initializeFormsBuild(String projectId, String sources) {
-        SonarScanner build = initializeBuild(projectId, sources);
+        SonarScanner build = initializeBuild(projectId, sources, "forms_rules");
         build.setProperty("sonar.plsql.forms.metadata", "metadata.json");
         build.setProperty("sonar.plsql.file.suffixes", "pcd,fun,pks,pkb,tgg");
         return build;
     }
 
-    public SonarScanner initializeBuild(String projectId, String sources) {
+    public SonarScanner initializeBuild(String projectId, String sources, String profileName) {
         assertTrue(
             "SonarQube 5.6 is the minimum version to generate the issues report",
             orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("5.6"));
         orchestrator.getServer().provisionProject(projectId, projectId);
-        orchestrator.getServer().associateProjectToQualityProfile(projectId, "plsqlopen", "rules");
+        orchestrator.getServer().associateProjectToQualityProfile(projectId, "plsqlopen", profileName);
 
         String originalSource = sources;
         if (originalSource == null) {
