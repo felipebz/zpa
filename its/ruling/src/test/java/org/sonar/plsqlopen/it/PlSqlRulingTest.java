@@ -126,5 +126,23 @@ public class PlSqlRulingTest {
         SonarScanner build = initializeFormsBuild("demo0001", "Doag-Forms-extracted/demo0001/WEBUTIL_DEMO");
         executeBuild(build);
     }
+
+    @Test
+    public void demo0002() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0002", "Doag-Forms-extracted/demo0002/DEMO0002");
+        executeBuild(build);
+    }
+
+    @Test
+    public void frw_ref() throws Exception {
+        SonarScanner build = initializeFormsBuild("frw_ref", "Doag-Forms-extracted/demo0002/FRW_REF");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0003() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0003", "Doag-Forms-extracted/demo0003/DEMO0003");
+        executeBuild(build);
+    }
     
 }
