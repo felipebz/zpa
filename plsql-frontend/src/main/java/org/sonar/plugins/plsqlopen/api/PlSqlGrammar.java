@@ -978,7 +978,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-statement.html
         b.rule(CREATE_PACKAGE).is(
-                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
+                b.optional(CREATE), b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 PACKAGE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                 b.zeroOrMore(b.firstOf(
@@ -994,7 +994,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-BODY-statement.html
         b.rule(CREATE_PACKAGE_BODY).is(
-                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
+                b.optional(CREATE), b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                 PACKAGE, BODY, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                 b.firstOf(IS, AS),
                 b.optional(DECLARE_SECTION),
@@ -1105,6 +1105,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 CREATE_VIEW,
                 CREATE_TRIGGER,
                 CREATE_TYPE_BODY,
-                CREATE_TYPE));
+                CREATE_TYPE,
+                PROCEDURE_DECLARATION,
+                FUNCTION_DECLARATION));
     }
 }
