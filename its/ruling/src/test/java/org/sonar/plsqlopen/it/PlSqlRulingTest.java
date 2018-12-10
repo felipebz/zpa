@@ -47,13 +47,29 @@ public class PlSqlRulingTest {
       .build();
 
     public SonarScanner initializeBuild(String projectId) throws Exception {
+        return initializeBuild(projectId, null);
+    }
+
+    public SonarScanner initializeFormsBuild(String projectId, String sources) {
+        SonarScanner build = initializeBuild(projectId, sources);
+        build.setProperty("sonar.plsql.forms.metadata", "metadata.json");
+        build.setProperty("sonar.plsql.file.suffixes", "pcd,fun,pks,pkb,tgg");
+        return build;
+    }
+
+    public SonarScanner initializeBuild(String projectId, String sources) {
         assertTrue(
             "SonarQube 5.6 is the minimum version to generate the issues report",
             orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("5.6"));
         orchestrator.getServer().provisionProject(projectId, projectId);
         orchestrator.getServer().associateProjectToQualityProfile(projectId, "plsqlopen", "rules");
 
-        return SonarScanner.create(FileLocation.of("../sources/" + projectId).getFile())
+        String originalSource = sources;
+        if (originalSource == null) {
+            originalSource = projectId;
+        }
+
+        return SonarScanner.create(FileLocation.of("../sources/" + originalSource).getFile())
             .setProjectKey(projectId)
             .setProjectVersion("1")
             .setLanguage("plsqlopen")
@@ -102,6 +118,12 @@ public class PlSqlRulingTest {
         build.setSourceDirs("./source");
         build.setProperty("sonar.coverageReportPaths", null);
         build.setProperty("sonar.testExecutionReportPaths", null);
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0001() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0001", "Doag-Forms-extracted/demo0001/WEBUTIL_DEMO");
         executeBuild(build);
     }
     
