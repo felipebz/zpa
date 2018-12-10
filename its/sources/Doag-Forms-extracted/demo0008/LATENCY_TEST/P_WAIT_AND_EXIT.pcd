@@ -1,0 +1,9 @@
+PROCEDURE P_WAIT_AND_EXIT IS
+BEGIN
+          -- Kurze Zeit um die Meldung sichtbar zu machen
+          for i in 1..100000000
+          loop
+            null;
+          end loop;  
+          exit_form(no_validate);
+END;          

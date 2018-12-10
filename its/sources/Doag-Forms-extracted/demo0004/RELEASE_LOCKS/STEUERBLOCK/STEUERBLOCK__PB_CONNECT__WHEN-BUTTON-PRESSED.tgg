@@ -1,0 +1,29 @@
+BEGIN
+declare
+  v_User varchar2(30) := get_application_property(USERNAME);
+  v_Pwd  varchar2(30) := get_application_property(PASSWORD); 
+  v_Con  varchar2(30) := get_application_property(CONNECT_STRING);
+begin
+  if v_Con is null and :steuerblock.Database is not null then
+    v_Con := :steuerblock.Database;
+  end if;
+  logout;
+  logon('SYSTEM', :steuerblock.Password || '@' || v_Con, TRUE);
+  if not FORM_SUCCESS then
+    raise FORM_TRIGGER_FAILURE;
+  end if;
+  if Is_DBA then
+    Kill_session;
+    Log_System_Schliessen;
+  else
+    Message('You do not have the permission to kill this session!');
+    Log_System_Schliessen;
+  end if;
+exception
+  when OTHERS then
+    Message('Connection failed, try to reconnect ...');
+    logout;
+    logon(v_User, v_Pwd || '@' || v_Con, FALSE);
+    Log_System_Schliessen;
+end;
+END;

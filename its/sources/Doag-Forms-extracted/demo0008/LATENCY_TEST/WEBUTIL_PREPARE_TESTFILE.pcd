@@ -1,0 +1,79 @@
+PROCEDURE webutil_prepare_testfile IS
+/* DOK:================================================================================================
+ * Bezeichnung       :  webutil_prepare_profi_testfile
+ * Inhalt            :  Diese Prozedur dient der Testdateienerstellung für den Latenztest
+ * Autor             :  F.Hoffmann / Cologne Data
+ * Erstellungsdatum  :  07.04.2015
+ *
+ * Änd-Nr.  Datum        Name        Beschreibung
+ * ----------------------------------------------------------------------------------------------------
+*/
+
+  -- webutil add_on
+  vch_temp_verzeichnis    varchar2(200);
+
+  vch_dateiname_1k         varchar2(50) := 'test_01k.txt';
+  vch_dateiname_16k        varchar2(50) := 'test_16k.txt';
+  vch_dateiname_64k        varchar2(50) := 'test_64k.txt';
+  
+  vch_slash                varchar2(1);
+
+  bol_success              boolean;
+  bol_falsche_konfig       boolean := false;
+  
+  ftype text_io.file_type;
+
+
+
+begin
+    -- Unterscheidung MAC-OS, Linux etc. "\" oder Windows File-System "/"
+    vch_slash := webutil_clientinfo.get_file_separator;
+   
+    -- Defaultbelegung von Verzeichnissen und INI Dateien
+    vch_temp_verzeichnis := webutil_get_as_tmp_dir;
+
+    :status := vch_temp_verzeichnis || vch_dateiname_1k;
+
+    if not webutil_file.file_exists(vch_temp_verzeichnis  || vch_dateiname_1k)
+    then
+      ftype := text_io.fopen(vch_temp_verzeichnis  || vch_dateiname_1k,'W');
+      text_io.put_line(ftype,'Testdatei 1 KB');
+      for i in 1..5
+      loop
+        text_io.put_line(ftype,'12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
+      end loop;
+     synchronize;
+     text_io.fclose(ftype); 
+     synchronize;
+    end if;
+    
+    :status := vch_temp_verzeichnis || vch_dateiname_16k;
+
+    if not webutil_file.file_exists(vch_temp_verzeichnis || vch_dateiname_16k)
+    then
+      ftype := text_io.fopen(vch_temp_verzeichnis || vch_dateiname_16k,'W');
+      text_io.put_line(ftype,'Testdatei 16 KB');
+      for i in 1..80
+      loop
+        text_io.put_line(ftype,'12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
+      end loop;
+     synchronize;
+     text_io.fclose(ftype); 
+     synchronize;
+    end if;
+
+    :status := vch_temp_verzeichnis || vch_slash  || vch_dateiname_64k;
+    
+    if not webutil_file.file_exists(vch_temp_verzeichnis || vch_dateiname_64k)
+    then 
+     ftype := text_io.fopen(vch_temp_verzeichnis || vch_dateiname_64k,'W');
+     text_io.put_line(ftype,'Testdatei 64 KB');
+     for i in 1..320
+     loop
+       text_io.put_line(ftype,'12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
+     end loop;
+     synchronize;
+     text_io.fclose(ftype); 
+     synchronize;
+   end if;        
+end;

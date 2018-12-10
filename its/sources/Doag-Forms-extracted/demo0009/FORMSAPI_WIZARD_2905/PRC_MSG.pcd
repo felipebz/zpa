@@ -1,0 +1,102 @@
+/** 
+ *  Erstellt: F.Matz - Okt.2016
+ *  Geaendert: 26.10.2016 , 29.06.2017 - F.Matz 
+ *
+ */
+ 
+PROCEDURE prc_msg (p_msg     VARCHAR2, 
+                   p_1       VARCHAR2 DEFAULT NULL, 
+                   p_2       VARCHAR2 DEFAULT NULL, 
+                   p_3       VARCHAR2 DEFAULT NULL,
+                   p_4       VARCHAR2 DEFAULT NULL,
+                   p_5       VARCHAR2 DEFAULT NULL,
+                   p_msg2    VARCHAR2 DEFAULT NULL,
+                   p_title   VARCHAR2 DEFAULT NULL,      
+                   p_type    VARCHAR2 DEFAULT 'MESSG'
+                   ) IS
+ 
+    C_MAX_ALERT_LEN CONSTANT NUMBER(3):= 200;
+    
+    l_alert           Alert;
+    l_b               PLS_INTEGER;
+    l_msg             VARCHAR2(2048);
+    l_msg_t           VARCHAR2(2048);
+    l_msgtab          BOOLEAN;
+    l_type            VARCHAR2(10);
+    l_exception_alert EXCEPTION;
+    l_exception_msgno EXCEPTION;
+    l_errorno          VARCHAR2(5);
+    l_errorcode        VARCHAR2(10);
+    
+    ---------------------------------------------------------
+    PROCEDURE prc_lmsg (p_str VARCHAR2) IS
+      l_b PLS_INTEGER;
+    BEGIN
+      Set_Alert_property(l_alert, alert_message_text, p_str);
+      l_b := Show_Alert(l_alert);
+    END prc_lmsg;
+    ---------------------------------------------------------
+    
+BEGIN
+  
+    l_errorno   := NULL;
+    l_errorcode := NULL;
+    
+    l_alert:= Find_Alert(p_type);
+    IF Id_Null(l_alert) THEN 
+       Message('$$$ Das Alert: '||p_type||' existiert nicht! $$$'); 
+       RAISE l_exception_alert; 
+    END IF;
+    
+    -- flying messages --
+    -- set --
+    l_msg     := p_msg;
+    l_type    := p_type;
+    l_msgtab  := FALSE;
+      
+    l_msg:= replace(l_msg, '{1}', p_1);
+    l_msg:= replace(l_msg, '{2}', p_2);
+    l_msg:= replace(l_msg, '{3}', p_3);
+    l_msg:= replace(l_msg, '{4}', p_4);
+    l_msg:= replace(l_msg, '{5}', p_5);
+            
+    IF p_title IS NOT NULL THEN
+      Set_Alert_property(l_alert, title, p_title);
+    END IF;
+    
+    -- Textlange behandeln --
+    l_msg_t:= l_msg;
+    
+    LOOP 
+      IF length(l_msg)>C_MAX_ALERT_LEN THEN
+        l_msg_t:= substr(l_msg,1,C_MAX_ALERT_LEN);
+        l_msg:= substr(l_msg, C_MAX_ALERT_LEN+1,length(l_msg)-C_MAX_ALERT_LEN-1);
+      ELSE  
+        l_msg_t:= l_msg;
+        l_msg:=NULL;
+      END IF;
+      
+      Set_Alert_property(l_alert, alert_message_text, l_msg_t);
+      l_b := Show_Alert(l_alert);
+  
+      EXIT WHEN l_msg IS NULL;
+    END LOOP;
+    
+    IF p_TYPE IN ('ERROR', 'EXCEPTION') THEN
+       g.STATE:= l_TYPE;
+       IF l_errorno IS NOT NULL THEN
+           -- save Global ! --
+           g.ERROR_NO   := l_errorno;
+           g.ERROR_CODE := l_errorcode;
+       END IF;
+    END IF;
+    
+  EXCEPTION WHEN l_exception_alert THEN
+        message('$$$ EXCEPTION: prc_msg(l_exception_alert) - Alert nicht gefunden! $$$');
+      WHEN l_exception_msgno THEN
+        message('$$$ EXCEPTION: prc_msg(l_exception_msg) - Message Problem! $$$');
+      WHEN OTHERS THEN
+        prc_lmsg('$$$ EXCEPTION in prc_msg bei: '||l_msg||chr(10)||sqlerrm);      
+        
+END prc_msg;
+  

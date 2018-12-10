@@ -1,0 +1,165 @@
+PROCEDURE prc_MIGRATION IS
+   l_fname_blank VARCHAR2(128);
+   
+PROCEDURE prc_clear_results IS
+BEGIN
+   -- clear final results       --
+   IF webutil_file.file_exists(:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+      IF webutil_file.delete_file(:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+         NULL;
+      END IF;
+   END IF;
+   IF webutil_file.file_exists(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+      IF webutil_file.delete_file(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+         NULL;
+      END IF;
+   END IF;         
+   -- delete all logs --
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log') THEN
+         NULL;
+      END IF;
+   END IF;
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log') THEN
+         NULL;
+      END IF;
+   END IF;
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log') THEN
+         NULL;
+      END IF;
+   END IF;  
+END prc_clear_results;
+
+PROCEDURE prc_clear_results_HOST IS
+   l_cmd VARCHAR2(2048);   
+BEGIN
+   
+   HOST( 'IF EXIST '||:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||                          ' DEL '||:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME,  NO_SCREEN);
+
+   HOST( 'IF EXIST '||:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||                          ' DEL '||:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME,  NO_SCREEN);
+
+   HOST( 'IF EXIST '||:PARAMETER.P_LOG_DIR ||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log'||    ' DEL '||:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log',  NO_SCREEN);
+
+   HOST( 'IF EXIST '||:PARAMETER.P_LOG_DIR ||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log'||' DEL '||:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log',  NO_SCREEN);
+
+   HOST( 'IF EXIST '||:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log'||' DEL '||:PARAMETER.P_MIGR_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log',  NO_SCREEN);
+
+END prc_clear_results_HOST;
+
+BEGIN
+  
+   l_fname_blank:= substr(:BLK_HANDLG.FNAME, 1, length(:BLK_HANDLG.FNAME)-4);
+
+   IF :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND 
+      :BLK_HANDLG.FEXTENT IN ('FMB', 'PLL', 'MMB') AND
+      :BLK_HANDLG.STATUS_CHECK<>'ERROR' THEN
+      
+      -- for re-enter loop:: configure parameters for one fmb e.g. --
+       pkg_Config.prc_set_Config_INI_Source(:BLK_HANDLG.FNAME); 
+             
+      IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN        
+         prc_clear_results;
+      ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN       
+         prc_clear_results_HOST;
+      END IF;
+      
+       -- running 2 scripts for one --
+       pkg_FAM_RUN_Script.prc_run_FAM_script_mig('mig_main_one.p2s');
+       
+       IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN   
+         prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_main_one.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log'); 
+       ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN   
+         prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_main_one.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log'); 
+       END IF;
+       
+      SYNCHRONIZE;  
+         
+      pkg_FAM_RUN_Script.prc_run_FAM_script_win2unix('mig_Win2Unix_one.p2s');
+      
+      IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN   
+         prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_Win2Unix_one.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log');        
+         SYNCHRONIZE;  
+         
+         -- merge files --
+         prc_file_merge( :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log', 
+                           :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log',
+                           :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log',
+                          '--- BEGINN - Windows => Unix Migration  --------------------------------' );
+                  
+         prc_Set_Migrate_Result(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log');
+        
+         SYNCHRONIZE;
+           
+          IF NOT webutil_file.file_exists(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME)
+           --  OR
+          --  NOT webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log') OR
+          --  NOT webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log')
+          THEN
+              :BLK_HANDLG.STATUS_MIGRATE  := 'ERROR';
+           ELSE
+              :BLK_HANDLG.STATUS_MIGRATE  := 'SUCCESS';
+          END IF;  
+       
+       ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN 
+          prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_Win2Unix_one.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log');   
+          SYNCHRONIZE;  
+         
+          -- merge files --
+          prc_file_merge_HOST( :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log', 
+                                 :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log',
+                                 :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log',
+                                '--- BEGINN - Windows => Unix Migration  --------------------------------' );
+                  
+          prc_Set_Migrate_Result(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one-all.log');
+        
+          SYNCHRONIZE;
+           
+           IF NOT fnc_File_Exists_HOST(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME)
+           --  OR
+          --  NOT webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log') OR
+          --  NOT webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_Win2Unix_one.log')
+          THEN
+              :BLK_HANDLG.STATUS_MIGRATE  := 'ERROR';
+           ELSE
+              :BLK_HANDLG.STATUS_MIGRATE  := 'SUCCESS';
+           END IF;  
+           
+       END IF;
+       
+    -- 28.02.2017 / 02.05.2017 --
+    ELSIF :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND 
+          :BLK_HANDLG.FEXTENT = 'RDF' AND 
+          :BLK_HANDLG.STATUS_CHECK<>'ERROR' THEN
+          
+          IF :PARAMETER.P_REPORTS_RUN='YES' THEN 
+              pkg_Config.prc_set_Config_INI_Source(:BLK_HANDLG.FNAME);
+             pkg_FAM_RUN_Script.prc_run_FAM_script_mig('mig_rdfconvert.p2s');
+             
+             IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN   
+                prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_rdfconvert.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log');  
+                SYNCHRONIZE;
+                             
+                IF NOT webutil_file.file_exists(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+                    :BLK_HANDLG.STATUS_MIGRATE  := 'ERROR';
+                 ELSE
+                    :BLK_HANDLG.STATUS_MIGRATE  := 'SUCCESS';
+                 END IF; 
+             
+             ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN 
+                prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'mig_rdfconvert.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-mig_main_one.log');  
+                SYNCHRONIZE;
+                           
+                 IF NOT fnc_File_Exists_HOST(:PARAMETER.P_UNIX_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME) THEN
+                    :BLK_HANDLG.STATUS_MIGRATE  := 'ERROR';
+                 ELSE
+                    :BLK_HANDLG.STATUS_MIGRATE  := 'SUCCESS';
+                 END IF;   
+                 
+              END IF;
+          END IF;
+          
+    END IF;   
+    
+END prc_MIGRATION;

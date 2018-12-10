@@ -1,0 +1,7 @@
+BEGIN
+declare
+     hBean ITEM:= FIND_ITEM('BL.BEAN');
+begin
+   fbean.invoke( hBean, 1, 'forceGotoPage', '0');
+end;  
+END;

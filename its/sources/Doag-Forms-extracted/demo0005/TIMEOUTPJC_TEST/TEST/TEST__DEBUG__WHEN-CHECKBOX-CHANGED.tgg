@@ -1,0 +1,3 @@
+BEGIN
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'ENABLE_DEBUGGING',:debug);
+END;

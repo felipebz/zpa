@@ -1,0 +1,15 @@
+BEGIN
+BEGIN
+   
+   g.msg_push('W-B-P:BT_CHECK_SINGLE');
+
+   prc_set_statistik_SINGLE;
+   
+   g.msg_free;
+   
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;     
+END;
+
+
+END;

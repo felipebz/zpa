@@ -1,0 +1,5 @@
+BEGIN
+set_block_property('ALL_OBJECTS',DEFAULT_WHERE,'where owner = ''SYS'' and object_type = ''PACKAGE'''); 
+execute_query;
+
+END;

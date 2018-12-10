@@ -1,0 +1,5 @@
+BEGIN
+begin
+  :ole.filename := client_get_file_name('C:\temp','','|Word Documents(*.doc)|*.doc|','Select output document...',SAVE_FILE,true);
+end;
+END;

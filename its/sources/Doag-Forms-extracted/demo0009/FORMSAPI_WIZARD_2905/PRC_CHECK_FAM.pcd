@@ -1,0 +1,143 @@
+PROCEDURE prc_Check_FAM IS
+
+    C_SCRIPT_CHECK CONSTANT VARCHAR2(512) := '${p_formsapi_execute} /SCRIPT /RUN="${p_script_dir}\${p_script_name}"  /output="${p_log_dir}"';
+    
+    C_SCRIPT_CHECK_def CONSTANT VARCHAR2(512):= 
+'PROGRAM Check_FAM;
+
+//Begin Main
+BEGIN
+  // -- get the current FormsAPI Master Version
+  logadd(\''Version      : \''+GetFormsAPIMasterVersionInfo);
+  logadd(\''license Name : \''+getLicenseName );
+
+  // -- who is running me?
+  logadd(GetUserName+\''@\''+GetComputerName);
+
+  // -- what is my script name?
+  logadd(GetScriptName);
+ 
+  logadd( \''drives : \''+getDrives );
+
+END.
+//End Main
+       ';
+          
+    l_script_check VARCHAR2(4096);
+    l_in_file      Text_IO.File_Type;
+    l_in_file_C    client_Text_IO.File_Type;
+    l_in_buff      VARCHAR2(400);
+    l_buff_all     VARCHAR2(4000);
+    l_cnt          NUMBER(4);
+    l_cmd         VARCHAR2(4096);
+         
+ BEGIN
+   
+    g.msg_push('prc_check_FAM');    
+    
+    IF :PARAMETER.P_CONFIG_FORMSAPI_EXECUTE IS NULL THEN      
+       prc_ERROR('$$$ FormsAPI Master not found - ABORT ! $$$');
+       EXIT_FORM;
+    END IF;
+    
+    -- write check script --
+    prc_write_script(:PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check-fam.p2s', replace(C_SCRIPT_CHECK_def, '\''', ''''));
+    
+    SYNCHRONIZE;
+    
+    -- set rdy => run     --   
+    l_script_check := C_SCRIPT_CHECK;
+    
+    l_script_check:= replace(l_script_check, '${p_formsapi_execute}', :PARAMETER.P_CONFIG_FORMSAPI_EXECUTE); 
+    l_script_check:= replace(l_script_check, '${p_script_dir}',       :PARAMETER.P_SCRIPT_DIR);
+    l_script_check:= replace(l_script_check, '${p_script_name}',      'check-fam.p2s');
+    l_script_check:= replace(l_script_check, '${p_log_dir}',           :PARAMETER.P_LOG_DIR);
+    
+    IF :PARAMETER.P_HOST_CLIENT='HOST' THEN 
+      
+       l_cmd:= 'CMD /C IF EXIST '||:PARAMETER.P_SCRIPT_DIR||'\check-fam.log'||' DEL '||:PARAMETER.P_SCRIPT_DIR||'\check-fam.log';
+       
+       HOST( l_cmd, NO_SCREEN );  
+       SYNCHRONIZE;
+       
+        pkg_FAM_run_Script.prc_wrt_CMD('do_check_fam.cmd', l_script_check);
+        SYNCHRONIZE;
+            
+       HOST( 'CMD /C CALL '||:PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'do_check_fam.cmd', NO_SCREEN);  
+       SYNCHRONIZE;
+      
+       --- Read results ---    
+       l_cnt:=1;
+       l_buff_all:='';
+       l_in_file := Text_IO.Fopen(:PARAMETER.P_SCRIPT_DIR||'\check-fam.log', 'r');
+       LOOP
+         BEGIN
+             Text_IO.get_line(l_in_File, l_in_buff);
+             l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF    l_cnt=2 THEN 
+                   :PARAMETER.P_FORMSAPI_VERSION := substr(l_in_buff, 35, length(l_in_buff)+1-35);
+             ELSIF l_cnt=3 THEN    
+                   :PARAMETER.P_FORMSAPI_LICENSE:= substr(l_in_buff, 35, length(l_in_buff)+1-35);
+             END IF;
+             l_cnt:= l_cnt+1;
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               Text_IO.Fclose(l_in_File);
+               EXIT;
+             WHEN OTHERS THEN
+               Text_IO.Fclose(l_in_File);
+               prc_error('$$$ Fehler in prc_Check_FAM: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+       END LOOP;
+    
+    ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN 
+      
+        IF webutil_file.file_exists(:PARAMETER.P_SCRIPT_DIR||'\check-fam.log') THEN
+          IF webutil_file.delete_file(:PARAMETER.P_SCRIPT_DIR||'\check-fam.log') THEN
+             NULL;
+          END IF;
+        END IF;
+      
+        pkg_FAM_run_Script.prc_wrt_CMD('do_check_fam.cmd', l_script_check);
+        SYNCHRONIZE;
+            
+       WEBUTIL_HOST.BLOCKING( 'CMD /C CALL '||:PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'do_check_fam.cmd' );  
+       SYNCHRONIZE;
+      
+       --- Read results ---    
+       l_cnt:=1;
+       l_buff_all:='';
+       l_in_file_C := client_Text_IO.Fopen(:PARAMETER.P_SCRIPT_DIR||'\check-fam.log', 'r');
+       LOOP
+         BEGIN
+             client_Text_IO.get_line(l_in_File_C, l_in_buff);
+             l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF    l_cnt=2 THEN 
+                   :PARAMETER.P_FORMSAPI_VERSION := substr(l_in_buff, 35, length(l_in_buff)+1-35);
+             ELSIF l_cnt=3 THEN    
+                   :PARAMETER.P_FORMSAPI_LICENSE:= substr(l_in_buff, 35, length(l_in_buff)+1-35);
+             END IF;
+             l_cnt:= l_cnt+1;
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               EXIT;
+             WHEN OTHERS THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               prc_error('$$$ Fehler in prc_Check_FAM: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+       END LOOP;
+               
+    END IF;
+               
+    g.msg_free;
+                  
+EXCEPTION WHEN OTHERS THEN
+    prc_EXCEPTION;
+           
+END prc_check_FAM;
+ 

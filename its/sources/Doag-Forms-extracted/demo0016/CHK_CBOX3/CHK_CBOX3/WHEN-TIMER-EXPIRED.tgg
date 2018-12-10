@@ -1,0 +1,4 @@
+BEGIN
+go_item('label');
+set_item_property('c.cbox',enabled,property_false);
+END;

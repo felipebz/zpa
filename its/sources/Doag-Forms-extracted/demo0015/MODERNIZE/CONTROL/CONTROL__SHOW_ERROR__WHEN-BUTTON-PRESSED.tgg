@@ -1,0 +1,3 @@
+BEGIN
+set_custom_property('ERROR_STACK',all_rows,'ShowError','20:ERR-00020:This is the text of error 20...');
+END;

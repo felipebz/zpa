@@ -1,0 +1,46 @@
+PROCEDURE DOWNLOAD_AS IS
+  l_success       boolean;
+  l_bare_filename varchar2(50);
+  l_value_start   number;
+  l_value_stop    number;
+  l_result        number;
+  l_bandwidth     number;
+BEGIN
+
+-- THIS CODE ASSUMES THAT CLIENT IS WINDOWS BASED
+-- CHANGE THE serverFile PATH FROM C:\TEMP TO THE LOCATION SET IN WEBUTIL.CFG
+
+--  l_bare_filename := substr(:upload.file_name,instr(:upload.file_name,'\',-1)+1);
+
+  clear_message;
+
+  l_value_start := f_get_timer_value;
+
+  l_success := webutil_file_transfer.AS_to_Client_with_progress
+                                    (clientFile       => :download.file_name
+                                    ,serverFile       => 'C:\temp\1MB.pdf'
+                                    ,progressTitle    => 'Download 1 MB from Application Server in progress'
+                                    ,progressSubTitle => 'Please wait'
+                                    );
+                                    
+  l_value_stop := f_get_timer_value;
+  
+  l_result := (l_value_stop-l_value_start) /1000;
+  l_bandwidth := 8 / l_result;
+  
+  Message('Bandbreite = ' || to_char(round(l_bandwidth,2)) || 'Mbit/s Messung ' || to_char(round(l_result,2)) || ' Sekunden');
+                                    
+  if l_success
+  then
+    message('File downloaded successfully from the Application Server');
+  else
+    message('File download from Application Server failed');
+  end if;
+  
+  exception
+    when others
+    then
+      message('File download failed: '||sqlerrm);
+  
+
+END;

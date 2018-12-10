@@ -1,0 +1,13 @@
+{
+  "alerts": [],
+  "blocks": [
+    {
+      "name": "TEST",
+      "items": [
+        "TEST",
+        "BUTTON1"
+      ]
+    }
+  ],
+  "lovs": []
+}

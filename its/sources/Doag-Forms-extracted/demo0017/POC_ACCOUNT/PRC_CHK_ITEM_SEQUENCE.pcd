@@ -1,0 +1,44 @@
+PROCEDURE prc_chk_item_sequence IS
+
+   -- Friedhold Matz - 2018-FEB --
+   -- Automated self check sequence definition . --
+BEGIN
+
+   --                     block          item                 value          expected result( DEFAULT:OK | NOK )
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'USERNAME',         'Tester'                         );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'FULLNAME',         'Friedhold Matz'                 );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL',            'fx@xx.'                       ,'NOK'); --'OK'  ); -- <<< 'OK' => FALSE !
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL',            'fx@xx.com'                      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL2',            'fx@xx.com'                    ,'NOK');
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL2',            'fy@xx.com'                       );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'QUERY',            'What''s the name of your cat ?'  );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'ANSWER',           'Susi'                           );
+   
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '13aaaPPP+#-'                 ,'NOK');
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '1333aaPPP+#-'                ,'NOK');  
+   
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         'testeraaPPP+#-123456'        ,'NOK');
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         'aaPPPtester+#-123456'        ,'NOK');
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '123aaaPPP+#-1TESTER'         ,'NOK');
+  
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '123aaaPPP+#-'                  );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '123aaaPPP+#-123456'            );  
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         '123aaaPPP+#-1234567890'        );
+   
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD_RETRY',   '123aaaPPP+#-1234567891'        );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD_RETRY',   '123aaaPPP+#-1234567890'        );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'BT_COMMIT',          'PRESS'      );
+   
+   -- clear (reset) items --
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'USERNAME',         ''      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'FULLNAME',         ''      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL',            ''      ); 
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'EMAIL2',            ''      ); 
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'QUERY',            ''      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'ANSWER',           ''      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD',         ''      );
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'PASSWORD_RETRY',   ''      );
+   
+   pkg_Item.prc_chk_item('BLK_ACCOUNT', 'BT_COMMIT',         'GO'    );
+   
+END prc_chk_item_sequence;

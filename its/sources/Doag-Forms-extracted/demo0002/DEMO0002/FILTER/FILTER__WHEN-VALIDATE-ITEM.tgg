@@ -1,0 +1,4 @@
+BEGIN
+One_Time_Timer.Initialize (Const_local.ott_Query);
+
+END;

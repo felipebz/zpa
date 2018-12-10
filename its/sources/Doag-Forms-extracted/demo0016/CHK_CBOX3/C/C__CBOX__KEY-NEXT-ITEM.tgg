@@ -1,0 +1,21 @@
+BEGIN
+declare
+
+BEGIN
+  
+   synchronize;
+  
+   if get_view_property('CBX',VISIBLE) = 'TRUE' 
+     and length(:label) > 0 
+     and upper (:label) <> upper (:cbox)
+   then
+     go_item('label');
+     set_item_property('c.cbox',enabled,property_false);
+   else
+     pkg_CBOX.prc_kni;
+   end if;  
+   
+  
+END;
+
+END;

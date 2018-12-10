@@ -1,0 +1,25 @@
+BEGIN
+
+-- Friedhold Matz - 2018-FEB
+
+DECLARE
+  l_res VARCHAR2(256);
+BEGIN
+  l_res:= pkg_Item.fnc_final_check;  
+  IF l_res<>'OK' THEN
+     IF fnc_msg_query(' User uccount is not completed ! '||chr(10)||
+                       l_res ||chr(10)||
+                       'Do you want to exit ?')='YES' THEN
+        EXIT_FORM(NO_VALIDATE);
+     ELSE
+         Raise Form_trigger_Failure;
+     END IF;
+  END IF;
+  
+  -- permanent storage function here ... --
+  prc_info('User account is completed .');
+  
+  EXIT_FORM;
+  
+END KEY_EXIT;
+END;

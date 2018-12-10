@@ -1,0 +1,28 @@
+PROCEDURE DOWNLOAD_AS IS
+  l_success       boolean;
+  l_bare_filename varchar2(50);
+BEGIN
+
+-- THIS CODE ASSUMES THAT CLIENT IS WINDOWS BASED
+-- CHANGE THE serverFile PATH FROM C:\TEMP TO THE LOCATION SET IN WEBUTIL.CFG
+  l_bare_filename := substr(:upload.file_name,instr(:upload.file_name,'\',-1)+1);
+  l_success := webutil_file_transfer.AS_to_Client_with_progress
+                                    (clientFile       => :download.file_name
+                                    ,serverFile       => 'c:\kassandra\temp\'||l_bare_filename
+                                    ,progressTitle    => 'Download from Application Server in progress'
+                                    ,progressSubTitle => 'Please wait'
+                                    );
+  if l_success
+  then
+    message('File downloaded successfully from the Application Server');
+  else
+    message('File download from Application Server failed');
+  end if;
+  
+  exception
+    when others
+    then
+      message('File download failed: '||sqlerrm);
+  
+
+END;

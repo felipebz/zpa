@@ -1,0 +1,13 @@
+PROCEDURE PRC_COPY_FILE_HOST(p_srcfile VARCHAR2, p_destfile VARCHAR2) IS
+    l_success BOOLEAN;
+    
+BEGIN
+    g.msg_push('pkg_Script.prc_DOS_file_copy_HOST');
+      
+    HOST(' COPY '||p_srcfile||' '||p_destfile, NO_SCREEN );
+    
+    g.msg_free;
+    
+EXCEPTION WHEN OTHERS THEN
+    prc_EXCEPTION;    
+END prc_copy_file_HOST;

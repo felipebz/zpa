@@ -1,0 +1,76 @@
+PROCEDURE prc_CONFIGURATION IS
+BEGIN
+   
+   prc_show_init;   
+   
+   prc_set_UserHome;
+       
+   SYNCHRONIZE;
+
+   -- 20.02.2017 / 26.04.2017 - FM - BO UNIX
+   :PARAMETER.P_FILE_SEPARATOR:= fnc_get_file_separator;  --- webutil_file.GET_FILE_SEPARATOR;
+    
+   -- 20.02.2017 - F.Matz --
+   IF :PARAMETER.P_CONFIG_INI IS NOT NULL THEN 
+      pkg_Config.prc_get_config(:PARAMETER.P_CONFIG_INI);
+   ELSIF :PARAMETER.P_CONFIG_INI_BLANK IS NOT NULL THEN
+       pkg_Config.prc_get_config(:PARAMETER.P_CONFIG_INI_BLANK);
+   ELSE
+       prc_ERROR('$$$ ERROR: Config.INI not used ! $$$'||chr(10)||
+                 ' - Modul Abort ! - ');
+       EXIT_FORM; --- <<< SENSE <<<
+   END IF;
+   
+   -- 19.05.2017 --
+   prc_show_init('STEP1', 'Read configuration from config.ini', 'SUCCESS');
+   
+   IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN 
+        
+      pkg_Config.prc_Create_DIRS;
+    
+      -- copy from user.space & fam.scripts to workspace . --
+      pkg_Config.prc_Copy_Dir( :PARAMETER.P_CONFIG_USER_SOURCES,      :PARAMETER.P_SOURCE_DIR );
+      pkg_Config.prc_Copy_Dir( :PARAMETER.P_CONFIG_USER_ADDONS,       :PARAMETER.P_ADDON_DIR  );
+      pkg_Config.prc_Copy_Dir( :PARAMETER.P_CONFIG_FORMSAPI_SCRIPTS, :PARAMETER.P_SCRIPT_DIR );
+      
+      -- 19.05.2017 --
+      prc_show_init('STEP2', 'Create directories and copy files', 'SUCCESS');
+            
+      pkg_BLK_DATA.prc_exec_from_directory('HANDLG', :PARAMETER.P_SOURCE_DIR, '*.*');
+      
+      -- 19.05.2017 --
+      prc_show_init('STEP3', 'Read from source directory into block', 'SUCCESS');
+      
+   ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+        
+      pkg_Config.prc_Create_DIRS_HOST;
+          
+      pkg_Config.prc_Copy_Dir_HOST( :PARAMETER.P_CONFIG_USER_SOURCES,     :PARAMETER.P_SOURCE_DIR );
+      pkg_Config.prc_Copy_Dir_HOST( :PARAMETER.P_CONFIG_USER_ADDONS,      :PARAMETER.P_ADDON_DIR  );
+      pkg_Config.prc_Copy_Dir_HOST( :PARAMETER.P_CONFIG_FORMSAPI_SCRIPTS, :PARAMETER.P_SCRIPT_DIR );       
+
+      -- 19.05.2017 --
+      prc_show_init('STEP2', 'Create directories and copy files', 'SUCCESS');
+               
+      pkg_BLK_DATA.prc_exec_from_directory_HOST(:PARAMETER.P_SOURCE_DIR);
+
+      -- 19.05.2017 --
+      prc_show_init('STEP3', 'Read from source directory into block', 'SUCCESS');
+
+   ELSE
+         
+      prc_ERROR('$$$ Parameter HOST / CLIENT NOT defined >>> ABORT ! $$$');
+         
+      EXIT_FORM; -- <<< SENSE !
+         
+   END IF;
+      
+   prc_Check_FAM;
+
+   -- 19.05.2017 --
+   prc_show_init('STEP4', 'Check script processing of FormsAPI', 'SUCCESS');
+   
+EXCEPTION WHEN OTHERS THEN
+   g.result:= '$$$ ERROR in Configuration. $$$';
+   prc_EXCEPTION;  
+END;

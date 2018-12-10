@@ -1,0 +1,54 @@
+{
+  "alerts": [],
+  "blocks": [
+    {
+      "name": "EMPLOYEES",
+      "items": [
+        "EMPLOYEE_ID",
+        "FIRST_NAME",
+        "LAST_NAME",
+        "EMAIL",
+        "JOB_ID",
+        "SALARY",
+        "COMMISSION_PCT",
+        "DEPARTMENT_ID"
+      ]
+    },
+    {
+      "name": "DEPARTMENTS",
+      "items": [
+        "DEPARTMENT_ID",
+        "DEPARTMENT_NAME"
+      ]
+    },
+    {
+      "name": "BL_TREE",
+      "items": [
+        "IT_TREE"
+      ]
+    },
+    {
+      "name": "B",
+      "items": [
+        "B",
+        "B2",
+        "B3",
+        "B4"
+      ]
+    },
+    {
+      "name": "SAL",
+      "items": [
+        "SAL"
+      ]
+    },
+    {
+      "name": "OTHRS",
+      "items": [
+        "TREE_WHERE",
+        "EMAIL"
+      ]
+    }
+  ],
+  "lovs": []
+}

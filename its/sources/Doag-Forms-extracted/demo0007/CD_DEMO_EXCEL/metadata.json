@@ -1,0 +1,38 @@
+{
+  "alerts": [
+    "WEBUTIL_ERROR"
+  ],
+  "blocks": [
+    {
+      "name": "ALL_OBJECTS",
+      "items": [
+        "OWNER",
+        "OBJECT_NAME",
+        "OBJECT_ID",
+        "STATUS",
+        "SUBOBJECT_NAME",
+        "OBJECT_TYPE",
+        "CREATED",
+        "CALL_EXCEL",
+        "LAST_QUERY",
+        "BT_TABLES",
+        "BT_PACKAGES",
+        "BT_ALL"
+      ]
+    },
+    {
+      "name": "WEBUTIL",
+      "items": [
+        "DUMMY",
+        "WEBUTIL_CLIENTINFO_FUNCTIONS",
+        "WEBUTIL_FILE_FUNCTIONS",
+        "WEBUTIL_HOST_FUNCTIONS",
+        "WEBUTIL_SESSION_FUNCTIONS",
+        "WEBUTIL_FILETRANSFER_FUNCTIONS",
+        "WEBUTIL_C_API_FUNCTIONS",
+        "WEBUTIL_BROWSER_FUNCTIONS"
+      ]
+    }
+  ],
+  "lovs": []
+}

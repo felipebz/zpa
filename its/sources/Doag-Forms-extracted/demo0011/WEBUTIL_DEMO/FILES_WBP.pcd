@@ -1,0 +1,71 @@
+PROCEDURE FILES_WBP (P_ACTION IN VARCHAR2) IS
+  l_file_list  webutil_file.file_list;
+  l_temp_text  varchar2(8000);
+  l_filename   varchar2(80)   := :global.user_home ||'\helloworld.txt';
+  l_copy_name  varchar2(80)   := :global.user_home ||'\copy of helloworld.txt';
+  l_success    boolean;
+BEGIN
+  l_file_list.delete;
+  
+  if p_action = 'LIST_DIRS'
+  then
+    l_file_list := webutil_file.directory_root_list;
+
+  elsif p_action = 'LIST_FILES'
+  then
+    l_file_list := webutil_file.directory_list(:global.user_home,true);
+
+  elsif p_action = 'FILE_INFO'
+  then
+    l_file_list(1) := 'Exists:    '||webutil_util.booltostr(webutil_file.file_exists(l_filename));
+    l_file_list(2) := 'Readable:  '||webutil_util.booltostr(webutil_file.file_is_readable(l_filename));
+    l_file_list(3) := 'Writeable: '||webutil_util.booltostr(webutil_file.file_is_writable(l_filename));
+    l_file_list(4) := 'Hidden:    '||webutil_util.booltostr(webutil_file.file_is_hidden(l_filename));
+    l_file_list(5) := 'Directory: '||webutil_util.booltostr(webutil_file.file_is_directory(l_filename));
+    l_file_list(6) := 'Size:      '||to_char(webutil_file.file_size(l_filename))||' bytes';
+
+  elsif p_action = 'COPY_FILE'
+  then
+    l_success := webutil_file.copy_file(l_filename,l_copy_name);
+    if l_success 
+    then
+       message('Copy of file successfull');
+    else
+       message('Copy failed');
+    end if;
+    l_file_list := webutil_file.directory_list(:global.user_home,true);
+
+  elsif p_action = 'DELETE_FILE'
+  then
+    l_success := webutil_file.delete_file(l_copy_name);
+    if l_success 
+    then
+       message('Delete of file successfull');
+    else
+       message('Delete failed');
+    end if;
+    l_file_list := webutil_file.directory_list(:global.user_home,true);
+
+  elsif p_action = 'FILE_OPEN'
+  then
+    l_filename := webutil_file.file_open_dialog;
+    l_file_list(1) := 'Selected file: '||l_filename;
+
+  elsif p_action = 'FILE_SAVE'
+  then
+    l_copy_name := webutil_file.file_save_dialog;
+    --l_success   := webutil_file.copy_file(l_filename,l_copy_name);
+    l_file_list(1) := 'File Saved as: '||l_copy_name;
+
+  else
+    message('Invalid Event passed to FILES_WBP');
+  end if;
+  
+  -- write file list to text box
+  l_temp_text := '';
+  for i in 1 .. l_file_list.count
+  loop
+    l_temp_text := l_temp_text || l_file_list(i) || chr(10);
+  end loop;
+  :files.result_box := l_temp_text;
+END;

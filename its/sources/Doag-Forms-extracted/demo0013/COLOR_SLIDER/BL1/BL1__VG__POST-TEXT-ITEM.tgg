@@ -1,0 +1,6 @@
+BEGIN
+PKG_SLIDER.Set_Value   ( 'BL1.G', 1, :BL1.VG ) ;
+:GLOBAL.Green := Ltrim( To_Char( :BL1.G ) ) ;
+:GLOBAL.Color := 'r' || :GLOBAL.Red || 'g' || :GLOBAL.Green || 'b' || :GLOBAL.Blue ;
+Set_Item_Property( 'BL1.COLOR', BACKGROUND_COLOR, :GLOBAL.Color ) ;
+END;

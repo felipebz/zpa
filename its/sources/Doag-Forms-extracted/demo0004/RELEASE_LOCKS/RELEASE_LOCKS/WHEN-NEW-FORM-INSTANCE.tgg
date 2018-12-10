@@ -1,0 +1,6 @@
+BEGIN
+:global.User := get_application_property(USERNAME); 
+:global.Pwd  := get_application_property(PASSWORD); 
+:global.Con  := get_application_property(CONNECT_STRING);
+Refresh;
+END;

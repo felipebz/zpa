@@ -1,0 +1,77 @@
+PROCEDURE prc_Set_Migrate_Result(p_fname VARCHAR2) IS
+   
+   l_buff VARCHAR2(4096);
+   l_cnt  NUMBER(3); 
+    
+PROCEDURE get_result_HOST IS 
+   l_in_file Text_IO.File_Type;
+BEGIN
+   l_buff:='';
+   l_in_file := Text_IO.Fopen(p_fname, 'r');
+   l_cnt:=1;
+   LOOP
+       BEGIN
+           Text_IO.get_line(l_in_File, l_buff);
+           IF substr(l_buff, 10, length('[Error]'))='[Error]' THEN 
+              :BLK_HANDLG.STATUS_MIGRATE:= 'ERROR'; 
+              Text_IO.Fclose(l_in_File);
+              EXIT;
+           END IF;
+           l_cnt:= l_cnt+1;           
+       EXCEPTION 
+           WHEN NO_DATA_FOUND THEN
+             Text_IO.Fclose(l_in_File);
+             EXIT;
+           WHEN OTHERS THEN
+             Text_IO.Fclose(l_in_File);
+             prc_msg('$$$ Fehler in prc_Set_Migrate_Result: '||sqlerrm);
+             EXIT;
+           EXIT;
+    END ;
+    END LOOP;
+END get_result_HOST;
+
+PROCEDURE get_result IS 
+   l_in_file_C client_Text_IO.File_Type;
+BEGIN
+   l_buff:='';
+   l_in_file_C := client_Text_IO.Fopen(p_fname, 'r');
+   l_cnt:=1;
+   LOOP
+       BEGIN
+           client_Text_IO.get_line(l_in_File_C, l_buff);
+           IF substr(l_buff, 10, length('[Error]'))='[Error]' THEN 
+              :BLK_HANDLG.STATUS_MIGRATE:= 'ERROR'; 
+              client_Text_IO.Fclose(l_in_File_C);
+              EXIT;
+           END IF;
+           l_cnt:= l_cnt+1;           
+       EXCEPTION 
+           WHEN NO_DATA_FOUND THEN
+             client_Text_IO.Fclose(l_in_File_C);
+             EXIT;
+           WHEN OTHERS THEN
+             client_Text_IO.Fclose(l_in_File_C);
+             prc_msg('$$$ Fehler in prc_Set_Migrate_Result: '||sqlerrm);
+             EXIT;
+           EXIT;
+    END ;
+    END LOOP;
+END get_result;
+
+BEGIN
+   g.msg_push('prc_Set_Migrate_Result');
+   
+   IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+      get_result_HOST;
+      
+   ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+      get_result;
+      
+   END IF;
+   
+   g.msg_free;
+   
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;
+END prc_Set_Migrate_Result;

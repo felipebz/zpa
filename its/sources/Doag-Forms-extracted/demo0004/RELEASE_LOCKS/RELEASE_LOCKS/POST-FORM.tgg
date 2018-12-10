@@ -1,0 +1,13 @@
+BEGIN
+declare
+  v_User varchar2(30) := get_application_property(USERNAME);
+begin
+  if nvl(v_User, ' ') != :global.User then
+    logout;
+    logon(:global.User, :global.Pwd || '@' || :global.Con, FALSE);
+  end if;
+  erase('global.User'); 
+  erase('global.PWD'); 
+  erase('global.Con');
+end;
+END;

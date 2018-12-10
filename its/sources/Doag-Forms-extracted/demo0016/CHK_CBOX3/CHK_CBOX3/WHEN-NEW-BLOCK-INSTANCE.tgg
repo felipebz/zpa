@@ -1,0 +1,15 @@
+BEGIN
+/*
+ * Quasi AutoComplete ComboBox with native PL/SQL.
+ * 29.01.2018 - Friedhold.Matz@yahoo.com
+ *
+ */
+BEGIN
+  
+   set_window_property('WINDOW1', TITLE, 'Autocomplete Combo Box - PoC [chk_cbox3 v03.01.20180129]');
+                       
+   pkg_CBOX.populate_auto_cbox('CBOX','select name,name from europecities order by 1');
+
+END;
+
+END;

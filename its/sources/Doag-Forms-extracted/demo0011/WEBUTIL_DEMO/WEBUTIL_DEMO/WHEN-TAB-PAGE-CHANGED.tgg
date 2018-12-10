@@ -1,0 +1,8 @@
+BEGIN
+begin  
+  if not WebUtil_SeparateFrame.IsSeparateFrame
+  then
+    set_item_property('browser.separate_frame',enabled,property_false);
+  end if;
+end;
+END;

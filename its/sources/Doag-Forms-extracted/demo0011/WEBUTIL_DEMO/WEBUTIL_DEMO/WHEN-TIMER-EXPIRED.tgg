@@ -1,0 +1,6 @@
+BEGIN
+  :global.user_home := webutil_clientinfo.get_system_property('user.home');
+  :OLE.FILENAME := :global.user_home||'\temp.doc';
+  SET_ITEM_PROPERTY('builtins.text_io_item',PROMPT_TEXT,'Write to '||:global.user_home||'\helloworld.txt');
+  SET_ITEM_PROPERTY('files.userdothome',PROMPT_TEXT,:global.user_home);
+END;

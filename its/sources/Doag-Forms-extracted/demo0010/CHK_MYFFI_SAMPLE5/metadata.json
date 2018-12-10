@@ -1,0 +1,29 @@
+{
+  "alerts": [
+    "INFO",
+    "WEBUTIL_ERROR"
+  ],
+  "blocks": [
+    {
+      "name": "BLK",
+      "items": [
+        "PB_WEB_FFI",
+        "URL"
+      ]
+    },
+    {
+      "name": "WEBUTIL",
+      "items": [
+        "DUMMY",
+        "WEBUTIL_CLIENTINFO_FUNCTIONS",
+        "WEBUTIL_FILE_FUNCTIONS",
+        "WEBUTIL_HOST_FUNCTIONS",
+        "WEBUTIL_SESSION_FUNCTIONS",
+        "WEBUTIL_FILETRANSFER_FUNCTIONS",
+        "WEBUTIL_C_API_FUNCTIONS",
+        "WEBUTIL_BROWSER_FUNCTIONS"
+      ]
+    }
+  ],
+  "lovs": []
+}

@@ -1,0 +1,18 @@
+PROCEDURE set_browser_message (  my_message  varchar2) IS
+  
+BEGIN
+  
+  If my_message IS NULL then
+  
+  WebUtil_Browser.BrowserMessage('Welcome '                  ||webutil_clientinfo.get_user_name   
+                               ||', your computer is called '||webutil_clientinfo.get_host_name
+                               ||', with IP address '        ||webutil_clientinfo.get_ip_address
+                               ||', running '                ||webutil_clientinfo.get_operating_system
+                               );
+  Else
+    
+      WebUtil_Browser.BrowserMessage (my_message);    
+  
+  End if;
+  
+END;

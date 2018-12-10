@@ -1,0 +1,42 @@
+PROCEDURE prc_Set_Compile_result(p_fn VARCHAR2) IS
+   l_fname_blank   VARCHAR2(128);   
+BEGIN  
+     -- l_buff:='';
+     
+     l_fname_blank:= substr(p_fn, 1, length(p_fn)-4);
+
+     -- check if *.fmx / *.plx / *.mmx exists          --
+     
+     IF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+        IF    :BLK_HANDLG.FEXTENT='FMB' AND NOT webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+        ELSIF :BLK_HANDLG.FEXTENT='PLL' AND NOT webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+       ELSIF :BLK_HANDLG.FEXTENT='MMB' AND NOT webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+        ELSIF :BLK_HANDLG.FEXTENT='RDF' AND NOT webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.rep')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+        ELSE
+               :BLK_HANDLG.STATUS_COMPILE  := 'SUCCESS';
+                -- RETURN;  -- <<< SENSE <<<
+        END IF;  
+     
+        ELSIF :PARAMETER.P_HOST_CLIENT='HOST' THEN  
+          
+        IF    :BLK_HANDLG.FEXTENT='FMB' AND NOT fnc_File_Exists_HOST(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+        ELSIF :BLK_HANDLG.FEXTENT='PLL' AND NOT fnc_File_Exists_HOST(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+       ELSIF :BLK_HANDLG.FEXTENT='MMB' AND NOT fnc_File_Exists_HOST(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+       ELSIF :BLK_HANDLG.FEXTENT='RDF' AND NOT fnc_File_Exists_HOST(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.rep')    THEN
+               :BLK_HANDLG.STATUS_COMPILE  := 'ERROR';
+        ELSE
+            :BLK_HANDLG.STATUS_COMPILE  := 'SUCCESS';
+            -- RETURN;  -- <<< SENSE <<<
+        END IF;
+        
+    END IF;
+  
+END prc_Set_Compile_result;
+

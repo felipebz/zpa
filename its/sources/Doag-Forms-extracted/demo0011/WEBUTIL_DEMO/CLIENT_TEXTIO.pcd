@@ -1,0 +1,9 @@
+PROCEDURE client_textio IS
+  l_out_file  client_Text_IO.File_Type;
+BEGIN
+  l_out_file := client_Text_IO.Fopen(:global.user_home ||'\helloworld.txt', 'w');
+  client_text_io.put_line(l_out_file, 'At '||TO_CHAR(SYSDATE,'HH24:MI')||' ' 
+                                      ||webutil_clientinfo.get_user_name||' wrote:');
+  client_text_io.put_line(l_out_file, :builtins.text_io_item);
+  client_text_io.fclose (l_out_file);
+END;

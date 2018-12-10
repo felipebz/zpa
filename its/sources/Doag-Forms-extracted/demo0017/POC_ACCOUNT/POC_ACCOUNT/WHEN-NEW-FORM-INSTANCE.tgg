@@ -1,0 +1,44 @@
+BEGIN
+/*
+ * Created by Friedhold.Matz@yahoo.com - Jan-2018
+ * This PoC Demo demonstrates the Oracle Forms power 
+ * of Forms Items modernizing as "Materialized Items":
+ *
+ * - Low Native PL/SQL Forms code
+ * - using simple four Items for one: 
+ *   o LABEL_Item
+ *   o Item
+ *   o UNDER_Item
+ *   o MSG_Item .
+ * - D_% items: Not used, only as separators.
+ * - demonstrate a low code automated self check of this items.
+ *
+ * Basic features:
+ * - Materialized items
+ * - Verification of Oracle password incl. special characters
+ * - Final check procedure of all defined items
+ * - Automatic test sequence for expected results and item values.
+ * ---------------------------------------------------------------
+ *
+ * NOT's: 
+ * ------
+ * - no using for production (only at own risk)
+ * - no generic solution (yet)
+ * - no maintainability
+ * - no guarantee.
+ *
+ * Hope you can accept & enjoy it.
+ *
+ */
+
+BEGIN
+  
+  set_window_property('WIN_MAIN', TITLE, 'User Account (Layout PoC) [poc_account v'||:PARAMETER.P_VERSION||']');
+  
+  pkg_Item.prc_Init_Items;
+  
+  go_item('DUMMY');
+   
+END W_N_F_I;
+
+END;

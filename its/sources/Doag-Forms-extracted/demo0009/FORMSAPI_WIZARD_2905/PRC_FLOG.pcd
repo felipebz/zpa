@@ -1,0 +1,70 @@
+PROCEDURE prc_flog (p_log   VARCHAR2,    
+                    p_1      VARCHAR2 DEFAULT NULL, 
+                    p_2      VARCHAR2 DEFAULT NULL, 
+                    p_3      VARCHAR2 DEFAULT NULL, 
+                    p_4      VARCHAR2 DEFAULT NULL, 
+                    p_5      VARCHAR2 DEFAULT NULL, 
+                    p_msg2  VARCHAR2 DEFAULT '.',
+                    p_TYPE   VARCHAR2 DEFAULT 'INFO') IS
+ 
+  l_out_file    Text_IO.File_Type;
+  l_out_file_C  client_Text_IO.File_Type;
+  l_msg         VARCHAR2(8000);
+  c_l_type      CONSTANT VARCHAR2(9):= 'EXCEPTION';
+  l_type        VARCHAR2(9);
+  
+  -- F.Matz: 15.01.2017 / 02.05.2017
+                
+BEGIN
+  
+   l_msg:= p_log;
+  
+   l_msg:= replace(l_msg, '{1}', p_1);
+   l_msg:= replace(l_msg, '{2}', p_2);
+   l_msg:= replace(l_msg, '{3}', p_3);
+   l_msg:= replace(l_msg, '{4}', p_4);
+   l_msg:= replace(l_msg, '{5}', p_5);
+   l_msg:= l_msg||' '||p_msg2;
+   
+   l_type:= p_TYPE;
+   l_type:= rpad(l_type, length(c_l_type));
+      
+   IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+      l_out_file := Text_IO.Fopen( :PARAMETER.P_USER_HOME ||:PARAMETER.P_FILE_SEPARATOR||
+                                            'Migration-'||replace(substr(webutil_clientinfo.get_date_time,1,8),'.','-')||
+                                            --:PARAMETER.P_PNO||
+                                             '.log', 'a');
+                                               
+      Text_IO.put_line(l_out_file, 
+                                             replace(replace(webutil_clientinfo.get_date_time,' ','-'),':','-')||'['||
+                                              -- TO_CHAR(SYSDATE,'DD.MM.YYYY-HH24:MI:SS')||'-'||
+                                            webutil_clientinfo.get_user_name||']'||
+                                            --:PARAMETER.P_MODULE_SHORT||
+                                            '['||substr(l_type,1,5)||']'||
+                                            '['||g.p||']::'||                              
+                                            l_msg);     
+       
+      Text_IO.Fclose  (l_out_file);
+
+   ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+       l_out_file_C := client_Text_IO.Fopen( :PARAMETER.P_USER_HOME ||:PARAMETER.P_FILE_SEPARATOR||
+                                            'Migration-'||replace(substr(webutil_clientinfo.get_date_time,1,8),'.','-')||
+                                            --:PARAMETER.P_PNO||
+                                             '.log', 'a');
+                                           
+      client_Text_IO.put_line(l_out_file_C, 
+                                             replace(replace(webutil_clientinfo.get_date_time,' ','-'),':','-')||'['||
+                                              -- TO_CHAR(SYSDATE,'DD.MM.YYYY-HH24:MI:SS')||'-'||
+                                            webutil_clientinfo.get_user_name||']'||
+                                            --:PARAMETER.P_MODULE_SHORT||
+                                            '['||substr(l_type,1,5)||']'||
+                                            '['||g.p||']::'||                              
+                                            l_msg);     
+       
+      client_Text_IO.Fclose  (l_out_file_C);
+       
+   END IF;
+   
+EXCEPTION WHEN OTHERS THEN
+  prc_error('$$$ EXCEPTION in: prc_flog'||chr(10)||':: '||sqlerrm);  
+END prc_flog;

@@ -1,0 +1,25 @@
+PROCEDURE Undo IS
+  V_Block  VARCHAR2 (30) := :SYSTEM.CURSOR_BLOCK;
+  V_Field  VARCHAR2 (61);
+  V_Item   VARCHAR2 (61);
+BEGIN
+  Validate (Item_Scope);
+  IF :SYSTEM.RECORD_STATUS = 'CHANGED' THEN
+    V_Field := Get_Block_Property (V_Block, FIRST_ITEM);
+    V_Item  := V_Block || '.' || V_Field;
+
+    WHILE V_Field IS NOT NULL
+    LOOP
+      IF  Get_Item_Property (V_Item, ITEM_TYPE) IN ('DISPLAY ITEM', 'CHECKBOX', 'LIST', 
+                                                    'RADIO GROUP',  'TEXT ITEM')
+      AND Get_Item_Property (V_Item, BASE_TABLE) = 'TRUE' THEN
+        COPY (Get_Item_Property (V_Item, DATABASE_VALUE), V_Item);
+      END IF;
+      V_Field := Get_Item_Property (V_Item, NextItem);
+      V_Item  := V_Block || '.' || V_Field;
+    END LOOP;
+  END IF;
+  
+  Set_Record_Property (:SYSTEM.CURSOR_RECORD, :SYSTEM.CURSOR_BLOCK, STATUS, QUERY_STATUS);
+
+END;

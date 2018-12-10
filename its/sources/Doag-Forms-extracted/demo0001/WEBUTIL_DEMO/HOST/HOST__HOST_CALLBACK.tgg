@@ -1,0 +1,3 @@
+BEGIN
+MESSAGE ('Host command called back into Forms');
+END;

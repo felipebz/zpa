@@ -1,0 +1,24 @@
+PROCEDURE DOWNLOAD_DB IS
+  l_success boolean;
+BEGIN
+  l_success := webutil_file_transfer.DB_To_Client_with_progress
+                                    (clientFile      => :download.file_name
+                                    ,tableName       => 'wu_fileupdown_demo'
+                                    ,columnName      => 'BLOB'
+                                    ,whereClause     => 'ID = 1'
+                                    ,progressTitle   => 'Download from Database in progress'
+                                    ,progressSubTitle=> 'Please wait'
+                                    );
+  if l_success
+  then
+    message('File downloaded successfully from the Database');
+  else
+    message('File download from Database failed');
+  end if;
+  
+  exception
+    when others
+    then
+      message('File download failed: '||sqlerrm);
+
+END;

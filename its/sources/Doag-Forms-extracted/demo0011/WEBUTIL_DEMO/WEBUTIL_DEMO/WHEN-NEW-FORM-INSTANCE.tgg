@@ -1,0 +1,28 @@
+BEGIN
+declare
+  fake_timer   TIMER;
+  istable      varchar2(2);
+begin
+  
+  --
+  -- Purpose of the fake timer is the we cannot call webutil in this trigger since the
+  -- beans have not yet been instantiated.  If we put the code in a when-timer-expired-trigger
+  -- it means that this timer will not start running until Forms has focus (and so the webutil
+  -- beans will be instantiated and so call canbe made.
+  --
+  fake_timer:= CREATE_TIMER('webutil',150,NO_REPEAT);
+
+  show_window ('w_hello');
+  hide_window ('window1');
+
+  -- Test to see if WebUtil Demo table exists (wu_test_table)
+  -- This is used on the File Upload tab
+    SELECT DECODE(count(*),0,'F','T') INTO istable FROM user_tables WHERE table_name = upper('wu_fileupdown_demo');
+    If istable = 'F' Then 
+      SET_ITEM_PROPERTY ('upload.upload_db',enabled, property_false);
+      SET_ITEM_PROPERTY ('download.download_db',enabled, property_false);  
+      SET_ITEM_PROPERTY ('upload.create_table',visible, property_true);
+      SET_ITEM_PROPERTY ('upload.create_table',enabled, property_true);
+    end if;          
+end;
+END;

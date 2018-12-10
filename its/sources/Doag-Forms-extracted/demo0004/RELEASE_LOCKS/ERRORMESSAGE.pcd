@@ -1,0 +1,8 @@
+PROCEDURE ErrorMessage (v_text varchar2) IS
+BEGIN
+  Message(v_text);
+  if SQLCODE <> 0 then
+    Message ('Oracle-Error: ' || SQLERRM);
+    Message ('Oracle-Error: ' || SQLERRM);
+  end if;
+END;

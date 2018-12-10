@@ -1,0 +1,12 @@
+BEGIN
+declare   
+  
+  vch_timer              varchar2(200);
+   
+  begin
+    
+    vch_timer := get_application_property(TIMER_NAME);
+    :WHEN_TIMER_EXPIRED_EVENT := vch_timer || ' has fired';
+    :expired_time :=  :System.Current_Datetime;
+end;
+END;

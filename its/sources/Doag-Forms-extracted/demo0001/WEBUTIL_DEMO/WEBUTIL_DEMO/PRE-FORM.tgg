@@ -1,0 +1,48 @@
+BEGIN
+DECLARE
+/* DOK:================================================================================================================
+ *  - Login mit oder ohne Parameterübergabe, Fehlerbehandlung durch Fehler aus POST-LOGON Trigger
+ * Autor           : F.HOFFMANN
+ * Erstellungsdatum: 12.2.2015
+ * Änd-Nr.  Datum       Name         Beschreibung
+ * ---------------------------------------------------------------------------------------------------------------------
+ * 1      12.02.2015 HOFFMANNF  Anzeige des letzten Logins integriert
+ * 2      05.03.2015 HOFFMANNF  Fehlerbehandlunga aus POST-LOGON Trigger
+ * 3      25.03.2015 HOFFMANNF  OT-25148/profi Browserversion einlesen 
+ * 4      16.04.2015 HOFFMANNF  OT-25148/profi Browserschutz nur bei Profi-Anwendung, "Default" Wert ist "nicht geschützt"
+ * 5      08.09.2015 HOFFMANNF  OT-64520/profi Browserschutz nur nach erfolgreicher Anmeldung 
+*/
+BEGIN
+  
+  -- Anmeldung über vorgeschaltete Maske, Password wird als Parameter übergeben
+  if :parameter.p_password is not null
+  then  
+      LOGON (:parameter.p_username, :parameter.p_password||'@' || :parameter.p_db,FALSE);
+      IF Form_Failure
+      THEN
+        message('Internal Error - Connect did not work');
+        raise form_trigger_failure;
+ 
+      else
+     
+        -- #1 Anzeige letztes Login
+        --:id_letztes_login := :parameter.p_login_text;
+        :parameter.P_START := f_get_timer_value;
+        :parameter.p_password := null;
+
+        --webutil_startup_timer;
+
+        --:parameter.p_browser := WEB.JAVASCRIPT_EVAL_FUNCTION('document.getElementById("browserversion").value');
+        -- #004
+        --web.javascript_eval_expr('document.getElementById("closeprofi").value="profi_protect_browser"'); 
+
+      end if;
+   else
+    -- Anmeldung direkt - es wird nur ein Timer gestartet
+    --webutil_startup_timer;
+    null;
+   end if;
+END;
+
+
+END;

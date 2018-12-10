@@ -1,0 +1,14 @@
+BEGIN
+
+-- 11.02.2017 - F.Matz
+   
+BEGIN
+   
+   prc_view_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-all.log');
+   
+EXCEPTION WHEN OTHERS THEN
+  prc_EXCEPTION;          
+END;
+
+
+END;

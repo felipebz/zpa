@@ -1,0 +1,46 @@
+BEGIN
+GO_BLOCK('DEPARTMENTS');
+EXECUTE_QUERY;
+GO_BLOCK('EMPLOYEES');
+EXECUTE_QUERY;
+
+PK_TREE.PR_FILL_TREE;
+
+
+DECLARE
+  lAccordionList PK_ACCORDION.tAccordionList;
+  
+  rAccordion     PK_ACCORDION.tAccordion;
+  
+BEGIN
+  rAccordion.vcCanvas:='CV';
+  rAccordion.vcButton:='B.B';
+  rAccordion.vcExpandedImage:=PK_ACCORDION.VCC_DEFAULT_EXPANDED_IMAGE;
+  rAccordion.vcCollapsedImage:=PK_ACCORDION.VCC_DEFAULT_COLLAPSED_IMAGE;
+  rAccordion.bOpened:=TRUE;
+  lAccordionList(1):=rAccordion;
+
+  rAccordion.vcCanvas:='CV2';
+  rAccordion.vcButton:='B.B2';
+  rAccordion.vcExpandedImage:=PK_ACCORDION.VCC_DEFAULT_EXPANDED_IMAGE;
+  rAccordion.vcCollapsedImage:=PK_ACCORDION.VCC_DEFAULT_COLLAPSED_IMAGE;
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(2):=rAccordion;
+
+  rAccordion.vcCanvas:='CV3';
+  rAccordion.vcButton:='B.B3';
+  rAccordion.vcExpandedImage:=PK_ACCORDION.VCC_DEFAULT_EXPANDED_IMAGE;
+  rAccordion.vcCollapsedImage:=PK_ACCORDION.VCC_DEFAULT_COLLAPSED_IMAGE;
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(3):=rAccordion;
+  
+  rAccordion.vcCanvas:='CV4';
+  rAccordion.vcButton:='B.B4';
+  rAccordion.vcExpandedImage:=PK_ACCORDION.VCC_DEFAULT_EXPANDED_IMAGE;
+  rAccordion.vcCollapsedImage:=PK_ACCORDION.VCC_DEFAULT_COLLAPSED_IMAGE;
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(4):=rAccordion;
+  
+  PK_ACCORDION.PR_INIT_ACCORDION('MAIN', lAccordionList);
+END;
+END;

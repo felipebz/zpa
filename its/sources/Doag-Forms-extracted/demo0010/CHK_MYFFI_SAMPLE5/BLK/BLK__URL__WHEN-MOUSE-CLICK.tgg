@@ -1,0 +1,7 @@
+BEGIN
+
+BEGIN
+  web.show_document('http://www.oracle.com/technetwork/developer-tools/forms/howto-ffi-090477.html');
+END;
+
+END;

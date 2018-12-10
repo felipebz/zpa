@@ -1,0 +1,43 @@
+BEGIN
+/*
+THE FOLLOWING IS THE SQL FOUND IN "wu_fileupload_db_demo.sql".
+IF THE TRIGGER BELOW EXECUTES SUCCESSFULLY, THE SAME TABLE WILL BE CREATED AS SEEN IN THE SCRIPT
+THERE IS NO NEED TO RUN THE SCRIPT IF THIS TRIGGER HAS BEEN EXECUTED SUCCESSFULLY
+
+    drop table wu_fileupdown_demo;
+    create table wu_fileupdown_demo (blob blob, id number(2));
+    insert into wu_fileupdown_demo values (NULL,1);
+    commit;
+
+*/
+
+
+BEGIN 
+  Forms_DDL('drop table wu_fileupdown_demo');
+  Forms_DDL('create table wu_fileupdown_demo (blob blob, id number(2))');
+  
+  IF NOT Form_Success THEN 
+    -- Failure will most likely occur if the current user does not have permission to create tables
+    Message ('Table Creation Failed');  
+  
+  ELSE 
+  Forms_DDL('insert into wu_fileupdown_demo values (NULL,1)');
+  Message ('Table "wu_fileupdown_demo" created.');
+  Message ('Table "wu_fileupdown_demo" created.');  
+ 
+ -- Since the table was created successfully, we can now enable the appropriate buttons
+ -- Also, we will remove the Create button since it is no longer needed
+   SET_ITEM_PROPERTY ('upload.upload_db',enabled, property_true);
+  SET_ITEM_PROPERTY ('download.download_db',enabled, property_true);
+  GO_ITEM('upload.file_name');
+  SYNCHRONIZE;
+  SET_ITEM_PROPERTY ('upload.create_table',enabled, property_false);
+  SET_ITEM_PROPERTY ('upload.create_table',visible, property_false);  
+  END IF;
+  
+
+END;
+
+
+
+END;

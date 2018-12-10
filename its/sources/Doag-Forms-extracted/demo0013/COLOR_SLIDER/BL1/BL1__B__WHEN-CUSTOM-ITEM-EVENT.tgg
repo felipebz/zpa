@@ -1,0 +1,9 @@
+BEGIN
+-- Get new value --
+:BL1.VB := Get_Custom_Property( 'BL1.B', 1, 'GETVALUE') ;
+:GLOBAL.Blue := :BL1.VB ;
+
+:GLOBAL.Color := 'r' || :GLOBAL.Red || 'g' || :GLOBAL.Green || 'b' || :GLOBAL.Blue ;
+Set_Item_Property( 'BL1.COLOR', BACKGROUND_COLOR, :GLOBAL.Color ) ;
+
+END;

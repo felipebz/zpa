@@ -1,0 +1,7 @@
+PROCEDURE get_applet_parameters IS
+BEGIN
+  :applet_param_box := '<lookAndFeel> = '||webutil_browser.getappletparameter('lookAndFeel');
+  :applet_param_box := :applet_param_box || chr(10)|| '<colorScheme> = '||webutil_browser.getappletparameter('colorScheme');
+  :applet_param_box := :applet_param_box || chr(10)|| '<separateFrame> = '||webutil_browser.getappletparameter('separateFrame');
+  :applet_param_box := :applet_param_box || chr(10)|| 'Applet width and height = '||webutil_browser.getappletsize();
+END;

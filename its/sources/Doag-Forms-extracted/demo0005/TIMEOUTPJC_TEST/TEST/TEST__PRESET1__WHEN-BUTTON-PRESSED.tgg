@@ -1,0 +1,12 @@
+BEGIN
+:maxinactivity := 500;
+:sleeptime := 100;
+:debug := 'true';
+:events := 'true';
+:timername := 'ST500ms';
+:intervaltimer := '';
+:standardtimer := 'true';
+pl_start;
+
+   
+END;

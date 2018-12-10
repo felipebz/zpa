@@ -1,0 +1,3 @@
+BEGIN
+do_key('exit');
+END;

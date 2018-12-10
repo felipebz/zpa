@@ -1,0 +1,3 @@
+BEGIN
+go_item('C.CBOX');
+END;

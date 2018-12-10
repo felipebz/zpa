@@ -1,0 +1,17 @@
+BEGIN
+
+-- F.Matz: 25.01.2017
+
+BEGIN
+  
+  clear_message;
+  
+  :PARAMETER.P_START_TIME := fnc_get_timer_value;
+  
+  prc_set_statistik;
+  
+  prc_show_duration; 
+    
+END;
+
+END;

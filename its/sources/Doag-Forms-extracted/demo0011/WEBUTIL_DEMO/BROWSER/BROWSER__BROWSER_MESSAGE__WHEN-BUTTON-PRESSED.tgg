@@ -1,0 +1,5 @@
+BEGIN
+begin
+  set_browser_message (:browser_mess_text);
+end;
+END;

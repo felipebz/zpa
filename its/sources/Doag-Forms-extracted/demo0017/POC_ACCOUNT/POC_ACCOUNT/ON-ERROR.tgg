@@ -1,0 +1,12 @@
+BEGIN
+
+BEGIN
+  
+  IF ERROR_CODE IN (42100) THEN
+     NULL;
+  ELSE
+     prc_info('ERR::'||ERROR_CODE||'/'||ERROR_TEXT);
+  END IF;
+
+END ON_ERROR;
+END;

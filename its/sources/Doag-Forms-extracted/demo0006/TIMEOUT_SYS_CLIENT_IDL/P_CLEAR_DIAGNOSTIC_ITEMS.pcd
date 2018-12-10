@@ -1,0 +1,13 @@
+PROCEDURE p_clear_diagnostic_items IS
+BEGIN
+  :stoptime       := '?';
+  :result         := '?';
+  :idle_heartbeat := '?';
+  :time_left      := '?';
+  :max_inactivity := '?';
+  
+  :parameter.p_timer_starttime := f_get_timer_value;
+  :starttime      := to_char(:parameter.p_timer_starttime) || ' ms since 23rd October 2015';
+  :last_action_event := 'Demo started ' || to_char(sysdate,'HH24:MI:SS');
+  :start_date := sysdate;
+END;

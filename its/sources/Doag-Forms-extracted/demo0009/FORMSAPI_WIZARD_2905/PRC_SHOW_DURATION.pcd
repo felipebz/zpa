@@ -1,0 +1,15 @@
+PROCEDURE prc_show_duration IS
+   -- F.Matz --
+   FUNCTION secs (p_beg VARCHAR2, p_end VARCHAR2) RETURN INTERVAL DAY TO SECOND IS
+   BEGIN
+     RETURN ( to_timestamp(p_end, 'DD.MM.YYYY HH24:MI:SS') - 
+              to_timestamp(p_beg, 'DD.MM.YYYY HH24:MI:SS')
+            );
+   END secs;
+
+BEGIN
+   :PARAMETER.P_END_TIME := fnc_get_timer_value;
+   clear_message; --to_char(:system.current_datetime,'DD.MM.YYYY HH24:MI:SS')
+   message( substr(secs(:PARAMETER.P_START_TIME, :PARAMETER.P_END_TIME), 5, 8) );
+   -- message('Runtime ' || to_char(round(((to_number(:parameter.p__end) - to_number(:parameter.p__start)) / 1000 / 60),2)) || ' min ');  
+END prc_show_duration;

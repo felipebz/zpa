@@ -1,0 +1,21 @@
+PROCEDURE prc_copy_file(p_srcfile VARCHAR2, p_destfile VARCHAR2) IS
+    l_success BOOLEAN;
+    
+BEGIN
+    g.msg_push('pkg_Script.prc_DOS_file_copy');
+      
+    l_success := webutil_file.copy_file(p_srcfile, p_destfile);
+    
+    if l_success 
+    then
+       NULL;
+       -- prc_info('Copy of file successfull');
+    else
+       prc_error('$$$ Copy failed. Source: "' || p_srcfile|| '" nach "' || p_destfile || '" $$$');
+    end if;
+    
+    g.msg_free;
+    
+EXCEPTION WHEN OTHERS THEN
+    prc_EXCEPTION;    
+END prc_copy_file;

@@ -1,0 +1,51 @@
+PROCEDURE p_get_blob(p_type in varchar2) IS
+  boolean_success boolean;
+  vch_file_bez  varchar2(500);
+  vch_dir_and_file varchar2(500);
+
+BEGIN
+  vch_file_bez :=  'Exceltest_' || to_char(sysdate,'YYYYDDMM_HH24MISS')||  '.' ||'csv';
+ 
+  vch_dir_and_file := webutil_clientinfo.get_system_property('user.home')|| '\' || vch_file_bez;
+  --message('Dir=' || vch_dir_and_file || ' ID=' || p_id);
+
+  -- Anzeige des Dokumentes
+  if vch_dir_and_file is not null
+  then
+
+     -- #3 Webutil Donwload nur wenn das Dokument nicht bereits geladen ist, sonst nur Aufruf
+     if not webutil_file.FILE_EXISTS(vch_dir_and_file)
+       then
+        boolean_success := webutil_file_transfer.DB_To_Client_with_progress
+                                        (clientFile      =>  vch_dir_and_file
+                                        ,tableName       => 'TEMP_BLOB_EXPORT'
+                                        ,columnName      => 'TBE_COL'
+                                        ,whereClause     => 'TBE_TYPE=''' || p_type || '''' 
+                                        ,progressTitle   => 'Dokument wird geladen'
+                                        ,progressSubTitle=> 'Bitte Warten'
+                                      );
+
+    end if;  
+    
+    -- Nach erfolgreichem "Runterladen" wird die Datei mit der verknüpften Anwendung auf dem PC gestartet
+    if webutil_file.FILE_EXISTS(vch_dir_and_file) or boolean_success
+     then
+        --WEBUTIL_CLIENT_FUNCTIONS.HOST('cmd /c rundll32.exe url.dll,FileProtocolHandler "'||vch_dir_and_file||'"',NO_SCREEN);
+        --Client_Host( 'cmd /c start "" "' || vch_dir_and_file || '"');
+        --  pdw_webutil_blobtab.p_update_status ( p_ind    => p_id,  p_status => 'Y');
+        -- #3 Aufruf wie in dokument.fmb
+        webutil_host.NonBlocking( 'rundll32 url.dll,FileProtocolHandler ' || vch_dir_and_file);
+      else
+        message('Not result for Excel File Generation.'); --Fehler in p_get_blob : Dokument ' || vch_dir_and_file || ' konnte nicht geladen werden!');
+    end if;
+  
+  end if;
+  
+  
+  exception
+    when others
+    then
+      message('The Excel File did not succeed : '||sqlerrm);
+
+END;
+

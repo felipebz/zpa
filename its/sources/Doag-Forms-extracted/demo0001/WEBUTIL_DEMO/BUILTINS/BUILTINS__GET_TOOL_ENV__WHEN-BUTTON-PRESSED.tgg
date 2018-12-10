@@ -1,0 +1,5 @@
+BEGIN
+begin
+  client_getenv;
+end;
+END;

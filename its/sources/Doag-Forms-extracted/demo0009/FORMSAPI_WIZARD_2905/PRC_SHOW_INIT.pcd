@@ -1,0 +1,44 @@
+PROCEDURE prc_show_init(p_step VARCHAR2 DEFAULT 'INIT', p_txt VARCHAR2 DEFAULT NULL, p_result VARCHAR2 DEFAULT NULL) IS
+
+-- F.Matz : 18.05.2017
+
+PROCEDURE prc_init  IS BEGIN g.rstate:= 'OPENED';     g.rcnt:= 0; g.result:='OK'; show_view('CNV_INIT');  END prc_init;
+
+PROCEDURE prc_show1 IS BEGIN g.rstate:= 'STEP1';      g.rcnt:= 1; 
+                             :CTL_INIT.STEP1:=p_txt;  :CTL_INIT.RES1:=p_result;                           END prc_show1;
+
+PROCEDURE prc_show2 IS BEGIN g.rstate:= 'STEP2';      g.rcnt:= 2; 
+                              :CTL_INIT.STEP2:=p_txt;  :CTL_INIT.RES2:=p_result;                            END prc_show2;
+
+PROCEDURE prc_show3 IS BEGIN g.rstate:= 'STEP3';      g.rcnt:= 3;                            
+                             :CTL_INIT.STEP3:=p_txt;  :CTL_INIT.RES3:=p_result;                            END prc_show3;
+
+PROCEDURE prc_show4 IS BEGIN g.rstate:= 'STEP4';      g.rcnt:= 4;                            
+                             :CTL_INIT.STEP4:=p_txt;  :CTL_INIT.RES4:=p_result;                            END prc_show4;
+
+PROCEDURE prc_close IS BEGIN g.rstate:= 'CLOSED';     g.rcnt:= 5; 
+                             hide_view('CNV_INIT');    go_item('CTL_BASIC.BT_CHECK');                      END prc_close;
+  
+BEGIN
+  
+   g.msg_push('prc_show_init');
+      
+   IF :PARAMETER.P_SHOW_INIT='YES' THEN
+     
+       CASE WHEN g.rstate='INIT'   AND p_step='INIT'                                       THEN prc_init;  
+             WHEN g.rstate='OPENED' AND p_step='STEP1'                                       THEN prc_show1;   
+             WHEN g.rstate='STEP1'  AND p_step='STEP2'                                        THEN prc_show2;  
+             WHEN g.rstate='STEP2'  AND p_step='STEP3'                                       THEN prc_show3;  
+             WHEN g.rstate='STEP3'  AND p_step='STEP4'                                        THEN prc_show4;            
+             WHEN g.rstate='STEP4'  AND p_step='CLOSE' AND g.result='OK' AND g.state='OK'  THEN prc_close;             
+            ELSE  prc_ABORT; -- <<< SENSE <<<
+       END CASE;
+            
+   END IF;
+   
+   g.msg_free;
+     
+EXCEPTION WHEN OTHERS THEN
+    prc_EXCEPTION;  
+    
+END prc_show_init;

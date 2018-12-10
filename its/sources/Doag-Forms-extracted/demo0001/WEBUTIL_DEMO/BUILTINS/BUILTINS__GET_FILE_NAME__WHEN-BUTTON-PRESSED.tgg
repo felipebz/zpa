@@ -1,0 +1,9 @@
+BEGIN
+begin
+  get_client_filename;
+  If :builtins.file_name IS NOT NULL Then
+    Go_Item('builtins.read_image');
+  end if;
+  
+end;
+END;

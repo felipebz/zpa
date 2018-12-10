@@ -1,0 +1,65 @@
+PROCEDURE prc_get_chk_ref_info(p_fn VARCHAR2) IS
+   l_buff       VARCHAR2(4096);
+   l_in_file     Text_IO.File_Type;
+   l_in_file_C   client_Text_IO.File_Type;
+   l_cnt        NUMBER(3);
+BEGIN
+     l_buff:='';
+     
+     IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+       l_in_file := Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             Text_IO.get_line(l_in_File, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF INSTR(l_buff, '$$$ EXCEPTION')>0 THEN
+                :BLK_HANDLG.STATUS_CHECK   := 'ERROR';         
+                Text_IO.Fclose(l_in_File);
+                EXIT;
+               Else
+                :BLK_HANDLG.STATUS_CHECK   := 'SUCCESS';
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               Text_IO.Fclose(l_in_File);
+               EXIT;
+             WHEN OTHERS THEN
+               Text_IO.Fclose(l_in_File);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+     END LOOP;
+    
+     ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+       l_in_file_C := client_Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             client_Text_IO.get_line(l_in_File_C, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF INSTR(l_buff, '$$$ EXCEPTION')>0 THEN
+                :BLK_HANDLG.STATUS_CHECK   := 'ERROR';         
+                client_Text_IO.Fclose(l_in_File_C);
+                EXIT;
+             Else
+                :BLK_HANDLG.STATUS_CHECK   := 'SUCCESS';
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               EXIT;
+             WHEN OTHERS THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+        END LOOP;
+    
+    END IF;
+    
+END prc_get_chk_ref_info;

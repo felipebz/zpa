@@ -1,0 +1,7 @@
+BEGIN
+if get_item_property('CONTROL.RADIO_BUTTON_1',BACKGROUND_COLOR) = 'r251g230b174' then
+  set_item_property('CONTROL.RADIO_BUTTON_1',BACKGROUND_COLOR,'automatic');
+else
+  set_item_property('CONTROL.RADIO_BUTTON_1',BACKGROUND_COLOR,'r251g230b174');
+end if;
+END;

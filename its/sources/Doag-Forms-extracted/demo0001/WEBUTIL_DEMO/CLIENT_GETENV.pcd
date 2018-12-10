@@ -1,0 +1,9 @@
+PROCEDURE client_getenv IS
+BEGIN
+  client_tool_env.getvar('NLS_LANG',:builtins.tool_env);
+  SYNCHRONIZE;
+  
+  If :builtins.tool_env IS NULL Then
+    :builtins.tool_env := 'NLS_LANG is not set.';
+  End if;
+END;

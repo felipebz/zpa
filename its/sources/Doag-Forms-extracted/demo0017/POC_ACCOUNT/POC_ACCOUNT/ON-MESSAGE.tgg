@@ -1,0 +1,9 @@
+BEGIN
+
+BEGIN
+
+   prc_info('ON-MESSAGE::'||MESSAGE_CODE);
+
+END ON_MESSAGE;
+
+END;

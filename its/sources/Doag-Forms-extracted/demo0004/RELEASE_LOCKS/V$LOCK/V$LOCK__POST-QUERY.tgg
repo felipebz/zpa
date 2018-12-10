@@ -1,0 +1,67 @@
+BEGIN
+declare
+  v_Mode_Case      int;
+  v_SQL_Address    v$session.SQL_Address%type;
+  v_SQL_Hash_Value v$session.SQL_Hash_Value%type;
+begin
+  if :v$lock.Request = 0 then
+    if :v$lock.Block = 1 then
+      :v$lock.Holder_Waiter := 'Holder';
+    else
+      :v$lock.Holder_Waiter := 'Lock';
+    end if;
+    v_Mode_Case := :v$lock.LMode;
+  else
+    :v$lock.Holder_Waiter := 'Waiter';
+    v_Mode_Case := :v$lock.Request;
+  end if;
+  case v_Mode_Case
+    when 0 then :v$lock.Mode := 'none';
+    when 1 then :v$lock.Mode := 'null';
+    when 2 then :v$lock.Mode := 'row-S (SS)';
+    when 3 then :v$lock.Mode := 'row-X (SX)';
+    when 4 then :v$lock.Mode := 'share (S)';
+    when 5 then :v$lock.Mode := 'S/Row-X (SSX)';
+    when 6 then :v$lock.Mode := 'exclusive (X)';
+    else        :v$lock.Mode := '??';
+  end case;
+  if :v$lock.Type = 'TM' then
+    begin
+      select Owner || '.' || Object_Name
+        into :v$lock.Object
+        from dba_Objects
+       where Object_Id = :v$lock.Id1
+      ;
+    exception
+      when OTHERS then 
+        ErrorMessage('Fehler bei "select Owner.Object_Name from dba_Objects".');
+    end;
+  end if;
+  begin
+    select Username, 
+           decode(SQL_Hash_Value, 0, Prev_SQL_Addr,   SQL_Address)    SQL_Address, 
+           decode(SQL_Hash_Value, 0, Prev_Hash_Value, SQL_Hash_Value) SQL_Hash_Value
+      into :v$lock.Username, v_SQL_Address, v_SQL_Hash_Value
+      from v$session
+     where SID = :v$lock.SID
+    ;
+  exception
+    when OTHERS then 
+      ErrorMessage('Fehler bei "select Username, ... from v$session".');
+      raise NO_DATA_FOUND;
+  end;
+  begin
+    select SQL_Text into :v$lock.SQL_Text
+      from v$sqlarea
+     where Address = v_SQL_Address
+       and Hash_Value = v_SQL_Hash_Value
+    ;
+  exception
+    when OTHERS then 
+      ErrorMessage('Fehler bei "select SQL_Text from v$sqlarea".');
+  end;
+exception
+  when NO_DATA_FOUND then null;
+  when FORM_TRIGGER_FAILURE then raise;
+end;
+END;

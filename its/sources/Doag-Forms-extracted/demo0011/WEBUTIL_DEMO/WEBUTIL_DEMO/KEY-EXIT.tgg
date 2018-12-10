@@ -1,0 +1,31 @@
+BEGIN
+DECLARE
+al_id Alert;
+al_button NUMBER;
+begin
+  al_id := Find_Alert('EXIT_ALERT');
+  al_button := Show_Alert(al_id); 
+  
+  -- 88 constant for button 1
+  -- 89 constant for button 2
+  -- 90 constant for button 3
+  If al_button = 88 Then
+    -- OK was pressed
+    --WEBUTIL_SESSION.ENABLE_REDIRECT_ON_TIMEOUT('http://www.oracle.com/technetwork/developer-tools/forms/overview/');
+    --SYNCHRONIZE;
+     EXIT_FORM;
+     
+  Elsif al_button = 89 Then
+    -- EXIT was pressed
+    -- message ('Good-bye');
+     EXIT_FORM;
+     
+  Elsif al_button = 90 Then
+    -- CANCEL was pressed, don't exit
+    RAISE FORM_TRIGGER_FAILURE;
+        
+  End if;
+  
+
+end;
+END;

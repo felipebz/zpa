@@ -1,0 +1,5 @@
+BEGIN
+begin
+  files_wbp('FILE_OPEN');
+end;
+END;

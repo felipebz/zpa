@@ -1,0 +1,41 @@
+BEGIN
+
+-- 16.01.2017 - F.Matz
+DECLARE  
+  l_action VARCHAR2(128);  
+  l_p1     VARCHAR2(1024); 
+  l_p2     VARCHAR2(1024); 
+  l_p3     VARCHAR2(1024); 
+  l_p4     VARCHAR2(1024); 
+  l_p5     VARCHAR2(1024); 
+  l_p6     VARCHAR2(1024); 
+  l_p7     VARCHAR2(1024); 
+  
+BEGIN
+  
+  /* {obsolete}
+  
+   :CTL_UPGR.IT_PARAMETER:= NULL;
+   
+   IF :BLK_UPGR.CBOX_FAM_ACTION IS NOT NULL AND :BLK_UPGR.CB='Y' THEN 
+            
+      l_action:= get_list_element_label('BLK_UPGR.CBOX_FAM_ACTION', :BLK_UPGR.CBOX_FAM_ACTION);
+        
+      pkg_FAM_LIBS.prc_get_Parameters4Script(l_action, l_p1, l_p2, l_p3, l_p4, l_p5, l_p6, l_p7);
+
+      IF l_p1 IS NOT NULL THEN
+         :CTL_UPGR.IT_PARAMETER:= l_p1;
+         prc_Visible_Item('CTL_UPGR.IT_PARAMETER');
+      ELSE
+         :CTL_UPGR.IT_PARAMETER:= NULL;
+         prc_Visible_Item('CTL_UPGR.IT_PARAMETER', FALSE);
+      END IF;
+      
+   END IF;
+  
+  */
+  NULL;
+  
+END;
+
+END;

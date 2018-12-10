@@ -1,0 +1,3 @@
+BEGIN
+set_custom_property('ERROR_STACK',all_rows,'ShowWarning','21:WAR-00021:This is the text of warning 21...');
+END;

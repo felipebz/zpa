@@ -1,0 +1,44 @@
+BEGIN
+
+-- F.Matz: 09.02.2017
+
+DECLARE
+  
+   l_fname_blank  VARCHAR2(128);
+    
+BEGIN
+
+   clear_message;
+   :PARAMETER.P_START_TIME := fnc_get_timer_value;
+   
+   g.msg_push('W-B-P:BT_MIGRATE');
+  
+   go_block('BLK_HANDLG');
+   first_record;
+   
+   LOOP
+  
+      prc_COMPILATION;
+    
+      IF :SYSTEM.LAST_RECORD='TRUE' THEN
+         EXIT;
+      END IF;
+    
+      SYNCHRONIZE;
+      
+      next_record;
+         
+   END LOOP;
+  
+   prc_show_duration;   
+  
+   first_record;
+   -- re-query --
+   
+   g.msg_free;
+     
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;
+END;
+
+END;

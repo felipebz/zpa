@@ -1,0 +1,7 @@
+PROCEDURE separate_frame_options IS
+BEGIN
+  if WebUtil_SeparateFrame.IsSeparateFrame
+  then
+    WebUtil_SeparateFrame.SetTitle('WebUtil Demo Form');
+  end if;
+END;

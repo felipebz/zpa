@@ -10,3 +10,6 @@
 [submodule "its/sources/utPLSQL3"]
 	path = its/sources/utPLSQL3
 	url = https://github.com/utPLSQL/utPLSQL/
+[submodule "its/sources/Doag-Forms"]
+	path = its/sources/Doag-Forms
+	url = https://github.com/Doag/Forms.git

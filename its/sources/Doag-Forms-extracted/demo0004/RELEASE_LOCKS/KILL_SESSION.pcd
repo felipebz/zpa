@@ -1,0 +1,13 @@
+PROCEDURE Kill_Session
+IS
+  v_DDL_Text varchar2(500);
+BEGIN
+  v_DDL_Text := 'alter system disconnect session '''
+                || to_char(:v$session.SID) || ','  || to_char(:v$session.Serial#)
+                || ''' immediate';
+  Forms_DDL(v_DDL_Text);
+  Refresh;
+exception
+  when OTHERS then
+    ErrorMessage('Fehler bei "' || v_DDL_Text || '".');
+END;

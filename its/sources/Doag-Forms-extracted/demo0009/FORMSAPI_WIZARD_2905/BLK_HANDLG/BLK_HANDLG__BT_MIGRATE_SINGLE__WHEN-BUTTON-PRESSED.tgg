@@ -1,0 +1,14 @@
+BEGIN
+
+-- 11.02.2017, 14.05.2017 - F.Matz
+   
+BEGIN
+  
+   prc_MIGRATION;
+      
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;     
+END;
+
+
+END;

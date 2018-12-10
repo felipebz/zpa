@@ -1,0 +1,11 @@
+BEGIN
+begin
+  If :builtins.file_name IS NULL then
+    message ('Please enter image filename.');
+    GO_ITEM('builtins.filename');
+    SYNCHRONIZE;
+    RAISE FORM_TRIGGER_FAILURE;
+  End if;
+  client_readimage;
+end;
+END;

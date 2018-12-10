@@ -1,0 +1,45 @@
+{
+  "alerts": [
+    "AL_ERROR",
+    "AL_INFO",
+    "AL_WARNING",
+    "AL_YES_NO",
+    "AL_YES_NO_CANCEL"
+  ],
+  "blocks": [
+    {
+      "name": "FILTER",
+      "items": [
+        "TI_EMPLOYEE_ID",
+        "TI_FIRST_NAME",
+        "TI_LAST_NAME",
+        "TI_EMAIL",
+        "BT_QUERY"
+      ]
+    },
+    {
+      "name": "EMPLOYEES",
+      "items": [
+        "EMPLOYEE_ID",
+        "FIRST_NAME",
+        "LAST_NAME",
+        "EMAIL",
+        "PHONE_NUMBER",
+        "JOB_ID",
+        "SALARY",
+        "MANAGER_ID",
+        "DEPARTMENT_ID",
+        "COMMISSION_PCT",
+        "HIRE_DATE"
+      ]
+    },
+    {
+      "name": "CONTROL",
+      "items": [
+        "BT_WIKI",
+        "BT_EXIT"
+      ]
+    }
+  ],
+  "lovs": []
+}

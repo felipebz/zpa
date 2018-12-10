@@ -1,0 +1,6 @@
+PROCEDURE Log_System_Schliessen IS
+BEGIN
+  Go_Item('v$session.PB_Kill_Session');
+  Hide_View('Logon_Leinwand');
+  Hide_Window('Logon_Fenster');
+END;

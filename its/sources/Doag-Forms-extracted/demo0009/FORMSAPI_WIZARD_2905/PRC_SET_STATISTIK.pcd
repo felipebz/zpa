@@ -1,0 +1,249 @@
+PROCEDURE prc_set_statistik IS
+   
+   l_result VARCHAr2(32);
+   
+PROCEDURE get_src_info(p_fn VARCHAR2,p_type VARCHAR2) IS
+
+   l_buff VARCHAR2(4096);
+   l_in_file     Text_IO.File_Type;
+   l_in_file_C   client_Text_IO.File_Type;
+   l_cnt  NUMBER(3);
+
+BEGIN
+     l_buff:='';
+     
+     IF :PARAMETER.P_HOST_CLIENT='HOST' THEN        
+       l_in_file := Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             Text_IO.get_line(l_in_File, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF l_cnt=11 THEN 
+                :BLK_HANDLG.DFILE  := replace(substr(l_buff, 52,16) , '-', '.');    
+                prc_cng_month_time;
+                
+                if p_type <> 'RDF'
+                then  
+                  :BLK_HANDLG.FORMS_OBJ_VNO := substr(l_buff, 96,10);
+                else
+                   :BLK_HANDLG.FORMS_OBJ_VNO := 'undefined';
+                end if;
+                
+                l_result:= substr(l_buff, 86,7);   
+                -- 20.02.2017 --   
+                IF instr(l_result,'WARNING',1,1) > 0 THEN
+                    l_result:='SUCCESS';
+                   -- :BLK_HANDLG.STATUS_CHECK:='SUCCESS';
+                   -- prc_info('Switched=>SUCCESS');
+                END IF;  
+                Text_IO.Fclose(l_in_File);
+                EXIT;
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               Text_IO.Fclose(l_in_File);
+               EXIT;
+             WHEN OTHERS THEN
+               Text_IO.Fclose(l_in_File);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+      END LOOP;
+   
+   ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN        
+       l_in_file_C := client_Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             client_Text_IO.get_line(l_in_File_C, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF l_cnt=11 THEN 
+                :BLK_HANDLG.DFILE  := replace(substr(l_buff, 52,16) , '-', '.');    
+                prc_cng_month_time;
+                
+                if p_type <> 'RDF'
+                then  
+                  :BLK_HANDLG.FORMS_OBJ_VNO := substr(l_buff, 96,10);
+                else
+                   :BLK_HANDLG.FORMS_OBJ_VNO := 'undefined';
+                end if;
+                
+                -- :BLK_HANDLG.STATUS_CHECK   := substr(l_buff, 86,7);  
+                l_result:= substr(l_buff, 86,7);     
+                -- 20.02.2017 --
+                -- IF instr(:BLK_HANDLG.STATUS_CHECK,'WARNING',1,1) > 0 THEN
+                  IF instr(l_result,'WARNING',1,1) > 0 THEN
+                    l_result:='SUCCESS';
+                   -- :BLK_HANDLG.STATUS_CHECK:='SUCCESS';
+                   -- prc_info('Switched=>SUCCESS');
+                END IF;  
+                client_Text_IO.Fclose(l_in_File_C);
+                EXIT;
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               EXIT;
+             WHEN OTHERS THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+         END ;
+       END LOOP;
+   
+   END IF;
+
+END get_src_info;
+
+PROCEDURE get_chk_ref_info(p_fn VARCHAR2) IS
+   l_buff      VARCHAR2(4096);
+   l_in_file   Text_IO.File_Type;
+   l_in_file_C client_Text_IO.File_Type;
+   l_cnt       NUMBER(3);
+BEGIN
+     l_buff:='';
+     
+      IF :PARAMETER.P_HOST_CLIENT='HOST' THEN        
+       l_in_file := Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             Text_IO.get_line(l_in_File, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF INSTR(l_buff, '$$$ EXCEPTION')>0 THEN
+                :BLK_HANDLG.STATUS_CHECK   := 'ERROR';
+                Text_IO.Fclose(l_in_File);
+                EXIT;
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               :BLK_HANDLG.STATUS_CHECK   := 'SUCCESS';
+               Text_IO.Fclose(l_in_File);
+               EXIT;
+             
+             WHEN OTHERS THEN
+               Text_IO.Fclose(l_in_File);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+          END ;
+          END LOOP;
+      
+      ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN        
+       l_in_file_C := client_Text_IO.Fopen(p_fn, 'r');
+       l_cnt:=1;
+       LOOP
+         BEGIN
+             client_Text_IO.get_line(l_in_File_C, l_buff);
+             --l_buff_all:= l_buff_all||replace(l_in_buff,'          ',' ')||'/';   
+             IF INSTR(l_buff, '$$$ EXCEPTION')>0 THEN
+                :BLK_HANDLG.STATUS_CHECK   := 'ERROR';
+                client_Text_IO.Fclose(l_in_File_C);
+                EXIT;
+             END IF;
+             l_cnt:= l_cnt+1;           
+         EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               :BLK_HANDLG.STATUS_CHECK   := 'SUCCESS';
+               client_Text_IO.Fclose(l_in_File_C);
+               EXIT;
+             
+             WHEN OTHERS THEN
+               client_Text_IO.Fclose(l_in_File_C);
+               prc_msg('$$$ Fehler in get_src_info: '||sqlerrm);
+               EXIT;
+             EXIT;
+          END ;
+          END LOOP;
+      END IF;
+      
+END get_chk_ref_info;
+
+BEGIN
+  -- prc_info('START-Check');
+  
+  go_block('BLK_HANDLG');
+  first_record;
+  LOOP
+    -- extract data from file to BLK_HANDLG --
+    IF :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND 
+       :BLK_HANDLG.FEXTENT IN ( 'FMB', 'PLL', 'MMB')THEN
+      
+       pkg_FAM_run_Script.prc_run_batch_version_cmd (:BLK_HANDLG.FNAME);
+       
+       IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+         
+          get_src_info(  :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt', :BLK_HANDLG.FEXTENT);
+          prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log');
+  
+          pkg_FAM_run_Script.prc_run_FAM_check_script(:BLK_HANDLG.FNAME);
+          
+          get_chk_ref_info( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check-ref.log' );
+          prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check-ref.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-ref.log');      
+         
+          -- merge files --
+          prc_file_merge_HOST( :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log', 
+                                :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-ref.log',
+                                :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-all.log',
+                                '--- BEGINN - CHECK - REFERENCES --------------------------------' );
+        
+       ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+         
+          get_src_info(  :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt', :BLK_HANDLG.FEXTENT);
+          prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log');
+  
+          pkg_FAM_run_Script.prc_run_FAM_check_script(:BLK_HANDLG.FNAME);
+          get_chk_ref_info( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check-ref.log' );
+          prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check-ref.log', :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-ref.log');      
+         
+          -- merge files --
+          prc_file_merge( :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log', 
+                           :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-ref.log',
+                           :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check-all.log',
+                           '--- BEGINN - CHECK - REFERENCES --------------------------------' );
+         
+       END IF;
+       
+     ELSIF :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND :BLK_HANDLG.FEXTENT= 'RDF' THEN
+
+        pkg_FAM_run_Script.prc_run_batch_version_cmd (:BLK_HANDLG.FNAME);
+        
+        IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+          get_src_info(  :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt',:BLK_HANDLG.FEXTENT);
+                
+          prc_copy_file_HOST( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt',     
+                              :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log');  
+       
+       ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+          get_src_info(  :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt',:BLK_HANDLG.FEXTENT);
+                
+          prc_copy_file( :PARAMETER.P_SCRIPT_DIR||:PARAMETER.P_FILE_SEPARATOR||'check.txt',     
+                         :PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-check.log');  
+
+       END IF;
+               
+       -- go over ! --
+       :BLK_HANDLG.STATUS_CHECK:= 'SUCCESS';  
+                             
+    END IF;
+    
+    IF :SYSTEM.LAST_RECORD='TRUE' THEN
+       EXIT;
+    END IF;
+    
+    SYNCHRONIZE;
+    
+    next_record;
+    
+  END LOOP;
+  
+  first_record;
+  -- re-query --
+   
+END prc_set_statistik;

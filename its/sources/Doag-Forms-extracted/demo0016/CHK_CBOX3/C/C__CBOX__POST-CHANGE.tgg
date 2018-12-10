@@ -1,0 +1,19 @@
+BEGIN
+declare
+mytimer timer;
+begin
+
+if :parameter.par1 is not null
+  then
+    if get_view_property('CBX',VISIBLE) = 'TRUE' 
+       and not abs(length(:cbox) - length(:dummy))= 1
+      then
+        :cbox := :parameter.par1;
+        :parameter.par1 := null;
+        mytimer := create_timer('xxx',1,NO_REPEAT);
+      else
+        :parameter.par1 := null;
+    end if;    
+end if;   
+end;
+END;

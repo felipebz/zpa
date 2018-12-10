@@ -1,0 +1,3 @@
+BEGIN
+Log_System_Schliessen;
+END;

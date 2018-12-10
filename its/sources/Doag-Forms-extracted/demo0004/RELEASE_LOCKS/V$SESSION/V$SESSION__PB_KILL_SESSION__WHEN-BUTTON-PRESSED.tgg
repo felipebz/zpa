@@ -1,0 +1,20 @@
+BEGIN
+declare
+  v_Anzahl   number(1);
+  v_User     varchar2(30);
+begin
+  if :v$session.SID is null then
+    Message('No session to kill');
+    Message('No session to kill');
+  else
+    if Show_Alert('Daten_Verloren_Warnung') = ALERT_BUTTON1 then -- OK
+      if Is_DBA then
+        Kill_session;
+      else
+        Set_Item_Property('steuerblock.Database', VISIBLE, PROPERTY_FALSE);
+        Go_Item('steuerblock.Password');
+      end if;
+    end if;
+  end if;
+end;
+END;

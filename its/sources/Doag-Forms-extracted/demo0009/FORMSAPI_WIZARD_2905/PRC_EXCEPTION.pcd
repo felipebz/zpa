@@ -1,0 +1,51 @@
+PROCEDURE prc_EXCEPTION (p_code NUMBER DEFAULT NULL, p_place VARCHAR2 DEFAULT NULL) IS
+  
+  -- F.Matz: 15.01.107 
+  
+  l_place VARCHAR2(256);
+  
+BEGIN
+  
+  IF p_code IS NOT NULL THEN
+     
+     IF p_place IS NOT NULL THEN
+         -- actual g.p --
+        g.p := p_place;
+        -- msg stack free ! --
+        IF g.msg_pop_chk THEN
+           g.msg_free;
+        END IF;
+     END IF;
+     
+     prc_msg(p_code, p_type=>'EXCEPTION');
+     
+  ELSE   
+    -- IF place<> 'none' THEN ..
+    IF g.msg_pop_chk THEN
+       l_place:= g.msg_pop;
+    ELSE
+       l_place:= g.p;
+    END IF;
+    
+    IF ERROR_CODE <> 0 THEN
+       -- prc_info(ERROR_TYPE || '-' || to_char(ERROR_CODE )|| ': ' || ERROR_TEXT);       
+       prc_msg( '$$$ {1} in: {2}'||chr(10)||':: {3} - {4}', 
+                'EXCEPTION', 
+                 l_place , 
+                 (ERROR_TYPE || '-' || to_char(ERROR_CODE )|| ': ' || ERROR_TEXT), 
+                 sqlerrm,
+                 p_type=>'EXCEPTION'
+               );    
+    ELSE
+        -- prc_alert_exception('$$$ EXCEPTION: Code=0 in '||g.p);
+        prc_msg( '$$$ {1} in: {2}'||chr(10)||':: - {3}', 
+                 'EXCEPTION', 
+                  l_place, 
+                  -- (ERROR_TYPE || '-' || to_char(ERROR_CODE )|| ': ' || ERROR_TEXT), 
+                  sqlerrm,
+                  p_type=>'EXCEPTION'
+                );
+    END IF;  
+  END IF;
+  
+END;

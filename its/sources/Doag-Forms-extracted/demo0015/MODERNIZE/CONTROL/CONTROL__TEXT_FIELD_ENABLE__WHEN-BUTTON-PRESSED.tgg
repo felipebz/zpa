@@ -1,0 +1,15 @@
+BEGIN
+if get_item_property('CONTROL.TEXT_FIELD_1',ENABLED) = 'TRUE' then
+  set_item_property('CONTROL.TEXT_FIELD_1',ENABLED,PROPERTY_FALSE);
+  set_item_property('CONTROL.TEXT_FIELD_2',ENABLED,PROPERTY_FALSE);
+  set_item_property('CONTROL.DATE_FIELD',ENABLED,PROPERTY_FALSE);
+  set_item_property('CONTROL.DATE_TIME_FIELD',ENABLED,PROPERTY_FALSE);
+  set_item_property('CONTROL.TEXT_FIELD_ENABLE',LABEL,'Enable fields');
+else
+  set_item_property('CONTROL.TEXT_FIELD_1',ENABLED,PROPERTY_TRUE);
+  set_item_property('CONTROL.TEXT_FIELD_2',ENABLED,PROPERTY_TRUE);
+  set_item_property('CONTROL.DATE_FIELD',ENABLED,PROPERTY_TRUE);
+  set_item_property('CONTROL.DATE_TIME_FIELD',ENABLED,PROPERTY_TRUE);
+  set_item_property('CONTROL.TEXT_FIELD_ENABLE',LABEL,'Disable fields');
+end if;
+END;

@@ -1,0 +1,15 @@
+BEGIN
+declare
+  l_filename varchar2(200);
+begin
+   l_filename := webutil_file.file_save_dialog
+    (directory_name => :global.user_home
+                                    ,file_name      => 'downloaded_from_as.txt'
+                                    ,file_filter    => null
+                                    ,title          => 'Select client side filename where App Server file will be saved'
+                                    );
+
+  :download.file_name := l_filename;
+end;
+
+END;

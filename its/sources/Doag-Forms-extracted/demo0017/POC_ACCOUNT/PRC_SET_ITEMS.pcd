@@ -1,0 +1,33 @@
+PROCEDURE prc_Set_Items IS
+
+   -- Friedhold Matz - 2018-FEB --
+   -- item value definitions --
+BEGIN
+   -- place your item definitions here . ! --
+     pkg_Item.prc_rec(1 , 'BLK_ACCOUNT', 'USERNAME',         'User name',              
+             'Enter your user name',                          'Must begin with .. followed .. #_$');
+             
+     pkg_Item.prc_rec(2 , 'BLK_ACCOUNT', 'FULLNAME',          'Full name',           
+             'Enter your full name',                          'Must begin with .. followed .. #_$');
+             
+     pkg_Item.prc_rec(3 , 'BLK_ACCOUNT', 'EMAIL',             'Email address',         
+             'Enter your first email address',               'Not a valid email format !');
+             
+      pkg_Item.prc_rec(4 , 'BLK_ACCOUNT', 'EMAIL2',            'Second email address',  
+              'Enter your second email address',              'Not a valid email format !', 'NO');
+              
+     pkg_Item.prc_rec(5 , 'BLK_ACCOUNT', 'QUERY',           'Users query',                                         
+             'Enter your query (e.g. "Name of my Cat")',    'Must begin with .. followed .. #_$');
+             
+     pkg_Item.prc_rec(6 , 'BLK_ACCOUNT', 'ANSWER',            'Users answer',                                        
+              'Enter the answer of your query',              '.. ', 'YES', 'SECURE');
+              
+     pkg_Item.prc_rec(7 , 'BLK_ACCOUNT', 'PASSWORD',          'Password (3 lowers,3 uppers,3 numbers,3 specials)',   
+              'Enter the password (min. 12 characters)',     '.. Error message comes from intern ..', 'YES', 'SECURE');
+              
+     pkg_Item.prc_rec(8 , 'BLK_ACCOUNT', 'PASSWORD_RETRY',  'Retry password', 
+              'Re-enter the password',                       '.. Error message comes from intern ..', 'YES', 'SECURE');   
+                       
+  EXCEPTION WHEN OTHERS THEN
+     prc_info(' EXCEPTION prc_Set_Items: '||sqlerrm);
+END prc_Set_Items;

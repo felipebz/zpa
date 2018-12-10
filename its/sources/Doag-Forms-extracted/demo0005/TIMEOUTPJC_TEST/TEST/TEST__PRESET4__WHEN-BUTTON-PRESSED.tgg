@@ -1,0 +1,11 @@
+BEGIN
+:maxinactivity := 60000;
+:sleeptime := 10000;
+:debug := 'true';
+:events := 'true';
+:timername := 'IT_60s_10s';
+:intervaltimer := 'true';
+:standardtimer := '';
+pl_start;
+   
+END;

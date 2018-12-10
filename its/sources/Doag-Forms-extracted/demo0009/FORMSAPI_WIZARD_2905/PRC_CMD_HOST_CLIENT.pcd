@@ -1,0 +1,19 @@
+
+-- 09.03.2017 --
+
+PROCEDURE prc_CMD_HOST_CLIENT(p_command VARCHAR2, p_blocking BOOLEAN DEFAULT TRUE) IS
+BEGIN
+  
+   CASE   
+     WHEN UPPER(:PARAMETER.P_HOST_CLIENT)='HOST' THEN      
+           HOST( p_COMMAND, NO_SCREEN );      
+
+     WHEN UPPER(:PARAMETER.P_HOST_CLIENT)='CLIENT' THEN        
+          IF p_blocking THEN
+             WEBUTIL_HOST.BLOCKING( p_command );
+          ELSE
+             WEBUTIL_HOST.NONBLOCKING( p_command );
+          END IF;
+   END CASE;
+
+END;

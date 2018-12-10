@@ -1,0 +1,15 @@
+BEGIN
+declare
+   hBean ITEM:= FIND_ITEM('BL.BEAN');
+   timer_id   Timer ;
+begin
+   fbean.register_bean(hBean, 1, 'com.sun.pdfview.PDFViewer');
+   fbean.invoke( hBean, 1, 'doOpenUrl', 'http://forms12c.com/customer_bvi_eng.pdf');
+   
+   --fbean.invoke( hBean, 1, 'doOpenUrl', 'c:\\temp\\Musterreport.pdf');
+  
+   fbean.invoke( hBean, 1, 'doThumbs', 'false');
+   timer_id := Create_Timer( 'pageTimer', 10, NO_REPEAT ) ;
+end;  
+
+END;

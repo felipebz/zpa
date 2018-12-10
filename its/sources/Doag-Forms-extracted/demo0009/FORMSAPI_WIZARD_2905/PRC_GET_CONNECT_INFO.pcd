@@ -1,0 +1,8 @@
+PROCEDURE prc_Get_Connect_Info( the_username IN OUT VARCHAR2, 
+              the_password IN OUT VARCHAR2, 
+              the_connect  IN OUT VARCHAR2) IS 
+BEGIN 
+  the_username := Get_Application_Property(lower(USERNAME)); 
+  the_password := Get_Application_Property(PASSWORD); 
+  the_connect  := Get_Application_Property(CONNECT_STRING); 
+END prc_Get_Connect_Info; 

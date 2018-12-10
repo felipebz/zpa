@@ -1,0 +1,21 @@
+BEGIN
+BEGIN
+  
+  g.msg_push('W-W-CLOSED');
+  
+  IF :SYSTEM.EVENT_WINDOW='WIN_INFO' THEN
+     go_item('CTL_MAIN.CMD_DUMMY');
+     hide_window('WIN_INFO');
+     g.msg_free;
+     RETURN;
+  END IF;
+  
+  do_key('exit');
+
+  g.msg_free;
+  
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;  
+END W_W_CLOSED;
+
+END;

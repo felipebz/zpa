@@ -1,0 +1,12 @@
+PROCEDURE WNR IS
+/*
+|| Name        : WNR
+|| Description : WHEN-NEW-RECORD-INSTANCE
+|| 
+|| Version   Updates     Author    Change-Description
+|| -------   ----------  -------   ------------------
+|| 1.0.001   03.04.2011, Volberg - Created
+*/
+BEGIN
+  Event.WNR;
+END;

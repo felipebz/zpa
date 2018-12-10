@@ -1,0 +1,7 @@
+BEGIN
+
+  show_window ('window1');
+  hide_window('w_hello');
+  go_block('clientinfo');
+  SYNCHRONIZE;
+END;

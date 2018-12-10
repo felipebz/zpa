@@ -1,0 +1,15 @@
+PROCEDURE WNF IS
+/*
+|| Name        : WNF
+|| Description : WHEN-NEW-FORM-INSTANCE
+|| 
+|| Version   Updates     Author    Change-Description
+|| -------   ----------  -------   ------------------
+|| 1.0.001   03.04.2011, Volberg - Created
+*/
+BEGIN
+  Event.WNF;
+
+  Goto_Block_and_Query (Const_local.blk_Mainblock);
+  Goto_Block           (Const_local.blk_Filter);
+END;

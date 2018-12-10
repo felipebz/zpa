@@ -1,0 +1,100 @@
+PROCEDURE prc_COMPILATION IS
+   l_fname_blank VARCHAR2(128); 
+PROCEDURE prc_clear_results IS
+BEGIN
+   IF webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx') THEN
+          NULL;
+      END IF;
+   END IF;              
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmb-compile.txt')   THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmb-compile.txt') THEN
+         NULL;
+      END IF;
+   END IF;        
+   IF webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx') THEN
+         NULL;
+      END IF;
+   END IF;              
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx-compile.txt')   THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx-compile.txt') THEN
+         NULL;
+      END IF;
+   END IF;        
+    IF webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx') THEN
+      IF webutil_file.delete_file(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx') THEN
+         NULL;
+      END IF;
+   END IF;              
+   IF webutil_file.file_exists(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx-compile.txt')   THEN
+      IF webutil_file.delete_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx-compile.txt') THEN
+         NULL;
+      END IF;
+   END IF;              
+   IF webutil_file.file_exists(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.err')   THEN
+      IF webutil_file.delete_file(:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.err') THEN
+         NULL;
+      END IF;
+   END IF;              
+END prc_clear_results;
+
+PROCEDURE prc_clear_results_HOST IS
+   l_cmd VARCHAR2(2048);   
+BEGIN
+   -- HOST( 'IF EXIST '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx'||' DEL '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx',  NO_SCREEN);
+   
+   HOST( 'IF EXIST '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx'||              ' DEL '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmx',  NO_SCREEN);
+
+   HOST( 'IF EXIST '||:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmb-compile.txt'||  ' DEL '||:PARAMETER.P_LOG_DIR ||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.fmb-compile.txt',  NO_SCREEN);
+    
+   HOST( 'IF EXIST '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx'||              ' DEL '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx',  NO_SCREEN);
+            
+   HOST( 'IF EXIST '||:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx-compile.txt'||  ' DEL '||:PARAMETER.P_LOG_DIR ||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.plx-compile.txt',  NO_SCREEN);
+    
+   HOST( 'IF EXIST '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx'||              ' DEL '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx',  NO_SCREEN);
+      
+   HOST( 'IF EXIST '||:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx-compile.txt'||  ' DEL '||:PARAMETER.P_LOG_DIR ||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.mmx-compile.txt',  NO_SCREEN);
+        
+   HOST( 'IF EXIST '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.err'||              ' DEL '||:PARAMETER.P_COMP_DIR||:PARAMETER.P_FILE_SEPARATOR||l_fname_blank||'.err',  NO_SCREEN);
+   
+END prc_clear_results_HOST;
+
+BEGIN
+  
+   l_fname_blank:= substr(:BLK_HANDLG.FNAME, 1, length(:BLK_HANDLG.FNAME)-4);
+   
+   IF :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND 
+      :BLK_HANDLG.FEXTENT IN ('FMB', 'PLL', 'MMB') AND
+      :BLK_HANDLG.STATUS_CHECK   <> 'ERROR' AND
+      :BLK_HANDLG.STATUS_MIGRATE <> 'ERROR' THEN        
+          
+      IF :PARAMETER.P_HOST_CLIENT='HOST' THEN  
+          prc_clear_results_HOST;    
+          
+          pkg_FAM_RUN_Script.prc_run_batch_compile_cmd(:BLK_HANDLG.FNAME); 
+          prc_Set_Compile_result(:BLK_HANDLG.FNAME);
+          SYNCHRONIZE;
+        
+      ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN  
+          prc_clear_results;   
+                    
+           pkg_FAM_RUN_Script.prc_run_batch_compile_cmd(:BLK_HANDLG.FNAME); 
+          prc_Set_Compile_result(:BLK_HANDLG.FNAME);
+          SYNCHRONIZE;
+                                                                                                             
+       END IF;
+      
+   ELSIF  :BLK_HANDLG.FNAME IS NOT NULL AND :BLK_HANDLG.CB='Y' AND 
+           :BLK_HANDLG.FEXTENT IN ('RDF') AND
+           :BLK_HANDLG.STATUS_CHECK   <> 'ERROR' AND
+            :BLK_HANDLG.STATUS_MIGRATE <> 'ERROR' THEN
+        
+        IF :PARAMETER.P_REPORTS_RUN='YES' THEN     
+           pkg_FAM_RUN_Script.prc_run_batch_comp_reports_cmd(:BLK_HANDLG.FNAME,replace(lower(:BLK_HANDLG.FNAME),'.rdf','.rep'));
+           prc_Set_Compile_result(:BLK_HANDLG.FNAME);
+        END IF;
+        
+   END IF;
+            
+END;

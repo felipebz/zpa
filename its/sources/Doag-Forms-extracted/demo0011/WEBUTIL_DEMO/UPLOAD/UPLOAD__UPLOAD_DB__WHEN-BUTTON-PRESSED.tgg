@@ -1,0 +1,10 @@
+BEGIN
+begin
+  upload_db;
+    exception
+    when others
+    then
+      message('File upload failed: '||sqlerrm);
+
+end;
+END;

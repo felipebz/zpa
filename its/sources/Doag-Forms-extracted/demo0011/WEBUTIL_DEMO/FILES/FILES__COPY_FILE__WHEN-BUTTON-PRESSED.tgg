@@ -1,0 +1,5 @@
+BEGIN
+begin
+  files_wbp('COPY_FILE');
+end;
+END;

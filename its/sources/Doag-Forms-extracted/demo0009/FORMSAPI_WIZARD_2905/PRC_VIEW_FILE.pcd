@@ -1,0 +1,109 @@
+PROCEDURE prc_view_file (p_file VARCHAR2) IS
+
+  -- F.Matz: 11.02.2017, 09.05.2017, 18.06.2017 : IF HOST THEN transfer from AS => CLIENT; END IF;
+  
+  -- m_init_n      VARCHAR2(2048)  := 'CMD /C notepad.exe "${p_file}"  '; 
+  m_init_n          VARCHAR2(2048)  := ' notepad.exe "${p_file}"  '; 
+  m_run_notepad    VARCHAR2(4096);
+  m_bare_filename  VARCHAR2(64);
+  --------------------------------------------------------------------
+  PROCEDURE prc_run_view_notepad(p_file VARCHAR2) IS          
+  BEGIN
+  
+      m_run_notepad:= m_init_n;      
+     m_run_notepad:= replace( m_run_notepad, '${p_file}',  p_file );  
+     SYNCHRONIZE;
+    
+     -- -notabbar -nosession
+     --     client_host('CMD /C call ' || m_run_notepad);
+     IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+        -- HOST( 'CMD /C call ' || m_run_notepad );
+        client_host( 'CMD /C call ' || m_run_notepad );       
+     ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+         WEBUTIL_HOST.BLOCKING( 'CMD /C call ' || m_run_notepad );
+     END IF;
+     
+  END prc_run_view_notepad;
+  --------------------------------------------------------------------  
+ 
+  PROCEDURE prc_run_view_notepad_HOST IS          
+  BEGIN  
+      m_run_notepad:= m_init_n;      
+     m_run_notepad:= replace( m_run_notepad, '${p_file}',  :PARAMETER.P_USER_HOME||'\'||m_bare_filename );  
+     SYNCHRONIZE;
+    
+     -- -notabbar -nosession
+     -- client_host('CMD /C call ' || m_run_notepad);    
+     -- HOST( 'CMD /C call ' || m_run_notepad );
+     
+     WEBUTIL_HOST.BLOCKING( 'CMD /C call ' || m_run_notepad );
+       
+  END prc_run_view_notepad_HOST;
+  --------------------------------------------------------------------  
+
+  FUNCTION fnc_trans_AS2CLIENT RETURN BOOLEAN IS
+     l_success       BOOLEAN;
+      
+  BEGIN
+
+   -- THIS CODE ASSUMES THAT CLIENT IS WINDOWS BASED
+  -- CHANGE THE serverFile PATH FROM C:\TEMP TO THE LOCATION SET IN WEBUTIL.CFG
+  --
+  -- 09.05.2017 : IF transfer.appsrv.accessControl=FALSE(webutil.cfg) THEN 
+  --                 transfer.appsrv.read.(webutil.cfg NOT USED 
+  --              END IF;
+  -- e.g in webutil.cfg ::
+  -- ....
+  --    transfer.appsrv.enabled=TRUE
+  --        transfer.appsrv.workAreaRoot=
+  --    transfer.appsrv.accessControl=FALSE
+  --        #List transfer.appsrv.read.<n> directories
+  --        transfer.appsrv.read.1=c:\temp
+  --        #List transfer.appsrv.write.<n> directories
+  --        transfer.appsrv.write.1=c:\temp
+
+  l_success := webutil_file_transfer.AS_to_Client_with_progress(
+                 clientFile       => :PARAMETER.P_USER_HOME||'\'||m_bare_filename
+                ,serverFile       => p_file
+                ,progressTitle    => 'Download from Application Server in progress.'
+                ,progressSubTitle => 'Please wait..'
+               );
+  IF l_success THEN
+     -- prc_info('File downloaded successfully from the Application Server');
+     RETURN(TRUE);
+  ELSE
+     prc_ERROR('$$$ File download from Application Server failed. $$$');
+     RETURN(FALSE);
+  END IF;
+  
+  EXCEPTION  WHEN others  THEN
+      prc_ERROR('File download failed: '||sqlerrm);
+      RETURN(FALSE);
+  END fnc_trans_AS2CLIENT;
+  
+BEGIN
+   
+   IF  :PARAMETER.P_HOST_CLIENT='HOST' THEN
+     
+       IF fnc_File_Exists_HOST(p_file) THEN
+           -- 09.05.2017 - transfer HOST => CLIENT --
+           -- set for transfer & view              --
+           m_bare_filename := substr(p_file, instr(p_file,'\',-1)+1);          
+          IF fnc_trans_AS2CLIENT THEN 
+             prc_run_view_notepad_HOST();
+          END IF;        
+       ELSE
+           prc_info('Ausgabe Datei existiert nicht !');
+       END IF;
+       
+   ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN      
+         
+       IF webutil_file.file_exists(p_file) THEN
+          prc_run_view_notepad(p_file);
+       ELSE
+           prc_info('Ausgabe Datei existiert nicht !');
+       END IF;
+       
+   END IF;
+     
+END prc_view_file;

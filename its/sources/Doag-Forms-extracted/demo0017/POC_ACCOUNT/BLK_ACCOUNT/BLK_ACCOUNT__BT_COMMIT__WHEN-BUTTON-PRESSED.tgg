@@ -1,0 +1,17 @@
+BEGIN
+DECLARE
+  l_res VARCHAR2(256);
+BEGIN
+  
+  SYNCHRONIZE;
+  
+  l_res:= pkg_Item.fnc_final_check;
+  IF l_res='OK' THEN
+     prc_info(' User account is completed. ');
+  ELSE
+     prc_info(' User account is not completed. '||chr(10)||l_res);
+  END IF;
+  
+END;
+
+END;

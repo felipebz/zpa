@@ -1,0 +1,10 @@
+BEGIN
+:maxinactivity := 36000000;
+:sleeptime := 10000;
+:debug := 'true';
+:events := 'true';
+:timername := 'RT_10h_10s';
+:intervaltimer := 'true';
+:standardtimer := '';
+pl_start;   
+END;

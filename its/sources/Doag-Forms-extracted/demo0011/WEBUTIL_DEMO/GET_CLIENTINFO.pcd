@@ -1,0 +1,13 @@
+PROCEDURE GET_CLIENTINFO IS
+BEGIN
+  :CLIENTINFO.USER_NAME        := webutil_clientinfo.get_user_name;
+  :CLIENTINFO.IP_ADDRESS       := webutil_clientinfo.get_ip_address;
+  :CLIENTINFO.HOST_NAME        := webutil_clientinfo.get_host_name;
+  :CLIENTINFO.OPERATING_SYSTEM := webutil_clientinfo.get_operating_system;
+  :CLIENTINFO.JAVA_VERSION     := webutil_clientinfo.get_java_version;
+  :CLIENTINFO.PATH_SEPERATOR   := webutil_clientinfo.get_path_separator;
+  :CLIENTINFO.FILE_SEPERATOR   := webutil_clientinfo.get_file_separator;
+  :CLIENTINFO.LANGUAGE         := webutil_clientinfo.get_language;
+  :CLIENTINFO.TIME_ZONE        := webutil_clientinfo.get_time_zone;
+  :CLIENTINFO.DATE_TIME        := webutil_clientinfo.get_date_time;
+END;

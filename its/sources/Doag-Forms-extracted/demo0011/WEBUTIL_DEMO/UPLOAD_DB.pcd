@@ -1,0 +1,39 @@
+PROCEDURE UPLOAD_DB IS
+  l_success boolean;
+BEGIN
+  l_success := webutil_file_transfer.Client_To_DB_with_progress
+                                    (clientFile      => :upload.file_name
+                                    ,tableName       => 'wu_fileupdown_demo'
+                                    ,columnName      => 'BLOB'
+                                    ,whereClause     => 'ID = 1'
+                                    ,progressTitle   => 'Upload to Database in progress'
+                                    ,progressSubTitle=> 'Please wait'
+                                    ,asynchronous    => false
+                                    ,callbackTrigger => null
+                                    );
+  if l_success
+  then
+  --
+  -- Force commit to save file in db.                                    
+  -- This is not in the original Demo 
+  -- which causes the Demo to fail if 
+  -- you exit and return later to download.
+    :System.Message_Level := '15';                                   
+    commit;
+    :System.Message_Level := '0';  
+    
+    message('File uploaded successfully into the Database');
+    
+-- Added to make demo more user friendly.
+-- If file is successfully uploaded, move to "Download" tab.        
+    go_item('download.file_name');
+    
+  else
+    message('File upload to Database failed');
+  end if;
+  
+  exception
+    when others
+    then
+      message('File upload failed: '||sqlerrm);
+END;

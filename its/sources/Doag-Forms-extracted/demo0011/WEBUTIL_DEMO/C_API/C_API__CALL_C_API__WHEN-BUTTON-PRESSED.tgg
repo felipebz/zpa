@@ -1,0 +1,38 @@
+BEGIN
+-- IMPORTANT
+-- Be sure to review the following My Oracle Support Note
+-- Doc ID: 285331.1 - "Exception When Calling PASCAL style Function Via WebUTIL_C_API"
+
+declare
+  
+  StringBuffer varchar2(255) := 'Text to overwrite';
+  StringLength pls_integer   := length(StringBuffer);
+  rc pls_integer;
+  
+  f_handle WEBUTIL_C_API.FUNCTIONHANDLE;
+  args Webutil_c_api.parameterlist;
+  param1 Webutil_c_api.ParameterHandle;
+  param2 Webutil_c_api.ParameterHandle;
+  
+begin
+  f_handle := WEBUTIL_C_API.register_function('ffisamp.dll','PopulateString');
+  args := WEBUTIL_C_API.create_parameter_list;
+  param1 := WEBUTIL_C_API.add_parameter(args,WEBUTIL_C_API.C_CHAR_PTR
+                                            ,WEBUTIL_C_API.PARAM_INOUT
+                                            ,StringBuffer, 255);
+  param2 := WEBUTIL_C_API.add_parameter(args,WEBUTIL_C_API.C_INT_PTR
+                                            ,WEBUTIL_C_API.PARAM_INOUT
+                                            ,StringLength);    
+                                          
+  rc := WEBUTIL_C_API.Invoke_Int(  'ffisamp.dll','PopulateString',args);  
+  
+  
+  
+  message('The New value for String is: '||WEBUTIL_C_API.Get_Parameter_String(args,param1));
+  message('New Length '||to_char(WEBUTIL_C_API.Get_Parameter_Number(args,param2)));
+  message('RC was '||to_char(RC));  
+  
+  WEBUTIL_C_API.Destroy_Parameter_List(args);
+  WEBUTIL_C_API.Deregister_Function(f_handle);                                
+end;
+END;

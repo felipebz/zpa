@@ -1,0 +1,8 @@
+BEGIN
+declare webutil_timer timer;
+begin
+:TEST.VERSION := 'Forms Version '||GET_APPLICATION_PROPERTY(VERSION);
+webutil_timer:= CREATE_TIMER('WEBUTIL',3500,NO_REPEAT);
+end;
+
+END;

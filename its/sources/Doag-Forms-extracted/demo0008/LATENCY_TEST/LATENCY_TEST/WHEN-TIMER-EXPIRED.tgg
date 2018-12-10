@@ -1,0 +1,38 @@
+BEGIN
+declare   
+
+/* DOK:===============================================================================================================================================================
+ * Bezeichnung      :  Trigger WHEN-TIMER-EXPIRED
+ * Inhalt            :  
+ *
+ * Returnwert        :  -/-
+ * Autor            :  F.Hoffmann / Cologne Data
+ * Erstellungsdatum  :  11.09.2014
+ * Änd-Nr.  Datum         Name         Beschreibung
+ * -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ *      1     9.9.2015    HOFFMANNF   OT-64520 Timer berücksichtigt Zeiten für Inaktivitäten nicht, Neu: Prüfung ob formswebutil.jar und profi jacob.jar geladen sind
+ *       
+*/
+  
+  vch_timer              varchar2(200);
+  vch_log_check          varchar2(30);
+   
+  begin
+    
+    vch_timer := get_application_property(TIMER_NAME);
+
+    -- Webutil Einmaliger Aufruf zum Systemstart   
+    if vch_timer = 'WEBUTIL'
+      then
+        P_WHEN_NEW_FORM_INSTANCE;
+      else
+        -- form wird geschlossen
+        message('Exit!!');
+        exit_form(no_validate);
+     end if;
+      
+             
+   
+ 
+end;
+END;

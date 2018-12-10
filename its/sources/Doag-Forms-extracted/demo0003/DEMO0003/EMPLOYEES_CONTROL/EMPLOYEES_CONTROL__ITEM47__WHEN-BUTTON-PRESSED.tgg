@@ -1,0 +1,4 @@
+BEGIN
+exit_form (no_validate);
+
+END;

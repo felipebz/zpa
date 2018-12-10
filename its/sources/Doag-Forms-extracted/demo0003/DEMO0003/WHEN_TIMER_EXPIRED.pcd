@@ -1,0 +1,10 @@
+PROCEDURE When_Timer_Expired IS
+  V_Item   VARCHAR2 (61);
+BEGIN
+  V_Item := Act.Item;
+
+  IF One_Time_Timer.Get_Value = Const_local.ott_Query THEN
+    Goto_Block_and_Query (Const_local.blk_Mainblock);
+    Go_Item (V_Item);
+  END IF;
+END;

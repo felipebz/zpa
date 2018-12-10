@@ -1,0 +1,16 @@
+BEGIN
+   :when_timer_expired_event := null;
+   :when_custom_item_event := null;
+   :custom_time := null;
+   :expired_time := null;
+   :starttime := :system.current_datetime;
+   :timername := 'ST';  
+   synchronize;
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'END_TIMER','');
+
+    -- Beispiel für das Aufrufen von OULOOK via JAVA Script 
+    --web.javascript_eval_expr('document.getElementById("closeprofi").value="unprotect"');
+    --web.javascript_eval_expr('window.open("mailto:test@example.com?subject=subject&body=body","_self")');
+    --web.javascript_eval_expr('document.getElementById("closeprofi").value="protect"');
+   
+END;

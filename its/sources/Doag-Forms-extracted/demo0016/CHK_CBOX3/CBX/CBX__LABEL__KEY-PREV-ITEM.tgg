@@ -1,0 +1,6 @@
+BEGIN
+set_item_property('c.cbox',enabled,property_true);
+:cbox := null;
+go_item('C.CBOX');
+
+END;

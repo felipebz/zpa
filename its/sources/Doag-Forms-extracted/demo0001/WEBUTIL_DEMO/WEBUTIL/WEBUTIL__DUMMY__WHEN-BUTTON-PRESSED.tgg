@@ -1,0 +1,6 @@
+BEGIN
+if :system.cursor_block = 'WEBUTIL' then 
+  next_block;
+end if;
+WebUtil_Core.ShowBeans(false);
+END;

@@ -1,0 +1,10 @@
+BEGIN
+begin
+  download_db;
+  
+  exception
+  when others
+    then
+      message('File download failed: '||sqlerrm);
+end;
+END;

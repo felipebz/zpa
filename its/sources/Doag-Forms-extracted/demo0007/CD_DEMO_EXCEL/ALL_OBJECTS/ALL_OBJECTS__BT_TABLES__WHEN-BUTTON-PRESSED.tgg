@@ -1,0 +1,4 @@
+BEGIN
+set_block_property('ALL_OBJECTS',DEFAULT_WHERE,'where owner = ''SYS'' and object_type = ''TABLE'''); 
+execute_query;
+END;

@@ -1,0 +1,12 @@
+PROCEDURE WNB IS
+/*
+|| Name        : WNB
+|| Description : WHEN-NEW-BLOCK-INSTANCE
+|| 
+|| Version   Updates     Author    Change-Description
+|| -------   ----------  -------   ------------------
+|| 1.0.001   03.04.2011, Volberg - Created
+*/
+BEGIN
+  Event.WNB;
+END;

@@ -1,0 +1,90 @@
+BEGIN
+/*-----------------------------------------------------------------------------
+
+  This forms module was developed from Friedhold Matz fmatz.com@gmail.com
+  and contributed from the Cologne Data GmbH, many thanks to Frank Hoffmann.
+  
+  -----------------------------------------------------------------------------
+*/ NULL;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+  The module includes following special programming features,
+  final version from 29.Juny 2017 :
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  # This module works normally without any DB connection.
+  
+  # Triggers and the mostly routines includes a prc_EXCEPTION.
+  
+  # There is a 'message-stack' for reading the EXCEPTION place:
+    thats why following structure exists:
+    
+    BEGIN
+      g.msg_push('block-name-(trigger-name/proc.-name..)'); ->(*)
+      ...
+      g.msg_free; -- it's ok.
+    EXCEPTION
+      prc_EXCEPTION; -- includes the g.msg_pop <-(*)
+    END;
+  
+  # As I described in my blog 
+    http://friedhold-matz.blogspot.de/2013/02/forms-11g-alert-prozedur.html 
+    the using of message parameter substituing is realized in:
+    - prc_msg
+    - prc_flog .
+    
+  # prc_flog is important for writing a log file in the %userhome% directory
+  
+  # I am using here 'indexed record tables' (associative arrays) 
+    directly binded at the quasi DB table block: BLK_HANDLING
+    for reading the directory files, coordinating the button actions and
+    viewing the action states.
+    
+  # For handling the dynamic DOS command lines I am using also the parameter substitution: 
+  
+    init_cmd CONSTANT VARCHAR2(1024):= 'CMD /C notepad.exe "${p_file}"  '; 
+    ..
+    final_cmd:= replace( init_cmd, '${p_file}',  p_file );  -- p_file as dynamic parameter
+    ..
+    
+  # The initializing is realized with the config-basis.ini:
+  
+    - intern defined in P_CONFIG_INI_BLANK if P_CONFIG_INI=NULL: placed in the \forms directory
+    - if P_CONFIG_INI IS NOT NULL then is using the config.ini there defined;
+      so you can define your own config.ini with the '&otherparams=p_config_ini=c:\works\myconfing.ini'
+      
+  # short definition of a config.ini:
+  
+    # --- BEGIN of INI File ---
+    
+    [DATABASE]
+    db.connect = scott/tiger@orcl
+
+    [PATH]
+    formsapi.execute= "C:\FormsAPI_Master_V3.0\FapiMaster.exe"
+
+    formsapi.scripts = C:\Works\Migr\scripts
+    user.sources_dir = C:\Works\Migr\Sources
+    user.addons_dir  = C:\Works\Migr\Addons
+    user.olb         = webutil_no_ole.olb
+
+    workspace.home   = C:\migration
+
+    # workspace.home\workspace.place
+    workspace.place = mydestination\works
+
+    # --- END of INI File ---
+
+  # Open tasks:
+  ~~~~~~~~~~~~~
+  # The module works in the moment as a HOST running module, see P_HOST_CLIENT.
+    The CLIENT running mode is implemented, but the checks are not completed.
+  -----------------------------------------------------------------------------
+
+  Hope you enjoy it, Friedhold.
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+*/
+  
+
+END;

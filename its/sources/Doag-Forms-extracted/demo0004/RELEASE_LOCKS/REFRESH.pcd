@@ -1,0 +1,5 @@
+PROCEDURE Refresh IS
+BEGIN
+  Go_Block('V$Lock');
+  Execute_Query;
+END;

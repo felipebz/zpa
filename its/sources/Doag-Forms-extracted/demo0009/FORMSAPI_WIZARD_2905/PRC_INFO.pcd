@@ -1,0 +1,10 @@
+PROCEDURE prc_info(s VARCHAR2) IS
+  al_button PLS_INTEGER;
+  al_id     Alert;
+  
+  -- F.Matz: 15.01.107 
+BEGIN
+  al_id:= FIND_ALERT('INFO'); 
+  SET_ALERT_PROPERTY(al_id, ALERT_MESSAGE_TEXT, s ); 
+  al_button := SHOW_ALERT( al_id ); 
+END prc_info;

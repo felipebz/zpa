@@ -1,0 +1,40 @@
+PROCEDURE pl_start IS
+BEGIN
+
+:when_timer_expired_event := null;
+:when_custom_item_event := null;
+:custom_time := null;
+:expired_time := null;
+:starttime := :system.current_datetime;
+synchronize;
+
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'TIMER_NAME',:timername); 
+
+if :standardtimer is not null
+  then
+    set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'ENABLE_STANDARDTIMER',:standardtimer);
+end if;
+
+if :intervaltimer is not null
+  then
+    set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'ENABLE_INTERVALTIMER',:intervaltimer);
+end if;
+
+if :events = 'true'
+  then
+    set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'RECORDING_EVENTS','ALL');
+  else
+    set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'RECORDING_EVENTS','');
+end if;
+
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'ENABLE_DEBUGGING',:debug);
+
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'TIMER_SLEEP_TIME',:sleeptime);  -- ms
+
+set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'START_TIMER',:maxinactivity); 
+
+
+
+
+   
+END;

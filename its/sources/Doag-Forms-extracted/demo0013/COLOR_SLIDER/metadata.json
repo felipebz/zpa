@@ -1,0 +1,18 @@
+{
+  "alerts": [],
+  "blocks": [
+    {
+      "name": "BL1",
+      "items": [
+        "R",
+        "G",
+        "B",
+        "COLOR",
+        "VR",
+        "VG",
+        "VB"
+      ]
+    }
+  ],
+  "lovs": []
+}

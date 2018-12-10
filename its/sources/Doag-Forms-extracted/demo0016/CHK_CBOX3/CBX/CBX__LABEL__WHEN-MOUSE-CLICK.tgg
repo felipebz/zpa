@@ -1,0 +1,10 @@
+BEGIN
+
+BEGIN
+   
+    set_item_property('c.cbox',enabled,property_true);
+    pkg_Cbox.prc_labelclick;
+    
+END;
+
+END;

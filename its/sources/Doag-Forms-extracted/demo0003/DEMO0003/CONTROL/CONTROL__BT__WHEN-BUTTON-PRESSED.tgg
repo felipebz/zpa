@@ -1,0 +1,4 @@
+BEGIN
+call_form ('demo0002');
+
+END;

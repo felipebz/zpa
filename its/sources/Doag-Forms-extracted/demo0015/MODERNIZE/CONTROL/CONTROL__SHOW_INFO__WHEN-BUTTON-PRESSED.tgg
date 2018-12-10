@@ -1,0 +1,3 @@
+BEGIN
+set_custom_property('ERROR_STACK',all_rows,'ShowInfo','30:INF-00030:This is the text of info 30...');
+END;

@@ -1,0 +1,44 @@
+PROCEDURE OLE_WRITE IS
+  app       CLIENT_OLE2.OBJ_TYPE;
+  docs      CLIENT_OLE2.OBJ_TYPE;    
+  doc       CLIENT_OLE2.OBJ_TYPE; 
+  selection CLIENT_OLE2.OBJ_TYPE; 
+  args      CLIENT_OLE2.LIST_TYPE;
+BEGIN
+  -- create a new document
+  app := CLIENT_OLE2.CREATE_OBJ('Word.Application');
+  if :ole.silent = 'Y' 
+  then
+    CLIENT_OLE2.SET_PROPERTY(app,'Visible',0);
+  else
+    CLIENT_OLE2.SET_PROPERTY(app,'Visible',1);
+  end if;
+  
+  docs := CLIENT_OLE2.GET_OBJ_PROPERTY(app, 'Documents');
+  doc  := CLIENT_OLE2.INVOKE_OBJ(docs, 'add');
+  
+  selection := CLIENT_OLE2.GET_OBJ_PROPERTY(app, 'Selection');
+
+  -- insert data into new document from long item
+  CLIENT_OLE2.SET_PROPERTY(selection, 'Text', :ole.oletext);
+
+  -- save document as example.tmp
+  args := CLIENT_OLE2.CREATE_ARGLIST;
+  CLIENT_OLE2.ADD_ARG(args, :ole.filename);
+  CLIENT_OLE2.INVOKE(doc, 'SaveAs', args);
+  CLIENT_OLE2.DESTROY_ARGLIST(args);
+
+  -- close example.tmp
+  args := CLIENT_OLE2.CREATE_ARGLIST;
+  CLIENT_OLE2.ADD_ARG(args, 0);
+  CLIENT_OLE2.INVOKE(doc, 'Close', args);
+  CLIENT_OLE2.DESTROY_ARGLIST(args);
+ 
+  CLIENT_OLE2.RELEASE_OBJ(selection);
+  CLIENT_OLE2.RELEASE_OBJ(doc); 
+  CLIENT_OLE2.RELEASE_OBJ(docs); 
+ 
+ -- exit MSWord 
+  CLIENT_OLE2.INVOKE(app,'Quit');
+  
+END;

@@ -1,0 +1,22 @@
+BEGIN
+
+BEGIN
+  
+  /* {obsolete}
+  
+  g.p:= 'W-CB-C: BLK_UPGR.CB';
+ 
+  prc_flog('--- ACTION: '||g.p||' ---', p_type=>'DEBUG');
+   
+  pkg_BLK_DATA.prc_update_DATA(NAME_IN(:SYSTEM.CURRENT_BLOCK||'.'||defs.DBI_RNO), defs.C_BLK_UPGR);
+  
+  prc_flog('--- <<< UPDATE UPGR >>> ---');
+  
+  pkg_TABLE_DUMP.prc_UPGR_dmp;
+  */
+  
+  NULL;
+  
+END;
+
+END;

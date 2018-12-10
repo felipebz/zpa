@@ -1,0 +1,15 @@
+BEGIN
+-- idle heartbeat time (sec)
+:heartbeat := 60;
+
+-- idle max_time (sec)
+:max_time := 300;
+
+:parameter.p_timer_countdown := null;
+:countdown := 5;
+
+p_clear_diagnostic_items;
+-- Set Client Idle Timer to 5 Seconds for an initial start
+SET_APPLICATION_PROPERTY(CLIENT_IDLE_TIME,60);
+
+END;

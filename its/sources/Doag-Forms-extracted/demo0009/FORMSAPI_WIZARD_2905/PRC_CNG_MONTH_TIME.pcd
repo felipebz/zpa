@@ -1,0 +1,58 @@
+PROCEDURE prc_cng_month_time IS
+   l_time VARCHAR2(32);
+   l_h    VARCHAR2(16);
+   l_m    VARCHAR2(16);
+   l_mon  VARCHAR2(3);
+BEGIN
+   l_mon:= upper(substr(:BLK_HANDLG.DFILE, 4,3));
+   
+   IF    l_mon = ('JAN') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'JAN', '01'); 
+   ELSIF l_mon = ('FEB') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'FEB', '02'); 
+   ELSIF l_mon = ('MAR') THEN 
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'MAR', '03'); 
+   ELSIF l_mon = ('MRZ') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'MRZ', '03'); 
+   ELSIF l_mon = ('APR') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'APR', '04'); 
+   ELSIF l_mon = ('MAI') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'MAI', '05'); 
+   ELSIF l_mon = ('MAY') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'MAY', '05'); 
+   ELSIF l_mon = ('JUN') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'JUN', '06'); 
+   ELSIF l_mon = ('JUL') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'JUL', '07'); 
+   ELSIF l_mon = ('AUG') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'AUG', '08'); 
+   ELSIF l_mon = ('SEP') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'SEP', '09'); 
+   ELSIF l_mon = ('OCT') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'OCT', '10'); 
+   ELSIF l_mon = ('OKT') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'OKT', '10'); 
+   ELSIF l_mon = ('NOV') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'NOV', '11'); 
+   ELSIF l_mon = ('DEC') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'DEC', '12');
+   ELSIF l_mon = ('DEZ') THEN
+       :BLK_HANDLG.DFILE:= replace( upper(:BLK_HANDLG.DFILE), 'DEZ', '12');
+   END IF;
+   
+   l_time:= substr(  :BLK_HANDLG.DFILE, 
+                     instr(:BLK_HANDLG.DFILE,' ')+1, 
+                     length(:BLK_HANDLG.DFILE)-instr(:BLK_HANDLG.DFILE,' '));
+   
+   l_h:= substr (:BLK_HANDLG.DFILE, instr(:BLK_HANDLG.DFILE,' ')+1, instr(:BLK_HANDLG.DFILE,':')-instr(:BLK_HANDLG.DFILE,' ')-1);
+   IF length(l_h)<2 THEN
+       l_h:= '0'||l_h;
+   END IF;
+   l_m:= substr (:BLK_HANDLG.DFILE, instr(:BLK_HANDLG.DFILE,':')+1, length(:BLK_HANDLG.DFILE)-instr(:BLK_HANDLG.DFILE,':') );
+   IF length(l_m)<2 THEN
+       l_m:= '0'||l_m;
+   END IF;
+   l_time:= l_h||':'||l_m;   
+   :BLK_HANDLG.DFILE:= replace(substr(:BLK_HANDLG.DFILE, 1, instr(:BLK_HANDLG.DFILE,' ')-1)||' '||l_time, '-', '.');
+          
+END prc_cng_month_time;

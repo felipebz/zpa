@@ -1,0 +1,8 @@
+PROCEDURE prc_ABORT IS
+BEGIN
+  
+  prc_info('$$$ The module is now closed ! $$$');
+  
+  EXIT_FORM; -- <<< SENSE <<<
+  
+END prc_ABORT;

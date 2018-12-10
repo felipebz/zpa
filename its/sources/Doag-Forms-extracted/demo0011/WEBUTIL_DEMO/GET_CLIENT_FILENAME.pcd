@@ -1,0 +1,12 @@
+PROCEDURE get_client_filename IS
+  l_filename varchar2(200);
+BEGIN
+  l_filename := client_get_file_name(directory_name => :global.user_home
+                                    ,file_name      => null
+                                    ,file_filter    => 'GIF Files (*.gif)|*.gif|All Files (*.*)|*.*'
+                                    ,message        => null
+                                    ,dialog_type    => null
+                                    ,select_file    => null
+                                    );
+  :builtins.file_name := l_filename;
+END;

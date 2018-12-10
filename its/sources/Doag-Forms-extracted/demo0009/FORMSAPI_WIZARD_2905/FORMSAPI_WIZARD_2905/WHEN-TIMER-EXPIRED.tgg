@@ -1,0 +1,33 @@
+BEGIN
+
+-- F.Matz : .., 19.05.2017 
+
+DECLARE
+  tm VARCHAR2(30);
+BEGIN 
+  
+  g.msg_push('W-TIMER-EXPIRED');
+    
+  tm := GET_APPLICATION_PROPERTY(TIMER_NAME);
+  
+  IF tm='WEBUTIL_USERHOME'  THEN   
+     
+     BEGIN                       
+        -- 19.05.2017 --
+        :PARAMETER.P_SHOW_INIT:= 'YES';
+        prc_CONFIGURATION;
+                
+     EXCEPTION WHEN OTHERS THEN        
+         prc_info('$$$ Fehler in der Konfigurierung WEBUTIL - ABBRUCH ! $$$');        
+         EXIT_Form;  --- <<< SENSE <<<        
+     END ablk_chkwebutil;
+     
+  END IF; -- END 'WEBUTIL_USERHOME' --
+  
+  g.msg_free;
+    
+EXCEPTION WHEN OTHERS THEN
+  prc_EXCEPTION;      
+END W_T_E;
+
+END;

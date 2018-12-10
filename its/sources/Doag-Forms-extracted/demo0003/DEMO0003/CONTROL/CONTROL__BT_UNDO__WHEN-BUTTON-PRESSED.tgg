@@ -1,0 +1,4 @@
+BEGIN
+goto_block_and_query (Const_local.blk_Employees);
+
+END;

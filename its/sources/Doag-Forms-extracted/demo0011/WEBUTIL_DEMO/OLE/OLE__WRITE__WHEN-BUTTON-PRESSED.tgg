@@ -1,0 +1,18 @@
+BEGIN
+begin
+  
+  If :OLE.OLETEXT is NULL then
+    Message ('Please enter some text.');
+    Message ('Please enter some text.');
+    CLEAR_MESSAGE;
+    GO_ITEM ('OLE.OLETEXT');
+    RAISE FORM_TRIGGER_FAILURE;
+  Else    
+  
+    ole_write;
+    message('Done.');
+  
+  End if;
+  
+end;    
+END;

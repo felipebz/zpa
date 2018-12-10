@@ -1,0 +1,15 @@
+BEGIN
+declare
+  l_filename varchar2(200);
+begin
+  l_filename := client_get_file_name(directory_name => :global.user_home
+                                    ,file_name      => null
+                                    ,file_filter    => null
+                                    ,message        => null
+                                    ,dialog_type    => null
+                                    ,select_file    => null
+                                    );
+  :upload.file_name := l_filename;
+  SYNCHRONIZE;
+end;
+END;

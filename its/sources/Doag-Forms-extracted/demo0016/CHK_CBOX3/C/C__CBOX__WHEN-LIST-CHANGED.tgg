@@ -1,0 +1,23 @@
+BEGIN
+declare pre_dummy varchar2(30) := :dummy;
+
+BEGIN
+   pkg_CBOX.prc_wlc('C.CBOX');
+
+   if get_view_property('CBX',VISIBLE) = 'TRUE' 
+     and length(:label) > 0 
+     and upper (:label) <> upper (:cbox)
+   then
+     :dummy := :cbox;
+     if nvl(pre_dummy,' ') <> :dummy 
+       then
+         :parameter.par1 := :dummy;
+      else
+         :parameter.par1 := null;
+       end if;  
+       
+   end if;
+  
+END;
+
+END;

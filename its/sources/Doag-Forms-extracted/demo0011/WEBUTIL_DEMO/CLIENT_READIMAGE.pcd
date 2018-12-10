@@ -1,0 +1,4 @@
+PROCEDURE client_readimage IS
+BEGIN
+  client_image.read_image_file(:builtins.file_name, 'GIF', 'builtins.image');
+END;

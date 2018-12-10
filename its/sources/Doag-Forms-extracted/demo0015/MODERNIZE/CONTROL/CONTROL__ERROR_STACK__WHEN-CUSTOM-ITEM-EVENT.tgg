@@ -1,0 +1,25 @@
+BEGIN
+DECLARE
+  ev  VARCHAR2(20);
+  pl  ParamList;
+  ty  number;
+  id  varchar2(40);
+  btn number;
+  alt alert;
+BEGIN
+  ev := :SYSTEM.Custom_Item_Event;
+  case ev
+  when 'Clicked' then
+    btn := show_alert('CLICKED');
+  when 'ButtonClicked' then
+    pl := get_parameter_list(:SYSTEM.Custom_Item_Event_Parameters);
+    get_parameter_attr(pl, 'ErrorId', ty, id);
+    alt := find_alert('BTN_CLICKED');
+    SET_ALERT_PROPERTY(alt, alert_message_text, 'You clicked the icon button for id ' || id); 
+    btn := show_alert(alt);
+  else
+    null;
+  end case;
+end;
+
+END;

@@ -1,0 +1,4 @@
+BEGIN
+go_item('TEST');
+do_key('EDIT_TEXTITEM');
+END;

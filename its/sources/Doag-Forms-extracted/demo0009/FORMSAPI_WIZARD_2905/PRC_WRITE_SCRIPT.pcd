@@ -1,0 +1,39 @@
+
+PROCEDURE prc_write_script(p_scriptname VARCHAR2, p_script VARCHAR2) IS
+   l_out_file Text_IO.File_Type;  
+   l_out_file_C client_Text_IO.File_Type;
+   
+BEGIN
+  
+    g.msg_push('prc_write_script');
+   
+   IF :PARAMETER.P_HOST_CLIENT='HOST' THEN
+      l_out_file := Text_IO.Fopen(p_scriptname, 'w');
+      BEGIN
+         Text_IO.put(l_out_file, p_script);
+      EXCEPTION
+         WHEN OTHERS THEN
+               prc_error('$$$ Fehler prc_write_script (ablk_prc_write_script) '||sqlerrm);            
+      END ablk_prc_write_script;   
+      Text_IO.Fclose(l_out_File); 
+   
+   ELSIF :PARAMETER.P_HOST_CLIENT='CLIENT' THEN
+       l_out_file_C := client_Text_IO.Fopen(p_scriptname, 'w');
+       BEGIN
+           client_Text_IO.put(l_out_file_C, p_script);
+       EXCEPTION
+           WHEN OTHERS THEN
+               prc_error('$$$ Fehler prc_write_script (ablk_prc_write_script) '||sqlerrm);
+            
+       END ablk_prc_write_script;   
+       client_Text_IO.Fclose(l_out_File_C); 
+       
+   END IF;
+   
+   g.msg_free;
+   
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;
+END prc_write_script;
+
+-------------------------------------------------------------------------------------------------

@@ -1,0 +1,30 @@
+PROCEDURE p_download_dokument_as(p_dokument in varchar2) is
+
+  vch_dokument varchar2(100) := :parameter.p_dokument_name;
+  boolean_success boolean;
+  vch_client_dir_and_file varchar2(500); 
+  vch_server_dir_and_file varchar2(500);
+  vch_server_dir varchar2(200) := :parameter.p_working_directory;
+  vch_user_home varchar2(200) :=  :parameter.p_userhome;
+  vch_slash varchar2(1);
+
+begin
+
+    -- Defaultbelegung von Verzeichnissen und INI Dateien
+    vch_server_dir_and_file := webutil_get_as_tmp_dir || p_dokument;
+
+
+   vch_client_dir_and_file := vch_user_home|| '\' || p_dokument;
+
+  :status := 'Copy: '|| vch_client_dir_and_file;
+  
+  boolean_success := 
+    webutil_file_transfer.as_To_Client(
+            serverfile    => vch_server_dir_and_file,
+            clientfile    => vch_client_dir_and_file);
+  if not boolean_success then
+    :status := 'Error : ' || vch_server_dir_and_file || ' nach ' || vch_client_dir_and_file;
+    raise form_trigger_failure;  
+  end if;          
+  
+END;

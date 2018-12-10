@@ -1,0 +1,18 @@
+BEGIN
+declare vch_return_value varchar2(2000);
+
+begin
+:last_query := get_block_property('ALL_OBJECTS',last_query);
+vch_return_value := pdw_temp_blob_export.f_make_blob(:last_query,'EXCEL');
+synchronize;
+p_get_blob('EXCEL');
+
+if vch_return_value != '0' 
+  then
+    message(vch_return_value);
+end if;
+
+pdw_temp_blob_export.p_drop_blob;
+
+end;
+END;

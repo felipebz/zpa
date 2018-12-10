@@ -1,0 +1,42 @@
+PROCEDURE prc_file_merge_HOST(p_first_file VARCHAR2, p_second_file VARCHAR2, p_result_file VARCHAR2, p_title2 VARCHAR2) IS
+
+   -- F.Matz: 11.02.2017
+   
+   l_in_file   Text_IO.File_Type;
+   l_out_file  Text_IO.File_Type;
+   l_buff      VARCHAR2(1024);
+   
+BEGIN
+   g.msg_push('prc_file_merge_HOST');
+   
+   prc_copy_file_HOST(p_first_file, p_result_file);
+   
+   l_in_file  := Text_IO.Fopen(p_second_file, 'r');
+   l_out_file := Text_IO.Fopen(p_result_file, 'a');
+    
+   Text_IO.put_line(l_out_file,'');  
+   Text_IO.put_line(l_out_file, p_title2);
+   Text_IO.put_line(l_out_file,'');     
+    
+   LOOP
+       BEGIN
+          Text_IO.get_line(l_in_File,  l_buff);                                    
+       EXCEPTION 
+           WHEN NO_DATA_FOUND THEN
+              Text_IO.Fclose(l_in_File);
+              EXIT;
+           WHEN OTHERS THEN
+              Text_IO.Fclose(l_in_File);
+              prc_msg('$$$ Fehler in prc_file_merge_HOST: '||sqlerrm);
+              EXIT;
+       END ;
+        Text_IO.put_line(l_out_file, l_buff);     
+   END LOOP;
+    
+   Text_IO.Fclose(l_out_file);
+    
+   g.msg_free;
+   
+EXCEPTION WHEN OTHERS THEN
+    prc_EXCEPTION;
+END prc_file_merge_HOST;

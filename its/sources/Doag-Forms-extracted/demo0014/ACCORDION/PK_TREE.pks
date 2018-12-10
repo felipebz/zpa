@@ -1,0 +1,9 @@
+PACKAGE PK_TREE IS
+  
+  PROCEDURE PR_FILL_TREE;
+  
+  PROCEDURE PR_WTNS(i_ndNode IN Ftree.NODE);
+  
+  PROCEDURE PR_WTNE(i_ndNode IN Ftree.NODE);
+  
+END;

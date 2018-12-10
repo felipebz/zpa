@@ -1,0 +1,4 @@
+BEGIN
+Goto_Block_and_Query (Const_local.blk_Mainblock);
+
+END;

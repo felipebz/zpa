@@ -1,0 +1,9 @@
+BEGIN
+if get_item_property('CONTROL.CHECK_BOX_1',BACKGROUND_COLOR) = 'r251g230b174' then
+  set_item_property('CONTROL.CHECK_BOX_1',BACKGROUND_COLOR,'automatic');
+  set_item_property('CONTROL.CHECK_BOX_2',BACKGROUND_COLOR,'automatic');
+else
+  set_item_property('CONTROL.CHECK_BOX_1',BACKGROUND_COLOR,'r251g230b174');
+  set_item_property('CONTROL.CHECK_BOX_2',BACKGROUND_COLOR,'r251g230b174');
+end if;
+END;

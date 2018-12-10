@@ -1,0 +1,5 @@
+BEGIN
+begin
+  separate_frame_options;
+end;
+END;

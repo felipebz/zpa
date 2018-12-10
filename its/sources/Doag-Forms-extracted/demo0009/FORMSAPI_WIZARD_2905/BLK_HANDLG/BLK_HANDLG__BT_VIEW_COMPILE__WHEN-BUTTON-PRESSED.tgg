@@ -1,0 +1,18 @@
+BEGIN
+
+    -- 11.02.2017 - F.Matz, 22.02.2017 - .err; 23.02.2017 - deactivated
+
+DECLARE
+  
+    l_fname_blank  VARCHAR2(128);
+    
+BEGIN
+      
+   prc_view_file(:PARAMETER.P_LOG_DIR||:PARAMETER.P_FILE_SEPARATOR||:BLK_HANDLG.FNAME||'-compile.txt');
+      
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;     
+END;
+
+
+END;

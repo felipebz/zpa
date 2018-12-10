@@ -1,0 +1,63 @@
+BEGIN
+DECLARE
+  
+  StringBuffer   varchar2(255) := 'An initial value that will be overwritten';
+  StringLength   pls_integer   := length(StringBuffer);
+  rc             pls_integer;
+  
+  f_handle   Webutil_c_api.FUNCTIONHANDLE;
+  args       Webutil_c_api.parameterlist;
+  param1     Webutil_c_api.ParameterHandle;
+  param2     Webutil_c_api.ParameterHandle;
+  loc       VARCHAR2(512);
+  
+BEGIN
+  
+  -- loc  := webutil_clientinfo.get_system_property('user.home') || '\' ||
+  --          WEBUTIL_CORE.ReadFromPropertyBundle('install.syslib.location.client.0') || ';';
+
+  -- prc_show(loc);
+  
+  prc_show('Before Calling the C program the value of the string is:"'||chr(10)||
+           StringBuffer||'" with a length of '||to_char(StringLength));
+  
+  f_handle := WEBUTIL_C_API.register_function('FFIdll32.dll', 'PopulateString');
+  
+  --prc_show('-- After register_function(<FFIdll32.dll>) ---');
+  
+  args   := WEBUTIL_C_API.create_parameter_list;
+  param1 := WEBUTIL_C_API.add_parameter(args,WEBUTIL_C_API.C_CHAR_PTR
+                                            ,WEBUTIL_C_API.PARAM_INOUT
+                                            ,StringBuffer, 255);
+  
+  --prc_show('-- After add_parameter param1 ---');
+                                              
+  param2 := WEBUTIL_C_API.add_parameter(args,WEBUTIL_C_API.C_INT_PTR
+                                            ,WEBUTIL_C_API.PARAM_INOUT
+                                            ,StringLength);    
+
+  --prc_show('-- After add_parameter param2 ---');
+  
+  rc := WEBUTIL_C_API.Invoke_Int(  'FFIdll32.dll', 'PopulateString', args);  
+  
+  --prc_show('-- After Invoke_Int(<FFIdll32.dll>) --- : '||to_char(rc));
+
+  --- SUCCESS !!! ---
+  -----------------------------------------------------------------------------------------------------
+      
+  prc_show('The New value for String is: "'||chr(10)||
+            WEBUTIL_C_API.Get_Parameter_String(args, param1)||
+            '" with a length of ' ||
+            to_char(WEBUTIL_C_API.Get_Parameter_Number(args, param2)));
+
+  --prc_show('The New value for String is: "'||WEBUTIL_C_API.Get_Parameter_String(args,
+  --          param2)||'" with a length of ' ||to_char(WEBUTIL_C_API.Get_Parameter_Number(args, param2)));
+           
+  --prc_show('RC was : '||to_char(rc));  
+  
+  WEBUTIL_C_API.Destroy_Parameter_List(args);
+  
+  WEBUTIL_C_API.Deregister_Function(f_handle);
+                                  
+END;
+END;

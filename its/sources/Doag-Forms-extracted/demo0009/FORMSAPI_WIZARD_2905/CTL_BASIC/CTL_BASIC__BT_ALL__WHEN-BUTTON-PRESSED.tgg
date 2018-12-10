@@ -1,0 +1,122 @@
+BEGIN
+
+----------------------------------------------------------------------------------
+-- F.Matz: 25.01.2017, 20.02.2017 - BO UNIX, 22.02.2017, 26.04.2017, 19.05.2017 
+----------------------------------------------------------------------------------
+
+DECLARE 
+  
+   l_fname_blank VARCHAR2(128);
+   
+BEGIN
+   -----------------------------------------------
+   -- 1.) Configuration  -- passive: 19.05.2017 --
+   -----------------------------------------------  
+   BEGIN   -- ablk_Konfiguration
+      
+       clear_message;
+      :PARAMETER.P_START_TIME := fnc_get_timer_value;
+
+       g.msg_push('W-B-P:BT_ALL: KONFIGURATION');  
+      
+      -- 19.05.2017 --
+      -- prc_CONFIGURATION;
+      -- SYNCHRONIZE;
+      
+       g.msg_free;
+     
+   EXCEPTION WHEN OTHERS THEN
+       prc_EXCEPTION;
+   END ablk_Konfiguration;
+   
+   ------------------------------------------
+   -- 2.) Running Checks.                  --
+   ------------------------------------------
+   BEGIN -- ablk_Migration
+     
+      g.msg_push('W-B-P:BT_ALL: CHECKS');
+   
+       prc_set_Statistik;
+       
+       SYNCHRONIZE;
+
+      g.msg_free;
+      
+   EXCEPTION WHEN OTHERS THEN
+       prc_EXCEPTION;
+   END ablk_Konfiguration;
+
+   ------------------------------------------
+   -- 3.) Running Migration.               --
+   ------------------------------------------
+   BEGIN -- ablk_Migration
+     
+      g.msg_push('W-B-P:BT_ALL: MIGRATION');
+  
+       go_block('BLK_HANDLG');
+       first_record;
+       
+       LOOP   
+                   
+          prc_MIGRATION;
+    
+          IF :SYSTEM.LAST_RECORD='TRUE' THEN
+             EXIT;
+          END IF;
+        
+          SYNCHRONIZE;
+        
+          next_record;
+    
+       END LOOP;
+  
+       first_record;
+       -- re-query --
+   
+       g.msg_free;
+     
+   EXCEPTION WHEN OTHERS THEN
+      prc_EXCEPTION;
+   END ablk_Migration;
+  
+   ------------------------------------------
+   -- 4.) Running Compiling.               --
+   ------------------------------------------
+    DECLARE -- ablk_Kompilierung  
+       l_fname_blank  VARCHAR2(128);    
+    BEGIN
+      
+       g.msg_push('W-B-P:BT_ALL: KOMPILIERUNG');
+  
+       go_block('BLK_HANDLG');
+       first_record;
+       
+       LOOP
+  
+          prc_COMPILATION;
+        
+          IF :SYSTEM.LAST_RECORD='TRUE' THEN
+             EXIT;
+          END IF;
+        
+          SYNCHRONIZE;
+        
+          next_record;
+    
+       END LOOP;
+  
+      first_record;
+      -- re-query --
+
+      prc_show_duration;  
+      
+      g.msg_free;
+    
+   EXCEPTION WHEN OTHERS THEN
+      prc_EXCEPTION;
+   END ablk_Kompilierung;  
+  
+END BT_ALL;
+
+
+END;

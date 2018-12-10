@@ -1,0 +1,57 @@
+BEGIN
+-- IMPORTANT
+-- Be sure to review the following My Oracle Support Note
+-- Doc ID: 285331.1 - "Exception When Calling PASCAL style Function Via WebUTIL_C_API"
+  
+  
+declare
+  
+  rc pls_integer;
+  f_handle WEBUTIL_C_API.FUNCTIONHANDLE;
+  args Webutil_c_api.parameterlist;
+
+  winSysDir varchar2(255) := Client_Win_API_ENVIRONMENT.Get_Windows_Directory || '\system32\';
+
+--- IMPORTANT ---
+-----------------
+--
+-- WEBUTIL_C_API CURRENTLY ONLY SUPPORTS CALLING C STYLE LIBRARIES, THEREFORE SOME WINDOWS LIBRARIES CANNOT BE CALLED.
+-- ADDITIONALLY, IT IS NOT RECOMMENDED THAT YOU ATTEMPT TO CALL WINDOWS FUNCTIONS WHICH REQUIRE ARGS.
+--
+-- USE EXTREME CAUTION WHEN CALLING WINDOWS APIS. 
+-- BE SURE TO THOROUGHLY TEST BEFORE MOVING TO PRODUCTION
+-- LOOK CLOSELY AT BOTH STABILITY AND MEMORY USAGE AS SOME CALLS
+-- MAY RESULT IN THE APPEARANCE OF A MEMORY LEAK.
+
+------------------------------------------------------------------------------------------
+-- This call to USER32.DLL will reference the LOCKWORKSTATION function.
+-- If the current OS user does not have a password configured, the workstation may not lock.
+------------------------------------------------------------------------------------------
+
+-- The Windows LockWorkStation function requires no args to be passed in.
+-- WebUtil expects something to be passed in. So an empty paramlist will be created.
+
+begin
+
+If webutil_clientinfo.get_operating_system LIKE 'Win%' Then    
+    
+  f_handle := WEBUTIL_C_API.register_function(winSysDir||'user32.dll','LockWorkStation');
+  args := WEBUTIL_C_API.create_parameter_list;    
+  
+/*
+If the function succeeds, the return value is nonzero. Because the function executes asynchronously, 
+a nonzero return value indicates that the operation has been initiated. It does not indicate whether 
+the workstation has been successfully locked.  If the function fails, the return value is zero. 
+
+    http://msdn.microsoft.com/en-us/library/aa376875(v=VS.85).aspx
+*/              
+  rc := WEBUTIL_C_API.Invoke_Int(winSysDir||'user32.dll','LockWorkStation',args);  
+
+End if;
+
+  WEBUTIL_C_API.Destroy_Parameter_List(args);
+  WEBUTIL_C_API.Deregister_Function(f_handle);      
+  SYNCHRONIZE;
+                          
+end;
+END;

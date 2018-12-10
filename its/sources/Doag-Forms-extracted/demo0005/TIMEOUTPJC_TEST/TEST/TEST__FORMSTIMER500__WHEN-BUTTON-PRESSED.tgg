@@ -1,0 +1,19 @@
+BEGIN
+declare 
+  timer_name varchar2(100);
+  timer_id   timer;
+
+begin  
+
+   pl_reset_formstimer_items;
+
+   timer_name := 'FormsTimer';
+   timer_id := find_timer(timer_name);
+   if id_null(timer_id) then 
+    timer_id := create_timer(timer_name,500,no_repeat);
+   else 
+    set_timer(timer_name,500, no_repeat);
+   end if;
+end; 
+   
+END;

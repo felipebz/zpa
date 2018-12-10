@@ -1,0 +1,96 @@
+PROCEDURE P_WHEN_NEW_FORM_INSTANCE IS
+  webutil_timer timer;
+BEGIN
+  :parameter.p_working_directory := webutil_browser.getappletparameter('WorkingDirectory');
+  :parameter.p_userhome := webutil_clientinfo.get_system_property('user.home');
+  --:parameter.p_use_testfile;
+ 
+  :status := 'Keyboardclick';
+  synchronize;
+  for i in 1..3
+  loop
+    :parameter.p_start := f_get_current_time_ms;
+    go_item('TASTATUR_1');
+    go_item('TASTATUR_2');
+    go_item('TASTATUR_3');
+    synchronize;
+    :parameter.p_stop := f_get_current_time_ms;
+    if i = 1 
+      then
+        :Tastatur_1 := webutil_get_latency(p_roundtrips_number=>3, p_estimated_time_ms=>1);
+     elsif i = 2 then
+        :Tastatur_2 := webutil_get_latency(p_roundtrips_number=>3, p_estimated_time_ms=>1);
+     else
+        :Tastatur_3 := webutil_get_latency(p_roundtrips_number=>3, p_estimated_time_ms=>1);
+     end if;
+     synchronize;
+  end loop; 
+  :Tastatur_AVG := (:Tastatur_1+:Tastatur_2+:Tastatur_3) / 3;
+  synchronize;
+  go_item('TASTATUR_AVG');
+  
+    :status := 'Webutil Download: 1 KB';
+  p_download_dokument_as('test_01k.txt');
+  for i in 1..3
+  loop
+    synchronize;
+    :parameter.p_start := f_get_current_time_ms;
+    p_download_dokument_as('test_01k.txt');
+    :parameter.p_stop := f_get_current_time_ms;
+    if i = 1 
+      then
+        :DATEI_01KB_1 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>1);
+     elsif i = 2 then
+        :DATEI_01KB_2 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>1);
+     else
+        :DATEI_01KB_3 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>1);
+     end if;
+  end loop; 
+  :DATEI_01KB_AVG := (:DATEI_01KB_1+:DATEI_01KB_2+:DATEI_01KB_3) / 3;
+  go_item('DATEI_01KB_AVG');
+  
+  :status := 'Webutil Download: 16 KB';
+  p_download_dokument_as('test_16k.txt');
+  for i in 1..3
+  loop
+    synchronize;
+    :parameter.p_start := f_get_current_time_ms;
+    p_download_dokument_as('test_16k.txt');
+    :parameter.p_stop := f_get_current_time_ms;
+    if i = 1 
+      then
+        :DATEI_16KB_1 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     elsif i = 2 then
+        :DATEI_16KB_2 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     else
+        :DATEI_16KB_3 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     end if;
+  end loop; 
+  :DATEI_16KB_AVG := (:DATEI_16KB_1+:DATEI_16KB_2+:DATEI_16KB_3) / 3;
+  go_item('DATEI_16KB_AVG');
+
+  :status := 'Webutil Download: 64 KB';
+  p_download_dokument_as('test_64k.txt');
+  for i in 1..3
+  loop
+    synchronize;
+    :parameter.p_start := f_get_current_time_ms;
+    p_download_dokument_as('test_64k.txt');
+    :parameter.p_stop := f_get_current_time_ms;
+    if i = 1 
+      then
+        :DATEI_64KB_1 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     elsif i = 2 then
+        :DATEI_64KB_2 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     else
+        :DATEI_64KB_3 := webutil_get_latency(p_roundtrips_number=>4, p_estimated_time_ms=>5);
+     end if;
+  end loop; 
+  :DATEI_64KB_AVG := (:DATEI_64KB_1+:DATEI_64KB_2+:DATEI_64KB_3) / 3;
+  go_item('DATEI_64KB_AVG');
+  
+  :status := 'Latencycheck finished';
+  :ergebnis := 'The average latency is ' || to_char(round((:tastatur_avg+:DATEI_01KB_AVG+:DATEI_16KB_AVG+:DATEI_64KB_AVG)/4,2)) || ' ms';
+  webutil_timer:= CREATE_TIMER('EXIT',25000,NO_REPEAT);
+ 
+END;

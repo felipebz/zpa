@@ -1,0 +1,44 @@
+BEGIN
+
+-- F.Matz: 02.02.2017
+DECLARE
+  l_set VARCHAR2(10);
+BEGIN
+    
+  go_block('BLK_HANDLG');
+  first_record;
+ 
+  IF :BLK_HANDLG.CB='Y' THEN
+     l_set := 'N';
+  ELSE
+     l_set:= 'Y';
+  END IF;  
+ 
+  LOOP    
+     :BLK_HANDLG.CB:= l_set;
+
+     go_block('BLK_HANDLG');
+
+     -- ${open}
+     -- pkg_BLK_DATA.prc_update_DATA(NAME_IN(:SYSTEM.CURRENT_BLOCK||'.'||'RNO'), 'BLK_HANDLG');
+
+     go_block('BLK_HANDLG');
+    
+     IF :SYSTEM.LAST_RECORD='TRUE' THEN
+        EXIT;
+      END IF;    
+      
+     next_record; 
+     
+     SYNCHRONIZE;
+            
+  END LOOP;
+
+  go_block('BLK_HANDLG');
+  first_record;
+
+EXCEPTION WHEN OTHERS THEN
+   prc_EXCEPTION;
+END;
+
+END;

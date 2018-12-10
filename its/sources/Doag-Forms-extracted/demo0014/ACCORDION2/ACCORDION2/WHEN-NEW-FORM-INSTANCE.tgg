@@ -1,0 +1,78 @@
+BEGIN
+DECLARE
+  lAccordionList PK_ACCORDION.tAccordionList;
+  
+  rAccordion     PK_ACCORDION.tAccordion;
+  
+BEGIN
+  rAccordion.vcCanvas:='CV1';
+  rAccordion.vcButton:='B.BT1';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=TRUE;
+  lAccordionList(1):=rAccordion;
+
+  rAccordion.vcCanvas:='CV2';
+  rAccordion.vcButton:='B.BT2';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(2):=rAccordion;
+
+  rAccordion.vcCanvas:='CV3';
+  rAccordion.vcButton:='B.BT3';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(3):=rAccordion;
+  
+  PK_ACCORDION.PR_INIT_ACCORDION('LEFT', lAccordionList);
+
+  rAccordion.vcCanvas:='CV4';
+  rAccordion.vcButton:='B.BT4';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=TRUE;
+  lAccordionList(1):=rAccordion;
+
+  rAccordion.vcCanvas:='CV5';
+  rAccordion.vcButton:='B.BT5';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(2):=rAccordion;
+
+  rAccordion.vcCanvas:='CV6';
+  rAccordion.vcButton:='B.BT6';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(3):=rAccordion;
+  
+  PK_ACCORDION.PR_INIT_ACCORDION('MIDDLE', lAccordionList);
+
+  rAccordion.vcCanvas:='CV7';
+  rAccordion.vcButton:='B.BT7';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=TRUE;
+  lAccordionList(1):=rAccordion;
+
+  rAccordion.vcCanvas:='CV8';
+  rAccordion.vcButton:='B.BT8';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(2):=rAccordion;
+
+  rAccordion.vcCanvas:='CV9';
+  rAccordion.vcButton:='B.BT9';
+  rAccordion.vcExpandedImage:='down.png';
+  rAccordion.vcCollapsedImage:='toright.png';
+  rAccordion.bOpened:=FALSE;
+  lAccordionList(3):=rAccordion;
+  
+  PK_ACCORDION.PR_INIT_ACCORDION('RIGHT', lAccordionList);
+
+END;
+END;

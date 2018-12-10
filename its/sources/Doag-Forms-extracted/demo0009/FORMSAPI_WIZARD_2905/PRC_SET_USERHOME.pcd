@@ -1,0 +1,12 @@
+PROCEDURE prc_set_UserHome IS
+  -- F.Matz: 15.01.107  
+  BEGIN
+    g.p:= 'pkg_config.prc_set_UserHome';
+    
+    IF :PARAMETER.P_USER_HOME IS NULL THEN    
+       :PARAMETER.P_USER_HOME:= webutil_clientinfo.get_system_property('user.home');
+    END IF;
+    
+  EXCEPTION WHEN OTHERS THEN
+     prc_EXCEPTION;     
+END prc_set_UserHome;

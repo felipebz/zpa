@@ -1,0 +1,26 @@
+PROCEDURE pl_when_custom_item_event IS
+
+  vch_eventName      varchar2(100); 
+  timer_name         varchar2(100);
+  timer_id           timer;
+
+begin  
+  vch_eventName      := name_in('system.custom_item_event');
+  :when_custom_item_event := vch_eventName;
+  :custom_time := :System.Current_Datetime;
+  
+  if instr(vch_eventName,':ST',1,1) > 0
+  then
+ 
+   timer_name := substr(vch_eventName,instr(vch_eventName,':',1,1)+1);
+   timer_id := find_timer(timer_name);
+   if id_null(timer_id) then 
+    timer_id := create_timer(timer_name,1,no_repeat);
+   else 
+    set_timer(timer_name,1, no_repeat);
+   end if;
+  end if;    
+  
+  
+ 
+END;

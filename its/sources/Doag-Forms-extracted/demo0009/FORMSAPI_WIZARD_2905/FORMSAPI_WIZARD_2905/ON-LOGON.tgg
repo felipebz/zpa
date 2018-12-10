@@ -1,0 +1,14 @@
+BEGIN
+
+DECLARE
+  
+  -- 07.03.2017 : DateTime from middle tier. --
+ 
+BEGIN  
+  
+  NULL;
+  
+END ON_LOGON;
+
+
+END;

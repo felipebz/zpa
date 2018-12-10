@@ -1,0 +1,17 @@
+PROCEDURE WNF IS
+/*
+|| Name        : WNF
+|| Description : WHEN-NEW-FORM-INSTANCE
+|| 
+|| Version   Updates     Author    Change-Description
+|| -------   ----------  -------   ------------------
+|| 1.0.001   03.04.2011, Volberg - Created
+*/
+BEGIN
+  Event.WNF;
+  
+  Init_List_Item (P_Item    => 'EMPLOYEES_LI_CONTROL.LI_JOB_ID',
+                  P_Query   => 'SELECT JOB_ID, JOB_ID FROM Employees UNION ' || Const.sel_All_from_Dual,
+                  P_Default => 0);
+
+END;

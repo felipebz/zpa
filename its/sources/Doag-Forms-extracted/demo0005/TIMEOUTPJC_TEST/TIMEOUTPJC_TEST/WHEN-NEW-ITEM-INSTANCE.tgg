@@ -1,0 +1,6 @@
+BEGIN
+if :whennewiteminstancefires = 'true'
+  then
+    set_custom_property('WEBUTIL.WEBUTIL_TIMER_FUNCTIONS',1,'FORMS_WHEN_NEW_ITEM_INSTANCE','');
+end if;    
+END;

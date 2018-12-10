@@ -1,0 +1,37 @@
+BEGIN
+
+-- F.Matz: 25.01.2017, 18.05.2017, .., 29.06.2017 (final) 
+
+DECLARE
+  
+   un  VARCHAR2(80); 
+   pw  VARCHAR2(80); 
+   cn  VARCHAR2(80); 
+  
+   start_timer   TIMER;
+ 
+BEGIN
+  
+    g.msg_push('W-N-F-I');
+  
+    prc_Get_Connect_Info(un,pw,cn); 
+ 
+   set_window_property('WIN_MAIN', TITLE, 
+                       :PARAMETER.P_TITLE              ||' - '         ||
+                       :PARAMETER.P_MODULE            ||' - Version '  ||
+                       :PARAMETER.P_MODULE_VERSION    ||' - '         ||    
+                       ' ['||un||'@'||nvl(cn,'NULL')  ||']' );
+
+   -- 08.05.2017 --
+   start_timer:= CREATE_TIMER('webutil_userhome', 150, NO_REPEAT);
+   
+   --18.05.2017 --
+   hide_view('CNV_INIT');
+   
+    g.msg_free;
+  
+EXCEPTION WHEN OTHERS THEN
+  prc_EXCEPTION;
+END W_N_F_I;
+
+END;
