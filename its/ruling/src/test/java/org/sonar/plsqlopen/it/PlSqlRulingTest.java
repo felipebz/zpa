@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import com.google.common.io.Files;
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.build.Build;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
 
@@ -45,33 +46,63 @@ public class PlSqlRulingTest {
       .restoreProfileAtStartup(FileLocation.of("src/test/resources/profile.xml"))
       .build();
 
-    @Test
-    public void test() throws Exception {
-      assertTrue(
-        "SonarQube 5.6 is the minimum version to generate the issues report",
-        orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("5.6"));
-      orchestrator.getServer().provisionProject("project", "project");
-      orchestrator.getServer().associateProjectToQualityProfile("project", "plsqlopen", "rules");
-      File litsDifferencesFile = FileLocation.of("target/differences").getFile();
-      SonarScanner build = SonarScanner.create(FileLocation.of("../sources").getFile())
-        .setProjectKey("project")
-        .setProjectName("project")
-        .setProjectVersion("1")
-        .setLanguage("plsqlopen")
-        .setSourceEncoding("UTF-8")
-        .setSourceDirs(".")
-        .setProperty("dump.old", FileLocation.of("src/test/resources/expected").getFile().getAbsolutePath())
-        .setProperty("dump.new", FileLocation.of("target/actual").getFile().getAbsolutePath())
-        .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab")
-        .setProperty("sonar.plsql.errorRecoveryEnabled", "false")
-        .setProperty("sonar.cpd.skip", "true")
-        .setProperty("sonar.analysis.mode", "preview")
-        .setProperty("sonar.issuesReport.html.enable", "true")
-        .setProperty("lits.differences", litsDifferencesFile.getAbsolutePath())
-        .setEnvironmentVariable("SONAR_RUNNER_OPTS", "-Xmx1024m");
-      orchestrator.executeBuild(build);
+    public SonarScanner initializeBuild(String projectId) throws Exception {
+        assertTrue(
+            "SonarQube 5.6 is the minimum version to generate the issues report",
+            orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("5.6"));
+        orchestrator.getServer().provisionProject(projectId, projectId);
+        orchestrator.getServer().associateProjectToQualityProfile(projectId, "plsqlopen", "rules");
 
-      assertThat(Files.toString(litsDifferencesFile, StandardCharsets.UTF_8)).isEmpty();
+        return SonarScanner.create(FileLocation.of("../sources/" + projectId).getFile())
+            .setProjectKey(projectId)
+            .setProjectVersion("1")
+            .setLanguage("plsqlopen")
+            .setSourceEncoding("UTF-8")
+            .setSourceDirs(".")
+            .setProperty("dump.old", FileLocation.of("src/test/resources/expected/" + projectId).getFile().getAbsolutePath())
+            .setProperty("dump.new", FileLocation.of("target/actual/" + projectId).getFile().getAbsolutePath())
+            .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab")
+            .setProperty("sonar.plsql.errorRecoveryEnabled", "false")
+            .setProperty("sonar.cpd.skip", "true")
+            .setProperty("sonar.analysis.mode", "preview")
+            .setProperty("sonar.issuesReport.html.enable", "true")
+            .setEnvironmentVariable("SONAR_RUNNER_OPTS", "-Xmx1024m");
+    }
+
+    public void executeBuild(Build<?> build) throws Exception {
+        String projectId = build.getProperty("sonar.projectKey");
+        File litsDifferencesFile = FileLocation.of("target/differences_" + projectId).getFile();
+        build.setProperty("lits.differences", litsDifferencesFile.getAbsolutePath());
+
+        orchestrator.executeBuild(build);
+        assertThat(Files.toString(litsDifferencesFile, StandardCharsets.UTF_8)).isEmpty();
+    }
+
+    @Test
+    public void alexandria_plsql_utils() throws Exception {
+        SonarScanner build = initializeBuild("alexandria-plsql-utils");
+        executeBuild(build);
+    }
+
+    @Test
+    public void pljson() throws Exception {
+        SonarScanner build = initializeBuild("pljson");
+        executeBuild(build);
+    }
+
+    @Test
+    public void utPLSQL2() throws Exception {
+        SonarScanner build = initializeBuild("utPLSQL2");
+        executeBuild(build);
+    }
+
+    @Test
+    public void utPLSQL3() throws Exception {
+        SonarScanner build = initializeBuild("utPLSQL3");
+        build.setSourceDirs("./source");
+        build.setProperty("sonar.coverageReportPaths", null);
+        build.setProperty("sonar.testExecutionReportPaths", null);
+        executeBuild(build);
     }
     
 }

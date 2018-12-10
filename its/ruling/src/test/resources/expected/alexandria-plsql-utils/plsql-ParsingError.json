@@ -1,0 +1,17 @@
+{
+'alexandria-plsql-utils:demos/02_create_temp_directory.sql':[
+4,
+],
+'alexandria-plsql-utils:demos/string_util_pkg_demo.sql':[
+39,
+],
+'alexandria-plsql-utils:extras/as_pdf3.pkb':[
+3245,
+],
+'alexandria-plsql-utils:extras/as_pdf3.pks':[
+285,
+],
+'alexandria-plsql-utils:setup/grants.sql':[
+5,
+],
+}
