@@ -78,7 +78,7 @@ public class PlSqlRulingTest {
             .setSourceDirs(".")
             .setProperty("dump.old", FileLocation.of("src/test/resources/expected/" + projectId).getFile().getAbsolutePath())
             .setProperty("dump.new", FileLocation.of("target/actual/" + projectId).getFile().getAbsolutePath())
-            .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab")
+            .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab,tps,tpb")
             .setProperty("sonar.plsql.errorRecoveryEnabled", "false")
             .setProperty("sonar.cpd.skip", "true")
             .setProperty("sonar.analysis.mode", "preview")
@@ -135,14 +135,110 @@ public class PlSqlRulingTest {
     }
 
     @Test
-    public void frw_ref() throws Exception {
-        SonarScanner build = initializeFormsBuild("frw_ref", "Doag-Forms-extracted/demo0002/FRW_REF");
+    public void demo0002_2() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0002_2", "Doag-Forms-extracted/demo0002/FRW_REF");
         executeBuild(build);
     }
 
     @Test
     public void demo0003() throws Exception {
         SonarScanner build = initializeFormsBuild("demo0003", "Doag-Forms-extracted/demo0003/DEMO0003");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0004() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0004", "Doag-Forms-extracted/demo0004/RELEASE_LOCKS");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0005() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0005", "Doag-Forms-extracted/demo0005/TIMEOUTPJC_TEST");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0006() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0006", "Doag-Forms-extracted/demo0006/TIMEOUT_SYS_CLIENT_IDL");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0007() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0007", "Doag-Forms-extracted/demo0007/CD_DEMO_EXCEL");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0008() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0008", "Doag-Forms-extracted/demo0008/LATENCY_TEST");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0009() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0009", "Doag-Forms-extracted/demo0009/FORMSAPI_WIZARD_2905");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0010() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0010", "Doag-Forms-extracted/demo0010/CHK_MYFFI_SAMPLE5");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0011() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0011", "Doag-Forms-extracted/demo0011/WEBUTIL_DEMO");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0012() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0012", "Doag-Forms-extracted/demo0012/PDFVIEWER");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0013() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0013", "Doag-Forms-extracted/demo0013/COLOR_SLIDER");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0014() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0014", "Doag-Forms-extracted/demo0014/ACCORDION");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0014_2() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0014", "Doag-Forms-extracted/demo0014/ACCORDION2");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0015() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0015", "Doag-Forms-extracted/demo0015/MODERNIZE");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0016() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0016", "Doag-Forms-extracted/demo0016/CHK_CBOX3");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0017() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0017", "Doag-Forms-extracted/demo0017/POC_ACCOUNT");
+        executeBuild(build);
+    }
+
+    @Test
+    public void demo0018() throws Exception {
+        SonarScanner build = initializeFormsBuild("demo0018", "Doag-Forms-extracted/demo0018/TEST");
         executeBuild(build);
     }
     
