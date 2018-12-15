@@ -214,7 +214,7 @@ public class PlSqlRulingTest {
 
     @Test
     public void demo0014_2() throws Exception {
-        SonarScanner build = initializeFormsBuild("demo0014", "Doag-Forms-extracted/demo0014/ACCORDION2");
+        SonarScanner build = initializeFormsBuild("demo0014_2", "Doag-Forms-extracted/demo0014/ACCORDION2");
         executeBuild(build);
     }
 
