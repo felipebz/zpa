@@ -87,6 +87,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     EXPONENTIATION_EXPRESSION, 
     ARGUMENT, 
     ARGUMENTS,
+    TREAT_AS_EXPRESSION,
     METHOD_CALL,
     CALL_EXPRESSION,
     CASE_EXPRESSION,
@@ -580,10 +581,13 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         b.rule(ARGUMENT).is(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION);
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
-        
+
+        b.rule(TREAT_AS_EXPRESSION).is(TREAT, LPARENTHESIS, EXPRESSION, AS, b.optional(REF), OBJECT_REFERENCE, RPARENTHESIS);
+
         b.rule(METHOD_CALL).is(MEMBER_EXPRESSION, b.oneOrMore(ARGUMENTS));
-        
+
         b.rule(CALL_EXPRESSION).is(b.firstOf(
+                TREAT_AS_EXPRESSION,
                 SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
                 AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
                 METHOD_CALL)).skipIfOneChild();

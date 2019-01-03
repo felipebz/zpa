@@ -490,7 +490,8 @@ public enum PlSqlKeyword implements TokenType {
     G("g"),
     T("t"),
     P("p"),
-    E("e");
+    E("e"),
+    TREAT("treat");
 
     private final String value;
     private final boolean reserved;
