@@ -40,6 +40,7 @@ public enum ConditionsGrammar implements GrammarRuleKey {
     IS_EMPTY_CONDITION,
     MEMBER_CONDITION,
     SUBMULTISET_CONDITION,
+    IS_OF_CONDITION,
     CONDITION;
 
     public static void buildOn(LexerfulGrammarBuilder b) {
@@ -83,12 +84,18 @@ public enum ConditionsGrammar implements GrammarRuleKey {
                 IS_EMPTY_CONDITION,
                 MEMBER_CONDITION, 
                 SUBMULTISET_CONDITION));
+
+        b.rule(IS_OF_CONDITION).is(CONCATENATION_EXPRESSION, IS, b.optional(NOT), OF, b.optional(TYPE),
+                LPARENTHESIS,
+                b.optional(ONLY), OBJECT_REFERENCE, b.zeroOrMore(COMMA, b.optional(ONLY), OBJECT_REFERENCE),
+                RPARENTHESIS);
         
         b.rule(CONDITION).is(b.firstOf(
                 RELATIONAL_CONDITION,
                 LIKE_CONDITION,
                 BETWEEN_CONDITION,
-                MULTISET_CONDITION)).skip();
+                MULTISET_CONDITION,
+                IS_OF_CONDITION)).skip();
     }
 
 }
