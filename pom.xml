@@ -7,7 +7,7 @@
   <version>2.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>SonarQube PL/SQL Community Plugin</name>
+  <name>Z PL/SQL Analyzer</name>
   <description>Enables analysis and reporting on PL/SQL projects.</description>
   <url>https://github.com/felipebz/sonar-plsql</url>
   <inceptionYear>2015</inceptionYear>
@@ -57,10 +57,10 @@
   </ciManagement>
 
   <properties>
-    <license.title>Sonar PL/SQL Plugin (Community)</license.title>
+    <license.title>Z PL/SQL Analyzer</license.title>
     <license.owner>Felipe Zorzo</license.owner>
     <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
-    <license.years>${project.inceptionYear}-2018</license.years>
+    <license.years>${project.inceptionYear}-2019</license.years>
     <license.name>GNU LGPL v3</license.name>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     <jdk.min.version>1.8</jdk.min.version>
@@ -72,7 +72,6 @@
     <sonar-packaging.version>1.18.0.372</sonar-packaging.version>
     <jar.plugin.version>3.0.2</jar.plugin.version>
     <jarjar.plugin.version>1.9</jarjar.plugin.version>
-    <sonar.pluginName>PL/SQL (Community)</sonar.pluginName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 

@@ -11,7 +11,7 @@
 
   <artifactId>sslr-plsql-toolkit</artifactId>
 
-  <name>PL/SQL :: SSLR Toolkit</name>
+  <name>Z PL/SQL Analyzer :: SSLR Toolkit</name>
 
   <dependencies>
     <dependency>

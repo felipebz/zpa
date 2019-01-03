@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>plsql-its</artifactId>
-  <name>SonarQube PL/SQL Community Plugin :: ITs</name>
+  <name>Z PL/SQL Analyzer :: ITs</name>
   <packaging>pom</packaging>
   
   <modules>

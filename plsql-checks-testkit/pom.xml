@@ -8,7 +8,7 @@
   
   <artifactId>plsql-checks-testkit</artifactId>
   
-  <name>PL/SQL :: Checks TestKit</name>
+  <name>Z PL/SQL Analyzer :: Checks TestKit</name>
   
   <dependencies>
     <dependency>

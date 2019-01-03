@@ -13,7 +13,7 @@
   <artifactId>sonar-plsql-open-plugin</artifactId>
   <packaging>sonar-plugin</packaging>
 
-  <name>SonarQube PL/SQL Community Plugin</name>
+  <name>Z PL/SQL Analyzer for SonarQube</name>
   <description>Enables analysis and reporting on PL/SQL projects.</description>
   <url>https://github.com/felipebz/sonar-plsql</url>
   
@@ -71,7 +71,7 @@
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
         <configuration>
-          <pluginName>PL/SQL (Community)</pluginName>
+          <pluginName>Z PL/SQL Analyzer</pluginName>
           <pluginClass>org.sonar.plsqlopen.PlSqlPlugin</pluginClass>
           <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <sonarLintSupported>false</sonarLintSupported>

@@ -10,7 +10,7 @@
 
   <artifactId>plsql-checks</artifactId>
 
-  <name>PL/SQL :: Checks</name>
+  <name>Z PL/SQL Analyzer :: Checks</name>
 
   <dependencies>
     <dependency>

@@ -4,13 +4,13 @@ Service | Status
 **AppVeyor** (Windows build and [deployment](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts)) | [![Build status](https://ci.appveyor.com/api/projects/status/6tpemq3g7d0drub8/branch/master?svg=true)](https://ci.appveyor.com/project/felipebz/sonar-plsql/branch/master)
 **Coveralls** (test coverage) | [![Coverage Status](https://coveralls.io/repos/github/felipebz/sonar-plsql/badge.svg?branch=master)](https://coveralls.io/github/felipebz/sonar-plsql?branch=master)
 
-## SonarQube PL/SQL Community plugin
+## Z PL/SQL Analyzer (previously known as SonarQube PL/SQL Community plugin)
 This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 5.6 and newer.
 
 ## Installation
 - Download the [latest sonar-plsql-open-plugin stable release](https://github.com/felipebz/sonar-plsql/releases) or the [latest sonar-plsql-open-plugin development version (not final)](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) into the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
-- Navigate to the Update Center (<SonarQube URL>/updatecenter). The Update Center should list "PL/SQL (Community)" on the tab "Installed Plugins";
+- Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "PL/SQL (Community)" or "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](http://docs.sonarqube.org/display/SONAR/Analyzing+with+SonarQube+Scanner).
 
 ## Contribute

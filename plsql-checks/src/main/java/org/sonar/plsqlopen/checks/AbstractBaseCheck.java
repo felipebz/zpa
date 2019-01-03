@@ -1,6 +1,6 @@
 /*
- * Sonar PL/SQL Plugin (Community)
- * Copyright (C) 2015-2018 Felipe Zorzo
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
  *
  * This program is free software; you can redistribute it and/or

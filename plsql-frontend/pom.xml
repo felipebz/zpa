@@ -10,7 +10,7 @@
 
   <artifactId>plsql-frontend</artifactId>
 
-  <name>PL/SQL :: Frontend</name>
+  <name>Z PL/SQL Analyzer :: Frontend</name>
 
   <dependencies>
     <dependency>
