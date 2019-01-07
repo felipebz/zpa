@@ -26,7 +26,7 @@ public final class PlSqlToolkit {
     }
 
     public static void main(String[] args) {
-        Toolkit toolkit = new Toolkit("SSLR :: PL/SQL :: Toolkit", new PlSqlConfigurationModel());
+        Toolkit toolkit = new Toolkit("Z PL/SQL Analyzer Toolkit", new PlSqlConfigurationModel());
         toolkit.run();
     }
 }
