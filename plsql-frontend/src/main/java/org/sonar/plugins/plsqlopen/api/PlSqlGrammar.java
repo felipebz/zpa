@@ -583,7 +583,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(ARGUMENTS).is(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS);
 
-        b.rule(TREAT_AS_EXPRESSION).is(TREAT, LPARENTHESIS, EXPRESSION, AS, b.optional(REF), OBJECT_REFERENCE, RPARENTHESIS);
+        b.rule(TREAT_AS_EXPRESSION).is(b.optional(TREAT), LPARENTHESIS, EXPRESSION, AS, b.optional(REF), OBJECT_REFERENCE, RPARENTHESIS);
 
         b.rule(SET_EXPRESSION).is(SET, LPARENTHESIS, EXPRESSION, RPARENTHESIS);
 

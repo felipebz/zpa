@@ -19,12 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.expressions;
 
+import static org.sonar.sslr.tests.Assertions.assertThat;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
-
-import static org.sonar.sslr.tests.Assertions.assertThat;
 
 public class TreatAsExpressionTest extends RuleTest {
 
@@ -42,9 +42,20 @@ public class TreatAsExpressionTest extends RuleTest {
     public void matchesTreatAsRef() {
         assertThat(p).matches("treat(foo as ref bar)");
     }
+
     @Test
     public void matchesTreatAsRef2() {
         assertThat(p).matches("treat(foo as ref bar).test");
+    }
+
+    @Test
+    public void matchesAsExpression() {
+        assertThat(p).matches("(foo as bar)");
+    }
+
+    @Test
+    public void matchesAsExpressionWithMethodCall() {
+        assertThat(p).matches("(foo as bar).baz()");
     }
 
 }
