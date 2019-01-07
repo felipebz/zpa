@@ -4,17 +4,17 @@ install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\maven" )) {
-        (new-object System.Net.WebClient).DownloadFile('http://www.us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.zip', 'C:\maven-bin.zip')
+        (new-object System.Net.WebClient).DownloadFile('http://www.us.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip', 'C:\maven-bin.zip')
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\maven-bin.zip", "C:\maven")
       }
 
 cache:
 - C:\Users\appveyor\.m2
-- C:\maven\apache-maven-3.3.9
+- C:\maven\apache-maven-3.6.0
 
 build_script:
-- cmd: C:\maven\apache-maven-3.3.9\bin\mvn verify -B -e -V
+- cmd: C:\maven\apache-maven-3.6.0\bin\mvn verify -B -e -V
 
 artifacts:
 - path: sonar-plsql-open-plugin\target\sonar-plsql-open-plugin-*.jar
-- path: sslr-plsql-toolkit\target\sslr-plsql-toolkit-*.jar
+- path: z-plsql-analyzer-toolkit\target\z-plsql-analyzer-toolkit-*.jar
