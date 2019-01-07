@@ -1,4 +1,5 @@
 create or replace procedure foo(bar number) is -- Noncompliant {{Explicitly declare this parameter as IN.}}
+--                              ^^^^^^^^^^
 begin
   null;
 end;
