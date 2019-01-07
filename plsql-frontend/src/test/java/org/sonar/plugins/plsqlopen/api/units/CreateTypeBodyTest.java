@@ -95,4 +95,15 @@ public class CreateTypeBodyTest extends RuleTest {
                 + "begin null; end; "
                 + "end;");
     }
+
+
+
+    @Test
+    public void matchesTypeBodyWithOverridenFinalFunction() {
+        assertThat(p).matches(
+            "create type body foo is "
+                + "overriding final member function foo return number is "
+                + "begin null; end; "
+                + "end;");
+    }
 }

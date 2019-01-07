@@ -1040,7 +1040,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(TYPE_ATTRIBUTE).is(IDENTIFIER_NAME, DATATYPE);
         
-        b.rule(INHERITANCE_CLAUSE).is(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE));
+        b.rule(INHERITANCE_CLAUSE).is(b.oneOrMore(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE)));
         
         b.rule(TYPE_SUBPROGRAM).is(
                 b.optional(INHERITANCE_CLAUSE),
