@@ -22,17 +22,22 @@ package org.sonar.plsqlopen.lexer;
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasComment;
 import static com.sonar.sslr.test.lexer.LexerMatchers.hasToken;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
-import org.sonar.plsqlopen.lexer.PlSqlLexer;
+import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.TokenType;
 import com.sonar.sslr.impl.Lexer;
+import com.sonar.sslr.impl.Parser;
 
 public class PlSqlLexerTest {
     private static Lexer lexer;
@@ -148,5 +153,18 @@ public class PlSqlLexerTest {
     
     private void assertThatIsNotToken(String sourceCode, TokenType tokenType) {
         assertThat(lexer.lex(sourceCode), not(hasToken(sourceCode, tokenType)));
+    }
+
+    @Test
+    public void checkLimitsOfStringLiteralWithUserDefinedDelimiters() {
+        Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, false));
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.BLOCK_STATEMENT));
+
+        AstNode node = p.parse("begin\n" +
+            "x := q'!select 1 from dual!';\n" +
+            "y := 'Another unrelated string!';\n" +
+            "end;");
+
+        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size(), is(2));
     }
 }
