@@ -43,3 +43,6 @@ target/
 # IntelliJ IDEA
 .idea
 *.iml
+
+# SonarQube
+.scannerwork
