@@ -67,7 +67,7 @@ public class UnusedParameterCheck extends AbstractBaseCheck {
         Set<Scope> scopes = getContext().getSymbolTable().getScopes();
         for (Scope scope : scopes) {
             // ignore procedure/function specification and overriding members
-            if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION)) {
+            if (scope.tree().is(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.TYPE_CONSTRUCTOR)) {
                 // is specification?
                 if (!scope.tree().hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
                     continue;

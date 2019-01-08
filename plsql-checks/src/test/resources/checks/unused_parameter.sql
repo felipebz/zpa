@@ -26,6 +26,11 @@ create package test is
    end;
 end;
 /
+create type foo as object ( -- don't report violation on declarations
+  constructor function foo(x number) return self as result,
+  member procedure foo(a number, b number);
+)
+/
 create type t under super_t (
   overriding member procedure foo(a number, b number); -- don't report violation on declaration
 )
