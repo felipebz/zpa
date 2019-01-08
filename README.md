@@ -11,7 +11,7 @@ This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.so
 - Download the [latest sonar-plsql-open-plugin stable release](https://github.com/felipebz/sonar-plsql/releases) or the [latest sonar-plsql-open-plugin development version (not final)](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) into the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "PL/SQL (Community)" or "Z PL/SQL Analyzer" on the tab "Installed Plugins";
-- Run an analysis with [SonarQube Scanner](http://docs.sonarqube.org/display/SONAR/Analyzing+with+SonarQube+Scanner).
+- Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).
 
 ## Contribute
 You are welcome to contribute. PL/SQL and Oracle SQL are big languages and there are many pieces missing in the [grammar](https://github.com/felipebz/sonar-plsql/blob/master/plsql-frontend/src/main/java/org/sonar/plugins/plsqlopen/api/PlSqlGrammar.java).
