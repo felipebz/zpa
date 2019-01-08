@@ -167,4 +167,18 @@ public class PlSqlLexerTest {
 
         assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size(), is(2));
     }
+
+    @Test
+    public void checkLimitsOfStringLiteralWithUserDefinedDelimiters2() {
+        Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, false));
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.BLOCK_STATEMENT));
+
+        AstNode node = p.parse("begin\n" +
+            "x := q'[" +
+            "replace(foo, ')');" +
+            "]';\n" +
+            "end;");
+
+        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size(), is(1));
+    }
 }
