@@ -19,10 +19,6 @@
  */
 package org.sonar.plsqlopen.it;
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.SonarScanner;
-import com.sonar.orchestrator.locator.FileLocation;
-
 import java.io.File;
 
 import org.junit.ClassRule;
@@ -32,12 +28,17 @@ import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 
+import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.build.SonarScanner;
+import com.sonar.orchestrator.locator.FileLocation;
+
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ MetricsTest.class, IssueTest.class, })
 public class Tests {
 
     @ClassRule
     public static final Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[6.7]"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     new File("../../sonar-plsql-open-plugin/target"),
                     "sonar-plsql-open-plugin-*.jar"))

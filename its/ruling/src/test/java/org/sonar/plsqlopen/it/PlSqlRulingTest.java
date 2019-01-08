@@ -20,29 +20,31 @@
 package org.sonar.plsqlopen.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import com.google.common.io.Files;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.Build;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.locator.MavenLocation;
 
 public class PlSqlRulingTest {
 
     @ClassRule
     public static Orchestrator orchestrator = Orchestrator.builderEnv()
+      .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[6.7]"))
       .addPlugin(FileLocation.byWildcardMavenFilename(
               new File("../../sonar-plsql-open-plugin/target"),
               "sonar-plsql-open-plugin-*.jar"))
       .setOrchestratorProperty("litsVersion", "0.6")
-      .addPlugin("lits")
+      .addPlugin(MavenLocation.of("org.sonarsource.sonar-lits-plugin","sonar-lits-plugin", "0.6"))
       .restoreProfileAtStartup(FileLocation.of("src/test/resources/profile.xml"))
       .restoreProfileAtStartup(FileLocation.of("src/test/resources/forms_profile.xml"))
       .build();
@@ -59,9 +61,6 @@ public class PlSqlRulingTest {
     }
 
     public SonarScanner initializeBuild(String projectId, String sources, String profileName) {
-        assertTrue(
-            "SonarQube 5.6 is the minimum version to generate the issues report",
-            orchestrator.getConfiguration().getSonarVersion().isGreaterThanOrEquals("5.6"));
         orchestrator.getServer().provisionProject(projectId, projectId);
         orchestrator.getServer().associateProjectToQualityProfile(projectId, "plsqlopen", profileName);
 
@@ -92,7 +91,9 @@ public class PlSqlRulingTest {
         build.setProperty("lits.differences", litsDifferencesFile.getAbsolutePath());
 
         orchestrator.executeBuild(build);
-        assertThat(Files.toString(litsDifferencesFile, StandardCharsets.UTF_8)).isEmpty();
+
+        String differences = new String(Files.readAllBytes(Paths.get(litsDifferencesFile.getAbsolutePath())), StandardCharsets.UTF_8);
+        assertThat(differences).isEmpty();
     }
 
     @Test
@@ -241,5 +242,5 @@ public class PlSqlRulingTest {
         SonarScanner build = initializeFormsBuild("demo0018", "Doag-Forms-extracted/demo0018/TEST");
         executeBuild(build);
     }
-    
+
 }

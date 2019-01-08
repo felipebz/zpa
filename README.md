@@ -23,7 +23,7 @@ There are two sets of integration tests:
 - [plugin](https://github.com/felipebz/sonar-plsql/tree/master/its/plugin): checks if the metrics are imported correctly in SonarQube
 - [ruling](https://github.com/felipebz/sonar-plsql/tree/master/its/ruling): checks the quality of parser and rules against real-world code
 
-To run the integrations tests, first update the submodules:
+To run the integrations tests, update the submodules:
 
     git submodule update --init --recursive
     
@@ -32,8 +32,12 @@ Build the plugin:
     mvn clean package
     
 Then run the tests:
-    
-    mvn test -Pit -Dsonar.runtimeVersion=LATEST_RELEASE -Dmaven.test.redirectTestOutputToFile=false
+
+    mvn test -Pit
+
+You can also specify the SonarQube version using the property `sonar.runtimeVersion`: 
+
+    mvn test -Pit -Dsonar.runtimeVersion=7.5
 
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
