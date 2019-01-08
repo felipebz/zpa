@@ -7,7 +7,7 @@ script: "./travis.sh"
 env:
   matrix:
   - TESTS=ci
-  - TESTS=it SQ_VERSION=LTS
+  - TESTS=it SQ_VERSION=LATEST_RELEASE[6.7]
   - TESTS=it SQ_VERSION=LATEST_RELEASE
   - TESTS=it SQ_VERSION=DEV
   global:

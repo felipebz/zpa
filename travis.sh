@@ -27,7 +27,7 @@ it)
   mvn package -Dsource.skip=true -Denforcer.skip=true -Danimal.sniffer.skip=true -Dmaven.test.skip=true -e -B
 
   cd its
-  mvn -Dsonar.runtimeVersion="$SQ_VERSION" -Pit -Dmaven.test.redirectTestOutputToFile=false verify -e -B -V
+  mvn -Dsonar.runtimeVersion="$SQ_VERSION" -Pit verify -e -B -V
   ;;
 
 esac
