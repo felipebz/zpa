@@ -5,7 +5,7 @@ Service | Status
 **Coveralls** (test coverage) | [![Coverage Status](https://coveralls.io/repos/github/felipebz/sonar-plsql/badge.svg?branch=master)](https://coveralls.io/github/felipebz/sonar-plsql?branch=master)
 
 ## Z PL/SQL Analyzer (previously known as SonarQube PL/SQL Community plugin)
-This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 5.6 and newer.
+This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
 
 ## Installation
 - Download the [latest sonar-plsql-open-plugin stable release](https://github.com/felipebz/sonar-plsql/releases) or the [latest sonar-plsql-open-plugin development version (not final)](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) into the SONARQUBE_HOME/extensions/plugins directory;
