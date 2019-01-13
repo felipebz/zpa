@@ -15,7 +15,7 @@
 
   <name>Z PL/SQL Analyzer for SonarQube</name>
   <description>Enables analysis and reporting on PL/SQL projects.</description>
-  <url>https://github.com/felipebz/sonar-plsql</url>
+  <url>https://felipezorzo.com.br/zpa/</url>
   
   <scm>
     <connection>scm:git:https://github.com/felipebz/sonar-plsql.git</connection>
