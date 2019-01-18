@@ -1,14 +1,13 @@
 Service | Status
 --- | ---
-**Travis** (Linux build) | [![Build Status](https://travis-ci.org/felipebz/sonar-plsql.svg?branch=master)](https://travis-ci.org/felipebz/sonar-plsql)
-**AppVeyor** (Windows build and [deployment](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts)) | [![Build status](https://ci.appveyor.com/api/projects/status/6tpemq3g7d0drub8/branch/master?svg=true)](https://ci.appveyor.com/project/felipebz/sonar-plsql/branch/master)
+**Azure Pipelines** | [![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=azure-devops-pipelines)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
 **Coveralls** (test coverage) | [![Coverage Status](https://coveralls.io/repos/github/felipebz/sonar-plsql/badge.svg?branch=master)](https://coveralls.io/github/felipebz/sonar-plsql?branch=master)
 
 ## Z PL/SQL Analyzer (previously known as SonarQube PL/SQL Community plugin)
 This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
 
 ## Installation
-- Download the [latest sonar-plsql-open-plugin stable release](https://github.com/felipebz/sonar-plsql/releases) or the [latest sonar-plsql-open-plugin development version (not final)](https://ci.appveyor.com/project/felipebz/sonar-plsql/build/artifacts) into the SONARQUBE_HOME/extensions/plugins directory;
+- Download the [latest sonar-plsql-open-plugin stable release](https://github.com/felipebz/sonar-plsql/releases) into the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "PL/SQL (Community)" or "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).

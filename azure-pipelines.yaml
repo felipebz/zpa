@@ -1,0 +1,66 @@
+jobs:
+  - job: Linux
+    pool:
+      vmImage: 'ubuntu-16.04'
+
+    strategy:
+      matrix:
+        CI:
+          TESTS: ci
+        ITS-LTS:
+          TESTS: it
+          SQ_VERSION: LATEST_RELEASE[6.7]
+        ITS-LATEST:
+          TESTS: it
+          SQ_VERSION: LATEST_RELEASE
+        ITS-NEXT:
+          TESTS: it
+          SQ_VERSION: DEV
+
+    steps:
+      - script: |
+          ./ci.sh
+        displayName: 'Build with Maven'
+        env:
+          COVERALLS_TOKEN: $(COVERALLS_TOKEN)
+
+  - job: Windows
+    pool:
+      vmImage: 'vs2017-win2016'
+
+    steps:
+      - script: |
+          echo Starting the build
+          mvn clean package
+        displayName: 'Build with Maven'
+
+      - task: CopyFiles@2
+        displayName: 'Copy artifact: sonar-plsql-open-plugin'
+        inputs:
+          sourceFolder: '$(system.defaultworkingdirectory)'
+          contents: 'sonar-plsql-open-plugin/target/sonar-plsql-open-plugin*.jar'
+          targetFolder: '$(build.artifactstagingdirectory)/plugin'
+          flattenFolders: true
+
+      - task: CopyFiles@2
+        displayName: 'Copy artifact: zpa-toolkit'
+        inputs:
+          sourceFolder: '$(system.defaultworkingdirectory)'
+          contents: 'zpa-toolkit/target/zpa-toolkit*.jar'
+          targetFolder: '$(build.artifactstagingdirectory)/toolkit'
+          flattenFolders: true
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish artifact: sonar-plsql-open-plugin'
+        inputs:
+          artifactName: 'sonar-plsql-open-plugin'
+          pathtoPublish: '$(build.artifactstagingdirectory)/plugin'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish artifact: sonar-plsql-open-plugin'
+        inputs:
+          artifactName: 'zpa-toolkit'
+          pathtoPublish: '$(build.artifactstagingdirectory)/toolkit'
+      
+      - task: PublishTestResults@2
+        displayName: 'Publish test results'
