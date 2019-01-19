@@ -112,6 +112,7 @@ public class PlSqlSquidSensor implements Sensor {
         
         try (JsonReader reader = new JsonReader(new FileReader(metadataFile))) {
             this.formsMetadata = new Gson().fromJson(reader, FormsMetadata.class);
+            LOG.info("Loaded Oracle Forms metadata from {}.", metadataFile);
         } catch (FileNotFoundException e) {
             LOG.warn("The metadata file {} was not found.", metadataFile, e);
         } catch (IOException e) {
