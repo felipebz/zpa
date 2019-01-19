@@ -54,8 +54,8 @@ public class PlSqlRulingTest {
 
     public SonarScanner initializeFormsBuild(String projectId, String sources) {
         SonarScanner build = initializeBuild(projectId, sources, "forms_rules");
-        build.setProperty("sonar.plsql.forms.metadata", "metadata.json");
-        build.setProperty("sonar.plsql.file.suffixes", "pcd,fun,pks,pkb,tgg");
+        build.setProperty("sonar.zpa.forms.metadata", "metadata.json");
+        build.setProperty("sonar.zpa.file.suffixes", "pcd,fun,pks,pkb,tgg");
         return build;
     }
 
@@ -76,8 +76,8 @@ public class PlSqlRulingTest {
             .setSourceDirs(".")
             .setProperty("dump.old", FileLocation.of("src/test/resources/expected/" + projectId).getFile().getAbsolutePath())
             .setProperty("dump.new", FileLocation.of("target/actual/" + projectId).getFile().getAbsolutePath())
-            .setProperty("sonar.plsql.file.suffixes", "sql,typ,pkg,pkb,pks,tab,tps,tpb")
-            .setProperty("sonar.plsql.errorRecoveryEnabled", "false")
+            .setProperty("sonar.zpa.file.suffixes", "sql,typ,pkg,pkb,pks,tab,tps,tpb")
+            .setProperty("sonar.zpa.errorRecoveryEnabled", "false")
             .setProperty("sonar.cpd.skip", "true")
             .setProperty("sonar.analysis.mode", "preview")
             .setProperty("sonar.issuesReport.html.enable", "true")
