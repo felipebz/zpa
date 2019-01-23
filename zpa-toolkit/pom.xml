@@ -9,7 +9,7 @@
     <version>2.3.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>z-plsql-analyzer-toolkit</artifactId>
+  <artifactId>zpa-toolkit</artifactId>
 
   <name>Z PL/SQL Analyzer :: SSLR Toolkit</name>
 

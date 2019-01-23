@@ -35,7 +35,7 @@
     <module>plsql-frontend</module>
     <module>plsql-checks</module>
     <module>sonar-plsql-open-plugin</module>
-    <module>z-plsql-analyzer-toolkit</module>
+    <module>zpa-toolkit</module>
     <module>plsql-checks-testkit</module>
     <module>its</module>
   </modules>

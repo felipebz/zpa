@@ -17,4 +17,4 @@ build_script:
 
 artifacts:
 - path: sonar-plsql-open-plugin\target\sonar-plsql-open-plugin-*.jar
-- path: z-plsql-analyzer-toolkit\target\z-plsql-analyzer-toolkit-*.jar
+- path: zpa-toolkit\target\zpa-toolkit-*.jar
