@@ -40,18 +40,13 @@ public class SonarQubePlSqlFile implements PlSqlFile {
     public String fileName() {
         return inputFile.filename();
     }
-
-    @Override
-    public InputFile inputFile() {
-        return inputFile;
-    }
     
     @Override
     public String content() {
         try {
-            return inputFile().contents();
+            return inputFile.contents();
         } catch (IOException e) {
-            throw new IllegalStateException("Could not read content of input file " + inputFile(), e);
+            throw new IllegalStateException("Could not read content of input file " + inputFile, e);
         }
     }
 
