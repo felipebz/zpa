@@ -122,7 +122,7 @@ public class CustomAnnotationBasedRulesDefinition {
     }
 
     private void setupExternalNames(Collection<NewRule> rules) {
-        ResourceBundle bundle = null;
+        ResourceBundle bundle;
         try {
             bundle = ResourceBundle.getBundle("org.sonar.l10n." + languageKey, locale);
         } catch (MissingResourceException e) {

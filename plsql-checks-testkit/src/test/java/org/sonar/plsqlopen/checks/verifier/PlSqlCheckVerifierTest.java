@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -97,7 +96,7 @@ public class PlSqlCheckVerifierTest {
     }
 
     @Test
-    public void verify_should_fail_when_using_incorrect_shift() throws IOException {
+    public void verify_should_fail_when_using_incorrect_shift() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_shift.sql", getNoEffectCheck());
             Fail.fail("Test should fail");
@@ -107,7 +106,7 @@ public class PlSqlCheckVerifierTest {
     }
 
     @Test
-    public void verify_should_fail_when_using_incorrect_attribute() throws IOException {
+    public void verify_should_fail_when_using_incorrect_attribute() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
                     getNoEffectCheck());
@@ -118,7 +117,7 @@ public class PlSqlCheckVerifierTest {
     }
 
     @Test
-    public void verify_should_fail_when_using_incorrect_attribute2() throws IOException {
+    public void verify_should_fail_when_using_incorrect_attribute2() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
                     getNoEffectCheck());
@@ -129,7 +128,7 @@ public class PlSqlCheckVerifierTest {
     }
 
     @Test
-    public void verify_should_fail_when_using_incorrect_secondaryLocation() throws IOException {
+    public void verify_should_fail_when_using_incorrect_secondaryLocation() {
         PlSqlCheck visitor = new FakeCheck().withDefaultIssues();
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor);
@@ -140,7 +139,7 @@ public class PlSqlCheckVerifierTest {
     }
 
     @Test
-    public void verify_should_fail_when_using_incorrect_secondaryLocation2() throws IOException {
+    public void verify_should_fail_when_using_incorrect_secondaryLocation2() {
         PlSqlCheck visitor = new FakeCheck().withDefaultIssues();
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor);
@@ -151,7 +150,7 @@ public class PlSqlCheckVerifierTest {
     }
     
     @Test
-    public void verify_should_fail_when_precision_location_comment_is_invalid() throws IOException {
+    public void verify_should_fail_when_precision_location_comment_is_invalid() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_comment.sql", new FakeCheck());
             Fail.fail("Test should fail");

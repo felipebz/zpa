@@ -72,9 +72,7 @@ public class PlSqlVisitor {
     }
     
     public void subscribeTo(AstNodeType... astNodeTypes) {
-        for (AstNodeType type : astNodeTypes) {
-            astNodeTypesToVisit.add(type);
-        }
+        Collections.addAll(astNodeTypesToVisit, astNodeTypes);
     }
 
     public void scanFile(PlSqlVisitorContext context) {

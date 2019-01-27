@@ -26,11 +26,9 @@ import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeSide;
 import org.sonar.api.internal.SonarRuntimeImpl;
 import org.sonar.api.utils.Version;
-import org.sonar.plsqlopen.PlSqlPlugin;
 
 public class PlSqlPluginTest {
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testGetExtensions() {
         Plugin.Context context = new Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER));

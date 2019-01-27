@@ -69,9 +69,7 @@ public class CheckUtils {
                 return true;
             }
 
-            if (isEmptyString(node)) {
-                return true;
-            }
+            return isEmptyString(node);
         }
 
         return false;

@@ -129,9 +129,7 @@ public class MethodMatcher {
             return false;
         }
         
-        boolean matches = true;
-        
-        matches &= nameAcceptable(nodes.removeLast(), methodNameCriteria);
+        boolean matches = nameAcceptable(nodes.removeLast(), methodNameCriteria);
         
         if (packageNameCriteria != null) {
             matches &= !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), packageNameCriteria);

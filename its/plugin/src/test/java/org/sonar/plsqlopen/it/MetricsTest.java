@@ -19,8 +19,12 @@
  */
 package org.sonar.plsqlopen.it;
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.SonarScanner;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -28,11 +32,8 @@ import org.sonarqube.ws.WsMeasures.ComponentWsResponse;
 import org.sonarqube.ws.WsMeasures.Measure;
 import org.sonarqube.ws.client.measure.ComponentWsRequest;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.build.SonarScanner;
 
 public class MetricsTest {
 
@@ -44,8 +45,6 @@ public class MetricsTest {
 
     @BeforeClass
     public static void init() {
-        orchestrator.resetData();
-
         SonarScanner build = Tests.createSonarScanner().setProjectDir(new File("projects/metrics/"))
                 .setProjectKey(PROJECT_KEY).setProjectName(PROJECT_KEY).setProjectVersion("1.0").setSourceDirs("src")
                 .setProperty("sonar.sourceEncoding", "UTF-8").setProfile("empty-profile");

@@ -43,11 +43,10 @@ public class SymbolVisitorTest {
   
     private SensorContextTester context;
     private String eol;
-    private File baseDir;
     private String key;
     
     private void scanFile() throws IOException {
-        baseDir = temp.newFolder();
+        File baseDir = temp.newFolder();
         File file = new File(baseDir, "test.sql");
         String content = Files.toString(new File("src/test/resources/symbols/symbols.sql"), StandardCharsets.UTF_8);
         Files.write(content.replaceAll("\\r\\n", "\n").replaceAll("\\n", eol), file, StandardCharsets.UTF_8);

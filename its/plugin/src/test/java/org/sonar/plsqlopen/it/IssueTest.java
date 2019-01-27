@@ -19,19 +19,20 @@
  */
 package org.sonar.plsqlopen.it;
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.SonarScanner;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.sonarqube.ws.Issues.Issue;
 import org.sonarqube.ws.client.issue.SearchWsRequest;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.build.SonarScanner;
 
 public class IssueTest {
 
@@ -44,8 +45,6 @@ public class IssueTest {
 
   @BeforeClass
   public static void init() {
-    orchestrator.resetData();
-
     SonarScanner build = Tests.createSonarScanner()
       .setProjectDir(new File("projects/metrics/"))
       .setProjectKey(PROJECT_KEY)

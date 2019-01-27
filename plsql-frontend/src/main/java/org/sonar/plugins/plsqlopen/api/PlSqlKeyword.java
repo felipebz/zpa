@@ -496,11 +496,11 @@ public enum PlSqlKeyword implements TokenType {
     private final String value;
     private final boolean reserved;
 
-    private PlSqlKeyword(String value) {
+    PlSqlKeyword(String value) {
         this(value, false);
     }
     
-    private PlSqlKeyword(String value, boolean reserved) {
+    PlSqlKeyword(String value, boolean reserved) {
         this.value = value;
         this.reserved = reserved;
     }

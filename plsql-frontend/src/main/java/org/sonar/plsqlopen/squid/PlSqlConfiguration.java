@@ -23,7 +23,7 @@ import java.nio.charset.Charset;
 
 public class PlSqlConfiguration {
 
-    private Charset charset = Charset.defaultCharset();
+    private Charset charset;
     private boolean isErrorRecoveryEnabled;
     
     public PlSqlConfiguration(Charset charset) {

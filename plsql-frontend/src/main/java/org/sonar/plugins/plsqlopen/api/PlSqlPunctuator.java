@@ -57,7 +57,7 @@ public enum PlSqlPunctuator implements TokenType {
 
     private final String value;
 
-    private PlSqlPunctuator(String word) {
+    PlSqlPunctuator(String word) {
         this.value = word;
     }
 

@@ -43,17 +43,17 @@ public class XPathCheckTest extends BaseCheckTest {
     }
 
     @Test
-    public void integer_xpath_result() throws Exception {
+    public void integer_xpath_result() {
       analyze("xpath.sql", "count(//STATEMENT)");
     }
 
     @Test
-    public void empty_query() throws Exception {
+    public void empty_query() {
       analyze("xpath.sql", "");
     }
 
     @Test(expected = AnalysisException.class)
-    public void invalid_query() throws Exception {
+    public void invalid_query() {
       analyze("xpath.sql", "+++");
   }
     

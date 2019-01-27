@@ -55,7 +55,7 @@ public class TokenLocation {
     }
     
     public static TokenLocation from(Token token) {
-        int lineCount = 0;
+        int lineCount;
         int lastLineLength = 0;
         
         if (token.getValue().contains("\n") || token.getValue().contains("\r")) {

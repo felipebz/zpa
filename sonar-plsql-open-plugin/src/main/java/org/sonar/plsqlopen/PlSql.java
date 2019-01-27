@@ -51,14 +51,14 @@ public class PlSql extends AbstractLanguage {
                 nonEmptyStrings.add(string.trim());
             }
         }
-        return nonEmptyStrings.toArray(new String[nonEmptyStrings.size()]);
+        return nonEmptyStrings.toArray(new String[0]);
     }
     
     @Override
     public boolean equals(Object o) {
         return super.equals(o);
     }
-    
+
     @Override
     public int hashCode() {
         return super.hashCode();

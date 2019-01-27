@@ -34,7 +34,7 @@ public class CheckList {
     
     @SuppressWarnings("rawtypes")
     public static List<Class> getChecks() {
-        return ImmutableList.<Class>of(
+        return ImmutableList.of(
             EmptyBlockCheck.class,
             ParsingErrorCheck.class,
             CollapsibleIfStatementsCheck.class,

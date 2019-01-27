@@ -57,12 +57,11 @@ public class PlSqlChecksTest {
         RulesDefinition.Context context = new RulesDefinition.Context();
         customRulesDefinition.define(context);
     }
-    
-    @SuppressWarnings("rawtypes")
+
     @Test
     public void shouldReturnDefaultChecks() {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
-        checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.<Class>of(MyRule.class));
+        checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.of(MyRule.class));
         
         PlSqlVisitor defaultCheck = check(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY);
         
@@ -91,12 +90,11 @@ public class PlSqlChecksTest {
         checks.addCustomChecks(null);
         assertThat(checks.all()).hasSize(0);
     }
-    
-    @SuppressWarnings("rawtypes")
+
     @Test
     public void shouldNotReturnRuleKeyIfCheckDoesNotExists() {
         PlSqlChecks checks = PlSqlChecks.createPlSqlCheck(checkFactory);
-        checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.<Class>of(MyRule.class));
+        checks.addChecks(DEFAULT_REPOSITORY_KEY, ImmutableList.of(MyRule.class));
         
         assertThat(checks.ruleKey(new MyCustomRule())).isNull();
     }
@@ -107,7 +105,7 @@ public class PlSqlChecksTest {
         PlSqlVisitor check;
 
         for (Checks<PlSqlVisitor> checks : plSqlChecks.getChecks()) {
-            check = (PlSqlVisitor)checks.of(key);
+            check = checks.of(key);
 
             if (check != null) {
                 return check;

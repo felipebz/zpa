@@ -258,7 +258,7 @@ public class SymbolVisitor extends PlSqlCheck {
         boolean exception = false;
         
         if (currentScope != null) {
-            exception = currentScope.hasExceptionHandler() ? true : Boolean.TRUE.equals(exceptionHandler);
+            exception = currentScope.hasExceptionHandler() || Boolean.TRUE.equals(exceptionHandler);
         } else if (exceptionHandler != null) {
             exception = exceptionHandler;  
         }

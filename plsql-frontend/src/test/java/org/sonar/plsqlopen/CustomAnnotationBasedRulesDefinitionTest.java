@@ -54,12 +54,12 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void noClassToAdd() throws Exception {
+    public void noClassToAdd() {
         assertThat(buildRepository().rules()).isEmpty();
     }
 
     @Test
-    public void classWithoutRuleAnnotation() throws Exception {
+    public void classWithoutRuleAnnotation() {
         class NotRuleClass {
         }
         thrown.expect(IllegalArgumentException.class);
@@ -67,7 +67,7 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void ruleAnnotationData() throws Exception {
+    public void ruleAnnotationData() {
 
         @Rule(key = "key1", name = "name1", description = "description1", tags = "mytag")
         class RuleClass {
@@ -91,13 +91,13 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void ruleWithoutExpliciKey() throws Exception {
+    public void ruleWithoutExpliciKey() {
         thrown.expect(IllegalArgumentException.class);
         buildSingleRuleRepository(RuleClassWithoutAnnotationDefinedKey.class);
     }
 
     @Test
-    public void ruleWithoutExplicitKeyCanBeAcceptable() throws Exception {
+    public void ruleWithoutExplicitKeyCanBeAcceptable() {
         Repository repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, false, RuleClassWithoutAnnotationDefinedKey.class);
         RulesDefinition.Rule rule = repository.rules().get(0);
         assertThat(rule.key()).isEqualTo(RuleClassWithoutAnnotationDefinedKey.class.getCanonicalName());
@@ -105,7 +105,7 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void externalNamesAndDescriptions() throws Exception {
+    public void externalNamesAndDescriptions() {
 
         @Rule(key = "ruleWithExternalInfo")
         class RuleClass {
@@ -125,7 +125,7 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void classWithSqaleConstantRemediation() throws Exception {
+    public void classWithSqaleConstantRemediation() {
 
         @Rule(key = "key1", name = "name1", description = "description1")
         @ConstantRemediation("10min")
@@ -137,7 +137,7 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void invalidSqaleAnnotation() throws Exception {
+    public void invalidSqaleAnnotation() {
         @Rule(key = "key1", name = "name1", description = "description1")
         @ConstantRemediation("xxx")
         class MyInvalidRuleClass {
@@ -148,7 +148,7 @@ public class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     @Test
-    public void loadMethodWithClassWithSqaleAnnotations() throws Exception {
+    public void loadMethodWithClassWithSqaleAnnotations() {
         @Rule(key = "key1", name = "name1", description = "description1")
         @ConstantRemediation("10min")
         class RuleClass {

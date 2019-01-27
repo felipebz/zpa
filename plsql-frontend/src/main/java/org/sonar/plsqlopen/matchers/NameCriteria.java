@@ -24,22 +24,22 @@ import java.util.Arrays;
 @FunctionalInterface
 public interface NameCriteria {
 
-    public boolean matches(String name);
+    boolean matches(String name);
 
-    public static NameCriteria any() {
+    static NameCriteria any() {
         return name -> true;
     }
 
-    public static NameCriteria is(String exactName) {
+    static NameCriteria is(String exactName) {
     	return exactName::equalsIgnoreCase;
     }
 
-    public static NameCriteria startsWith(String prefix) {
+    static NameCriteria startsWith(String prefix) {
         return name -> name.toUpperCase().startsWith(prefix.toUpperCase());
     }
     
-    public static NameCriteria in(String... prefix) {
-        return name -> Arrays.asList(prefix).stream().anyMatch(name::equalsIgnoreCase);
+    static NameCriteria in(String... prefix) {
+        return name -> Arrays.stream(prefix).anyMatch(name::equalsIgnoreCase);
     }
     
 }

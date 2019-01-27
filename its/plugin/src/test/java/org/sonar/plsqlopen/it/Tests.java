@@ -46,8 +46,7 @@ public class Tests {
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build();
 
     public static SonarScanner createSonarScanner() {
-        SonarScanner build = SonarScanner.create();
-        return build;
+        return SonarScanner.create();
     }
     
     public static WsClient newWsClient(Orchestrator orchestrator) {
