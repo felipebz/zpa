@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 
 import com.sonar.sslr.api.AstNode;
@@ -180,5 +181,11 @@ public class PlSqlLexerTest {
             "end;");
 
         assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size(), is(1));
+    }
+
+    @Test
+    public void punctuatorWithSpace() {
+        assertThatIsToken("<>", PlSqlPunctuator.NOTEQUALS);
+        assertThatIsToken("<  >", PlSqlPunctuator.NOTEQUALS);
     }
 }
