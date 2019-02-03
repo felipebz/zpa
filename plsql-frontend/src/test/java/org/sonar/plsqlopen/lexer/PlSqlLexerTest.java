@@ -188,4 +188,50 @@ public class PlSqlLexerTest {
         assertThatIsToken("<>", PlSqlPunctuator.NOTEQUALS);
         assertThatIsToken("<  >", PlSqlPunctuator.NOTEQUALS);
     }
+
+    @Test
+    public void conditionalCompilation() {
+        Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, false));
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.BLOCK_STATEMENT));
+
+        AstNode node = p.parse("begin\n" +
+            "$if $$var $then\n" +
+            "  null;\n" +
+            "$end\n" +
+            "end;");
+
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size(), is(1));
+    }
+
+    @Test
+    public void conditionalCompilationWithElse() {
+        Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, false));
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.BLOCK_STATEMENT));
+
+        AstNode node = p.parse("begin\n" +
+            "$if $$var $then\n" +
+            "  null;\n" +
+            "$else\n" +
+            "  null;\n" +
+            "$end\n" +
+            "end;");
+
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size(), is(1));
+    }
+
+
+    @Test
+    public void ignoreErrorPreProcessor() {
+        Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, false));
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.BLOCK_STATEMENT));
+
+        AstNode node = p.parse("begin\n" +
+            "$if DBMS_DB_VERSION.VER_LE_10_1 $then\n" +
+            "  $error 'unsupported database release' $end\n" +
+            "$end\n" +
+            "null;\n" +
+            "end;");
+
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size(), is(1));
+    }
 }

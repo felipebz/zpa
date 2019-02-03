@@ -89,7 +89,13 @@ public class PlSqlLexer {
                 .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
                 .withChannel(new IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false, PlSqlKeyword.values()))
                 .withChannel(new RegexPunctuatorChannel(PlSqlPunctuator.values()))
-                .withChannel(new BlackHoleChannel(and("\\s&&?", SIMPLE_IDENTIFIER)))
+                .withChannel(new BlackHoleChannel("(?is)" + or(
+                    "\\s&&?" + SIMPLE_IDENTIFIER,
+                    "\\$if.*?\\$then",
+                    "\\$else.*?\\$end",
+                    "\\$error.*?\\$end",
+                    "\\$end"
+                    )))
                 .withChannel(new UnknownCharacterChannel())
                 .build();
     }
