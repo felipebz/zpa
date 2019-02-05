@@ -77,7 +77,7 @@ public class PlSqlSquidSensorTest {
     public void testDescriptor() {
         DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
         sensor.describe(descriptor);
-        assertThat(descriptor.name()).isEqualTo("PlsqlSquidSensor");
+        assertThat(descriptor.name()).isEqualTo("Z PL/SQL Analyzer");
         assertThat(descriptor.languages()).containsOnly(PlSql.KEY);
     }
     

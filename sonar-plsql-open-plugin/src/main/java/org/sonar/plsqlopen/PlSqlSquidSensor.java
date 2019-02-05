@@ -84,7 +84,7 @@ public class PlSqlSquidSensor implements Sensor {
     @Override
     public void describe(SensorDescriptor descriptor) {
         descriptor
-            .name("PlsqlSquidSensor")
+            .name("Z PL/SQL Analyzer")
             .onlyOnLanguage(PlSql.KEY);
     }
 
