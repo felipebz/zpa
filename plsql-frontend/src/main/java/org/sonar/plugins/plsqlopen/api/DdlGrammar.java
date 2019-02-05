@@ -203,7 +203,7 @@ public enum DdlGrammar implements GrammarRuleKey {
         						LEVELS)));
         
         b.rule(SIZE_CLAUSE).is(
-        		b.sequence(INTEGER_LITERAL, b.firstOf(K, M, G, T, P, E)));
+        		b.sequence(INTEGER_LITERAL, b.firstOf("K", "M", "G", "T", "P", "E")));
         
         b.rule(STORAGE_CLAUSE).is(
         		b.sequence(STORAGE,
