@@ -26,7 +26,7 @@ import org.sonar.api.resources.Qualifiers;
 
 public class PlSqlPlugin implements Plugin {
 
-    public static final String DEFAULT_CATEGORY = "PL/SQL";
+    public static final String DEFAULT_CATEGORY = "Z PL/SQL Analyzer";
     public static final String FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes";
     public static final String FORMS_METADATA_KEY = "sonar.zpa.forms.metadata";
     public static final String ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled";
