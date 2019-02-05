@@ -491,7 +491,20 @@ public enum PlSqlKeyword implements TokenType {
     T("t"),
     P("p"),
     E("e"),
-    TREAT("treat");
+    TREAT("treat"),
+    LIBRARY("library"),
+    AGENT("agent"),
+    CONTEXT("context"),
+    PARAMETERS("parameters"),
+    TDO("tdo"),
+    INDICATOR("indicator"),
+    STRUCT("struct"),
+    LENGTH("length"),
+    DURATION("duration"),
+    MAXLEN("maxlen"),
+    CHARSETID("charsetid"),
+    CHARSETFORM("charsetform"),
+    REFERENCE("reference");
 
     private final String value;
     private final boolean reserved;

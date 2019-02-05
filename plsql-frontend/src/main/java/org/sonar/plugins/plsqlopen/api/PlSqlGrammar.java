@@ -157,6 +157,11 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     RESTRICT_REFERENCES_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
+    JAVA_DECLARATION,
+    C_DECLARATION,
+    EXTERNAL_PARAMETER_PROPERTY,
+    EXTERNAL_PARAMETER,
+    CALL_SPECIFICATION,
     
     DECLARE_SECTION,
     EXCEPTION_HANDLER,
@@ -679,6 +684,34 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                         b.sequence(DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT)),
                         b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
                 );
+
+        b.rule(JAVA_DECLARATION).is(LANGUAGE, JAVA, NAME, STRING_LITERAL);
+
+        b.rule(C_DECLARATION).is(
+            b.firstOf(b.sequence(LANGUAGE, "C"), EXTERNAL),
+            b.optional(NAME, IDENTIFIER_NAME), LIBRARY, IDENTIFIER_NAME, b.optional(NAME, IDENTIFIER_NAME),
+            b.optional(AGENT, IN, LPARENTHESIS, b.oneOrMore(IDENTIFIER_NAME, b.optional(COMMA)), RPARENTHESIS),
+            b.optional(WITH, CONTEXT),
+            b.optional(PARAMETERS, LPARENTHESIS, b.oneOrMore(EXTERNAL_PARAMETER, b.optional(COMMA)), RPARENTHESIS));
+
+        b.rule(EXTERNAL_PARAMETER_PROPERTY).is(
+            b.sequence(INDICATOR, b.optional(b.firstOf(STRUCT, TDO))),
+            LENGTH,
+            DURATION,
+            MAXLEN,
+            CHARSETID,
+            CHARSETFORM);
+
+        b.rule(EXTERNAL_PARAMETER).is(b.firstOf(
+            CONTEXT,
+            b.sequence(SELF, b.firstOf(TDO, EXTERNAL_PARAMETER_PROPERTY)),
+            b.sequence(
+                b.firstOf(RETURN, IDENTIFIER_NAME),
+                b.optional(EXTERNAL_PARAMETER_PROPERTY),
+                b.optional(BY, REFERENCE),
+                b.optional(DATATYPE))));
+
+        b.rule(CALL_SPECIFICATION).is(b.firstOf(JAVA_DECLARATION, C_DECLARATION), SEMICOLON);
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
         b.rule(PROCEDURE_DECLARATION).is(
@@ -686,7 +719,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
                 b.optional(b.firstOf(
                         SEMICOLON,
-                        b.sequence(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION))
+                        b.sequence(b.firstOf(IS, AS),
+                            b.firstOf(
+                                b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                CALL_SPECIFICATION)))
                 ));
         
         // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/function.htm
@@ -697,7 +733,10 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.optional(RESULT_CACHE,b.optional(RELIES_ON,LPARENTHESIS,b.oneOrMore(OBJECT_REFERENCE,b.optional(COMMA)),RPARENTHESIS)),
                 b.optional(b.firstOf(
                         SEMICOLON,
-                        b.sequence(b.firstOf(IS, AS), b.optional(DECLARE_SECTION), STATEMENTS_SECTION))
+                        b.sequence(b.firstOf(IS, AS),
+                            b.firstOf(
+                                b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                CALL_SPECIFICATION)))
                 ));
         
         b.rule(VARIABLE_DECLARATION).is(IDENTIFIER_NAME,
@@ -951,10 +990,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                 b.firstOf(IS, AS),
                 b.firstOf(
                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON),
-                        b.sequence(EXTERNAL, SEMICOLON))
+                        CALL_SPECIFICATION)
                 );
-        
+
         // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-FUNCTION-statement.html
         b.rule(CREATE_FUNCTION).is(
                 CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
@@ -980,7 +1018,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                 b.firstOf(IS, AS),
                                 b.firstOf(
                                         b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                                        b.sequence(LANGUAGE, JAVA, NAME, STRING_LITERAL, SEMICOLON))),
+                                        CALL_SPECIFICATION)),
                         b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON))
                 );
         

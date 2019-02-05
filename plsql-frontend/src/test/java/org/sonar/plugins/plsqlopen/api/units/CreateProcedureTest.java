@@ -166,7 +166,7 @@ public class CreateProcedureTest extends RuleTest {
     
     @Test
     public void matchesExternalProcedure() {
-        assertThat(p).matches("create procedure test is external;");
+        assertThat(p).matches("create procedure test is external name \"foo\" library bar;");
     }
     
     @Test
