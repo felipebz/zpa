@@ -44,7 +44,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
     private static final Logger LOG = LoggerFactory.getLogger(PlSqlConfigurationModel.class);
 
     private static final String CHARSET_PROPERTY_KEY = "sonar.sourceEncoding";
-    private static final String ERROR_RECOVERY_PROPERTY_KEY = "sonar.plsql.errorRecoveryEnabled";
+    private static final String ERROR_RECOVERY_PROPERTY_KEY = "sonar.zpa.errorRecoveryEnabled";
 
     @VisibleForTesting
     ConfigurationProperty charsetProperty = new ConfigurationProperty("Charset",
