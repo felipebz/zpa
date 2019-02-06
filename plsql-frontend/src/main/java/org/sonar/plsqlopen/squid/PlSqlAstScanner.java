@@ -155,6 +155,7 @@ public class PlSqlAstScanner {
         PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
 
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
+        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
 
         PlSqlAstWalker newWalker = new PlSqlAstWalker(checksToRun);
