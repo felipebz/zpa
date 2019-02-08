@@ -19,19 +19,19 @@
  */
 package org.sonar.plsqlopen;
 
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.impl.Parser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import org.sonar.api.batch.fs.InputFile;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
-
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.impl.Parser;
 
 public class TestPlSqlVisitorRunner {
 
@@ -72,6 +72,11 @@ public class TestPlSqlVisitorRunner {
     @Override
     public String fileName() {
       return file.getName();
+    }
+
+    @Override
+    public InputFile inputFile() {
+        return null;
     }
 
   }
