@@ -10,14 +10,14 @@
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	<sonarplsqlopen.version>2.3.0-SNAPSHOT</sonarplsqlopen.version>
+    <sonarplsqlopen.version>2.3.0-SNAPSHOT</sonarplsqlopen.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
-      <version>6.3</version>
+      <version>6.7</version>
       <scope>provided</scope>
     </dependency>
 
@@ -34,26 +34,6 @@
       <artifactId>plsql-checks-testkit</artifactId>
       <version>${sonarplsqlopen.version}</version>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>3.8.0</version>
-      <scope>test</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.12</version>
     </dependency>
   </dependencies>
 
