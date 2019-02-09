@@ -31,6 +31,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.parser.PlSqlParser;
+import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 
 public class TestPlSqlVisitorRunner {
@@ -48,7 +49,7 @@ public class TestPlSqlVisitorRunner {
   public static PlSqlVisitorContext createContext(File file, FormsMetadata metadata) {
     Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
     TestPlSqlFile pythonFile = new TestPlSqlFile(file);
-    AstNode rootTree = parser.parse(pythonFile.content());
+    AstNode rootTree = PlSqlAstScanner.getSemanticNode(parser.parse(pythonFile.content()));
     return new PlSqlVisitorContext(rootTree, pythonFile, metadata);
   }
 

@@ -167,7 +167,7 @@ public class PlSqlAstScanner {
 
         PlSqlVisitorContext visitorContext;
         try {
-            AstNode root = parser.parse(plSqlFile.content());
+            AstNode root = getSemanticNode(parser.parse(plSqlFile.content()));
             visitorContext = new PlSqlVisitorContext(root, plSqlFile, formsMetadata);
         } catch (RecognitionException e) {
             visitorContext = new PlSqlVisitorContext(plSqlFile, e, formsMetadata);
@@ -180,6 +180,17 @@ public class PlSqlAstScanner {
             throw new AnalysisException("Unable to analyze file: " + inputFile.toString(), e);
         }
         return visitorContext;
+    }
+
+    public static SemanticAstNode getSemanticNode(AstNode node) {
+        SemanticAstNode annotatedNode = new SemanticAstNode(node);
+
+
+        for (AstNode child : node.getChildren()) {
+            annotatedNode.addChild(getSemanticNode(child));
+        }
+
+        return annotatedNode;
     }
     
     private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues) {
