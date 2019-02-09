@@ -28,8 +28,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -63,8 +62,7 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
                 if (intoClause != null) {
                     List<AstNode> variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
                     if (variablesInInto.size() == 1) {
-                        Symbol variable = semantic(variablesInInto.get(0)).getSymbol();
-                        if (variable != null && variable.type().type() == Type.ROWTYPE) {
+                        if (semantic(variablesInInto.get(0)).getPlSqlType() == PlSqlType.ROWTYPE) {
                             return;
                         }
                     }

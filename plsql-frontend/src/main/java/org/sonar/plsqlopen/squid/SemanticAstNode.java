@@ -21,11 +21,13 @@ package org.sonar.plsqlopen.squid;
 
 import com.sonar.sslr.api.AstNode;
 
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 
 public class SemanticAstNode extends AstNode {
 
     private Symbol symbol;
+    private PlSqlType plSqlType = PlSqlType.UNKNOWN;
 
     public SemanticAstNode(AstNode astNode) {
         super(astNode.getType(), astNode.getName(), astNode.getToken());
@@ -45,4 +47,14 @@ public class SemanticAstNode extends AstNode {
         }
     }
 
+    public PlSqlType getPlSqlType() {
+        if (symbol != null) {
+            return symbol.type();
+        }
+        return plSqlType;
+    }
+
+    public void setPlSqlType(PlSqlType plSqlType) {
+        this.plSqlType = plSqlType;
+    }
 }

@@ -206,14 +206,14 @@ public class SymbolVisitor extends PlSqlCheck {
         enterScope(node, null, null);
         AstNode identifier = node.getFirstChild(PlSqlKeyword.FOR).getNextSibling();
 
-        PlSqlType.Type type;
+        PlSqlType type;
         if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
-            type = PlSqlType.Type.NUMERIC;
+            type = PlSqlType.NUMERIC;
         } else {
-            type = PlSqlType.Type.ROWTYPE;
+            type = PlSqlType.ROWTYPE;
         }
 
-        createSymbol(identifier, Symbol.Kind.VARIABLE, new PlSqlType(type, identifier));
+        createSymbol(identifier, Symbol.Kind.VARIABLE, type);
     }
     
     private void visitVariableDeclaration(AstNode node) {

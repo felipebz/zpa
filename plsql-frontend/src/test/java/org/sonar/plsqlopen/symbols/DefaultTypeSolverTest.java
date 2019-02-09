@@ -29,7 +29,6 @@ import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
 
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.impl.Parser;
@@ -47,72 +46,72 @@ public class DefaultTypeSolverTest {
     @Test
     public void identifyNumericType() {
         PlSqlType type = solveTypeFrom("number");
-        assertThat(type.type()).isEqualTo(Type.NUMERIC);
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC);
         assertThat(type.isNumeric()).isTrue();
     }
 
     @Test
     public void identifyTypeNotNull() {
         PlSqlType type = solveTypeFrom("number not null");
-        assertThat(type.type()).isEqualTo(Type.NUMERIC);
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC);
         assertThat(type.isNumeric()).isTrue();
     }
     
     @Test
     public void identifyCharacterType() {
         PlSqlType type = solveTypeFrom("varchar2(100)");
-        assertThat(type.type()).isEqualTo(Type.CHARACTER);
+        assertThat(type).isEqualTo(PlSqlType.CHARACTER);
         assertThat(type.isCharacter()).isTrue();
     }
     
     @Test
     public void identifyDateType() {
         PlSqlType type = solveTypeFrom("date");
-        assertThat(type.type()).isEqualTo(Type.DATE);
+        assertThat(type).isEqualTo(PlSqlType.DATE);
     }
     
     @Test
     public void identifyLobType() {
         PlSqlType type = solveTypeFrom("clob");
-        assertThat(type.type()).isEqualTo(Type.LOB);
+        assertThat(type).isEqualTo(PlSqlType.LOB);
     }
 
     @Test
     public void identifyBooleanType() {
         PlSqlType type = solveTypeFrom("boolean");
-        assertThat(type.type()).isEqualTo(Type.BOOLEAN);
+        assertThat(type).isEqualTo(PlSqlType.BOOLEAN);
     }
 
     @Test
     public void identifyRowtype() {
         PlSqlType type = solveTypeFrom("tab%rowtype");
-        assertThat(type.type()).isEqualTo(Type.ROWTYPE);
+        assertThat(type).isEqualTo(PlSqlType.ROWTYPE);
     }
 
     @Test
     public void identifyRowtypeNotNull() {
         PlSqlType type = solveTypeFrom("tab%rowtype not null");
-        assertThat(type.type()).isEqualTo(Type.ROWTYPE);
+        assertThat(type).isEqualTo(PlSqlType.ROWTYPE);
     }
     
     @Test
     public void unknownType() {
         PlSqlType type = solveTypeFrom("tab.col%type");
-        assertThat(type.type()).isEqualTo(Type.UNKNOWN);
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }
 
     @Test
     public void unknownTypeNotNull() {
         PlSqlType type = solveTypeFrom("tab.col%type not null");
-        assertThat(type.type()).isEqualTo(Type.UNKNOWN);
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }
     
     @Test
     public void ifNodeIsNullReturnsUnknownType() {
         PlSqlType type = typeSolver.solve(null);
-        assertThat(type.type()).isEqualTo(Type.UNKNOWN);
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }
 

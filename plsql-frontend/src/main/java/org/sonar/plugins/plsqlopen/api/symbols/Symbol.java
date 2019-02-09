@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
-
 import com.sonar.sslr.api.AstNode;
 
 public class Symbol {
@@ -60,7 +58,7 @@ public class Symbol {
         if (type != null) {
             this.type = type;
         } else {
-            this.type = new PlSqlType(Type.UNKNOWN);
+            this.type = PlSqlType.UNKNOWN;
         }
     }
 

@@ -22,33 +22,32 @@ package org.sonar.plsqlopen.symbols;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
 
 import com.sonar.sslr.api.AstNode;
 
 public class DefaultTypeSolver {
 
     public PlSqlType solve(AstNode node) {
-        Type type = Type.UNKNOWN;
+        PlSqlType type = PlSqlType.UNKNOWN;
         if (node != null) {
             if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
-                type = Type.CHARACTER;
+                type = PlSqlType.CHARACTER;
             } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
-                type = Type.NUMERIC;
+                type = PlSqlType.NUMERIC;
             } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
-                type = Type.DATE;
+                type = PlSqlType.DATE;
             } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
-                type = Type.LOB;
+                type = PlSqlType.LOB;
             } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
-                type = Type.BOOLEAN;
+                type = PlSqlType.BOOLEAN;
             } else {
                 AstNode anchoredDatatype = node.getFirstChild(PlSqlGrammar.ANCHORED_DATATYPE);
                 if (anchoredDatatype != null && anchoredDatatype.getLastChild().getType() == PlSqlKeyword.ROWTYPE) {
-                    type = Type.ROWTYPE;
+                    type = PlSqlType.ROWTYPE;
                 }
             }
         }
-        return new PlSqlType(type, node);
+        return type;
     }
 
 }

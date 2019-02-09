@@ -25,8 +25,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType.Type;
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -51,8 +50,7 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
             AstNode value = node.getLastChild();
 
             if (value.getType() == PlSqlGrammar.VARIABLE_NAME) {
-                Symbol variable = semantic(value).getSymbol();
-                if (variable != null && variable.type().type() == Type.ROWTYPE)
+                if (semantic(value).getPlSqlType() == PlSqlType.ROWTYPE)
                     return;
             }
 
