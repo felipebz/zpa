@@ -63,7 +63,7 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
                 if (intoClause != null) {
                     List<AstNode> variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
                     if (variablesInInto.size() == 1) {
-                        Symbol variable = getContext().getCurrentScope().getSymbol(variablesInInto.get(0).getTokenOriginalValue());
+                        Symbol variable = semantic(variablesInInto.get(0)).getSymbol();
                         if (variable != null && variable.type().type() == Type.ROWTYPE) {
                             return;
                         }

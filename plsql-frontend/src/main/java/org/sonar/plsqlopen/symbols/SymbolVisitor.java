@@ -238,12 +238,15 @@ public class SymbolVisitor extends PlSqlCheck {
             Symbol symbol = currentScope.getSymbol(identifier.getTokenOriginalValue());
             if (symbol != null) {
                 symbol.addUsage(identifier);
+                semantic(node).setSymbol(symbol);
             }
         }
     }
     
     private Symbol createSymbol(AstNode identifier, Symbol.Kind kind, PlSqlType type) {
-        return symbolTable.declareSymbol(identifier, kind, currentScope, type);
+        Symbol symbol = symbolTable.declareSymbol(identifier, kind, currentScope, type);
+        semantic(identifier).setSymbol(symbol);
+        return symbol;
     }
     
     private void enterScope(AstNode node, Boolean autonomousTransaction, Boolean exceptionHandler) {

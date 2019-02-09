@@ -51,7 +51,7 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
             AstNode value = node.getLastChild();
 
             if (value.getType() == PlSqlGrammar.VARIABLE_NAME) {
-                Symbol variable = getContext().getCurrentScope().getSymbol(value.getTokenOriginalValue());
+                Symbol variable = semantic(value).getSymbol();
                 if (variable != null && variable.type().type() == Type.ROWTYPE)
                     return;
             }

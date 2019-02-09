@@ -27,6 +27,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.squid.SemanticAstNode;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
@@ -38,6 +39,10 @@ public class PlSqlCheck extends PlSqlVisitor {
     @Override
     public void startScan() {
         issues.clear();
+    }
+
+    public SemanticAstNode semantic(AstNode node) {
+        return (SemanticAstNode)node;
     }
     
     public List<PreciseIssue> issues() {

@@ -26,7 +26,6 @@ import org.sonar.check.Rule;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.annnotations.ConstantRemediation;
@@ -58,18 +57,15 @@ public class VariableInCountCheck extends AbstractBaseCheck {
         checkArguments(node, count.getArgumentsValues(node));
     }
     
-    protected void checkArguments(AstNode currentNode, List<AstNode> arguments) {
+    private void checkArguments(AstNode currentNode, List<AstNode> arguments) {
         if (arguments.size() != 1) {
             return;
         }
-        
-        String value = arguments.get(0).getTokenOriginalValue();
-        Scope scope = getContext().getCurrentScope();
-        if (scope != null) {
-            Symbol symbol = scope.getSymbol(value);
-            if (symbol != null) {
-                addIssue(currentNode, getLocalizedMessage(CHECK_KEY), value);
-            }
+
+        AstNode value = arguments.get(0);
+        Symbol symbol = semantic(value).getSymbol();
+        if (symbol != null) {
+            addIssue(currentNode, getLocalizedMessage(CHECK_KEY), value.getTokenOriginalValue());
         }
     }
 
