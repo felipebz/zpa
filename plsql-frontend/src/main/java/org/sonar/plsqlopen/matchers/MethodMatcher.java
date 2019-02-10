@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.sonar.plsqlopen.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.google.common.base.Preconditions;
 import com.sonar.sslr.api.AstNode;
@@ -42,6 +44,7 @@ public class MethodMatcher {
     private boolean shouldCheckParameters = true;
     private boolean schemaIsOptional = false;
     private String methodName;
+    private List<PlSqlType> expectedArgumentTypes = new ArrayList<>();
 
     private MethodMatcher() {
         // instances should be created using the create method
@@ -101,10 +104,26 @@ public class MethodMatcher {
         this.parameterCount++;
         return this;
     }
+
+    public MethodMatcher addParameter(PlSqlType type) {
+        Preconditions.checkState(this.shouldCheckParameters);
+        addParameter();
+        expectedArgumentTypes.add(type);
+        return this;
+    }
     
     public MethodMatcher addParameters(int quantity) {
         Preconditions.checkState(this.shouldCheckParameters);
         this.parameterCount += quantity;
+        return this;
+    }
+
+    public MethodMatcher addParameters(PlSqlType... types) {
+        Preconditions.checkState(this.shouldCheckParameters);
+        for (PlSqlType type : types) {
+            addParameter();
+            expectedArgumentTypes.add(type);
+        }
         return this;
     }
     
@@ -149,9 +168,25 @@ public class MethodMatcher {
     }
 
     private boolean argumentsAcceptable(AstNode node) {
-        return !shouldCheckParameters || getArguments(node).size() == parameterCount;
+        List<AstNode> arguments = getArguments(node);
+        return !shouldCheckParameters ||
+            (arguments.size() == parameterCount && argumentTypesAreCorrect(arguments));
     }
-    
+
+    private boolean argumentTypesAreCorrect(List<AstNode> arguments) {
+        boolean result = true;
+        int i = 0;
+        for (PlSqlType type : expectedArgumentTypes) {
+            AstNode actualArgument = arguments.get(i++).getFirstChild();
+            result &= semantic(actualArgument).getPlSqlType() == type;
+        }
+        return result;
+    }
+
+    static SemanticAstNode semantic(AstNode node) {
+        return (SemanticAstNode)node;
+    }
+
     private static AstNode normalize(AstNode node) {
         if (node.getType() == PlSqlGrammar.METHOD_CALL || node.getType() == PlSqlGrammar.CALL_STATEMENT) {
             AstNode child = normalize(node.getFirstChild());
