@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
@@ -37,73 +36,68 @@ public class DefaultTypeSolverTest {
 
     private Parser<Grammar> p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
     private DefaultTypeSolver typeSolver = new DefaultTypeSolver();
-
-    @Before
-    public void setUp() {
-        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.DATATYPE));
-    }
     
     @Test
     public void identifyNumericType() {
-        PlSqlType type = solveTypeFrom("number");
+        PlSqlType type = solveTypeFromDatatype("number");
         assertThat(type).isEqualTo(PlSqlType.NUMERIC);
         assertThat(type.isNumeric()).isTrue();
     }
 
     @Test
     public void identifyTypeNotNull() {
-        PlSqlType type = solveTypeFrom("number not null");
+        PlSqlType type = solveTypeFromDatatype("number not null");
         assertThat(type).isEqualTo(PlSqlType.NUMERIC);
         assertThat(type.isNumeric()).isTrue();
     }
     
     @Test
     public void identifyCharacterType() {
-        PlSqlType type = solveTypeFrom("varchar2(100)");
+        PlSqlType type = solveTypeFromDatatype("varchar2(100)");
         assertThat(type).isEqualTo(PlSqlType.CHARACTER);
         assertThat(type.isCharacter()).isTrue();
     }
     
     @Test
     public void identifyDateType() {
-        PlSqlType type = solveTypeFrom("date");
+        PlSqlType type = solveTypeFromDatatype("date");
         assertThat(type).isEqualTo(PlSqlType.DATE);
     }
     
     @Test
     public void identifyLobType() {
-        PlSqlType type = solveTypeFrom("clob");
+        PlSqlType type = solveTypeFromDatatype("clob");
         assertThat(type).isEqualTo(PlSqlType.LOB);
     }
 
     @Test
     public void identifyBooleanType() {
-        PlSqlType type = solveTypeFrom("boolean");
+        PlSqlType type = solveTypeFromDatatype("boolean");
         assertThat(type).isEqualTo(PlSqlType.BOOLEAN);
     }
 
     @Test
     public void identifyRowtype() {
-        PlSqlType type = solveTypeFrom("tab%rowtype");
+        PlSqlType type = solveTypeFromDatatype("tab%rowtype");
         assertThat(type).isEqualTo(PlSqlType.ROWTYPE);
     }
 
     @Test
     public void identifyRowtypeNotNull() {
-        PlSqlType type = solveTypeFrom("tab%rowtype not null");
+        PlSqlType type = solveTypeFromDatatype("tab%rowtype not null");
         assertThat(type).isEqualTo(PlSqlType.ROWTYPE);
     }
     
     @Test
     public void unknownType() {
-        PlSqlType type = solveTypeFrom("tab.col%type");
+        PlSqlType type = solveTypeFromDatatype("tab.col%type");
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }
 
     @Test
     public void unknownTypeNotNull() {
-        PlSqlType type = solveTypeFrom("tab.col%type not null");
+        PlSqlType type = solveTypeFromDatatype("tab.col%type not null");
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
         assertThat(type.isUnknown()).isTrue();
     }
@@ -115,7 +109,39 @@ public class DefaultTypeSolverTest {
         assertThat(type.isUnknown()).isTrue();
     }
 
-    private PlSqlType solveTypeFrom(String code) {
+    @Test
+    public void identifyNumericLiteral() {
+        PlSqlType type = solveTypeFromLiteral("1");
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC);
+        assertThat(type.isNumeric()).isTrue();
+    }
+
+    @Test
+    public void identifyCharacterLiteral() {
+        PlSqlType type = solveTypeFromLiteral("'foo'");
+        assertThat(type).isEqualTo(PlSqlType.CHARACTER);
+        assertThat(type.isCharacter()).isTrue();
+    }
+
+    @Test
+    public void identifyDateLiteral() {
+        PlSqlType type = solveTypeFromLiteral("date '2000-01-01'");
+        assertThat(type).isEqualTo(PlSqlType.DATE);
+    }
+
+    @Test
+    public void identifyBooleanLiteral() {
+        PlSqlType type = solveTypeFromLiteral("true");
+        assertThat(type).isEqualTo(PlSqlType.BOOLEAN);
+    }
+
+    private PlSqlType solveTypeFromDatatype(String code) {
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.DATATYPE));
+        return typeSolver.solve(p.parse(code));
+    }
+
+    private PlSqlType solveTypeFromLiteral(String code) {
+        p.setRootRule(p.getGrammar().rule(PlSqlGrammar.LITERAL));
         return typeSolver.solve(p.parse(code));
     }
     

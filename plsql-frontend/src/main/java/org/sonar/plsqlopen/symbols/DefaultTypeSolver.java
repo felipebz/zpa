@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.symbols;
 
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
@@ -28,24 +29,48 @@ import com.sonar.sslr.api.AstNode;
 public class DefaultTypeSolver {
 
     public PlSqlType solve(AstNode node) {
-        PlSqlType type = PlSqlType.UNKNOWN;
         if (node != null) {
-            if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
-                type = PlSqlType.CHARACTER;
-            } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
-                type = PlSqlType.NUMERIC;
-            } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
-                type = PlSqlType.DATE;
-            } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
-                type = PlSqlType.LOB;
-            } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
-                type = PlSqlType.BOOLEAN;
-            } else {
-                AstNode anchoredDatatype = node.getFirstChild(PlSqlGrammar.ANCHORED_DATATYPE);
-                if (anchoredDatatype != null && anchoredDatatype.getLastChild().getType() == PlSqlKeyword.ROWTYPE) {
-                    type = PlSqlType.ROWTYPE;
-                }
+            if (node.getType() == PlSqlGrammar.DATATYPE) {
+                return solveDatatype(node);
             }
+            else if (node.getType() == PlSqlGrammar.LITERAL) {
+                return solveLiteral(node);
+            }
+        }
+        return PlSqlType.UNKNOWN;
+    }
+
+    private PlSqlType solveDatatype(AstNode node) {
+        PlSqlType type = PlSqlType.UNKNOWN;
+        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
+            type = PlSqlType.CHARACTER;
+        } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
+            type = PlSqlType.NUMERIC;
+        } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
+            type = PlSqlType.DATE;
+        } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
+            type = PlSqlType.LOB;
+        } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
+            type = PlSqlType.BOOLEAN;
+        } else {
+            AstNode anchoredDatatype = node.getFirstChild(PlSqlGrammar.ANCHORED_DATATYPE);
+            if (anchoredDatatype != null && anchoredDatatype.getLastChild().getType() == PlSqlKeyword.ROWTYPE) {
+                type = PlSqlType.ROWTYPE;
+            }
+        }
+        return type;
+    }
+
+    private PlSqlType solveLiteral(AstNode node) {
+        PlSqlType type = PlSqlType.UNKNOWN;
+        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
+            type = PlSqlType.CHARACTER;
+        } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
+            type = PlSqlType.NUMERIC;
+        } else if (node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL)) {
+            type = PlSqlType.DATE;
+        } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL)) {
+            type = PlSqlType.BOOLEAN;
         }
         return type;
     }

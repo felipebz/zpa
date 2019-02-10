@@ -25,6 +25,7 @@ import org.sonar.api.batch.sensor.symbol.NewSymbol;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.TokenLocation;
 import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plsqlopen.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
@@ -138,26 +139,20 @@ public class SymbolVisitor extends PlSqlCheck {
     }
 
     private void visitNodeInternal(AstNode node) {
-        
+
         if (node.getType() == PlSqlGrammar.VARIABLE_DECLARATION) {
             visitVariableDeclaration(node);
-        
         } else if (node.getType() == PlSqlGrammar.VARIABLE_NAME) {
             visitVariableName(node);
-        
         } else if (node.getType() == PlSqlGrammar.CURSOR_DECLARATION) {
             visitCursor(node);
-        
         } else if (node.getType() == PlSqlGrammar.BLOCK_STATEMENT) {
             visitBlock(node);
-        
         } else if (node.getType() == PlSqlGrammar.FOR_STATEMENT) {
             visitFor(node);
-        
         } else if (node.getType() == PlSqlGrammar.PARAMETER_DECLARATION ||
                 node.getType() == PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
             visitParameterDeclaration(node);
-        
         } else if (node.getType() == PlSqlGrammar.CREATE_PROCEDURE ||
                 node.getType() == PlSqlGrammar.PROCEDURE_DECLARATION ||
                 node.getType() == PlSqlGrammar.CREATE_FUNCTION ||
@@ -167,13 +162,14 @@ public class SymbolVisitor extends PlSqlCheck {
                 node.getType() == PlSqlGrammar.CREATE_TYPE_BODY ||
                 node.getType() == PlSqlGrammar.TYPE_CONSTRUCTOR) {
             visitUnit(node);
-        
-        } else if (node.getType() == PlSqlGrammar.CREATE_PACKAGE || 
+        } else if (node.getType() == PlSqlGrammar.CREATE_PACKAGE ||
                 node.getType() == PlSqlGrammar.CREATE_PACKAGE_BODY) {
             visitPackage(node);
+        } else if (node.getType() == PlSqlGrammar.LITERAL) {
+            visitLiteral(node);
         }
     }
-    
+
     private void visitUnit(AstNode node) {
         boolean autonomousTransaction = node.select()
                 .children(PlSqlGrammar.DECLARE_SECTION)
@@ -241,6 +237,10 @@ public class SymbolVisitor extends PlSqlCheck {
                 semantic(node).setSymbol(symbol);
             }
         }
+    }
+
+    private void visitLiteral(AstNode node) {
+        ((SemanticAstNode)node).setPlSqlType(solveType(node));
     }
     
     private Symbol createSymbol(AstNode identifier, Symbol.Kind kind, PlSqlType type) {
