@@ -48,9 +48,9 @@ public class TestPlSqlVisitorRunner {
 
   public static PlSqlVisitorContext createContext(File file, FormsMetadata metadata) {
     Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
-    TestPlSqlFile pythonFile = new TestPlSqlFile(file);
-    AstNode rootTree = PlSqlAstScanner.getSemanticNode(parser.parse(pythonFile.content()));
-    return new PlSqlVisitorContext(rootTree, pythonFile, metadata);
+    TestPlSqlFile plSqlFile = new TestPlSqlFile(file);
+    AstNode rootTree = PlSqlAstScanner.getSemanticNode(parser.parse(plSqlFile.content()));
+    return new PlSqlVisitorContext(rootTree, plSqlFile, metadata);
   }
 
   private static class TestPlSqlFile implements PlSqlFile {
