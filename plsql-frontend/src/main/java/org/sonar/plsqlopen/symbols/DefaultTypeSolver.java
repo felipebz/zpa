@@ -63,7 +63,7 @@ public class DefaultTypeSolver {
 
     private PlSqlType solveLiteral(AstNode node) {
         PlSqlType type = PlSqlType.UNKNOWN;
-        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
+        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && !isEmptyString(node)) {
             type = PlSqlType.CHARACTER;
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
             type = PlSqlType.NUMERIC;
@@ -73,6 +73,13 @@ public class DefaultTypeSolver {
             type = PlSqlType.BOOLEAN;
         }
         return type;
+    }
+
+
+    // TODO: this was duplicated from org.sonar.plsqlopen.checks.CheckUtils#isEmptyString, it needs to be moved to a better place
+    private static boolean isEmptyString(AstNode node) {
+        AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
+        return characterLiteral != null && "''".equals(characterLiteral.getTokenValue());
     }
 
 }

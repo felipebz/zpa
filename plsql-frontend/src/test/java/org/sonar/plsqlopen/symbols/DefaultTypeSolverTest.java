@@ -135,6 +135,17 @@ public class DefaultTypeSolverTest {
         assertThat(type).isEqualTo(PlSqlType.BOOLEAN);
     }
 
+    @Test
+    public void emptyStringShouldNotBeTypedAsCharacter() {
+        PlSqlType type = solveTypeFromLiteral("''");
+        /* TODO: handle these cases
+        PlSqlType type = solveTypeFromLiteral("q'!!'");
+        PlSqlType type = solveTypeFromLiteral("n'!!'");
+        PlSqlType type = solveTypeFromLiteral("nq'!!'");
+        */
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
+    }
+
     private PlSqlType solveTypeFromDatatype(String code) {
         p.setRootRule(p.getGrammar().rule(PlSqlGrammar.DATATYPE));
         return typeSolver.solve(p.parse(code));
