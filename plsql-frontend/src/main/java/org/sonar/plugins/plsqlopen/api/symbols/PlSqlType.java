@@ -30,7 +30,8 @@ public enum PlSqlType {
     DATE,
     LOB,
     BOOLEAN,
-    ROWTYPE;
+    ROWTYPE,
+    NULL;
 
     public boolean isCharacter() {
         return this == CHARACTER;

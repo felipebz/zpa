@@ -63,7 +63,9 @@ public class DefaultTypeSolver {
 
     private PlSqlType solveLiteral(AstNode node) {
         PlSqlType type = PlSqlType.UNKNOWN;
-        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && !isEmptyString(node)) {
+        if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
+            type = PlSqlType.NULL;
+        } else if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
             type = PlSqlType.CHARACTER;
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
             type = PlSqlType.NUMERIC;

@@ -143,7 +143,7 @@ public class DefaultTypeSolverTest {
         PlSqlType type = solveTypeFromLiteral("n'!!'");
         PlSqlType type = solveTypeFromLiteral("nq'!!'");
         */
-        assertThat(type).isEqualTo(PlSqlType.UNKNOWN);
+        assertThat(type).isEqualTo(PlSqlType.NULL);
     }
 
     private PlSqlType solveTypeFromDatatype(String code) {
