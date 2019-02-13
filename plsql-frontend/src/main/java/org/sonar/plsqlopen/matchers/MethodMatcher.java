@@ -40,7 +40,6 @@ public class MethodMatcher {
     private NameCriteria methodNameCriteria;
     private NameCriteria packageNameCriteria;
     private NameCriteria schemaNameCriteria;
-    private int parameterCount;
     private boolean shouldCheckParameters = true;
     private boolean schemaIsOptional = false;
     private String methodName;
@@ -89,7 +88,7 @@ public class MethodMatcher {
     }
     
     public MethodMatcher withNoParameterConstraint() {
-        Preconditions.checkState(this.parameterCount == 0);
+        Preconditions.checkState(this.expectedArgumentTypes.size() == 0);
         this.shouldCheckParameters = false;
         return this;
     }
@@ -100,29 +99,27 @@ public class MethodMatcher {
     }
     
     public MethodMatcher addParameter() {
-        Preconditions.checkState(this.shouldCheckParameters);
-        this.parameterCount++;
+        addParameter(PlSqlType.UNKNOWN);
         return this;
     }
 
     public MethodMatcher addParameter(PlSqlType type) {
         Preconditions.checkState(this.shouldCheckParameters);
-        addParameter();
         expectedArgumentTypes.add(type);
         return this;
     }
     
     public MethodMatcher addParameters(int quantity) {
-        Preconditions.checkState(this.shouldCheckParameters);
-        this.parameterCount += quantity;
+        for (int i = 0; i < quantity; i++) {
+            addParameter(PlSqlType.UNKNOWN);
+        }
         return this;
     }
 
     public MethodMatcher addParameters(PlSqlType... types) {
         Preconditions.checkState(this.shouldCheckParameters);
         for (PlSqlType type : types) {
-            addParameter();
-            expectedArgumentTypes.add(type);
+            addParameter(type);
         }
         return this;
     }
@@ -170,7 +167,7 @@ public class MethodMatcher {
     private boolean argumentsAcceptable(AstNode node) {
         List<AstNode> arguments = getArguments(node);
         return !shouldCheckParameters ||
-            (arguments.size() == parameterCount && argumentTypesAreCorrect(arguments));
+            (arguments.size() == expectedArgumentTypes.size() && argumentTypesAreCorrect(arguments));
     }
 
     private boolean argumentTypesAreCorrect(List<AstNode> arguments) {
@@ -178,7 +175,7 @@ public class MethodMatcher {
         int i = 0;
         for (PlSqlType type : expectedArgumentTypes) {
             AstNode actualArgument = arguments.get(i++).getFirstChild();
-            result &= semantic(actualArgument).getPlSqlType() == type;
+            result &= (type == PlSqlType.UNKNOWN || type == semantic(actualArgument).getPlSqlType());
         }
         return result;
     }

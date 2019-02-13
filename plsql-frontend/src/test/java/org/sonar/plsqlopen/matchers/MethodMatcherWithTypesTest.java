@@ -49,6 +49,13 @@ public class MethodMatcherWithTypesTest extends RuleTest {
     }
 
     @Test
+    public void matchesMethodWhenTheTypeIsSpecifiedAsUnknownInTheMatcher() {
+        MethodMatcher matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN);
+        SemanticAstNode node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC);
+        assertThat(matcher.matches(node)).isTrue();
+    }
+
+    @Test
     public void matchesMethodWhenTheTypeIsSpecifiedInTheMatcher() {
         MethodMatcher matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC);
         SemanticAstNode node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC);
