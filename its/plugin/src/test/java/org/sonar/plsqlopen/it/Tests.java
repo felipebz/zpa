@@ -42,6 +42,9 @@ public class Tests {
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     new File("../../sonar-plsql-open-plugin/target"),
                     "sonar-plsql-open-plugin-*.jar"))
+            .addPlugin(FileLocation.byWildcardMavenFilename(
+                    new File("../../plsql-custom-rules/target"),
+                    "plsql-custom-rules-*.jar"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/it-profile.xml"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build();
 
