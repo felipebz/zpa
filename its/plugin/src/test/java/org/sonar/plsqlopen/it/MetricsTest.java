@@ -71,9 +71,6 @@ public class MetricsTest {
         assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero();
         // Rules
         assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero();
-        // Tests
-        assertThat(getMeasureAsString(PROJECT_KEY, "tests")).isNull();
-        assertThat(getMeasureAsString(PROJECT_KEY, "coverage")).isNull();
     }
 
     @Test
