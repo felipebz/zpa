@@ -77,8 +77,6 @@ public class DefaultTypeSolver {
         return type;
     }
 
-
-    // TODO: this was duplicated from org.sonar.plsqlopen.checks.CheckUtils#isEmptyString, it needs to be moved to a better place
     private static boolean isEmptyString(AstNode node) {
         AstNode characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL);
         return characterLiteral != null && "''".equals(characterLiteral.getTokenValue());

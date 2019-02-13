@@ -24,8 +24,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.sonar.plsqlopen.matchers.MethodMatcher;
+import org.sonar.plsqlopen.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
@@ -45,16 +47,14 @@ public class CheckUtils {
             PlSqlGrammar.CREATE_FUNCTION,
             PlSqlGrammar.FUNCTION_DECLARATION,
             PlSqlGrammar.CREATE_PACKAGE_BODY};
-    
-    private static final AstNodeType[] NULL_LITERAL = { PlSqlGrammar.NULL_LITERAL };
-    
-    private static final AstNodeType[] CHARACTER_LITERAL = { PlSqlGrammar.CHARACTER_LITERAL };
-    
+
     private static final AstNodeType[] WHEN = { PlSqlKeyword.WHEN };
     
-    private static final MethodMatcher NVL_MATCHER = MethodMatcher.create().name("nvl").addParameter().addParameter();
+    private static final MethodMatcher NVL_WITH_NULL_MATCHER =
+        MethodMatcher.create().name("nvl").addParameters(PlSqlType.UNKNOWN, PlSqlType.NULL);
 
-    private static final MethodMatcher RAISE_APPLICATION_ERROR_MATCHER = MethodMatcher.create().name("raise_application_error").withNoParameterConstraint();
+    private static final MethodMatcher RAISE_APPLICATION_ERROR_MATCHER =
+        MethodMatcher.create().name("raise_application_error").withNoParameterConstraint();
     
     private CheckUtils() {
     }
@@ -65,19 +65,15 @@ public class CheckUtils {
     
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
         if (node != null) {
-            if (node.hasDirectChildren(NULL_LITERAL)) {
-                return true;
-            }
-
-            return isEmptyString(node);
+            return ((SemanticAstNode)node).getPlSqlType() == PlSqlType.NULL;
         }
 
         return false;
     }
 
     public static boolean isEmptyString(AstNode node) {
-        AstNode characterLiteral = node.getFirstChild(CHARACTER_LITERAL);
-        return characterLiteral != null && "''".equals(characterLiteral.getTokenValue());
+        return node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) &&
+            ((SemanticAstNode)node).getPlSqlType() == PlSqlType.NULL;
     }
 
     public static boolean equalNodes(AstNode node1, AstNode node2) {
@@ -116,11 +112,9 @@ public class CheckUtils {
     }
     
     public static AstNode skipNvlWithNull(AstNode node) {
-        if (NVL_MATCHER.matches(node)) {
-            List<AstNode> arguments = NVL_MATCHER.getArgumentsValues(node);
-            if (isNullLiteralOrEmptyString(arguments.get(1))) {
-                return arguments.get(0);
-            }
+        if (NVL_WITH_NULL_MATCHER.matches(node)) {
+            List<AstNode> arguments = NVL_WITH_NULL_MATCHER.getArgumentsValues(node);
+            return arguments.get(0);
         }
         return node;
     }
