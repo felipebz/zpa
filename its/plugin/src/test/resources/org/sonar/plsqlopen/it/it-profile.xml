@@ -7,5 +7,10 @@
             <key>EmptyBlock</key>
             <priority>MAJOR</priority>
         </rule>
+        <rule>
+            <repositoryKey>my-rules</repositoryKey>
+            <key>ForbiddenDmlCheck</key>
+            <priority>MAJOR</priority>
+        </rule>
     </rules>
 </profile>

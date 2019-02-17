@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.io.File;
 import java.util.Collections;
@@ -36,40 +37,40 @@ import com.sonar.orchestrator.build.SonarScanner;
 
 public class IssueTest {
 
-  @ClassRule
-  public static Orchestrator orchestrator = Tests.ORCHESTRATOR;
+    @ClassRule
+    public static Orchestrator orchestrator = Tests.ORCHESTRATOR;
 
-  private static final String PROJECT_KEY = "metrics";
-  private static final String FILE_NAME = PROJECT_KEY + ":src/source1.sql";
+    private static final String PROJECT_KEY = "metrics";
 
 
-  @BeforeClass
-  public static void init() {
-    SonarScanner build = Tests.createSonarScanner()
-      .setProjectDir(new File("projects/metrics/"))
-      .setProjectKey(PROJECT_KEY)
-      .setProjectName(PROJECT_KEY)
-      .setProjectVersion("1.0")
-      .setSourceDirs("src")
-      .setProperty("sonar.sourceEncoding", "UTF-8")
-      .setProfile("it-profile");
-    orchestrator.executeBuild(build);
-  }
+    @BeforeClass
+    public static void init() {
+        SonarScanner build = Tests.createSonarScanner()
+            .setProjectDir(new File("projects/metrics/"))
+            .setProjectKey(PROJECT_KEY)
+            .setProjectName(PROJECT_KEY)
+            .setProjectVersion("1.0")
+            .setSourceDirs("src")
+            .setProperty("sonar.sourceEncoding", "UTF-8")
+            .setProfile("it-profile");
+        orchestrator.executeBuild(build);
+    }
 
-  @Test
-  public void one_issue() {
-    List<Issue> issues = getIssues(PROJECT_KEY);
+    @Test
+    public void issues() {
+        List<Issue> issues = getIssues(PROJECT_KEY);
 
-    assertThat(issues).hasSize(1);
-    assertThat(issues.get(0).getRule()).isEqualTo("plsql:EmptyBlock");
-    assertThat(issues.get(0).getComponent()).isEqualTo(FILE_NAME);
-  }
+        assertThat(issues).extracting("rule", "component")
+            .containsExactlyInAnyOrder(
+                tuple("plsql:EmptyBlock", PROJECT_KEY + ":src/source1.sql"),
+                tuple("my-rules:ForbiddenDmlCheck", PROJECT_KEY + ":src/custom_rule.sql"));
+    }
 
-  /* Helper methods */
-  private List<Issue> getIssues(String componentKey) {
-      return Tests.newWsClient(orchestrator)
-              .issues()
-              .search(new SearchWsRequest().setComponentKeys(Collections.singletonList(componentKey)))
-              .getIssuesList();
-  }
+    /* Helper methods */
+    private List<Issue> getIssues(String componentKey) {
+        return Tests.newWsClient(orchestrator)
+            .issues()
+            .search(new SearchWsRequest().setComponentKeys(Collections.singletonList(componentKey)))
+            .getIssuesList();
+    }
 }

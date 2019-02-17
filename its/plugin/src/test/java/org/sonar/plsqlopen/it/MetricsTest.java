@@ -54,15 +54,15 @@ public class MetricsTest {
     @Test
     public void project_level() {
         // Size
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(13);
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(14);
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(2);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(22);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(23);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(3);
         assertThat(getMeasureAsInteger(PROJECT_KEY, "directories")).isEqualTo(1);
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(3);
+        assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(4);
         // Documentation
         assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1);
         assertThat(getMeasureAsString(PROJECT_KEY, "commented_out_code_lines")).isNull();
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(7.1);
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(4.3);
         assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull();
         // Duplication
         assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero();
@@ -76,8 +76,8 @@ public class MetricsTest {
     @Test
     public void file_level() {
         // Size
-        assertThat(getMeasureAsInteger(FILE_NAME, "ncloc")).isEqualTo(6);
-        assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(6);
+        assertThat(getMeasureAsInteger(FILE_NAME, "ncloc")).isEqualTo(7);
+        assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(7);
         assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(2);
         // Documentation
         assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero();
