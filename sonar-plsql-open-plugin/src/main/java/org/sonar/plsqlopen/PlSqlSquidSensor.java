@@ -43,6 +43,7 @@ import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.ProgressReport;
+import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;

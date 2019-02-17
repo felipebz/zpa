@@ -31,6 +31,7 @@ import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 import com.google.common.annotations.VisibleForTesting;
 

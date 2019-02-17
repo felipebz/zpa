@@ -1,6 +1,6 @@
 package com.company.plsql;
 
-import org.sonar.plsqlopen.CustomPlSqlRulesDefinition;
+import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 public class PlSqlCustomRulesDefinition extends CustomPlSqlRulesDefinition {
     
