@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.Test;
-import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;

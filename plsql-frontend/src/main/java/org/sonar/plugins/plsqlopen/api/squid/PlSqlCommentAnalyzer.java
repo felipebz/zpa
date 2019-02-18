@@ -17,15 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen;
+package org.sonar.plugins.plsqlopen.api.squid;
 
-import org.sonar.api.batch.fs.InputFile;
-
-public interface PlSqlFile {
-
-    InputFile inputFile();
+public class PlSqlCommentAnalyzer {
     
-    String content();
+    public boolean isBlank(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            if (Character.isLetterOrDigit(line.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-    String fileName();
+    public String getContents(String comment) {
+        if (comment.startsWith("--")) {
+            return comment.substring(2);
+        } else if (comment.startsWith("/*")) {
+            if (comment.endsWith("*/")) {
+                return comment.substring(2, comment.length() - 2);
+            }
+            return comment.substring(2);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+    
 }

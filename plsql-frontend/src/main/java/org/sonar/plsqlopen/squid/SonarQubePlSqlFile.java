@@ -22,7 +22,7 @@ package org.sonar.plsqlopen.squid;
 import java.io.IOException;
 
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.plsqlopen.PlSqlFile;
+import org.sonar.plugins.plsqlopen.api.PlSqlFile;
 
 public class SonarQubePlSqlFile implements PlSqlFile {
 

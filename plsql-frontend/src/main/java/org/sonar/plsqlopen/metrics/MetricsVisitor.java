@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plsqlopen.squid.PlSqlCommentAnalyzer;
+import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 
 import com.sonar.sslr.api.AstNode;

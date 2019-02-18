@@ -26,7 +26,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 
 import com.sonar.sslr.api.AstNode;

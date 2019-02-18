@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.sonar.plsqlopen.squid.SemanticAstNode;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 

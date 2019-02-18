@@ -26,9 +26,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plsqlopen.squid.SemanticAstNode;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;

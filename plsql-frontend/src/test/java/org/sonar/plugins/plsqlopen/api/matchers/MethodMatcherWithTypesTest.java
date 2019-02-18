@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
-import org.sonar.plsqlopen.squid.SemanticAstNode;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.RuleTest;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;

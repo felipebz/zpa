@@ -42,8 +42,8 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.PlSqlChecks;
-import org.sonar.plsqlopen.PlSqlFile;
-import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.PlSqlFile;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
@@ -64,6 +64,7 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.impl.Parser;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 public class PlSqlAstScanner {
 
