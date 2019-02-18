@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.metrics;
 
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 

@@ -34,7 +34,7 @@ import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
 import com.google.common.collect.ImmutableList;
 

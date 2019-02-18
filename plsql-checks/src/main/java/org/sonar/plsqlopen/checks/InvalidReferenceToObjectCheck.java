@@ -30,8 +30,8 @@ import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.matchers.MethodMatcher;
 import org.sonar.plsqlopen.metadata.Block;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 

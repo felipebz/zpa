@@ -24,7 +24,7 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 

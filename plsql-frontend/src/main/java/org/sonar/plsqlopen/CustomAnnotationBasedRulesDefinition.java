@@ -34,8 +34,8 @@ import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.NewRule;
 import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
-import org.sonar.plsqlopen.annnotations.RuleTemplate;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate;
 
 import com.google.common.io.Resources;
 

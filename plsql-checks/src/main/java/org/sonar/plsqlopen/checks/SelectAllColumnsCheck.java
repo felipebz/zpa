@@ -26,8 +26,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;

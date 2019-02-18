@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.checks;
+package org.sonar.plugins.plsqlopen.api.checks;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -27,6 +27,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
+import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.squid.SemanticAstNode;
 
 import com.sonar.sslr.api.AstNode;

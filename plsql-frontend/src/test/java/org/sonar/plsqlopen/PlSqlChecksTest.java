@@ -30,8 +30,8 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 import com.google.common.collect.ImmutableList;

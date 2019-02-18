@@ -26,8 +26,8 @@ import javax.annotation.Nullable;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 

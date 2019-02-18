@@ -27,8 +27,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
 @Rule(

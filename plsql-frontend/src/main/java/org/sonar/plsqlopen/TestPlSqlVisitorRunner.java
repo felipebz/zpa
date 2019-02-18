@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;

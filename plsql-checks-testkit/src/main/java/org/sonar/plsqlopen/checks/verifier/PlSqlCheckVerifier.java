@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
 import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstWalker;
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver;

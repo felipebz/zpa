@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 

@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.junit.Test;
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.plsqlopen.checks.PlSqlCheck.PreciseIssue;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
 

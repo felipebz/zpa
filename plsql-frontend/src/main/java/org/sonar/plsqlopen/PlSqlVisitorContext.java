@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
-import org.sonar.plsqlopen.checks.PlSqlCheck.PreciseIssue;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;

@@ -30,7 +30,7 @@ import java.util.Set;
 import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;

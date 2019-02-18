@@ -21,8 +21,8 @@ package org.sonar.plsqlopen.checks;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plsqlopen.annnotations.ActivatedByDefault;
-import org.sonar.plsqlopen.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.ConditionsGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 

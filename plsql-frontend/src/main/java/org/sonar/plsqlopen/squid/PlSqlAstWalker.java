@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sonar.plsqlopen.PlSqlVisitorContext;
-import org.sonar.plsqlopen.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;

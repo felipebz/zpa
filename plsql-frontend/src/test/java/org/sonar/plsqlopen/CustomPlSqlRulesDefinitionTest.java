@@ -26,7 +26,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 public class CustomPlSqlRulesDefinitionTest {

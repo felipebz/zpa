@@ -24,7 +24,7 @@ import java.util.List;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plsqlopen.annnotations.RuleTemplate;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate;
 import org.sonar.plsqlopen.squid.AnalysisException;
 
 import com.google.common.base.Strings;
