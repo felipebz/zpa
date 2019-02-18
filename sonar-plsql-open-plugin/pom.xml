@@ -49,6 +49,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>plsql-checks-testkit</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -93,15 +98,21 @@
         <configuration>
           <shadedArtifactAttached>false</shadedArtifactAttached>
           <createDependencyReducedPom>false</createDependencyReducedPom>
-          <minimizeJar>true</minimizeJar>
-		  <filters>
-			<filter>
-			  <artifact>jaxen:jaxen</artifact>
-			  <includes>
-				<include>**</include>
-			  </includes>
-			</filter>
-		  </filters>
+          <minimizeJar>false</minimizeJar>
+          <filters>
+            <filter>
+              <artifact>jaxen:jaxen</artifact>
+              <includes>
+                <include>**</include>
+              </includes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <pattern>com.sonar.sslr.api</pattern>
+              <shadedPattern>org.sonar.plugins.plsqlopen.api.sslr</shadedPattern>
+            </relocation>
+          </relocations>
         </configuration>
       </plugin>
     </plugins>
