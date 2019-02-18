@@ -38,7 +38,7 @@
     <module>zpa-toolkit</module>
     <module>plsql-checks-testkit</module>
     <module>its</module>
-    <module>plsql-custom-rules</module>
+    <!--<module>plsql-custom-rules</module>-->
   </modules>
   
   <scm>

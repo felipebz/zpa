@@ -24,11 +24,10 @@
     <dependency>
       <groupId>org.sonar.plsqlopen</groupId>
       <artifactId>sonar-plsql-open-plugin</artifactId>
-      <type>sonar-plugin</type>
       <version>${sonarplsqlopen.version}</version>
       <scope>provided</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.sonar.plsqlopen</groupId>
       <artifactId>plsql-checks-testkit</artifactId>
@@ -46,7 +45,6 @@
         <extensions>true</extensions>
         <configuration>
           <pluginClass>com.company.plsql.PlSqlCustomRulesPlugin</pluginClass>
-          <basePlugin>plsqlopen</basePlugin><!-- required -->
           <pluginKey>my-rules</pluginKey>
         </configuration>
       </plugin>

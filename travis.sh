@@ -17,7 +17,9 @@ ci)
 it)
   git submodule update --init --recursive
 
-  ./mvnw package -Dmaven.test.skip=true -e -B
+  ./mvnw install -Dmaven.test.skip=true -e -B
+
+  ./mvnw -f plsql-custom-rules/pom.xml package -e -B
 
   cd its
   ../mvnw -Dsonar.runtimeVersion="$SQ_VERSION" -Pit verify -e -B -V
