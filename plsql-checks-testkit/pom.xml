@@ -15,6 +15,7 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>plsql-frontend</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
