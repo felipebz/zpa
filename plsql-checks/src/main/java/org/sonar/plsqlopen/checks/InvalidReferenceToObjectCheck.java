@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
-import org.sonar.plsqlopen.matchers.MethodMatcher;
+import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
 import org.sonar.plsqlopen.metadata.Block;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;

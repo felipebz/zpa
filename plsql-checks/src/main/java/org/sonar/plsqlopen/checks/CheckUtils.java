@@ -23,7 +23,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.sonar.plsqlopen.matchers.MethodMatcher;
+import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
 import org.sonar.plsqlopen.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
