@@ -29,15 +29,16 @@ To run the integrations tests, update the submodules:
     
 Build the plugin:
 
-    mvn clean package
+    ./mvnw clean install
+    ./mvnw -f plsql-custom-rules/pom.xml package
     
 Then run the tests:
 
-    mvn test -Pit
+    ./mvnw test -Pit
 
 You can also specify the SonarQube version using the property `sonar.runtimeVersion`: 
 
-    mvn test -Pit -Dsonar.runtimeVersion=7.5
+    ./mvnw test -Pit -Dsonar.runtimeVersion=7.6
 
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
