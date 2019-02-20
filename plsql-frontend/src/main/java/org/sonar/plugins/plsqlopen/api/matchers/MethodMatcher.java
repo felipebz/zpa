@@ -88,7 +88,7 @@ public class MethodMatcher {
     }
     
     public MethodMatcher withNoParameterConstraint() {
-        Preconditions.checkState(this.expectedArgumentTypes.size() == 0);
+        Preconditions.checkState(this.expectedArgumentTypes.isEmpty());
         this.shouldCheckParameters = false;
         return this;
     }

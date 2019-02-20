@@ -19,9 +19,6 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.sonar.sslr.api.AstNode;
-
 public enum PlSqlType {
 
     UNKNOWN,

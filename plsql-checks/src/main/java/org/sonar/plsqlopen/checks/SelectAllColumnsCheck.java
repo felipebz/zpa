@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.sonar.check.Priority;
@@ -58,18 +59,22 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
             }
             
             if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
-                AstNode intoClause = node.getParent().getFirstChild(DmlGrammar.INTO_CLAUSE);
-                if (intoClause != null) {
-                    List<AstNode> variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
-                    if (variablesInInto.size() == 1) {
-                        if (semantic(variablesInInto.get(0)).getPlSqlType() == PlSqlType.ROWTYPE) {
-                            return;
-                        }
-                    }
+                List<AstNode> variablesInInto = getVariablesInIntoClause(node);
+                if (variablesInInto.size() == 1 && semantic(variablesInInto.get(0)).getPlSqlType() == PlSqlType.ROWTYPE) {
+                    return;
                 }
 
                 addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.getTokenLine());
             }
+        }
+    }
+
+    private static List<AstNode> getVariablesInIntoClause(AstNode selectNode) {
+        AstNode intoClause = selectNode.getParent().getFirstChild(DmlGrammar.INTO_CLAUSE);
+        if (intoClause != null) {
+            return intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
+        } else {
+            return new ArrayList<>();
         }
     }
     

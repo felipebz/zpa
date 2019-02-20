@@ -23,6 +23,8 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
@@ -47,15 +49,11 @@ public class PlSqlVisitorContext {
         this(rootTree, plsqlFile, null, metadata);
     }
 
-    public PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile) {
-        this(rootTree, plsqlFile, null, null);
-    }
-
     public PlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata metadata) {
         this(null, plsqlFile, parsingException, metadata);
     }
-    
-    private PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata metadata) {
+
+    private PlSqlVisitorContext(@Nullable AstNode rootTree, PlSqlFile plsqlFile, @Nullable RecognitionException parsingException, FormsMetadata metadata) {
         this.rootTree = rootTree;
         this.plSqlFile = plsqlFile;
         this.parsingException = parsingException;

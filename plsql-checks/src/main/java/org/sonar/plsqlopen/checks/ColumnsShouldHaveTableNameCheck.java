@@ -48,16 +48,15 @@ public class ColumnsShouldHaveTableNameCheck extends AbstractBaseCheck {
         if (candidate.getFirstChild() != null) {
             candidate = candidate.getFirstChild();
         }
-        
+
         AstNode selectExpression = node.getParent();
         if (selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size() > 1 &&
-                candidate.is(PlSqlGrammar.IDENTIFIER_NAME) && 
-                !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD)) {
+            candidate.is(PlSqlGrammar.IDENTIFIER_NAME) &&
+            !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD) &&
+            semantic(candidate).getSymbol() == null) {
 
-            if (semantic(candidate).getSymbol() == null) {
-                addIssue(candidate, getLocalizedMessage(CHECK_KEY), candidate.getTokenOriginalValue());
-            }
+            addIssue(candidate, getLocalizedMessage(CHECK_KEY), candidate.getTokenOriginalValue());
+
         }
     }
-
 }

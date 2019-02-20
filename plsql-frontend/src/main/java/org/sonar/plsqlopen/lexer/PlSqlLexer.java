@@ -43,7 +43,6 @@ public class PlSqlLexer {
     
     public static final String INTEGER_LITERAL = "(?:\\d++)";
     
-    // TODO: improve this regex
     public static final String REAL_LITERAL = "(?:"
             + "("
             + "\\d*+(?!\\.\\.)\\.\\d++"
