@@ -47,7 +47,7 @@ public abstract class AbstractBaseCheck extends PlSqlCheck {
         if (bundle == null) {
             bundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault());
         }
-        return bundle.getString("rule.plsql." + checkKey + ".message"); 
+        return bundle.getString(checkKey + ".message");
     }
     
 }

@@ -129,7 +129,7 @@ public class CustomAnnotationBasedRulesDefinition {
             return;
         }
         for (NewRule rule : rules) {
-            String baseKey = "rule." + repository.key() + "." + rule.key();
+            String baseKey = rule.key();
             String nameKey = baseKey + ".name";
             if (bundle.containsKey(nameKey)) {
                 rule.setName(bundle.getString(nameKey));
