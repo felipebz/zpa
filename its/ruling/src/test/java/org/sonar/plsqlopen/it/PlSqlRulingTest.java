@@ -79,8 +79,6 @@ public class PlSqlRulingTest {
             .setProperty("sonar.zpa.file.suffixes", "sql,typ,pkg,pkb,pks,tab,tps,tpb")
             .setProperty("sonar.zpa.errorRecoveryEnabled", "false")
             .setProperty("sonar.cpd.skip", "true")
-            .setProperty("sonar.analysis.mode", "preview")
-            .setProperty("sonar.issuesReport.html.enable", "true")
             .setEnvironmentVariable("SONAR_RUNNER_OPTS", "-Xmx1024m");
     }
 
@@ -117,8 +115,8 @@ public class PlSqlRulingTest {
     public void utPLSQL3() throws Exception {
         SonarScanner build = initializeBuild("utPLSQL3");
         build.setSourceDirs("./source");
-        build.setProperty("sonar.coverageReportPaths", null);
-        build.setProperty("sonar.testExecutionReportPaths", null);
+        build.setProperty("sonar.coverageReportPaths", "");
+        build.setProperty("sonar.testExecutionReportPaths", "");
         executeBuild(build);
     }
 
