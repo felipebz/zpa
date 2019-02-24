@@ -24,15 +24,15 @@ import org.sonar.plsqlopen.checks.CheckList;
 
 public class PlSqlRuleRepository implements RulesDefinition {
 
-    private static final String REPOSITORY_NAME = "PL/SQL";
+    private static final String REPOSITORY_NAME = "Z PL/SQL Analyzer";
 
     @Override
     public void define(Context context) {
-      NewRepository repository = context
-          .createRepository(CheckList.REPOSITORY_KEY, PlSql.KEY)
-          .setName(REPOSITORY_NAME);
-      CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.getChecks());
-      repository.done();
+        NewRepository repository = context
+            .createRepository(CheckList.REPOSITORY_KEY, PlSql.KEY)
+            .setName(REPOSITORY_NAME);
+        CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.getChecks());
+        repository.done();
     }
 
 }
