@@ -25,9 +25,22 @@ import com.google.common.collect.ImmutableList;
 
 public class CheckList {
 
-    public static final String REPOSITORY_KEY = "plsql";
+    public static final String REPOSITORY_KEY;
 
     public static final String SONAR_WAY_PROFILE = "Sonar way";
+
+    static  {
+        // TODO: remove this code and always use the key "zpa"
+        String repositoryKey = "plsql";
+        try {
+            // is it running a commercial edition of SQ?
+            Class.forName("com.sonarsource.plugins.license.api.LicensedPluginRegistration");
+            repositoryKey = "zpa";
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+        REPOSITORY_KEY = repositoryKey;
+    }
 
     private CheckList() {
     }

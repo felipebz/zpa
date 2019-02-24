@@ -40,7 +40,7 @@ import com.google.common.collect.ImmutableList;
 
 public class CustomAnnotationBasedRulesDefinitionTest {
 
-    private static final String REPO_KEY = "repoKey";
+    private static final String REPO_KEY = "plsql";
     private static final String LANGUAGE_KEY_WITH_RESOURCE_BUNDLE = "languageKey";
 
     private RulesDefinition.Context context = new RulesDefinition.Context();

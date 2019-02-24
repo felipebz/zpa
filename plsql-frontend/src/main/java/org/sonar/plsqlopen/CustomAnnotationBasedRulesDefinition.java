@@ -50,8 +50,8 @@ public class CustomAnnotationBasedRulesDefinition {
         this.repository = repository;
         this.languageKey = languageKey;
         this.locale = Locale.getDefault();
-        this.externalDescriptionBasePath = String.format("%s/rules/%s",
-            getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale), repository.key());
+        this.externalDescriptionBasePath = String.format("%s/rules/plsql",
+            getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale));
         
     }
     
