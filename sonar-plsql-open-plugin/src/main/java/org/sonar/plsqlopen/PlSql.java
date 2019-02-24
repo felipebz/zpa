@@ -34,7 +34,7 @@ public class PlSql extends AbstractLanguage {
     private final Configuration settings;
 
     public PlSql(Configuration configuration) {
-        super(KEY, "PL/SQL");
+        super(KEY, "PL/SQL (ZPA)");
         this.settings = configuration;
     }
     

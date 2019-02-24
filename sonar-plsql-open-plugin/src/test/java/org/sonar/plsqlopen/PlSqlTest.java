@@ -31,7 +31,7 @@ public class PlSqlTest {
     public void test() {
         PlSql language = new PlSql(new MapSettings().asConfig());
         assertThat(language.getKey()).isEqualTo("plsqlopen");
-        assertThat(language.getName()).isEqualTo("PL/SQL");
+        assertThat(language.getName()).isEqualTo("PL/SQL (ZPA)");
         assertThat(language.getFileSuffixes())
             .hasSize(4)
             .contains("sql")
