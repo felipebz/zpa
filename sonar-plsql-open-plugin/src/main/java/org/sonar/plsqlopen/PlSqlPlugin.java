@@ -30,9 +30,15 @@ public class PlSqlPlugin implements Plugin {
     public static final String FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes";
     public static final String FORMS_METADATA_KEY = "sonar.zpa.forms.metadata";
     public static final String ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled";
-    public static final String OLD_FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
-    public static final String OLD_FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
-    public static final String OLD_ERROR_RECOVERY_KEY = "sonar.plsql.errorRecoveryEnabled";
+    private static String OLD_FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
+    private static final String OLD_FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
+    private static final String OLD_ERROR_RECOVERY_KEY = "sonar.plsql.errorRecoveryEnabled";
+
+    static {
+        if (SonarQubeUtils.isCommercialEdition()) {
+            OLD_FILE_SUFFIXES_KEY = null;
+        }
+    }
 
     @Override
     public void define(Context context) {

@@ -21,6 +21,8 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.List;
 
+import org.sonar.plsqlopen.SonarQubeUtils;
+
 import com.google.common.collect.ImmutableList;
 
 public class CheckList {
@@ -32,12 +34,8 @@ public class CheckList {
     static  {
         // TODO: remove this code and always use the key "zpa"
         String repositoryKey = "plsql";
-        try {
-            // is it running a commercial edition of SQ?
-            Class.forName("com.sonarsource.plugins.license.api.LicensedPluginRegistration");
+        if (SonarQubeUtils.isCommercialEdition()) {
             repositoryKey = "zpa";
-        } catch (ClassNotFoundException e) {
-            // ignore
         }
         REPOSITORY_KEY = repositoryKey;
     }
