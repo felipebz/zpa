@@ -20,9 +20,9 @@
 package org.sonar.plsqlopen.checks.verifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -30,11 +30,14 @@ import java.util.Set;
 import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.sonar.plsqlopen.checks.IssueLocation;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.GenericTokenType;
 import com.sonar.sslr.api.Token;
 
 public class PlSqlCheckVerifierTest {
@@ -236,22 +239,32 @@ public class PlSqlCheckVerifierTest {
         }
         
         private AstNode mockNode(int startLine, int startCharacter, int endLine, int endCharacter) {
+            URI fakeUri;
+            try {
+                fakeUri = new URI("tests://unittest");
+            } catch (URISyntaxException e) {
+                // Can't happen
+                throw new IllegalStateException(e);
+            }
+            Token token = Token.builder()
+                .setLine(startLine)
+                .setColumn(startCharacter - 1)
+                .setValueAndOriginalValue("")
+                .setType(GenericTokenType.IDENTIFIER)
+                .setURI(fakeUri)
+                .build();
             
-            Token token = mock(Token.class);
-            when(token.getLine()).thenReturn(startLine);
-            when(token.getColumn()).thenReturn(startCharacter - 1);
-            when(token.getOriginalValue()).thenReturn("");
-            when(token.getValue()).thenReturn("");
+            Token lastToken = Token.builder()
+                .setLine(endLine)
+                .setColumn(endCharacter - 1)
+                .setValueAndOriginalValue("")
+                .setType(GenericTokenType.IDENTIFIER)
+                .setURI(fakeUri)
+                .build();
             
-            Token lastToken = mock(Token.class);
-            when(lastToken.getLine()).thenReturn(endLine);
-            when(lastToken.getColumn()).thenReturn(endCharacter - 1);
-            when(lastToken.getOriginalValue()).thenReturn("");
-            when(lastToken.getValue()).thenReturn("");
-            
-            AstNode node = mock(AstNode.class);
-            when(node.getToken()).thenReturn(token);
-            when(node.getLastToken()).thenReturn(lastToken);
+            AstNode node = new AstNode(token);
+            node.addChild(new AstNode(token));
+            node.addChild(new AstNode(lastToken));
             
             return node;
         }

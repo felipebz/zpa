@@ -19,11 +19,6 @@
       <artifactId>sslr-toolkit</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-    </dependency>
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>plsql-frontend</artifactId>
       <version>${project.version}</version>
