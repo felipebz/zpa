@@ -30,6 +30,7 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>plsql-checks-testkit</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
