@@ -168,7 +168,7 @@ public class PlSqlAstScanner {
 
         PlSqlVisitorContext visitorContext;
         try {
-            AstNode root = getSemanticNode(parser.parse(plSqlFile.content()));
+            AstNode root = getSemanticNode(parser.parse(plSqlFile.contents()));
             visitorContext = new PlSqlVisitorContext(root, plSqlFile, formsMetadata);
         } catch (RecognitionException e) {
             visitorContext = new PlSqlVisitorContext(plSqlFile, e, formsMetadata);

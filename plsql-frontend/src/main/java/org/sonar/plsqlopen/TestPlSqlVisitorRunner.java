@@ -51,7 +51,7 @@ public class TestPlSqlVisitorRunner {
   public static PlSqlVisitorContext createContext(File file, FormsMetadata metadata) {
     Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
     TestPlSqlFile plSqlFile = new TestPlSqlFile(file);
-    AstNode rootTree = PlSqlAstScanner.getSemanticNode(parser.parse(plSqlFile.content()));
+    AstNode rootTree = PlSqlAstScanner.getSemanticNode(parser.parse(plSqlFile.contents()));
     return new PlSqlVisitorContext(rootTree, plSqlFile, metadata);
   }
 
@@ -64,7 +64,7 @@ public class TestPlSqlVisitorRunner {
     }
 
     @Override
-    public String content() {
+    public String contents() {
       try {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
       } catch (IOException e) {
@@ -78,6 +78,7 @@ public class TestPlSqlVisitorRunner {
     }
 
     @Override
+    @Deprecated
     public InputFile inputFile() {
         return null;
     }
