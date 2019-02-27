@@ -19,9 +19,6 @@
  */
 package org.sonar.plsqlopen;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -46,10 +43,7 @@ import org.sonar.plsqlopen.squid.ProgressReport;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 
 public class PlSqlSquidSensor implements Sensor {
 
@@ -73,7 +67,7 @@ public class PlSqlSquidSensor implements Sensor {
         this.checks = PlSqlChecks.createPlSqlCheck(checkFactory)
                 .addChecks(CheckList.REPOSITORY_KEY, CheckList.getChecks())
                 .addCustomChecks(customRulesDefinition);
-        loadMetadataFile(settings.get(PlSqlPlugin.FORMS_METADATA_KEY).orElse(null));
+        this.formsMetadata = FormsMetadata.loadFromFile(settings.get(PlSqlPlugin.FORMS_METADATA_KEY).orElse(null));
         isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY).orElse(false);
     }
     
@@ -104,21 +98,6 @@ public class PlSqlSquidSensor implements Sensor {
             progressReport.nextFile();
         }
         progressReport.stop();
-    }
-    
-    public void loadMetadataFile(String metadataFile) {
-        if (Strings.isNullOrEmpty(metadataFile)) {
-            return;
-        }
-        
-        try (JsonReader reader = new JsonReader(new FileReader(metadataFile))) {
-            this.formsMetadata = new Gson().fromJson(reader, FormsMetadata.class);
-            LOG.info("Loaded Oracle Forms metadata from {}.", metadataFile);
-        } catch (FileNotFoundException e) {
-            LOG.warn("The metadata file {} was not found.", metadataFile, e);
-        } catch (IOException e) {
-            LOG.error("Error reading the metadata file at {}.", metadataFile, e);
-        }
     }
     
     @Override

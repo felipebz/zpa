@@ -46,7 +46,6 @@ import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.plsqlopen.checks.CheckList;
-import org.sonar.plsqlopen.metadata.FormsMetadata;
 
 import com.google.common.io.Files;
 
@@ -140,20 +139,6 @@ public class PlSqlSquidSensorTest {
         assertThat(context.highlightingTypeAt(key, 7, lineOffset(1))).containsExactly(TypeOfText.KEYWORD);
     }
     
-    @Test
-    public void canReadSimpleMetadaFile() {
-        sensor.loadMetadataFile("src/test/resources/metadata/metadata.json");
-        FormsMetadata metadata = sensor.getFormsMetadata();
-        
-        assertThat(metadata.getAlerts()).containsExactly("foo", "bar");
-        assertThat(metadata.getBlocks()).hasSize(2);
-        assertThat(metadata.getBlocks()[0].getName()).isEqualTo("foo");
-        assertThat(metadata.getBlocks()[0].getItems()).containsExactly("item1", "item2");
-        assertThat(metadata.getBlocks()[1].getName()).isEqualTo("bar");
-        assertThat(metadata.getBlocks()[1].getItems()).containsExactly("item1", "item2");
-        assertThat(metadata.getLovs()).containsExactly("foo", "bar");
-    }
-
     private int lineOffset(int offset) {
         return offset - 1;
     }

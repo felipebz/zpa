@@ -19,7 +19,22 @@
  */
 package org.sonar.plsqlopen.metadata;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+
+import javax.annotation.Nullable;
+
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+
 public class FormsMetadata {
+
+    private static final Logger LOG = Loggers.get(FormsMetadata.class);
 
     private String[] alerts = new String[0];
     private Block[] blocks = new Block[0];
@@ -47,6 +62,22 @@ public class FormsMetadata {
 
     public void setLovs(String[] lovs) {
         this.lovs = lovs;
+    }
+
+    @Nullable
+    public static FormsMetadata loadFromFile(String path) {
+        if (!Strings.isNullOrEmpty(path)) {
+            try (JsonReader reader = new JsonReader(new FileReader(path))) {
+                FormsMetadata formsMetadata = new Gson().fromJson(reader, FormsMetadata.class);
+                LOG.info("Loaded Oracle Forms metadata from {}.", path);
+                return formsMetadata;
+            } catch (FileNotFoundException e) {
+                LOG.warn("The metadata file {} was not found.", path, e);
+            } catch (IOException e) {
+                LOG.error("Error reading the metadata file at {}.", path, e);
+            }
+        }
+        return null;
     }
     
 }
