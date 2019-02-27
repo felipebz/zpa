@@ -19,18 +19,16 @@
  */
 package org.sonar.plsqlopen.metadata;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-
-import javax.annotation.Nullable;
-
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
+import javax.annotation.CheckForNull;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class FormsMetadata {
 
@@ -64,7 +62,7 @@ public class FormsMetadata {
         this.lovs = lovs;
     }
 
-    @Nullable
+    @CheckForNull
     public static FormsMetadata loadFromFile(String path) {
         if (!Strings.isNullOrEmpty(path)) {
             try (JsonReader reader = new JsonReader(new FileReader(path))) {

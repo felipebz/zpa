@@ -19,12 +19,7 @@
  */
 package org.sonar.plsqlopen;
 
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
+import com.google.common.collect.Lists;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.CheckFactory;
@@ -34,20 +29,19 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.FileLinesContextFactory;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.ProgressReport;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class PlSqlSquidSensor implements Sensor {
 
-    private static final Logger LOG = Loggers.get(PlSqlSquidSensor.class);
     private final PlSqlChecks checks;
     private final boolean isErrorRecoveryEnabled;
 
@@ -69,11 +63,6 @@ public class PlSqlSquidSensor implements Sensor {
                 .addCustomChecks(customRulesDefinition);
         this.formsMetadata = FormsMetadata.loadFromFile(settings.get(PlSqlPlugin.FORMS_METADATA_KEY).orElse(null));
         isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY).orElse(false);
-    }
-    
-    @VisibleForTesting
-    FormsMetadata getFormsMetadata() {
-        return formsMetadata;
     }
     
     @Override

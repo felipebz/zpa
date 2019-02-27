@@ -45,15 +45,15 @@ public class PlSqlVisitorContext {
     private Scope scope;
     private FormsMetadata formsMetadata;
 
-    public PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile, FormsMetadata metadata) {
+    public PlSqlVisitorContext(AstNode rootTree, PlSqlFile plsqlFile, @Nullable FormsMetadata metadata) {
         this(rootTree, plsqlFile, null, metadata);
     }
 
-    public PlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, FormsMetadata metadata) {
+    public PlSqlVisitorContext(PlSqlFile plsqlFile, RecognitionException parsingException, @Nullable FormsMetadata metadata) {
         this(null, plsqlFile, parsingException, metadata);
     }
 
-    private PlSqlVisitorContext(@Nullable AstNode rootTree, PlSqlFile plsqlFile, @Nullable RecognitionException parsingException, FormsMetadata metadata) {
+    private PlSqlVisitorContext(@Nullable AstNode rootTree, PlSqlFile plsqlFile, @Nullable RecognitionException parsingException, @Nullable FormsMetadata metadata) {
         this.rootTree = rootTree;
         this.plSqlFile = plsqlFile;
         this.parsingException = parsingException;
