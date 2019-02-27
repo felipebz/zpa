@@ -77,7 +77,7 @@ public class PlSqlVisitorContext {
      * @param check Rule associated with the violation.
      * @param message Description of the violation.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addFileIssue(String)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addFileIssue(String)}.
      */
     @Deprecated
     public void createFileViolation(PlSqlCheck check, String message, Object... messageParameters) {
@@ -90,7 +90,7 @@ public class PlSqlVisitorContext {
      * @param message Description of the violation.
      * @param node Node that causes the violation.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addLineIssue(String, int)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
      */
     @Deprecated
     public void createLineViolation(PlSqlCheck check, String message, AstNode node, Object... messageParameters) {
@@ -103,7 +103,7 @@ public class PlSqlVisitorContext {
      * @param message Description of the violation.
      * @param token Token that causes the violation.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addLineIssue(String, int)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
      */
     @Deprecated
     public void createLineViolation(PlSqlCheck check, String message, Token token, Object... messageParameters) {
@@ -116,7 +116,7 @@ public class PlSqlVisitorContext {
      * @param message Description of the violation.
      * @param line Line where the violation occurs.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addLineIssue(String, int)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
      */
     @Deprecated
     public void createLineViolation(PlSqlCheck check, String message, int line, Object... messageParameters) {
@@ -129,7 +129,7 @@ public class PlSqlVisitorContext {
      * @param message Description of the violation.
      * @param node Node that causes the violation.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addIssue(AstNode, String)} or {@link PlSqlCheck#addIssue(Token, String)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addIssue(AstNode, String)} or {@link PlSqlCheck#addIssue(Token, String)}.
      */
     @Deprecated
     public void createViolation(PlSqlCheck check, String message, AstNode node, Object... messageParameters) {
@@ -143,7 +143,7 @@ public class PlSqlVisitorContext {
      * @param node Node that causes the violation.
      * @param secondary List of locations.
      * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.2. Use {@link PlSqlCheck#addIssue(org.sonar.plsqlopen.checks.IssueLocation)}.
+     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addIssue(org.sonar.plsqlopen.checks.IssueLocation)}.
      */
     @Deprecated
     public void createViolation(PlSqlCheck check, String message, AstNode node, List<Location> secondary, Object... messageParameters) {
@@ -178,7 +178,7 @@ public class PlSqlVisitorContext {
     }
     
     /***
-     * @deprecated since 2.2. Use {@link IssueLocation}.
+     * @deprecated since 2.3.0. Use {@link IssueLocation}.
      */
     @Deprecated
     public static class Location {

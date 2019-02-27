@@ -36,7 +36,7 @@ public abstract class AbstractBaseCheck extends PlSqlCheck {
      * @param message Description.
      * @param node Node related to the location.
      * @return The new issue location.
-     * @deprecated since 2.2. Use {@link IssueLocation}.
+     * @deprecated since 2.3.0. Use {@link IssueLocation}.
      */
     @Deprecated
     protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
