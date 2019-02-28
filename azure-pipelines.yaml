@@ -25,6 +25,7 @@ jobs:
           COVERALLS_TOKEN: $(COVERALLS_TOKEN)
           DEPLOY_USERNAME: $(DEPLOY_USERNAME)
           DEPLOY_PASSWORD: $(DEPLOY_PASSWORD)
+          ARTIFACTORY_URL: https://repox.jfrog.io/repox
 
 
   - job: Windows
