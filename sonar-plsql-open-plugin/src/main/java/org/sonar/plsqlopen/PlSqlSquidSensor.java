@@ -19,7 +19,13 @@
  */
 package org.sonar.plsqlopen;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.CheckFactory;
@@ -35,10 +41,7 @@ import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.ProgressReport;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 
 public class PlSqlSquidSensor implements Sensor {
 
@@ -66,14 +69,14 @@ public class PlSqlSquidSensor implements Sensor {
     }
     
     @Override
-    public void describe(SensorDescriptor descriptor) {
+    public void describe(@Nonnull SensorDescriptor descriptor) {
         descriptor
             .name("Z PL/SQL Analyzer")
             .onlyOnLanguage(PlSql.KEY);
     }
 
     @Override
-    public void execute(SensorContext context) {        
+    public void execute(@Nonnull SensorContext context) {
         FilePredicates p = context.fileSystem().predicates();
         ArrayList<InputFile> inputFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.hasLanguage(PlSql.KEY)));
         

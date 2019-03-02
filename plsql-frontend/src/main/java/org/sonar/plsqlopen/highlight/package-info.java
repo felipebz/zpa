@@ -17,24 +17,5 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen;
-
-import javax.annotation.Nonnull;
-
-import org.sonar.api.server.rule.RulesDefinition;
-import org.sonar.plsqlopen.checks.CheckList;
-
-public class PlSqlRuleRepository implements RulesDefinition {
-
-    private static final String REPOSITORY_NAME = "Z PL/SQL Analyzer";
-
-    @Override
-    public void define(@Nonnull Context context) {
-        NewRepository repository = context
-            .createRepository(CheckList.REPOSITORY_KEY, PlSql.KEY)
-            .setName(REPOSITORY_NAME);
-        CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.getChecks());
-        repository.done();
-    }
-
-}
+@javax.annotation.ParametersAreNonnullByDefault
+package org.sonar.plsqlopen.highlight;

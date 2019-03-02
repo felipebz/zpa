@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen;
 
+import javax.annotation.Nonnull;
+
 import org.sonar.api.Plugin;
 import org.sonar.api.PropertyType;
 import org.sonar.api.config.PropertyDefinition;
@@ -41,7 +43,7 @@ public class PlSqlPlugin implements Plugin {
     }
 
     @Override
-    public void define(Context context) {
+    public void define(@Nonnull Context context) {
         context.addExtensions(
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)
                 .deprecatedKey(OLD_FILE_SUFFIXES_KEY)

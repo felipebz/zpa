@@ -19,16 +19,18 @@
  */
 package org.sonar.plsqlopen;
 
+import javax.annotation.Nonnull;
+
 import org.sonar.api.rules.RuleAnnotationUtils;
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition;
 import org.sonar.api.utils.AnnotationUtils;
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plsqlopen.checks.CheckList;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 
 public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
 
     @Override
-    public void define(Context context) {
+    public void define(@Nonnull Context context) {
         NewBuiltInQualityProfile profile = context.createBuiltInQualityProfile(CheckList.SONAR_WAY_PROFILE, PlSql.KEY);
         profile.setDefault(true);
         
