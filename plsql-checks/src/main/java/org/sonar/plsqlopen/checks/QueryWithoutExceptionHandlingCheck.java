@@ -25,6 +25,7 @@ import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -52,7 +53,7 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
         if (strictMode) {
             AstNode parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION);
             
-            if (!hasExceptionHandling(parentBlock)) {
+            if (!parentBlock.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         } else {
@@ -60,10 +61,6 @@ public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
-    }
-
-    private static boolean hasExceptionHandling(AstNode node) {
-        return node != null && node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER);
     }
 
 }

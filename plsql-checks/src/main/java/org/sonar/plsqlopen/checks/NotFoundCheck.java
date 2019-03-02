@@ -25,6 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -44,7 +45,7 @@ public class NotFoundCheck extends AbstractBaseCheck  {
     @Override
     public void visitNode(AstNode node) {
         AstNode parent = node.getParent();
-        if (parentIsNotExpression(parent) && 
+        if (parent.is(PlSqlGrammar.NOT_EXPRESSION) &&
             node.getNumberOfChildren() == 3) {
             
             AstNode foundCandidate = node.getLastChild();
@@ -54,10 +55,6 @@ public class NotFoundCheck extends AbstractBaseCheck  {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.getTokenLine());
             }
         }
-    }
-    
-    private static boolean parentIsNotExpression(AstNode parent) {
-        return parent != null && parent.is(PlSqlGrammar.NOT_EXPRESSION);
     }
 
 }

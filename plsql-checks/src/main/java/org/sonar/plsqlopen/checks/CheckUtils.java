@@ -23,10 +23,10 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
-import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
@@ -64,11 +64,7 @@ public class CheckUtils {
     }
     
     public static boolean isNullLiteralOrEmptyString(AstNode node) {
-        if (node != null) {
-            return ((SemanticAstNode)node).getPlSqlType() == PlSqlType.NULL;
-        }
-
-        return false;
+        return ((SemanticAstNode)node).getPlSqlType() == PlSqlType.NULL;
     }
 
     public static boolean isEmptyString(AstNode node) {

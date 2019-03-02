@@ -21,12 +21,15 @@ package org.sonar.plsqlopen.checks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.sonar.sslr.api.AstNode;
@@ -105,7 +108,7 @@ public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
         public final AstNode table;
         public final AstNode alias;
         
-        public TableReference(AstNode table, AstNode alias) {
+        TableReference(AstNode table, @Nullable AstNode alias) {
             this.table = table;
             this.alias = alias;
         }
