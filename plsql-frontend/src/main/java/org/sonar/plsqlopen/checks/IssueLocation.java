@@ -19,9 +19,6 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 import org.sonar.plsqlopen.TokenLocation;
 
 import com.sonar.sslr.api.AstNode;
@@ -35,7 +32,7 @@ public abstract class IssueLocation {
 
     private String message;
 
-    private IssueLocation(@Nullable String message) {
+    private IssueLocation(String message) {
         this.message = message;
     }
 
@@ -55,7 +52,7 @@ public abstract class IssueLocation {
         return new PreciseIssueLocation(startNode, message);
     }
 
-    @CheckForNull
+
     public String message() {
         return message;
     }
