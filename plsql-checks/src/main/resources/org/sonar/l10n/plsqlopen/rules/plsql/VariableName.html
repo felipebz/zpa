@@ -1,0 +1,16 @@
+<p>
+This rule checks that all variable names match a provided regular expression.
+</p>
+
+<h2>Example</h2>
+
+<p>Considering the default expression:</p>
+
+<pre>
+DECLARE
+  dept_name dept.name%type; -- Compliant
+  dept_name_ dept.name%type; -- Noncompliant
+BEGIN
+  ...
+END;
+</pre>

@@ -94,6 +94,7 @@ public class CheckList {
             NotASelectedExpressionCheck.class,
             InvalidReferenceToObjectCheck.class,
             CursorBodyInPackageSpecCheck.class,
-            XPathCheck.class);
+            XPathCheck.class,
+            VariableNameCheck.class);
     }
 }
