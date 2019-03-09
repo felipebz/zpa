@@ -61,7 +61,6 @@ public class MetricsTest {
         assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(4);
         // Documentation
         assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1);
-        assertThat(getMeasureAsString(PROJECT_KEY, "commented_out_code_lines")).isNull();
         assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(4.3);
         assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull();
         // Duplication
@@ -81,7 +80,6 @@ public class MetricsTest {
         assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(2);
         // Documentation
         assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero();
-        assertThat(getMeasureAsInteger(FILE_NAME, "commented_out_code_lines")).isZero();
         assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero();
         // Duplication
         assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero();
