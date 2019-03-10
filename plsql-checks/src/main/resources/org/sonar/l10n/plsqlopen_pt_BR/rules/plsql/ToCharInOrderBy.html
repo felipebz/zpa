@@ -1,0 +1,115 @@
+<p>O uso da função <code>TO_CHAR</code> em um <code>ORDER BY</code> quase sempre é um erro.
+  O valor da coluna será ordenado alfabeticamente em vez de ser ordenado de acordo com o tipo de dados da coluna.</p>
+
+<h2>Código em desconformidade</h2>
+
+<p>Supondo que temos os dados abaixo na tabela <code>EMP</code>:</p>
+
+<table>
+  <tr>
+    <td>empno</td>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>2019-10-01</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>2019-10-10</td>
+  </tr>
+  <tr>
+    <td>15</td>
+    <td>2018-10-02</td>
+  </tr>
+  <tr>
+    <td>20</td>
+    <td>2018-10-20</td>
+  </tr>
+</table>
+
+As consultas abaixo retornam um resultado indesejado:
+
+<p><code>select empno from emp order by to_char(empno);</code></p>
+
+<table>
+  <tr>
+    <td>empno</td>
+  </tr>
+  <tr>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>15</td>
+  </tr>
+  <tr>
+    <td>20</td>
+  </tr>
+  <tr>
+    <td>5</td>
+  </tr>
+</table>
+
+<p><code>select hiredate from emp order by to_char(hiredate, 'dd-mm-rrrr');</code></p>
+
+<table>
+  <tr>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>01-OCT-19</td>
+  </tr>
+  <tr>
+    <td>02-OCT-18</td>
+  </tr>
+  <tr>
+    <td>10-OCT-19</td>
+  </tr>
+  <tr>
+    <td>20-OCT-18</td>
+  </tr>
+</table>
+
+<h2>Código correto</h2>
+
+Para ordernar essa colunas corretamente precisamos remover a chamada para <code>TO_CHAR</code>.
+
+<p><code>select empno from emp order by empno;</code></p>
+
+<table>
+  <tr>
+    <td>empno</td>
+  </tr>
+  <tr>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>5</td>
+  </tr>
+  <tr>
+    <td>15</td>
+  </tr>
+  <tr>
+    <td>20</td>
+  </tr>
+</table>
+
+<p><code>select hiredate from emp order by hiredate;</code></p>
+
+<table>
+  <tr>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>02-OCT-18</td>
+  </tr>
+  <tr>
+    <td>20-OCT-18</td>
+  </tr>
+  <tr>
+    <td>01-OCT-19</td>
+  </tr>
+  <tr>
+    <td>10-OCT-19</td>
+  </tr>
+</table>

@@ -95,6 +95,7 @@ public class CheckList {
             InvalidReferenceToObjectCheck.class,
             CursorBodyInPackageSpecCheck.class,
             XPathCheck.class,
-            VariableNameCheck.class);
+            VariableNameCheck.class,
+            ToCharInOrderByCheck.class);
     }
 }

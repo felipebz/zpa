@@ -1,0 +1,115 @@
+<p>The usage of <code>TO_CHAR</code> function in a <code>ORDER BY</code> is almost always a mistake.
+  The column value will be ordered alphabetically instead of being ordered according its datatype.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<p>Suppose we have the data below in the <code>EMP</code> table:</p>
+
+<table>
+  <tr>
+    <td>empno</td>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>2019-10-01</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>2019-10-10</td>
+  </tr>
+  <tr>
+    <td>15</td>
+    <td>2018-10-02</td>
+  </tr>
+  <tr>
+    <td>20</td>
+    <td>2018-10-20</td>
+  </tr>
+</table>
+
+The queries below return an unwanted result:
+
+<p><code>select empno from emp order by to_char(empno);</code></p>
+
+<table>
+  <tr>
+    <td>empno</td>
+  </tr>
+  <tr>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>15</td>
+  </tr>
+  <tr>
+    <td>20</td>
+  </tr>
+  <tr>
+    <td>5</td>
+  </tr>
+</table>
+
+<p><code>select hiredate from emp order by to_char(hiredate, 'dd-mm-rrrr');</code></p>
+
+<table>
+  <tr>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>01-OCT-19</td>
+  </tr>
+  <tr>
+    <td>02-OCT-18</td>
+  </tr>
+  <tr>
+    <td>10-OCT-19</td>
+  </tr>
+  <tr>
+    <td>20-OCT-18</td>
+  </tr>
+</table>
+
+<h2>Compliant Code Example</h2>
+
+To order these columns correctly we must remove the <code>TO_CHAR</code> call.
+
+<p><code>select empno from emp order by empno;</code></p>
+
+<table>
+  <tr>
+    <td>empno</td>
+  </tr>
+  <tr>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>5</td>
+  </tr>
+  <tr>
+    <td>15</td>
+  </tr>
+  <tr>
+    <td>20</td>
+  </tr>
+</table>
+
+<p><code>select hiredate from emp order by hiredate;</code></p>
+
+<table>
+  <tr>
+    <td>hiredate</td>
+  </tr>
+  <tr>
+    <td>02-OCT-18</td>
+  </tr>
+  <tr>
+    <td>20-OCT-18</td>
+  </tr>
+  <tr>
+    <td>01-OCT-19</td>
+  </tr>
+  <tr>
+    <td>10-OCT-19</td>
+  </tr>
+</table>
