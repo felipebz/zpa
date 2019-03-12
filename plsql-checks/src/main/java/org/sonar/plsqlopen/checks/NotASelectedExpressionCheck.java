@@ -49,7 +49,7 @@ public class NotASelectedExpressionCheck extends AbstractBaseCheck {
         if (!node.getChildren().get(1).is(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
             return;
         }
-        
+
         List<AstNode> columns = node.getChildren(DmlGrammar.SELECT_COLUMN);
         List<AstNode> orderByItems = node.getFirstChild(DmlGrammar.ORDER_BY_CLAUSE).getChildren(DmlGrammar.ORDER_BY_ITEM);
         
@@ -70,7 +70,7 @@ public class NotASelectedExpressionCheck extends AbstractBaseCheck {
             List<AstNode> candidates = extractAcceptableValuesFromColumn(column);
             
             for (AstNode candidate : candidates) {
-                if (CheckUtils.equalNodes(orderByItemValue, candidate)) {
+                if (CheckUtils.containsNode(candidate, orderByItemValue)) {
                     found = true;
                 }
             }
@@ -93,13 +93,13 @@ public class NotASelectedExpressionCheck extends AbstractBaseCheck {
         
         AstNode selectedExpression = skipVariableName(column.getFirstChild()); 
         values.add(selectedExpression);
+
+        // if the value is "table.column", "column" can be used in order by
+        if (selectedExpression.is(PlSqlGrammar.MEMBER_EXPRESSION)) {
+            values.add(selectedExpression.getLastChild());
+        }
         
-        if (column.getNumberOfChildren() == 1) {
-            // if the value is "table.column", "column" can be used in order by
-            if (selectedExpression.is(PlSqlGrammar.MEMBER_EXPRESSION)) {
-                values.add(selectedExpression.getLastChild());
-            }
-        } else {
+        if (column.getNumberOfChildren() > 1) {
             AstNode alias = skipVariableName(column.getLastChild());
             values.add(alias);
         }

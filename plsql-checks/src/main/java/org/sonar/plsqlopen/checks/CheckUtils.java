@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -92,6 +93,28 @@ public class CheckUtils {
             }
         }
         return true;
+    }
+
+    public static boolean containsNode(AstNode node1, AstNode node2) {
+        AstNode currentNode = skipParenthesis(node1);
+        AstNode nodeToCheck = skipParenthesis(node2);
+
+        AstNodeType type = currentNode.getType();
+
+        List<AstNode> descendants = new ArrayList<>();
+        if (nodeToCheck.getType() == type) {
+            descendants.add(nodeToCheck);
+        }
+        descendants.addAll(nodeToCheck.getDescendants(type));
+
+        AstNode probableNode = null;
+        for (AstNode descendant : descendants) {
+            if (descendant.getTokenValue().equalsIgnoreCase(currentNode.getTokenValue())) {
+                probableNode = descendant;
+            }
+        }
+
+        return probableNode != null && equalNodes(probableNode, currentNode);
     }
     
     public static AstNode skipExpressionsWithoutEffect(AstNode node) {
