@@ -27,6 +27,7 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import com.sonar.sslr.api.AstNode;
 
@@ -35,6 +36,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.CRITICAL
 )
 @ConstantRemediation("5min")
+@ActivatedByDefault
 public class NotASelectedExpressionCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "NotASelectedExpression";
