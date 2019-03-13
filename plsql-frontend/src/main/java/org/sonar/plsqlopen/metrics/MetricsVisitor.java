@@ -19,21 +19,18 @@
  */
 package org.sonar.plsqlopen.metrics;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Token;
 import com.sonar.sslr.api.Trivia;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class MetricsVisitor extends PlSqlCheck {
-    
-    private static final PlSqlCommentAnalyzer COMMENT_ANALYSER = new PlSqlCommentAnalyzer();
-    
+
     private int numberOfStatements;
     private Set<Integer> linesOfCode = new HashSet<>();
     private Set<Integer> linesOfComments = new HashSet<>();
@@ -59,24 +56,18 @@ public class MetricsVisitor extends PlSqlCheck {
         for (int line = token.getLine(); line < token.getLine() + tokenLines.length; line++) {
           linesOfCode.add(line);
         }
-
-        for (Trivia trivia : token.getTrivia()) {
-            if (trivia.isComment()) {
-                visitComment(trivia);
-            }
-        }
     }
-    
-    public void visitComment(Trivia trivia) {
-        String[] commentLines = COMMENT_ANALYSER.getContents(trivia.getToken().getOriginalValue()).split("(\r)?\n|\r",
-                -1);
+
+    @Override
+    public void visitComment(Trivia trivia, String content) {
+        String[] commentLines = content.split("(\r)?\n|\r", -1);
         int line = trivia.getToken().getLine();
 
         for (String commentLine : commentLines) {
             if (commentLine.contains("NOSONAR")) {
                 linesOfComments.remove(line);
                 noSonar.add(line);
-            } else if (!COMMENT_ANALYSER.isBlank(commentLine)) {
+            } else if (!PlSqlCommentAnalyzer.isBlank(commentLine)) {
                 linesOfComments.add(line);
             }
             line++;

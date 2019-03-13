@@ -19,16 +19,16 @@
  */
 package org.sonar.plugins.plsqlopen.api.checks;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
-import org.sonar.plsqlopen.squid.PlSqlAstWalker;
-
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Token;
+import com.sonar.sslr.api.Trivia;
+import org.sonar.plsqlopen.squid.PlSqlAstWalker;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PlSqlVisitor {
 
@@ -60,6 +60,10 @@ public class PlSqlVisitor {
     }
 
     public void visitToken(Token token) {
+        // default implementation does nothing
+    }
+
+    public void visitComment(Trivia trivia, String content) {
         // default implementation does nothing
     }
 

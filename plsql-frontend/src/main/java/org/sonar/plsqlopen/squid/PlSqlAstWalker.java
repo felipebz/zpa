@@ -19,19 +19,15 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
-
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.AstNodeType;
 import com.sonar.sslr.api.Token;
+import com.sonar.sslr.api.Trivia;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer;
+
+import java.util.*;
 
 public class PlSqlAstWalker {
 
@@ -93,6 +89,11 @@ public class PlSqlAstWalker {
             lastVisitedToken = ast.getToken();
             for (PlSqlVisitor astAndTokenVisitor : checks) {
                 astAndTokenVisitor.visitToken(lastVisitedToken);
+
+                for (Trivia trivia : lastVisitedToken.getTrivia()) {
+                    astAndTokenVisitor.visitComment(trivia,
+                        PlSqlCommentAnalyzer.getContents(trivia.getToken().getOriginalValue()));
+                }
             }
         }
     }

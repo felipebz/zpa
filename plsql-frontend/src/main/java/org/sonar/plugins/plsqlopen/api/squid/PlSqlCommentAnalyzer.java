@@ -19,9 +19,9 @@
  */
 package org.sonar.plugins.plsqlopen.api.squid;
 
-public class PlSqlCommentAnalyzer {
+public final class PlSqlCommentAnalyzer {
     
-    public boolean isBlank(String line) {
+    public static boolean isBlank(String line) {
         for (int i = 0; i < line.length(); i++) {
             if (Character.isLetterOrDigit(line.charAt(i))) {
                 return false;
@@ -30,7 +30,7 @@ public class PlSqlCommentAnalyzer {
         return true;
     }
 
-    public String getContents(String comment) {
+    public static String getContents(String comment) {
         if (comment.startsWith("--")) {
             return comment.substring(2);
         } else if (comment.startsWith("/*")) {
