@@ -38,16 +38,12 @@ import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.PlSqlChecks;
-import org.sonar.plugins.plsqlopen.api.PlSqlFile;
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.metrics.ComplexityVisitor;
@@ -57,6 +53,13 @@ import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
+import org.sonar.plugins.plsqlopen.api.PlSqlFile;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
@@ -64,7 +67,6 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.impl.Parser;
-import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 public class PlSqlAstScanner {
 
@@ -117,6 +119,7 @@ public class PlSqlAstScanner {
                 checks.stream()
                     .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
                     .filter(check -> check instanceof PlSqlCheck)
+                    .filter(check -> ruleHasScope(check, RuleInfo.Scope.MAIN))
                     .collect(toList()));
         
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
@@ -154,13 +157,39 @@ public class PlSqlAstScanner {
 
     public void scanTestFile(InputFile inputFile) {
         PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
+        MetricsVisitor metricsVisitor = new MetricsVisitor();
 
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
         checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
+        checksToRun.add(metricsVisitor);
+
+        checksToRun.addAll(
+            checks.stream()
+                .filter(check -> check instanceof PlSqlCheck)
+                .filter(check -> ruleHasScope(check, RuleInfo.Scope.TEST))
+                .collect(toList()));
 
         PlSqlAstWalker newWalker = new PlSqlAstWalker(checksToRun);
         newWalker.walk(newVisitorContext);
+
+        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
+
+        for (PlSqlVisitor check : checksToRun) {
+            List<PreciseIssue> issues = ((PlSqlCheck)check).issues();
+            if (!issues.isEmpty()) {
+                saveIssues(inputFile, check, issues);
+            }
+        }
+    }
+
+    private boolean ruleHasScope(PlSqlVisitor check, RuleInfo.Scope scope) {
+        RuleInfo ruleInfo = AnnotationUtils.getAnnotation(check, RuleInfo.class);
+        if (ruleInfo != null) {
+            return ruleInfo.scope() == RuleInfo.Scope.ALL ||
+                ruleInfo.scope() == scope;
+        }
+        return scope == RuleInfo.Scope.MAIN;
     }
 
     private PlSqlVisitorContext getPlSqlVisitorContext(InputFile inputFile) {
