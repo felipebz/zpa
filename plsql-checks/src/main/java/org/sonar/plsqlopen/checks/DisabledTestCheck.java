@@ -19,23 +19,27 @@
  */
 package org.sonar.plsqlopen.checks;
 
-public class Tags {
-  public static final String BRAIN_OVERLOAD = "brain-overload";
-  public static final String BUG = "bug";
-  public static final String CLUMSY = "clumsy";
-  public static final String CONVENTION = "convention";
-  public static final String OBSOLETE = "obsolete";
-  public static final String SECURITY = "security";
-  public static final String UNUSED = "unused";
-  public static final String CERT = "cert";
-  public static final String PITFALL = "pitfall";
-  public static final String MISRA = "misra";
-  public static final String CONFUSING = "confusing";
-  public static final String CWE = "cwe";
-  public static final String PERFORMANCE = "performance";
-  public static final String UTPLSQL = "utplsql";
+import com.sonar.sslr.api.Trivia;
+import org.sonar.check.Priority;
+import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
-  private Tags() {
-    // This class only defines constants
-  }
+@Rule(
+    key = DisabledTestCheck.CHECK_KEY,
+    priority = Priority.MAJOR,
+    tags = Tags.UTPLSQL
+)
+@RuleInfo(scope = RuleInfo.Scope.TEST)
+@ActivatedByDefault
+public class DisabledTestCheck extends AbstractBaseCheck {
+
+    public static final String CHECK_KEY = "DisabledTest";
+
+    @Override
+    public void visitComment(Trivia trivia, String content) {
+        if (content.trim().equalsIgnoreCase("%disabled")) {
+            addIssue(trivia.getToken(), getLocalizedMessage(CHECK_KEY));
+        }
+    }
 }

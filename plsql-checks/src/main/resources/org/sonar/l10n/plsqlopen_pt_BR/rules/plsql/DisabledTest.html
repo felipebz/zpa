@@ -1,0 +1,23 @@
+<p>Quando um teste falha, por exemplo, devido a problemas de infraestrutura, você pode querer ignorá-lo temporariamente.
+  Mas sem nenhum tipo de explicação do motivo do teste ter sido ignorado, talvez ele nunca seja reativado.</p>
+
+<p>Essa regra registra um problema em cada teste desativado que não tem um comentário explicando o motivo disso.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+-- %test(my test)
+-- %disabled
+procedure test;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+-- %test(my test)
+procedure test;
+</pre>
+
+<h2>Exceções</h2>
+
+<p>A regra não registra um problema se houver um comentário na anotação <code>%disabled</code>.</p>

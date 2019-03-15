@@ -96,6 +96,7 @@ public class CheckList {
             CursorBodyInPackageSpecCheck.class,
             XPathCheck.class,
             VariableNameCheck.class,
-            ToCharInOrderByCheck.class);
+            ToCharInOrderByCheck.class,
+            DisabledTestCheck.class);
     }
 }
