@@ -38,4 +38,7 @@
 'utPLSQL3:source/define_ut3_owner_param.sql':[
 49,
 ],
+'utPLSQL3:test/core/test_ut_executable.pkb':[
+66,
+],
 }
