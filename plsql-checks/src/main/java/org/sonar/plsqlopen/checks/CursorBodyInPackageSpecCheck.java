@@ -23,9 +23,10 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind;
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -34,6 +35,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR
 )
 @ConstantRemediation("10min")
+@RuleInfo(scope = RuleInfo.Scope.MAIN)
 public class CursorBodyInPackageSpecCheck extends AbstractBaseCheck {
 
     public static final String CHECK_KEY = "CursorBodyInPackageSpec";

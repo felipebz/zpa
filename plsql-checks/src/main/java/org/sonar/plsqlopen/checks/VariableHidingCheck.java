@@ -23,9 +23,10 @@ import java.util.Deque;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 
@@ -36,6 +37,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault 
 public class VariableHidingCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "VariableHiding";

@@ -27,6 +27,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -36,6 +37,7 @@ import com.sonar.sslr.api.AstNode;
     tags = Tags.BUG
 )
 @ConstantRemediation("20min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class SelectWithRownumAndOrderByCheck extends AbstractBaseCheck {
 

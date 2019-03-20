@@ -24,6 +24,8 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -31,6 +33,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MINOR
 )
 @ConstantRemediation("1min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class UnnecessaryNullStatementCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnnecessaryNullStatement";

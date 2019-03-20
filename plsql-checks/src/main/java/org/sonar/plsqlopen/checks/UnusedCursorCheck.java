@@ -26,10 +26,12 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+import org.sonar.plugins.plsqlopen.api.symbols.Scope;
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -38,6 +40,7 @@ import com.sonar.sslr.api.AstNode;
     tags = Tags.UNUSED
 )
 @ConstantRemediation("2min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class UnusedCursorCheck extends AbstractBaseCheck {
 

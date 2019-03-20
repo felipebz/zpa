@@ -28,6 +28,7 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -37,6 +38,7 @@ import com.sonar.sslr.api.AstNode;
     tags = Tags.CLUMSY
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class CollapsibleIfStatementsCheck extends AbstractBaseCheck {
 

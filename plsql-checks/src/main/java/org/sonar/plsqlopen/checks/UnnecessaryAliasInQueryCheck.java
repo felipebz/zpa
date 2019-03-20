@@ -29,6 +29,7 @@ import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -40,6 +41,7 @@ import com.sonar.sslr.api.AstNodeType;
     priority = Priority.MINOR
 )
 @ConstantRemediation("1min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 public class UnnecessaryAliasInQueryCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnnecessaryAliasInQuery";
 

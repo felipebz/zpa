@@ -25,6 +25,8 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
@@ -32,6 +34,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MAJOR
 )
 @ConstantRemediation("1h")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class FunctionWithOutParameterCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "FunctionWithOutParameter";

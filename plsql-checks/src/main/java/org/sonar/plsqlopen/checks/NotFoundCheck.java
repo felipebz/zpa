@@ -25,6 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -33,6 +34,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.MINOR
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class NotFoundCheck extends AbstractBaseCheck  {
     public static final String CHECK_KEY = "NotFound";

@@ -29,6 +29,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
@@ -39,6 +40,7 @@ import com.sonar.sslr.api.AstNode;
     tags = Tags.PERFORMANCE
 )
 @ConstantRemediation("30min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class SelectAllColumnsCheck extends AbstractBaseCheck {
 

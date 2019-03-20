@@ -24,6 +24,7 @@ import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 
 import com.sonar.sslr.api.AstNode;
@@ -31,9 +32,10 @@ import com.sonar.sslr.api.AstNode;
 @Rule(
     key = InsertWithoutColumnsCheck.CHECK_KEY,
     priority = Priority.CRITICAL,
-    tags = Tags.CONVENTION
+    tags = { Tags.CONVENTION, Tags.BUG }
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
     public static final String CHECK_KEY = "InsertWithoutColumns";

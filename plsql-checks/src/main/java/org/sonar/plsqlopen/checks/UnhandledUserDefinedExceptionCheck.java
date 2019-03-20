@@ -25,16 +25,20 @@ import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = UnhandledUserDefinedExceptionCheck.CHECK_KEY,
-    priority = Priority.CRITICAL
+    priority = Priority.CRITICAL,
+    tags = Tags.BUG
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 public class UnhandledUserDefinedExceptionCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "UnhandledUserDefinedException";
 

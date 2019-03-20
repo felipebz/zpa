@@ -24,10 +24,11 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -37,6 +38,7 @@ import com.sonar.sslr.api.AstNode;
     tags = Tags.BUG
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class DuplicatedValueInInCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "DuplicatedValueInIn";

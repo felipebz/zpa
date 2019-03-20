@@ -24,17 +24,20 @@ import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = SameBranchCheck.CHECK_KEY,
-    priority = Priority.MAJOR
+    priority = Priority.MAJOR,
+    tags = Tags.BUG
 )
 @ConstantRemediation("10min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
 public class SameBranchCheck extends AbstractBaseCheck {
 

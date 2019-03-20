@@ -24,14 +24,16 @@ import java.util.List;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate;
 import org.sonar.plsqlopen.squid.AnalysisException;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate;
 
 import com.google.common.base.Strings;
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.xpath.api.AstNodeXPathQuery;
 
 @Rule(key = XPathCheck.CHECK_KEY, priority = Priority.MAJOR)
+@RuleInfo(scope = RuleInfo.Scope.ALL)
 @RuleTemplate
 public class XPathCheck extends AbstractBaseCheck {
 
@@ -40,7 +42,7 @@ public class XPathCheck extends AbstractBaseCheck {
     private static final String DEFAULT_XPATH_QUERY = "";
     private static final String DEFAULT_MESSAGE = "The XPath expression matches this piece of code";
 
-    @RuleProperty(key = "xpathQuery", defaultValue = "" + DEFAULT_XPATH_QUERY)
+    @RuleProperty(key = "xpathQuery")
     public String xpathQuery = DEFAULT_XPATH_QUERY;
 
     @RuleProperty(key = "message", defaultValue = "" + DEFAULT_MESSAGE)

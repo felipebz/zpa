@@ -25,6 +25,7 @@ import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 
 import com.sonar.sslr.api.AstNode;
 
@@ -33,6 +34,7 @@ import com.sonar.sslr.api.AstNode;
     priority = Priority.CRITICAL
 )
 @ConstantRemediation("20min")
+@RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
 public class QueryWithoutExceptionHandlingCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "QueryWithoutExceptionHandling";

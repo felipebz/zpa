@@ -27,19 +27,22 @@ import java.util.stream.Stream;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
-import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
 import org.sonar.plsqlopen.metadata.Block;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
+import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher;
 
 import com.sonar.sslr.api.AstNode;
 
 @Rule(
     key = InvalidReferenceToObjectCheck.CHECK_KEY,
-    priority = Priority.MAJOR
+    priority = Priority.MAJOR,
+    tags = Tags.BUG
 )
 @ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
 public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements FormsMetadataAwareCheck {
 
