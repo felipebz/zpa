@@ -45,9 +45,12 @@ public class MetricsTest {
 
     @BeforeClass
     public static void init() {
+        orchestrator.getServer().provisionProject(PROJECT_KEY, PROJECT_KEY);
+        orchestrator.getServer().associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "empty-profile");
+
         SonarScanner build = Tests.createSonarScanner().setProjectDir(new File("projects/metrics/"))
                 .setProjectKey(PROJECT_KEY).setProjectName(PROJECT_KEY).setProjectVersion("1.0").setSourceDirs("src")
-                .setProperty("sonar.sourceEncoding", "UTF-8").setProfile("empty-profile");
+                .setProperty("sonar.sourceEncoding", "UTF-8");
         orchestrator.executeBuild(build);
     }
 
@@ -57,7 +60,6 @@ public class MetricsTest {
         assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(22);
         assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(23);
         assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(3);
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "directories")).isEqualTo(1);
         assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(4);
         // Documentation
         assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1);

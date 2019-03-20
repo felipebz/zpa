@@ -40,19 +40,21 @@ public class IssueTest {
     @ClassRule
     public static Orchestrator orchestrator = Tests.ORCHESTRATOR;
 
-    private static final String PROJECT_KEY = "metrics";
+    private static final String PROJECT_KEY = "issue";
 
 
     @BeforeClass
     public static void init() {
+        orchestrator.getServer().provisionProject(PROJECT_KEY, PROJECT_KEY);
+        orchestrator.getServer().associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "it-profile");
+
         SonarScanner build = Tests.createSonarScanner()
             .setProjectDir(new File("projects/metrics/"))
             .setProjectKey(PROJECT_KEY)
             .setProjectName(PROJECT_KEY)
             .setProjectVersion("1.0")
             .setSourceDirs("src")
-            .setProperty("sonar.sourceEncoding", "UTF-8")
-            .setProfile("it-profile");
+            .setProperty("sonar.sourceEncoding", "UTF-8");
         orchestrator.executeBuild(build);
     }
 
