@@ -24,6 +24,7 @@ import java.util.List;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
@@ -57,7 +58,7 @@ public class ToCharInOrderByCheck extends AbstractBaseCheck {
             addIssue(node, getLocalizedMessage(CHECK_KEY));
         }
 
-        if (semantic(expression).getPlSqlType() == PlSqlType.NUMERIC) {
+        if (expression.getType() == PlSqlGrammar.LITERAL && semantic(expression).getPlSqlType() == PlSqlType.NUMERIC) {
             int index = Integer.valueOf(expression.getTokenOriginalValue());
 
             AstNode selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION);

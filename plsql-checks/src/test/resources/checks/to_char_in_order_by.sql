@@ -15,3 +15,12 @@ order by empno; -- Compliant
 select empno
 from emp
 order by 1; -- Compliant
+
+declare
+  my_empno number;
+begin
+  select *
+  into foo
+  from emp
+  order by my_empno; -- Compliant
+end;
