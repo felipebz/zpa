@@ -37,10 +37,55 @@ public class ListAggExpressionTest extends RuleTest {
     public void matchesSimpleListAgg() {
         assertThat(p).matches("listagg(foo) within group (order by bar)");
     }
+
+    @Test
+    public void matchesListAggAll() {
+        assertThat(p).matches("listagg(all foo) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggDistinct() {
+        assertThat(p).matches("listagg(distinct foo) within group (order by bar)");
+    }
     
     @Test
     public void matchesListAggWithDelimiter() {
         assertThat(p).matches("listagg(foo, ',') within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggWithDelimiter2() {
+        assertThat(p).matches("listagg(foo, chr(10)) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggOverflowError() {
+        assertThat(p).matches("listagg(foo on overflow error) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggOverflowTruncate() {
+        assertThat(p).matches("listagg(foo on overflow truncate) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggOverflowTruncateWithIndicator() {
+        assertThat(p).matches("listagg(foo on overflow truncate '...') within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggOverflowTruncateWithCount() {
+        assertThat(p).matches("listagg(foo on overflow truncate '...' with count) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggOverflowTruncateWithoutCount() {
+        assertThat(p).matches("listagg(foo on overflow truncate '...' without count) within group (order by bar)");
+    }
+
+    @Test
+    public void matchesListAggPartitionBy() {
+        assertThat(p).matches("listagg(foo) within group (order by bar) over (partition by baz)");
     }
     
     @Test

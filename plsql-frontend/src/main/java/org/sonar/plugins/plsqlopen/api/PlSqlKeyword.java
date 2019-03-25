@@ -498,7 +498,9 @@ public enum PlSqlKeyword implements TokenType {
     MAXLEN("maxlen"),
     CHARSETID("charsetid"),
     CHARSETFORM("charsetform"),
-    REFERENCE("reference");
+    REFERENCE("reference"),
+    ERROR("error"),
+    WITHOUT("without");
 
     private final String value;
     private final boolean reserved;

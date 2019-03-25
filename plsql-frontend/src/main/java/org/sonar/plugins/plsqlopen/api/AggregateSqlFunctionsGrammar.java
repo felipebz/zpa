@@ -34,9 +34,13 @@ public enum AggregateSqlFunctionsGrammar implements GrammarRuleKey {
 
     public static void buildOn(LexerfulGrammarBuilder b) {
         b.rule(LISTAGG_EXPRESSION).is(
-                LISTAGG,
-                LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS,
-                WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS);
+            LISTAGG,
+            LPARENTHESIS, b.optional(b.firstOf(ALL, DISTINCT)), EXPRESSION, b.optional(COMMA, EXPRESSION),
+            b.optional(ON, OVERFLOW, b.firstOf(
+                ERROR,
+                b.sequence(TRUNCATE, b.optional(EXPRESSION), b.optional(b.firstOf(WITH, WITHOUT), COUNT)))),
+            RPARENTHESIS,
+            WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS);
         
         b.rule(AGGREGATE_SQL_FUNCTION).is(LISTAGG_EXPRESSION);
     }
