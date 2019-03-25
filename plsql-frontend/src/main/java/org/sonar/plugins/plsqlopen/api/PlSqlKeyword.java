@@ -500,7 +500,8 @@ public enum PlSqlKeyword implements TokenType {
     CHARSETFORM("charsetform"),
     REFERENCE("reference"),
     ERROR("error"),
-    WITHOUT("without");
+    WITHOUT("without"),
+    INLINE("inline");
 
     private final String value;
     private final boolean reserved;

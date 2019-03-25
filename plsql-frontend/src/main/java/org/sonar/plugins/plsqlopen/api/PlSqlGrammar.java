@@ -136,6 +136,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
     FORALL_STATEMENT,
     SET_TRANSACTION_STATEMENT,
     MERGE_STATEMENT,
+    INLINE_PRAGMA_STATEMENT,
     
     // Declarations
     DEFAULT_VALUE_ASSIGNMENT,
@@ -507,6 +508,9 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_10005.htm#SQLRF01705
         b.rule(SET_TRANSACTION_STATEMENT).is(b.optional(LABEL), SET_TRANSACTION_EXPRESSION, SEMICOLON);
+
+        b.rule(INLINE_PRAGMA_STATEMENT).is(PRAGMA, INLINE,
+            LPARENTHESIS, MEMBER_EXPRESSION, COMMA, STRING_LITERAL, RPARENTHESIS, SEMICOLON);
         
         b.rule(STATEMENT).is(b.firstOf(NULL_STATEMENT,
                                        BLOCK_STATEMENT,
@@ -536,7 +540,8 @@ public enum PlSqlGrammar implements GrammarRuleKey {
                                        PIPE_ROW_STATEMENT,
                                        CASE_STATEMENT,
                                        SET_TRANSACTION_STATEMENT,
-                                       MERGE_STATEMENT));
+                                       MERGE_STATEMENT,
+                                       INLINE_PRAGMA_STATEMENT));
         
         b.rule(STATEMENTS).is(b.oneOrMore(STATEMENT));
     }
