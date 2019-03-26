@@ -36,6 +36,7 @@ public class XmlTableExpressionTest extends RuleTest {
     @Test
     public void matchesSimpleXmlTable() {
         assertThat(p).matches("xmltable('/foo' passing bar)");
+        assertThat(p).matches("xmltable('/foo' passing bar.baz)");
     }
     
     @Test

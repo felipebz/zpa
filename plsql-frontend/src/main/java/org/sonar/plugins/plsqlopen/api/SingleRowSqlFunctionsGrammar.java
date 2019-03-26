@@ -145,7 +145,7 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
         
         b.rule(XML_PASSING_CLAUSE).is(
                 PASSING, b.optional(BY, VALUE),
-                IDENTIFIER_NAME, b.optional(AS, IDENTIFIER_NAME),
+                EXPRESSION, b.optional(AS, IDENTIFIER_NAME),
                 b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(AS, IDENTIFIER_NAME)));
         
         b.rule(XMLEXISTS_EXPRESSION).is(
