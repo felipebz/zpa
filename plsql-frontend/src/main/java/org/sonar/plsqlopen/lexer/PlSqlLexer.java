@@ -54,7 +54,8 @@ public class PlSqlLexer {
             + ")";
     
     private static final String CUSTOM_DELIMITER_START = "[^\\s{\\[<\\(]"; // any except spacing
-    private static final String CUSTOM_DELIMITER_END = "(\\5|}|]|>|\\))"; // same as the start, }, ], > or )
+    private static final String CUSTOM_DELIMITER_END = "\\5"; // same as the start
+
     public static final String STRING_LITERAL = "(?is)(?:"
             + or("'([^']|'')*+'", // simple text literal
                  "n?q?'" + or(g(g(CUSTOM_DELIMITER_START) +  ".*?(" + CUSTOM_DELIMITER_END + "')"),

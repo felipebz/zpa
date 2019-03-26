@@ -17,9 +17,6 @@
 'utPLSQL3:source/core/output_buffers/ut_output_buffer_tmp.sql':[
 27,
 ],
-'utPLSQL3:source/core/ut_utils.pkb':[
-565,
-],
 'utPLSQL3:source/create_synonyms_and_grants_for_public.sql':[
 106,
 ],
@@ -34,8 +31,5 @@
 ],
 'utPLSQL3:source/define_ut3_owner_param.sql':[
 49,
-],
-'utPLSQL3:test/core/test_ut_executable.pkb':[
-66,
 ],
 }

@@ -92,6 +92,8 @@ public class PlSqlLexerTest {
         assertThatIsToken("nq'{I'm a string}'", PlSqlTokenType.STRING_LITERAL);
         assertThatIsToken("nq'<I'm a string>'", PlSqlTokenType.STRING_LITERAL);
         assertThatIsToken("nq'(I'm a string)'", PlSqlTokenType.STRING_LITERAL);
+
+        assertThatIsToken("q'!I'm a string q'[with nesting]'!'", PlSqlTokenType.STRING_LITERAL);
     }
     
     @Test
