@@ -260,7 +260,7 @@ public enum PlSqlKeyword implements TokenType {
     VERSION("version"),
     NO("no"),
     YES("yes"),
-    IDENT("ident"),
+    INDENT("indent"),
     HIDE("hide"),
     SHOW("show"),
     DEFAULTS("defaults"),

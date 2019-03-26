@@ -108,7 +108,7 @@ public enum SingleRowSqlFunctionsGrammar implements GrammarRuleKey {
                 b.optional(AS, DATATYPE),
                 b.optional(ENCODING, EXPRESSION),
                 b.optional(VERSION, STRING_LITERAL),
-                b.optional(b.firstOf(b.sequence(NO, IDENT), b.sequence(IDENT, b.optional(SIZE, EQUALS, EXPRESSION)))),
+                b.optional(b.firstOf(b.sequence(NO, INDENT), b.sequence(INDENT, b.optional(SIZE, EQUALS, EXPRESSION)))),
                 b.optional(b.firstOf(HIDE, SHOW), DEFAULTS),
                 RPARENTHESIS);
         

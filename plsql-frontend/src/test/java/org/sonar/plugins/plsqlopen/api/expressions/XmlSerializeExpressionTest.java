@@ -60,17 +60,17 @@ public class XmlSerializeExpressionTest extends RuleTest {
     
     @Test
     public void matchesXmlSerializeWithNoIdent() {
-        assertThat(p).matches("xmlserialize(document 'foo' no ident)");
+        assertThat(p).matches("xmlserialize(document 'foo' no indent)");
     }
     
     @Test
-    public void matchesXmlSerializeWithIdent() {
-        assertThat(p).matches("xmlserialize(document 'foo' ident)");
+    public void matchesXmlSerializeWithIndent() {
+        assertThat(p).matches("xmlserialize(document 'foo' indent)");
     }
     
     @Test
-    public void matchesXmlSerializeWithIdentAndSize() {
-        assertThat(p).matches("xmlserialize(document 'foo' ident size = 1)");
+    public void matchesXmlSerializeWithIndentAndSize() {
+        assertThat(p).matches("xmlserialize(document 'foo' indent size = 1)");
     }
     
     @Test
@@ -85,7 +85,7 @@ public class XmlSerializeExpressionTest extends RuleTest {
     
     @Test
     public void matchesLongXmlSerializeExpression() {
-        assertThat(p).matches("xmlserialize(document 'foo' as clob encoding 'utf-8' version '1.0' ident size = 1 show defaults)");
+        assertThat(p).matches("xmlserialize(document 'foo' as clob encoding 'utf-8' version '1.0' indent size = 1 show defaults)");
     }
 
 }
