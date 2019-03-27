@@ -291,7 +291,7 @@ public enum PlSqlGrammar implements GrammarRuleKey {
         
         b.rule(NULL_LITERAL).is(NULL);
         b.rule(BOOLEAN_LITERAL).is(b.firstOf(TRUE, FALSE));
-        b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, REAL_LITERAL, SCIENTIFIC_LITERAL));
+        b.rule(NUMERIC_LITERAL).is(b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL));
         b.rule(CHARACTER_LITERAL).is(STRING_LITERAL);
         b.rule(INTERVAL_LITERAL).is(b.firstOf(INTERVAL_YEAR_TO_MONTH_LITERAL, INTERVAL_DAY_TO_SECOND_LITERAL));
         b.rule(INQUIRY_DIRECTIVE).is(DOUBLEDOLLAR, IDENTIFIER_NAME);

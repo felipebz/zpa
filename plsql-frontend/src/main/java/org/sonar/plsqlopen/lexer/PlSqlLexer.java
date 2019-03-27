@@ -42,16 +42,11 @@ public class PlSqlLexer {
     public static final String COMMENT = "(?:" + INLINE_COMMENT + "|" + MULTILINE_COMMENT + ")";
     
     public static final String INTEGER_LITERAL = "(?:\\d++)";
-    
-    public static final String REAL_LITERAL = "(?:"
-            + "("
-            + "\\d*+(?!\\.\\.)\\.\\d++"
-            + "|\\d++(?!\\.\\.)\\.\\d*+)"
-            + ")";
-    
-    public static final String SCIENTIFIC_LITERAL = "(?:"
-            + "\\d++(\\.\\d*+)?[Ee](\\+|-)?\\d++"
-            + ")";
+
+    public static final String NUMBER_LITERAL = "(?is)(?:" + or(
+        "((\\d++(?![.][.])[.]\\d*+)|(?![.][.])[.]\\d++)(e[+-]?\\d++)?[fd]?", // decimal value in floating-point literal
+        "\\d++(e[+-]?\\d++)?[fd]", // integer value in floating-point literal
+        "\\d++(e[+-]?\\d++)") + ")"; // number literal in scientific notation
     
     private static final String CUSTOM_DELIMITER_START = "[^\\s{\\[<\\(]"; // any except spacing
     private static final String CUSTOM_DELIMITER_END = "\\5"; // same as the start
@@ -82,8 +77,7 @@ public class PlSqlLexer {
                 .withFailIfNoChannelToConsumeOneCharacter(true)
                 .withChannel(new BlackHoleChannel("\\s(?!&)"))
                 .withChannel(commentRegexp(COMMENT))
-                .withChannel(regexp(PlSqlTokenType.SCIENTIFIC_LITERAL, SCIENTIFIC_LITERAL))
-                .withChannel(regexp(PlSqlTokenType.REAL_LITERAL, REAL_LITERAL))
+                .withChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
                 .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))

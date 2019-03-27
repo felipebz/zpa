@@ -25,8 +25,7 @@ import com.sonar.sslr.api.TokenType;
 public enum PlSqlTokenType implements TokenType {
     STRING_LITERAL,
     INTEGER_LITERAL,
-    SCIENTIFIC_LITERAL,
-    REAL_LITERAL,
+    NUMBER_LITERAL,
     DATE_LITERAL;
 
     @Override

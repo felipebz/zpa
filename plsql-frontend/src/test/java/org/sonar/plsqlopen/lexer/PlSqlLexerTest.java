@@ -105,43 +105,53 @@ public class PlSqlLexerTest {
     public void simpleIntegerLiteral() {
         assertThatIsToken("6", PlSqlTokenType.INTEGER_LITERAL);
     }
+
+    @Test
+    public void simpleNumberLiteral() {
+        assertThatIsToken("6d", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsToken("6f", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsNotToken("6e", PlSqlTokenType.NUMBER_LITERAL);
+    }
     
     @Test
     public void simpleRealLiteral() {
-        assertThatIsToken("3.14159", PlSqlTokenType.REAL_LITERAL);
+        assertThatIsToken("3.14159", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsToken("3.14159f", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsToken("3.14159d", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void realLiteralWithDecimalPointOnly() {
-        assertThatIsToken(".5", PlSqlTokenType.REAL_LITERAL);
+        assertThatIsToken(".5", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void realLiteralWithWholePartOnly() {
-        assertThatIsToken("25.", PlSqlTokenType.REAL_LITERAL);
+        assertThatIsToken("25.", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void simpleScientificNotationLiteral() {
-        assertThatIsToken("2E5", PlSqlTokenType.SCIENTIFIC_LITERAL);
+        assertThatIsToken("2E5", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsToken("2E5f", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void scientificNotationLiteralWithNegativeExponent() {
-        assertThatIsToken("1.0E-7", PlSqlTokenType.SCIENTIFIC_LITERAL);
+        assertThatIsToken("1.0E-7", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void scientificNotationWithLowercaseSuffix() {
-        assertThatIsToken("9.5e-3", PlSqlTokenType.SCIENTIFIC_LITERAL);
+        assertThatIsToken("9.5e-3", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
     public void cornerCases() {
-        assertThatIsNotToken("1..", PlSqlTokenType.REAL_LITERAL);
-        assertThatIsNotToken("..2", PlSqlTokenType.REAL_LITERAL);
+        assertThatIsNotToken("1..", PlSqlTokenType.NUMBER_LITERAL);
+        assertThatIsNotToken("..2", PlSqlTokenType.NUMBER_LITERAL);
         
-        assertThatIsNotToken("e1", PlSqlTokenType.SCIENTIFIC_LITERAL);
+        assertThatIsNotToken("e1", PlSqlTokenType.NUMBER_LITERAL);
     }
     
     @Test
