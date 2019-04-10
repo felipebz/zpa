@@ -97,6 +97,7 @@ public class CheckList {
             XPathCheck.class,
             VariableNameCheck.class,
             ToCharInOrderByCheck.class,
-            DisabledTestCheck.class);
+            DisabledTestCheck.class,
+            RedundantExpectationCheck.class);
     }
 }

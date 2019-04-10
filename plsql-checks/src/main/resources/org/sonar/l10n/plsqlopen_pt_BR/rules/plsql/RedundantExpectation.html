@@ -1,0 +1,21 @@
+<p>De acordo com a <a href="http://utplsql.org/utPLSQL/latest/userguide/expectations.html">documentação do utPLSQL</a>:</p>
+
+<blockquote>
+  A validação do código sob teste (a lógica testada do procedimento/função/etc.) é executada comparando
+  os dados reais com os dados esperados. O utPLSQL usa uma combinação de expectativa e um comparador para executar
+  a validação nos dados.
+</blockquote>
+
+<p>
+  Algumas validações são escritas no formato <code>ut.expect(valor_real).matcher(valor_esperado)</code>.
+  Essa regra verifica se o <code>valor_real</code> e o <code>valor_esperado</code> são a mesma coisa. Exemplo:
+</p>
+
+<pre>
+...
+begin
+  v_expected := '2345';
+  v_actual := betwnstr('1234567', 2, 5);
+  ut.expect(v_actual).to_equal(v_actual); -- Essa expectativa está errada, ela é sempre verdadeira
+end;
+</pre>
