@@ -19,6 +19,12 @@
  */
 package org.sonar.plsqlopen;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -35,6 +41,8 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.NoSonarFilter;
 import org.sonar.api.measures.FileLinesContextFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
@@ -51,7 +59,8 @@ public class PlSqlSquidSensor implements Sensor {
     private FormsMetadata formsMetadata;
     private NoSonarFilter noSonarFilter;
 	private FileLinesContextFactory fileLinesContextFactory;
-    
+    private static final Logger LOG = Loggers.get(PlSqlAstScanner.class);
+
     public PlSqlSquidSensor(CheckFactory checkFactory, Configuration settings, NoSonarFilter noSonarFilter) {
         this(checkFactory, settings, noSonarFilter, null, null);
     }
@@ -84,12 +93,74 @@ public class PlSqlSquidSensor implements Sensor {
         PlSqlAstScanner scanner = new PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
         
         progressReport.start(inputFiles.stream().map(InputFile::toString).collect(Collectors.toList()));
-        for (InputFile inputFile : inputFiles) {
-            scanner.scanFile(inputFile);
-            
-            progressReport.nextFile();
-        }
-        progressReport.stop();
+      //(******************************** Custom Code Starts *****************************************//
+        try {
+			String projectDir = System.getProperty("user.dir");
+	        String projectName = projectDir.substring(projectDir.lastIndexOf("\\")+1);
+	    	String targetIssues = (projectDir+"\\"+projectName+"_ISSUES.csv");
+	    	targetIssues = targetIssues.replaceAll("\\\\", "\\\\\\\\");
+	    	
+	    	String targetMetrics = (projectDir+"\\"+projectName+"_METRICS.csv");
+	    	targetMetrics = targetMetrics.replaceAll("\\\\", "\\\\\\\\");
+	    	
+	    	
+	    	File targetIssuesCsv = new File(targetIssues);
+	    	File targetMetricsCsv = new File(targetMetrics);
+	    	
+	    	if(targetIssuesCsv.exists()) { //If file already exists
+	    		Files.deleteIfExists(Paths.get(targetIssues));
+	    		//LOG.debug("***************************deleted*******************************\n"+targetCsv);
+	    	}
+	    	
+	    	if(targetMetricsCsv.exists()) { //If file already exists
+	    		Files.deleteIfExists(Paths.get(targetMetrics));
+	    		//LOG.debug("***************************deleted*******************************\n"+targetCsv);
+	    	}
+	    	
+	    	BufferedWriter writerIssues = new BufferedWriter(new FileWriter(targetIssues, true));
+	    	if(targetIssuesCsv.length() == 0) { //If file is empty
+	    		writerIssues.append("\"ProjectDirectory\",");
+	    		//writerIssues.append("\"ProjectName\",");
+	    		writerIssues.append("\"FilePath\",");
+	    		//writerIssues.append("\"FileDirectory\",");
+	    		writerIssues.append("\"FileName\",");
+	    		writerIssues.append("\"Category\",");
+	    		writerIssues.append("\"Type\",");
+	    		writerIssues.append("\"Object\",");
+	    		writerIssues.append("\"Message\",");
+	    		writerIssues.append("\"LineNo START\",");
+	    		//writerIssues.append("\"StartLineCol START\",");
+	    		//writerIssues.append("\"LineNo END\",");
+	    		//writerIssues.append("\"EndLineCol END\",");
+	    		writerIssues.append("\"LineContent\"\n");
+	    		//LOG.debug("***************************appended*******************************\n"+"Headers");
+	    	}
+
+	    	BufferedWriter writerMetrics = new BufferedWriter(new FileWriter(targetMetrics, true));
+	    	if(targetMetricsCsv.length() == 0) { //If file is empty
+	    		writerMetrics.append("\"ProjectDirectory\",");
+	    		writerMetrics.append("\"FilePath\",");
+	    		writerMetrics.append("\"FileName\",");
+	    		writerMetrics.append("\"TotalLines\",");
+	    		writerMetrics.append("\"LineOfCodes\",");
+	    		writerMetrics.append("\"Statements\",");
+	    		writerMetrics.append("\"CommentLines\",");
+	    		writerMetrics.append("\"Functions\",");
+	    		writerMetrics.append("\"Complexity\"\n");
+	    		//LOG.debug("***************************appended*******************************\n"+"Headers");
+	    	}
+	        for (InputFile inputFile : inputFiles) {
+	            scanner.scanFile(inputFile,writerIssues,writerMetrics);
+	            
+	            progressReport.nextFile();
+	        }
+	        progressReport.stop();
+	        writerIssues.close();
+	        writerMetrics.close();
+    	}catch(IOException e) {
+    		LOG.debug(e.getStackTrace().toString());
+    	}
+        //(******************************** Custom Code Ends *****************************************//
     }
     
     @Override

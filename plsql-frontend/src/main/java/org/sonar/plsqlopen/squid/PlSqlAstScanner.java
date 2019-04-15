@@ -21,11 +21,19 @@ package org.sonar.plsqlopen.squid;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
@@ -38,12 +46,16 @@ import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
 import org.sonar.plsqlopen.PlSqlChecks;
+import org.sonar.plugins.plsqlopen.api.PlSqlFile;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
 import org.sonar.plsqlopen.checks.IssueLocation;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.metrics.ComplexityVisitor;
@@ -53,13 +65,6 @@ import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
-import org.sonar.plugins.plsqlopen.api.PlSqlFile;
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
-import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
@@ -67,6 +72,7 @@ import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
 import com.sonar.sslr.impl.Parser;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
 public class PlSqlAstScanner {
 
@@ -95,17 +101,17 @@ public class PlSqlAstScanner {
         this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory);
         this.plsqlChecks = checks;
     }
-    
+
     @VisibleForTesting
-    public void scanFile(InputFile inputFile) {
+    public void scanFile(InputFile inputFile, BufferedWriter writerIssues, BufferedWriter writerMetrics) {
         if (inputFile.type() == InputFile.Type.MAIN) {
-            scanMainFile(inputFile);
+            scanMainFile(inputFile,writerIssues,writerMetrics);
         } else {
             scanTestFile(inputFile);
         }
     }
 
-    public void scanMainFile(InputFile inputFile) {
+    public void scanMainFile(InputFile inputFile,BufferedWriter writerIssues,BufferedWriter writerMetrics) {
         MetricsVisitor metricsVisitor = new MetricsVisitor();
         ComplexityVisitor complexityVisitor = new ComplexityVisitor();
         FunctionComplexityVisitor functionComplexityVisitor = new FunctionComplexityVisitor();
@@ -119,7 +125,6 @@ public class PlSqlAstScanner {
                 checks.stream()
                     .filter(check -> formsMetadata != null || !(check instanceof FormsMetadataAwareCheck))
                     .filter(check -> check instanceof PlSqlCheck)
-                    .filter(check -> ruleHasScope(check, RuleInfo.Scope.MAIN))
                     .collect(toList()));
         
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
@@ -136,7 +141,7 @@ public class PlSqlAstScanner {
         for (PlSqlVisitor check : checksToRun) {
             List<PreciseIssue> issues = ((PlSqlCheck)check).issues();
             if (!issues.isEmpty()) {
-                saveIssues(inputFile, check, issues);
+            	saveIssues(inputFile, check, issues,"Main",writerIssues); //Partially Custom Method
             }
         }
         
@@ -153,43 +158,44 @@ public class PlSqlAstScanner {
             }
             fileLinesContext.save();
         }
+//(******************************** Custom Code Starts *****************************************//
+        try {
+        	String filePath = inputFile.absolutePath();
+        	String fileName = inputFile.filename();
+        	filePath = filePath.replaceAll("/", "\\\\");
+       		String projectDir = System.getProperty("user.dir");
+       		//LOG.debug(filePath);
+       		BufferedReader readerLines = new BufferedReader(new FileReader(filePath));
+       		int lines = 1;
+       		while (readerLines.readLine() != null) lines++;
+       		readerLines.close();
+
+        	writerMetrics.append("\""+projectDir+"\",");//ProjectDirectory
+        	writerMetrics.append("\""+filePath+"\",");//FilePath
+        	writerMetrics.append("\""+fileName+"\",");//FileName
+        	writerMetrics.append("\""+lines+"\",");//TotalLines
+        	writerMetrics.append("\""+metricsVisitor.getLinesOfCode().size()+"\",");//LineOfCodes
+        	writerMetrics.append("\""+metricsVisitor.getExecutableLines().size()+"\",");//ExecutableLines
+        	writerMetrics.append("\""+metricsVisitor.getLinesOfComments().size()+"\",");//CommentLines
+        	writerMetrics.append("\""+functionComplexityVisitor.getNumberOfFunctions()+"\",");//Functions
+        	writerMetrics.append("\""+complexityVisitor.getComplexity()+"\"\n");//Complexity
+        	
+        }catch(IOException e) {
+        	
+        }
+//(******************************** Custom Code Ends *****************************************//
+
     }
 
     public void scanTestFile(InputFile inputFile) {
         PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
-        MetricsVisitor metricsVisitor = new MetricsVisitor();
 
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
         checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
-        checksToRun.add(metricsVisitor);
-
-        checksToRun.addAll(
-            checks.stream()
-                .filter(check -> check instanceof PlSqlCheck)
-                .filter(check -> ruleHasScope(check, RuleInfo.Scope.TEST))
-                .collect(toList()));
 
         PlSqlAstWalker newWalker = new PlSqlAstWalker(checksToRun);
         newWalker.walk(newVisitorContext);
-
-        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.getLinesWithNoSonar());
-
-        for (PlSqlVisitor check : checksToRun) {
-            List<PreciseIssue> issues = ((PlSqlCheck)check).issues();
-            if (!issues.isEmpty()) {
-                saveIssues(inputFile, check, issues);
-            }
-        }
-    }
-
-    private boolean ruleHasScope(PlSqlVisitor check, RuleInfo.Scope scope) {
-        RuleInfo ruleInfo = AnnotationUtils.getAnnotation(check, RuleInfo.class);
-        if (ruleInfo != null) {
-            return ruleInfo.scope() == RuleInfo.Scope.ALL ||
-                ruleInfo.scope() == scope;
-        }
-        return scope == RuleInfo.Scope.MAIN;
     }
 
     private PlSqlVisitorContext getPlSqlVisitorContext(InputFile inputFile) {
@@ -223,26 +229,130 @@ public class PlSqlAstScanner {
         return annotatedNode;
     }
     
-    private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues) {
-        RuleKey ruleKey = plsqlChecks.ruleKey(check);
-        for (PreciseIssue preciseIssue : issues) {
-
+    private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues,String testORmain, BufferedWriter writerIssues) {
+    	RuleKey ruleKey = plsqlChecks.ruleKey(check);
+     //(******************************** Custom Code Starts *****************************************//
+       
+   		String projectDir = System.getProperty("user.dir");
+        //String projectName = projectDir.substring(projectDir.lastIndexOf("\\")+1);
+       	//String target = (projectDir+"\\"+projectName+".csv");
+       	//target = target.replaceAll("\\\\", "\\\\\\\\");
+    	//BufferedWriter writer = new BufferedWriter(new FileWriter(target, true));
+    	String filePath = inputFile.absolutePath();
+    	String fileName = inputFile.filename();
+    	//String fileDir = inputFile.path().toString();
+	    for (PreciseIssue preciseIssue : issues) {
+	    	String message = preciseIssue.primaryLocation().message();
+	        if(testORmain.equals("Main") && message.startsWith("TD|")) {
+	        	filePath = filePath.replaceAll("/", "\\\\");
+		    	int startLine = preciseIssue.primaryLocation().startLine();
+	            int endLine = preciseIssue.primaryLocation().endLine();
+	            int startLineCOL=preciseIssue.primaryLocation().startLineOffset();
+	            int endLineCOL=preciseIssue.primaryLocation().endLineOffset();
+		    	//LOG.error("*************************target************************\n"+target);
+	            String msg = preciseIssue.primaryLocation().message();
+	            
+	            int firstPipe = msg.indexOf("|");
+	    		String msgAfterFirstPipe = msg.substring(firstPipe+1,msg.length());
+	    		int secondPipe = msgAfterFirstPipe.indexOf("|");
+	    		String category = msgAfterFirstPipe.substring(0,secondPipe);//Category
+	    		String msgAfterSecondPipe = msgAfterFirstPipe.substring(secondPipe+1,msgAfterFirstPipe.length());
+	    		int thirdPipe = msgAfterSecondPipe.indexOf("|");
+	    		String type = msgAfterSecondPipe.substring(0,thirdPipe);//Type
+	    		String msgAfterThirdPipe = msgAfterSecondPipe.substring(thirdPipe+1,msgAfterSecondPipe.length());
+	    	    int fourthPipe = msgAfterThirdPipe.indexOf("|");
+	    	    String object = msgAfterThirdPipe.substring(0,fourthPipe);//Object
+	    		String msgAfterFourthPipe = msgAfterThirdPipe.substring(fourthPipe+1,msgAfterThirdPipe.length());
+	    		String finalMessage = msgAfterFourthPipe;//Message
+   	     	    int excelCellLimit = 30000;
+	            
+	            try {
+	            	writerIssues.append("\""+projectDir+"\""+","); //ProjectDirectory
+		            //writerIssues.append("\""+projectName+"\""+","); //ProjectName
+	            	writerIssues.append("\""+filePath+"\""+","); //FilePath
+		            //writerIssues.append("\""+fileDir+"\""+","); //FileDirectory
+		            writerIssues.append("\""+fileName+"\""+","); //FileName
+	            	writerIssues.append("\""+category+"\","); //Category
+	            	writerIssues.append("\""+type+"\","); //Type
+	            	writerIssues.append("\""+object+"\","); //Object
+	            	writerIssues.append("\""+finalMessage+"\","); //Message
+	            	writerIssues.append("\""+startLine+"\""+","); //LineNo START
+					//writerIssues.append("\""+startLineCOL+"\""+","); //StartLineCol START
+		            //writerIssues.append("\""+endLine+"\""+","); //LineNo END
+					//writerIssues.append("\""+endLineCOL+"\""+","); //EndLineCol END
+					if(startLine==endLine) {
+		            	FileReader fileReader = new FileReader(filePath);
+		            	String line;
+		            	int counter = 0;
+		                BufferedReader bufferedReader = new BufferedReader(fileReader);
+		           	    while((line = bufferedReader.readLine()) != null) {
+		           	    	counter++;
+		           	    	line = line.replaceAll("\"", "'");
+		           	    	if(line.length()>excelCellLimit){
+	           	     	    	line = line.substring(0,excelCellLimit);
+	           	     	    }
+		           	        if(counter == startLine)
+		           	        {	
+		           	        	if(startLineCOL==-1 || endLineCOL == -1) {
+			           	     	   writerIssues.append("\""+line.trim()+"\""+"\n"); //LineContent
+		           	        	}else {
+		           	        		writerIssues.append("\""+line.substring(startLineCOL,endLineCOL).trim()+"\""+"\n"); //LineContent
+		           	        	}
+		           	        	bufferedReader.close();
+		           	        	break;
+		           	        }
+		           	    }
+		            }
+					else {
+						FileReader fileReader = new FileReader(filePath);
+		            	String line;
+		            	int counter = 0;
+	           	    	String longLine = "";
+		                BufferedReader bufferedReader = new BufferedReader(fileReader);
+		           	    while((line = bufferedReader.readLine()) != null) {
+		           	    	counter++;
+		           	    	line = line.replaceAll("\"", "'");
+		           	        if(counter >= startLine & counter <=endLine)
+		           	        {
+		           	        	if(startLineCOL==-1 || endLineCOL == -1) {
+		           	        		if(line.length()>excelCellLimit){
+			           	     	    	line = line.substring(0,excelCellLimit);
+			           	     	    }
+		           	        		writerIssues.append("\""+line.trim()+"\""); //LineContent
+		           	        	}else {
+		           	        		if(counter!=endLine) {
+		           	        			
+		           	        			longLine = longLine+line.trim()+" ";
+		           	        		}else {
+			          	           		longLine = longLine+(line.substring(0,endLineCOL)).trim()+" ";
+			          	           	}
+		           	        	}
+		           	        }
+		           	    }
+		           	    if(longLine.length()>excelCellLimit){
+		           	    	longLine = longLine.substring(0,excelCellLimit);
+        	     	    }
+		           	    writerIssues.append("\""+longLine.trim()+"\"\n"); //LineContent
+           	        	bufferedReader.close();
+					}
+		    	}catch(Exception e) {
+		    		LOG.error(e+"");
+		    	}
+	        }
+//(******************************** Custom Code Ends *****************************************//
             NewIssue newIssue = context.newIssue().forRule(ruleKey);
-
             Integer cost = preciseIssue.cost();
             if (cost != null) {
-                newIssue.gap(cost.doubleValue());
+            	newIssue.gap(cost.doubleValue());
             }
-
             newIssue.at(newLocation(inputFile, newIssue, preciseIssue.primaryLocation()));
-
             for (IssueLocation secondaryLocation : preciseIssue.secondaryLocations()) {
-                newIssue.addLocation(newLocation(inputFile, newIssue, secondaryLocation));
+            	newIssue.addLocation(newLocation(inputFile, newIssue, secondaryLocation));
             }
-
-            newIssue.save();
-        }
+	        newIssue.save();
+		}	
     }
+
 
     private static NewIssueLocation newLocation(InputFile inputFile, NewIssue issue, IssueLocation location) {
         NewIssueLocation newLocation = issue.newLocation().on(inputFile);
@@ -278,5 +388,4 @@ public class PlSqlAstScanner {
             .withValue(value)
             .save();
     }
-    
 }
