@@ -32,10 +32,9 @@ jobs:
       vmImage: 'vs2017-win2016'
 
     steps:
-      - script: |
-          echo Starting the build
-          mvn clean package
-        displayName: 'Build with Maven'
+      - task: Maven@3
+        inputs:
+          jdkVersionOption: 1.11
 
       - task: CopyFiles@2
         displayName: 'Copy artifact: sonar-plsql-open-plugin'
