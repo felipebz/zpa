@@ -20,6 +20,8 @@
 package org.sonar.plugins.plsqlopen.api.squid;
 
 public final class PlSqlCommentAnalyzer {
+
+    private PlSqlCommentAnalyzer() { }
     
     public static boolean isBlank(String line) {
         for (int i = 0; i < line.length(); i++) {

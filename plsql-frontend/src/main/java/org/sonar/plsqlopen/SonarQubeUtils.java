@@ -21,6 +21,8 @@ package org.sonar.plsqlopen;
 
 public class SonarQubeUtils {
 
+    private SonarQubeUtils() { }
+
     private static boolean commercialEdition;
 
     static {

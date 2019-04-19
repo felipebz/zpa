@@ -41,7 +41,7 @@ import java.util.List;
 public class RedundantExpectationCheck extends AbstractBaseCheck {
     public static final String CHECK_KEY = "RedundantExpectation";
 
-    private static MethodMatcher MATCHER =
+    private static MethodMatcher expectMatcher =
         MethodMatcher.create().packageName("UT").name("EXPECT").withNoParameterConstraint();
 
     @Override
@@ -51,12 +51,12 @@ public class RedundantExpectationCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        if (MATCHER.matches(node)) {
+        if (expectMatcher.matches(node)) {
             AstNode expectationNode = node.getNextSibling().getNextSibling();
 
-            AstNode actualValue = MATCHER.getArgumentsValues(node).get(0);
+            AstNode actualValue = expectMatcher.getArgumentsValues(node).get(0);
 
-            List<AstNode> matcherArguments = MATCHER.getArgumentsValues(expectationNode);
+            List<AstNode> matcherArguments = expectMatcher.getArgumentsValues(expectationNode);
             if (matcherArguments.isEmpty()) {
                 return;
             }

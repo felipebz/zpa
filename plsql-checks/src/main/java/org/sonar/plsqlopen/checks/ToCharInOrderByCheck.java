@@ -59,7 +59,7 @@ public class ToCharInOrderByCheck extends AbstractBaseCheck {
         }
 
         if (expression.getType() == PlSqlGrammar.LITERAL && semantic(expression).getPlSqlType() == PlSqlType.NUMERIC) {
-            int index = Integer.valueOf(expression.getTokenOriginalValue());
+            int index = Integer.parseInt(expression.getTokenOriginalValue());
 
             AstNode selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION);
             List<AstNode> columns = selectExpression.getChildren(DmlGrammar.SELECT_COLUMN);
