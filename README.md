@@ -1,7 +1,7 @@
 Service | Status
 --- | ---
 **Azure Pipelines** | [![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=master)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
-**Coveralls** (test coverage) | [![Coverage Status](https://coveralls.io/repos/github/felipebz/sonar-plsql/badge.svg?branch=master)](https://coveralls.io/github/felipebz/sonar-plsql?branch=master)
+**Coveralls** (test coverage) | [![Coverage Status](https://coveralls.io/repos/github/felipebz/zpa/badge.svg?branch=master)](https://coveralls.io/github/felipebz/zpa?branch=master)
 
 ## Z PL/SQL Analyzer (previously known as SonarQube PL/SQL Community plugin)
 This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
