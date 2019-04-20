@@ -9,10 +9,11 @@
 
   <name>Z PL/SQL Analyzer</name>
   <description>Enables analysis and reporting on PL/SQL projects.</description>
-  <url>https://github.com/felipebz/sonar-plsql</url>
+  <url>https://github.com/felipebz/zpa</url>
   <inceptionYear>2015</inceptionYear>
   <organization>
     <name>Felipe Zorzo</name>
+    <url>https://felipezorzo.com.br</url>
   </organization>
   
   <licenses>
@@ -28,6 +29,7 @@
       <id>felipebz</id>
       <name>Felipe Zorzo</name>
       <email>felipe.b.zorzo@gmail.com</email>
+      <url>https://felipezorzo.com.br</url>
     </developer>
   </developers>
 
@@ -41,19 +43,19 @@
   </modules>
   
   <scm>
-    <connection>scm:git:https://github.com/felipebz/sonar-plsql.git</connection>
-    <developerConnection>scm:git:https://github.com/felipebz/sonar-plsql.git</developerConnection>
-    <url>https://github.com/felipebz/sonar-plsql</url>
+    <connection>scm:git:https://github.com/felipebz/zpa.git</connection>
+    <developerConnection>scm:git:https://github.com/felipebz/zpa.git</developerConnection>
+    <url>https://github.com/felipebz/zpa</url>
   </scm>
-  
+
   <issueManagement>
-    <system>Git</system>
-    <url>https://github.com/felipebz/sonar-plsql/issues</url>
+    <system>Git></system>
+    <url>https://github.com/felipebz/zpa/issues</url>
   </issueManagement>
   
   <ciManagement>
-    <system>Travis CI</system>
-    <url>https://travis-ci.org/felipebz/sonar-plsql</url>
+    <system>Azure DevOps</system>
+    <url>https://dev.azure.com/felipebz/z-plsql-analyzer/_build</url>
   </ciManagement>
 
   <properties>
