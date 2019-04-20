@@ -44,6 +44,8 @@ public class PlSqlPlugin implements Plugin {
 
     @Override
     public void define(@Nonnull Context context) {
+        SonarQubeUtils.setSonarQubeVersion(context.getSonarQubeVersion());
+
         context.addExtensions(
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)
                 .deprecatedKey(OLD_FILE_SUFFIXES_KEY)

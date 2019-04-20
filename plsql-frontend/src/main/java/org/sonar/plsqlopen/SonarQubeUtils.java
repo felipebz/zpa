@@ -19,11 +19,14 @@
  */
 package org.sonar.plsqlopen;
 
+import org.sonar.api.utils.Version;
+
 public class SonarQubeUtils {
 
     private SonarQubeUtils() { }
 
     private static boolean commercialEdition;
+    private static boolean isSQ71OrGreater;
 
     static {
         commercialEdition = false;
@@ -38,5 +41,13 @@ public class SonarQubeUtils {
 
     public static boolean isCommercialEdition() {
         return commercialEdition;
+    }
+
+    static void setSonarQubeVersion(Version sonarQubeVersion) {
+        isSQ71OrGreater = sonarQubeVersion.isGreaterThanOrEqual(Version.create(7, 1));
+    }
+
+    public static boolean isIsSQ71OrGreater() {
+        return isSQ71OrGreater;
     }
 }

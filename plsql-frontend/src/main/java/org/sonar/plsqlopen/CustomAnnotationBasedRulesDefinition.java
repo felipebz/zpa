@@ -29,12 +29,14 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.sonar.api.rule.RuleScope;
 import org.sonar.api.server.rule.RulesDefinition.NewParam;
 import org.sonar.api.server.rule.RulesDefinition.NewRepository;
 import org.sonar.api.server.rule.RulesDefinition.NewRule;
 import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate;
 
 import com.google.common.io.Resources;
@@ -86,6 +88,22 @@ public class CustomAnnotationBasedRulesDefinition {
             } catch (RuntimeException e) {
                 throw new IllegalArgumentException("Could not setup SQALE model on " + ruleClass, e);
             }
+
+            if (SonarQubeUtils.isIsSQ71OrGreater()) {
+                RuleInfo ruleInfo = AnnotationUtils.getAnnotation(ruleClass, RuleInfo.class);
+                if (ruleInfo != null) {
+                    RuleScope scope = RuleScope.defaultScope();
+                    if (ruleInfo.scope() == RuleInfo.Scope.ALL) {
+                        scope = RuleScope.ALL;
+                    } else if (ruleInfo.scope() == RuleInfo.Scope.MAIN) {
+                        scope = RuleScope.MAIN;
+                    } else if (ruleInfo.scope() == RuleInfo.Scope.TEST) {
+                        scope = RuleScope.TEST;
+                    }
+                    rule.setScope(scope);
+                }
+            }
+
             newRules.add(rule);
         }
         setupExternalNames(newRules);
