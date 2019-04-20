@@ -28,9 +28,8 @@ import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.sonarqube.ws.WsMeasures.ComponentWsResponse;
-import org.sonarqube.ws.WsMeasures.Measure;
-import org.sonarqube.ws.client.measure.ComponentWsRequest;
+import org.sonarqube.ws.Measures;
+import org.sonarqube.ws.client.measures.ComponentRequest;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.SonarScanner;
@@ -93,26 +92,26 @@ public class MetricsTest {
     }
 
     /* Helper methods */
-    private static Measure getMeasure(String componentKey, String metricKey) {
-        ComponentWsResponse response = Tests.newWsClient(orchestrator).measures()
-                .component(new ComponentWsRequest().setComponent(componentKey)
+    private static Measures.Measure getMeasure(String componentKey, String metricKey) {
+        Measures.ComponentWsResponse response = Tests.newWsClient(orchestrator).measures()
+                .component(new ComponentRequest().setComponent(componentKey)
                         .setMetricKeys(Collections.singletonList(metricKey)));
-        List<Measure> measures = response.getComponent().getMeasuresList();
+        List<Measures.Measure> measures = response.getComponent().getMeasuresList();
         return measures.size() == 1 ? measures.get(0) : null;
     }
 
     private static String getMeasureAsString(String componentKey, String metricKey) {
-        Measure measure = getMeasure(componentKey, metricKey);
+        Measures.Measure measure = getMeasure(componentKey, metricKey);
         return (measure == null) ? null : measure.getValue();
     }
 
     private static Integer getMeasureAsInteger(String componentKey, String metricKey) {
-        Measure measure = getMeasure(componentKey, metricKey);
+        Measures.Measure measure = getMeasure(componentKey, metricKey);
         return (measure == null) ? null : Integer.parseInt(measure.getValue());
     }
 
     private static Double getMeasureAsDouble(String componentKey, String metricKey) {
-        Measure measure = getMeasure(componentKey, metricKey);
+        Measures.Measure measure = getMeasure(componentKey, metricKey);
         return (measure == null) ? null : Double.parseDouble(measure.getValue());
     }
 }

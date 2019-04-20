@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.sonarqube.ws.Issues.Issue;
-import org.sonarqube.ws.client.issue.SearchWsRequest;
+import org.sonarqube.ws.client.issues.SearchRequest;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.SonarScanner;
@@ -72,7 +72,7 @@ public class IssueTest {
     private List<Issue> getIssues(String componentKey) {
         return Tests.newWsClient(orchestrator)
             .issues()
-            .search(new SearchWsRequest().setComponentKeys(Collections.singletonList(componentKey)))
+            .search(new SearchRequest().setComponentKeys(Collections.singletonList(componentKey)))
             .getIssuesList();
     }
 }
