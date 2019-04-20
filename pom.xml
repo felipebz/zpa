@@ -253,9 +253,9 @@
 
   <distributionManagement>
     <repository>
-      <id>central</id>
-      <name>oss-jfrog-artifactory-releases</name>
-      <url>https://oss.jfrog.org/artifactory/oss-release-local</url>
+      <id>bintray-felipebz-maven</id>
+      <name>felipebz-maven</name>
+      <url>https://api.bintray.com/maven/felipebz/maven/org.sonar.plsqlopen/;publish=1</url>
     </repository>
     <snapshotRepository>
       <id>snapshots</id>

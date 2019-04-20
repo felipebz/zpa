@@ -3,9 +3,9 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <servers>
     <server>
-      <username>${env.DEPLOY_USERNAME}</username>
-      <password>${env.DEPLOY_PASSWORD}</password>
-      <id>central</id>
+      <id>bintray-felipebz-maven</id>
+      <username>${env.BINTRAY_DEPLOY_USERNAME}</username>
+      <password>${env.BINTRAY_DEPLOY_PASSWORD}</password>
     </server>
     <server>
       <username>${env.DEPLOY_USERNAME}</username>
