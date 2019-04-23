@@ -30,19 +30,7 @@ import com.sonar.sslr.api.AstNode;
 public abstract class AbstractBaseCheck extends PlSqlCheck {
     
     private ResourceBundle bundle;
-    
-    /***
-     * Creates an issue location.
-     * @param message Description.
-     * @param node Node related to the location.
-     * @return The new issue location.
-     * @deprecated since 2.3.0. Use {@link IssueLocation}.
-     */
-    @Deprecated
-    protected PlSqlVisitorContext.Location newLocation(String message, AstNode node) {
-        return new PlSqlVisitorContext.Location(message, node);
-    }
-    
+
     protected String getLocalizedMessage(String checkKey) {
         if (bundle == null) {
             bundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault());

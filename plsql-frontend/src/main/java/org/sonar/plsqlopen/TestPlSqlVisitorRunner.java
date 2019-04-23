@@ -77,12 +77,6 @@ public class TestPlSqlVisitorRunner {
       return file.getName();
     }
 
-    @Override
-    @Deprecated
-    public InputFile inputFile() {
-        return null;
-    }
-
   }
 
 }

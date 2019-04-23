@@ -19,22 +19,14 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.List;
-
 import javax.annotation.Nullable;
 
-import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable;
 
 import com.sonar.sslr.api.AstNode;
 import com.sonar.sslr.api.RecognitionException;
-import com.sonar.sslr.api.Token;
 
 public class PlSqlVisitorContext {
 
@@ -72,87 +64,6 @@ public class PlSqlVisitorContext {
         return parsingException;
     }
 
-    /***
-     * Creates a file level violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addFileIssue(String)}.
-     */
-    @Deprecated
-    public void createFileViolation(PlSqlCheck check, String message, Object... messageParameters) {
-        check.addFileIssue(MessageFormat.format(message, messageParameters));
-    }
-    
-    /***
-     * Creates a line level violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param node Node that causes the violation.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
-     */
-    @Deprecated
-    public void createLineViolation(PlSqlCheck check, String message, AstNode node, Object... messageParameters) {
-        createLineViolation(check, message, node.getTokenLine(), messageParameters);
-    }
-    
-    /***
-     * Creates a line level violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param token Token that causes the violation.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
-     */
-    @Deprecated
-    public void createLineViolation(PlSqlCheck check, String message, Token token, Object... messageParameters) {
-        createLineViolation(check, message, token.getLine(), messageParameters);
-    }
-    
-    /***
-     * Creates a line level violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param line Line where the violation occurs.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addLineIssue(String, int)}.
-     */
-    @Deprecated
-    public void createLineViolation(PlSqlCheck check, String message, int line, Object... messageParameters) {
-        check.addLineIssue(MessageFormat.format(message, messageParameters), line);
-    }
-    
-    /***
-     * Creates a violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param node Node that causes the violation.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addIssue(AstNode, String)} or {@link PlSqlCheck#addIssue(Token, String)}.
-     */
-    @Deprecated
-    public void createViolation(PlSqlCheck check, String message, AstNode node, Object... messageParameters) {
-        createViolation(check, message, node, Collections.emptyList(), messageParameters);
-    }
-    
-    /***
-     * Creates a violation.
-     * @param check Rule associated with the violation.
-     * @param message Description of the violation.
-     * @param node Node that causes the violation.
-     * @param secondary List of locations.
-     * @param messageParameters Parameters used to format the description.
-     * @deprecated since 2.3.0. Use {@link PlSqlCheck#addIssue(org.sonar.plsqlopen.checks.IssueLocation)}.
-     */
-    @Deprecated
-    public void createViolation(PlSqlCheck check, String message, AstNode node, List<Location> secondary, Object... messageParameters) {
-        PreciseIssue issue = check.addIssue(node, MessageFormat.format(message, messageParameters));
-        for (Location location : secondary) {
-            issue.secondary(location.node, location.msg);
-        }
-    }
-
     public void setSymbolTable(SymbolTable symbolTable) {
         this.symbolTable = symbolTable;
     }
@@ -175,20 +86,6 @@ public class PlSqlVisitorContext {
 
     public FormsMetadata getFormsMetadata() {
         return formsMetadata;
-    }
-    
-    /***
-     * @deprecated since 2.3.0. Use {@link IssueLocation}.
-     */
-    @Deprecated
-    public static class Location {
-        public final String msg;
-        public final AstNode node;
-
-        public Location(String msg, AstNode node) {
-            this.msg = msg;
-            this.node = node;
-        }
     }
     
 }
