@@ -181,15 +181,6 @@
         </configuration>
       </plugin>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.0</version>
-          <configuration>
-            <!-- Force version of source to Java 8 in order to produce Javadoc relying on package-based architecture. -->
-            <source>8</source>
-          </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
         <extensions>true</extensions>
@@ -265,7 +256,7 @@
       <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
     </snapshotRepository>
   </distributionManagement>
-  
+
   <profiles>
     <profile>
       <!-- Set javac's release flag for Java 9 and higher -->
@@ -273,19 +264,9 @@
       <activation>
         <jdk>[9,)</jdk>
       </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <configuration>
-                <release>8</release>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
+      <properties>
+        <maven.compiler.release>8</maven.compiler.release>
+      </properties>
     </profile>
   </profiles>
 </project>
