@@ -19,22 +19,22 @@
  */
 package org.sonar.plsqlopen;
 
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.impl.Parser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.plugins.plsqlopen.api.PlSqlFile;
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plsqlopen.metadata.FormsMetadata;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlAstScanner;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plugins.plsqlopen.api.PlSqlFile;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
+
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.impl.Parser;
 
 public class TestPlSqlVisitorRunner {
 
