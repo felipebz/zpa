@@ -19,13 +19,13 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
@@ -53,30 +53,31 @@ public class SelectAllColumnsCheck extends AbstractBaseCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        if (!node.getParent().getParent().is(PlSqlGrammar.EXISTS_EXPRESSION)) {
-            AstNode candidate = node.getFirstChild();
-            
-            if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
-                candidate = candidate.getLastChild();
-            }
-            
-            if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
-                List<AstNode> variablesInInto = getVariablesInIntoClause(node);
-                if (variablesInInto.size() == 1 && semantic(variablesInInto.get(0)).getPlSqlType() == PlSqlType.ROWTYPE) {
+        if (node.getParent().getParent().is(PlSqlGrammar.EXISTS_EXPRESSION)) {
+            return;
+        }
+
+        AstNode candidate = node.getFirstChild();
+
+        if (candidate.is(PlSqlGrammar.OBJECT_REFERENCE)) {
+            candidate = candidate.getLastChild();
+        }
+
+        if (candidate.is(PlSqlPunctuator.MULTIPLICATION)) {
+            AstNode intoClause = node.getParent().getFirstChild(DmlGrammar.INTO_CLAUSE);
+
+            if (intoClause != null) {
+                if (intoClause.getFirstChild().getType() == PlSqlKeyword.BULK) {
                     return;
                 }
 
-                addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.getTokenLine());
+                List<AstNode> variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
+                if (variablesInInto.size() == 1 && semantic(variablesInInto.get(0)).getPlSqlType() == PlSqlType.ROWTYPE) {
+                    return;
+                }
             }
-        }
-    }
 
-    private static List<AstNode> getVariablesInIntoClause(AstNode selectNode) {
-        AstNode intoClause = selectNode.getParent().getFirstChild(DmlGrammar.INTO_CLAUSE);
-        if (intoClause != null) {
-            return intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME);
-        } else {
-            return new ArrayList<>();
+            addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.getTokenLine());
         }
     }
     

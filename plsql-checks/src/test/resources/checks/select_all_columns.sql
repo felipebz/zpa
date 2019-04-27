@@ -1,4 +1,8 @@
 declare
+  cursor cur is
+    select * -- Noncompliant {{SELECT * should not be used.}}
+      from emp;
+
   row emp%rowtype;
 begin
   -- violations
@@ -38,5 +42,9 @@ begin
 
   select *
     into row
+    from emp;
+
+  select *
+    bulk collect into row_table
     from emp;
 end;
