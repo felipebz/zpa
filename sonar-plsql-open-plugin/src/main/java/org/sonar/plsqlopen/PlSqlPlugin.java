@@ -32,15 +32,6 @@ public class PlSqlPlugin implements Plugin {
     public static final String FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes";
     public static final String FORMS_METADATA_KEY = "sonar.zpa.forms.metadata";
     public static final String ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled";
-    private static String OLD_FILE_SUFFIXES_KEY = "sonar.plsql.file.suffixes";
-    private static final String OLD_FORMS_METADATA_KEY = "sonar.plsql.forms.metadata";
-    private static final String OLD_ERROR_RECOVERY_KEY = "sonar.plsql.errorRecoveryEnabled";
-
-    static {
-        if (SonarQubeUtils.isCommercialEdition()) {
-            OLD_FILE_SUFFIXES_KEY = null;
-        }
-    }
 
     @Override
     public void define(@Nonnull Context context) {
@@ -48,7 +39,6 @@ public class PlSqlPlugin implements Plugin {
 
         context.addExtensions(
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)
-                .deprecatedKey(OLD_FILE_SUFFIXES_KEY)
                 .name("File Suffixes")
                 .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
                 .category(DEFAULT_CATEGORY)
@@ -57,14 +47,12 @@ public class PlSqlPlugin implements Plugin {
                 .multiValues(true)
                 .build(),
             PropertyDefinition.builder(FORMS_METADATA_KEY)
-                .deprecatedKey(OLD_FORMS_METADATA_KEY)
                 .name("Oracle Forms metadata file")
                 .description("Path to the JSON file with the Oracle Forms metadata.")
                 .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .build(),
             PropertyDefinition.builder(ERROR_RECOVERY_KEY)
-                .deprecatedKey(OLD_ERROR_RECOVERY_KEY)
                 .name("Parse error recovery")
                 .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
                 .category(DEFAULT_CATEGORY)
