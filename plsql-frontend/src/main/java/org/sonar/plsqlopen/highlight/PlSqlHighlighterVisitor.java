@@ -19,18 +19,17 @@
  */
 package org.sonar.plsqlopen.highlight;
 
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Token;
+import com.sonar.sslr.api.Trivia;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.highlighting.TypeOfText;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
-
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Token;
-import com.sonar.sslr.api.Trivia;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 public class PlSqlHighlighterVisitor extends PlSqlCheck {
 
@@ -49,16 +48,6 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
     
     @Override
     public void visitToken(Token token) {
-        TypeOfText code;
-        for (Trivia trivia : token.getTrivia()) {
-            if (trivia.getToken().getValue().startsWith("/**")) {
-                code = TypeOfText.STRUCTURED_COMMENT;
-            } else {
-                code = TypeOfText.COMMENT;
-            }
-            highlight(trivia.getToken(), code);
-        }
-        
         if (token.getType() instanceof PlSqlTokenType) {
             highlight(token, TypeOfText.STRING);
         }
@@ -66,7 +55,17 @@ public class PlSqlHighlighterVisitor extends PlSqlCheck {
             highlight(token, TypeOfText.KEYWORD);
         }
     }
-    
+
+    @Override
+    public void visitComment(Trivia trivia, String content) {
+        Token token = trivia.getToken();
+        if (token.getValue().startsWith("/**")) {
+            highlight(token, TypeOfText.STRUCTURED_COMMENT);
+        } else {
+            highlight(token, TypeOfText.COMMENT);
+        }
+    }
+
     private void highlight(Token token, TypeOfText code) {
         TokenLocation location = TokenLocation.from(token);
         if (highlighting != null) {
