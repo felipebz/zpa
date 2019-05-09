@@ -19,8 +19,18 @@
  */
 package org.sonar.plsqlopen.checks.verifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import com.google.common.base.Function;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Ordering;
+import com.sonar.sslr.api.Token;
+import com.sonar.sslr.api.Trivia;
+import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
+import org.sonar.plsqlopen.checks.IssueLocation;
+import org.sonar.plsqlopen.metadata.FormsMetadata;
+import org.sonar.plsqlopen.squid.PlSqlAstWalker;
+import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
+import org.sonar.plsqlopen.symbols.SymbolVisitor;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,19 +38,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
-import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plsqlopen.metadata.FormsMetadata;
-import org.sonar.plsqlopen.squid.PlSqlAstWalker;
-import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
-import org.sonar.plsqlopen.symbols.SymbolVisitor;
-
-import com.google.common.base.Function;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Ordering;
-import com.sonar.sslr.api.Token;
-import com.sonar.sslr.api.Trivia;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 public class PlSqlCheckVerifier extends PlSqlCheck {
 
@@ -141,47 +140,45 @@ public class PlSqlCheckVerifier extends PlSqlCheck {
     }
 
     @Override
-    public void visitToken(Token token) {
-        for (Trivia trivia : token.getTrivia()) {
-            String text = trivia.getToken().getValue().substring(2).trim();
-            String marker = "Noncompliant";
+    public void visitComment(Trivia trivia, String content) {
+        String text = content.trim();
+        String marker = "Noncompliant";
 
-            if (text.startsWith(marker)) {
-                int issueLine = trivia.getToken().getLine();
-                String paramsAndMessage = text.substring(marker.length()).trim();
+        if (text.startsWith(marker)) {
+            int issueLine = trivia.getToken().getLine();
+            String paramsAndMessage = text.substring(marker.length()).trim();
 
-                if (paramsAndMessage.startsWith("@")) {
-                    String[] spaceSplit = paramsAndMessage.split("[\\s\\[{]", 2);
-                    
-                    String shiftValue = spaceSplit[0];
-                    
-                    if (shiftValue.charAt(1) != '+' && shiftValue.charAt(1) != '-') {
-                        fail("Use only '@+N' or '@-N' to shifts messages.");
-                    }
-                    
-                    issueLine += Integer.valueOf(shiftValue.substring(1));
-                    paramsAndMessage = spaceSplit.length > 1 ? spaceSplit[1] : "";
+            if (paramsAndMessage.startsWith("@")) {
+                String[] spaceSplit = paramsAndMessage.split("[\\s\\[{]", 2);
+
+                String shiftValue = spaceSplit[0];
+
+                if (shiftValue.charAt(1) != '+' && shiftValue.charAt(1) != '-') {
+                    fail("Use only '@+N' or '@-N' to shifts messages.");
                 }
 
-                TestIssue issue = TestIssue.create(null, issueLine);
-                
-                if (paramsAndMessage.startsWith("{{")) {
-                    int endIndex = paramsAndMessage.indexOf("}}");
-                    String message = paramsAndMessage.substring(2, endIndex);
-                    issue.message(message);
-                    paramsAndMessage = paramsAndMessage.substring(endIndex + 2).trim();
-                }
-                
-                if (paramsAndMessage.startsWith("[[")) {
-                    int endIndex = paramsAndMessage.indexOf("]]");
-                    addParams(issue, paramsAndMessage.substring(2, endIndex));
-                }
-
-                expectedIssues.add(issue);
-
-            } else if (text.startsWith("^")) {
-                addPreciseLocation(trivia);
+                issueLine += Integer.valueOf(shiftValue.substring(1));
+                paramsAndMessage = spaceSplit.length > 1 ? spaceSplit[1] : "";
             }
+
+            TestIssue issue = TestIssue.create(null, issueLine);
+
+            if (paramsAndMessage.startsWith("{{")) {
+                int endIndex = paramsAndMessage.indexOf("}}");
+                String message = paramsAndMessage.substring(2, endIndex);
+                issue.message(message);
+                paramsAndMessage = paramsAndMessage.substring(endIndex + 2).trim();
+            }
+
+            if (paramsAndMessage.startsWith("[[")) {
+                int endIndex = paramsAndMessage.indexOf("]]");
+                addParams(issue, paramsAndMessage.substring(2, endIndex));
+            }
+
+            expectedIssues.add(issue);
+
+        } else if (text.startsWith("^")) {
+            addPreciseLocation(trivia);
         }
     }
 
