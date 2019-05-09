@@ -19,7 +19,15 @@
  */
 package org.sonar.plsqlopen.checks.verifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.GenericTokenType;
+import com.sonar.sslr.api.Token;
+import org.assertj.core.api.Fail;
+import org.junit.Test;
+import org.sonar.plsqlopen.checks.IssueLocation;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,18 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.assertj.core.api.Fail;
-import org.junit.Test;
-import org.sonar.plsqlopen.checks.IssueLocation;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.GenericTokenType;
-import com.sonar.sslr.api.Token;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PlSqlCheckVerifierTest {
 

@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
-import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*;
-import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
-import static org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*;
-
 import org.sonar.sslr.grammar.GrammarRuleKey;
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder;
+
+import static org.sonar.plugins.plsqlopen.api.PlSqlGrammar.EXPRESSION;
+import static org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*;
+import static org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*;
 
 public enum AggregateSqlFunctionsGrammar implements GrammarRuleKey {
 
