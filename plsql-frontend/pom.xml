@@ -18,6 +18,11 @@
       <artifactId>sonar-plugin-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>zpa-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.sonarsource.sslr</groupId>
       <artifactId>sslr-core</artifactId>
     </dependency>
