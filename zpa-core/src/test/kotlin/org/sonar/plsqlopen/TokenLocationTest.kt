@@ -22,8 +22,8 @@ package org.sonar.plsqlopen
 import com.sonar.sslr.api.GenericTokenType
 import com.sonar.sslr.api.Token
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
 import java.net.URI
-import kotlin.test.Test
 
 class TokenLocationTest {
 
@@ -77,13 +77,12 @@ class TokenLocationTest {
         assertThat(location.endColumn()).isEqualTo(3)
     }
 
-    private fun createToken(startLine: Int, startCharacter: Int, value: String): Token {
-        return Token.builder()
+    private fun createToken(startLine: Int, startCharacter: Int, value: String) =
+        Token.builder()
             .setLine(startLine)
             .setColumn(startCharacter)
             .setValueAndOriginalValue(value)
             .setType(GenericTokenType.IDENTIFIER)
             .setURI(URI("tests://unittest"))
             .build()
-    }
 }

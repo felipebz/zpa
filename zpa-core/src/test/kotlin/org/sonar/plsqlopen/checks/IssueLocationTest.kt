@@ -23,8 +23,8 @@ import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.GenericTokenType
 import com.sonar.sslr.api.Token
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
 import java.net.URI
-import kotlin.test.Test
 
 class IssueLocationTest {
 

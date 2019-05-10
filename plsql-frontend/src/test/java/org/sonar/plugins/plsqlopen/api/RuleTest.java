@@ -34,7 +34,7 @@ public abstract class RuleTest {
     protected Parser<Grammar> p;
     
     protected void setRootRule(GrammarRuleKey ruleKey) {
-        p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
+        p = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
         p.setRootRule(p.getGrammar().rule(ruleKey));
     }
     

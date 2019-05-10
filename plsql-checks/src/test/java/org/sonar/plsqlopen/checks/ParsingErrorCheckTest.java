@@ -41,7 +41,7 @@ public class ParsingErrorCheckTest extends BaseCheckTest {
     public void test() {
         File file = new File("src/test/resources/checks/parsing_error.sql");
 
-        Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
+        Parser<Grammar> parser = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
         PlSqlVisitorContext context;
         try {
             parser.parse(file);

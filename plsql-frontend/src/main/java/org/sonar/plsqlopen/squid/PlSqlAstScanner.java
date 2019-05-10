@@ -87,7 +87,7 @@ public class PlSqlAstScanner {
         this.noSonarFilter = noSonarFilter;
         this.formsMetadata = formsMetadata;
 		this.fileLinesContextFactory = fileLinesContextFactory;
-        this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
+        this.parser = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
     }
 
     public PlSqlAstScanner(SensorContext context, PlSqlChecks checks, NoSonarFilter noSonarFilter, 

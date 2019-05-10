@@ -19,24 +19,23 @@
  */
 package org.sonar.plsqlopen.symbols;
 
+import com.google.common.base.Preconditions;
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.AstNodeType;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.symbol.NewSymbol;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
 import org.sonar.plugins.plsqlopen.api.symbols.Scope;
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTableImpl;
-
-import com.google.common.base.Preconditions;
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.AstNodeType;
 
 public class SymbolVisitor extends PlSqlCheck {
 
@@ -187,7 +186,7 @@ public class SymbolVisitor extends PlSqlCheck {
     
     private void visitCursor(AstNode node) {
         AstNode identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME);
-        createSymbol(identifier, Symbol.Kind.CURSOR, null);
+        createSymbol(identifier, Symbol.Kind.CURSOR, PlSqlType.UNKNOWN);
         enterScope(node, null, null);
     }
     
