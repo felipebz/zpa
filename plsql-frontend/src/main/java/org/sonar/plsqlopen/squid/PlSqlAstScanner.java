@@ -87,7 +87,7 @@ public class PlSqlAstScanner {
         this.noSonarFilter = noSonarFilter;
         this.formsMetadata = formsMetadata;
 		this.fileLinesContextFactory = fileLinesContextFactory;
-        this.parser = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
+        this.parser = PlSqlParser.create(new PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled));
     }
 
     public PlSqlAstScanner(SensorContext context, PlSqlChecks checks, NoSonarFilter noSonarFilter, 
@@ -257,10 +257,7 @@ public class PlSqlAstScanner {
             newLocation.at(range);
         }
 
-        String message = location.message();
-        if (message != null) {
-            newLocation.message(message);
-        }
+        newLocation.message(location.message());
         return newLocation;
     }
     

@@ -69,7 +69,7 @@ public class PlSqlConfigurationModel extends AbstractConfigurationModel {
 
     @Override
     public Parser<Grammar> doGetParser() {
-        return PlSqlParser.INSTANCE.create(getConfiguration());
+        return PlSqlParser.create(getConfiguration());
     }
 
     @Override

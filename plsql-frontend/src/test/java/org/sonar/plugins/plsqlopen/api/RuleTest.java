@@ -34,15 +34,11 @@ public abstract class RuleTest {
     protected Parser<Grammar> p;
     
     protected void setRootRule(GrammarRuleKey ruleKey) {
-        p = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
+        p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
         p.setRootRule(p.getGrammar().rule(ruleKey));
     }
     
     protected void setErrorRecoveryEnabled(boolean value) {
         errorRecoveryEnabled = value;
-    }
-    
-    protected static String lines(String... lines) {
-        return String.join("\n", lines);
     }
 }

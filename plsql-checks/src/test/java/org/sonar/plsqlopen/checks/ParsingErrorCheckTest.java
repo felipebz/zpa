@@ -26,10 +26,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.Test;
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.squid.PlSqlConfiguration;
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 
 import com.sonar.sslr.api.Grammar;
 import com.sonar.sslr.api.RecognitionException;
@@ -41,7 +41,7 @@ public class ParsingErrorCheckTest extends BaseCheckTest {
     public void test() {
         File file = new File("src/test/resources/checks/parsing_error.sql");
 
-        Parser<Grammar> parser = PlSqlParser.INSTANCE.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
+        Parser<Grammar> parser = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8));
         PlSqlVisitorContext context;
         try {
             parser.parse(file);
