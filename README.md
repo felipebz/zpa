@@ -2,7 +2,8 @@
 
 [![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=master)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
 [![Coverage Status](https://coveralls.io/repos/github/felipebz/zpa/badge.svg?branch=master)](https://coveralls.io/github/felipebz/zpa?branch=master)
-[![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) ](https://github.com/felipebz/zpa/releases/latest)
+[![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffelipebz%2Fzpa.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffelipebz%2Fzpa?ref=badge_shield)
+](https://github.com/felipebz/zpa/releases/latest)
 
 This plugin adds PL/SQL and Oracle SQL support to the [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
 
@@ -42,3 +43,7 @@ You can also specify the SonarQube version using the property `sonar.runtimeVers
 ## Alternatives:
 If you're looking for PL/SQL support in SonarQube, there is also 
 the [commercial plugin from SonarSource](http://www.sonarsource.com/products/plugins/languages/plsql/).
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffelipebz%2Fzpa.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffelipebz%2Fzpa?ref=badge_large)
