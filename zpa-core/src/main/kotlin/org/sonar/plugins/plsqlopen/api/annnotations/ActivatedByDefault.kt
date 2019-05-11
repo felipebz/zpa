@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,11 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api;
+package org.sonar.plugins.plsqlopen.api.annnotations
 
-public interface PlSqlFile {
-
-    String contents();
-
-    String fileName();
-}
+@Retention
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class ActivatedByDefault

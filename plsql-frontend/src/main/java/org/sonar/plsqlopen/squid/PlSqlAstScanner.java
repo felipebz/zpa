@@ -42,6 +42,7 @@ import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plsqlopen.FormsMetadataAwareCheck;
+import org.sonar.plsqlopen.PlSqlAstScannerKt;
 import org.sonar.plsqlopen.PlSqlChecks;
 import org.sonar.plsqlopen.checks.IssueLocation;
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor;
@@ -213,14 +214,7 @@ public class PlSqlAstScanner {
     }
 
     public static SemanticAstNode getSemanticNode(AstNode node) {
-        SemanticAstNode annotatedNode = new SemanticAstNode(node);
-
-
-        for (AstNode child : node.getChildren()) {
-            annotatedNode.addChild(getSemanticNode(child));
-        }
-
-        return annotatedNode;
+        return PlSqlAstScannerKt.getSemanticNode(node);
     }
     
     private void saveIssues(InputFile inputFile, PlSqlVisitor check, List<PreciseIssue> issues) {

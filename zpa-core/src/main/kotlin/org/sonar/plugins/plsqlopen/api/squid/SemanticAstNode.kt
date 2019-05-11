@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,15 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations;
+package org.sonar.plugins.plsqlopen.api.squid
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.sonar.sslr.api.AstNode
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface ActivatedByDefault {
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
+class SemanticAstNode(astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
+
+    var symbol: Symbol? = null
+        set(symbol) {
+            field = symbol
+
+            for (node in children) {
+                (node as SemanticAstNode).symbol = symbol
+            }
+        }
+    var plSqlType: PlSqlType? = PlSqlType.UNKNOWN
+        get() = if (this.symbol != null) {
+            this.symbol!!.type()
+        } else field
+
+    init {
+        super.setFromIndex(astNode.fromIndex)
+        super.setToIndex(astNode.toIndex)
+    }
 }

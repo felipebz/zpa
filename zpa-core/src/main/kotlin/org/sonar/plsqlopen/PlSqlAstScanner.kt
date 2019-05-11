@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,28 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api;
+package org.sonar.plsqlopen
 
-import java.nio.charset.StandardCharsets;
+import com.sonar.sslr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-import org.sonar.plsqlopen.parser.PlSqlParser;
-import org.sonar.plsqlopen.squid.PlSqlConfiguration;
-import org.sonar.sslr.grammar.GrammarRuleKey;
+fun getSemanticNode(node: AstNode): SemanticAstNode {
+    val annotatedNode = SemanticAstNode(node)
 
-import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.impl.Parser;
-
-public abstract class RuleTest {
-    private boolean errorRecoveryEnabled;
-    
-    protected Parser<Grammar> p;
-    
-    protected void setRootRule(GrammarRuleKey ruleKey) {
-        p = PlSqlParser.create(new PlSqlConfiguration(StandardCharsets.UTF_8, errorRecoveryEnabled));
-        p.setRootRule(p.getGrammar().rule(ruleKey));
+    for (child in node.children) {
+        annotatedNode.addChild(getSemanticNode(child))
     }
-    
-    protected void setErrorRecoveryEnabled(boolean value) {
-        errorRecoveryEnabled = value;
-    }
+
+    return annotatedNode
 }

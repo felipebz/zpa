@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,21 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations;
+package org.sonar.plugins.plsqlopen.api.annnotations
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface ConstantRemediation {
-    
-    /**
-     * Value of the remediation
-     * @return e.g. "10min" or "2h"
-     */
-    String value();
-
-}
+@Retention
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class ConstantRemediation(
+        /**
+         * Value of the remediation
+         * @return e.g. "10min" or "2h"
+         */
+        val value: String)

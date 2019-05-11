@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,32 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid;
+package org.sonar.plugins.plsqlopen.api.annnotations
 
-public final class PlSqlCommentAnalyzer {
-
-    private PlSqlCommentAnalyzer() { }
-    
-    public static boolean isBlank(String line) {
-        for (int i = 0; i < line.length(); i++) {
-            if (Character.isLetterOrDigit(line.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static String getContents(String comment) {
-        if (comment.startsWith("--")) {
-            return comment.substring(2);
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                return comment.substring(2, comment.length() - 2);
-            }
-            return comment.substring(2);
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
-    
-}
+@Retention
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class RuleTemplate

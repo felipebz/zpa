@@ -21,8 +21,8 @@ package org.sonar.plugins.plsqlopen.api
 
 import org.sonar.sslr.grammar.GrammarRuleBuilder
 
-fun GrammarRuleBuilder.define(e: Any): GrammarRuleBuilder =
+internal fun GrammarRuleBuilder.define(e: Any): GrammarRuleBuilder =
     this.`is`(e)
 
-fun GrammarRuleBuilder.define(e: Any, vararg rest: Any): GrammarRuleBuilder =
+internal fun GrammarRuleBuilder.define(e: Any, vararg rest: Any): GrammarRuleBuilder =
     this.`is`(e, *rest)

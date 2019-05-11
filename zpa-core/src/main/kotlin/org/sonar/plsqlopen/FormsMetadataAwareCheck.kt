@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,29 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.matchers;
+package org.sonar.plsqlopen
 
-import java.util.Arrays;
-
-@FunctionalInterface
-public interface NameCriteria {
-
-    boolean matches(String name);
-
-    static NameCriteria any() {
-        return name -> true;
-    }
-
-    static NameCriteria is(String exactName) {
-    	return exactName::equalsIgnoreCase;
-    }
-
-    static NameCriteria startsWith(String prefix) {
-        return name -> name.toUpperCase().startsWith(prefix.toUpperCase());
-    }
-    
-    static NameCriteria in(String... prefix) {
-        return name -> Arrays.stream(prefix).anyMatch(name::equalsIgnoreCase);
-    }
-    
-}
+// Marker interface to define checks that require Oracle Forms metadata
+interface FormsMetadataAwareCheck

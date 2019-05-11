@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,19 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations;
+package org.sonar.plugins.plsqlopen.api.squid
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+object PlSqlCommentAnalyzer {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface RuleInfo {
+    @JvmStatic
+    fun isBlank(line: String): Boolean {
+        for (i in 0 until line.length) {
+            if (line[i].isLetterOrDigit()) {
+                return false
+            }
+        }
+        return true
+    }
 
-    Scope scope() default Scope.MAIN;
-
-    enum Scope { ALL, MAIN, TEST }
+    @JvmStatic
+    fun getContents(comment: String): String {
+        return if (comment.startsWith("--")) {
+            comment.substring(2)
+        } else if (comment.startsWith("/*")) {
+            if (comment.endsWith("*/")) {
+                comment.substring(2, comment.length - 2)
+            } else comment.substring(2)
+        } else {
+            throw IllegalArgumentException()
+        }
+    }
 
 }

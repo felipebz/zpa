@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,8 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen;
+package org.sonar.plugins.plsqlopen.api.annnotations
 
-// Marker interface to define checks that require Oracle Forms metadata
-public interface FormsMetadataAwareCheck {
+@Retention
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class RuleInfo(val scope: Scope = Scope.MAIN) {
+
+    enum class Scope {
+        ALL, MAIN, TEST
+    }
+
 }
