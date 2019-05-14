@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.checks;
 
+import java.util.Collections;
+
 import org.junit.Test;
 import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
 import org.sonar.plsqlopen.metadata.Block;
@@ -29,9 +31,9 @@ public class InvalidReferenceToObjectCheckTest extends BaseCheckTest {
     @Test
     public void test() {
         FormsMetadata metadata = new FormsMetadata();
-        metadata.setAlerts(new String[] {"foo"});
-        metadata.setBlocks(new Block[] { new Block("foo", new String[] {"item1"}) });
-        metadata.setLovs(new String[] {"foo"});
+        metadata.setAlerts(Collections.singletonList("foo"));
+        metadata.setBlocks(Collections.singletonList(new Block("foo", new String[] {"item1"})));
+        metadata.setLovs(Collections.singletonList("foo"));
         PlSqlCheckVerifier.verify(getPath("invalid_reference_to_object.sql"), new InvalidReferenceToObjectCheck(), metadata);
     }
 

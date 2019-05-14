@@ -128,11 +128,11 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
 
     private boolean validateAlert(String value) {
-        return Stream.of(getContext().getFormsMetadata().getAlerts()).noneMatch(alert -> alert.equalsIgnoreCase(value));
+        return getContext().getFormsMetadata().getAlerts().stream().noneMatch(alert -> alert.equalsIgnoreCase(value));
     }
     
     private boolean validateBlock(String value) {
-        return Stream.of(getContext().getFormsMetadata().getBlocks()).noneMatch(block -> block.getName().equalsIgnoreCase(value));
+        return getContext().getFormsMetadata().getBlocks().stream().noneMatch(block -> block.getName().equalsIgnoreCase(value));
     }
     
     private boolean validateItem(String value) {
@@ -149,7 +149,7 @@ public class InvalidReferenceToObjectCheck extends AbstractBaseCheck implements 
     }
     
     private boolean validateLov(String value) {
-        return Stream.of(getContext().getFormsMetadata().getLovs()).noneMatch(lov -> lov.equalsIgnoreCase(value));
+        return getContext().getFormsMetadata().getLovs().stream().noneMatch(lov -> lov.equalsIgnoreCase(value));
     }
     
     private static boolean isVarcharLiteral(AstNode argument) {
