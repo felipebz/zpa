@@ -27,7 +27,7 @@ public class SonarQubeLoggers extends Loggers {
 
     @NotNull
     @Override
-    protected Logger get(@NotNull String name) {
+    protected Logger getLogger(@NotNull String name) {
         return new SonarQubeLogger(org.sonar.api.utils.log.Loggers.get(name));
     }
 

@@ -36,7 +36,7 @@ class FormsMetadata {
 
     companion object {
 
-        private val LOG = Loggers[FormsMetadata::class.java]
+        private val LOG = Loggers.getLogger(FormsMetadata::class.java)
 
         @JvmStatic
         fun loadFromFile(path: String?): FormsMetadata? {

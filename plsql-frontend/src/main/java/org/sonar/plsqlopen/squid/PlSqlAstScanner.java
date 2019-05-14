@@ -19,14 +19,12 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import static java.util.stream.Collectors.toList;
-
-import java.io.InterruptedIOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Grammar;
+import com.sonar.sslr.api.RecognitionException;
+import com.sonar.sslr.impl.Parser;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.measure.Metric;
@@ -62,16 +60,17 @@ import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Grammar;
-import com.sonar.sslr.api.RecognitionException;
-import com.sonar.sslr.impl.Parser;
+import java.io.InterruptedIOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class PlSqlAstScanner {
 
-    private static final Logger LOG = Loggers.get(PlSqlAstScanner.class);
+    private static final Logger LOG = Loggers.getLogger(PlSqlAstScanner.class);
     
     private final SensorContext context;
     private final Parser<Grammar> parser;

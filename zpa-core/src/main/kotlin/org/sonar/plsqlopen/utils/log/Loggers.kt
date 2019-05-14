@@ -21,16 +21,15 @@ package org.sonar.plsqlopen.utils.log
 
 abstract class Loggers {
 
-    protected abstract fun get(name: String): Logger
+    protected abstract fun getLogger(name: String): Logger
 
     companion object {
-
         @JvmStatic
         var factory: Loggers = ZpaLoggers()
 
         @JvmStatic
-        operator fun get(name: Class<*>): Logger {
-            return factory.get(name.name)
+        fun getLogger(name: Class<*>): Logger {
+            return factory.getLogger(name.name)
         }
     }
 

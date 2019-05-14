@@ -19,11 +19,11 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.sonar.plsqlopen.utils.log.Logger;
 import org.sonar.plsqlopen.utils.log.Loggers;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 public class ProgressReport implements Runnable {
 
@@ -45,7 +45,7 @@ public class ProgressReport implements Runnable {
     }
     
     public ProgressReport(String threadName, long period) {
-        this(threadName, period, Loggers.get(ProgressReport.class));
+        this(threadName, period, Loggers.getLogger(ProgressReport.class));
     }
     
     @Override

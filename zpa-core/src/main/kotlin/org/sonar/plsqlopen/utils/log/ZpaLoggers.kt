@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.utils.log
 
 class ZpaLoggers : Loggers() {
-    override fun get(name: String): Logger {
+    override fun getLogger(name: String): Logger {
         return ZpaLogger(java.util.logging.Logger.getLogger(name))
     }
 }
