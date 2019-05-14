@@ -22,8 +22,8 @@ package org.sonar.plsqlopen.squid;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.sonar.plsqlopen.utils.log.Logger;
+import org.sonar.plsqlopen.utils.log.Loggers;
 
 public class ProgressReport implements Runnable {
 

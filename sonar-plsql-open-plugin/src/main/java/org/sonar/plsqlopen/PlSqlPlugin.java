@@ -25,6 +25,8 @@ import org.sonar.api.Plugin;
 import org.sonar.api.PropertyType;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
+import org.sonar.plsqlopen.util.log.SonarQubeLoggers;
+import org.sonar.plsqlopen.utils.log.Loggers;
 
 public class PlSqlPlugin implements Plugin {
 
@@ -36,6 +38,7 @@ public class PlSqlPlugin implements Plugin {
     @Override
     public void define(@Nonnull Context context) {
         SonarQubeUtils.setSonarQubeVersion(context.getSonarQubeVersion());
+        Loggers.setFactory(new SonarQubeLoggers());
 
         context.addExtensions(
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)

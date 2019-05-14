@@ -19,16 +19,18 @@
  */
 package org.sonar.plsqlopen.metadata;
 
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-
-import javax.annotation.CheckForNull;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+
+import javax.annotation.CheckForNull;
+
+import org.sonar.plsqlopen.utils.log.Logger;
+import org.sonar.plsqlopen.utils.log.Loggers;
+
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 
 public class FormsMetadata {
 
