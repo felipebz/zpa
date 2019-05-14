@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,30 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.metrics;
+package org.sonar.plsqlopen.metrics
 
-import com.sonar.sslr.api.AstNode;
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
+import com.sonar.sslr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 
-public class FunctionComplexityVisitor extends ComplexityVisitor {
+class FunctionComplexityVisitor : ComplexityVisitor() {
 
-    private int numberOfFunctions;
+    private val METHOD_DECLARATION = arrayOf(PlSqlGrammar.CREATE_PROCEDURE,
+        PlSqlGrammar.CREATE_FUNCTION,
+        PlSqlGrammar.PROCEDURE_DECLARATION,
+        PlSqlGrammar.FUNCTION_DECLARATION)
 
-    private static final PlSqlGrammar[] METHOD_DECLARATION = { 
-          PlSqlGrammar.CREATE_PROCEDURE,
-          PlSqlGrammar.CREATE_FUNCTION, 
-          PlSqlGrammar.PROCEDURE_DECLARATION,
-          PlSqlGrammar.FUNCTION_DECLARATION };
+    var numberOfFunctions: Int = 0
+        private set
 
-    @Override
-    public void visitNode(AstNode node) {
-        if (node.is(METHOD_DECLARATION)) {
-            numberOfFunctions++;
+    override fun visitNode(node: AstNode) {
+        if (node.`is`(*METHOD_DECLARATION)) {
+            numberOfFunctions++
         }
     }
-    
-    public int getNumberOfFunctions() {
-        return numberOfFunctions;
-    }
-    
+
 }

@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,12 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.squid;
+package org.sonar.plsqlopen.squid
 
-public class AnalysisException extends RuntimeException {
-
-    public AnalysisException(String string, Throwable e) {
-        super(string, e);
-    }
-
-}
+class AnalysisException(string: String, e: Throwable) : RuntimeException(string, e)
