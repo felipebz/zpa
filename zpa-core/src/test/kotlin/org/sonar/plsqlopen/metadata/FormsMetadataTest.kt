@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.metadata
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 
 import org.junit.Test
 
@@ -27,15 +28,19 @@ class FormsMetadataTest {
 
     @Test
     fun canReadSimpleMetadaFile() {
-        val metadata = FormsMetadata.loadFromFile("src/test/resources/metadata/metadata.json")!!
+        val metadata = FormsMetadata.loadFromFile("src/test/resources/metadata/metadata.json")
 
-        assertThat(metadata.alerts).containsExactly("foo", "bar")
-        assertThat(metadata.blocks).hasSize(2)
-        assertThat(metadata.blocks[0].name).isEqualTo("foo")
-        assertThat(metadata.blocks[0].items).containsExactly("item1", "item2")
-        assertThat(metadata.blocks[1].name).isEqualTo("bar")
-        assertThat(metadata.blocks[1].items).containsExactly("item1", "item2")
-        assertThat(metadata.lovs).containsExactly("foo", "bar")
+        if (metadata == null) {
+            fail("Should load Oracle Forms metadata")
+        } else {
+            assertThat(metadata.alerts).containsExactly("foo", "bar")
+            assertThat(metadata.blocks).hasSize(2)
+            assertThat(metadata.blocks[0].name).isEqualTo("foo")
+            assertThat(metadata.blocks[0].items).containsExactly("item1", "item2")
+            assertThat(metadata.blocks[1].name).isEqualTo("bar")
+            assertThat(metadata.blocks[1].items).containsExactly("item1", "item2")
+            assertThat(metadata.lovs).containsExactly("foo", "bar")
+        }
     }
 
 

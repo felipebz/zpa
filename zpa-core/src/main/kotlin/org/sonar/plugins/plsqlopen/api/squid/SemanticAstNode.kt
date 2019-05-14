@@ -34,10 +34,9 @@ class SemanticAstNode(astNode: AstNode) : AstNode(astNode.type, astNode.name, as
                 (node as SemanticAstNode).symbol = symbol
             }
         }
+
     var plSqlType: PlSqlType? = PlSqlType.UNKNOWN
-        get() = if (this.symbol != null) {
-            this.symbol!!.type()
-        } else field
+        get() = this.symbol?.type() ?:  field
 
     init {
         super.setFromIndex(astNode.fromIndex)

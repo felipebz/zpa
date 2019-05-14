@@ -110,14 +110,14 @@ class MethodMatcher private constructor()
             return false
         }
 
-        var matches = nameAcceptable(nodes.removeLast(), methodNameCriteria!!)
+        var matches =  methodNameCriteria?.let { nameAcceptable(nodes.removeLast(), it) } ?: true
 
-        if (packageNameCriteria != null) {
-            matches = matches and (!nodes.isEmpty() && nameAcceptable(nodes.removeLast(), packageNameCriteria!!))
+        packageNameCriteria?.let {
+            matches = matches and (!nodes.isEmpty() && nameAcceptable(nodes.removeLast(), it))
         }
 
-        if (schemaNameCriteria != null) {
-            matches = matches and (schemaIsOptional && nodes.isEmpty() || !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), schemaNameCriteria!!))
+        schemaNameCriteria?.let {
+            matches = matches and (schemaIsOptional && nodes.isEmpty() || !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), it))
         }
 
         return matches && nodes.isEmpty() && argumentsAcceptable(originalNode)
