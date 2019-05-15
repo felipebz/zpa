@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo;
@@ -51,6 +52,11 @@ public class InsertWithoutColumnsCheck extends AbstractBaseCheck  {
             AstNode value = node.getLastChild();
 
             if (semantic(value).getPlSqlType() == PlSqlType.ROWTYPE) {
+                return;
+            }
+
+            AstNode possibleForAll = node.getPreviousSibling();
+            if (possibleForAll != null && possibleForAll.getType() == PlSqlGrammar.FORALL_STATEMENT) {
                 return;
             }
 
