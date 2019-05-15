@@ -49,10 +49,10 @@ class SymbolTableImplTest {
     @Test
     fun returnScopeForSymbol() {
         val node1 = newAstNodeForTest("foo")
-        val scope1 = Scope(null, node1, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope1 = ScopeImpl(null, node1, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val node2 = newAstNodeForTest("bar")
-        val scope2 = Scope(null, node2, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope2 = ScopeImpl(null, node2, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
         symbolTable.addScope(scope1)
@@ -72,7 +72,7 @@ class SymbolTableImplTest {
     fun returnSymbolForNode() {
         val node = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("bar")
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
         val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
@@ -91,7 +91,7 @@ class SymbolTableImplTest {
     fun returnScopeForSymbolForNode() {
         val node = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("bar")
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
         symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
@@ -102,7 +102,7 @@ class SymbolTableImplTest {
 
     @Test
     fun getSymbolsByKind() {
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val node = newAstNodeForTest("foo")
 
@@ -117,7 +117,7 @@ class SymbolTableImplTest {
 
     @Test
     fun getSymbolsByName() {
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val node1 = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("FOO")

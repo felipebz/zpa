@@ -20,78 +20,22 @@
 package org.sonar.plugins.plsqlopen.api.symbols
 
 import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.util.*
 
-class Scope(private val outer: Scope?, private val node: AstNode?, val isAutonomousTransaction: Boolean, private val hasExceptionHandler: Boolean) {
-    private val nameTypes = arrayOf<AstNodeType>(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
-    private var identifier: String? = null
-    val symbols: MutableList<Symbol> = ArrayList()
-
-    fun tree() = node
-
-    fun outer() = outer
-
-    fun identifier(): String? {
-        if (identifier == null && node != null) {
-            identifier = ""
-            val identifierNode = node.getFirstChild(*nameTypes)
-            if (identifierNode != null) {
-                this.identifier = identifierNode.tokenOriginalValue
-            }
-        }
-        return identifier
-    }
-
-    fun hasExceptionHandler() = hasExceptionHandler
-
+interface Scope {
+    val isAutonomousTransaction: Boolean
+    val symbols: List<Symbol>
+    fun tree(): AstNode?
+    fun outer(): Scope?
+    fun identifier(): String?
+    fun hasExceptionHandler(): Boolean
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind
      */
-    fun getSymbols(kind: Symbol.Kind): List<Symbol> {
-        val result = LinkedList<Symbol>()
-        for (symbol in symbols) {
-            if (symbol.`is`(kind)) {
-                result.add(symbol)
-            }
-        }
-        return result
-    }
+    fun getSymbols(kind: Symbol.Kind): List<Symbol>
 
-    fun getSymbolsAcessibleInScope(name: String, vararg kinds: Symbol.Kind): Deque<Symbol> {
-        val result = ArrayDeque<Symbol>()
-        val kindList = Arrays.asList(*kinds)
-        var scope: Scope? = this
-        while (scope != null) {
-            for (s in scope.symbols) {
-                if (s.called(name) && (kindList.isEmpty() || kindList.contains(s.kind()))) {
-                    result.add(s)
-                }
-            }
-            scope = scope.outer()
-        }
-
-        return result
-    }
-
-    fun addSymbol(symbol: Symbol) {
-        symbols.add(symbol)
-    }
-
-    fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol? {
-        val kindList = Arrays.asList(*kinds)
-        var scope: Scope? = this
-        while (scope != null) {
-            for (s in scope.symbols) {
-                if (s.called(name) && (kindList.isEmpty() || kindList.contains(s.kind()))) {
-                    return s
-                }
-            }
-            scope = scope.outer()
-        }
-
-        return null
-    }
+    fun getSymbolsAcessibleInScope(name: String, vararg kinds: Symbol.Kind): Deque<Symbol>
+    fun addSymbol(symbol: Symbol)
+    fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol?
 }

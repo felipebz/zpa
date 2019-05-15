@@ -26,12 +26,12 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
 
-class ScopeTest {
+class ScopeImplTest {
 
     @Test
     fun testScope() {
         val node = mock(AstNode::class.java)
-        val scope = Scope(null, node, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, node, false, hasExceptionHandler = false)
         assertThat(scope.outer()).isNull()
         assertThat(scope.tree()).isEqualTo(node)
         assertThat(scope.isAutonomousTransaction).isFalse()
@@ -39,7 +39,7 @@ class ScopeTest {
 
     @Test
     fun getSymbolsInScope() {
-        val scope = Scope(null, null, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, false, hasExceptionHandler = false)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -52,7 +52,7 @@ class ScopeTest {
 
     @Test
     fun getSymbolsByKind() {
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -66,7 +66,7 @@ class ScopeTest {
 
     @Test
     fun getSymbolsAcessibleInScope() {
-        val scope = Scope(null, null, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, false, hasExceptionHandler = false)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -81,11 +81,11 @@ class ScopeTest {
 
     @Test
     fun getSymbolsAcessibleInScopeConsideringOuterScope() {
-        val outerScope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val outerScope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = Scope(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val innerScope = ScopeImpl(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 
@@ -96,7 +96,7 @@ class ScopeTest {
 
     @Test
     fun getSymbol() {
-        val scope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -112,11 +112,11 @@ class ScopeTest {
 
     @Test
     fun getSymbolConsideringOuterScope() {
-        val outerScope = Scope(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val outerScope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = Scope(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val innerScope = ScopeImpl(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 

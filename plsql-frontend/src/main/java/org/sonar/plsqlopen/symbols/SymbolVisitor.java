@@ -32,10 +32,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword;
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode;
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType;
-import org.sonar.plugins.plsqlopen.api.symbols.Scope;
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol;
-import org.sonar.plugins.plsqlopen.api.symbols.SymbolTableImpl;
+import org.sonar.plugins.plsqlopen.api.symbols.*;
 
 public class SymbolVisitor extends PlSqlCheck {
 
@@ -265,7 +262,7 @@ public class SymbolVisitor extends PlSqlCheck {
             exception = exceptionHandler;  
         }
         
-        currentScope = new Scope(currentScope, node, autonomous, exception);
+        currentScope = new ScopeImpl(currentScope, node, autonomous, exception);
         symbolTable.addScope(currentScope);
     }
     
