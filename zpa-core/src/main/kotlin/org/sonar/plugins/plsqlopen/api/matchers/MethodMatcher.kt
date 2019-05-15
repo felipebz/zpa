@@ -104,7 +104,7 @@ class MethodMatcher private constructor()
 
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
-        val nodes = LinkedList(node.getChildren(*VARIABLE_OR_IDENTIFIER))
+        val nodes = LinkedList(node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME))
 
         if (nodes.isEmpty()) {
             return false
@@ -154,9 +154,6 @@ class MethodMatcher private constructor()
     }
 
     companion object {
-
-        private val VARIABLE_OR_IDENTIFIER = arrayOf(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
-
         @JvmStatic
         fun create(): MethodMatcher {
             return MethodMatcher()

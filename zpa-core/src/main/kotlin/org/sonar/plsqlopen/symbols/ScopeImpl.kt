@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.symbols
 
 import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -31,7 +30,6 @@ class ScopeImpl(private val outer: Scope?,
                 override val isAutonomousTransaction: Boolean,
                 private val hasExceptionHandler: Boolean) : Scope {
     private var identifier: String? = null
-    private val nameTypes = arrayOf<AstNodeType>(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
 
     override val symbols = mutableListOf<Symbol>()
 
@@ -42,7 +40,7 @@ class ScopeImpl(private val outer: Scope?,
     override fun identifier(): String? {
         if (identifier == null && node != null) {
             identifier = ""
-            val identifierNode = node.getFirstChild(*nameTypes)
+            val identifierNode = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
             if (identifierNode != null) {
                 this.identifier = identifierNode.tokenOriginalValue
             }

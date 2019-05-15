@@ -23,17 +23,14 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 
 class FunctionComplexityVisitor : ComplexityVisitor() {
-
-    private val METHOD_DECLARATION = arrayOf(PlSqlGrammar.CREATE_PROCEDURE,
-        PlSqlGrammar.CREATE_FUNCTION,
-        PlSqlGrammar.PROCEDURE_DECLARATION,
-        PlSqlGrammar.FUNCTION_DECLARATION)
-
     var numberOfFunctions: Int = 0
         private set
 
     override fun visitNode(node: AstNode) {
-        if (node.`is`(*METHOD_DECLARATION)) {
+        if (node.`is`(PlSqlGrammar.CREATE_PROCEDURE,
+                PlSqlGrammar.CREATE_FUNCTION,
+                PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.FUNCTION_DECLARATION)) {
             numberOfFunctions++
         }
     }
