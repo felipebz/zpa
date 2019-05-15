@@ -49,6 +49,7 @@ import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor;
 import org.sonar.plsqlopen.metrics.MetricsVisitor;
 import org.sonar.plsqlopen.parser.PlSqlParser;
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver;
+import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable;
 import org.sonar.plsqlopen.symbols.SymbolVisitor;
 import org.sonar.plsqlopen.utils.log.Logger;
 import org.sonar.plsqlopen.utils.log.Loggers;
@@ -112,8 +113,10 @@ public class PlSqlAstScanner {
 
         PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
 
+        SymbolVisitor symbolVisitor = new SymbolVisitor(new DefaultTypeSolver());
+
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
-        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
+        checksToRun.add(symbolVisitor);
         
         checksToRun.addAll(
                 checks.stream()
@@ -139,6 +142,9 @@ public class PlSqlAstScanner {
                 saveIssues(inputFile, check, issues);
             }
         }
+
+        SonarQubeSymbolTable symbolSaver = new SonarQubeSymbolTable(context, inputFile);
+        symbolSaver.save(symbolVisitor.getSymbols());
         
         saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, metricsVisitor.getNumberOfStatements());
         saveMetricOnFile(inputFile, CoreMetrics.NCLOC, metricsVisitor.getLinesOfCode().size());
@@ -159,8 +165,10 @@ public class PlSqlAstScanner {
         PlSqlVisitorContext newVisitorContext = getPlSqlVisitorContext(inputFile);
         MetricsVisitor metricsVisitor = new MetricsVisitor();
 
+        SymbolVisitor symbolVisitor = new SymbolVisitor(new DefaultTypeSolver());
+
         List<PlSqlVisitor> checksToRun = new ArrayList<>();
-        checksToRun.add(new SymbolVisitor(context, inputFile, new DefaultTypeSolver()));
+        checksToRun.add(symbolVisitor);
         checksToRun.add(new PlSqlHighlighterVisitor(context, inputFile));
         checksToRun.add(metricsVisitor);
 
@@ -181,6 +189,9 @@ public class PlSqlAstScanner {
                 saveIssues(inputFile, check, issues);
             }
         }
+
+        SonarQubeSymbolTable symbolTable = new SonarQubeSymbolTable(context, inputFile);
+        symbolTable.save(symbolVisitor.getSymbols());
     }
 
     private boolean ruleHasScope(PlSqlVisitor check, RuleInfo.Scope scope) {
@@ -193,7 +204,7 @@ public class PlSqlAstScanner {
     }
 
     private PlSqlVisitorContext getPlSqlVisitorContext(InputFile inputFile) {
-        PlSqlFile plSqlFile = SonarQubePlSqlFile.create(inputFile);
+        PlSqlFile plSqlFile =   SonarQubePlSqlFile.create(inputFile);
 
         PlSqlVisitorContext visitorContext;
         try {
