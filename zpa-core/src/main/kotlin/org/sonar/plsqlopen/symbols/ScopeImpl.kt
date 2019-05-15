@@ -17,11 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.symbols
+package org.sonar.plsqlopen.symbols
 
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 
 class ScopeImpl(private val outer: Scope?,
