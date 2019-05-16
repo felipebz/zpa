@@ -37,7 +37,7 @@ open class PlSqlCheck : PlSqlVisitor() {
 
     fun semantic(node: AstNode) = node as SemanticAstNode
 
-    fun issues(): List<PreciseIssue> = Collections.unmodifiableList(ArrayList(issues))
+    fun issues(): List<PreciseIssue> = Collections.unmodifiableList(issues)
 
     fun scanFileForIssues(context: PlSqlVisitorContext): List<PreciseIssue> {
         issues.clear()

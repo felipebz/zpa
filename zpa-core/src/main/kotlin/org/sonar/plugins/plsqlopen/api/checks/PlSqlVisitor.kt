@@ -25,7 +25,6 @@ import com.sonar.sslr.api.Token
 import com.sonar.sslr.api.Trivia
 import org.sonar.plsqlopen.squid.PlSqlAstWalker
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
-import java.util.*
 
 open class PlSqlVisitor {
 
@@ -67,7 +66,7 @@ open class PlSqlVisitor {
     }
 
     fun subscribeTo(vararg astNodeTypes: AstNodeType) {
-        Collections.addAll(astNodeTypesToVisit, *astNodeTypes)
+        astNodeTypesToVisit.addAll(astNodeTypes)
     }
 
     fun scanFile(context: PlSqlVisitorContext) {

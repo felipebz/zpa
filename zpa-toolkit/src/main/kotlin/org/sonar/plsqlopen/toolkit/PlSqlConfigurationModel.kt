@@ -32,7 +32,6 @@ import org.sonar.sslr.toolkit.AbstractConfigurationModel
 import org.sonar.sslr.toolkit.ConfigurationProperty
 import org.sonar.sslr.toolkit.Validators
 import java.nio.charset.Charset
-import java.util.*
 
 class PlSqlConfigurationModel : AbstractConfigurationModel() {
 
@@ -54,7 +53,7 @@ class PlSqlConfigurationModel : AbstractConfigurationModel() {
     override fun getCharset(): Charset = Charset.forName(charsetProperty.value)
 
     override fun getProperties(): List<ConfigurationProperty> =
-        Collections.unmodifiableList(Arrays.asList(charsetProperty, errorRecoveryProperty))
+        listOf(charsetProperty, errorRecoveryProperty)
 
     override fun doGetParser(): Parser<Grammar> = PlSqlParser.create(configuration)
 
