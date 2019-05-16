@@ -1,0 +1,256 @@
+/**
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2019 Felipe Zorzo
+ * mailto:felipebzorzo AT gmail DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonar.plsqlopen.checks.verifier
+
+import com.google.common.collect.LinkedListMultimap
+import com.google.common.collect.Multimap
+import com.sonar.sslr.api.AstNode
+import com.sonar.sslr.api.GenericTokenType
+import com.sonar.sslr.api.Token
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Fail
+import org.junit.Test
+import org.sonar.plsqlopen.checks.IssueLocation
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
+import java.net.URI
+import java.util.*
+
+class PlSqlCheckVerifierTest {
+
+    @Test
+    fun verify_line_issues() {
+        val visitor = FakeCheck().withDefaultIssues()
+        PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
+    }
+
+    @Test
+    fun verify_unexpected_issue() {
+        val visitor = FakeCheck().withDefaultIssues().withIssue(4, "extra message")
+
+        try {
+            PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("Unexpected issue at line 4: \"extra message\"")
+        }
+    }
+
+    @Test
+    fun verify_combined_missing_expected_and_unexpected_issues() {
+        val visitor = FakeCheck().withDefaultIssues().withIssue(4, "extra message")
+                .withoutIssue(1)
+
+        try {
+            PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("Missing issue at line 1")
+        }
+    }
+
+    @Test
+    fun verify_missing_expected_issue() {
+        val visitor = FakeCheck().withDefaultIssues().withoutIssue(1)
+
+        try {
+            PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("Missing issue at line 1")
+        }
+    }
+
+
+    @Test
+    fun verify_no_issue() {
+        PlSqlCheckVerifier.verify(FILENAME_NO_ISSUE, noEffectCheck)
+    }
+
+    @Test
+    fun verify_should_fail_when_using_incorrect_shift() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_shift.sql", noEffectCheck)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("Use only '@+N' or '@-N' to shifts messages.")
+        }
+    }
+
+    @Test
+    fun verify_should_fail_when_using_incorrect_attribute() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
+                    noEffectCheck)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: IllegalStateException) {
+            assertThat(e).hasMessage("Invalid param at line 1: invalid")
+        }
+    }
+
+    @Test
+    fun verify_should_fail_when_using_incorrect_attribute2() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
+                    noEffectCheck)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: IllegalStateException) {
+            assertThat(e).hasMessage("Invalid param at line 1: invalid")
+        }
+    }
+
+    @Test
+    fun verify_should_fail_when_using_incorrect_secondaryLocation() {
+        val visitor = FakeCheck().withDefaultIssues()
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[[]4]> but was:<[[3, ]4]>")
+        }
+    }
+
+    @Test
+    fun verify_should_fail_when_using_incorrect_secondaryLocation2() {
+        val visitor = FakeCheck().withDefaultIssues()
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor)
+            Fail.fail<Any>("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[3, 4[, 5]]> but was:<[3, 4[]]>")
+        }
+    }
+
+    @Test
+    fun verify_should_fail_when_precision_location_comment_is_invalid() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_comment.sql", FakeCheck())
+            Fail.fail<Any>("Test should fail")
+        } catch (e: IllegalStateException) {
+            assertThat(e).hasMessage("Line 3: comments asserting a precise location should start at column 1")
+        }
+    }
+
+    @Test
+    fun verify_unexpected_precise_location() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location.sql", FakeCheck())
+        } catch (e: IllegalStateException) {
+            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
+        }
+    }
+
+    @Test
+    fun verify_unexpected_precise_location2() {
+        try {
+            PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location2.sql", FakeCheck())
+        } catch (e: IllegalStateException) {
+            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
+        }
+    }
+
+    private class FakeCheck : PlSqlCheck() {
+
+        internal var issues: Multimap<Int, String> = LinkedListMultimap.create()
+        internal var preciseIssues: Multimap<Int, Set<IssueLocation>> = LinkedListMultimap.create()
+
+        fun withDefaultIssues(): FakeCheck {
+            return this.withIssue(1, "message")
+                    .withIssue(2, "message1")
+                    .withIssue(5, "message2")
+                    .withIssue(6, "message3")
+                    .withIssue(6, "message3")
+                    .withPreciseIssue(
+                            IssueLocation.preciseLocation(mockNode(8, 9, 8, 10), "message4"),
+                            IssueLocation.atLineLevel("no message", 3),
+                            IssueLocation.atLineLevel("no message", 4)
+                    )
+                    .withPreciseIssue(IssueLocation.atLineLevel("no message", 9))
+                    .withPreciseIssue(IssueLocation.preciseLocation(mockNode(11, 5, 12, 11), "message12"))
+                    .withIssue(14, "message17")
+                    .withPreciseIssue(IssueLocation.preciseLocation(mockNode(15, 5, 15, 9), "baseline"))
+        }
+
+        fun withIssue(line: Int, message: String) = apply {
+            issues.put(line, message)
+        }
+
+        fun withPreciseIssue(vararg message: IssueLocation) = apply {
+            preciseIssues.put(message[0].startLine(), LinkedHashSet(Arrays.asList(*message)))
+        }
+
+        fun withoutIssue(line: Int) = apply {
+            issues.removeAll(line)
+            preciseIssues.removeAll(line)
+        }
+
+        override fun visitFile(node: AstNode) {
+            for (line in issues.keySet()) {
+                for (message in issues.get(line)) {
+                    addLineIssue(message, line)
+                }
+            }
+
+            for (locations in preciseIssues.values()) {
+                var issue: PreciseIssue? = null
+                for (location in locations) {
+                    if (issue == null) {
+                        issue = addIssue(location).withCost(3)
+                    } else {
+                        issue.secondary(location)
+                    }
+                }
+            }
+        }
+
+        fun mockNode(startLine: Int, startCharacter: Int, endLine: Int, endCharacter: Int): AstNode {
+            val token = Token.builder()
+                    .setLine(startLine)
+                    .setColumn(startCharacter - 1)
+                    .setValueAndOriginalValue("")
+                    .setType(GenericTokenType.IDENTIFIER)
+                    .setURI(URI("tests://unittest"))
+                    .build()
+
+            val lastToken = Token.builder()
+                    .setLine(endLine)
+                    .setColumn(endCharacter - 1)
+                    .setValueAndOriginalValue("")
+                    .setType(GenericTokenType.IDENTIFIER)
+                    .setURI(URI("tests://unittest"))
+                    .build()
+
+            val node = AstNode(token)
+            node.addChild(AstNode(token))
+            node.addChild(AstNode(lastToken))
+
+            return node
+        }
+
+    }
+
+    companion object {
+        private const val FILENAME_ISSUES = "src/test/resources/check_verifier.sql"
+        private const val FILENAME_NO_ISSUE = "src/test/resources/check_verifier_no_issue.sql"
+
+        private val noEffectCheck: PlSqlCheck
+            get() = object : PlSqlCheck() { }
+    }
+
+}
