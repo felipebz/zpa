@@ -22,8 +22,17 @@
       <artifactId>sslr-xpath</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.sonarsource.sonarqube</groupId>
+      <artifactId>sonar-plugin-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+    </dependency>
+    <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>plsql-frontend</artifactId>
+      <artifactId>zpa-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
