@@ -19,15 +19,15 @@
  */
 package org.sonar.plsqlopen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CustomPlSqlRulesDefinitionTest {
 

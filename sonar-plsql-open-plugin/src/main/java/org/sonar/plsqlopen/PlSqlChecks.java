@@ -19,21 +19,15 @@
  */
 package org.sonar.plsqlopen;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
+import com.google.common.annotations.VisibleForTesting;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.batch.rule.Checks;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
 
-import com.google.common.annotations.VisibleForTesting;
+import javax.annotation.Nullable;
+import java.util.*;
 
 public class PlSqlChecks {
 

@@ -19,8 +19,7 @@
  */
 package org.sonar.plsqlopen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -30,11 +29,11 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor;
-import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition;
 
-import com.google.common.collect.ImmutableList;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PlSqlChecksTest {
     

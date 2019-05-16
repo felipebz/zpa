@@ -19,15 +19,14 @@
  */
 package org.sonar.plsqlopen.metrics;
 
+import com.sonar.sslr.api.AstNode;
+import com.sonar.sslr.api.Token;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.plsqlopen.TokenLocation;
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar;
-
-import com.sonar.sslr.api.AstNode;
-import com.sonar.sslr.api.Token;
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 
 public class CpdVisitor extends PlSqlCheck {
 

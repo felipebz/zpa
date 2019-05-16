@@ -19,13 +19,13 @@
  */
 package org.sonar.plugins.plsqlopen.api;
 
-import java.util.Arrays;
-import java.util.Collections;
-
 import org.sonar.api.ExtensionPoint;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @ExtensionPoint
 @ScannerSide

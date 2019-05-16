@@ -19,10 +19,10 @@
  */
 package org.sonar.plsqlopen.squid;
 
-import java.io.IOException;
-
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.plugins.plsqlopen.api.PlSqlFile;
+
+import java.io.IOException;
 
 public class SonarQubePlSqlFile implements PlSqlFile {
 

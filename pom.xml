@@ -35,7 +35,6 @@
 
   <modules>
     <module>zpa-core</module>
-    <module>plsql-frontend</module>
     <module>plsql-checks</module>
     <module>sonar-plsql-open-plugin</module>
     <module>zpa-toolkit</module>

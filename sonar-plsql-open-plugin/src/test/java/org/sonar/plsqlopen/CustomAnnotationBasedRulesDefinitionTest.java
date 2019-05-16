@@ -19,10 +19,7 @@
  */
 package org.sonar.plsqlopen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Locale;
-
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,7 +33,9 @@ import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Locale;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CustomAnnotationBasedRulesDefinitionTest {
 

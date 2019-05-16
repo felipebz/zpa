@@ -19,13 +19,7 @@
  */
 package org.sonar.plsqlopen.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.List;
-
+import com.google.common.io.Files;
 import org.junit.Test;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
@@ -33,7 +27,12 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.duplications.internal.pmd.TokensLine;
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner;
 
-import com.google.common.io.Files;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CpdVisitorTest {
 
