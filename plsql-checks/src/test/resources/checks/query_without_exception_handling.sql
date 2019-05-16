@@ -83,3 +83,15 @@ begin -- outer block doesn't require a exception handling block
     end;
 end;
 /
+
+create trigger foo
+before insert on tab
+begin
+  select 1
+    into var
+    from dual;
+exception
+  when others then
+    null;
+end;
+/

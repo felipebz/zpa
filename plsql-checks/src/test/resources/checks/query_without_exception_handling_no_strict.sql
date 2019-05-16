@@ -1,4 +1,4 @@
-begin 
+begin
   select 1 -- Noncompliant {{Handle exceptions of this query.}}
     into var
     from dual;
@@ -6,7 +6,7 @@ end;
 /
 
 begin
-  if (true) then 
+  if (true) then
     select 1 -- Noncompliant
       into var
       from dual;
@@ -51,7 +51,7 @@ create package body pack is
         into var
         from dual;
     end;
-    
+
     function foo return number is
     begin
       select 1 -- Noncompliant
@@ -62,7 +62,7 @@ end;
 /
 
 -- correct code
-begin 
+begin
   select 1
     into var
     from dual;
@@ -73,7 +73,7 @@ end;
 /
 
 begin -- outer block doesn't require a exception handling block
-    begin 
+    begin
       select 1
         into var
         from dual;
@@ -81,5 +81,17 @@ begin -- outer block doesn't require a exception handling block
       when others then
         null;
     end;
+end;
+/
+
+create trigger foo
+before insert on tab
+begin
+  select 1
+    into var
+    from dual;
+exception
+  when others then
+    null;
 end;
 /

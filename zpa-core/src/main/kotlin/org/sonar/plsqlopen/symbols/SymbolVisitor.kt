@@ -26,7 +26,9 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
-import org.sonar.plugins.plsqlopen.api.symbols.*
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
 class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
@@ -37,7 +39,10 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         PlSqlGrammar.FUNCTION_DECLARATION,
         PlSqlGrammar.CREATE_PACKAGE,
         PlSqlGrammar.CREATE_PACKAGE_BODY,
-        PlSqlGrammar.CREATE_TRIGGER,
+        PlSqlGrammar.SIMPLE_DML_TRIGGER,
+        PlSqlGrammar.INSTEAD_OF_DML_TRIGGER,
+        PlSqlGrammar.COMPOUND_DML_TRIGGER,
+        PlSqlGrammar.SYSTEM_TRIGGER,
         PlSqlGrammar.TYPE_CONSTRUCTOR,
         PlSqlGrammar.CREATE_TYPE,
         PlSqlGrammar.CREATE_TYPE_BODY,
@@ -111,7 +116,10 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
                 node.type === PlSqlGrammar.PROCEDURE_DECLARATION ||
                 node.type === PlSqlGrammar.CREATE_FUNCTION ||
                 node.type === PlSqlGrammar.FUNCTION_DECLARATION ||
-                node.type === PlSqlGrammar.CREATE_TRIGGER ||
+                node.type === PlSqlGrammar.SIMPLE_DML_TRIGGER ||
+                node.type === PlSqlGrammar.INSTEAD_OF_DML_TRIGGER ||
+                node.type === PlSqlGrammar.COMPOUND_DML_TRIGGER ||
+                node.type === PlSqlGrammar.SYSTEM_TRIGGER ||
                 node.type === PlSqlGrammar.CREATE_TYPE ||
                 node.type === PlSqlGrammar.CREATE_TYPE_BODY ||
                 node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) {
