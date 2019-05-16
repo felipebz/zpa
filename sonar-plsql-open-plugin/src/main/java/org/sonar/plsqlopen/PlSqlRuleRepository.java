@@ -19,19 +19,30 @@
  */
 package org.sonar.plsqlopen;
 
-import javax.annotation.Nonnull;
-
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.plsqlopen.checks.CheckList;
+
+import javax.annotation.Nonnull;
 
 public class PlSqlRuleRepository implements RulesDefinition {
 
     private static final String REPOSITORY_NAME = "Z PL/SQL Analyzer";
 
+    public static final String KEY;
+
+    static  {
+        // TODO: remove this code and always use the key "zpa"
+        String repositoryKey = "plsql";
+        if (SonarQubeUtils.isCommercialEdition()) {
+            repositoryKey = "zpa";
+        }
+        KEY = repositoryKey;
+    }
+
     @Override
     public void define(@Nonnull Context context) {
         NewRepository repository = context
-            .createRepository(CheckList.REPOSITORY_KEY, PlSql.KEY)
+            .createRepository(PlSqlRuleRepository.KEY, PlSql.KEY)
             .setName(REPOSITORY_NAME);
         CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.getChecks());
         repository.done();

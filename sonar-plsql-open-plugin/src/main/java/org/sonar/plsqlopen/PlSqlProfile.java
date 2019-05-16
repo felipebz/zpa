@@ -19,13 +19,13 @@
  */
 package org.sonar.plsqlopen;
 
-import javax.annotation.Nonnull;
-
 import org.sonar.api.rules.RuleAnnotationUtils;
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.plsqlopen.checks.CheckList;
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
+
+import javax.annotation.Nonnull;
 
 public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
 
@@ -35,7 +35,7 @@ public class PlSqlProfile implements BuiltInQualityProfilesDefinition {
         profile.setDefault(true);
         
         for (Class<?> ruleClass : CheckList.getChecks()) {
-            addRule(ruleClass, profile, CheckList.REPOSITORY_KEY);
+            addRule(ruleClass, profile, PlSqlRuleRepository.KEY);
         }
         
         profile.done();

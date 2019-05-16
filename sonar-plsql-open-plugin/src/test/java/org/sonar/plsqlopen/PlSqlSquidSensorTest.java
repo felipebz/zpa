@@ -19,14 +19,7 @@
  */
 package org.sonar.plsqlopen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-
+import com.google.common.io.Files;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -45,9 +38,14 @@ import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.FileLinesContext;
 import org.sonar.api.measures.FileLinesContextFactory;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.plsqlopen.checks.CheckList;
 
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 public class PlSqlSquidSensorTest {
 
@@ -58,7 +56,7 @@ public class PlSqlSquidSensorTest {
     @Before
     public void setUp() {
         ActiveRules activeRules = (new ActiveRulesBuilder())
-                .create(RuleKey.of(CheckList.REPOSITORY_KEY, "EmptyBlock"))
+                .create(RuleKey.of(PlSqlRuleRepository.KEY, "EmptyBlock"))
                 .setName("Print Statement Usage")
                 .activate()
                 .build();

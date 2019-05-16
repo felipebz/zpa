@@ -19,26 +19,13 @@
  */
 package org.sonar.plsqlopen.checks;
 
-import java.util.List;
-
-import org.sonar.plsqlopen.SonarQubeUtils;
-
 import com.google.common.collect.ImmutableList;
+
+import java.util.List;
 
 public class CheckList {
 
-    public static final String REPOSITORY_KEY;
-
     public static final String SONAR_WAY_PROFILE = "Sonar way";
-
-    static  {
-        // TODO: remove this code and always use the key "zpa"
-        String repositoryKey = "plsql";
-        if (SonarQubeUtils.isCommercialEdition()) {
-            repositoryKey = "zpa";
-        }
-        REPOSITORY_KEY = repositoryKey;
-    }
 
     private CheckList() {
     }
