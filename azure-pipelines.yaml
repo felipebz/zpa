@@ -22,7 +22,6 @@ jobs:
           ./ci.sh
         displayName: 'Build with Maven'
         env:
-          COVERALLS_TOKEN: $(COVERALLS_TOKEN)
           DEPLOY_USERNAME: $(DEPLOY_USERNAME)
           DEPLOY_PASSWORD: $(DEPLOY_PASSWORD)
           BINTRAY_DEPLOY_PASSWORD: $(BINTRAY_DEPLOY_PASSWORD)
