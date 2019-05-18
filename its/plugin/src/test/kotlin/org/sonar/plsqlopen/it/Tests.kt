@@ -1,4 +1,4 @@
-/*
+/**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2019 Felipe Zorzo
  * mailto:felipebzorzo AT gmail DOT com
@@ -17,45 +17,41 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.it;
+package org.sonar.plsqlopen.it
 
-import java.io.File;
+import com.sonar.orchestrator.Orchestrator
+import com.sonar.orchestrator.build.SonarScanner
+import com.sonar.orchestrator.locator.FileLocation
+import org.junit.ClassRule
+import org.junit.runner.RunWith
+import org.junit.runners.Suite
+import org.sonarqube.ws.client.HttpConnector
+import org.sonarqube.ws.client.WsClient
+import org.sonarqube.ws.client.WsClientFactories
+import java.io.File
 
-import org.junit.ClassRule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.sonarqube.ws.client.HttpConnector;
-import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.WsClientFactories;
+@RunWith(Suite::class)
+@Suite.SuiteClasses(MetricsTest::class, IssueTest::class)
+object Tests {
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.SonarScanner;
-import com.sonar.orchestrator.locator.FileLocation;
-
-@RunWith(Suite.class)
-@Suite.SuiteClasses({ MetricsTest.class, IssueTest.class, })
-public class Tests {
-
+    @JvmField
     @ClassRule
-    public static final Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    val ORCHESTRATOR: Orchestrator = Orchestrator.builderEnv()
             .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[6.7]"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    new File("../../sonar-plsql-open-plugin/target"),
+                    File("../../sonar-plsql-open-plugin/target"),
                     "sonar-plsql-open-plugin-*.jar"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    new File("../../plsql-custom-rules/target"),
+                    File("../../plsql-custom-rules/target"),
                     "plsql-custom-rules-*.jar"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/it-profile.xml"))
-            .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build();
+            .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build()
 
-    public static SonarScanner createSonarScanner() {
-        return SonarScanner.create();
-    }
-    
-    public static WsClient newWsClient(Orchestrator orchestrator) {
-        return WsClientFactories.getDefault()
+    fun createSonarScanner(): SonarScanner = SonarScanner.create()
+
+    fun newWsClient(orchestrator: Orchestrator): WsClient =
+        WsClientFactories.getDefault()
                 .newClient(HttpConnector.newBuilder()
-                        .url(orchestrator.getServer().getUrl()).build());
-    }
+                        .url(orchestrator.server.url).build())
 
 }
