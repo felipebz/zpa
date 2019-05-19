@@ -21,18 +21,21 @@ package org.sonar.plsqlopen.metrics
 
 import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 
-class FunctionComplexityVisitor : ComplexityVisitor() {
+class FunctionComplexityVisitor : PlSqlCheck() {
     var numberOfFunctions: Int = 0
         private set
 
+    override fun init() {
+        subscribeTo(PlSqlGrammar.CREATE_PROCEDURE,
+            PlSqlGrammar.CREATE_FUNCTION,
+            PlSqlGrammar.PROCEDURE_DECLARATION,
+            PlSqlGrammar.FUNCTION_DECLARATION)
+    }
+
     override fun visitNode(node: AstNode) {
-        if (node.`is`(PlSqlGrammar.CREATE_PROCEDURE,
-                PlSqlGrammar.CREATE_FUNCTION,
-                PlSqlGrammar.PROCEDURE_DECLARATION,
-                PlSqlGrammar.FUNCTION_DECLARATION)) {
-            numberOfFunctions++
-        }
+        numberOfFunctions++
     }
 
 }
