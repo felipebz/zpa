@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.symbols
 
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.AstNodeType
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
@@ -69,13 +70,13 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.`is`(*scopeHolders)) {
+        if (node.typeIs(scopeHolders)) {
             context.currentScope = symbolTable.getScopeFor(node)
         }
     }
 
     override fun leaveNode(node: AstNode) {
-        if (node.`is`(*scopeHolders)) {
+        if (node.typeIs(scopeHolders)) {
             context.currentScope = context.currentScope?.outer()
         }
     }
@@ -88,7 +89,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         visitNodeInternal(ast)
         visitChildren(ast)
 
-        if (ast.`is`(*scopeHolders)) {
+        if (ast.typeIs(scopeHolders)) {
             leaveScope()
         }
     }
