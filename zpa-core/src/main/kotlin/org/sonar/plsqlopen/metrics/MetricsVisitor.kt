@@ -44,24 +44,21 @@ class MetricsVisitor : PlSqlCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.`is`(PlSqlGrammar.STATEMENT)) {
-            numberOfStatements++
-            executableLines.add(node.tokenLine)
-        }
+        numberOfStatements++
+        executableLines.add(node.tokenLine)
     }
 
     override fun visitToken(token: Token) {
-        val tokenLines = token.value.split("\n".toRegex()).toTypedArray()
+        val tokenLines = token.value.split("\n")
         for (line in token.line until token.line + tokenLines.size) {
             linesOfCode.add(line)
         }
     }
 
     override fun visitComment(trivia: Trivia, content: String) {
-        val commentLines = content.split("(\r)?\n|\r".toRegex()).toTypedArray()
         var line = trivia.token.line
 
-        for (commentLine in commentLines) {
+        for (commentLine in content.lineSequence()) {
             if (commentLine.contains("NOSONAR")) {
                 linesOfComments.remove(line)
                 noSonar.add(line)
