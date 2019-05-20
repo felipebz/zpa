@@ -24,10 +24,8 @@ abstract class Loggers {
     protected abstract fun getLogger(name: String): Logger
 
     companion object {
-        @JvmStatic
         var factory: Loggers = ZpaLoggers()
 
-        @JvmStatic
         fun getLogger(name: Class<*>): Logger {
             return factory.getLogger(name.name)
         }

@@ -33,7 +33,6 @@ class PlSqlRuleRepository : RulesDefinition {
     }
 
     companion object {
-        @JvmField
         internal val KEY: String
 
         init {

@@ -60,7 +60,6 @@ object PlSqlLexer {
 
     private const val QUOTED_IDENTIFIER = "\".+?\""
 
-    @JvmStatic
     fun create(conf: PlSqlConfiguration): Lexer =
         Lexer.builder()
             .withCharset(conf.charset)

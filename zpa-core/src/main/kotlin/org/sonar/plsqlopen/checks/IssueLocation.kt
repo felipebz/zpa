@@ -90,19 +90,15 @@ abstract class IssueLocation private constructor(private val message: String) {
 
         const val UNDEFINED_LINE = 0
 
-        @JvmStatic
         fun atFileLevel(message: String): IssueLocation =
             FileLevelIssueLocation(message)
 
-        @JvmStatic
         fun atLineLevel(message: String, lineNumber: Int): IssueLocation =
             LineLevelIssueLocation(message, lineNumber)
 
-        @JvmStatic
         fun preciseLocation(startNode: AstNode, endNode: AstNode, message: String): IssueLocation =
             PreciseIssueLocation(startNode, endNode, message)
 
-        @JvmStatic
         fun preciseLocation(startNode: AstNode, message: String): IssueLocation =
             PreciseIssueLocation(startNode, message)
     }

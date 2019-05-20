@@ -19,15 +19,13 @@
  */
 package org.sonar.plsqlopen.parser
 
+import com.sonar.sslr.api.Grammar
+import com.sonar.sslr.impl.Parser
 import org.sonar.plsqlopen.lexer.PlSqlLexer
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.impl.Parser
-
 object PlSqlParser {
-    @JvmStatic
     fun create(conf: PlSqlConfiguration): Parser<Grammar> =
         Parser.builder(PlSqlGrammar.create(conf).build())
             .withLexer(PlSqlLexer.create(conf)).build()

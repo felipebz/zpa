@@ -35,10 +35,8 @@ class FormsMetadata {
     var lovs = listOf<String>()
 
     companion object {
-
         private val LOG = Loggers.getLogger(FormsMetadata::class.java)
 
-        @JvmStatic
         fun loadFromFile(path: String?): FormsMetadata? {
             if (!path.isNullOrEmpty()) {
                 try {

@@ -159,7 +159,6 @@ class MethodMatcher private constructor()
             return MethodMatcher()
         }
 
-        @JvmStatic
         fun semantic(node: AstNode): SemanticAstNode {
             return node as SemanticAstNode
         }

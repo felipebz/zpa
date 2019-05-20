@@ -39,7 +39,6 @@ class TokenLocation private constructor(
     companion object {
         private val pattern = Regex("\r?\n|\r")
 
-        @JvmStatic
         fun from(token: Token): TokenLocation {
             val lineCount: Int
             var lastLineLength = 0

@@ -74,7 +74,6 @@ class PlSqlChecks private constructor(private val checkFactory: CheckFactory) {
     }
 
     companion object {
-        @JvmStatic
         fun createPlSqlCheck(checkFactory: CheckFactory): PlSqlChecks {
             return PlSqlChecks(checkFactory)
         }

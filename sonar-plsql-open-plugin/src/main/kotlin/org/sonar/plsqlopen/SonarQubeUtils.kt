@@ -23,7 +23,6 @@ import org.sonar.api.utils.Version
 
 object SonarQubeUtils {
 
-    @get:JvmStatic
     val isCommercialEdition by lazy {
         var value = false
         try {
@@ -36,11 +35,9 @@ object SonarQubeUtils {
         value
     }
 
-    @get:JvmStatic
     var isIsSQ71OrGreater: Boolean = false
         private set
 
-    @JvmStatic
     fun setSonarQubeVersion(sonarQubeVersion: Version) {
         isIsSQ71OrGreater = sonarQubeVersion.isGreaterThanOrEqual(Version.create(7, 1))
     }

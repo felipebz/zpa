@@ -32,7 +32,6 @@ import java.nio.file.Files
 
 object TestPlSqlVisitorRunner {
 
-    @JvmStatic
     fun scanFile(file: File, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
         val context = createContext(file, metadata)
         for (visitor in visitors) {
@@ -40,7 +39,6 @@ object TestPlSqlVisitorRunner {
         }
     }
 
-    @JvmStatic
     fun createContext(file: File, metadata: FormsMetadata?): PlSqlVisitorContext {
         val parser = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
         val plSqlFile = TestPlSqlFile(file)
