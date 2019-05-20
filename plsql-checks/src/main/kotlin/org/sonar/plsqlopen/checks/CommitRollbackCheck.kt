@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -46,10 +47,10 @@ class CommitRollbackCheck : AbstractBaseCheck() {
             outerScope = outerScope.outer()
         }
 
-        val isRollbackToSavepoint = node.`is`(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO)
+        val isRollbackToSavepoint = node.typeIs(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO)
 
         val currentScopeIsAutonomousTransaction = scope?.isAutonomousTransaction ?: false
-        val isInsideABlockStatement = outerScope?.tree()?.`is`(PlSqlGrammar.BLOCK_STATEMENT) ?: false
+        val isInsideABlockStatement = outerScope?.tree()?.typeIs(PlSqlGrammar.BLOCK_STATEMENT) ?: false
 
         if (!isRollbackToSavepoint && !currentScopeIsAutonomousTransaction && !isInsideABlockStatement) {
             addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine, node.tokenValue)

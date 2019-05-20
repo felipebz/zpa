@@ -23,6 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
@@ -55,7 +56,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
                     ?: continue
 
             // ignore procedure/function specification and overriding members
-            if (scope.tree()?.`is`(PlSqlGrammar.PROCEDURE_DECLARATION,PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.TYPE_CONSTRUCTOR) == true) {
+            if (scope.tree()?.typeIs(DECLARATION_OR_CONSTRUCTOR) == true) {
                 // is specification?
                 if (!scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
                     continue
@@ -70,13 +71,12 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             }
 
             // cursor declaration (without implementation)
-            if (scopeNode.`is`(PlSqlGrammar.CURSOR_DECLARATION) && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
+            if (scopeNode.typeIs(PlSqlGrammar.CURSOR_DECLARATION) && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
                 continue
             }
 
             // ignore methods by name
-            if (scopeNode.`is`(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION,
-                    PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.CREATE_FUNCTION) &&
+            if (scopeNode.typeIs(PROCEDURE_OR_FUNCTION) &&
                 ignoreRegex != null) {
                 val matchesRegex = ignoreRegex?.matcher(scope.identifier())?.matches() ?: false
                 if (matchesRegex) {
@@ -100,6 +100,15 @@ class UnusedParameterCheck : AbstractBaseCheck() {
 
     companion object {
         const val CHECK_KEY = "UnusedParameter"
+        val DECLARATION_OR_CONSTRUCTOR =
+            arrayOf(PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.FUNCTION_DECLARATION,
+                PlSqlGrammar.TYPE_CONSTRUCTOR)
+        val PROCEDURE_OR_FUNCTION =
+            arrayOf(PlSqlGrammar.PROCEDURE_DECLARATION,
+                PlSqlGrammar.FUNCTION_DECLARATION,
+                PlSqlGrammar.CREATE_PROCEDURE,
+                PlSqlGrammar.CREATE_FUNCTION)
     }
 
 }

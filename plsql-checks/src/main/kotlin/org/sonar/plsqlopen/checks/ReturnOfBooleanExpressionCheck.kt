@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -71,7 +72,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
     private fun extractBooleanValueFromReturn(node: AstNode?): AstNode? {
         if (node != null) {
             val child = node.firstChild
-            if (child.`is`(PlSqlGrammar.RETURN_STATEMENT)) {
+            if (child.typeIs(PlSqlGrammar.RETURN_STATEMENT)) {
                 val expression = child.getFirstChild(PlSqlGrammar.LITERAL)
 
                 return getBooleanLiteral(expression)

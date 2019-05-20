@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -56,7 +57,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
 
     private fun exceptionShouldBeChecked(exceptionDeclaration: Symbol): Boolean {
         val scopeOfDeclaration = exceptionDeclaration.scope().tree()
-        val isPackage = scopeOfDeclaration?.`is`(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY) ?: false
+        val isPackage = scopeOfDeclaration?.typeIs(PACKAGE_SPEC_OR_BODY) ?: false
         return !isPackage
     }
 
@@ -88,6 +89,8 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
 
     companion object {
         const val CHECK_KEY = "UnhandledUserDefinedException"
+
+        val PACKAGE_SPEC_OR_BODY = arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
     }
 
 }

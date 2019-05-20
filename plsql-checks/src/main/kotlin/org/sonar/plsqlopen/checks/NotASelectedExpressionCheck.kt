@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
@@ -41,7 +42,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (!node.children[1].`is`(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
+        if (!node.children[1].typeIs(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
             return
         }
 
@@ -56,7 +57,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
     private fun checkOrderByItem(orderByItem: AstNode, columns: List<AstNode>) {
         val orderByItemValue = skipVariableName(orderByItem.firstChild)
 
-        if (orderByItemValue.`is`(PlSqlGrammar.LITERAL)) {
+        if (orderByItemValue.typeIs(PlSqlGrammar.LITERAL)) {
             return
         }
 
@@ -77,7 +78,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
     }
 
     private fun skipVariableName(node: AstNode): AstNode {
-        return if (node.`is`(PlSqlGrammar.VARIABLE_NAME)) {
+        return if (node.typeIs(PlSqlGrammar.VARIABLE_NAME)) {
             node.firstChild
         } else node
     }
@@ -89,7 +90,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
         values.add(selectedExpression)
 
         // if the value is "table.column", "column" can be used in order by
-        if (selectedExpression.`is`(PlSqlGrammar.MEMBER_EXPRESSION)) {
+        if (selectedExpression.typeIs(PlSqlGrammar.MEMBER_EXPRESSION)) {
             values.add(selectedExpression.lastChild)
         }
 

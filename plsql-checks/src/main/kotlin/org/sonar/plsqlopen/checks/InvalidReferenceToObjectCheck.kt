@@ -23,6 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -148,7 +149,7 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
     }
 
     private fun isVarcharLiteral(argument: AstNode): Boolean {
-        return if (argument.`is`(PlSqlGrammar.LITERAL)) {
+        return if (argument.typeIs(PlSqlGrammar.LITERAL)) {
             argument.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)
         } else false
     }

@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -50,9 +51,9 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
         while (current != null) {
             current = current.nextSibling
 
-            if (current.`is`(PlSqlPunctuator.RPARENTHESIS)) {
+            if (current.typeIs(PlSqlPunctuator.RPARENTHESIS)) {
                 current = null
-            } else if (!current.`is`(PlSqlPunctuator.COMMA)) {
+            } else if (!current.typeIs(PlSqlPunctuator.COMMA)) {
                 values.add(current)
             }
         }

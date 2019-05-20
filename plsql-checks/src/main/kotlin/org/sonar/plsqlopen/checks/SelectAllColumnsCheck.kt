@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
@@ -42,17 +43,17 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.parent.parent.`is`(PlSqlGrammar.EXISTS_EXPRESSION)) {
+        if (node.parent.parent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
             return
         }
 
         var candidate = node.firstChild
 
-        if (candidate.`is`(PlSqlGrammar.OBJECT_REFERENCE)) {
+        if (candidate.typeIs(PlSqlGrammar.OBJECT_REFERENCE)) {
             candidate = candidate.lastChild
         }
 
-        if (candidate.`is`(PlSqlPunctuator.MULTIPLICATION)) {
+        if (candidate.typeIs(PlSqlPunctuator.MULTIPLICATION)) {
             val intoClause = node.parent.getFirstChild(DmlGrammar.INTO_CLAUSE)
 
             if (intoClause != null) {

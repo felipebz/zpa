@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -40,7 +41,7 @@ class ComparisonWithBooleanCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val children = node.getChildren(PlSqlGrammar.LITERAL)
         for (child in children) {
-            if (child.firstChild.`is`(PlSqlGrammar.BOOLEAN_LITERAL)) {
+            if (child.firstChild.typeIs(PlSqlGrammar.BOOLEAN_LITERAL)) {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine, child.tokenValue)
                 return
             }

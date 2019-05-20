@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -39,7 +40,7 @@ class UselessParenthesisCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val parent = node.parent
-        if (parent.`is`(PlSqlGrammar.BRACKED_EXPRESSION) && parent.numberOfChildren == 3) {
+        if (parent.typeIs(PlSqlGrammar.BRACKED_EXPRESSION) && parent.numberOfChildren == 3) {
             addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }

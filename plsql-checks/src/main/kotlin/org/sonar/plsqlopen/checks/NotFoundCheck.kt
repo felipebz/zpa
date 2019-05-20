@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -40,12 +41,12 @@ class NotFoundCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val parent = node.parent
-        if (parent.`is`(PlSqlGrammar.NOT_EXPRESSION) && node.numberOfChildren == 3) {
+        if (parent.typeIs(PlSqlGrammar.NOT_EXPRESSION) && node.numberOfChildren == 3) {
 
             val foundCandidate = node.lastChild
             val percentCandidate = foundCandidate.previousAstNode
 
-            if (percentCandidate.`is`(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate.tokenValue) {
+            if (percentCandidate.typeIs(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate.tokenValue) {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
             }
         }

@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -44,10 +45,10 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
         for (exception in exceptions) {
             val child = exception.firstChild
 
-            if (child.`is`(PlSqlGrammar.IDENTIFIER_NAME) && "TOO_MANY_ROWS".equals(child.tokenValue, ignoreCase = true)) {
+            if (child.typeIs(PlSqlGrammar.IDENTIFIER_NAME) && "TOO_MANY_ROWS".equals(child.tokenValue, ignoreCase = true)) {
                 // and have only one NULL_STATEMENT
                 val children = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
-                if (children.size == 1 && children[0].firstChild.`is`(PlSqlGrammar.NULL_STATEMENT)) {
+                if (children.size == 1 && children[0].firstChild.typeIs(PlSqlGrammar.NULL_STATEMENT)) {
                     addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
                 }
             }

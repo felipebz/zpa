@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.AstNodeType
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
@@ -116,10 +117,10 @@ object CheckUtils {
     }
 
     fun isTerminationStatement(node: AstNode): Boolean {
-        return (node.`is`(*TERMINATION_STATEMENTS) || RAISE_APPLICATION_ERROR_MATCHER.matches(node)) && !node.hasDirectChildren(*WHEN)
+        return (node.typeIs(TERMINATION_STATEMENTS) || RAISE_APPLICATION_ERROR_MATCHER.matches(node)) && !node.hasDirectChildren(*WHEN)
     }
 
     fun isProgramUnit(node: AstNode?): Boolean {
-        return node != null && node.`is`(*PROGRAM_UNITS)
+        return node != null && node.typeIs(PROGRAM_UNITS)
     }
 }

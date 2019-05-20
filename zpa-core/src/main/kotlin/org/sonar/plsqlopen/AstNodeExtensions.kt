@@ -26,10 +26,5 @@ import com.sonar.sslr.api.AstNodeType
 fun AstNode.typeIs(type: AstNodeType): Boolean = this.type == type
 
 fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean {
-    for (type in types) {
-        if (this.type == type) {
-            return true
-        }
-    }
-    return false
+    return types.any { it == type }
 }

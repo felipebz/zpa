@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -52,7 +53,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
             return true
         }
         val nextSibling = node.nextSibling
-        if (nextSibling != null && nextSibling.`is`(PlSqlGrammar.STATEMENT)) {
+        if (nextSibling != null && nextSibling.typeIs(PlSqlGrammar.STATEMENT)) {
             addLineIssue(getLocalizedMessage(CHECK_KEY), nextSibling.tokenLine)
             return true
         }
@@ -63,13 +64,18 @@ class DeadCodeCheck : AbstractBaseCheck() {
         if (node == null || CheckUtils.isProgramUnit(node)) {
             return false
         }
-        return if (node.`is`(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)) {
+
+        return if (node.typeIs(STATEMENT_OR_CALL)) {
             true
-        } else node.`is`(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)
+        } else {
+            node.typeIs(STATEMENT_SECTION) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)
+        }
     }
 
     companion object {
         const val CHECK_KEY = "DeadCode"
+        val STATEMENT_OR_CALL = arrayOf(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)
+        val STATEMENT_SECTION = arrayOf(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS)
     }
 
 }

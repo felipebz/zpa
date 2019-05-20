@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -46,7 +47,7 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
 
         val selectExpression = node.parent
         if (selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size > 1 &&
-                candidate.`is`(PlSqlGrammar.IDENTIFIER_NAME) &&
+                candidate.typeIs(PlSqlGrammar.IDENTIFIER_NAME) &&
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD) &&
                 semantic(candidate).symbol == null) {
 

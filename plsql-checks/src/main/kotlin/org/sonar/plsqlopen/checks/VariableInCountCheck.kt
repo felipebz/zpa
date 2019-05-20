@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -42,7 +43,7 @@ class VariableInCountCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val count = MethodMatcher.create().name("count").addParameter()
 
-        if (!node.parent.`is`(DmlGrammar.SELECT_COLUMN) || !count.matches(node)) {
+        if (!node.parent.typeIs(DmlGrammar.SELECT_COLUMN) || !count.matches(node)) {
             return
         }
 

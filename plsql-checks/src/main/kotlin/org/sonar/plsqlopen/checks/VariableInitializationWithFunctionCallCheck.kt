@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
@@ -42,7 +43,7 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
             val datatype = node.parent.getFirstChild(PlSqlGrammar.DATATYPE)
 
             val expression = node.lastChild
-            if (expression.`is`(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
+            if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
                 addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
             }
         }

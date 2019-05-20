@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
@@ -40,13 +41,14 @@ class CharacterDatatypeUsageCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val datatype = node.firstChild
-        if (datatype.`is`(PlSqlKeyword.CHAR, PlSqlKeyword.VARCHAR)) {
+        if (datatype.typeIs(CHAR_DATATYPE)) {
             addIssue(node, getLocalizedMessage(CHECK_KEY), datatype.tokenValue)
         }
     }
 
     companion object {
         const val CHECK_KEY = "CharacterDatatypeUsage"
+        val CHAR_DATATYPE = arrayOf(PlSqlKeyword.CHAR, PlSqlKeyword.VARCHAR)
     }
 
 }
