@@ -17,21 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
+import org.junit.Test
+import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier
 
-    fun isBlank(line: String) = line.isBlank()
+class VariableNameCheckTest : BaseCheckTest() {
 
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
-        }
+    @Test
+    fun test() {
+        PlSqlCheckVerifier.verify(getPath("variable_name.sql"), VariableNameCheck())
+    }
+
+    @Test
+    fun testIgnoreMethodsByName() {
+        val check = VariableNameCheck()
+        check.regexp = "\\w{3,}"
+        PlSqlCheckVerifier.verify(getPath("variable_name_alternative.sql"), check)
+    }
 
 }

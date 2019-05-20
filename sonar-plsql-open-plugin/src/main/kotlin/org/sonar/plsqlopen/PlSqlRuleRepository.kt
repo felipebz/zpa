@@ -28,7 +28,7 @@ class PlSqlRuleRepository : RulesDefinition {
         val repository = context
                 .createRepository(KEY, PlSql.KEY)
                 .setName("Z PL/SQL Analyzer")
-        CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.getChecks())
+        CustomAnnotationBasedRulesDefinition.load(repository, PlSql.KEY, CheckList.checks)
         repository.done()
     }
 

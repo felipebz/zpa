@@ -38,7 +38,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(checkFactory: CheckFactory, set
                                                  customRulesDefinition: Array<CustomPlSqlRulesDefinition>? = null) : Sensor {
 
     private val checks = PlSqlChecks.createPlSqlCheck(checkFactory)
-            .addChecks(PlSqlRuleRepository.KEY, CheckList.getChecks())
+            .addChecks(PlSqlRuleRepository.KEY, CheckList.checks)
             .addCustomChecks(customRulesDefinition)
 
     private val isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY).orElse(false)

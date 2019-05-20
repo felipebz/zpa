@@ -17,21 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
+import java.io.File
 
-    fun isBlank(line: String) = line.isBlank()
+class CheckListTest {
 
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
-        }
+    /**
+     * Enforces that each check declared in list.
+     */
+    @Test
+    fun count() {
+        val files = File("src/main/kotlin/org/sonar/plsqlopen/checks/")
+            .list { _, name -> name.contains("Check.") && !name.startsWith("Abstract") }
+            .map { File(it).nameWithoutExtension }
+            .toTypedArray()
+
+        assertThat(CheckList.checks.map { it.simpleName }).containsExactlyInAnyOrder(*files)
+    }
 
 }

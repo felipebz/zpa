@@ -17,21 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
-
-    fun isBlank(line: String) = line.isBlank()
-
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
-        }
-
+object Tags {
+    const val BRAIN_OVERLOAD = "brain-overload"
+    const val BUG = "bug"
+    const val CLUMSY = "clumsy"
+    const val CONVENTION = "convention"
+    const val OBSOLETE = "obsolete"
+    const val SECURITY = "security"
+    const val UNUSED = "unused"
+    const val CERT = "cert"
+    const val PITFALL = "pitfall"
+    const val MISRA = "misra"
+    const val CONFUSING = "confusing"
+    const val CWE = "cwe"
+    const val PERFORMANCE = "performance"
+    const val UTPLSQL = "utplsql"
 }

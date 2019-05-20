@@ -33,7 +33,7 @@ class MethodMatcher private constructor()
     private var schemaNameCriteria: NameCriteria? = null
     private var shouldCheckParameters = true
     private var schemaIsOptional = false
-    var methodName: String? = null
+    var methodName: String = ""
         private set
     private val expectedArgumentTypes = ArrayList<PlSqlType>()
 
@@ -125,7 +125,7 @@ class MethodMatcher private constructor()
 
     private fun nameAcceptable(node: AstNode, criteria: NameCriteria): Boolean {
         methodName = node.tokenOriginalValue
-        return criteria.matches(methodName as String)
+        return criteria.matches(methodName)
     }
 
     private fun argumentsAcceptable(node: AstNode): Boolean {

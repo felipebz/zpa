@@ -17,21 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
+import java.util.*
 
-    fun isBlank(line: String) = line.isBlank()
+abstract class AbstractBaseCheck : PlSqlCheck() {
 
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
-        }
+    private val bundle: ResourceBundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault())
+
+    protected fun getLocalizedMessage(checkKey: String): String =
+        bundle.getString("$checkKey.message")
 
 }

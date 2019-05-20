@@ -1,0 +1,75 @@
+/**
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2019 Felipe Zorzo
+ * mailto:felipebzorzo AT gmail DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonar.plsqlopen.checks
+
+import com.sonar.sslr.api.AstNode
+import org.sonar.check.Priority
+import org.sonar.check.Rule
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+
+@Rule(key = DeadCodeCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UNUSED])
+@ConstantRemediation("5min")
+@RuleInfo(scope = RuleInfo.Scope.ALL)
+@ActivatedByDefault
+class DeadCodeCheck : AbstractBaseCheck() {
+
+    override fun init() {
+        subscribeTo(*CheckUtils.terminationStatements)
+        subscribeTo(PlSqlGrammar.METHOD_CALL)
+    }
+
+    override fun visitNode(node: AstNode) {
+        if (CheckUtils.isTerminationStatement(node)) {
+            var parent = node.parent
+            while (!checkNode(parent)) {
+                parent = parent.parent
+            }
+        }
+    }
+
+    private fun checkNode(node: AstNode): Boolean {
+        if (!shouldCheckNode(node)) {
+            return true
+        }
+        val nextSibling = node.nextSibling
+        if (nextSibling != null && nextSibling.`is`(PlSqlGrammar.STATEMENT)) {
+            addLineIssue(getLocalizedMessage(CHECK_KEY), nextSibling.tokenLine)
+            return true
+        }
+        return false
+    }
+
+    private fun shouldCheckNode(node: AstNode?): Boolean {
+        if (node == null || CheckUtils.isProgramUnit(node)) {
+            return false
+        }
+        return if (node.`is`(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)) {
+            true
+        } else node.`is`(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)
+    }
+
+    companion object {
+        const val CHECK_KEY = "DeadCode"
+    }
+
+}

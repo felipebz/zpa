@@ -30,9 +30,9 @@ class Block(val name: String, val items: Array<String>)
 
 class FormsMetadata {
 
-    var alerts = mutableListOf<String>()
-    var blocks = mutableListOf<Block>()
-    var lovs = mutableListOf<String>()
+    var alerts = listOf<String>()
+    var blocks = listOf<Block>()
+    var lovs = listOf<String>()
 
     companion object {
 

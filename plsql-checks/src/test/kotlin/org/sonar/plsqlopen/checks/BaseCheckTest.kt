@@ -17,21 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
+import org.junit.Before
+import java.util.*
 
-    fun isBlank(line: String) = line.isBlank()
+abstract class BaseCheckTest {
 
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
-        }
+    @Before
+    fun setUp() {
+        Locale.setDefault(Locale.ENGLISH)
+    }
+
+    protected fun getPath(filename: String) = defaultResourceFolder + filename
+
+    companion object {
+        private const val defaultResourceFolder = "src/test/resources/checks/"
+    }
 
 }

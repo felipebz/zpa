@@ -31,7 +31,7 @@ class PlSqlProfile : BuiltInQualityProfilesDefinition {
         val profile = context.createBuiltInQualityProfile(CheckList.SONAR_WAY_PROFILE, PlSql.KEY)
         profile.isDefault = true
 
-        for (ruleClass in CheckList.getChecks()) {
+        for (ruleClass in CheckList.checks) {
             addRule(ruleClass, profile)
         }
 

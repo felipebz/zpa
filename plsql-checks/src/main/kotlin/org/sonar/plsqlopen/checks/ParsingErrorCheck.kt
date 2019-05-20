@@ -17,21 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.squid
+package org.sonar.plsqlopen.checks
 
-object PlSqlCommentAnalyzer {
+import org.sonar.check.Priority
+import org.sonar.check.Rule
+import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
 
-    fun isBlank(line: String) = line.isBlank()
+@Rule(key = ParsingErrorCheck.CHECK_KEY, priority = Priority.INFO)
+@RuleInfo(scope = RuleInfo.Scope.ALL)
+@ActivatedByDefault
+class ParsingErrorCheck : AbstractBaseCheck() {
 
-    fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
-                comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
+    override fun init() {
+        val parsingException = context.parsingException()
+        if (parsingException != null) {
+            parsingException.message?.let {
+                addLineIssue(it, parsingException.line)
+            }
         }
+    }
+
+    companion object {
+        const val CHECK_KEY = "ParsingError"
+    }
 
 }
