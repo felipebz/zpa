@@ -51,7 +51,7 @@ object CheckUtils {
         return node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && (node as SemanticAstNode).plSqlType === PlSqlType.NULL
     }
 
-    fun equalNodes(node1: AstNode?, node2: AstNode): Boolean {
+    fun equalNodes(node1: AstNode, node2: AstNode): Boolean {
         val first = skipExpressionsWithoutEffect(node1)
         val second = skipExpressionsWithoutEffect(node2)
 
@@ -95,8 +95,8 @@ object CheckUtils {
         return probableNode != null && equalNodes(probableNode, currentNode)
     }
 
-    fun skipExpressionsWithoutEffect(node: AstNode?): AstNode {
-        var newNode = skipParenthesis(node!!)
+    fun skipExpressionsWithoutEffect(node: AstNode): AstNode {
+        var newNode = skipParenthesis(node)
         newNode = skipNvlWithNull(newNode)
         return newNode
     }

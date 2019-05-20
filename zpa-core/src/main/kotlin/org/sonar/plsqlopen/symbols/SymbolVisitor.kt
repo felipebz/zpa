@@ -144,7 +144,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun visitPackage(node: AstNode) {
-        enterScope(node, false, false)
+        enterScope(node, autonomousTransaction = false, exceptionHandler = false)
     }
 
     private fun visitCursor(node: AstNode) {
@@ -205,9 +205,14 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, type: PlSqlType): Symbol {
-        val symbol = symbolTable.declareSymbol(identifier, kind, currentScope!!, type)
-        semantic(identifier).symbol = symbol
-        return symbol
+        val scope = currentScope
+        if (scope == null) {
+            throw IllegalStateException("Cannot create a symbol without a scope.")
+        } else {
+            val symbol = symbolTable.declareSymbol(identifier, kind, scope, type)
+            semantic(identifier).symbol = symbol
+            return symbol
+        }
     }
 
     private fun enterScope(node: AstNode, autonomousTransaction: Boolean?, exceptionHandler: Boolean?) {

@@ -45,7 +45,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
         val identifierName = identifier.tokenOriginalValue
         val symbols = context.currentScope?.getSymbolsAcessibleInScope(identifierName) ?: ArrayDeque()
 
-        if (!symbols.isEmpty()) {
+        if (symbols.isNotEmpty()) {
             val checkException = exceptionShouldBeChecked(symbols.first)
 
             if (checkException && !isHandled(identifierName)) {

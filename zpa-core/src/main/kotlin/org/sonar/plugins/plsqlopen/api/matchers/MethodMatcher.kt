@@ -113,11 +113,11 @@ class MethodMatcher private constructor()
         var matches =  methodNameCriteria?.let { nameAcceptable(nodes.removeLast(), it) } ?: true
 
         packageNameCriteria?.let {
-            matches = matches and (!nodes.isEmpty() && nameAcceptable(nodes.removeLast(), it))
+            matches = matches and (nodes.isNotEmpty() && nameAcceptable(nodes.removeLast(), it))
         }
 
         schemaNameCriteria?.let {
-            matches = matches and (schemaIsOptional && nodes.isEmpty() || !nodes.isEmpty() && nameAcceptable(nodes.removeLast(), it))
+            matches = matches and (schemaIsOptional && nodes.isEmpty() || nodes.isNotEmpty() && nameAcceptable(nodes.removeLast(), it))
         }
 
         return matches && nodes.isEmpty() && argumentsAcceptable(originalNode)

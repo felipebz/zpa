@@ -33,6 +33,7 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContextFactory
+import org.sonar.api.rule.RuleKey
 import org.sonar.api.utils.AnnotationUtils
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.PlSqlChecks
@@ -112,7 +113,7 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
 
         for (check in checksToRun) {
             val issues = (check as PlSqlCheck).issues()
-            if (!issues.isEmpty()) {
+            if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
             }
         }
@@ -159,7 +160,7 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
 
         for (check in checksToRun) {
             val issues = (check as PlSqlCheck).issues()
-            if (!issues.isEmpty()) {
+            if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
             }
         }
@@ -196,10 +197,10 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
     }
 
     private fun saveIssues(inputFile: InputFile, check: PlSqlVisitor, issues: List<PreciseIssue>) {
-        val ruleKey = plsqlChecks.ruleKey(check)
+        val ruleKey = plsqlChecks.ruleKey(check) as RuleKey
         for (preciseIssue in issues) {
 
-            val newIssue = context.newIssue().forRule(ruleKey!!)
+            val newIssue = context.newIssue().forRule(ruleKey)
 
             val cost = preciseIssue.cost()
             if (cost != null) {
@@ -227,12 +228,11 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
     private fun newLocation(inputFile: InputFile, issue: NewIssue, location: IssueLocation): NewIssueLocation {
         val newLocation = issue.newLocation().on(inputFile)
         if (location.startLine() != IssueLocation.UNDEFINED_LINE) {
-            val range: TextRange
-            if (location.startLineOffset() == IssueLocation.UNDEFINED_OFFSET) {
-                range = inputFile.selectLine(location.startLine())
+            val range: TextRange = if (location.startLineOffset() == IssueLocation.UNDEFINED_OFFSET) {
+                inputFile.selectLine(location.startLine())
             } else {
-                range = inputFile.newRange(location.startLine(), location.startLineOffset(), location.endLine(),
-                    location.endLineOffset())
+                inputFile.newRange(location.startLine(), location.startLineOffset(), location.endLine(),
+                        location.endLineOffset())
             }
             newLocation.at(range)
         }
