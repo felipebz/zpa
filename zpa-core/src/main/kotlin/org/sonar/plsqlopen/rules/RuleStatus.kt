@@ -17,33 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen
+package org.sonar.plsqlopen.rules
 
-import org.sonar.api.server.rule.RulesDefinition
-import org.sonar.plsqlopen.checks.CheckList
-import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
-
-class PlSqlRuleRepository : RulesDefinition {
-
-    override fun define(context: RulesDefinition.Context) {
-        val repository = context
-                .createRepository(KEY, PlSql.KEY)
-                .setName("Z PL/SQL Analyzer")
-        CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(repository), PlSql.KEY, CheckList.checks)
-        repository.done()
-    }
+enum class RuleStatus {
+    BETA, DEPRECATED, READY, REMOVED;
 
     companion object {
-        internal val KEY: String
-
-        init {
-            // TODO: remove this code and always use the key "zpa"
-            var repositoryKey = "plsql"
-            if (SonarQubeUtils.isCommercialEdition) {
-                repositoryKey = "zpa"
-            }
-            KEY = repositoryKey
+        fun defaultStatus(): RuleStatus {
+            return READY
         }
     }
-
 }

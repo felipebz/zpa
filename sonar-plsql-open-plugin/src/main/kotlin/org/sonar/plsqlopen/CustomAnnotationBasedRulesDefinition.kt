@@ -19,11 +19,10 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.api.rule.RuleScope
-import org.sonar.api.server.rule.RulesDefinition.NewRepository
-import org.sonar.api.server.rule.RulesDefinition.NewRule
-import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader
-import org.sonar.api.utils.AnnotationUtils
+import org.sonar.plsqlopen.rules.RulesDefinitionAnnotationLoader
+import org.sonar.plsqlopen.rules.ZpaRepository
+import org.sonar.plsqlopen.rules.ZpaRule
+import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate
@@ -31,7 +30,7 @@ import java.io.IOException
 import java.net.URL
 import java.util.*
 
-class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository, private val languageKey: String) {
+class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository, private val languageKey: String) {
     private val locale: Locale = Locale.getDefault()
     private val externalDescriptionBasePath: String
 
@@ -47,11 +46,11 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
             loader.load(repository, annotatedClass)
         }
 
-        val newRules = ArrayList<NewRule>()
+        val newRules = ArrayList<ZpaRule>()
         for (ruleClass in ruleClasses) {
             val rule = newRule(ruleClass, failIfNoExplicitKey)
             addHtmlDescription(rule)
-            rule.setTemplate(AnnotationUtils.getAnnotation(ruleClass, RuleTemplate::class.java) != null)
+            rule.template = getAnnotation(ruleClass, RuleTemplate::class.java) != null
             try {
                 setupSqaleModel(rule, ruleClass)
             } catch (e: RuntimeException) {
@@ -59,15 +58,9 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
             }
 
             if (SonarQubeUtils.isIsSQ71OrGreater) {
-                val ruleInfo = AnnotationUtils.getAnnotation(ruleClass, RuleInfo::class.java)
+                val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
                 if (ruleInfo != null) {
-                    var scope = RuleScope.defaultScope()
-                    when {
-                        ruleInfo.scope === RuleInfo.Scope.ALL -> scope = RuleScope.ALL
-                        ruleInfo.scope === RuleInfo.Scope.MAIN -> scope = RuleScope.MAIN
-                        ruleInfo.scope === RuleInfo.Scope.TEST -> scope = RuleScope.TEST
-                    }
-                    rule.setScope(scope)
+                    rule.scope = ruleInfo.scope
                 }
             }
 
@@ -76,24 +69,24 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
         setupExternalNames(newRules)
     }
 
-    private fun addHtmlDescription(rule: NewRule) {
-        val resource = CustomAnnotationBasedRulesDefinition::class.java.getResource(externalDescriptionBasePath + "/" + rule.key() + ".html")
+    private fun addHtmlDescription(rule: ZpaRule) {
+        val resource = CustomAnnotationBasedRulesDefinition::class.java.getResource("$externalDescriptionBasePath/${rule.key}.html")
         if (resource != null) {
             addHtmlDescription(rule, resource)
         }
     }
 
-    private fun addHtmlDescription(rule: NewRule, resource: URL) {
+    private fun addHtmlDescription(rule: ZpaRule, resource: URL) {
         try {
-            rule.setHtmlDescription(resource.readText())
+            rule.htmlDescription = resource.readText()
         } catch (e: IOException) {
             throw IllegalStateException("Failed to read: $resource", e)
         }
 
     }
 
-    private fun newRule(ruleClass: Class<*>, failIfNoExplicitKey: Boolean): NewRule {
-        val ruleAnnotation = AnnotationUtils.getAnnotation(ruleClass, org.sonar.check.Rule::class.java)
+    private fun newRule(ruleClass: Class<*>, failIfNoExplicitKey: Boolean): ZpaRule {
+        val ruleAnnotation = getAnnotation(ruleClass, org.sonar.check.Rule::class.java)
                 ?: throw IllegalArgumentException("No Rule annotation was found on $ruleClass")
         var ruleKey = ruleAnnotation.key
         if (ruleKey.isEmpty()) {
@@ -105,7 +98,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
         return repository.rule(ruleKey) ?: throw IllegalStateException("Rule $ruleKey was not created")
     }
 
-    private fun setupExternalNames(rules: Collection<NewRule>) {
+    private fun setupExternalNames(rules: Collection<ZpaRule>) {
         val bundle: ResourceBundle
         try {
             bundle = ResourceBundle.getBundle("org.sonar.l10n.$languageKey", locale)
@@ -114,15 +107,15 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
         }
 
         for (rule in rules) {
-            val baseKey = rule.key()
+            val baseKey = rule.key
             val nameKey = "$baseKey.name"
             if (bundle.containsKey(nameKey)) {
-                rule.setName(bundle.getString(nameKey))
+                rule.name = bundle.getString(nameKey)
             }
-            for (param in rule.params()) {
-                val paramDescriptionKey = baseKey + ".param." + param.key()
+            for (param in rule.params) {
+                val paramDescriptionKey = baseKey + ".param." + param.key
                 if (bundle.containsKey(paramDescriptionKey)) {
-                    param.setDescription(bundle.getString(paramDescriptionKey))
+                    param.description = bundle.getString(paramDescriptionKey)
                 }
             }
         }
@@ -136,15 +129,15 @@ class CustomAnnotationBasedRulesDefinition(private val repository: NewRepository
          * @param languageKey language identifier
          * @param ruleClasses classes to add
          */
-        fun load(repository: NewRepository, languageKey: String, ruleClasses: Iterable<Class<*>>) {
+        fun load(repository: ZpaRepository, languageKey: String, ruleClasses: Iterable<Class<*>>) {
             CustomAnnotationBasedRulesDefinition(repository, languageKey).addRuleClasses(true, ruleClasses)
         }
 
-        private fun setupSqaleModel(rule: NewRule, ruleClass: Class<*>) {
-            val constant = AnnotationUtils.getAnnotation(ruleClass, ConstantRemediation::class.java)
+        private fun setupSqaleModel(rule: ZpaRule, ruleClass: Class<*>) {
+            val constant = getAnnotation(ruleClass, ConstantRemediation::class.java)
 
             if (constant != null) {
-                rule.setDebtRemediationFunction(rule.debtRemediationFunctions().constantPerIssue(constant.value))
+                rule.remediationConstant = constant.value
             }
         }
 

@@ -17,34 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api
+package org.sonar.plsqlopen.rules
 
-import org.sonar.api.ExtensionPoint
-import org.sonar.api.batch.ScannerSide
 import org.sonar.api.server.rule.RulesDefinition
-import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition
-import org.sonar.plsqlopen.PlSql
-import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
 
-@ExtensionPoint
-@ScannerSide
-abstract class CustomPlSqlRulesDefinition : RulesDefinition {
+class SonarQubeRepositoryAdapter(private val repository: RulesDefinition.NewRepository) : ZpaRepository {
+    override fun createRule(ruleKey: String): ZpaRule =
+        SonarQubeRuleAdapter(repository.createRule(ruleKey))
 
-    override fun define(context: RulesDefinition.Context) {
-        val repo = context.createRepository(repositoryKey(), PlSql.KEY)
-                .setName(repositoryName())
-
-        // Load metadata from check classes' annotations
-        CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(repo), PlSql.KEY)
-            .addRuleClasses(false, checkClasses().toList())
-
-        repo.done()
+    override fun rule(ruleKey: String): ZpaRule? {
+        val rule = repository.rule(ruleKey)
+        return if (rule != null) SonarQubeRuleAdapter(rule) else null
     }
-
-    abstract fun repositoryName(): String
-
-    abstract fun repositoryKey(): String
-
-    abstract fun checkClasses(): Array<Class<*>>
-
 }
