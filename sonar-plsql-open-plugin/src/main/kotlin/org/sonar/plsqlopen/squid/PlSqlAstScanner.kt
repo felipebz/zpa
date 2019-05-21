@@ -33,7 +33,6 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContextFactory
-import org.sonar.api.rule.RuleKey
 import org.sonar.api.utils.AnnotationUtils
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.PlSqlChecks
@@ -46,6 +45,7 @@ import org.sonar.plsqlopen.metrics.CpdVisitor
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor
 import org.sonar.plsqlopen.metrics.MetricsVisitor
 import org.sonar.plsqlopen.parser.PlSqlParser
+import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
 import org.sonar.plsqlopen.symbols.SymbolVisitor
@@ -197,10 +197,10 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
     }
 
     private fun saveIssues(inputFile: InputFile, check: PlSqlVisitor, issues: List<PreciseIssue>) {
-        val ruleKey = plsqlChecks.ruleKey(check) as RuleKey
+        val rule = plsqlChecks.ruleKey(check) as SonarQubeRuleKeyAdapter
         for (preciseIssue in issues) {
 
-            val newIssue = context.newIssue().forRule(ruleKey)
+            val newIssue = context.newIssue().forRule(rule.ruleKey)
 
             val cost = preciseIssue.cost()
             if (cost != null) {

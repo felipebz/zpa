@@ -25,7 +25,6 @@ import org.junit.Test
 import org.mockito.Mockito.*
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder
-import org.sonar.api.batch.rule.CheckFactory
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder
 import org.sonar.api.batch.sensor.highlighting.TypeOfText
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor
@@ -53,14 +52,13 @@ class PlSqlSquidSensorTest {
                 .setName("Print Statement Usage")
                 .activate()
                 .build()
-        val checkFactory = CheckFactory(activeRules)
         context = SensorContextTester.create(File("."))
 
         val fileLinesContextFactory = mock(FileLinesContextFactory::class.java)
         fileLinesContext = mock(FileLinesContext::class.java)
         `when`(fileLinesContextFactory.createFor(any(InputFile::class.java))).thenReturn(fileLinesContext)
 
-        sensor = PlSqlSquidSensor(checkFactory, MapSettings().asConfig(), NoSonarFilter(), fileLinesContextFactory, null)
+        sensor = PlSqlSquidSensor(activeRules, MapSettings().asConfig(), NoSonarFilter(), fileLinesContextFactory, null)
     }
 
     @Test

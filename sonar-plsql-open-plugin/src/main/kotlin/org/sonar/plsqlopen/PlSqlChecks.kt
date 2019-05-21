@@ -19,21 +19,21 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.api.batch.rule.CheckFactory
-import org.sonar.api.batch.rule.Checks
-import org.sonar.api.rule.RuleKey
+import org.sonar.plsqlopen.rules.SonarQubeChecks
+import org.sonar.plsqlopen.rules.ZpaActiveRules
+import org.sonar.plsqlopen.rules.ZpaChecks
+import org.sonar.plsqlopen.rules.ZpaRuleKey
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.util.*
 
-class PlSqlChecks private constructor(private val checkFactory: CheckFactory) {
-    private val checksByRepository = hashSetOf<Checks<PlSqlVisitor>>()
+class PlSqlChecks private constructor(private val activeRules: ZpaActiveRules) {
+    private val checksByRepository = hashSetOf<ZpaChecks<PlSqlVisitor>>()
 
-    val checks: Set<Checks<PlSqlVisitor>> = checksByRepository
+    val checks: Set<ZpaChecks<PlSqlVisitor>> = checksByRepository
 
     fun addChecks(repositoryKey: String, checkClass: Iterable<Class<*>>): PlSqlChecks {
-        checksByRepository.add(checkFactory
-                .create<PlSqlVisitor>(repositoryKey)
+        checksByRepository.add(SonarQubeChecks<PlSqlVisitor>(activeRules, repositoryKey)
                 .addAnnotatedChecks(checkClass))
 
         return this
@@ -60,8 +60,8 @@ class PlSqlChecks private constructor(private val checkFactory: CheckFactory) {
         return allVisitors
     }
 
-    fun ruleKey(check: PlSqlVisitor): RuleKey? {
-        var ruleKey: RuleKey?
+    fun ruleKey(check: PlSqlVisitor): ZpaRuleKey? {
+        var ruleKey: ZpaRuleKey?
 
         for (checks in checksByRepository) {
             ruleKey = checks.ruleKey(check)
@@ -74,8 +74,8 @@ class PlSqlChecks private constructor(private val checkFactory: CheckFactory) {
     }
 
     companion object {
-        fun createPlSqlCheck(checkFactory: CheckFactory): PlSqlChecks {
-            return PlSqlChecks(checkFactory)
+        fun createPlSqlCheck(activeRules: ZpaActiveRules): PlSqlChecks {
+            return PlSqlChecks(activeRules)
         }
     }
 

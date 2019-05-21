@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.api.batch.rule.CheckFactory
+import org.sonar.api.batch.rule.ActiveRules
 import org.sonar.api.batch.sensor.Sensor
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.SensorDescriptor
@@ -28,16 +28,17 @@ import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.FileLinesContextFactory
 import org.sonar.plsqlopen.checks.CheckList
 import org.sonar.plsqlopen.metadata.FormsMetadata
+import org.sonar.plsqlopen.rules.SonarQubeActiveRulesAdapter
 import org.sonar.plsqlopen.squid.PlSqlAstScanner
 import org.sonar.plsqlopen.squid.ProgressReport
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition
 import java.util.concurrent.TimeUnit
 
-class PlSqlSquidSensor @JvmOverloads constructor(checkFactory: CheckFactory, settings: Configuration, private val noSonarFilter: NoSonarFilter,
+class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, settings: Configuration, private val noSonarFilter: NoSonarFilter,
                                                  private val fileLinesContextFactory: FileLinesContextFactory,
                                                  customRulesDefinition: Array<CustomPlSqlRulesDefinition>? = null) : Sensor {
 
-    private val checks = PlSqlChecks.createPlSqlCheck(checkFactory)
+    private val checks = PlSqlChecks.createPlSqlCheck(SonarQubeActiveRulesAdapter(activeRules))
             .addChecks(PlSqlRuleRepository.KEY, CheckList.checks)
             .addCustomChecks(customRulesDefinition)
 
