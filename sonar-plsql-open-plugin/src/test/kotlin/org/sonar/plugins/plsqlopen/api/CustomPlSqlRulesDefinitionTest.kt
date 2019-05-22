@@ -59,7 +59,6 @@ class CustomPlSqlRulesDefinitionTest {
 
     class MyCustomPlSqlRulesDefinition : CustomPlSqlRulesDefinition() {
         override fun repositoryName(): String {
-            println(REPOSITORY_NAME)
             return REPOSITORY_NAME
         }
 
