@@ -20,9 +20,9 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.Trivia
-import org.sonar.check.Priority
-import org.sonar.check.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.Priority
+import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 @Rule(key = DisabledTestCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UTPLSQL])

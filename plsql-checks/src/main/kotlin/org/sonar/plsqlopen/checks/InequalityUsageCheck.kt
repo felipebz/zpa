@@ -20,12 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.check.Priority
-import org.sonar.check.Rule
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(key = InequalityUsageCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.OBSOLETE])
 @ConstantRemediation("5min")

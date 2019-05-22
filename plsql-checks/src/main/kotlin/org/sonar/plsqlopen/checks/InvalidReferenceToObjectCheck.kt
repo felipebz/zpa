@@ -20,14 +20,10 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.check.Priority
-import org.sonar.check.Rule
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 import java.util.*
 

@@ -20,12 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.check.Priority
-import org.sonar.check.Rule
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(key = CollapsibleIfStatementsCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.CLUMSY])
 @ConstantRemediation("5min")

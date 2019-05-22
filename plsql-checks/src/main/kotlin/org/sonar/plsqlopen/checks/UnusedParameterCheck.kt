@@ -20,16 +20,11 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.check.Priority
-import org.sonar.check.Rule
-import org.sonar.check.RuleProperty
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.regex.Pattern

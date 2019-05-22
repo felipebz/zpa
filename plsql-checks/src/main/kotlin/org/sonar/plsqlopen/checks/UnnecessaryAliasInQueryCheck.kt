@@ -22,13 +22,9 @@ package org.sonar.plsqlopen.checks
 import com.google.common.collect.ArrayListMultimap
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.AstNodeType
-import org.sonar.check.Priority
-import org.sonar.check.Rule
-import org.sonar.check.RuleProperty
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(key = UnnecessaryAliasInQueryCheck.CHECK_KEY, priority = Priority.MINOR)
 @ConstantRemediation("1min")

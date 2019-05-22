@@ -20,15 +20,11 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.check.Priority
-import org.sonar.check.Rule
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
 @Rule(key = NotASelectedExpressionCheck.CHECK_KEY, priority = Priority.CRITICAL, tags = [Tags.BUG])
