@@ -25,8 +25,8 @@ import org.sonar.check.Priority
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty
 import org.sonar.plsqlopen.squid.AnalysisException
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.RuleTemplate
 
 @Rule(key = XPathCheck.CHECK_KEY, priority = Priority.MAJOR)
 @RuleInfo(scope = RuleInfo.Scope.ALL)

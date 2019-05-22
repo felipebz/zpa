@@ -17,14 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations
+package org.sonar.plugins.plsqlopen.api.annotations
 
-@Deprecated(message = "Use the annotation from the correct package")
 @Retention
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
-annotation class ConstantRemediation(
-        /**
-         * Value of the remediation
-         * @return e.g. "10min" or "2h"
-         */
-        val value: String)
+@Target(AnnotationTarget.FIELD)
+annotation class RuleProperty(val key: String = "",
+                              val description: String = "",
+                              val defaultValue: String = "",
+                              val type: String = "")

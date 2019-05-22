@@ -17,26 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations
+package org.sonar.plugins.plsqlopen.api.annotations
 
 @Retention
-@Target(AnnotationTarget.FIELD)
-annotation class RuleProperty(val key: String = "",
-                              val description: String = "",
-                              val defaultValue: String = "",
-                              val type: String = "")
-
-class RulePropertyData(val key: String,
-                       val description: String,
-                       val defaultValue: String,
-                       val type: String) {
-    companion object {
-        fun from(ruleProperty: RuleProperty?) =
-            if (ruleProperty == null) null
-            else
-                RulePropertyData(ruleProperty.key,
-                    ruleProperty.description,
-                    ruleProperty.defaultValue,
-                    ruleProperty.type)
-    }
-}
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class RuleTemplate

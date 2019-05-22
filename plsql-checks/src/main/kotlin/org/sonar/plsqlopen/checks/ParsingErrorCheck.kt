@@ -21,8 +21,8 @@ package org.sonar.plsqlopen.checks
 
 import org.sonar.check.Priority
 import org.sonar.check.Rule
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 @Rule(key = ParsingErrorCheck.CHECK_KEY, priority = Priority.INFO)
 @RuleInfo(scope = RuleInfo.Scope.ALL)

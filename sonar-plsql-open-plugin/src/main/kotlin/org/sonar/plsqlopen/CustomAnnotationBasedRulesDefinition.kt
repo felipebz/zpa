@@ -23,12 +23,14 @@ import org.sonar.plsqlopen.rules.RulesDefinitionAnnotationLoader
 import org.sonar.plsqlopen.rules.ZpaRepository
 import org.sonar.plsqlopen.rules.ZpaRule
 import org.sonar.plsqlopen.utils.getAnnotation
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleTemplate
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import java.io.IOException
 import java.net.URL
 import java.util.*
+import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation as OldConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
 class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository, private val languageKey: String) {
     private val locale: Locale = Locale.getDefault()
@@ -58,6 +60,12 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
             }
 
             if (SonarQubeUtils.isIsSQ71OrGreater) {
+                val oldRuleInfo = getAnnotation(ruleClass, OldRuleInfo::class.java)
+                if (oldRuleInfo != null) {
+                    rule.scope = RuleInfo.Scope.valueOf(oldRuleInfo.scope.name)
+                }
+
+                // TODO: remove this code in the next release
                 val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
                 if (ruleInfo != null) {
                     rule.scope = ruleInfo.scope
@@ -134,8 +142,13 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
         }
 
         private fun setupSqaleModel(rule: ZpaRule, ruleClass: Class<*>) {
-            val constant = getAnnotation(ruleClass, ConstantRemediation::class.java)
+            // TODO: remove this code in the next release
+            val oldConstant = getAnnotation(ruleClass, OldConstantRemediation::class.java)
+            if (oldConstant != null) {
+                rule.remediationConstant = oldConstant.value
+            }
 
+            val constant = getAnnotation(ruleClass, ConstantRemediation::class.java)
             if (constant != null) {
                 rule.remediationConstant = constant.value
             }

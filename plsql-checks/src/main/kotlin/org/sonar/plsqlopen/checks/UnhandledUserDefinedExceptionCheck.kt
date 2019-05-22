@@ -25,8 +25,8 @@ import org.sonar.check.Rule
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 

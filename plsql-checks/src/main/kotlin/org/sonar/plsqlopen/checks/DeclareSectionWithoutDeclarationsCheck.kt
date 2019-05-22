@@ -24,9 +24,9 @@ import org.sonar.check.Priority
 import org.sonar.check.Rule
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 @Rule(key = DeclareSectionWithoutDeclarationsCheck.CHECK_KEY, priority = Priority.INFO)
 @ConstantRemediation("1min")

@@ -17,12 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations
+package org.sonar.plugins.plsqlopen.api.annotations
 
-enum class Priority {
-    INFO,
-    MINOR,
-    MAJOR,
-    CRITICAL,
-    BLOCKER
-}
+@Retention
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+annotation class Rule(val key: String = "",
+                      val name: String = "",
+                      val description: String = "",
+                      val priority: Priority = Priority.MAJOR,
+                      val tags: Array<String> = [])

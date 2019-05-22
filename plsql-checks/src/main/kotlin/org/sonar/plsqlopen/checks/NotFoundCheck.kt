@@ -25,9 +25,9 @@ import org.sonar.check.Rule
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 @Rule(key = NotFoundCheck.CHECK_KEY, priority = Priority.MINOR)
 @ConstantRemediation("5min")

@@ -23,7 +23,7 @@ import org.sonar.api.rules.RuleAnnotationUtils
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition
 import org.sonar.api.utils.AnnotationUtils
 import org.sonar.plsqlopen.checks.CheckList
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
 
 class PlSqlProfile : BuiltInQualityProfilesDefinition {
 

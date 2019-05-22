@@ -33,7 +33,6 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContextFactory
-import org.sonar.api.utils.AnnotationUtils
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.PlSqlChecks
 import org.sonar.plsqlopen.checks.IssueLocation
@@ -49,9 +48,10 @@ import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
 import org.sonar.plsqlopen.symbols.SymbolVisitor
+import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
@@ -59,6 +59,7 @@ import java.io.InterruptedIOException
 import java.io.Serializable
 import java.util.*
 import kotlin.streams.toList
+import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
 class PlSqlAstScanner(private val context: SensorContext, private val checks: Collection<PlSqlVisitor>, private val noSonarFilter: NoSonarFilter,
                       private val formsMetadata: FormsMetadata?, isErrorRecoveryEnabled: Boolean, private val fileLinesContextFactory: FileLinesContextFactory?) {
@@ -170,10 +171,17 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
     }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
-        val ruleInfo = AnnotationUtils.getAnnotation(check, RuleInfo::class.java)
-        return if (ruleInfo != null) {
-            ruleInfo.scope === RuleInfo.Scope.ALL || ruleInfo.scope === scope
-        } else scope === RuleInfo.Scope.MAIN
+        val ruleInfo = getAnnotation(check, RuleInfo::class.java)
+        if (ruleInfo != null) {
+            return ruleInfo.scope === RuleInfo.Scope.ALL || ruleInfo.scope === scope
+        } else {
+            // TODO: remove this code in the next release
+            val oldRuleInfo = getAnnotation(check, OldRuleInfo::class.java)
+            if (oldRuleInfo != null) {
+                return oldRuleInfo.scope.name === RuleInfo.Scope.ALL.name || oldRuleInfo.scope.name === scope.name
+            }
+        }
+        return scope === RuleInfo.Scope.MAIN
     }
 
     private fun getPlSqlVisitorContext(inputFile: InputFile): PlSqlVisitorContext {

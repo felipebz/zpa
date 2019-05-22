@@ -19,6 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.annnotations
 
+@Deprecated(message = "Use the annotation from the correct package")
 @Retention
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
 annotation class RuleInfo(val scope: Scope = Scope.MAIN) {

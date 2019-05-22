@@ -23,9 +23,9 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.check.Priority
 import org.sonar.check.Rule
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
 @Rule(key = NvlWithNullParameterCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])

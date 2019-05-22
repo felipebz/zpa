@@ -21,10 +21,8 @@ package org.sonar.plsqlopen.rules
 
 import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plsqlopen.utils.getFields
-import org.sonar.plugins.plsqlopen.api.annnotations.Rule
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleData
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleProperty
-import org.sonar.plugins.plsqlopen.api.annnotations.RulePropertyData
+import org.sonar.plugins.plsqlopen.api.annotations.Rule
+import org.sonar.plugins.plsqlopen.api.annotations.RuleProperty
 import java.lang.reflect.Field
 import java.util.*
 

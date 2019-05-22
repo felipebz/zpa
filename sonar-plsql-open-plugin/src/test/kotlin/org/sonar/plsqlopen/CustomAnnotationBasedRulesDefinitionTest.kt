@@ -30,7 +30,7 @@ import org.sonar.api.server.rule.RulesDefinition.*
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty
 import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
 import java.util.*
 
 class CustomAnnotationBasedRulesDefinitionTest {

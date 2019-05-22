@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.rules
 
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 interface ZpaRule {
     val key: String

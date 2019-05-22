@@ -17,14 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.annnotations
+package org.sonar.plsqlopen.rules
 
-@Deprecated(message = "Use the annotation from the correct package")
-@Retention
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
-annotation class ConstantRemediation(
-        /**
-         * Value of the remediation
-         * @return e.g. "10min" or "2h"
-         */
-        val value: String)
+import org.sonar.plugins.plsqlopen.api.annotations.Priority
+import org.sonar.plugins.plsqlopen.api.annotations.Rule
+
+class RuleData(val key: String,
+               val name: String,
+               val description: String,
+               val priority: Priority,
+               val tags: Array<String>) {
+    companion object {
+        fun from(rule: Rule?) =
+            if (rule == null) null
+            else RuleData(rule.key,
+                rule.name,
+                rule.description,
+                rule.priority,
+                rule.tags)
+    }
+}

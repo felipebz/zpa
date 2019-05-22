@@ -19,6 +19,6 @@
  */
 package org.sonar.plugins.plsqlopen.api.annnotations
 
-@Retention
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FILE)
+@Deprecated(message = "Use the annotation from the correct package")
+@org.sonar.plugins.plsqlopen.api.annotations.RuleTemplate
 annotation class RuleTemplate

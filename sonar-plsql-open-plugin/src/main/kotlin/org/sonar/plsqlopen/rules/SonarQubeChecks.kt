@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.rules
 
 import org.sonar.plsqlopen.utils.getAnnotation
-import org.sonar.plugins.plsqlopen.api.annnotations.*
+import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import java.lang.reflect.Field
 import org.sonar.check.Priority as SonarPriority
 import org.sonar.check.Rule as SonarRule
