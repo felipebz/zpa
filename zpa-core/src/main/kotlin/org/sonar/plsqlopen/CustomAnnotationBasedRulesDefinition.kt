@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen
 
+import org.sonar.plsqlopen.rules.RuleMetadataLoader
 import org.sonar.plsqlopen.rules.RulesDefinitionAnnotationLoader
 import org.sonar.plsqlopen.rules.ZpaRepository
 import org.sonar.plsqlopen.rules.ZpaRule
@@ -32,18 +33,20 @@ import java.util.*
 import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation as OldConstantRemediation
 import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
-class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository, private val languageKey: String) {
+class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository,
+                                           private val languageKey: String,
+                                           private val ruleMetadataLoader: RuleMetadataLoader) {
     private val locale: Locale = Locale.getDefault()
     private val externalDescriptionBasePath: String
 
     init {
         this.externalDescriptionBasePath = String.format("%s/rules/plsql",
-                getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale))
+            getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale))
 
     }
 
     fun addRuleClasses(failIfNoExplicitKey: Boolean, ruleClasses: Iterable<Class<*>>) {
-        val loader = RulesDefinitionAnnotationLoader()
+        val loader = RulesDefinitionAnnotationLoader(ruleMetadataLoader)
         for (annotatedClass in ruleClasses) {
             loader.load(repository, annotatedClass)
         }
@@ -59,17 +62,15 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
                 throw IllegalArgumentException("Could not setup SQALE model on $ruleClass", e)
             }
 
-            if (SonarQubeUtils.isIsSQ71OrGreater) {
-                val oldRuleInfo = getAnnotation(ruleClass, OldRuleInfo::class.java)
-                if (oldRuleInfo != null) {
-                    rule.scope = RuleInfo.Scope.valueOf(oldRuleInfo.scope.name)
-                }
+            val oldRuleInfo = getAnnotation(ruleClass, OldRuleInfo::class.java)
+            if (oldRuleInfo != null) {
+                rule.scope = RuleInfo.Scope.valueOf(oldRuleInfo.scope.name)
+            }
 
-                // TODO: remove this code in the next release
-                val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
-                if (ruleInfo != null) {
-                    rule.scope = ruleInfo.scope
-                }
+            // TODO: remove this code in the next release
+            val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
+            if (ruleInfo != null) {
+                rule.scope = ruleInfo.scope
             }
 
             newRules.add(rule)
@@ -94,7 +95,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
     }
 
     private fun newRule(ruleClass: Class<*>, failIfNoExplicitKey: Boolean): ZpaRule {
-        val ruleAnnotation = getAnnotation(ruleClass, org.sonar.check.Rule::class.java)
+        val ruleAnnotation = ruleMetadataLoader.getRuleAnnotation(ruleClass)
                 ?: throw IllegalArgumentException("No Rule annotation was found on $ruleClass")
         var ruleKey = ruleAnnotation.key
         if (ruleKey.isEmpty()) {
@@ -137,8 +138,8 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
          * @param languageKey language identifier
          * @param ruleClasses classes to add
          */
-        fun load(repository: ZpaRepository, languageKey: String, ruleClasses: Iterable<Class<*>>) {
-            CustomAnnotationBasedRulesDefinition(repository, languageKey).addRuleClasses(true, ruleClasses)
+        fun load(repository: ZpaRepository, languageKey: String, ruleClasses: Iterable<Class<*>>, ruleMetadataLoader: RuleMetadataLoader) {
+            CustomAnnotationBasedRulesDefinition(repository, languageKey, ruleMetadataLoader).addRuleClasses(true, ruleClasses)
         }
 
         private fun setupSqaleModel(rule: ZpaRule, ruleClass: Class<*>) {

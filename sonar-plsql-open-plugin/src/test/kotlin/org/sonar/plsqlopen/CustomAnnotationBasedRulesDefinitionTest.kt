@@ -30,6 +30,7 @@ import org.sonar.api.server.rule.RulesDefinition.*
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty
 import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
+import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
 import java.util.*
 
@@ -168,7 +169,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     private fun buildRepository(languageKey: String, failIfNoExplicitKey: Boolean, vararg classes: Class<*>): Repository {
         val newRepository = createRepository(languageKey)
-        CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(newRepository), languageKey)
+        CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(newRepository), languageKey, SonarQubeRuleMetadataLoader())
                 .addRuleClasses(failIfNoExplicitKey, classes.toList())
         newRepository.done()
         return context.repository(REPO_KEY) ?: fail("Should build a repository")
@@ -177,7 +178,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
     private fun load(vararg classes: Class<*>): Repository {
         val languageKey = LANGUAGE_KEY_WITH_RESOURCE_BUNDLE
         val newRepository = createRepository(languageKey)
-        CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(newRepository), languageKey, classes.toList())
+        CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(newRepository), languageKey, classes.toList(), SonarQubeRuleMetadataLoader())
         newRepository.done()
         return context.repository(REPO_KEY) ?: fail("Should build a repository")
     }

@@ -22,6 +22,7 @@ package org.sonar.plsqlopen
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.plsqlopen.checks.CheckList
 import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
+import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 
 class PlSqlRuleRepository : RulesDefinition {
 
@@ -29,7 +30,7 @@ class PlSqlRuleRepository : RulesDefinition {
         val repository = context
                 .createRepository(KEY, PlSql.KEY)
                 .setName("Z PL/SQL Analyzer")
-        CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(repository), PlSql.KEY, CheckList.checks)
+        CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(repository), PlSql.KEY, CheckList.checks, SonarQubeRuleMetadataLoader())
         repository.done()
     }
 

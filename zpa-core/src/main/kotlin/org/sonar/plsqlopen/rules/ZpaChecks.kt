@@ -19,14 +19,13 @@
  */
 package org.sonar.plsqlopen.rules
 
-import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plsqlopen.utils.getFields
-import org.sonar.plugins.plsqlopen.api.annotations.Rule
-import org.sonar.plugins.plsqlopen.api.annotations.RuleProperty
 import java.lang.reflect.Field
 import java.util.*
 
-open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules, private val repository: String) {
+open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
+                                    private val repository: String,
+                                    private val ruleMetadataLoader: RuleMetadataLoader) {
     private val checkByRule = HashMap<ZpaRuleKey, C>()
     private val ruleByCheck = IdentityHashMap<C, ZpaRuleKey>()
 
@@ -41,12 +40,6 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules, pri
     fun ruleKey(check: C): ZpaRuleKey? {
         return ruleByCheck[check]
     }
-
-    open fun getRuleAnnotation(annotatedClassOrObject: Any) : RuleData? =
-        RuleData.from(getAnnotation(annotatedClassOrObject, Rule::class.java))
-
-    open fun getRulePropertyAnnotation(field: Field) : RulePropertyData? =
-        RulePropertyData.from(field.getAnnotation(RuleProperty::class.java))
 
     private fun add(ruleKey: ZpaRuleKey, obj: C) {
         checkByRule[ruleKey] = obj
@@ -79,7 +72,7 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules, pri
 
     private fun annotatedEngineKey(annotatedClassOrObject: Any): String? {
         var key: String? = null
-        val ruleAnnotation = getRuleAnnotation(annotatedClassOrObject)
+        val ruleAnnotation = ruleMetadataLoader.getRuleAnnotation(annotatedClassOrObject)
         if (ruleAnnotation != null) {
             key = ruleAnnotation.key
         }
@@ -123,7 +116,7 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules, pri
     private fun getField(check: Any, key: String): Field? {
         val fields = getFields(check.javaClass, true)
         for (field in fields) {
-            val propertyAnnotation = getRulePropertyAnnotation(field)
+            val propertyAnnotation = ruleMetadataLoader.getRulePropertyAnnotation(field)
             if (propertyAnnotation != null && ((key == field.name) || (key == propertyAnnotation.key))) {
                 return field
             }

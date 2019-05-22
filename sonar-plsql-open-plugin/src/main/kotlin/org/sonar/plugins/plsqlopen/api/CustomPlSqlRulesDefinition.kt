@@ -25,6 +25,7 @@ import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition
 import org.sonar.plsqlopen.PlSql
 import org.sonar.plsqlopen.rules.SonarQubeRepositoryAdapter
+import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 
 @ExtensionPoint
 @ScannerSide
@@ -35,7 +36,7 @@ abstract class CustomPlSqlRulesDefinition : RulesDefinition {
                 .setName(repositoryName())
 
         // Load metadata from check classes' annotations
-        CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(repo), PlSql.KEY)
+        CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(repo), PlSql.KEY, SonarQubeRuleMetadataLoader())
             .addRuleClasses(false, checkClasses().toList())
 
         repo.done()

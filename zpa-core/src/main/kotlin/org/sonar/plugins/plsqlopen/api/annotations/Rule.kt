@@ -25,4 +25,5 @@ annotation class Rule(val key: String = "",
                       val name: String = "",
                       val description: String = "",
                       val priority: Priority = Priority.MAJOR,
-                      val tags: Array<String> = [])
+                      val tags: Array<String> = [],
+                      val status: String = "READY")

@@ -26,7 +26,7 @@ import org.sonar.check.Priority as SonarPriority
 import org.sonar.check.Rule as SonarRule
 import org.sonar.check.RuleProperty as SonarRuleProperty
 
-class SonarQubeChecks<C> constructor(activeRules: ZpaActiveRules, repository: String) : ZpaChecks<C>(activeRules, repository) {
+class SonarQubeRuleMetadataLoader : RuleMetadataLoader() {
 
     override fun getRuleAnnotation(annotatedClassOrObject: Any): RuleData? {
         val ruleAnnotation = super.getRuleAnnotation(annotatedClassOrObject)
@@ -49,7 +49,8 @@ class SonarQubeChecks<C> constructor(activeRules: ZpaActiveRules, repository: St
                 sonarRule.name,
                 sonarRule.description,
                 priority,
-                sonarRule.tags)
+                sonarRule.tags,
+                sonarRule.status)
         }
 
         return null

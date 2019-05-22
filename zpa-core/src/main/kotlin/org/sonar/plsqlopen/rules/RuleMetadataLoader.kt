@@ -19,23 +19,17 @@
  */
 package org.sonar.plsqlopen.rules
 
-import org.sonar.plugins.plsqlopen.api.annotations.Priority
+import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
+import org.sonar.plugins.plsqlopen.api.annotations.RuleProperty
+import java.lang.reflect.Field
 
-class RuleData(val key: String,
-               val name: String,
-               val description: String,
-               val priority: Priority,
-               val tags: Array<String>,
-               val status: String) {
-    companion object {
-        fun from(rule: Rule?) =
-            if (rule == null) null
-            else RuleData(rule.key,
-                rule.name,
-                rule.description,
-                rule.priority,
-                rule.tags,
-                rule.status)
-    }
+open class RuleMetadataLoader {
+
+    open fun getRuleAnnotation(annotatedClassOrObject: Any) : RuleData? =
+        RuleData.from(getAnnotation(annotatedClassOrObject, Rule::class.java))
+
+    open fun getRulePropertyAnnotation(field: Field) : RulePropertyData? =
+        RulePropertyData.from(field.getAnnotation(RuleProperty::class.java))
+
 }
