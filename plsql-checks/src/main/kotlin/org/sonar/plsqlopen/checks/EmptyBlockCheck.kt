@@ -34,6 +34,10 @@ class EmptyBlockCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        if (context.currentScope?.isOverridingMember == true) {
+            return
+        }
+
         val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT)
         if (statements.size == 1) {
             val nullStatementSelect = statements[0].getChildren(PlSqlGrammar.NULL_STATEMENT)
