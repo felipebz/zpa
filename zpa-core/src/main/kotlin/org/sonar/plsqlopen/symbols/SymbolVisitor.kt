@@ -140,7 +140,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         val exceptionHandler = node.select()
                 .children(PlSqlGrammar.STATEMENTS_SECTION)
                 .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty
-        enterScope(node, autonomousTransaction, exceptionHandler)
+        val inheritanceClause = node.parent.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
+        val isOverridingMember = inheritanceClause != null &&
+            inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
+            inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)
+
+        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
     }
 
     private fun visitPackage(node: AstNode) {
@@ -150,18 +155,18 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun visitCursor(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
         createSymbol(identifier, Symbol.Kind.CURSOR, PlSqlType.UNKNOWN)
-        enterScope(node, null, null)
+        enterScope(node)
     }
 
     private fun visitBlock(node: AstNode) {
         val exceptionHandler = node.select()
                 .children(PlSqlGrammar.STATEMENTS_SECTION)
                 .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty
-        enterScope(node, null, exceptionHandler)
+        enterScope(node, exceptionHandler =  exceptionHandler)
     }
 
     private fun visitFor(node: AstNode) {
-        enterScope(node, null, null)
+        enterScope(node)
         val identifier = node.getFirstChild(PlSqlKeyword.FOR).nextSibling
 
         val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
@@ -215,15 +220,25 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         }
     }
 
-    private fun enterScope(node: AstNode, autonomousTransaction: Boolean?, exceptionHandler: Boolean?) {
+    private fun enterScope(node: AstNode,
+                           autonomousTransaction: Boolean? = null,
+                           exceptionHandler: Boolean? = null,
+                           overridingMember: Boolean? = null) {
         var autonomous = false
         var exception = false
+        var isOverridingMember = false
 
         with(currentScope) {
             if (autonomousTransaction != null) {
                 autonomous = autonomousTransaction
             } else if (this != null) {
                 autonomous = this.isAutonomousTransaction
+            }
+
+            if (overridingMember != null) {
+                isOverridingMember = overridingMember
+            } else if (this != null) {
+                isOverridingMember = this.isOverridingMember
             }
 
             if (this != null) {
@@ -233,7 +248,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             }
         }
 
-        val scope = ScopeImpl(currentScope, node, autonomous, exception)
+        val scope = ScopeImpl(currentScope, node, autonomous, exception, isOverridingMember)
         symbolTable.addScope(scope)
         currentScope = scope
     }

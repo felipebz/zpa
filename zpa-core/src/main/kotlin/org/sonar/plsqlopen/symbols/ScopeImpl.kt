@@ -27,8 +27,9 @@ import java.util.*
 
 class ScopeImpl(private val outer: Scope?,
                 private val node: AstNode?,
-                override val isAutonomousTransaction: Boolean,
-                private val hasExceptionHandler: Boolean) : Scope {
+                override val isAutonomousTransaction: Boolean = false,
+                private val hasExceptionHandler: Boolean = false,
+                override val isOverridingMember: Boolean = false) : Scope {
     private var identifier: String? = null
 
     override val symbols = mutableListOf<Symbol>()

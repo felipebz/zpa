@@ -33,7 +33,7 @@ class ScopeImplTest {
     @Test
     fun testScope() {
         val node = mock(AstNode::class.java)
-        val scope = ScopeImpl(null, node, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, node)
         assertThat(scope.outer()).isNull()
         assertThat(scope.tree()).isEqualTo(node)
         assertThat(scope.isAutonomousTransaction).isFalse()
@@ -41,7 +41,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsInScope() {
-        val scope = ScopeImpl(null, null, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -54,7 +54,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsByKind() {
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -68,7 +68,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsAcessibleInScope() {
-        val scope = ScopeImpl(null, null, false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -83,11 +83,11 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsAcessibleInScopeConsideringOuterScope() {
-        val outerScope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val outerScope = ScopeImpl(null, null)
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = ScopeImpl(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val innerScope = ScopeImpl(outerScope, null)
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 
@@ -98,7 +98,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbol() {
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, null)
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -114,11 +114,11 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolConsideringOuterScope() {
-        val outerScope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val outerScope = ScopeImpl(null, null)
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = ScopeImpl(outerScope, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val innerScope = ScopeImpl(outerScope, null)
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 

@@ -24,6 +24,7 @@ import java.util.*
 
 interface Scope {
     val isAutonomousTransaction: Boolean
+    val isOverridingMember: Boolean
     val symbols: List<Symbol>
     fun tree(): AstNode?
     fun outer(): Scope?
