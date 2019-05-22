@@ -19,13 +19,15 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.api.rules.RuleAnnotationUtils
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition
 import org.sonar.api.utils.AnnotationUtils
 import org.sonar.plsqlopen.checks.CheckList
+import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
 
 class PlSqlProfile : BuiltInQualityProfilesDefinition {
+
+    private val ruleMetadataLoader = SonarQubeRuleMetadataLoader()
 
     override fun define(context: BuiltInQualityProfilesDefinition.Context) {
         val profile = context.createBuiltInQualityProfile(CheckList.SONAR_WAY_PROFILE, PlSql.KEY)
@@ -40,8 +42,10 @@ class PlSqlProfile : BuiltInQualityProfilesDefinition {
 
     private fun addRule(ruleClass: Class<*>, profile: BuiltInQualityProfilesDefinition.NewBuiltInQualityProfile) {
         if (AnnotationUtils.getAnnotation(ruleClass, ActivatedByDefault::class.java) != null) {
-            val ruleKey = RuleAnnotationUtils.getRuleKey(ruleClass)
-            profile.activateRule(PlSqlRuleRepository.KEY, ruleKey)
+            val ruleKey = ruleMetadataLoader.getRuleAnnotation(ruleClass)?.key
+            if (ruleKey != null) {
+                profile.activateRule(PlSqlRuleRepository.KEY, ruleKey)
+            }
         }
     }
 
