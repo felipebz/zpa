@@ -23,7 +23,6 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -47,20 +46,18 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     override fun leaveFile(node: AstNode) {
         val scopes = context.symbolTable?.scopes ?: emptySet()
         for (scope in scopes) {
+            // is overriding something?
+            if (scope.isOverridingMember) {
+                continue
+            }
+
             val scopeNode = scope.tree()
                     ?: continue
 
             // ignore procedure/function specification and overriding members
-            if (scope.tree()?.typeIs(DECLARATION_OR_CONSTRUCTOR) == true) {
+            if (scopeNode.typeIs(DECLARATION_OR_CONSTRUCTOR)) {
                 // is specification?
                 if (!scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
-                    continue
-                }
-
-                // is overriding something?
-                val inheritanceClause = scopeNode.parent.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
-                if (inheritanceClause != null && inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
-                        inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)) {
                     continue
                 }
             }
