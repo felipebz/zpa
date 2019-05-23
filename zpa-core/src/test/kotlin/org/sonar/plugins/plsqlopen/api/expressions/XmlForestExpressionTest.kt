@@ -38,6 +38,11 @@ class XmlForestExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesXmlForestWithExpressionWithoutAs() {
+        assertThat(p).matches("xmlforest(foo \"bar\")")
+    }
+
+    @Test
     fun matchesXmlForestWithExpression() {
         assertThat(p).matches("xmlforest(foo as \"bar\")")
     }

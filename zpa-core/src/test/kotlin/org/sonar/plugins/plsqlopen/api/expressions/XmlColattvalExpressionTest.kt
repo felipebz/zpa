@@ -38,6 +38,11 @@ class XmlColattvalExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesXmlColattvalWithExpressionWithoutAs() {
+        assertThat(p).matches("xmlcolattval(foo \"bar\")")
+    }
+
+    @Test
     fun matchesXmlColattvalWithEvalname() {
         assertThat(p).matches("xmlcolattval(foo as bar, foo as evalname bar)")
     }

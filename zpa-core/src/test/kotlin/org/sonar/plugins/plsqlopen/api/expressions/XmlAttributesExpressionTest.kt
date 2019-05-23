@@ -58,6 +58,11 @@ class XmlAttributesExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesXmlAttributesWithExpressionWithoutAs() {
+        assertThat(p).matches("xmlattributes(foo \"bar\")")
+    }
+
+    @Test
     fun matchesXmlAttributesWithExpression() {
         assertThat(p).matches("xmlattributes(foo as \"bar\")")
     }

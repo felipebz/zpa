@@ -19,12 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
-import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
-
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
@@ -114,7 +113,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     RPARENTHESIS)
 
             b.rule(XML_COLUMN).define(
-                    EXPRESSION, b.optional(AS, b.firstOf(b.sequence(EVALNAME, EXPRESSION), IDENTIFIER_NAME)))
+                    EXPRESSION, b.optional(b.optional(AS), b.firstOf(b.sequence(EVALNAME, EXPRESSION), IDENTIFIER_NAME)))
 
             b.rule(XMLATTRIBUTES_EXPRESSION).define(
                     XMLATTRIBUTES, LPARENTHESIS,
