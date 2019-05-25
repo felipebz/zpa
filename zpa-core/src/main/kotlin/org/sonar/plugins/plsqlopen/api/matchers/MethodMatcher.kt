@@ -23,7 +23,6 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
-import java.util.*
 
 class MethodMatcher private constructor()
 {
@@ -104,20 +103,20 @@ class MethodMatcher private constructor()
 
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
-        val nodes = LinkedList(node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME))
+        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
 
         if (nodes.isEmpty()) {
             return false
         }
 
-        var matches =  methodNameCriteria?.let { nameAcceptable(nodes.removeLast(), it) } ?: true
+        var matches =  methodNameCriteria?.let { nameAcceptable(nodes.removeAt(nodes.lastIndex), it) } ?: true
 
         packageNameCriteria?.let {
-            matches = matches and (nodes.isNotEmpty() && nameAcceptable(nodes.removeLast(), it))
+            matches = matches and (nodes.isNotEmpty() && nameAcceptable(nodes.removeAt(nodes.lastIndex), it))
         }
 
         schemaNameCriteria?.let {
-            matches = matches and (schemaIsOptional && nodes.isEmpty() || nodes.isNotEmpty() && nameAcceptable(nodes.removeLast(), it))
+            matches = matches and (schemaIsOptional && nodes.isEmpty() || nodes.isNotEmpty() && nameAcceptable(nodes.removeAt(nodes.lastIndex), it))
         }
 
         return matches && nodes.isEmpty() && argumentsAcceptable(originalNode)

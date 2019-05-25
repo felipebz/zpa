@@ -25,8 +25,8 @@ import java.util.*
 class Symbol(private val declaration: AstNode, private val kind: Kind, private val scope: Scope, type: PlSqlType?) {
 
     private val name: String = declaration.tokenOriginalValue
-    private val usages = LinkedList<AstNode>()
-    private val modifiers = LinkedList<AstNode>()
+    private val usages = ArrayList<AstNode>()
+    private val modifiers = ArrayList<AstNode>()
     private var type: PlSqlType? = null
 
     enum class Kind(val value: String) {
