@@ -72,7 +72,7 @@ exception
 end;
 /
 
-begin -- outer block doesn't require a exception handling block
+begin -- outer block doesn't require an exception handling block
     begin
       select 1
         into var
