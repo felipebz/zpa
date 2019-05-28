@@ -29,6 +29,7 @@ import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
 import org.sonar.plsqlopen.rules.SonarQubeActiveRulesAdapter
 import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
+import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
@@ -37,6 +38,7 @@ class PlSqlChecksTest {
 
     private lateinit var activeRules: SonarQubeActiveRulesAdapter
     private lateinit var customRulesDefinition: MyCustomPlSqlRulesDefinition
+    private val ruleMetadataLoader = SonarQubeRuleMetadataLoader()
 
     @Before
     fun setUp() {
@@ -52,7 +54,7 @@ class PlSqlChecksTest {
 
     @Test
     fun shouldReturnDefaultChecks() {
-        val checks = PlSqlChecks.createPlSqlCheck(activeRules)
+        val checks = PlSqlChecks.createPlSqlCheck(activeRules, ruleMetadataLoader)
         checks.addChecks(DEFAULT_REPOSITORY_KEY, listOf(MyRule::class.java))
 
         val defaultVisitor = visitor(checks, DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY)
@@ -65,7 +67,7 @@ class PlSqlChecksTest {
 
     @Test
     fun shouldReturnCustomChecks() {
-        val checks = PlSqlChecks.createPlSqlCheck(activeRules)
+        val checks = PlSqlChecks.createPlSqlCheck(activeRules, ruleMetadataLoader)
         checks.addCustomChecks(arrayOf(customRulesDefinition))
 
         val customVisitor = visitor(checks, CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY)
@@ -78,14 +80,14 @@ class PlSqlChecksTest {
 
     @Test
     fun shouldWorkWithoutCustomChecks() {
-        val checks = PlSqlChecks.createPlSqlCheck(activeRules)
+        val checks = PlSqlChecks.createPlSqlCheck(activeRules, ruleMetadataLoader)
         checks.addCustomChecks(null)
         assertThat(checks.all()).hasSize(0)
     }
 
     @Test
     fun shouldNotReturnRuleKeyIfCheckDoesNotExists() {
-        val checks = PlSqlChecks.createPlSqlCheck(activeRules)
+        val checks = PlSqlChecks.createPlSqlCheck(activeRules, ruleMetadataLoader)
         checks.addChecks(DEFAULT_REPOSITORY_KEY, listOf(MyRule::class.java))
 
         assertThat(checks.ruleKey(MyCustomRule())).isNull()

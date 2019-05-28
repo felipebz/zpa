@@ -29,7 +29,7 @@ import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 
 @ExtensionPoint
 @ScannerSide
-abstract class CustomPlSqlRulesDefinition : RulesDefinition {
+abstract class CustomPlSqlRulesDefinition : RulesDefinition, ZpaRulesDefinition {
 
     override fun define(context: RulesDefinition.Context) {
         val repo = context.createRepository(repositoryKey(), PlSql.KEY)
@@ -41,11 +41,5 @@ abstract class CustomPlSqlRulesDefinition : RulesDefinition {
 
         repo.done()
     }
-
-    abstract fun repositoryName(): String
-
-    abstract fun repositoryKey(): String
-
-    abstract fun checkClasses(): Array<Class<*>>
 
 }

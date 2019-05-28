@@ -19,28 +19,27 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
+import org.sonar.plsqlopen.rules.RuleMetadataLoader
 import org.sonar.plsqlopen.rules.ZpaActiveRules
 import org.sonar.plsqlopen.rules.ZpaChecks
 import org.sonar.plsqlopen.rules.ZpaRuleKey
-import org.sonar.plugins.plsqlopen.api.CustomPlSqlRulesDefinition
+import org.sonar.plugins.plsqlopen.api.ZpaRulesDefinition
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.util.*
 
-class PlSqlChecks private constructor(private val activeRules: ZpaActiveRules) {
+class PlSqlChecks private constructor(private val activeRules: ZpaActiveRules, private val ruleMetadataLoader: RuleMetadataLoader) {
     private val checksByRepository = hashSetOf<ZpaChecks<PlSqlVisitor>>()
-    private val sonarQubeRuleMetadataLoader = SonarQubeRuleMetadataLoader()
 
     val checks: Set<ZpaChecks<PlSqlVisitor>> = checksByRepository
 
     fun addChecks(repositoryKey: String, checkClass: Iterable<Class<*>>): PlSqlChecks {
-        checksByRepository.add(ZpaChecks<PlSqlVisitor>(activeRules, repositoryKey, sonarQubeRuleMetadataLoader)
+        checksByRepository.add(ZpaChecks<PlSqlVisitor>(activeRules, repositoryKey, ruleMetadataLoader)
                 .addAnnotatedChecks(checkClass))
 
         return this
     }
 
-    fun addCustomChecks(customRulesDefinitions: Array<CustomPlSqlRulesDefinition>?): PlSqlChecks {
+    fun addCustomChecks(customRulesDefinitions: Array<ZpaRulesDefinition>?): PlSqlChecks {
         if (customRulesDefinitions != null) {
 
             for (rulesDefinition in customRulesDefinitions) {
@@ -75,8 +74,8 @@ class PlSqlChecks private constructor(private val activeRules: ZpaActiveRules) {
     }
 
     companion object {
-        fun createPlSqlCheck(activeRules: ZpaActiveRules): PlSqlChecks {
-            return PlSqlChecks(activeRules)
+        fun createPlSqlCheck(activeRules: ZpaActiveRules, ruleMetadataLoader: RuleMetadataLoader): PlSqlChecks {
+            return PlSqlChecks(activeRules, ruleMetadataLoader)
         }
     }
 
