@@ -52,6 +52,7 @@ object CheckUtils {
         return node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && (node as SemanticAstNode).plSqlType === PlSqlType.NULL
     }
 
+    @JvmStatic
     fun equalNodes(node1: AstNode, node2: AstNode): Boolean {
         val first = skipExpressionsWithoutEffect(node1)
         val second = skipExpressionsWithoutEffect(node2)
