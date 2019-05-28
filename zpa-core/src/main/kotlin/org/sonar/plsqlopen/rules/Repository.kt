@@ -31,6 +31,6 @@ class Repository : ZpaRepository {
 
     override fun rule(ruleKey: String): ZpaRule? = rules[ruleKey]
 
-    fun availableRules() = rules.values.toList()
+    fun availableRules(): List<ZpaRule> = rules.values.toList()
 
 }

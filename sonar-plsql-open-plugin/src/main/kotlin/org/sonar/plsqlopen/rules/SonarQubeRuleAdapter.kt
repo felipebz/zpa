@@ -29,7 +29,7 @@ class SonarQubeRuleAdapter(private val newRule: RulesDefinition.NewRule) : ZpaRu
     override val key: String
         get() = newRule.key()
 
-    override val params: Collection<ZpaRuleParam>
+    override val params: List<ZpaRuleParam>
         get() = newRule.params().map { SonarQubeRuleParamAdapter(it) }
 
     override var name: String

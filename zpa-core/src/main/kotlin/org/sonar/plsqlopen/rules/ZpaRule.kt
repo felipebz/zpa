@@ -23,7 +23,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 interface ZpaRule {
     val key: String
-    val params: Collection<ZpaRuleParam>
+    val params: List<ZpaRuleParam>
     var name: String
     var remediationConstant: String
     var scope: RuleInfo.Scope
