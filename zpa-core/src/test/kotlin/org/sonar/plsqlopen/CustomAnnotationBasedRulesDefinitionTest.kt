@@ -168,7 +168,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     private fun createRepository(): Repository {
-        return Repository()
+        return Repository(REPO_KEY)
     }
 
     companion object {

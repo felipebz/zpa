@@ -19,10 +19,25 @@
  */
 package org.sonar.plsqlopen.rules
 
-class RuleKey(private val key: String) : ZpaRuleKey {
+class RuleKey(private val repository: String, private val key: String) : ZpaRuleKey {
 
-    override fun repository(): String = "zpa"
+    override fun repository(): String = repository
 
     override fun rule(): String = key
+
+    override fun toString(): String = "$repository:$key"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+        other as RuleKey
+        return this.key == other.key && this.repository == other.repository
+    }
+
+    override fun hashCode(): Int {
+        var result = repository.hashCode()
+        result = 31 * result + key.hashCode()
+        return result
+    }
 
 }

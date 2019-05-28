@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.rules
 
-class Repository : ZpaRepository {
+class Repository(override val key: String) : ZpaRepository {
 
     private val rules = mutableMapOf<String, ZpaRule>()
 
@@ -32,5 +32,7 @@ class Repository : ZpaRepository {
     override fun rule(ruleKey: String): ZpaRule? = rules[ruleKey]
 
     fun availableRules(): List<ZpaRule> = rules.values.toList()
+
+    override fun toString(): String = key
 
 }

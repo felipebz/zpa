@@ -19,9 +19,17 @@
  */
 package org.sonar.plsqlopen.rules
 
-class ActiveRules(private val repository: Repository) : ZpaActiveRules {
+class ActiveRules : ZpaActiveRules {
 
-    override fun findByRepository(repositoryKey: String): Collection<ZpaActiveRule> =
-            repository.availableRules().map { ActiveRule(it) }
+    private val repositories = mutableListOf<Repository>()
+
+    fun addRepository(repository: Repository): ActiveRules = apply {
+        repositories.add(repository)
+    }
+
+    override fun findByRepository(repository: String): Collection<ZpaActiveRule> {
+        val repo = this.repositories.first { it.key == repository }
+        return repo.availableRules().map { ActiveRule(repo, it) }
+    }
 
 }

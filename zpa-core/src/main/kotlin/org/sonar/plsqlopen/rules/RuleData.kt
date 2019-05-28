@@ -29,7 +29,7 @@ class RuleData(val key: String,
                val tags: Array<String>,
                val status: String) {
     companion object {
-        fun from(rule: Rule?) =
+        fun from(rule: Rule?): RuleData? =
             if (rule == null) null
             else RuleData(rule.key,
                 rule.name,

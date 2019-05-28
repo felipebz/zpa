@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.rules
 
-class ActiveRule(private val rule: ZpaRule) : ZpaActiveRule {
+class ActiveRule(private val repository: ZpaRepository, private val rule: ZpaRule) : ZpaActiveRule {
 
     override fun internalKey(): String? = rule.key
 
@@ -29,7 +29,7 @@ class ActiveRule(private val rule: ZpaRule) : ZpaActiveRule {
 
     override fun params(): Map<String, String> = emptyMap()
 
-    override fun ruleKey(): ZpaRuleKey = RuleKey(rule.key)
+    override fun ruleKey(): ZpaRuleKey = RuleKey(repository.key, rule.key)
 
     override fun severity(): String = rule.severity
 
