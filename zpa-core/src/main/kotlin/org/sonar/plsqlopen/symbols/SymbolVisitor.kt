@@ -226,7 +226,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
                            overridingMember: Boolean? = null) {
         var autonomous = false
         var exception = false
-        var isOverridingMember = overridingMember ?: false
+        val isOverridingMember = overridingMember ?: false
 
         with(currentScope) {
             if (autonomousTransaction != null) {

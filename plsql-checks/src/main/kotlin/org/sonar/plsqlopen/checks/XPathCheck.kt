@@ -38,7 +38,7 @@ class XPathCheck : AbstractBaseCheck() {
     private var query: AstNodeXPathQuery<Any>? = null
 
     private fun query(): AstNodeXPathQuery<Any>? {
-        if (query == null && !xpathQuery.isEmpty()) {
+        if (query == null && xpathQuery.isNotEmpty()) {
             try {
                 query = AstNodeXPathQuery.create(xpathQuery)
             } catch (e: RuntimeException) {
