@@ -68,11 +68,14 @@
           <shadedArtifactAttached>false</shadedArtifactAttached>
           <createDependencyReducedPom>false</createDependencyReducedPom>
           <minimizeJar>true</minimizeJar>
-          <artifactSet>
-            <excludes>
-              <exclude>org.codehaus.sonar:sonar-channel</exclude>
-            </excludes>
-          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>jaxen:jaxen</artifact>
+              <includes>
+                <include>**</include>
+              </includes>
+            </filter>
+          </filters>
         </configuration>
       </plugin>
     </plugins>
