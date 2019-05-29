@@ -58,6 +58,8 @@ object TestPlSqlVisitorRunner {
 
         override fun fileName(): String = file.name
 
+        override fun type(): PlSqlFile.Type = PlSqlFile.Type.MAIN
+
     }
 
 }

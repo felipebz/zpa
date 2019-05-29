@@ -20,10 +20,6 @@
 package org.sonar.plsqlopen.squid
 
 import com.google.common.annotations.VisibleForTesting
-import com.google.common.base.Throwables
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.api.RecognitionException
-import com.sonar.sslr.impl.Parser
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.fs.TextRange
 import org.sonar.api.batch.measure.Metric
@@ -33,86 +29,57 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContextFactory
-import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.PlSqlChecks
 import org.sonar.plsqlopen.checks.IssueLocation
-import org.sonar.plsqlopen.getSemanticNode
 import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor
 import org.sonar.plsqlopen.metadata.FormsMetadata
-import org.sonar.plsqlopen.metrics.ComplexityVisitor
 import org.sonar.plsqlopen.metrics.CpdVisitor
-import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor
-import org.sonar.plsqlopen.metrics.MetricsVisitor
-import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
-import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
-import org.sonar.plsqlopen.symbols.SymbolVisitor
-import org.sonar.plsqlopen.utils.getAnnotation
-import org.sonar.plsqlopen.utils.log.Loggers
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
-import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
+import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
-import java.io.InterruptedIOException
 import java.io.Serializable
-import java.util.*
-import kotlin.streams.toList
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
-class PlSqlAstScanner(private val context: SensorContext, private val checks: Collection<PlSqlVisitor>, private val noSonarFilter: NoSonarFilter,
-                      private val formsMetadata: FormsMetadata?, isErrorRecoveryEnabled: Boolean, private val fileLinesContextFactory: FileLinesContextFactory?) {
+class PlSqlAstScanner(private val context: SensorContext,
+                      checks: Collection<PlSqlVisitor>,
+                      private val noSonarFilter: NoSonarFilter,
+                      formsMetadata: FormsMetadata?,
+                      isErrorRecoveryEnabled: Boolean,
+                      private val fileLinesContextFactory: FileLinesContextFactory?) {
 
-    private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(context.fileSystem().encoding(), isErrorRecoveryEnabled))
+    private val astScanner: AstScanner = AstScanner(checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding())
 
     private lateinit var plsqlChecks: PlSqlChecks
 
-    constructor(context: SensorContext, checks: PlSqlChecks, noSonarFilter: NoSonarFilter,
-                formsMetadata: FormsMetadata?, isErrorRecoveryEnabled: Boolean, fileLinesContextFactory: FileLinesContextFactory) : this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory) {
+    constructor(context: SensorContext,
+                checks: PlSqlChecks,
+                noSonarFilter: NoSonarFilter,
+                formsMetadata: FormsMetadata?,
+                isErrorRecoveryEnabled: Boolean,
+                fileLinesContextFactory: FileLinesContextFactory) : this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory) {
         this.plsqlChecks = checks
     }
 
     @VisibleForTesting
     fun scanFile(inputFile: InputFile) {
-        if (inputFile.type() == InputFile.Type.MAIN) {
-            scanMainFile(inputFile)
+        val plSqlFile = SonarQubePlSqlFile(inputFile)
+        if (plSqlFile.type() == PlSqlFile.Type.MAIN) {
+            scanMainFile(plSqlFile)
         } else {
-            scanTestFile(inputFile)
+            scanTestFile(plSqlFile)
         }
     }
 
-    private fun scanMainFile(inputFile: InputFile) {
-        val metricsVisitor = MetricsVisitor()
-        val complexityVisitor = ComplexityVisitor()
-        val functionComplexityVisitor = FunctionComplexityVisitor()
+    private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
+        val inputFile = plSqlFile.inputFile
 
-        val newVisitorContext = getPlSqlVisitorContext(inputFile)
+        astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)))
 
-        val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
+        noSonarFilter.noSonarInFile(inputFile, astScanner.linesWithNoSonar)
 
-        val checksToRun = ArrayList<PlSqlVisitor>()
-        checksToRun.add(symbolVisitor)
-
-        checksToRun.addAll(
-                checks.stream()
-                        .filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
-                        .filter { check -> check is PlSqlCheck }
-                        .filter { check -> ruleHasScope(check, RuleInfo.Scope.MAIN) }
-                        .toList())
-
-        checksToRun.add(PlSqlHighlighterVisitor(context, inputFile))
-        checksToRun.add(metricsVisitor)
-        checksToRun.add(complexityVisitor)
-        checksToRun.add(functionComplexityVisitor)
-        checksToRun.add(CpdVisitor(context, inputFile))
-
-        val newWalker = PlSqlAstWalker(checksToRun)
-        newWalker.walk(newVisitorContext)
-
-        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.linesWithNoSonar)
-
-        for (check in checksToRun) {
+        for (check in astScanner.executedChecks) {
             val issues = (check as PlSqlCheck).issues()
             if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
@@ -120,46 +87,31 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
         }
 
         val symbolSaver = SonarQubeSymbolTable(context, inputFile)
-        symbolSaver.save(symbolVisitor.symbols)
+        symbolSaver.save(astScanner.symbols)
 
-        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, metricsVisitor.numberOfStatements)
-        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, metricsVisitor.getLinesOfCode().size)
-        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, metricsVisitor.getLinesOfComments().size)
-        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, complexityVisitor.complexity)
-        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, functionComplexityVisitor.numberOfFunctions)
+        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, astScanner.numberOfStatements)
+        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, astScanner.linesOfCode)
+        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, astScanner.linesOfComments)
+        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, astScanner.complexity)
+        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, astScanner.numberOfFunctions)
 
         if (fileLinesContextFactory != null) {
             val fileLinesContext = fileLinesContextFactory.createFor(inputFile)
-            for (line in metricsVisitor.getExecutableLines()) {
+            for (line in astScanner.executableLines) {
                 fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1)
             }
             fileLinesContext.save()
         }
     }
 
-    private fun scanTestFile(inputFile: InputFile) {
-        val newVisitorContext = getPlSqlVisitorContext(inputFile)
-        val metricsVisitor = MetricsVisitor()
+    private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
+        val inputFile = plSqlFile.inputFile
 
-        val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
+        astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile)))
 
-        val checksToRun = ArrayList<PlSqlVisitor>()
-        checksToRun.add(symbolVisitor)
-        checksToRun.add(PlSqlHighlighterVisitor(context, inputFile))
-        checksToRun.add(metricsVisitor)
+        noSonarFilter.noSonarInFile(inputFile, astScanner.linesWithNoSonar)
 
-        checksToRun.addAll(
-                checks.stream()
-                        .filter { check -> check is PlSqlCheck }
-                        .filter { check -> ruleHasScope(check, RuleInfo.Scope.TEST) }
-                        .toList())
-
-        val newWalker = PlSqlAstWalker(checksToRun)
-        newWalker.walk(newVisitorContext)
-
-        noSonarFilter.noSonarInFile(inputFile, metricsVisitor.linesWithNoSonar)
-
-        for (check in checksToRun) {
+        for (check in astScanner.executedChecks) {
             val issues = (check as PlSqlCheck).issues()
             if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
@@ -167,41 +119,7 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
         }
 
         val symbolTable = SonarQubeSymbolTable(context, inputFile)
-        symbolTable.save(symbolVisitor.symbols)
-    }
-
-    private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
-        val ruleInfo = getAnnotation(check, RuleInfo::class.java)
-        if (ruleInfo != null) {
-            return ruleInfo.scope === RuleInfo.Scope.ALL || ruleInfo.scope === scope
-        } else {
-            // TODO: remove this code in the next release
-            val oldRuleInfo = getAnnotation(check, OldRuleInfo::class.java)
-            if (oldRuleInfo != null) {
-                return oldRuleInfo.scope.name === RuleInfo.Scope.ALL.name || oldRuleInfo.scope.name === scope.name
-            }
-        }
-        return scope === RuleInfo.Scope.MAIN
-    }
-
-    private fun getPlSqlVisitorContext(inputFile: InputFile): PlSqlVisitorContext {
-        val plSqlFile = SonarQubePlSqlFile.create(inputFile)
-
-        var visitorContext: PlSqlVisitorContext
-        try {
-            val root = getSemanticNode(parser.parse(plSqlFile.contents()))
-            visitorContext = PlSqlVisitorContext(root, plSqlFile, formsMetadata)
-        } catch (e: RecognitionException) {
-            visitorContext = PlSqlVisitorContext(plSqlFile, e, formsMetadata)
-            LOG.error("Unable to parse file: $inputFile\n${e.message}")
-        } catch (e: Exception) {
-            checkInterrupted(e)
-            throw AnalysisException("Unable to analyze file: $inputFile", e)
-        } catch (e: Throwable) {
-            throw AnalysisException("Unable to analyze file: $inputFile", e)
-        }
-
-        return visitorContext
+        symbolTable.save(astScanner.symbols)
     }
 
     private fun saveIssues(inputFile: InputFile, check: PlSqlVisitor, issues: List<PreciseIssue>) {
@@ -247,17 +165,6 @@ class PlSqlAstScanner(private val context: SensorContext, private val checks: Co
 
         newLocation.message(location.message())
         return newLocation
-    }
-
-    private fun checkInterrupted(e: Exception) {
-        val cause = Throwables.getRootCause(e)
-        if (cause is InterruptedException || cause is InterruptedIOException) {
-            throw AnalysisException("Analysis cancelled", e)
-        }
-    }
-
-    companion object {
-        private val LOG = Loggers.getLogger(PlSqlAstScanner::class.java)
     }
 
 }

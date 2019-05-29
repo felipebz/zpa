@@ -24,4 +24,11 @@ interface PlSqlFile {
     fun contents(): String
 
     fun fileName(): String
+
+    fun type(): Type
+
+    enum class Type {
+        MAIN, TEST
+    }
+
 }

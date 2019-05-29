@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlFile
 
 import java.io.IOException
 
-class SonarQubePlSqlFile private constructor(private val inputFile: InputFile) : PlSqlFile {
+class SonarQubePlSqlFile(val inputFile: InputFile) : PlSqlFile {
 
     override fun fileName(): String = inputFile.filename()
 
@@ -35,10 +35,11 @@ class SonarQubePlSqlFile private constructor(private val inputFile: InputFile) :
             throw IllegalStateException("Could not read contents of input file $inputFile", e)
         }
 
-    companion object {
-        fun create(inputFile: InputFile): PlSqlFile {
-            return SonarQubePlSqlFile(inputFile)
+    override fun type(): PlSqlFile.Type =
+        when (inputFile.type()) {
+            InputFile.Type.MAIN -> PlSqlFile.Type.MAIN
+            InputFile.Type.TEST -> PlSqlFile.Type.TEST
+            else -> PlSqlFile.Type.MAIN
         }
-    }
 
 }
