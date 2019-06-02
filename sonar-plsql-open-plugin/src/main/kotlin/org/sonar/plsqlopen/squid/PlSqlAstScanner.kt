@@ -75,11 +75,11 @@ class PlSqlAstScanner(private val context: SensorContext,
     private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
 
-        astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)))
+        val result = astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)))
 
-        noSonarFilter.noSonarInFile(inputFile, astScanner.linesWithNoSonar)
+        noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        for (check in astScanner.executedChecks) {
+        for (check in result.executedChecks) {
             val issues = (check as PlSqlCheck).issues()
             if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
@@ -87,17 +87,17 @@ class PlSqlAstScanner(private val context: SensorContext,
         }
 
         val symbolSaver = SonarQubeSymbolTable(context, inputFile)
-        symbolSaver.save(astScanner.symbols)
+        symbolSaver.save(result.symbols)
 
-        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, astScanner.numberOfStatements)
-        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, astScanner.linesOfCode)
-        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, astScanner.linesOfComments)
-        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, astScanner.complexity)
-        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, astScanner.numberOfFunctions)
+        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, result.numberOfStatements)
+        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, result.linesOfCode)
+        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, result.linesOfComments)
+        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, result.complexity)
+        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, result.numberOfFunctions)
 
         if (fileLinesContextFactory != null) {
             val fileLinesContext = fileLinesContextFactory.createFor(inputFile)
-            for (line in astScanner.executableLines) {
+            for (line in result.executableLines) {
                 fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1)
             }
             fileLinesContext.save()
@@ -107,11 +107,11 @@ class PlSqlAstScanner(private val context: SensorContext,
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
 
-        astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile)))
+        val result = astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile)))
 
-        noSonarFilter.noSonarInFile(inputFile, astScanner.linesWithNoSonar)
+        noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        for (check in astScanner.executedChecks) {
+        for (check in result.executedChecks) {
             val issues = (check as PlSqlCheck).issues()
             if (issues.isNotEmpty()) {
                 saveIssues(inputFile, check, issues)
@@ -119,7 +119,7 @@ class PlSqlAstScanner(private val context: SensorContext,
         }
 
         val symbolTable = SonarQubeSymbolTable(context, inputFile)
-        symbolTable.save(astScanner.symbols)
+        symbolTable.save(result.symbols)
     }
 
     private fun saveIssues(inputFile: InputFile, check: PlSqlVisitor, issues: List<PreciseIssue>) {

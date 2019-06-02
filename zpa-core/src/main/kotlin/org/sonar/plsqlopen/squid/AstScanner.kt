@@ -38,7 +38,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.io.InterruptedIOException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -52,34 +51,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
 
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
 
-    var executedChecks: List<PlSqlVisitor> = emptyList()
-        private set
-
-    var linesWithNoSonar: Set<Int> = emptySet()
-        private set
-
-    var symbols: List<Symbol> = emptyList()
-        private set
-
-    var numberOfStatements: Int = 0
-        private set
-
-    var linesOfCode: Int = 0
-        private set
-
-    var linesOfComments: Int = 0
-        private set
-
-    var complexity: Int = 0
-        private set
-
-    var numberOfFunctions:  Int = 0
-        private set
-
-    var executableLines: Set<Int> = emptySet()
-        private set
-
-    fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor> = emptyList()) {
+    fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor> = emptyList()) : AstScannerResult {
         val newVisitorContext = getPlSqlVisitorContext(inputFile)
 
         val metricsVisitor = MetricsVisitor()
@@ -114,15 +86,16 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         val newWalker = PlSqlAstWalker(checksToRun)
         newWalker.walk(newVisitorContext)
 
-        executedChecks = checksToRun
-        linesWithNoSonar = metricsVisitor.linesWithNoSonar
-        symbols = symbolVisitor.symbols
-        numberOfStatements = metricsVisitor.numberOfStatements
-        linesOfCode = metricsVisitor.getLinesOfCode().size
-        linesOfComments = metricsVisitor.getLinesOfComments().size
-        complexity = complexityVisitor.complexity
-        numberOfFunctions = functionComplexityVisitor.numberOfFunctions
-        executableLines = metricsVisitor.getExecutableLines()
+        return AstScannerResult(
+            executedChecks = checksToRun,
+            linesWithNoSonar = metricsVisitor.linesWithNoSonar,
+            symbols = symbolVisitor.symbols,
+            numberOfStatements = metricsVisitor.numberOfStatements,
+            linesOfCode = metricsVisitor.getLinesOfCode().size,
+            linesOfComments = metricsVisitor.getLinesOfComments().size,
+            complexity = complexityVisitor.complexity,
+            numberOfFunctions = functionComplexityVisitor.numberOfFunctions,
+            executableLines = metricsVisitor.getExecutableLines())
     }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
