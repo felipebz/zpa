@@ -98,11 +98,6 @@ class ExecuteImmediateStatementTest : RuleTest() {
     }
 
     @Test
-    fun matchesExecuteImmediateWithForall() {
-        assertThat(p).matches("forall foo in indices of bar execute immediate 'command';")
-    }
-
-    @Test
     fun matchesExecuteImmediateWithReturning() {
         assertThat(p).matches("execute immediate 'command' returning into foo;")
     }

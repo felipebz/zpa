@@ -68,11 +68,6 @@ class UpdateStatementTest : RuleTest() {
     }
 
     @Test
-    fun matchesForallUpdate() {
-        assertThat(p).matches("forall foo in 1 .. bar.count update tab set x = 1;")
-    }
-
-    @Test
     fun matchesUpdateWithReturningInto() {
         assertThat(p).matches("update tab set x = 1 returning x into y;")
     }

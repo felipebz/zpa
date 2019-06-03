@@ -73,11 +73,6 @@ class DeleteStatementTest : RuleTest() {
     }
 
     @Test
-    fun matchesForallDelete() {
-        assertThat(p).matches("forall x in indices of bar delete tab;")
-    }
-
-    @Test
     fun matchesDeleteWithReturningInto() {
         assertThat(p).matches("delete from tab returning x bulk collect into y;")
     }

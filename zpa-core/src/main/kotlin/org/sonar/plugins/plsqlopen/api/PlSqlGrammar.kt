@@ -21,17 +21,16 @@ package org.sonar.plugins.plsqlopen.api
 
 import com.sonar.sslr.api.GenericTokenType.EOF
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
-import org.sonar.plugins.plsqlopen.api.DclGrammar.*
-import org.sonar.plugins.plsqlopen.api.DdlGrammar.*
+import org.sonar.plsqlopen.squid.PlSqlConfiguration
+import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
+import org.sonar.plugins.plsqlopen.api.DdlGrammar.DDL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.*
-import org.sonar.plugins.plsqlopen.api.TclGrammar.*
-import org.sonar.plugins.plsqlopen.api.SessionControlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
-import org.sonar.plugins.plsqlopen.api.SqlPlusGrammar.*
-
-import org.sonar.plsqlopen.squid.PlSqlConfiguration
+import org.sonar.plugins.plsqlopen.api.SessionControlGrammar.SESSION_CONTROL_COMMAND
+import org.sonar.plugins.plsqlopen.api.SqlPlusGrammar.SQLPLUS_COMMAND
+import org.sonar.plugins.plsqlopen.api.TclGrammar.*
 import org.sonar.sslr.grammar.GrammarRuleKey
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
@@ -435,11 +434,19 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     STATEMENTS,
                     END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON)
 
-            b.rule(FORALL_STATEMENT).define(FORALL, IDENTIFIER_NAME, IN,
-                    b.firstOf(b.sequence(EXPRESSION, RANGE, EXPRESSION),
-                            b.sequence(VALUES, OF, IDENTIFIER_NAME),
-                            b.sequence(INDICES, OF, IDENTIFIER_NAME, b.optional(BETWEEN, AND_EXPRESSION))),
-                    b.optional(SAVE, EXCEPTIONS))
+            b.rule(FORALL_STATEMENT).define(
+                b.optional(LABEL),
+                FORALL, IDENTIFIER_NAME, IN,
+                b.firstOf(b.sequence(EXPRESSION, RANGE, EXPRESSION),
+                    b.sequence(VALUES, OF, IDENTIFIER_NAME),
+                    b.sequence(INDICES, OF, IDENTIFIER_NAME, b.optional(BETWEEN, AND_EXPRESSION))),
+                b.optional(SAVE, EXCEPTIONS),
+                b.firstOf(
+                    INSERT_STATEMENT,
+                    UPDATE_STATEMENT,
+                    DELETE_STATEMENT,
+                    MERGE_STATEMENT,
+                    EXECUTE_IMMEDIATE_STATEMENT))
 
             b.rule(RETURN_STATEMENT).define(b.optional(LABEL), RETURN, b.optional(EXPRESSION), SEMICOLON)
 
@@ -453,13 +460,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(SELECT_STATEMENT).define(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON)
 
-            b.rule(INSERT_STATEMENT).define(b.optional(LABEL), b.optional(FORALL_STATEMENT), INSERT_EXPRESSION, SEMICOLON)
+            b.rule(INSERT_STATEMENT).define(b.optional(LABEL), INSERT_EXPRESSION, SEMICOLON)
 
-            b.rule(UPDATE_STATEMENT).define(b.optional(LABEL), b.optional(FORALL_STATEMENT), UPDATE_EXPRESSION, SEMICOLON)
+            b.rule(UPDATE_STATEMENT).define(b.optional(LABEL), UPDATE_EXPRESSION, SEMICOLON)
 
-            b.rule(DELETE_STATEMENT).define(b.optional(LABEL), b.optional(FORALL_STATEMENT), DELETE_EXPRESSION, SEMICOLON)
+            b.rule(DELETE_STATEMENT).define(b.optional(LABEL), DELETE_EXPRESSION, SEMICOLON)
 
-            b.rule(MERGE_STATEMENT).define(b.optional(LABEL), b.optional(FORALL_STATEMENT), MERGE_EXPRESSION, SEMICOLON)
+            b.rule(MERGE_STATEMENT).define(b.optional(LABEL), MERGE_EXPRESSION, SEMICOLON)
 
             b.rule(CALL_STATEMENT).define(b.optional(LABEL), OBJECT_REFERENCE, SEMICOLON)
 
@@ -526,6 +533,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ROLLBACK_STATEMENT,
                     SAVEPOINT_STATEMENT,
                     RAISE_STATEMENT,
+                    FORALL_STATEMENT,
                     SELECT_STATEMENT,
                     INSERT_STATEMENT,
                     UPDATE_STATEMENT,

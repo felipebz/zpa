@@ -160,15 +160,6 @@ class MergeStatementTest : RuleTest() {
     }
 
     @Test
-    fun matchesForallMerge() {
-        assertThat(p).matches("forall x in indices of foo "
-                + "merge into dest_tab "
-                + "using source_tab on (1 = 2) "
-                + "when matched then update set col = val "
-                + "when not matched then insert values (val);")
-    }
-
-    @Test
     fun matchesMergeWithErrorLoggingClause() {
         assertThat(p).matches("merge into dest_tab d "
                 + "using source_tab s on (d.id = s.id) "

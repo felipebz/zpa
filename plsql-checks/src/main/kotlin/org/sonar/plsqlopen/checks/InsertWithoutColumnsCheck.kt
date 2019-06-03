@@ -43,8 +43,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
                 return
             }
 
-            val possibleForAll = node.previousSibling
-            if (possibleForAll != null && possibleForAll.type === PlSqlGrammar.FORALL_STATEMENT) {
+            if (node.parent?.parent?.type === PlSqlGrammar.FORALL_STATEMENT) {
                 return
             }
 
