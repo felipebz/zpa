@@ -21,70 +21,219 @@ package org.sonar.plsqlopen.symbols
 
 import org.assertj.core.api.Assertions.*
 import org.assertj.core.groups.Tuple
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
-import java.io.File
 
 class SymbolVisitorTest {
 
-    @get:Rule
-    val temp = TemporaryFolder()
+    private val visitor = SymbolVisitor(DefaultTypeSolver())
 
-    private fun scanFile(eol: String) {
-        val baseDir = temp.newFolder()
-        val file = File(baseDir, "test.sql")
-        val content = File("src/test/resources/symbols/symbols.sql").readText()
-        file.writeText(content.replace("\r\n", "\n").replace("\n", eol))
+    @Test
+    fun variableDeclaration() {
+        val symbols = scan("""
+declare
+  variable number;
+begin
+  variable := 1;
+end;
+""")
+        assertThat(symbols).hasSize(1)
 
-        val visitor = SymbolVisitor(DefaultTypeSolver())
-        TestPlSqlVisitorRunner.scanFile(file, null, visitor)
-
-        val symbols = visitor.symbols
-
-        assertThat(symbols).hasSize(10)
-
-        assertThat(symbols.referencesForSymbolAt(2, 3)).containsExactly(tuple(4, offset(3)))
-        assertThat(symbols.referencesForSymbolAt(6, 7)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(11, 22)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(12, 10)).containsExactly(tuple(15, offset(8)))
-        assertThat(symbols.referencesForSymbolAt(12, 14)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(18, 21)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(24, 3)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(28, 3)).isEmpty()
-        assertThat(symbols.referencesForSymbolAt(32, 3)).containsExactly(tuple(36, offset(8)))
-        assertThat(symbols.referencesForSymbolAt(41, 3)).containsExactly(tuple(43, offset(3)))
+        val variable = symbols.find("variable", 2, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references()).containsExactly(
+            tuple(4, 3))
     }
 
-    private fun List<Symbol>.referencesForSymbolAt(line: Int, column: Int): List<Tuple> {
+    @Test
+    fun forLoop() {
+        val symbols = scan("""
+begin
+  for i in 1..2 loop
+    null;
+  end loop;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val i = symbols.find("i", 2, 7)
+        assertThat(i.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i.references()).isEmpty()
+    }
+
+    @Test
+    fun forLoopRedeclaringVariable() {
+        val symbols = scan("""
+declare
+  i number;
+begin
+  for i in 1..2 loop
+    foo(i);
+  end loop;
+  foo(i);
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val i = symbols.find("i", 2, 3)
+        assertThat(i.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i.references()).containsExactly(
+            tuple(7, 7))
+
+        val i2 = symbols.find("i", 4, 7)
+        assertThat(i2.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i2.references()).containsExactly(
+            tuple(5, 9))
+    }
+
+    @Test
+    fun procedureArgument() {
+        val symbols = scan("""
+create procedure foo(x number) is
+begin
+  null;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val x = symbols.find("x", 1, 22)
+        assertThat(x.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references()).isEmpty()
+    }
+
+    @Test
+    fun functionArgument() {
+        val symbols = scan("""
+create function foo(x number) return number is
+begin
+  null;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val x = symbols.find("x", 1, 21)
+        assertThat(x.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references()).isEmpty()
+    }
+
+    @Test
+    fun packageSpecificationVariable() {
+        val symbols = scan("""
+create package pkg as
+  variable number;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val variable = symbols.find("variable", 2, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references()).isEmpty()
+    }
+
+    @Test
+    fun packageBodyVariable() {
+        val symbols = scan("""
+create package body pkg as
+  variable number;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val variable = symbols.find("variable", 2, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references()).isEmpty()
+    }
+
+    @Test
+    fun cursor() {
+        val symbols = scan("""
+declare
+  cursor cur(c number) is
+    select 1 from dual;
+
+  variable cur%rowtype;
+begin
+  open cur(1);
+  fetch cur into variable;
+  close cur;
+end;
+""")
+        assertThat(symbols).hasSize(3)
+
+        val cur = symbols.find("cur", 2, 10)
+        assertThat(cur.type()).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(cur.references()).containsExactly(
+            tuple(5, 12),
+            tuple(7, 8),
+            tuple(8, 9),
+            tuple(9, 9))
+
+        val c = symbols.find("c", 2, 14)
+        assertThat(c.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(c.references()).isEmpty()
+
+        val variable = symbols.find("variable", 5, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(variable.references()).containsExactly(
+            tuple(8, 18))
+    }
+
+    @Test
+    fun exception() {
+        val symbols = scan("""
+declare
+  ex exception;
+begin
+  null;
+exception
+  when ex then
+    null;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val ex = symbols.find("ex", 2, 3)
+        assertThat(ex.type()).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(ex.references()).containsExactly(
+            tuple(6, 8))
+    }
+
+    @Test
+    fun trigger() {
+        val symbols = scan("""
+create trigger baz before insert or delete on tab for each row
+declare
+  variable number;
+begin
+  variable := :old.id;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references()).containsExactly(
+            tuple(5, 3))
+    }
+
+    private fun scan(contents: String): List<Symbol> {
+        TestPlSqlVisitorRunner.scan(contents, null, visitor)
+        return visitor.symbols
+    }
+
+    private fun List<Symbol>.find(name: String, line: Int, column: Int): Symbol {
         val symbol = this.firstOrNull {
-            it.declaration().token.line == line && it.declaration().token.column == offset(column)
+            it.name() == name &&
+                it.declaration().token.line == line &&
+                it.declaration().token.column == offset(column)
         }
-
-        if (symbol == null) {
-            fail("No symbol was found at line $line and column ${offset(column)}")
-        } else {
-            return symbol.usages().map { tuple(it.token.line, it.token.column) }
-        }
-        return emptyList()
+        return symbol ?: fail("No symbol named $name was found at line $line and column ${offset(column)}")
     }
 
-    @Test
-    fun shouldAnalyse_lf() {
-        scanFile("\n")
-    }
-
-    @Test
-    fun shouldAnalyse_crlf() {
-        scanFile("\r\n")
-    }
-
-    @Test
-    fun shouldAnalyse_cr() {
-        scanFile("\r")
-    }
+    private fun Symbol.references(): List<Tuple> =
+        this.usages().map { tuple(it.token.line, it.token.column + 1) }
 
     private fun offset(offset: Int): Int {
         return offset - 1

@@ -39,6 +39,12 @@ object TestPlSqlVisitorRunner {
         walker.walk(context)
     }
 
+    fun scan(contents: String, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
+        val context = createContext(TestPlSqlFile.fromString(contents), metadata)
+        val walker = PlSqlAstWalker(visitors.toList())
+        walker.walk(context)
+    }
+
     private fun createContext(plSqlFile: PlSqlFile, metadata: FormsMetadata?): PlSqlVisitorContext {
         val parser = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
         val rootTree = getSemanticNode(parser.parse(plSqlFile.contents()))
@@ -52,6 +58,8 @@ object TestPlSqlVisitorRunner {
         override fun type(): PlSqlFile.Type = PlSqlFile.Type.MAIN
 
         companion object {
+            fun fromString(contents: String): PlSqlFile = TestPlSqlFile(contents.trim(), "unnamed")
+
             fun fromFile(file: File): PlSqlFile =
                 try {
                     TestPlSqlFile(String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8), file.name)
