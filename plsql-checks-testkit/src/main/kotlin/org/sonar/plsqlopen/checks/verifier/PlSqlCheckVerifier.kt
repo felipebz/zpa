@@ -25,7 +25,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plsqlopen.metadata.FormsMetadata
-import org.sonar.plsqlopen.squid.PlSqlAstWalker
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
@@ -105,8 +104,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
 
         @JvmStatic
         fun scanFileForIssues(file: File, metadata: FormsMetadata?, check: PlSqlCheck): List<PreciseIssue> {
-            val walker = PlSqlAstWalker(Arrays.asList(SymbolVisitor(DefaultTypeSolver()), check))
-            walker.walk(TestPlSqlVisitorRunner.createContext(file, metadata))
+            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver()), check)
             return check.issues()
         }
 

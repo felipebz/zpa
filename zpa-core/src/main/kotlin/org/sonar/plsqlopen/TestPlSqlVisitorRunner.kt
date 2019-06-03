@@ -21,6 +21,7 @@ package org.sonar.plsqlopen
 
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.parser.PlSqlParser
+import org.sonar.plsqlopen.squid.PlSqlAstWalker
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
@@ -33,33 +34,31 @@ import java.nio.file.Files
 object TestPlSqlVisitorRunner {
 
     fun scanFile(file: File, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
-        val context = createContext(file, metadata)
-        for (visitor in visitors) {
-            visitor.scanFile(context)
-        }
+        val context = createContext(TestPlSqlFile.fromFile(file), metadata)
+        val walker = PlSqlAstWalker(visitors.toList())
+        walker.walk(context)
     }
 
-    fun createContext(file: File, metadata: FormsMetadata?): PlSqlVisitorContext {
+    private fun createContext(plSqlFile: PlSqlFile, metadata: FormsMetadata?): PlSqlVisitorContext {
         val parser = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
-        val plSqlFile = TestPlSqlFile(file)
         val rootTree = getSemanticNode(parser.parse(plSqlFile.contents()))
         return PlSqlVisitorContext(rootTree, plSqlFile, metadata)
     }
 
-    private class TestPlSqlFile(private val file: File) : PlSqlFile {
-
-        override fun contents(): String {
-            try {
-                return String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)
-            } catch (e: IOException) {
-                throw IllegalStateException("Cannot read $file", e)
-            }
-        }
-
-        override fun fileName(): String = file.name
-
+    private class TestPlSqlFile private constructor(private val contents: String,
+                                                    private val name: String) : PlSqlFile {
+        override fun contents(): String = contents
+        override fun fileName(): String = name
         override fun type(): PlSqlFile.Type = PlSqlFile.Type.MAIN
 
+        companion object {
+            fun fromFile(file: File): PlSqlFile =
+                try {
+                    TestPlSqlFile(String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8), file.name)
+                } catch (e: IOException) {
+                    throw IllegalStateException("Cannot read $file", e)
+                }
+        }
     }
 
 }
