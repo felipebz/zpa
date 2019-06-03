@@ -49,7 +49,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         PlSqlGrammar.CREATE_TYPE_BODY,
         PlSqlGrammar.BLOCK_STATEMENT,
         PlSqlGrammar.FOR_STATEMENT,
-        PlSqlGrammar.CURSOR_DECLARATION)
+        PlSqlGrammar.CURSOR_DECLARATION,
+        PlSqlGrammar.FORALL_STATEMENT)
 
     private lateinit var symbolTable: SymbolTableImpl
     private var currentScope: Scope? = null
@@ -111,6 +112,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             visitBlock(node)
         } else if (node.type === PlSqlGrammar.FOR_STATEMENT) {
             visitFor(node)
+        } else if (node.type === PlSqlGrammar.FORALL_STATEMENT) {
+            visitForAll(node)
         } else if (node.type === PlSqlGrammar.PARAMETER_DECLARATION || node.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
             visitParameterDeclaration(node)
         } else if (node.type === PlSqlGrammar.CREATE_PROCEDURE ||
@@ -176,6 +179,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         }
 
         createSymbol(identifier, Symbol.Kind.VARIABLE, type)
+    }
+
+    private fun visitForAll(node: AstNode) {
+        enterScope(node)
+        val identifier = node.getFirstChild(PlSqlKeyword.FORALL).nextSibling
+        createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.NUMERIC)
     }
 
     private fun visitVariableDeclaration(node: AstNode) {

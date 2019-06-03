@@ -89,6 +89,22 @@ end;
     }
 
     @Test
+    fun forAllLoop() {
+        val symbols = scan("""
+begin
+  forall foo in 1 .. 2
+  insert into tab values (var(foo).value);
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val foo = symbols.find("foo", 2, 10)
+        assertThat(foo.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(foo.references()).containsExactly(
+            tuple(3, 31))
+    }
+
+    @Test
     fun procedureArgument() {
         val symbols = scan("""
 create procedure foo(x number) is
