@@ -76,8 +76,17 @@ class DefaultTypeSolver {
     }
 
     private fun isEmptyString(node: AstNode): Boolean {
-        val characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL)
-        return characterLiteral != null && "''" == characterLiteral.tokenValue
+        val characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL) ?: return false
+        val value = characterLiteral.tokenValue
+        if (value == "''") {
+            return true
+        }
+        if (value.startsWith('n', ignoreCase = true) || value.startsWith('q', ignoreCase = true)) {
+            val actualStart = value.indexOf('\'') + 2
+            val actualEnd = value.lastIndexOf('\'') - 1
+            return actualStart == actualEnd
+        }
+        return false
     }
 
 }

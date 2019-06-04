@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.symbols
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
@@ -35,110 +35,113 @@ class DefaultTypeSolverTest {
     @Test
     fun identifyNumericType() {
         val type = solveTypeFromDatatype("number")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        Assertions.assertThat(type.isNumeric).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(type.isNumeric).isTrue()
     }
 
     @Test
     fun identifyTypeNotNull() {
         val type = solveTypeFromDatatype("number not null")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        Assertions.assertThat(type.isNumeric).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(type.isNumeric).isTrue()
     }
 
     @Test
     fun identifyCharacterType() {
         val type = solveTypeFromDatatype("varchar2(100)")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.CHARACTER)
-        Assertions.assertThat(type.isCharacter).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.CHARACTER)
+        assertThat(type.isCharacter).isTrue()
     }
 
     @Test
     fun identifyDateType() {
         val type = solveTypeFromDatatype("date")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.DATE)
+        assertThat(type).isEqualTo(PlSqlType.DATE)
     }
 
     @Test
     fun identifyLobType() {
         val type = solveTypeFromDatatype("clob")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.LOB)
+        assertThat(type).isEqualTo(PlSqlType.LOB)
     }
 
     @Test
     fun identifyBooleanType() {
         val type = solveTypeFromDatatype("boolean")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.BOOLEAN)
+        assertThat(type).isEqualTo(PlSqlType.BOOLEAN)
     }
 
     @Test
     fun identifyRowtype() {
         val type = solveTypeFromDatatype("tab%rowtype")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(type).isEqualTo(PlSqlType.ROWTYPE)
     }
 
     @Test
     fun identifyRowtypeNotNull() {
         val type = solveTypeFromDatatype("tab%rowtype not null")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(type).isEqualTo(PlSqlType.ROWTYPE)
     }
 
     @Test
     fun unknownType() {
         val type = solveTypeFromDatatype("tab.col%type")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        Assertions.assertThat(type.isUnknown).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(type.isUnknown).isTrue()
     }
 
     @Test
     fun unknownTypeNotNull() {
         val type = solveTypeFromDatatype("tab.col%type not null")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        Assertions.assertThat(type.isUnknown).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(type.isUnknown).isTrue()
     }
 
     @Test
     fun ifNodeIsNullReturnsUnknownType() {
         val type = typeSolver.solve(null)
-        Assertions.assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        Assertions.assertThat(type.isUnknown).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(type.isUnknown).isTrue()
     }
 
     @Test
     fun identifyNumericLiteral() {
         val type = solveTypeFromLiteral("1")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        Assertions.assertThat(type.isNumeric).isTrue()
+        assertThat(type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(type.isNumeric).isTrue()
     }
 
     @Test
     fun identifyCharacterLiteral() {
         val type = solveTypeFromLiteral("'foo'")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.CHARACTER)
-        Assertions.assertThat(type.isCharacter).isTrue()
+        val type2 = solveTypeFromLiteral("q'!foo!'")
+        val type3 = solveTypeFromLiteral("n'!foo!'")
+        val type4 = solveTypeFromLiteral("nq'!foo!'")
+
+        assertThat(arrayOf(type, type2, type3, type4))
+            .allMatch { it == PlSqlType.CHARACTER && it.isCharacter }
     }
 
     @Test
     fun identifyDateLiteral() {
         val type = solveTypeFromLiteral("date '2000-01-01'")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.DATE)
+        assertThat(type).isEqualTo(PlSqlType.DATE)
     }
 
     @Test
     fun identifyBooleanLiteral() {
         val type = solveTypeFromLiteral("true")
-        Assertions.assertThat(type).isEqualTo(PlSqlType.BOOLEAN)
+        assertThat(type).isEqualTo(PlSqlType.BOOLEAN)
     }
 
     @Test
     fun emptyStringShouldNotBeTypedAsCharacter() {
         val type = solveTypeFromLiteral("''")
-        /* TODO: handle these cases
-        PlSqlType type = solveTypeFromLiteral("q'!!'");
-        PlSqlType type = solveTypeFromLiteral("n'!!'");
-        PlSqlType type = solveTypeFromLiteral("nq'!!'");
-        */
-        Assertions.assertThat(type).isEqualTo(PlSqlType.NULL)
+        val type2 = solveTypeFromLiteral("q'!!'")
+        val type3 = solveTypeFromLiteral("n'!!'")
+        val type4 = solveTypeFromLiteral("nq'!!'")
+
+        assertThat(arrayOf(type, type2, type3, type4)).allMatch { it == PlSqlType.NULL }
     }
 
     private fun solveTypeFromDatatype(code: String): PlSqlType {
