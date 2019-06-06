@@ -22,7 +22,6 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
-import java.util.*
 
 @Rule(key = RaiseStandardExceptionCheck.CHECK_KEY, priority = Priority.MAJOR)
 @ConstantRemediation("20min")
@@ -30,7 +29,7 @@ import java.util.*
 @ActivatedByDefault
 class RaiseStandardExceptionCheck : AbstractBaseCheck() {
 
-    private val standardExceptions = Collections.unmodifiableList(Arrays.asList(
+    private val standardExceptions = listOf(
             "ACCESS_INTO_NULL",
             "CASE_NOT_FOUND",
             "COLLECTION_IS_NULL",
@@ -51,7 +50,7 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
             "TIMEOUT_ON_RESOURCE",
             "TOO_MANY_ROWS",
             "VALUE_ERROR",
-            "ZERO_DIVIDE"))
+            "ZERO_DIVIDE")
 
     override fun init() {
         subscribeTo(PlSqlGrammar.RAISE_STATEMENT)

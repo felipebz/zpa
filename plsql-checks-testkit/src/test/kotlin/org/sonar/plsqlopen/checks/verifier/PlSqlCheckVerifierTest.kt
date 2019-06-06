@@ -192,7 +192,7 @@ class PlSqlCheckVerifierTest {
         }
 
         fun withPreciseIssue(vararg message: IssueLocation) = apply {
-            preciseIssues.put(message[0].startLine(), LinkedHashSet(Arrays.asList(*message)))
+            preciseIssues.put(message[0].startLine(), LinkedHashSet(message.toList()))
         }
 
         fun withoutIssue(line: Int) = apply {

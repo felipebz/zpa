@@ -25,7 +25,6 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
-import java.util.*
 
 @Rule(key = InvalidReferenceToObjectCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
@@ -33,7 +32,7 @@ import java.util.*
 @ActivatedByDefault
 class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareCheck {
 
-    private val verifiers = Collections.unmodifiableList(Arrays.asList(
+    private val verifiers = listOf(
             Verifier(MethodMatcher.create().name("find_alert").addParameter(), ObjectType.ALERT),
             Verifier(MethodMatcher.create().name("set_alert_button_property").addParameters(4), ObjectType.ALERT),
             Verifier(MethodMatcher.create().name("set_alert_property").addParameters(3), ObjectType.ALERT),
@@ -74,7 +73,7 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
             Verifier(MethodMatcher.create().name("set_radio_button_property").addParameters(5), ObjectType.ITEM),
             Verifier(MethodMatcher.create().name("write_image_file").addParameters(5), 3, ObjectType.ITEM),
             Verifier(MethodMatcher.create().name("write_sound_file").addParameters(5), 3, ObjectType.ITEM)
-    ))
+    )
 
     override fun init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL)
