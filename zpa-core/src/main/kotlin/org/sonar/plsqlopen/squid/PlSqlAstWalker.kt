@@ -29,7 +29,7 @@ import java.util.*
 
 class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
-    private val visitorsByNodeType = IdentityHashMap<AstNodeType, Array<PlSqlVisitor>>()
+    private val visitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
     private var lastVisitedToken: Token? = null
 
     fun walk(context: PlSqlVisitorContext) {
@@ -39,9 +39,7 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
             check.init()
 
             for (type in check.subscribedKinds()) {
-                val visitorsByType = getAstVisitors(type)
-                visitorsByType.add(check)
-                putAstVisitors(type, visitorsByType)
+                visitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
             }
         }
 
@@ -65,7 +63,7 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
         leaveNode(ast, nodeVisitors)
     }
 
-    private fun leaveNode(ast: AstNode, nodeVisitors: Array<PlSqlVisitor>) {
+    private fun leaveNode(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
         for (i in nodeVisitors.indices.reversed()) {
             nodeVisitors[i].leaveNode(ast)
         }
@@ -91,30 +89,13 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
         }
     }
 
-    private fun visitNode(ast: AstNode, nodeVisitors: Array<PlSqlVisitor>) {
+    private fun visitNode(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
         for (nodeVisitor in nodeVisitors) {
             nodeVisitor.visitNode(ast)
         }
     }
 
-    private fun getNodeVisitors(ast: AstNode): Array<PlSqlVisitor> {
-        var nodeVisitors: Array<PlSqlVisitor>? = visitorsByNodeType[ast.type]
-        if (nodeVisitors == null) {
-            nodeVisitors = emptyArray()
-        }
-        return nodeVisitors
-    }
-
-    private fun putAstVisitors(type: AstNodeType, visitors: List<PlSqlVisitor>) {
-        visitorsByNodeType[type] = visitors.toTypedArray()
-    }
-
-    private fun getAstVisitors(type: AstNodeType): MutableList<PlSqlVisitor> {
-        val visitorsByType = visitorsByNodeType[type]
-        return if (visitorsByType == null)
-            ArrayList()
-        else
-            ArrayList(Arrays.asList(*visitorsByType))
-    }
+    private fun getNodeVisitors(ast: AstNode) =
+        visitorsByNodeType[ast.type] ?: emptyList<PlSqlVisitor>()
 
 }
