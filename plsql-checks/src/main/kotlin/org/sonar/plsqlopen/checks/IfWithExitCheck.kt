@@ -45,7 +45,7 @@ class IfWithExitCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "IfWithExit"
+        internal const val CHECK_KEY = "IfWithExit"
     }
 
 }

@@ -53,6 +53,6 @@ class VariableHidingCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "VariableHiding"
+        internal const val CHECK_KEY = "VariableHiding"
     }
 }

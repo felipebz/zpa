@@ -50,7 +50,7 @@ class IdenticalExpressionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "IdenticalExpression"
+        internal const val CHECK_KEY = "IdenticalExpression"
     }
 
 }

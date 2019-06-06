@@ -52,7 +52,7 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "QueryWithoutExceptionHandling"
+        internal const val CHECK_KEY = "QueryWithoutExceptionHandling"
     }
 
 }

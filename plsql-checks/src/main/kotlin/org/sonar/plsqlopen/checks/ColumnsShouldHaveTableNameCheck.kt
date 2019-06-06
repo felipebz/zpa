@@ -52,6 +52,6 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ColumnsShouldHaveTableName"
+        internal const val CHECK_KEY = "ColumnsShouldHaveTableName"
     }
 }

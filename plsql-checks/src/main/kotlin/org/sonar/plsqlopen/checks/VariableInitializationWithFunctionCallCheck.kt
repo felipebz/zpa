@@ -46,7 +46,7 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "VariableInitializationWithFunctionCall"
+        internal const val CHECK_KEY = "VariableInitializationWithFunctionCall"
     }
 
 }

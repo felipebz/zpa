@@ -41,7 +41,7 @@ class AddParenthesesInNestedExpressionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "AddParenthesesInNestedExpression"
+        internal const val CHECK_KEY = "AddParenthesesInNestedExpression"
     }
 
 }

@@ -56,7 +56,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnnecessaryElse"
+        internal const val CHECK_KEY = "UnnecessaryElse"
     }
 
 }

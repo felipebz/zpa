@@ -99,7 +99,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "NotASelectedExpression"
+        internal const val CHECK_KEY = "NotASelectedExpression"
     }
 
 }

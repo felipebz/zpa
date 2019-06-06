@@ -74,7 +74,7 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DuplicateConditionIfElsif"
+        internal const val CHECK_KEY = "DuplicateConditionIfElsif"
     }
 
 }

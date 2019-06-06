@@ -63,7 +63,7 @@ class SelectWithRownumAndOrderByCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "SelectWithRownumAndOrderBy"
+        internal const val CHECK_KEY = "SelectWithRownumAndOrderBy"
     }
 
 }

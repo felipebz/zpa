@@ -41,7 +41,7 @@ class ExplicitInParameterCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ExplicitInParameter"
+        internal const val CHECK_KEY = "ExplicitInParameter"
     }
 
 }

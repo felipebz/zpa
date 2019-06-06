@@ -61,7 +61,7 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ToCharInOrderBy"
+        internal const val CHECK_KEY = "ToCharInOrderBy"
         private val toChar = MethodMatcher.create().name("to_char").withNoParameterConstraint()
     }
 

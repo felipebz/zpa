@@ -48,7 +48,7 @@ class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "CursorBodyInPackageSpec"
+        internal const val CHECK_KEY = "CursorBodyInPackageSpec"
     }
 
 }

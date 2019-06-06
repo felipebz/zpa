@@ -43,7 +43,7 @@ class VariableInitializationWithNullCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "VariableInitializationWithNull"
+        internal const val CHECK_KEY = "VariableInitializationWithNull"
     }
 
 }

@@ -45,7 +45,7 @@ class ComparisonWithBooleanCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ComparisonWithBoolean"
+        internal const val CHECK_KEY = "ComparisonWithBoolean"
     }
 
 }

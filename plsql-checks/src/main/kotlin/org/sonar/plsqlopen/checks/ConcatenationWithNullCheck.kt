@@ -42,7 +42,7 @@ class ConcatenationWithNullCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ConcatenationWithNull"
+        internal const val CHECK_KEY = "ConcatenationWithNull"
     }
 
 }

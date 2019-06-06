@@ -41,7 +41,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "CollapsibleIfStatements"
+        internal const val CHECK_KEY = "CollapsibleIfStatements"
 
         private fun hasElseOrElsif(ifNode: AstNode): Boolean {
             return ifNode.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE)

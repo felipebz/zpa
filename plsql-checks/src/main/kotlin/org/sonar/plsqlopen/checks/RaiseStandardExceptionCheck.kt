@@ -68,7 +68,7 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "RaiseStandardException"
+        internal const val CHECK_KEY = "RaiseStandardException"
     }
 
 }

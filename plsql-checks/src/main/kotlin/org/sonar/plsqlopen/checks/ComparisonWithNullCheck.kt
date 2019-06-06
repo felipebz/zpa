@@ -53,7 +53,7 @@ class ComparisonWithNullCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ComparisonWithNull"
+        internal const val CHECK_KEY = "ComparisonWithNull"
     }
 
 }

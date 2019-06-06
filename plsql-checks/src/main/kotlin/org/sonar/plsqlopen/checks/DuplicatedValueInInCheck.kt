@@ -77,7 +77,7 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DuplicatedValueInIn"
+        internal const val CHECK_KEY = "DuplicatedValueInIn"
     }
 
 }

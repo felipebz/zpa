@@ -55,7 +55,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnusedCursor"
+        internal const val CHECK_KEY = "UnusedCursor"
     }
 
 }

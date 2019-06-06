@@ -88,7 +88,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnhandledUserDefinedException"
+        internal const val CHECK_KEY = "UnhandledUserDefinedException"
 
         val PACKAGE_SPEC_OR_BODY = arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
     }

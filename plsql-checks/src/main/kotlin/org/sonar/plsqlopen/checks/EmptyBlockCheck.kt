@@ -48,7 +48,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "EmptyBlock"
+        internal const val CHECK_KEY = "EmptyBlock"
     }
 
 }

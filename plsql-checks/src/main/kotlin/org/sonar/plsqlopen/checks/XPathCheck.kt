@@ -64,7 +64,7 @@ class XPathCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "XPath"
+        internal const val CHECK_KEY = "XPath"
 
         private const val DEFAULT_XPATH_QUERY = ""
         private const val DEFAULT_MESSAGE = "The XPath expression matches this piece of code"

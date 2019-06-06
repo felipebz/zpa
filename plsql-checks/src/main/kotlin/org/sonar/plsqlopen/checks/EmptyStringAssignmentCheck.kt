@@ -42,7 +42,7 @@ class EmptyStringAssignmentCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "EmptyStringAssignment"
+        internal const val CHECK_KEY = "EmptyStringAssignment"
     }
 
 }

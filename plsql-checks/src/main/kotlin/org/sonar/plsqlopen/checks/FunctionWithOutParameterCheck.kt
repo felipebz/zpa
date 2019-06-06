@@ -41,7 +41,7 @@ class FunctionWithOutParameterCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "FunctionWithOutParameter"
+        internal const val CHECK_KEY = "FunctionWithOutParameter"
     }
 
 }

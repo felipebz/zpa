@@ -43,7 +43,7 @@ class CharacterDatatypeUsageCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "CharacterDatatypeUsage"
+        internal const val CHECK_KEY = "CharacterDatatypeUsage"
         val CHAR_DATATYPE = arrayOf(PlSqlKeyword.CHAR, PlSqlKeyword.VARCHAR)
     }
 

@@ -41,7 +41,7 @@ class UnnecessaryNullStatementCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnnecessaryNullStatement"
+        internal const val CHECK_KEY = "UnnecessaryNullStatement"
     }
 
 }

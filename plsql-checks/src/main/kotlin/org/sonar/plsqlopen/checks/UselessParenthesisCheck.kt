@@ -42,7 +42,7 @@ class UselessParenthesisCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UselessParenthesis"
+        internal const val CHECK_KEY = "UselessParenthesis"
     }
 
 }

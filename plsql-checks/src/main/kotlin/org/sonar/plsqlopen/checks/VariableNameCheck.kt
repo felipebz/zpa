@@ -51,7 +51,7 @@ class VariableNameCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "VariableName"
+        internal const val CHECK_KEY = "VariableName"
 
         private const val DEFAULT_REGEXP = "[a-zA-Z]([a-zA-Z0-9_]*[a-zA-Z0-9])?"
     }

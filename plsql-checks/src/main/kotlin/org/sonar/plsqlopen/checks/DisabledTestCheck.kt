@@ -37,7 +37,7 @@ class DisabledTestCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DisabledTest"
+        internal const val CHECK_KEY = "DisabledTest"
     }
 
 }

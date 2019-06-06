@@ -71,7 +71,7 @@ class SameConditionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "SameCondition"
+        internal const val CHECK_KEY = "SameCondition"
     }
 
 }

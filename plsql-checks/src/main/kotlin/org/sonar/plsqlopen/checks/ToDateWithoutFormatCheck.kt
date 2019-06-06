@@ -46,7 +46,7 @@ class ToDateWithoutFormatCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ToDateWithoutFormat"
+        internal const val CHECK_KEY = "ToDateWithoutFormat"
     }
 
 }

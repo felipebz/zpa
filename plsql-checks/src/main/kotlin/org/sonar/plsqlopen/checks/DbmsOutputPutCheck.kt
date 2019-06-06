@@ -55,7 +55,7 @@ class DbmsOutputPutCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DbmsOutputPut"
+        internal const val CHECK_KEY = "DbmsOutputPut"
     }
 
 }

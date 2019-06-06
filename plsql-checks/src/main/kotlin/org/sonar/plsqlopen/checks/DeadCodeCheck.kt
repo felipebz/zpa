@@ -69,7 +69,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DeadCode"
+        internal const val CHECK_KEY = "DeadCode"
         val STATEMENT_OR_CALL = arrayOf(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)
         val STATEMENT_SECTION = arrayOf(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS)
     }

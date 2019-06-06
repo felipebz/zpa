@@ -82,7 +82,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ReturnOfBooleanExpression"
+        internal const val CHECK_KEY = "ReturnOfBooleanExpression"
     }
 
 }

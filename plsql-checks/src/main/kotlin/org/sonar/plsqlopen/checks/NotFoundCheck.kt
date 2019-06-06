@@ -49,7 +49,7 @@ class NotFoundCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "NotFound"
+        internal const val CHECK_KEY = "NotFound"
     }
 
 }

@@ -68,7 +68,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "SelectAllColumns"
+        internal const val CHECK_KEY = "SelectAllColumns"
     }
 
 }

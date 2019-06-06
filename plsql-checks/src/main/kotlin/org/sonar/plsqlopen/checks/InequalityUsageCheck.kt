@@ -38,7 +38,7 @@ class InequalityUsageCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "InequalityUsage"
+        internal const val CHECK_KEY = "InequalityUsage"
     }
 
 }

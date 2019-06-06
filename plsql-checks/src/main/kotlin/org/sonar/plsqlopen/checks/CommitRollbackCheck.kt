@@ -54,7 +54,7 @@ class CommitRollbackCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "CommitRollback"
+        internal const val CHECK_KEY = "CommitRollback"
     }
 
 }

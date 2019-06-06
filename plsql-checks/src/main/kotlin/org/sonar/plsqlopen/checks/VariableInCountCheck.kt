@@ -59,7 +59,7 @@ class VariableInCountCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "VariableInCount"
+        internal const val CHECK_KEY = "VariableInCount"
     }
 
 }

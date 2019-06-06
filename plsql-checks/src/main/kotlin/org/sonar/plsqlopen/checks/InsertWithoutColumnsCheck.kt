@@ -52,7 +52,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "InsertWithoutColumns"
+        internal const val CHECK_KEY = "InsertWithoutColumns"
     }
 
 }

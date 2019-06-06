@@ -52,7 +52,7 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "TooManyRowsHandler"
+        internal const val CHECK_KEY = "TooManyRowsHandler"
     }
 }
 

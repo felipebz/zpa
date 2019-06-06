@@ -49,7 +49,7 @@ class NvlWithNullParameterCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "NvlWithNullParameter"
+        internal const val CHECK_KEY = "NvlWithNullParameter"
     }
 
 }

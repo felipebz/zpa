@@ -51,7 +51,7 @@ class UnusedVariableCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnusedVariable"
+        internal const val CHECK_KEY = "UnusedVariable"
     }
 
 }

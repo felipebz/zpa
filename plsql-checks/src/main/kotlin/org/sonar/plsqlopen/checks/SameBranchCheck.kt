@@ -77,7 +77,7 @@ class SameBranchCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "SameBranch"
+        internal const val CHECK_KEY = "SameBranch"
     }
 
 }

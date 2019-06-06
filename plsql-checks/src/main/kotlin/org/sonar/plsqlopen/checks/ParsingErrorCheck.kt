@@ -39,7 +39,7 @@ class ParsingErrorCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "ParsingError"
+        internal const val CHECK_KEY = "ParsingError"
     }
 
 }

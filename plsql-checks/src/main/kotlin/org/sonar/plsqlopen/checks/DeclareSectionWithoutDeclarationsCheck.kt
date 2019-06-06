@@ -41,7 +41,7 @@ class DeclareSectionWithoutDeclarationsCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "DeclareSectionWithoutDeclarations"
+        internal const val CHECK_KEY = "DeclareSectionWithoutDeclarations"
     }
 
 }

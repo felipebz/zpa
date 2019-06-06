@@ -53,7 +53,7 @@ class RedundantExpectationCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "RedundantExpectation"
+        internal const val CHECK_KEY = "RedundantExpectation"
 
         private val expectMatcher = MethodMatcher.create()
             .packageName("UT")

@@ -91,7 +91,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        const val CHECK_KEY = "UnusedParameter"
+        internal const val CHECK_KEY = "UnusedParameter"
         val DECLARATION_OR_CONSTRUCTOR =
             arrayOf(PlSqlGrammar.PROCEDURE_DECLARATION,
                 PlSqlGrammar.FUNCTION_DECLARATION,

@@ -150,7 +150,7 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
     }
 
     companion object {
-        const val CHECK_KEY = "InvalidReferenceToObject"
+        internal const val CHECK_KEY = "InvalidReferenceToObject"
     }
 
 }
