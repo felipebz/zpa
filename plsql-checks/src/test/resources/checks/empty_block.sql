@@ -1,22 +1,22 @@
-begin -- Noncompliant {{Either remove or fill this block of code.}}
-  null;
+begin
+  null; -- Noncompliant {{Either remove or fill this block of code.}}
 end;
 /
 create type body t as
   not overriding member procedure foo as
-  begin -- Noncompliant
-    null;
-  end;
-
-  overriding member procedure foo as
-  begin  -- Compliant, don't report violation on overriding member
-    null;
+  begin
+    null; -- Noncompliant
   end;
 
   overriding member procedure foo as
   begin
-    begin -- Noncompliant
-      null;
+    null;  -- Compliant, don't report violation on overriding member
+  end;
+
+  overriding member procedure foo as
+  begin
+    begin
+      null; -- Noncompliant
     end;
   end;
 end;
