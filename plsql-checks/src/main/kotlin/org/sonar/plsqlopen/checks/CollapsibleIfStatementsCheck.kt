@@ -36,7 +36,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val singleIfChild = singleIfChild(node)
         if (singleIfChild != null && !hasElseOrElsif(node) && !hasElseOrElsif(singleIfChild)) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), singleIfChild.tokenLine)
+            addIssue(singleIfChild, getLocalizedMessage(CHECK_KEY))
         }
     }
 

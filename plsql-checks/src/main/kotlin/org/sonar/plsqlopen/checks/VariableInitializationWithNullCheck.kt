@@ -37,7 +37,7 @@ class VariableInitializationWithNullCheck : AbstractBaseCheck() {
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.RECORD_FIELD_DECLARATION)) {
             val expression = node.lastChild
             if (CheckUtils.isNullLiteralOrEmptyString(expression)) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

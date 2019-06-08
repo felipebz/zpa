@@ -37,7 +37,7 @@ class EmptyStringAssignmentCheck : AbstractBaseCheck() {
         val value = node.getLastChild(PlSqlGrammar.LITERAL)
 
         if (value != null && CheckUtils.isEmptyString(value)) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), value.tokenLine)
+            addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }
 

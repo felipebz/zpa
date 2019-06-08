@@ -43,7 +43,7 @@ class NotFoundCheck : AbstractBaseCheck() {
             val percentCandidate = foundCandidate.previousAstNode
 
             if (percentCandidate.typeIs(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate.tokenValue) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

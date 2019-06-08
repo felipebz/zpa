@@ -63,7 +63,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
                 }
             }
 
-            addLineIssue(getLocalizedMessage(CHECK_KEY), candidate.tokenLine)
+            addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }
 

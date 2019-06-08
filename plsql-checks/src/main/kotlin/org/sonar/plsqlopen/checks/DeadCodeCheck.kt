@@ -50,7 +50,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
         }
         val nextSibling = node.nextSibling
         if (nextSibling != null && nextSibling.typeIs(PlSqlGrammar.STATEMENT)) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), nextSibling.tokenLine)
+            addIssue(nextSibling, getLocalizedMessage(CHECK_KEY))
             return true
         }
         return false

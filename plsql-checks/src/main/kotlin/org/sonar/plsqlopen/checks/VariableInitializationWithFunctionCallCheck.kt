@@ -40,7 +40,7 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
 
             val expression = node.lastChild
             if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

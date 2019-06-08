@@ -36,7 +36,7 @@ class UnnecessaryNullStatementCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val parent = node.parent
         if (parent.previousSibling != null || parent.nextSibling != null) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+            addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }
 

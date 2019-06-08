@@ -52,7 +52,7 @@ class SelectWithRownumAndOrderByCheck : AbstractBaseCheck() {
         for (comparison in whereComparisonConditions) {
             for (child in comparison.getChildren(PlSqlGrammar.VARIABLE_NAME)) {
                 if ("rownum".equals(child.tokenValue, ignoreCase = true) && node == child.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)) {
-                    addLineIssue(getLocalizedMessage(CHECK_KEY), child.tokenLine)
+                    addIssue(comparison, getLocalizedMessage(CHECK_KEY))
                 }
             }
         }

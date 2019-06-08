@@ -51,7 +51,7 @@ class DbmsOutputPutCheck : AbstractBaseCheck() {
             return
         }
 
-        addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+        addIssue(node, getLocalizedMessage(CHECK_KEY))
     }
 
     companion object {

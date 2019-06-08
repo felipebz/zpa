@@ -42,7 +42,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
         if (statements.size == 1) {
             val nullStatementSelect = statements[0].getChildren(PlSqlGrammar.NULL_STATEMENT)
             if (nullStatementSelect.isNotEmpty()) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), statements[0].tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

@@ -41,7 +41,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
 
             if (firstBoolean != null && secondBoolean != null
                     && firstBoolean.tokenValue != secondBoolean.tokenValue) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

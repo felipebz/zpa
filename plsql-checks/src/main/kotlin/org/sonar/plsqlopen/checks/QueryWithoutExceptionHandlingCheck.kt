@@ -41,12 +41,12 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
             val parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION)
 
             if (!parentBlock.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         } else {
             val hasExceptionHandler = context.currentScope?.hasExceptionHandler() ?: false
             if (!hasExceptionHandler) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+                addIssue(node, getLocalizedMessage(CHECK_KEY))
             }
         }
     }

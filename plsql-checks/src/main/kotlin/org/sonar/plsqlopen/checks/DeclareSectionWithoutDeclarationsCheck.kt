@@ -36,7 +36,7 @@ class DeclareSectionWithoutDeclarationsCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (node.hasDirectChildren(PlSqlKeyword.DECLARE) && !node.hasDescendant(PlSqlGrammar.DECLARE_SECTION)) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+            addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }
 
