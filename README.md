@@ -10,6 +10,8 @@ The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle S
 
 Currently you can use it in [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
 
+See some examples in our [SonarQube instance](https://sonarqube.felipezorzo.com.br/projects?languages=plsqlopen)!
+
 **Soon**: you'll be able to analyze code without using the SonarQube environment with [zpa-cli](https://github.com/felipebz/zpa-cli) and more.
 
 ## Installation
