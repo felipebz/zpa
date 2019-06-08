@@ -87,16 +87,6 @@
         <version>${kotlin.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.sonarsource.sonarqube</groupId>
-        <artifactId>sonar-plugin-api</artifactId>
-        <version>${sonar.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonarqube.sonarsource</groupId>
-        <artifactId>sonar-testing-harness</artifactId>
-        <version>${sonar.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.sonarsource.sslr</groupId>
         <artifactId>sslr-core</artifactId>
         <version>${sslr.version}</version>
