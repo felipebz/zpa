@@ -19,8 +19,6 @@
  */
 package org.sonar.plsqlopen.checks.verifier
 
-import com.google.common.collect.LinkedListMultimap
-import com.google.common.collect.Multimap
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.GenericTokenType
 import com.sonar.sslr.api.Token
@@ -30,7 +28,6 @@ import org.junit.Test
 import org.sonar.plsqlopen.checks.IssueLocation
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.net.URI
-import java.util.*
 
 class PlSqlCheckVerifierTest {
 
@@ -167,8 +164,8 @@ class PlSqlCheckVerifierTest {
 
     private class FakeCheck : PlSqlCheck() {
 
-        internal var issues: Multimap<Int, String> = LinkedListMultimap.create()
-        internal var preciseIssues: Multimap<Int, Set<IssueLocation>> = LinkedListMultimap.create()
+        internal var issues = hashMapOf<Int, MutableList<String>>()
+        internal var preciseIssues = linkedMapOf<Int, MutableList<IssueLocation>>()
 
         fun withDefaultIssues(): FakeCheck {
             return this.withIssue(1, "message")
@@ -188,26 +185,26 @@ class PlSqlCheckVerifierTest {
         }
 
         fun withIssue(line: Int, message: String) = apply {
-            issues.put(line, message)
+            issues.getOrPut(line) { mutableListOf() }.add(message)
         }
 
         fun withPreciseIssue(vararg message: IssueLocation) = apply {
-            preciseIssues.put(message[0].startLine(), LinkedHashSet(message.toList()))
+            preciseIssues.getOrPut(message[0].startLine()) { mutableListOf() }.addAll(message.toList())
         }
 
         fun withoutIssue(line: Int) = apply {
-            issues.removeAll(line)
-            preciseIssues.removeAll(line)
+            issues.remove(line)
+            preciseIssues.remove(line)
         }
 
         override fun visitFile(node: AstNode) {
-            for (line in issues.keySet()) {
-                for (message in issues.get(line)) {
+            for ((line, messages) in issues) {
+                for (message in messages) {
                     addLineIssue(message, line)
                 }
             }
 
-            for (locations in preciseIssues.values()) {
+            for (locations in preciseIssues.values) {
                 var issue: PreciseIssue? = null
                 for (location in locations) {
                     if (issue == null) {

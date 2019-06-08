@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.google.common.collect.ArrayListMultimap
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
@@ -47,25 +46,24 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
             return
         }
 
-        val tableReferences = ArrayListMultimap.create<String, TableReference>()
+        val tableReferences = hashMapOf<String, MutableList<TableReference>>()
         for (fromClause in node.getDescendants(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)) {
             val table = fromClause.getFirstChild(DmlGrammar.TABLE_REFERENCE)
             val alias = fromClause.getFirstChild(DmlGrammar.ALIAS)
 
 
             if (table != null) {
-                tableReferences.put(table.tokenOriginalValue.toLowerCase(),
-                        TableReference(table, alias))
+                tableReferences.getOrPut(table.tokenOriginalValue.toLowerCase()) { mutableListOf() }
+                    .add(TableReference(table, alias))
             }
         }
 
-        for (tableName in tableReferences.keySet()) {
-            val references = tableReferences.get(tableName)
+        for (references in tableReferences.values) {
             checkReference(references)
         }
     }
 
-    private fun checkReference(references: List<TableReference>) {
+    private fun checkReference(references: MutableList<TableReference>) {
         if (references.size == 1) {
             val reference: TableReference = references[0]
 

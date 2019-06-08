@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.checks.verifier
 
-import com.google.common.base.Splitter
 import com.sonar.sslr.api.Trivia
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
@@ -188,7 +187,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
         }
 
         private fun addParams(issue: TestIssue, params: String) {
-            for (param in Splitter.on(';').split(params)) {
+            for (param in params.split(';')) {
                 val equalIndex = param.indexOf('=')
                 if (equalIndex == -1) {
                     throw IllegalStateException("Invalid param at line 1: $param")
@@ -210,7 +209,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
         private fun addSecondaryLines(issue: TestIssue, value: String) {
             val secondaryLines = ArrayList<Int>()
             if ("" != value) {
-                for (secondary in Splitter.on(',').split(value)) {
+                for (secondary in value.split(',')) {
                     secondaryLines.add(lineValue(issue.line, secondary))
                 }
             }

@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.squid
 
-import com.google.common.annotations.VisibleForTesting
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.fs.TextRange
 import org.sonar.api.batch.measure.Metric
@@ -62,7 +61,6 @@ class PlSqlAstScanner(private val context: SensorContext,
         this.plsqlChecks = checks
     }
 
-    @VisibleForTesting
     fun scanFile(inputFile: InputFile) {
         val plSqlFile = SonarQubePlSqlFile(inputFile)
         if (plSqlFile.type() == PlSqlFile.Type.MAIN) {

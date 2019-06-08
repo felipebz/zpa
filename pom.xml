@@ -70,7 +70,6 @@
     <sonar.version>7.1</sonar.version>
     <sonar.min.version>6.7</sonar.min.version>
     <sslr.version>1.23</sslr.version>
-    <guava.version>10.0.1</guava.version>
     <gson.version>2.7</gson.version>
     <sonar-packaging.version>1.18.0.372</sonar-packaging.version>
     <jar.plugin.version>3.1.1</jar.plugin.version>
