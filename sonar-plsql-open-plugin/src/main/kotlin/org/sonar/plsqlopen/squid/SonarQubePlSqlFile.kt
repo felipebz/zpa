@@ -42,4 +42,6 @@ class SonarQubePlSqlFile(val inputFile: InputFile) : PlSqlFile {
             else -> PlSqlFile.Type.MAIN
         }
 
+    override fun toString(): String = inputFile.toString()
+
 }
