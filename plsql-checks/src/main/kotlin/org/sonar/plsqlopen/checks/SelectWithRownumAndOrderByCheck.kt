@@ -39,7 +39,9 @@ class SelectWithRownumAndOrderByCheck : AbstractBaseCheck() {
             return
         }
 
-        val whereClause = node.getChildren(DmlGrammar.WHERE_CLAUSE)
+        val queryBlock = node.getFirstChild(DmlGrammar.QUERY_BLOCK)
+
+        val whereClause = queryBlock.getChildren(DmlGrammar.WHERE_CLAUSE)
         if (whereClause.isEmpty()) {
             return
         }

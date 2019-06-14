@@ -60,6 +60,7 @@ enum class DmlGrammar : GrammarRuleKey {
     HIERARCHICAL_QUERY_CLAUSE,
     SUBQUERY_FACTORING_CLAUSE,
     RETURNING_INTO_CLAUSE,
+    QUERY_BLOCK,
     SELECT_EXPRESSION,
     DELETE_EXPRESSION,
     UPDATE_COLUMN,
@@ -209,26 +210,28 @@ enum class DmlGrammar : GrammarRuleKey {
                     WITH,
                     b.oneOrMore(IDENTIFIER_NAME, AS, LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(COMMA)))
 
+            b.rule(QUERY_BLOCK).define(
+                b.firstOf(
+                    b.sequence(
+                        SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
+                        b.optional(INTO_CLAUSE),
+                        FROM_CLAUSE,
+                        b.optional(WHERE_CLAUSE),
+                        b.optional(b.firstOf(
+                            b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
+                            b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
+                        b.optional(HAVING_CLAUSE),
+                        b.optional(HIERARCHICAL_QUERY_CLAUSE)),
+                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)))
+
             b.rule(SELECT_EXPRESSION).define(
-                    b.optional(SUBQUERY_FACTORING_CLAUSE),
-                    b.firstOf(
-                            b.sequence(
-                                    SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
-                                    b.optional(INTO_CLAUSE),
-                                    FROM_CLAUSE,
-                                    b.optional(WHERE_CLAUSE),
-                                    b.optional(b.firstOf(
-                                            b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
-                                            b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
-                                    b.optional(HAVING_CLAUSE),
-                                    b.optional(HIERARCHICAL_QUERY_CLAUSE),
-                                    b.optional(b.firstOf(
-                                            b.sequence(ORDER_BY_CLAUSE, b.optional(b.firstOf(FOR_UPDATE_CLAUSE, ROW_LIMITING_CLAUSE))),
-                                            ROW_LIMITING_CLAUSE,
-                                            b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE))))),
-                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(ORDER_BY_CLAUSE), b.optional(ROW_LIMITING_CLAUSE))),
-                    b.optional(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), SELECT_EXPRESSION),
-                    b.optional(FOR_UPDATE_CLAUSE))
+                b.optional(SUBQUERY_FACTORING_CLAUSE),
+                QUERY_BLOCK,
+                b.zeroOrMore(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), QUERY_BLOCK),
+                b.optional(b.firstOf(
+                    b.sequence(ORDER_BY_CLAUSE, b.optional(b.firstOf(FOR_UPDATE_CLAUSE, ROW_LIMITING_CLAUSE))),
+                    ROW_LIMITING_CLAUSE,
+                    b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE)))))
         }
 
         private fun createDeleteExpression(b: LexerfulGrammarBuilder) {

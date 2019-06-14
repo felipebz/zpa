@@ -38,11 +38,12 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (!node.children[1].typeIs(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
+        val firstQueryBlock = node.getFirstChild(DmlGrammar.QUERY_BLOCK)
+        if (!firstQueryBlock.children[1].typeIs(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
             return
         }
 
-        val columns = node.getChildren(DmlGrammar.SELECT_COLUMN)
+        val columns = firstQueryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
         val orderByItems = node.getFirstChild(DmlGrammar.ORDER_BY_CLAUSE).getChildren(DmlGrammar.ORDER_BY_ITEM)
 
         for (orderByItem in orderByItems) {

@@ -39,7 +39,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.parent.parent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
+        if (node.parent.parent.parent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
             return
         }
 
