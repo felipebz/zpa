@@ -33,7 +33,10 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
     @RuleProperty(key = "acceptedLength", defaultValue = "" + DEFAULT_ACCEPTED_LENGTH)
     var acceptedLength = DEFAULT_ACCEPTED_LENGTH
 
-    private val dmlStatements = arrayOf<AstNodeType>(DmlGrammar.SELECT_EXPRESSION, PlSqlGrammar.UPDATE_STATEMENT, PlSqlGrammar.DELETE_STATEMENT)
+    private val dmlStatements = arrayOf<AstNodeType>(
+        DmlGrammar.QUERY_BLOCK,
+        PlSqlGrammar.UPDATE_STATEMENT,
+        PlSqlGrammar.DELETE_STATEMENT)
 
     override fun init() {
         subscribeTo(*dmlStatements)

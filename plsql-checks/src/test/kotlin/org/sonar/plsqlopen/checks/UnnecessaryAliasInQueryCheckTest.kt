@@ -34,7 +34,7 @@ class UnnecessaryAliasInQueryCheckTest : BaseCheckTest() {
         val check = UnnecessaryAliasInQueryCheck()
         check.acceptedLength = 4
 
-        PlSqlCheckVerifier.verify(getPath("unnecessary_alias_in_query.sql"), check)
+        PlSqlCheckVerifier.verify(getPath("unnecessary_alias_in_query_custom_length.sql"), check)
     }
 
 }

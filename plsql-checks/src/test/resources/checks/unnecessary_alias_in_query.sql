@@ -17,6 +17,13 @@ begin
    
   delete tab x where exists (select 1 from tab2); -- Noncompliant
 --           ^
+
+  select *
+    from tab x -- Noncompliant
+--           ^
+  union
+  select *
+    from tab x; -- Noncompliant
     
   -- correct
   select *
@@ -40,6 +47,6 @@ begin
    where exists (select 1 from tab x);
    
   delete tab
-   where exists (select 1 from tab x); 
+   where exists (select 1 from tab x);
 end;
 /
