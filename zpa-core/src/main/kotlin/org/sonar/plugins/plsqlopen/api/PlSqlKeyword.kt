@@ -498,7 +498,8 @@ enum class PlSqlKeyword(private val value: String, val isReserved: Boolean = fal
     REFERENCE("reference"),
     ERROR("error"),
     WITHOUT("without"),
-    INLINE("inline");
+    INLINE("inline"),
+    UDF("udf");
 
     override fun getName() = name
 

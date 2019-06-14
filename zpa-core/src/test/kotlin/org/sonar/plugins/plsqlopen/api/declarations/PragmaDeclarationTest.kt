@@ -57,4 +57,9 @@ class PragmaDeclarationTest : RuleTest() {
         assertThat(p).matches("pragma restrict_references(foo, rnds, wnds);")
     }
 
+    @Test
+    fun matchesUdfPragma() {
+        assertThat(p).matches("pragma udf;")
+    }
+
 }

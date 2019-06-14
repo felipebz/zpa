@@ -153,6 +153,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     SERIALLY_REUSABLE_PRAGMA,
     INTERFACE_PRAGMA,
     RESTRICT_REFERENCES_PRAGMA,
+    UDF_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     JAVA_DECLARATION,
@@ -815,12 +816,15 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(RESTRICT_REFERENCES_PRAGMA).define(
                     PRAGMA, RESTRICT_REFERENCES, LPARENTHESIS, b.oneOrMore(b.anyTokenButNot(RPARENTHESIS)), RPARENTHESIS, SEMICOLON)
 
+            b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON);
+
             b.rule(PRAGMA_DECLARATION).define(b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
                     AUTONOMOUS_TRANSACTION_PRAGMA,
                     SERIALLY_REUSABLE_PRAGMA,
                     INTERFACE_PRAGMA,
-                    RESTRICT_REFERENCES_PRAGMA))
+                    RESTRICT_REFERENCES_PRAGMA,
+                    UDF_PRAGMA))
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
