@@ -19,14 +19,12 @@
  */
 package org.sonar.plsqlopen.checks
 
-import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 @Rule(key = ParsingErrorCheck.CHECK_KEY, priority = Priority.INFO)
 @RuleInfo(scope = RuleInfo.Scope.ALL)
-@ActivatedByDefault
 class ParsingErrorCheck : AbstractBaseCheck() {
 
     override fun init() {
