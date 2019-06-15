@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.checks
 
+import com.sonar.sslr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
@@ -34,6 +36,12 @@ class ParsingErrorCheck : AbstractBaseCheck() {
                 addLineIssue(it, parsingException.line)
             }
         }
+
+        subscribeTo(PlSqlGrammar.RECOVERY)
+    }
+
+    override fun visitNode(node: AstNode) {
+        addIssue(node, getLocalizedMessage(CHECK_KEY))
     }
 
     companion object {

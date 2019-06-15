@@ -49,4 +49,19 @@ class ParsingErrorCheckTest : BaseCheckTest() {
         assertThat(issues[0].primaryLocation().startLine()).isEqualTo(1)
     }
 
+    @Test
+    fun testTolerantParsing() {
+        val file = File("src/test/resources/checks/parsing_error.sql")
+
+        val parser = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, isErrorRecoveryEnabled = true))
+
+        val rootTree = parser.parse(file)
+        val context = PlSqlVisitorContext(rootTree, null, null)
+
+        val check = ParsingErrorCheck()
+        val issues = check.scanFileForIssues(context)
+        assertThat(issues).hasSize(1)
+        assertThat(issues[0].primaryLocation().startLine()).isEqualTo(1)
+    }
+
 }
