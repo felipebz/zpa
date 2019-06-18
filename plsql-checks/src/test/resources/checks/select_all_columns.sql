@@ -48,3 +48,16 @@ begin
     bulk collect into row_table
     from emp;
 end;
+/
+declare
+  v_foo emp%rowtype;
+
+  cursor cur is
+    select * -- Compliant
+      from emp;
+begin
+  open cur;
+  fetch cur into v_foo;
+  close cur;
+end;
+/

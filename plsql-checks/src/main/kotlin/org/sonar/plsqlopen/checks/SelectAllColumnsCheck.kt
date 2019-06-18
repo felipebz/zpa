@@ -39,8 +39,24 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.parent.parent.parent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
+        val topParent = node.parent.parent.parent
+        if (topParent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
             return
+        }
+
+        if (topParent.typeIs(PlSqlGrammar.CURSOR_DECLARATION)) {
+
+            // TODO this is very complex and it probably can be simplified in the future
+            val fetchDestination = semantic(topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME))
+                .symbol?.usages().orEmpty()
+                .map { it.parent.parent }
+                .filter { it.typeIs(PlSqlGrammar.FETCH_STATEMENT) }
+                .map { it.getFirstChild(DmlGrammar.INTO_CLAUSE)?.getFirstChild(PlSqlGrammar.VARIABLE_NAME) }
+                .firstOrNull()
+
+            if (fetchDestination != null && semantic(fetchDestination).plSqlType == PlSqlType.ROWTYPE) {
+                return
+            }
         }
 
         var candidate = node.firstChild
