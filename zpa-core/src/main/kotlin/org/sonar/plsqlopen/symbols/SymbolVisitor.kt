@@ -136,13 +136,13 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun visitUnit(node: AstNode) {
-        val autonomousTransaction = node.select()
-                .children(PlSqlGrammar.DECLARE_SECTION)
-                .children(PlSqlGrammar.PRAGMA_DECLARATION)
-                .children(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).isNotEmpty
-        val exceptionHandler = node.select()
-                .children(PlSqlGrammar.STATEMENTS_SECTION)
-                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty
+        val autonomousTransaction = node
+            .getChildren(PlSqlGrammar.DECLARE_SECTION).asSequence()
+            .flatMap { it.getChildren(PlSqlGrammar.PRAGMA_DECLARATION).asSequence() }
+            .flatMap { it.getChildren(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).asSequence() }.any()
+        val exceptionHandler = node
+                .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
+                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
         val inheritanceClause = node.parent.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
         val isOverridingMember = inheritanceClause != null &&
             inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
@@ -162,9 +162,9 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun visitBlock(node: AstNode) {
-        val exceptionHandler = node.select()
-                .children(PlSqlGrammar.STATEMENTS_SECTION)
-                .children(PlSqlGrammar.EXCEPTION_HANDLER).isNotEmpty
+        val exceptionHandler = node
+                .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
+                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
         enterScope(node, exceptionHandler =  exceptionHandler)
     }
 
