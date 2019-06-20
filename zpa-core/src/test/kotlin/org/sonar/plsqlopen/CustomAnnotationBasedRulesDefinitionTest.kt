@@ -67,7 +67,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
         assertThat(rule.name).isEqualTo("name1")
         assertThat(rule.htmlDescription).isEqualTo("description1")
         assertThat(rule.tags).containsOnly("mytag")
-        assertThat(rule.template).isFalse()
+        assertThat(rule.template).isFalse
         assertThat(rule.params).hasSize(1)
         assertParam(rule.params[0], "param1Key", "param1 description")
     }

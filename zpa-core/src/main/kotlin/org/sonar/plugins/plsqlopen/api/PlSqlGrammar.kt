@@ -816,7 +816,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(RESTRICT_REFERENCES_PRAGMA).define(
                     PRAGMA, RESTRICT_REFERENCES, LPARENTHESIS, b.oneOrMore(b.anyTokenButNot(RPARENTHESIS)), RPARENTHESIS, SEMICOLON)
 
-            b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON);
+            b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON)
 
             b.rule(PRAGMA_DECLARATION).define(b.firstOf(
                     EXCEPTION_INIT_PRAGMA,

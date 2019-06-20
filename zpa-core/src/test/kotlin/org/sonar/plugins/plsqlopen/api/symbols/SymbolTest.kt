@@ -64,9 +64,9 @@ class SymbolTest {
         modifiers.add(node)
         symbol.addModifiers(modifiers)
 
-        assertThat(symbol.hasModifier("foo")).isTrue()
-        assertThat(symbol.hasModifier("FOO")).isTrue()
-        assertThat(symbol.hasModifier("bar")).isFalse()
+        assertThat(symbol.hasModifier("foo")).isTrue
+        assertThat(symbol.hasModifier("FOO")).isTrue
+        assertThat(symbol.hasModifier("bar")).isFalse
     }
 
     private fun createSymbol(scope: Scope, name: String, kind: Kind): Symbol {

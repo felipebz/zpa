@@ -36,21 +36,21 @@ class DefaultTypeSolverTest {
     fun identifyNumericType() {
         val type = solveTypeFromDatatype("number")
         assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(type.isNumeric).isTrue()
+        assertThat(type.isNumeric).isTrue
     }
 
     @Test
     fun identifyTypeNotNull() {
         val type = solveTypeFromDatatype("number not null")
         assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(type.isNumeric).isTrue()
+        assertThat(type.isNumeric).isTrue
     }
 
     @Test
     fun identifyCharacterType() {
         val type = solveTypeFromDatatype("varchar2(100)")
         assertThat(type).isEqualTo(PlSqlType.CHARACTER)
-        assertThat(type.isCharacter).isTrue()
+        assertThat(type.isCharacter).isTrue
     }
 
     @Test
@@ -87,28 +87,28 @@ class DefaultTypeSolverTest {
     fun unknownType() {
         val type = solveTypeFromDatatype("tab.col%type")
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(type.isUnknown).isTrue()
+        assertThat(type.isUnknown).isTrue
     }
 
     @Test
     fun unknownTypeNotNull() {
         val type = solveTypeFromDatatype("tab.col%type not null")
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(type.isUnknown).isTrue()
+        assertThat(type.isUnknown).isTrue
     }
 
     @Test
     fun ifNodeIsNullReturnsUnknownType() {
         val type = typeSolver.solve(null)
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(type.isUnknown).isTrue()
+        assertThat(type.isUnknown).isTrue
     }
 
     @Test
     fun identifyNumericLiteral() {
         val type = solveTypeFromLiteral("1")
         assertThat(type).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(type.isNumeric).isTrue()
+        assertThat(type.isNumeric).isTrue
     }
 
     @Test

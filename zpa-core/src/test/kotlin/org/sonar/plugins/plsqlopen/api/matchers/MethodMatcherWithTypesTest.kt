@@ -39,28 +39,28 @@ class MethodMatcherWithTypesTest : RuleTest() {
     fun matchesMethodWhenTheTypeIsNotSpecifiedInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter()
         val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
-        assertThat(matcher.matches(node)).isTrue()
+        assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun matchesMethodWhenTheTypeIsSpecifiedAsUnknownInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN)
         val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
-        assertThat(matcher.matches(node)).isTrue()
+        assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun matchesMethodWhenTheTypeIsSpecifiedInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC)
         val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
-        assertThat(matcher.matches(node)).isTrue()
+        assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun notMatchesMethodWhenTheTypeIsDifferentFromExpectation() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.CHARACTER)
         val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
-        assertThat(matcher.matches(node)).isFalse()
+        assertThat(matcher.matches(node)).isFalse
     }
 
     @Test
@@ -68,7 +68,7 @@ class MethodMatcherWithTypesTest : RuleTest() {
         val matcher = MethodMatcher.create().name("func")
                 .addParameters(PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
         val node = getAstNodeWithArguments("func(x, y, z)", PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
-        assertThat(matcher.matches(node)).isTrue()
+        assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
@@ -76,7 +76,7 @@ class MethodMatcherWithTypesTest : RuleTest() {
         val matcher = MethodMatcher.create().name("func")
                 .addParameters(PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
         val node = getAstNodeWithArguments("func(x, y, z)", PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.CHARACTER)
-        assertThat(matcher.matches(node)).isFalse()
+        assertThat(matcher.matches(node)).isFalse
     }
 
     private fun getAstNodeWithArguments(text: String, vararg types: PlSqlType): SemanticAstNode {
