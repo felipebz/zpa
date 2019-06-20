@@ -196,11 +196,11 @@ class MethodMatcherTest : RuleTest() {
     }
 
     fun matches(matcher: MethodMatcher, text: String) {
-        assertThat(matcher.matches(p.parse(text).firstChild)).isTrue
+        assertThat(matcher.matches(p.parse(text).firstChild)).isTrue()
     }
 
     fun notMatches(matcher: MethodMatcher, text: String) {
-        assertThat(matcher.matches(p.parse(text).firstChild)).isFalse
+        assertThat(matcher.matches(p.parse(text).firstChild)).isFalse()
     }
 
 }

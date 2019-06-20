@@ -46,7 +46,7 @@ class CustomPlSqlRulesDefinitionTest {
 
         for (rule in repository.rules()) {
             for (param in rule.params()) {
-                assertThat(param.description()).`as`("description for " + param.key()).isNotEmpty
+                assertThat(param.description()).`as`("description for " + param.key()).isNotEmpty()
             }
         }
     }

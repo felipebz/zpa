@@ -36,7 +36,7 @@ class ScopeImplTest {
         val scope = ScopeImpl(null, node)
         assertThat(scope.outer()).isNull()
         assertThat(scope.tree()).isEqualTo(node)
-        assertThat(scope.isAutonomousTransaction).isFalse
+        assertThat(scope.isAutonomousTransaction).isFalse()
     }
 
     @Test
