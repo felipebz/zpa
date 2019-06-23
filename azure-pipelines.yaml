@@ -34,6 +34,7 @@ jobs:
 
     steps:
       - task: SonarQubePrepare@4
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
         inputs:
           SonarQube: 'SonarQube'
           scannerMode: 'Other'
