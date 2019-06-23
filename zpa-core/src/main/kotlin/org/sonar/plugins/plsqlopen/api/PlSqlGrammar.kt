@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.sonar.sslr.api.GenericTokenType.EOF
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
+import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plsqlopen.sslr.RaiseStatement
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
@@ -405,7 +406,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ELSE_CLAUSE).define(ELSE, STATEMENTS)
 
-            b.rule(IF_STATEMENT).define(
+            b.rule(IF_STATEMENT, IfStatement::class).define(
                     b.optional(LABEL),
                     IF, EXPRESSION, THEN,
                     STATEMENTS,

@@ -22,10 +22,10 @@ package org.sonar.plsqlopen.sslr
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class RaiseStatement(private val node: SemanticAstNode) : Tree {
+class RaiseStatement(override val astNode: SemanticAstNode) : Tree {
 
     val exception : SemanticAstNode? by lazy {
-        node.getFirstChild(PlSqlKeyword.RAISE).nextSibling as SemanticAstNode
+        astNode.getFirstChild(PlSqlKeyword.RAISE).nextSibling as SemanticAstNode
     }
 
 }

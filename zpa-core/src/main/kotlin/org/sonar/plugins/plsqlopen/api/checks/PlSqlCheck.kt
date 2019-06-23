@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api.checks
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.Token
 import org.sonar.plsqlopen.checks.IssueLocation
+import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import java.text.MessageFormat
@@ -53,6 +54,16 @@ open class PlSqlCheck : PlSqlVisitor() {
 
     fun addIssue(node: AstNode, message: String, vararg messageParameters: Any): PreciseIssue {
         return addIssue(node, MessageFormat.format(message, *messageParameters))
+    }
+
+    fun addIssue(tree: Tree, message: String): PreciseIssue {
+        val newIssue = PreciseIssue(IssueLocation.preciseLocation(tree.astNode, message))
+        issues.add(newIssue)
+        return newIssue
+    }
+
+    fun addIssue(tree: Tree, message: String, vararg messageParameters: Any): PreciseIssue {
+        return addIssue(tree, MessageFormat.format(message, *messageParameters))
     }
 
     fun addIssue(primaryLocation: IssueLocation): PreciseIssue {

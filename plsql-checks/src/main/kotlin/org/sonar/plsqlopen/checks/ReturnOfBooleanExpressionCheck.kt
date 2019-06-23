@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -35,8 +36,9 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (!hasElsif(node) && hasElse(node)) {
-            val firstBoolean = getBooleanValue(node)
+        val ifStatement = semantic(node).tree as IfStatement
+        if (!hasElsif(ifStatement) && hasElse(ifStatement)) {
+            val firstBoolean = getBooleanValue(ifStatement.astNode)
             val secondBoolean = getBooleanValue(node.getFirstChild(PlSqlGrammar.ELSE_CLAUSE))
 
             if (firstBoolean != null && secondBoolean != null
@@ -46,12 +48,12 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun hasElsif(node: AstNode): Boolean {
-        return node.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE)
+    private fun hasElsif(ifStatement: IfStatement): Boolean {
+        return ifStatement.elsifClauses.isNotEmpty()
     }
 
-    private fun hasElse(node: AstNode): Boolean {
-        return node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE)
+    private fun hasElse(ifStatement: IfStatement): Boolean {
+        return ifStatement.elseClause != null
     }
 
     private fun getBooleanValue(node: AstNode): AstNode? {
