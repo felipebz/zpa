@@ -19,12 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.CONCATENATION_EXPRESSION
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.OBJECT_REFERENCE
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class ConditionsGrammar : GrammarRuleKey {
 
@@ -44,7 +44,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     CONDITION;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(RELATIONAL_OPERATOR).define(b.firstOf(
                     EQUALS,
                     NOTEQUALS,

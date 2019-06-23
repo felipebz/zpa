@@ -19,11 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
@@ -31,7 +31,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(LISTAGG_EXPRESSION).define(
                     LISTAGG,
                     LPARENTHESIS, b.optional(b.firstOf(ALL, DISTINCT)), EXPRESSION, b.optional(COMMA, EXPRESSION),

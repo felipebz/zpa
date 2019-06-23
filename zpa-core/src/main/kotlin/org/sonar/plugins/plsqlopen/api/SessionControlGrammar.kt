@@ -20,12 +20,11 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.sonar.sslr.api.GenericTokenType.EOF
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class SessionControlGrammar : GrammarRuleKey {
 
@@ -34,7 +33,7 @@ enum class SessionControlGrammar : GrammarRuleKey {
     SESSION_CONTROL_COMMAND;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
 
             b.rule(ALTER_SESSION).define(ALTER, SESSION, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))))
 

@@ -19,13 +19,13 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
@@ -57,7 +57,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     SINGLE_ROW_SQL_FUNCTION;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             createCharacterFunctions(b)
             createConversionFunctions(b)
             createDateFunctions(b)
@@ -82,14 +82,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     TRIM_EXPRESSION)).skip()
         }
 
-        private fun createCharacterFunctions(b: LexerfulGrammarBuilder) {
+        private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
             b.rule(TRIM_EXPRESSION).define(
                     TRIM, LPARENTHESIS,
                     b.optional(b.optional(b.firstOf(LEADING, TRAILING, BOTH)), EXPRESSION, FROM),
                     EXPRESSION, RPARENTHESIS)
         }
 
-        private fun createConversionFunctions(b: LexerfulGrammarBuilder) {
+        private fun createConversionFunctions(b: PlSqlGrammarBuilder) {
             b.rule(CAST_EXPRESSION).define(
                     CAST, LPARENTHESIS,
                     b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
@@ -97,11 +97,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     RPARENTHESIS)
         }
 
-        private fun createDateFunctions(b: LexerfulGrammarBuilder) {
+        private fun createDateFunctions(b: PlSqlGrammarBuilder) {
             b.rule(EXTRACT_DATETIME_EXPRESSION).define(EXTRACT, LPARENTHESIS, IDENTIFIER_NAME, FROM, EXPRESSION, RPARENTHESIS)
         }
 
-        private fun createXmlFunctions(b: LexerfulGrammarBuilder) {
+        private fun createXmlFunctions(b: PlSqlGrammarBuilder) {
             b.rule(XMLSERIALIZE_EXPRESSION).define(
                     XMLSERIALIZE, LPARENTHESIS,
                     b.firstOf(DOCUMENT, CONTENT), EXPRESSION,

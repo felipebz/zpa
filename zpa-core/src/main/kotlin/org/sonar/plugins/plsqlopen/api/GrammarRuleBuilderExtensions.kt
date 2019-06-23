@@ -26,3 +26,4 @@ internal fun GrammarRuleBuilder.define(e: Any): GrammarRuleBuilder =
 
 internal fun GrammarRuleBuilder.define(e: Any, vararg rest: Any): GrammarRuleBuilder =
     this.`is`(e, *rest)
+

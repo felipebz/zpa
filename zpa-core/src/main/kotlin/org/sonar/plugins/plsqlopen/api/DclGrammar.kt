@@ -20,12 +20,12 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.sonar.sslr.api.GenericTokenType
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.UNIT_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class DclGrammar : GrammarRuleKey {
 
@@ -39,11 +39,11 @@ enum class DclGrammar : GrammarRuleKey {
     DCL_COMMAND;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             createDclCommands(b)
         }
 
-        private fun createDclCommands(b: LexerfulGrammarBuilder) {
+        private fun createDclCommands(b: PlSqlGrammarBuilder) {
             val keywords = PlSqlKeyword.values().toList()
             val rest = keywords.subList(1, keywords.size).toTypedArray()
             b.rule(IDENTIFIER_OR_KEYWORD).define(b.firstOf(GenericTokenType.IDENTIFIER, keywords[0], *rest))
