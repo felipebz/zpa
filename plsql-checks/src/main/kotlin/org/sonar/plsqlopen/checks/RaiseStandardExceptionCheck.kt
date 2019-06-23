@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.sslr.RaiseStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
@@ -57,7 +58,8 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val exceptionIdentifier = node.getFirstChild(PlSqlGrammar.VARIABLE_NAME)
+        val statement = semantic(node).tree as RaiseStatement
+        val exceptionIdentifier = statement.exception
         if (exceptionIdentifier != null) {
             val exceptionName = exceptionIdentifier.tokenOriginalValue
 

@@ -19,17 +19,24 @@
  */
 package org.sonar.plsqlopen.sslr
 
+import com.sonar.sslr.api.AstNodeType
 import com.sonar.sslr.api.Grammar
 import com.sonar.sslr.api.TokenType
 import org.sonar.sslr.grammar.GrammarRuleBuilder
 import org.sonar.sslr.grammar.GrammarRuleKey
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder
+import kotlin.reflect.KClass
 
 class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun build(): Grammar = builder.build()
 
     fun rule(ruleKey: GrammarRuleKey): GrammarRuleBuilder = builder.rule(ruleKey)
+
+    fun rule(ruleKey: GrammarRuleKey, clazz: KClass<out Tree>): GrammarRuleBuilder {
+        typedClasses[ruleKey] = clazz.java
+        return builder.rule(ruleKey)
+    }
 
     fun setRootRule(ruleKey: GrammarRuleKey) {
         builder.setRootRule(ruleKey)
@@ -84,5 +91,11 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
     fun exclusiveTill(e: Any): Any = builder.exclusiveTill(e)
 
     fun exclusiveTill(e1: Any, vararg rest: Any): Any = builder.exclusiveTill(e1, *rest)
+
+    companion object {
+        private val typedClasses = mutableMapOf<AstNodeType, Class<out Tree>>()
+
+        fun classForType(key: AstNodeType) = typedClasses[key]
+    }
 
 }

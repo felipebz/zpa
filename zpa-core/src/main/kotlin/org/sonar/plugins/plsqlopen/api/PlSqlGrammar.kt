@@ -23,6 +23,7 @@ import com.sonar.sslr.api.GenericTokenType.EOF
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plsqlopen.sslr.RaiseStatement
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DdlGrammar.DDL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.*
@@ -458,7 +459,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(SAVEPOINT_STATEMENT).define(b.optional(LABEL), SAVEPOINT_EXPRESSION, SEMICOLON)
 
-            b.rule(RAISE_STATEMENT).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
+            b.rule(RAISE_STATEMENT, RaiseStatement::class).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
 
             b.rule(SELECT_STATEMENT).define(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON)
 

@@ -20,11 +20,13 @@
 package org.sonar.plugins.plsqlopen.api.squid
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plsqlopen.sslr.Tree
 
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
-class SemanticAstNode(astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
+class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
 
     var symbol: Symbol? = null
         set(symbol) {
@@ -36,7 +38,13 @@ class SemanticAstNode(astNode: AstNode) : AstNode(astNode.type, astNode.name, as
         }
 
     var plSqlType: PlSqlType? = PlSqlType.UNKNOWN
-        get() = this.symbol?.type() ?:  field
+        get() = this.symbol?.type() ?: field
+
+    val tree: Tree? by lazy {
+        PlSqlGrammarBuilder.classForType(astNode.type)
+            ?.getDeclaredConstructor(SemanticAstNode::class.java)
+            ?.newInstance(this)
+    }
 
     init {
         super.setFromIndex(astNode.fromIndex)
