@@ -124,7 +124,8 @@ class VariableDeclarationTest : RuleTest() {
 
     @Test
     fun matchesRemoteTableColumnAnchoredDeclaration() {
-        assertThat(p).matches("var tab.col@sch.foo%type;")
+        assertThat(p).matches("var tab.col@link%type;")
+        assertThat(p).matches("var tab.col@link.domain.com%type;")
     }
 
     @Test

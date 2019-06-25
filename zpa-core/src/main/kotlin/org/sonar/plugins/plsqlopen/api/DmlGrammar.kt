@@ -22,8 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
-
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
 import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
@@ -96,7 +95,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(TABLE_REFERENCE).define(
                     b.optional(IDENTIFIER_NAME, DOT),
                     IDENTIFIER_NAME,
-                    b.optional(REMOTE, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)))
+                    b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)))
 
             b.rule(ALIAS).define(IDENTIFIER_NAME)
 

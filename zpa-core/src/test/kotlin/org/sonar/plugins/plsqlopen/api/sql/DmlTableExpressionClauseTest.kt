@@ -45,6 +45,7 @@ class DmlTableExpressionClauseTest : RuleTest() {
     @Test
     fun matchesTableWithDbLink() {
         assertThat(p).matches("tab@link")
+        assertThat(p).matches("tab@link.domain.com")
     }
 
     @Test

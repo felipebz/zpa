@@ -70,6 +70,7 @@ class CreateSynonymTest : RuleTest() {
     @Test
     fun matchesLongSynonym() {
         assertThat(p).matches("create or replace public synonym sch.foo for sch.bar@link;")
+        assertThat(p).matches("create or replace public synonym sch.foo for sch.bar@link.domain.com;")
     }
 
 }
