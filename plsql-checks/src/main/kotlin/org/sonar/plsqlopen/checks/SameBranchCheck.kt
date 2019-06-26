@@ -68,7 +68,7 @@ class SameBranchCheck : AbstractBaseCheck() {
 
         val elseBranch = ifStatement.elseClause
         if (elseBranch != null) {
-            statementsFromBranches.add(getStatements(elseBranch))
+            statementsFromBranches.add(elseBranch.statements)
         }
 
         return statementsFromBranches
