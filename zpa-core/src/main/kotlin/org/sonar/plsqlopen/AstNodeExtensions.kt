@@ -27,10 +27,13 @@ import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 fun AstNode.typeIs(type: AstNodeType): Boolean = this.type == type
 
-fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean {
-    return types.any { it == type }
-}
+fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean  =
+    types.any { it == type }
 
-fun <T : Tree?> AstNode.getAsTree(): T? {
-    return (this as SemanticAstNode).tree as T?
-}
+inline fun <reified T : Tree?> AstNode.getAsTree(): T? =
+    this.asSemantic().tree as T?
+
+fun AstNode.asSemantic(): SemanticAstNode = (this as SemanticAstNode)
+
+fun List<AstNode>.asSemantic(): List<SemanticAstNode> =
+    this.map { it.asSemantic() }

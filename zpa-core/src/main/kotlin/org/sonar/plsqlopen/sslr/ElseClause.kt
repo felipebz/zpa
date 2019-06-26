@@ -19,13 +19,14 @@
  */
 package org.sonar.plsqlopen.sslr
 
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 class ElseClause(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
 
     val statements : SemanticAstNode by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS) as SemanticAstNode
+        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asSemantic()
     }
 
 }
