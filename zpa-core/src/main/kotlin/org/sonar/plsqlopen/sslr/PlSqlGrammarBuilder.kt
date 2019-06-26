@@ -31,7 +31,7 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun build(): Grammar = builder.build()
 
-    fun rule(ruleKey: GrammarRuleKey): GrammarRuleBuilder = builder.rule(ruleKey)
+    fun rule(ruleKey: GrammarRuleKey): GrammarRuleBuilder = rule(ruleKey, TreeImpl::class)
 
     fun rule(ruleKey: GrammarRuleKey, clazz: KClass<out Tree>): GrammarRuleBuilder {
         typedClasses[ruleKey] = clazz.java
@@ -95,7 +95,7 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
     companion object {
         private val typedClasses = mutableMapOf<AstNodeType, Class<out Tree>>()
 
-        fun classForType(key: AstNodeType) = typedClasses[key]
+        fun classForType(key: AstNodeType): Class<out Tree> = typedClasses.getOrDefault(key, TreeImpl::class.java)
     }
 
 }

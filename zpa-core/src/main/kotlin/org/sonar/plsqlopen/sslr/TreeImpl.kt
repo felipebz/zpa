@@ -19,21 +19,12 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class IfStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+open class TreeImpl(override val astNode: SemanticAstNode) : Tree {
 
-    val statements : SemanticAstNode by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS) as SemanticAstNode
-    }
-
-    val elsifClauses : List<SemanticAstNode> by lazy {
-        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).map { it as SemanticAstNode }
-    }
-
-    val elseClause : SemanticAstNode? by lazy {
-        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE) as SemanticAstNode?
+    override val parent: Tree? by lazy {
+        (astNode.parent as SemanticAstNode?)?.tree
     }
 
 }

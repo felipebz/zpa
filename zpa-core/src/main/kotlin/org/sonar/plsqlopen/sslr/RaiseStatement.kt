@@ -22,7 +22,7 @@ package org.sonar.plsqlopen.sslr
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class RaiseStatement(override val astNode: SemanticAstNode) : Tree {
+class RaiseStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
 
     val exception : SemanticAstNode? by lazy {
         astNode.getFirstChild(PlSqlKeyword.RAISE).nextSibling as SemanticAstNode

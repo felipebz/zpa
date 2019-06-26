@@ -19,8 +19,10 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import com.sonar.sslr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 interface Tree {
-    val astNode: AstNode
+    val astNode: SemanticAstNode
+
+    val parent: Tree?
 }

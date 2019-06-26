@@ -40,10 +40,10 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     var plSqlType: PlSqlType? = PlSqlType.UNKNOWN
         get() = this.symbol?.type() ?: field
 
-    val tree: Tree? by lazy {
+    val tree: Tree by lazy {
         PlSqlGrammarBuilder.classForType(astNode.type)
-            ?.getDeclaredConstructor(SemanticAstNode::class.java)
-            ?.newInstance(this)
+            .getDeclaredConstructor(SemanticAstNode::class.java)
+            .newInstance(this)
     }
 
     init {
