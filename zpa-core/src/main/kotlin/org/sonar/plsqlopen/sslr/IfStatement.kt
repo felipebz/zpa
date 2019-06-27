@@ -39,7 +39,7 @@ class IfStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
     }
 
     val elseClause : ElseClause? by lazy {
-        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.getAsTree<ElseClause?>()
+        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.getAsTree<ElseClause>()
     }
 
 }
