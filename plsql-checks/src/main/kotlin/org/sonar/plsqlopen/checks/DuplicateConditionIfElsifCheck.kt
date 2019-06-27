@@ -62,17 +62,13 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
     private fun collectConditionsFromBranches(ifStatement: IfStatement): List<AstNode> {
         val conditionsFromBranches = ArrayList<AstNode>()
 
-        conditionsFromBranches.add(getConditions(ifStatement.astNode))
+        conditionsFromBranches.add(ifStatement.condition)
 
         for (branch in ifStatement.elsifClauses) {
             conditionsFromBranches.add(branch.condition)
         }
 
         return conditionsFromBranches
-    }
-
-    private fun getConditions(node: AstNode): AstNode {
-        return node.children[1]
     }
 
     companion object {
