@@ -552,7 +552,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     MERGE_STATEMENT,
                     INLINE_PRAGMA_STATEMENT))
 
-            b.rule(STATEMENTS).define(b.oneOrMore(STATEMENT))
+            b.rule(STATEMENTS, Statements::class).define(b.oneOrMore(STATEMENT))
         }
 
         private fun createExpressions(b: PlSqlGrammarBuilder) {

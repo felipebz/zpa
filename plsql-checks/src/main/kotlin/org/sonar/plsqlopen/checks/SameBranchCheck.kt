@@ -61,15 +61,15 @@ class SameBranchCheck : AbstractBaseCheck() {
     private fun collectStatementsFromBranches(ifStatement: IfStatement): List<AstNode> {
         val statementsFromBranches = ArrayList<AstNode>()
 
-        statementsFromBranches.add(ifStatement.statements)
+        statementsFromBranches.add(ifStatement.statements.astNode)
 
         for (branch in ifStatement.elsifClauses) {
-            statementsFromBranches.add(branch.statements)
+            statementsFromBranches.add(branch.statements.astNode)
         }
 
         val elseBranch = ifStatement.elseClause
         if (elseBranch != null) {
-            statementsFromBranches.add(elseBranch.statements)
+            statementsFromBranches.add(elseBranch.statements.astNode)
         }
 
         return statementsFromBranches

@@ -19,14 +19,13 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import org.sonar.plsqlopen.asTree
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-open class TreeWithStatements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+class Statements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
 
-    val statements : Statements by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asTree<Statements>()
+    val children : List<AstNode> by lazy {
+        astNode.children
     }
 
 }
