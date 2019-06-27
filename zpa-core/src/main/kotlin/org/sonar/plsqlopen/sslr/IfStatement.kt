@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.sslr
 
 import org.sonar.plsqlopen.asSemantic
-import org.sonar.plsqlopen.getAsTree
+import org.sonar.plsqlopen.asTree
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
@@ -35,11 +35,11 @@ class IfStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
     }
 
     val elsifClauses : List<ElsifClause> by lazy {
-        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).getAsTree<ElsifClause>()
+        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).asTree<ElsifClause>()
     }
 
     val elseClause : ElseClause? by lazy {
-        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.getAsTree<ElseClause>()
+        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.asTree<ElseClause>()
     }
 
 }

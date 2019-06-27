@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -35,7 +36,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val ifStatement = semantic(node).tree as IfStatement
+        val ifStatement = node.asTree<IfStatement>()
         val singleIfChild = singleIfChild(ifStatement)
         if (singleIfChild != null && !hasElseOrElsif(ifStatement) && !hasElseOrElsif(singleIfChild)) {
             addIssue(singleIfChild, getLocalizedMessage(CHECK_KEY))
@@ -51,7 +52,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
         if (statements.size == 1) {
             val nestedIf = statements[0].getChildren(PlSqlGrammar.IF_STATEMENT)
             if (nestedIf.size == 1) {
-                return semantic(nestedIf[0]).tree as IfStatement
+                return nestedIf[0].asTree()
             }
         }
         return null

@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.RaiseStatement
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
@@ -41,7 +42,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val statement = semantic(node).tree as RaiseStatement
+        val statement = node.asTree<RaiseStatement>()
         val identifier = statement.exception
                 ?: return
 

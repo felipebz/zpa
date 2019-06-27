@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -36,7 +37,7 @@ class SameBranchCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val ifStatement = semantic(node).tree as IfStatement
+        val ifStatement = node.asTree<IfStatement>()
         val branches = collectStatementsFromBranches(ifStatement)
         findSameBranches(branches)
     }
