@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.sonar.sslr.api.AstNode
 import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.IfStatement
+import org.sonar.plsqlopen.sslr.TreeWithStatements
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -38,9 +39,11 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val ifStatement = node.asTree<IfStatement>()
-        if (!hasElsif(ifStatement) && hasElse(ifStatement)) {
-            val firstBoolean = getBooleanValue(ifStatement.astNode)
-            val secondBoolean = getBooleanValue(node.getFirstChild(PlSqlGrammar.ELSE_CLAUSE))
+
+        val elseClause = ifStatement.elseClause
+        if (!hasElsif(ifStatement) && elseClause != null) {
+            val firstBoolean = getBooleanValue(ifStatement)
+            val secondBoolean = getBooleanValue(elseClause)
 
             if (firstBoolean != null && secondBoolean != null
                     && firstBoolean.tokenValue != secondBoolean.tokenValue) {
@@ -53,16 +56,12 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
         return ifStatement.elsifClauses.isNotEmpty()
     }
 
-    private fun hasElse(ifStatement: IfStatement): Boolean {
-        return ifStatement.elseClause != null
-    }
-
-    private fun getBooleanValue(node: AstNode): AstNode? {
+    private fun getBooleanValue(node: TreeWithStatements): AstNode? {
         return extractBooleanValueFromReturn(getStatementFrom(node))
     }
 
-    private fun getStatementFrom(node: AstNode): AstNode? {
-        val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
+    private fun getStatementFrom(node: TreeWithStatements): AstNode? {
+        val statements = node.statements.children
         return if (statements.size == 1) {
             statements[0]
         } else null

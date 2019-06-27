@@ -20,17 +20,12 @@
 package org.sonar.plsqlopen.sslr
 
 import org.sonar.plsqlopen.asSemantic
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class ElsifClause(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+class ElsifClause(override val astNode: SemanticAstNode) : TreeWithStatements(astNode) {
 
     val condition : SemanticAstNode by lazy {
         astNode.children[1].asSemantic()
-    }
-
-    val statements : SemanticAstNode by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asSemantic()
     }
 
 }

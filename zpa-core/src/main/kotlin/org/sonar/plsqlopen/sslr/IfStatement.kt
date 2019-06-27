@@ -24,14 +24,10 @@ import org.sonar.plsqlopen.asTree
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class IfStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+class IfStatement(override val astNode: SemanticAstNode) : TreeWithStatements(astNode) {
 
     val condition : SemanticAstNode by lazy {
         astNode.children[1].asSemantic()
-    }
-
-    val statements : SemanticAstNode by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asSemantic()
     }
 
     val elsifClauses : List<ElsifClause> by lazy {
