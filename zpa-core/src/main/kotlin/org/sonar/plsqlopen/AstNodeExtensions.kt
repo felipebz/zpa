@@ -33,6 +33,9 @@ fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean  =
 inline fun <reified T : Tree?> AstNode.getAsTree(): T? =
     this.asSemantic().tree as T?
 
+inline fun <reified T : Tree> List<AstNode>.getAsTree(): List<T> =
+    this.asSemantic().map { it.tree as T }
+
 fun AstNode.asSemantic(): SemanticAstNode = (this as SemanticAstNode)
 
 fun List<AstNode>.asSemantic(): List<SemanticAstNode> =

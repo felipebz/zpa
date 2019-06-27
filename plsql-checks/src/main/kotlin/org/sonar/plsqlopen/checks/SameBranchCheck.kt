@@ -63,7 +63,7 @@ class SameBranchCheck : AbstractBaseCheck() {
         statementsFromBranches.add(ifStatement.statements)
 
         for (branch in ifStatement.elsifClauses) {
-            statementsFromBranches.add(getStatements(branch))
+            statementsFromBranches.add(branch.statements)
         }
 
         val elseBranch = ifStatement.elseClause
@@ -72,10 +72,6 @@ class SameBranchCheck : AbstractBaseCheck() {
         }
 
         return statementsFromBranches
-    }
-
-    private fun getStatements(node: AstNode): AstNode {
-        return node.getFirstChild(PlSqlGrammar.STATEMENTS)
     }
 
     companion object {

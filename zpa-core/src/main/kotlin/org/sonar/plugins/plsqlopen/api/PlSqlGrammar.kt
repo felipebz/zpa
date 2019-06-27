@@ -22,10 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.sonar.sslr.api.GenericTokenType.EOF
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import org.sonar.plsqlopen.sslr.ElseClause
-import org.sonar.plsqlopen.sslr.IfStatement
-import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
-import org.sonar.plsqlopen.sslr.RaiseStatement
+import org.sonar.plsqlopen.sslr.*
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DdlGrammar.DDL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.*
@@ -403,7 +400,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ASSIGNMENT_STATEMENT).define(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON)
 
-            b.rule(ELSIF_CLAUSE).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
+            b.rule(ELSIF_CLAUSE, ElsifClause::class).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
 
             b.rule(ELSE_CLAUSE, ElseClause::class).define(ELSE, STATEMENTS)
 

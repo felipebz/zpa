@@ -65,7 +65,7 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
         conditionsFromBranches.add(getConditions(ifStatement.astNode))
 
         for (branch in ifStatement.elsifClauses) {
-            conditionsFromBranches.add(getConditions(branch))
+            conditionsFromBranches.add(branch.condition)
         }
 
         return conditionsFromBranches
