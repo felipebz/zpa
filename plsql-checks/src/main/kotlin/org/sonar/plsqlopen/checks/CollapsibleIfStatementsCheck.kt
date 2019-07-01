@@ -48,7 +48,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
     }
 
     private fun singleIfChild(ifStatement: IfStatement): IfStatement? {
-        val statements = ifStatement.statements.children
+        val statements = ifStatement.statements
         if (statements.size == 1) {
             val nestedIf = statements[0].getChildren(PlSqlGrammar.IF_STATEMENT)
             if (nestedIf.size == 1) {

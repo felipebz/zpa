@@ -19,13 +19,44 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
-class Statements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+class Statements(override val astNode: SemanticAstNode) : TreeImpl(astNode), List<SemanticAstNode> {
 
-    val children : List<AstNode> by lazy {
-        astNode.children
-    }
+    private val children by lazy { astNode.children.asSemantic() }
+
+    override val size: Int =
+        children.size
+
+    override fun contains(element: SemanticAstNode): Boolean  =
+        children.contains(element)
+
+    override fun containsAll(elements: Collection<SemanticAstNode>): Boolean =
+        children.containsAll(elements)
+
+    override fun get(index: Int): SemanticAstNode =
+        children[index]
+
+    override fun indexOf(element: SemanticAstNode): Int =
+        children.indexOf(element)
+
+    override fun isEmpty(): Boolean =
+        children.isEmpty()
+
+    override fun iterator(): Iterator<SemanticAstNode> =
+        children.iterator()
+
+    override fun lastIndexOf(element: SemanticAstNode): Int =
+        children.lastIndexOf(element)
+
+    override fun listIterator(): ListIterator<SemanticAstNode>  =
+        children.listIterator()
+
+    override fun listIterator(index: Int): ListIterator<SemanticAstNode> =
+        children.listIterator(index)
+
+    override fun subList(fromIndex: Int, toIndex: Int): List<SemanticAstNode> =
+        children.subList(fromIndex, toIndex)
 
 }

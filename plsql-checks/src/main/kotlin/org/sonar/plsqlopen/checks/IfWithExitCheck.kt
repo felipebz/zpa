@@ -40,7 +40,7 @@ class IfWithExitCheck : AbstractBaseCheck() {
         val ifStatement = statement.parent.parent.tryGetAsTree<IfStatement>()
         if (ifStatement != null &&
                 ifStatement.elsifClauses.isEmpty() && ifStatement.elseClause == null &&
-                ifStatement.statements.children.size == 1) {
+                ifStatement.statements.size == 1) {
             addIssue(ifStatement, getLocalizedMessage(CHECK_KEY))
         }
     }

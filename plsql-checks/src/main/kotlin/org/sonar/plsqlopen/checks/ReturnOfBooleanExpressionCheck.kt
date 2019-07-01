@@ -61,7 +61,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
     }
 
     private fun getStatementFrom(node: TreeWithStatements): AstNode? {
-        val statements = node.statements.children
+        val statements = node.statements
         return if (statements.size == 1) {
             statements[0]
         } else null
