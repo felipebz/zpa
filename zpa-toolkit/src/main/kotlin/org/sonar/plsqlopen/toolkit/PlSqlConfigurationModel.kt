@@ -44,7 +44,7 @@ class PlSqlConfigurationModel : AbstractConfigurationModel() {
     @VisibleForTesting
     internal var errorRecoveryProperty = ConfigurationProperty("Error recovery",
             ERROR_RECOVERY_PROPERTY_KEY,
-            getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "false"))
+            getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "true"))
 
     internal val configuration: PlSqlConfiguration
         @VisibleForTesting
