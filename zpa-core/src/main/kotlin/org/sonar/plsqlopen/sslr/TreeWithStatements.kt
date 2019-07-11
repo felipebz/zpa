@@ -17,29 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen
+package org.sonar.plsqlopen.sslr
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
-import org.sonar.plsqlopen.sslr.Tree
+import org.sonar.plsqlopen.asTree
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
+open class TreeWithStatements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
 
-fun AstNode.typeIs(type: AstNodeType): Boolean = this.type == type
+    val statements : Statements by lazy {
+        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asTree<Statements>()
+    }
 
-fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean  =
-    types.any { it == type }
-
-inline fun <reified T : Tree> AstNode.asTree(): T =
-    this.asSemantic().tree as T
-
-inline fun <reified T : Tree?> AstNode.tryGetAsTree(): T? =
-    this.asSemantic().tree as? T
-
-inline fun <reified T : Tree> List<AstNode>.asTree(): List<T> =
-    this.asSemantic().map { it.tree as T }
-
-fun AstNode.asSemantic(): SemanticAstNode = (this as SemanticAstNode)
-
-fun List<AstNode>.asSemantic(): List<SemanticAstNode> =
-    this.map { it.asSemantic() }
+}

@@ -17,29 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen
+package org.sonar.plsqlopen.sslr
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
-import org.sonar.plsqlopen.sslr.Tree
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
+class ElsifClause(override val astNode: SemanticAstNode) : TreeWithStatements(astNode) {
 
-fun AstNode.typeIs(type: AstNodeType): Boolean = this.type == type
+    val condition : SemanticAstNode by lazy {
+        astNode.children[1].asSemantic()
+    }
 
-fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean  =
-    types.any { it == type }
-
-inline fun <reified T : Tree> AstNode.asTree(): T =
-    this.asSemantic().tree as T
-
-inline fun <reified T : Tree?> AstNode.tryGetAsTree(): T? =
-    this.asSemantic().tree as? T
-
-inline fun <reified T : Tree> List<AstNode>.asTree(): List<T> =
-    this.asSemantic().map { it.tree as T }
-
-fun AstNode.asSemantic(): SemanticAstNode = (this as SemanticAstNode)
-
-fun List<AstNode>.asSemantic(): List<SemanticAstNode> =
-    this.map { it.asSemantic() }
+}

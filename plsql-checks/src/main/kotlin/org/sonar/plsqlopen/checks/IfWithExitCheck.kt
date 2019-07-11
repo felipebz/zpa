@@ -20,7 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.plsqlopen.typeIs
+import org.sonar.plsqlopen.sslr.IfStatement
+import org.sonar.plsqlopen.tryGetAsTree
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
@@ -36,10 +37,10 @@ class IfWithExitCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val statement = node.parent
-        val ifStatement = statement.parent.parent
-        if (ifStatement.typeIs(PlSqlGrammar.IF_STATEMENT) &&
-                !ifStatement.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE) &&
-                ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS).numberOfChildren == 1) {
+        val ifStatement = statement.parent.parent.tryGetAsTree<IfStatement>()
+        if (ifStatement != null &&
+                ifStatement.elsifClauses.isEmpty() && ifStatement.elseClause == null &&
+                ifStatement.statements.size == 1) {
             addIssue(ifStatement, getLocalizedMessage(CHECK_KEY))
         }
     }

@@ -19,19 +19,19 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class SqlPlusGrammar : GrammarRuleKey {
 
     SQLPLUS_COMMAND;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             createSqlPlusCommands(b)
         }
 
-        private fun createSqlPlusCommands(b: LexerfulGrammarBuilder) {
+        private fun createSqlPlusCommands(b: PlSqlGrammarBuilder) {
             b.rule(SQLPLUS_COMMAND).define(
                     b.firstOf(
                             "@",

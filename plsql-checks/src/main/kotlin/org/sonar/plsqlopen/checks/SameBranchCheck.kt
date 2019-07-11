@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
+import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
@@ -35,7 +37,8 @@ class SameBranchCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val branches = collectStatementsFromBranches(node)
+        val ifStatement = node.asTree<IfStatement>()
+        val branches = collectStatementsFromBranches(ifStatement)
         findSameBranches(branches)
     }
 
@@ -55,25 +58,21 @@ class SameBranchCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun collectStatementsFromBranches(node: AstNode): List<AstNode> {
+    private fun collectStatementsFromBranches(ifStatement: IfStatement): List<AstNode> {
         val statementsFromBranches = ArrayList<AstNode>()
 
-        statementsFromBranches.add(getStatements(node))
+        statementsFromBranches.add(ifStatement.statements.astNode)
 
-        for (branch in node.getChildren(PlSqlGrammar.ELSIF_CLAUSE)) {
-            statementsFromBranches.add(getStatements(branch))
+        for (branch in ifStatement.elsifClauses) {
+            statementsFromBranches.add(branch.statements.astNode)
         }
 
-        val elseBranch = node.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)
+        val elseBranch = ifStatement.elseClause
         if (elseBranch != null) {
-            statementsFromBranches.add(getStatements(elseBranch))
+            statementsFromBranches.add(elseBranch.statements.astNode)
         }
 
         return statementsFromBranches
-    }
-
-    private fun getStatements(node: AstNode): AstNode {
-        return node.getFirstChild(PlSqlGrammar.STATEMENTS)
     }
 
     companion object {

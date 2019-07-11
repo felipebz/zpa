@@ -20,13 +20,12 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.sonar.sslr.api.GenericTokenType.EOF
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
-
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class DdlGrammar : GrammarRuleKey {
 
@@ -78,11 +77,11 @@ enum class DdlGrammar : GrammarRuleKey {
     SUBPARTITION_TEMPLATE;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             createDdlCommands(b)
         }
 
-        private fun createDdlCommands(b: LexerfulGrammarBuilder) {
+        private fun createDdlCommands(b: PlSqlGrammarBuilder) {
             b.rule(DDL_COMMENT).define(
                     COMMENT, ON,
                     b.firstOf(

@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
+import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
@@ -35,7 +37,8 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val conditions = collectConditionsFromBranches(node)
+        val ifStatement = node.asTree<IfStatement>()
+        val conditions = collectConditionsFromBranches(ifStatement)
         findSameConditions(conditions)
     }
 
@@ -57,20 +60,16 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun collectConditionsFromBranches(node: AstNode): List<AstNode> {
+    private fun collectConditionsFromBranches(ifStatement: IfStatement): List<AstNode> {
         val conditionsFromBranches = ArrayList<AstNode>()
 
-        conditionsFromBranches.add(getConditions(node))
+        conditionsFromBranches.add(ifStatement.condition)
 
-        for (branch in node.getChildren(PlSqlGrammar.ELSIF_CLAUSE)) {
-            conditionsFromBranches.add(getConditions(branch))
+        for (branch in ifStatement.elsifClauses) {
+            conditionsFromBranches.add(branch.condition)
         }
 
         return conditionsFromBranches
-    }
-
-    private fun getConditions(node: AstNode): AstNode {
-        return node.children[1]
     }
 
     companion object {

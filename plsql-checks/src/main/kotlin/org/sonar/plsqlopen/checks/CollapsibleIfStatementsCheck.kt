@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.asTree
+import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
@@ -34,29 +36,30 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val singleIfChild = singleIfChild(node)
-        if (singleIfChild != null && !hasElseOrElsif(node) && !hasElseOrElsif(singleIfChild)) {
+        val ifStatement = node.asTree<IfStatement>()
+        val singleIfChild = singleIfChild(ifStatement)
+        if (singleIfChild != null && !hasElseOrElsif(ifStatement) && !hasElseOrElsif(singleIfChild)) {
             addIssue(singleIfChild, getLocalizedMessage(CHECK_KEY))
         }
     }
 
+    private fun hasElseOrElsif(ifStatement: IfStatement): Boolean {
+        return ifStatement.elsifClauses.isNotEmpty() || ifStatement.elseClause != null
+    }
+
+    private fun singleIfChild(ifStatement: IfStatement): IfStatement? {
+        val statements = ifStatement.statements
+        if (statements.size == 1) {
+            val nestedIf = statements[0].getChildren(PlSqlGrammar.IF_STATEMENT)
+            if (nestedIf.size == 1) {
+                return nestedIf[0].asTree()
+            }
+        }
+        return null
+    }
+
     companion object {
         internal const val CHECK_KEY = "CollapsibleIfStatements"
-
-        private fun hasElseOrElsif(ifNode: AstNode): Boolean {
-            return ifNode.hasDirectChildren(PlSqlGrammar.ELSIF_CLAUSE, PlSqlGrammar.ELSE_CLAUSE)
-        }
-
-        private fun singleIfChild(suite: AstNode): AstNode? {
-            val statements = suite.getFirstChild(PlSqlGrammar.STATEMENTS).children
-            if (statements.size == 1) {
-                val nestedIf = statements[0].getChildren(PlSqlGrammar.IF_STATEMENT)
-                if (nestedIf.size == 1) {
-                    return nestedIf[0]
-                }
-            }
-            return null
-        }
     }
 
 }

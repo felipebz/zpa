@@ -20,13 +20,14 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
-
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.COMMA
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.SEMICOLON
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
+import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class TclGrammar : GrammarRuleKey {
 
@@ -39,7 +40,7 @@ enum class TclGrammar : GrammarRuleKey {
     TCL_COMMAND;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(COMMIT_EXPRESSION).define(
                     COMMIT,
                     b.optional(WORK),

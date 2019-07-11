@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.sonar.sslr.api.GenericTokenType.EOF
 import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
+import org.sonar.plsqlopen.sslr.*
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DdlGrammar.DDL_COMMAND
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.*
@@ -213,8 +214,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
     FILE_INPUT;
 
     companion object {
-        fun create(conf: PlSqlConfiguration): LexerfulGrammarBuilder {
-            val b = LexerfulGrammarBuilder.create()
+        fun create(conf: PlSqlConfiguration): PlSqlGrammarBuilder {
+            val b = PlSqlGrammarBuilder(LexerfulGrammarBuilder.create())
 
             val keywords = PlSqlKeyword.nonReservedKeywords
             val rest = keywords.subList(2, keywords.size).toTypedArray()
@@ -268,7 +269,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             return b
         }
 
-        private fun createLiterals(b: LexerfulGrammarBuilder) {
+        private fun createLiterals(b: PlSqlGrammarBuilder) {
             b.rule(INTERVAL_YEAR_TO_MONTH_LITERAL).define(
                     INTERVAL, CHARACTER_LITERAL,
                     b.firstOf(YEAR, MONTH), b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS),
@@ -298,7 +299,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(LITERAL).define(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL, INQUIRY_DIRECTIVE))
         }
 
-        private fun createDatatypes(b: LexerfulGrammarBuilder) {
+        private fun createDatatypes(b: PlSqlGrammarBuilder) {
             b.rule(DATATYPE_LENGTH).define(b.firstOf(INTEGER_LITERAL, INQUIRY_DIRECTIVE)).skip()
 
             b.rule(NUMERIC_DATATYPE).define(
@@ -373,7 +374,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             NULL)))
         }
 
-        private fun createStatements(b: LexerfulGrammarBuilder) {
+        private fun createStatements(b: PlSqlGrammarBuilder) {
             b.rule(HOST_AND_INDICATOR_VARIABLE).define(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME))
 
             b.rule(NULL_STATEMENT).define(NULL, SEMICOLON)
@@ -399,11 +400,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ASSIGNMENT_STATEMENT).define(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON)
 
-            b.rule(ELSIF_CLAUSE).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
+            b.rule(ELSIF_CLAUSE, ElsifClause::class).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
 
-            b.rule(ELSE_CLAUSE).define(ELSE, STATEMENTS)
+            b.rule(ELSE_CLAUSE, ElseClause::class).define(ELSE, STATEMENTS)
 
-            b.rule(IF_STATEMENT).define(
+            b.rule(IF_STATEMENT, IfStatement::class).define(
                     b.optional(LABEL),
                     IF, EXPRESSION, THEN,
                     STATEMENTS,
@@ -457,7 +458,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(SAVEPOINT_STATEMENT).define(b.optional(LABEL), SAVEPOINT_EXPRESSION, SEMICOLON)
 
-            b.rule(RAISE_STATEMENT).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
+            b.rule(RAISE_STATEMENT, RaiseStatement::class).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
 
             b.rule(SELECT_STATEMENT).define(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON)
 
@@ -551,10 +552,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     MERGE_STATEMENT,
                     INLINE_PRAGMA_STATEMENT))
 
-            b.rule(STATEMENTS).define(b.oneOrMore(STATEMENT))
+            b.rule(STATEMENTS, Statements::class).define(b.oneOrMore(STATEMENT))
         }
 
-        private fun createExpressions(b: LexerfulGrammarBuilder) {
+        private fun createExpressions(b: PlSqlGrammarBuilder) {
             // Reference: http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/expression.htm
 
             b.rule(VARIABLE_NAME).define(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE))
@@ -687,7 +688,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(EXPRESSION).define(BOOLEAN_EXPRESSION).skipIfOneChild()
         }
 
-        private fun createDeclarations(b: LexerfulGrammarBuilder) {
+        private fun createDeclarations(b: PlSqlGrammarBuilder) {
             b.rule(DEFAULT_VALUE_ASSIGNMENT).define(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)
 
             b.rule(PARAMETER_DECLARATION).define(
@@ -839,7 +840,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     REF_CURSOR_DECLARATION)))
         }
 
-        private fun createTrigger(b: LexerfulGrammarBuilder) {
+        private fun createTrigger(b: PlSqlGrammarBuilder) {
             b.rule(CREATE_TRIGGER).define(
                     CREATE, b.optional(OR, REPLACE),
                     b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
@@ -984,7 +985,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             )
         }
 
-        private fun createProgramUnits(b: LexerfulGrammarBuilder) {
+        private fun createProgramUnits(b: PlSqlGrammarBuilder) {
             b.rule(EXECUTE_PLSQL_BUFFER).define(DIVISION)
 
             b.rule(UNIT_NAME).define(b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME)

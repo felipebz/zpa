@@ -19,12 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
 import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
 
 enum class DmlGrammar : GrammarRuleKey {
 
@@ -73,7 +73,7 @@ enum class DmlGrammar : GrammarRuleKey {
     DML_COMMAND;
 
     companion object {
-        fun buildOn(b: LexerfulGrammarBuilder) {
+        fun buildOn(b: PlSqlGrammarBuilder) {
             createSelectExpression(b)
             createDeleteExpression(b)
             createUpdateExpression(b)
@@ -90,7 +90,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(SEMICOLON))
         }
 
-        private fun createSelectExpression(b: LexerfulGrammarBuilder) {
+        private fun createSelectExpression(b: PlSqlGrammarBuilder) {
 
             b.rule(TABLE_REFERENCE).define(
                     b.optional(IDENTIFIER_NAME, DOT),
@@ -233,7 +233,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE)))))
         }
 
-        private fun createDeleteExpression(b: LexerfulGrammarBuilder) {
+        private fun createDeleteExpression(b: PlSqlGrammarBuilder) {
             b.rule(RETURNING_INTO_CLAUSE).define(
                     b.firstOf(RETURNING, RETURN),
                     b.optional(OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
@@ -248,7 +248,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(RETURNING_INTO_CLAUSE))
         }
 
-        private fun createUpdateExpression(b: LexerfulGrammarBuilder) {
+        private fun createUpdateExpression(b: PlSqlGrammarBuilder) {
             b.rule(UPDATE_COLUMN).define(OBJECT_REFERENCE, EQUALS, b.firstOf(EXPRESSION, DEFAULT))
 
             b.rule(UPDATE_EXPRESSION).define(
@@ -259,7 +259,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(RETURNING_INTO_CLAUSE))
         }
 
-        private fun createInsertExpression(b: LexerfulGrammarBuilder) {
+        private fun createInsertExpression(b: PlSqlGrammarBuilder) {
             b.rule(INSERT_COLUMNS).define(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS)
 
             b.rule(INSERT_EXPRESSION).define(
@@ -272,7 +272,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(RETURNING_INTO_CLAUSE))
         }
 
-        private fun createMergeExpression(b: LexerfulGrammarBuilder) {
+        private fun createMergeExpression(b: PlSqlGrammarBuilder) {
 
             b.rule(MERGE_UPDATE_CLAUSE).define(WHEN, MATCHED, THEN, UPDATE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                     b.optional(WHERE_CLAUSE), b.optional(DELETE, WHERE_CLAUSE))
