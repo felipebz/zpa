@@ -83,10 +83,19 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     private fun checkScope(scope: Scope) {
         val symbols = scope.getSymbols(Symbol.Kind.PARAMETER)
         for (symbol in symbols) {
+
+            // SELF parameter in type members
+            if (scope.tree()?.parent?.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) == true &&
+                symbol.name().equals("self", ignoreCase = true)) {
+                continue
+            }
+
+
             if (symbol.usages().isEmpty()) {
                 addIssue(symbol.declaration().parent, getLocalizedMessage(CHECK_KEY),
                         symbol.declaration().tokenOriginalValue)
             }
+
         }
     }
 
