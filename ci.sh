@@ -2,9 +2,6 @@
 
 set -euo pipefail
 
-# Set JDK 11 as default
-JAVA_HOME=$JAVA_HOME_11_X64
-
 case "$TESTS" in
 
 ci)
@@ -16,6 +13,9 @@ ci)
   ;;
 
 it)
+  # Set JDK 11 as default
+  JAVA_HOME=$JAVA_HOME_11_X64
+
   git submodule update --init --recursive
 
   ./mvnw install -Dmaven.test.skip=true -e -B
