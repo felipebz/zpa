@@ -9,7 +9,7 @@ case "$TESTS" in
 
 ci)
   if [ "$BUILD_SOURCEBRANCH" == "refs/heads/master" ] && [ "$SYSTEM_PULLREQUEST_ISFORK" == "False" ]; then
-    ./mvnw source:jar javadoc:jar deploy --settings=.settings.xml -B -e -V
+    ./mvnw source:jar dokka:javadocJar deploy --settings=.settings.xml -B -e -V
   else
     ./mvnw verify -B -e -V
   fi
