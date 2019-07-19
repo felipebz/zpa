@@ -32,7 +32,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 class UnusedVariableCheck : AbstractBaseCheck() {
 
     override fun leaveFile(node: AstNode) {
-        val scopes = context.symbolTable?.scopes ?: emptySet()
+        val scopes = context.symbolTable.scopes
         for (scope in scopes) {
             if (scope.tree().isNot(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT)) {
                 checkScope(scope)

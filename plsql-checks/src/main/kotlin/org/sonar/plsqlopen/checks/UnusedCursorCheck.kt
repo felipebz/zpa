@@ -34,7 +34,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 class UnusedCursorCheck : AbstractBaseCheck() {
 
     override fun leaveFile(node: AstNode) {
-        val scopes = context.symbolTable?.scopes ?: emptySet()
+        val scopes = context.symbolTable.scopes
         for (scope in scopes) {
             val isCreatePackage = scope.tree().typeIs(PlSqlGrammar.CREATE_PACKAGE)
             if (isCreatePackage) {

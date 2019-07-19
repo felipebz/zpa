@@ -52,19 +52,16 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         PlSqlGrammar.CURSOR_DECLARATION,
         PlSqlGrammar.FORALL_STATEMENT)
 
-    private lateinit var symbolTable: SymbolTableImpl
+    private var symbolTable = SymbolTableImpl()
     private var currentScope: Scope? = null
 
-    val symbols: List<Symbol>
-        get() = if (::symbolTable.isInitialized) symbolTable.symbols else emptyList()
+    val symbols: List<Symbol> = symbolTable.symbols
 
     override fun init() {
         subscribeTo(*scopeHolders)
     }
 
     override fun visitFile(node: AstNode) {
-        symbolTable = SymbolTableImpl()
-
         visit(node)
 
         context.symbolTable = symbolTable

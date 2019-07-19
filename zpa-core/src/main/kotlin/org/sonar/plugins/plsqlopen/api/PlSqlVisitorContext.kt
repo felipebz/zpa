@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.RecognitionException
 import org.sonar.plsqlopen.metadata.FormsMetadata
+import org.sonar.plsqlopen.symbols.SymbolTableImpl
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
 
@@ -29,7 +30,7 @@ class PlSqlVisitorContext private constructor(private val rootTree: AstNode?,
                                               private val plSqlFile: PlSqlFile?,
                                               private val parsingException: RecognitionException?,
                                               var formsMetadata: FormsMetadata?) {
-    var symbolTable: SymbolTable? = null
+    var symbolTable: SymbolTable = SymbolTableImpl()
     var currentScope: Scope? = null
 
     constructor(rootTree: AstNode,

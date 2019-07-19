@@ -37,7 +37,7 @@ class VariableHidingCheck : AbstractBaseCheck() {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
         val name = identifier.tokenOriginalValue
 
-        val scope = context.symbolTable?.getScopeForSymbol(identifier)
+        val scope = context.symbolTable.getScopeForSymbol(identifier)
         if (scope != null) {
             val symbols = scope.getSymbolsAcessibleInScope(name)
 

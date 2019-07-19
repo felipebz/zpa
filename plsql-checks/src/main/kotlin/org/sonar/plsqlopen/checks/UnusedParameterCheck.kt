@@ -44,7 +44,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     }
 
     override fun leaveFile(node: AstNode) {
-        val scopes = context.symbolTable?.scopes ?: emptySet()
+        val scopes = context.symbolTable.scopes
         for (scope in scopes) {
             // is overriding something?
             if (scope.isOverridingMember) {
