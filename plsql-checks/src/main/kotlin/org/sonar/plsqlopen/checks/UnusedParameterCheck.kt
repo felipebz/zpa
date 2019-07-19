@@ -52,7 +52,6 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             }
 
             val scopeNode = scope.tree()
-                    ?: continue
 
             // ignore procedure/function specification and overriding members
             if (scopeNode.typeIs(DECLARATION_OR_CONSTRUCTOR)) {
@@ -85,7 +84,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
         for (symbol in symbols) {
 
             // SELF parameter in type members
-            if (scope.tree()?.parent?.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) == true &&
+            if (scope.tree().parent?.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) == true &&
                 symbol.name().equals("self", ignoreCase = true)) {
                 continue
             }

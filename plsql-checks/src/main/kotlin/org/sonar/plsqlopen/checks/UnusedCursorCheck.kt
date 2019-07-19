@@ -36,7 +36,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     override fun leaveFile(node: AstNode) {
         val scopes = context.symbolTable?.scopes ?: emptySet()
         for (scope in scopes) {
-            val isCreatePackage = scope.tree()?.typeIs(PlSqlGrammar.CREATE_PACKAGE) ?: false
+            val isCreatePackage = scope.tree().typeIs(PlSqlGrammar.CREATE_PACKAGE)
             if (isCreatePackage) {
                 continue
             }

@@ -41,7 +41,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsInScope() {
-        val scope = ScopeImpl(null, null)
+        val scope = ScopeImpl(null, mockAstNode())
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -54,7 +54,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsByKind() {
-        val scope = ScopeImpl(null, null)
+        val scope = ScopeImpl(null, mockAstNode())
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -68,7 +68,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsAcessibleInScope() {
-        val scope = ScopeImpl(null, null)
+        val scope = ScopeImpl(null, mockAstNode())
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -83,11 +83,11 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolsAcessibleInScopeConsideringOuterScope() {
-        val outerScope = ScopeImpl(null, null)
+        val outerScope = ScopeImpl(null, mockAstNode())
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = ScopeImpl(outerScope, null)
+        val innerScope = ScopeImpl(outerScope, mockAstNode())
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 
@@ -98,7 +98,7 @@ class ScopeImplTest {
 
     @Test
     fun getSymbol() {
-        val scope = ScopeImpl(null, null)
+        val scope = ScopeImpl(null, mockAstNode())
 
         val symbol1 = createSymbol(scope, "foo", Kind.VARIABLE)
         scope.addSymbol(symbol1)
@@ -114,11 +114,11 @@ class ScopeImplTest {
 
     @Test
     fun getSymbolConsideringOuterScope() {
-        val outerScope = ScopeImpl(null, null)
+        val outerScope = ScopeImpl(null, mockAstNode())
         val symbol1 = createSymbol(outerScope, "foo", Kind.VARIABLE)
         outerScope.addSymbol(symbol1)
 
-        val innerScope = ScopeImpl(outerScope, null)
+        val innerScope = ScopeImpl(outerScope, mockAstNode())
         val symbol2 = createSymbol(innerScope, "bar", Kind.VARIABLE)
         innerScope.addSymbol(symbol2)
 
@@ -128,8 +128,10 @@ class ScopeImplTest {
         assertThat(innerScope.getSymbol("baz")).isNull()
     }
 
+    private fun mockAstNode() = mock(AstNode::class.java)
+
     private fun createSymbol(scope: Scope, name: String, kind: Kind): Symbol {
-        val node = mock(AstNode::class.java)
+        val node = mockAstNode()
         `when`(node.tokenOriginalValue).thenReturn(name)
         return Symbol(node, kind, scope, null)
     }

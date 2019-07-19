@@ -60,7 +60,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
 
     private fun exceptionShouldBeChecked(exceptionDeclaration: Symbol): Boolean {
         val scopeOfDeclaration = exceptionDeclaration.scope().tree()
-        val isPackage = scopeOfDeclaration?.typeIs(PACKAGE_SPEC_OR_BODY) ?: false
+        val isPackage = scopeOfDeclaration.typeIs(PACKAGE_SPEC_OR_BODY)
         return !isPackage
     }
 

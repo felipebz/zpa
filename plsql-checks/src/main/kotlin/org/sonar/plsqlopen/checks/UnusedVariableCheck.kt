@@ -34,7 +34,7 @@ class UnusedVariableCheck : AbstractBaseCheck() {
     override fun leaveFile(node: AstNode) {
         val scopes = context.symbolTable?.scopes ?: emptySet()
         for (scope in scopes) {
-            if (scope.tree()?.isNot(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT) == true) {
+            if (scope.tree().isNot(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT)) {
                 checkScope(scope)
             }
         }

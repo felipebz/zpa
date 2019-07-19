@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 
 class ScopeImpl(private val outer: Scope?,
-                private val node: AstNode?,
+                private val node: AstNode,
                 override val isAutonomousTransaction: Boolean = false,
                 private val hasExceptionHandler: Boolean = false,
                 override val isOverridingMember: Boolean = false) : Scope {
@@ -39,7 +39,7 @@ class ScopeImpl(private val outer: Scope?,
     override fun outer() = outer
 
     override fun identifier(): String? {
-        if (identifier == null && node != null) {
+        if (identifier == null) {
             identifier = ""
             val identifierNode = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
             if (identifierNode != null) {

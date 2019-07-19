@@ -74,7 +74,7 @@ class SymbolTableImplTest {
     fun returnSymbolForNode() {
         val node = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("bar")
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
         val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
@@ -93,7 +93,7 @@ class SymbolTableImplTest {
     fun returnScopeForSymbolForNode() {
         val node = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("bar")
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
         symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
@@ -104,7 +104,7 @@ class SymbolTableImplTest {
 
     @Test
     fun getSymbolsByKind() {
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val node = newAstNodeForTest("foo")
 
@@ -119,7 +119,7 @@ class SymbolTableImplTest {
 
     @Test
     fun getSymbolsByName() {
-        val scope = ScopeImpl(null, null, isAutonomousTransaction = false, hasExceptionHandler = false)
+        val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val node1 = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("FOO")
