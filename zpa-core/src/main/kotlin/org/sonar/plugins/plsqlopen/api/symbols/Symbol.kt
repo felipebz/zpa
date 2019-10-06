@@ -22,7 +22,7 @@ package org.sonar.plugins.plsqlopen.api.symbols
 import com.sonar.sslr.api.AstNode
 import java.util.*
 
-class Symbol(private val declaration: AstNode, private val kind: Kind, private val scope: Scope, type: PlSqlType?) {
+open class Symbol(private val declaration: AstNode, private val kind: Kind, private val scope: Scope, type: PlSqlType?) {
 
     private val name: String = declaration.tokenOriginalValue
     private val usages = ArrayList<AstNode>()
@@ -32,7 +32,8 @@ class Symbol(private val declaration: AstNode, private val kind: Kind, private v
     enum class Kind(val value: String) {
         VARIABLE("variable"),
         PARAMETER("parameter"),
-        CURSOR("cursor")
+        CURSOR("cursor"),
+        TYPE("type"),
     }
 
     init {

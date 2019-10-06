@@ -24,13 +24,15 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
 class DefaultTypeSolver {
 
-    fun solve(node: AstNode?): PlSqlType {
+    fun solve(node: AstNode?, scope: Scope?): PlSqlType {
         if (node != null) {
             if (node.type === PlSqlGrammar.DATATYPE) {
-                return solveDatatype(node)
+                return solveDatatype(node, scope)
             } else if (node.type === PlSqlGrammar.LITERAL) {
                 return solveLiteral(node)
             }
@@ -38,7 +40,7 @@ class DefaultTypeSolver {
         return PlSqlType.UNKNOWN
     }
 
-    private fun solveDatatype(node: AstNode): PlSqlType {
+    private fun solveDatatype(node: AstNode, scope: Scope?): PlSqlType {
         var type = PlSqlType.UNKNOWN
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
             type = PlSqlType.CHARACTER
@@ -50,11 +52,14 @@ class DefaultTypeSolver {
             type = PlSqlType.LOB
         } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
             type = PlSqlType.BOOLEAN
-        } else {
-            val anchoredDatatype = node.getFirstChild(PlSqlGrammar.ANCHORED_DATATYPE)
-            if (anchoredDatatype != null && anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
+        } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
+            val anchoredDatatype = node.firstChild
+            if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
                 type = PlSqlType.ROWTYPE
             }
+        } else {
+            val datatype = node.firstChild
+            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.type() ?: PlSqlType.UNKNOWN
         }
         return type
     }

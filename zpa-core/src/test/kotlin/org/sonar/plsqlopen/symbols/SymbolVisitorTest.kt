@@ -48,6 +48,27 @@ end;
     }
 
     @Test
+    fun variableDeclarationWithSubtype() {
+        val symbols = scan("""
+declare
+  subtype my_number is number;
+  variable my_number;
+begin
+  variable := 1;
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val type = symbols.find("my_number", 2, 11)
+        assertThat(type.type()).isEqualTo(PlSqlType.NUMERIC)
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references()).containsExactly(
+            tuple(5, 3))
+    }
+
+    @Test
     fun forLoop() {
         val symbols = scan("""
 begin

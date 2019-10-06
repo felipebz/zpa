@@ -19,18 +19,29 @@
  */
 package org.sonar.plsqlopen.symbols
 
+import com.nhaarman.mockitokotlin2.whenever
+import com.sonar.sslr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.mock
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.nio.charset.StandardCharsets
 
 class DefaultTypeSolverTest {
 
+    private lateinit var scope: ScopeImpl
     private val p = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
     private val typeSolver = DefaultTypeSolver()
+
+    @Before
+    fun setup() {
+        scope = ScopeImpl(null, mockAstNode())
+    }
 
     @Test
     fun identifyNumericType() {
@@ -84,6 +95,15 @@ class DefaultTypeSolverTest {
     }
 
     @Test
+    fun identifyCustomType() {
+        val symbol = createSymbol("my_type", Symbol.Kind.TYPE, PlSqlType.ROWTYPE)
+        scope.addSymbol(symbol)
+
+        val type = solveTypeFromDatatype("my_type")
+        assertThat(type).isEqualTo(PlSqlType.ROWTYPE)
+    }
+
+    @Test
     fun unknownType() {
         val type = solveTypeFromDatatype("tab.col%type")
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
@@ -99,7 +119,7 @@ class DefaultTypeSolverTest {
 
     @Test
     fun ifNodeIsNullReturnsUnknownType() {
-        val type = typeSolver.solve(null)
+        val type = typeSolver.solve(null, null)
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)
         assertThat(type.isUnknown).isTrue()
     }
@@ -146,12 +166,20 @@ class DefaultTypeSolverTest {
 
     private fun solveTypeFromDatatype(code: String): PlSqlType {
         p.setRootRule(p.grammar.rule(PlSqlGrammar.DATATYPE))
-        return typeSolver.solve(p.parse(code))
+        return typeSolver.solve(p.parse(code), scope)
     }
 
     private fun solveTypeFromLiteral(code: String): PlSqlType {
         p.setRootRule(p.grammar.rule(PlSqlGrammar.LITERAL))
-        return typeSolver.solve(p.parse(code))
+        return typeSolver.solve(p.parse(code), scope)
+    }
+
+    private fun mockAstNode() = mock(AstNode::class.java)
+
+    private fun createSymbol(name: String, kind: Symbol.Kind, type: PlSqlType): Symbol {
+        val node = mockAstNode()
+        whenever(node.tokenOriginalValue).thenReturn(name)
+        return Symbol(node, kind, scope, type)
     }
 
 }
