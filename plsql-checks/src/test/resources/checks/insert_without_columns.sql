@@ -1,6 +1,9 @@
 declare
   var tab%rowtype;
 
+  subtype my_type is tab%rowtype;
+  v_my_type my_type;
+
   type t_tab is table of tab%rowtype index by binary_integer;
   v_tab t_tab;
 begin
@@ -16,5 +19,7 @@ begin
 
   forall idx in v_tab.first .. v_tab.last
   insert into tab values v_tab(idx);
+
+  insert into tab values v_my_type;
 
 end;
