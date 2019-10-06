@@ -20,7 +20,10 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.typeIs
+import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(key = QueryWithoutExceptionHandlingCheck.CHECK_KEY, priority = Priority.CRITICAL)
@@ -37,6 +40,11 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        val intoClause = node.getFirstDescendant(DmlGrammar.INTO_CLAUSE)
+        if (intoClause.firstChild.typeIs(PlSqlKeyword.BULK)) {
+            return
+        }
+
         if (strictMode) {
             val parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION)
 

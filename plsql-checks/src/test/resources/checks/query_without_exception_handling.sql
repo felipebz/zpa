@@ -95,3 +95,11 @@ exception
     null;
 end;
 /
+
+-- queries with bulk collect should be ignored because they don't throw no_data_found/too_many_rows
+begin
+  select 1
+    bulk collect into var
+    from dual;
+end;
+/
