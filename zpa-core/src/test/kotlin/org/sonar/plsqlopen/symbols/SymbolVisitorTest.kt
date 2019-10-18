@@ -69,6 +69,27 @@ end;
     }
 
     @Test
+    fun associativeArray() {
+        val symbols = scan("""
+declare
+  type my_array is table of number;
+  variable my_array;
+begin
+  variable := my_array();
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val type = symbols.find("my_array", 2, 8)
+        assertThat(type.type()).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+        assertThat(variable.references()).containsExactly(
+            tuple(5, 3))
+    }
+
+    @Test
     fun forLoop() {
         val symbols = scan("""
 begin

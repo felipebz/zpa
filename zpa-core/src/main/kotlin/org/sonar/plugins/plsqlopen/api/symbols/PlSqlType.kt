@@ -28,6 +28,7 @@ enum class PlSqlType {
     LOB,
     BOOLEAN,
     ROWTYPE,
+    ASSOCIATIVE_ARRAY,
     NULL;
 
     val isCharacter: Boolean

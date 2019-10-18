@@ -103,6 +103,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             visitVariableDeclaration(node)
         } else if (node.type === PlSqlGrammar.CUSTOM_SUBTYPE) {
             visitCustomSubtypeDeclaration(node)
+        } else if (node.type === PlSqlGrammar.TABLE_OF_DECLARATION) {
+            visitAssociativeArrayDeclaration(node)
         } else if (node.type === PlSqlGrammar.VARIABLE_NAME) {
             visitVariableName(node)
         } else if (node.type === PlSqlGrammar.CURSOR_DECLARATION) {
@@ -200,6 +202,11 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
         val type = solveType(datatype)
         createSymbol(identifier, Symbol.Kind.TYPE, type)
+    }
+
+    private fun visitAssociativeArrayDeclaration(node: AstNode) {
+        val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+        createSymbol(identifier, Symbol.Kind.TYPE, PlSqlType.ASSOCIATIVE_ARRAY)
     }
 
     private fun visitParameterDeclaration(node: AstNode) {
