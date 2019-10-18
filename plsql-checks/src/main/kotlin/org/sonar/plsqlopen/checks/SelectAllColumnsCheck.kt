@@ -23,7 +23,6 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
@@ -69,15 +68,13 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
             val intoClause = node.parent.getFirstChild(DmlGrammar.INTO_CLAUSE)
 
             if (intoClause != null) {
-                if (intoClause.firstChild.type === PlSqlKeyword.BULK) {
-                    return
-                }
-
                 val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME)
-                if (variablesInInto.size == 1 && semantic(variablesInInto[0]).plSqlType === PlSqlType.ROWTYPE) {
+                val type = semantic(variablesInInto[0]).plSqlType
+                if (variablesInInto.size == 1 && (type == PlSqlType.ROWTYPE || type == PlSqlType.ASSOCIATIVE_ARRAY)) {
                     return
                 }
             }
+
 
             addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
