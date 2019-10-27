@@ -68,8 +68,9 @@ class XmlElementExpressionTest : RuleTest() {
     }
 
     @Test
-    fun matchesXmlElementWithValueAndIdentifier() {
-        assertThat(p).matches("xmlelement(\"xml\", foo as \"bar\")")
+    fun matchesXmlElementWithValueAndAlias() {
+        assertThat(p).matches("xmlelement(\"xml\", foo as bar)")
+        assertThat(p).matches("xmlelement(\"xml\", foo bar)")
     }
 
     @Test

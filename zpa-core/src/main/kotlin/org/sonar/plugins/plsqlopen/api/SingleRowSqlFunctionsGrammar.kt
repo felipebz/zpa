@@ -130,7 +130,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                             b.sequence(b.optional(NAME), IDENTIFIER_NAME)
                     ),
                     b.optional(COMMA, XMLATTRIBUTES_EXPRESSION),
-                    b.zeroOrMore(COMMA, EXPRESSION, b.optional(AS, IDENTIFIER_NAME)),
+                    b.zeroOrMore(COMMA, EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME)),
                     RPARENTHESIS)
 
             b.rule(XMLAGG_EXPRESSION).define(
