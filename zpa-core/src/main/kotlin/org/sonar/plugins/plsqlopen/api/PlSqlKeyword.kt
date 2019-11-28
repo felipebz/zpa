@@ -57,7 +57,6 @@ enum class PlSqlKeyword(private val value: String, val isReserved: Boolean = fal
     GOTO("goto", true),
     GRANT("grant", true),
     GROUP("group", true),
-    GROUPS("groups", true),
     HAVING("having", true),
     IDENTIFIED("identified", true),
     IF("if", true),
@@ -123,6 +122,7 @@ enum class PlSqlKeyword(private val value: String, val isReserved: Boolean = fal
     REFRESH("refresh"),
     ADD("add"),
     MODE("mode"),
+    GROUPS("groups"),
 
     // non reserved keywords
     ARRAY("array"),
