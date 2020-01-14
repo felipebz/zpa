@@ -10,7 +10,7 @@
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonarplsqlopen.version>2.4.0-SNAPSHOT</sonarplsqlopen.version>
+    <sonarplsqlopen.version>2.4.0</sonarplsqlopen.version>
   </properties>
 
   <dependencies>
