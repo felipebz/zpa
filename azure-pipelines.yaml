@@ -7,9 +7,9 @@ jobs:
       matrix:
         CI:
           TESTS: ci
-        ITS-LTS:
+        ITS-MIN:
           TESTS: it
-          SQ_VERSION: LATEST_RELEASE[6.7]
+          SQ_VERSION: 7.6
         ITS-LATEST:
           TESTS: it
           SQ_VERSION: LATEST_RELEASE

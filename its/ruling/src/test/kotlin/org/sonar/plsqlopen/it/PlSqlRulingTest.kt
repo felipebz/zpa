@@ -223,7 +223,7 @@ class PlSqlRulingTest {
         @JvmField
         @ClassRule
         val orchestrator: Orchestrator = Orchestrator.builderEnv()
-                .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[6.7]"))
+                .setSonarVersion(System.getProperty("sonar.runtimeVersion", "7.6"))
                 .addPlugin(FileLocation.byWildcardMavenFilename(
                         File("../../sonar-plsql-open-plugin/target"),
                         "sonar-plsql-open-plugin-*.jar"))

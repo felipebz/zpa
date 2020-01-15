@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder
+import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.rule.RuleKey
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
@@ -43,8 +44,8 @@ class PlSqlChecksTest {
     @Before
     fun setUp() {
         activeRules = SonarQubeActiveRulesAdapter(ActiveRulesBuilder()
-                .create(RuleKey.of(DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY)).activate()
-                .create(RuleKey.of(CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY)).activate()
+                .addRule(NewActiveRule.Builder().setRuleKey(RuleKey.of(DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY)).build())
+                .addRule(NewActiveRule.Builder().setRuleKey(RuleKey.of(CUSTOM_REPOSITORY_KEY, CUSTOM_RULE_KEY)).build())
                 .build())
 
         customRulesDefinition = MyCustomPlSqlRulesDefinition()

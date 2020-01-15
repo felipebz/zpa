@@ -26,6 +26,7 @@ import org.mockito.Mockito.*
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder
+import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.batch.sensor.highlighting.TypeOfText
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor
 import org.sonar.api.batch.sensor.internal.SensorContextTester
@@ -48,9 +49,9 @@ class PlSqlSquidSensorTest {
     @Before
     fun setUp() {
         val activeRules = ActiveRulesBuilder()
-                .create(RuleKey.of(PlSqlRuleRepository.KEY, "EmptyBlock"))
-                .setName("Print Statement Usage")
-                .activate()
+                .addRule(NewActiveRule.Builder()
+                    .setRuleKey(RuleKey.of(PlSqlRuleRepository.KEY, "EmptyBlock"))
+                    .setName("Print Statement Usage").build())
                 .build()
         context = SensorContextTester.create(File("."))
 
