@@ -270,7 +270,7 @@
         </executions>
         <configuration>
           <jdkVersion>8</jdkVersion>
-          <reportNotDocumented>false</reportNotDocumented>
+          <reportUndocumented>false</reportUndocumented>
         </configuration>
       </plugin>
     </plugins>
