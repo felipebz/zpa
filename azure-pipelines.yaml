@@ -33,17 +33,10 @@ jobs:
       vmImage: 'vs2017-win2016'
 
     steps:
-      - task: SonarQubePrepare@4
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
-        inputs:
-          SonarQube: 'SonarQube'
-          scannerMode: 'Other'
-
       - task: Maven@3
         inputs:
           goals: 'org.jacoco:jacoco-maven-plugin:prepare-agent package org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate'
           jdkVersionOption: 1.11
-          sonarQubeRunAnalysis: true
 
       - task: CopyFiles@2
         displayName: 'Copy artifact: sonar-plsql-open-plugin'
