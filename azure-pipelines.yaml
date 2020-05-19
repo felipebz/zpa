@@ -3,6 +3,10 @@ jobs:
     pool:
       vmImage: 'ubuntu-16.04'
 
+    variables:
+      MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+      MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
     strategy:
       matrix:
         CI:
@@ -18,6 +22,15 @@ jobs:
           SQ_VERSION: DEV
 
     steps:
+      - task: Cache@2
+        inputs:
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+
       - script: |
           ./ci.sh
         displayName: 'Build with Maven'

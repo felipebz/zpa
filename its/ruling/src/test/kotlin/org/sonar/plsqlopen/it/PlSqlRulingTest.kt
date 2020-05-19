@@ -219,6 +219,17 @@ class PlSqlRulingTest {
         executeBuild(build)
     }
 
+    @Test
+    fun oracleDatabase19() {
+        val project = "oracle-database_19"
+        if (!File("../sources/$project").exists())
+        {
+            OracleDocsExtractor().extract()
+        }
+        val build = initializeBuild(project)
+        executeBuild(build)
+    }
+
     companion object {
         @JvmField
         @ClassRule
