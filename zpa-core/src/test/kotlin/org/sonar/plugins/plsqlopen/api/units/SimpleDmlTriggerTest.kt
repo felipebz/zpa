@@ -85,6 +85,11 @@ class SimpleDmlTriggerTest : RuleTest() {
     }
 
     @Test
+    fun matchesEmptyReferencing() {
+        assertThat(p).matches("after insert on tab referencing$body")
+    }
+
+    @Test
     fun matchesForEachRow() {
         assertThat(p).matches("after insert on tab for each row$body")
     }

@@ -915,7 +915,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(REFERENCING_CLAUSE).define(
                     REFERENCING,
-                    b.oneOrMore(
+                    b.zeroOrMore(
                             b.firstOf(
                                     b.sequence(OLD, b.optional(AS), IDENTIFIER_NAME),
                                     b.sequence(NEW, b.optional(AS), IDENTIFIER_NAME),
