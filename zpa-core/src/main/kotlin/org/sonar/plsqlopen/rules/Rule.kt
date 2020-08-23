@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.rules
 
-import org.sonar.plsqlopen.rules.RuleStatus
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
 class Rule(override val key: String) : ZpaRule {

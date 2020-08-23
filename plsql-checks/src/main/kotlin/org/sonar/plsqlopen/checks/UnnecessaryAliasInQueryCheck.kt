@@ -83,7 +83,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
         }
     }
 
-    internal inner class TableReference(val table: AstNode, val alias: AstNode?)
+    internal class TableReference(val table: AstNode, val alias: AstNode?)
 
     companion object {
         internal const val CHECK_KEY = "UnnecessaryAliasInQuery"

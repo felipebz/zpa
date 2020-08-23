@@ -31,11 +31,11 @@ class IfStatement(override val astNode: SemanticAstNode) : TreeWithStatements(as
     }
 
     val elsifClauses : List<ElsifClause> by lazy {
-        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).asTree<ElsifClause>()
+        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).asTree()
     }
 
     val elseClause : ElseClause? by lazy {
-        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.asTree<ElseClause>()
+        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.asTree()
     }
 
 }

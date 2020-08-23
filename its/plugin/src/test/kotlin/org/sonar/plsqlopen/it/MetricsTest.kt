@@ -41,12 +41,12 @@ class MetricsTest {
         assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(4.3)
         assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull()
         // Duplication
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero()
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_blocks")).isZero()
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_files")).isZero()
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero()
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_blocks")).isZero
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_files")).isZero
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero
         // Rules
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero()
+        assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero
     }
 
     @Test
@@ -56,15 +56,15 @@ class MetricsTest {
         assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(7)
         assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(2)
         // Documentation
-        assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero()
-        assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero()
+        assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero
+        assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero
         // Duplication
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero()
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_blocks")).isZero()
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_files")).isZero()
-        assertThat(getMeasureAsDouble(FILE_NAME, "duplicated_lines_density")).isZero()
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_blocks")).isZero
+        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_files")).isZero
+        assertThat(getMeasureAsDouble(FILE_NAME, "duplicated_lines_density")).isZero
         // Rules
-        assertThat(getMeasureAsInteger(FILE_NAME, "violations")).isZero()
+        assertThat(getMeasureAsInteger(FILE_NAME, "violations")).isZero
     }
 
     /* Helper methods */

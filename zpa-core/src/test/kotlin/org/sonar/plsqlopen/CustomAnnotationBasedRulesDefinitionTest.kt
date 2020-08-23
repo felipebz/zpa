@@ -67,13 +67,13 @@ class CustomAnnotationBasedRulesDefinitionTest {
         assertThat(rule.name).isEqualTo("name1")
         assertThat(rule.htmlDescription).isEqualTo("description1")
         assertThat(rule.tags).containsOnly("mytag")
-        assertThat(rule.template).isFalse()
+        assertThat(rule.template).isFalse
         assertThat(rule.params).hasSize(1)
         assertParam(rule.params[0], "param1Key", "param1 description")
     }
 
     @Rule(name = "name1", description = "description1")
-    internal inner class RuleClassWithoutAnnotationDefinedKey
+    internal class RuleClassWithoutAnnotationDefinedKey
 
     @Test
     fun ruleWithoutExpliciKey() {

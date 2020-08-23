@@ -96,6 +96,6 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun getNodeVisitors(ast: AstNode) =
-        visitorsByNodeType[ast.type] ?: emptyList<PlSqlVisitor>()
+        visitorsByNodeType[ast.type] ?: emptyList()
 
 }

@@ -91,11 +91,11 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
             val value = argument.tokenOriginalValue.replace("'", "")
 
             var reportIssue = false
-            when {
-                verifier.type == ObjectType.ALERT -> reportIssue = validateAlert(value)
-                verifier.type == ObjectType.BLOCK -> reportIssue = validateBlock(value)
-                verifier.type == ObjectType.ITEM -> reportIssue = validateItem(value)
-                verifier.type == ObjectType.LOV -> reportIssue = validateLov(value)
+            when (verifier.type) {
+                ObjectType.ALERT -> reportIssue = validateAlert(value)
+                ObjectType.BLOCK -> reportIssue = validateBlock(value)
+                ObjectType.ITEM -> reportIssue = validateItem(value)
+                ObjectType.LOV -> reportIssue = validateLov(value)
             }
 
             if (reportIssue) {
