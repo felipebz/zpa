@@ -44,6 +44,9 @@ class MetricsVisitor : PlSqlCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        if (node.hasDirectChildren(PlSqlGrammar.BLOCK_STATEMENT))
+            return
+
         numberOfStatements++
         executableLines.add(node.tokenLine)
     }

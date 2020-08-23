@@ -91,8 +91,8 @@ class PlSqlSquidSensorTest {
         assertThat(context.measure(key, CoreMetrics.COMMENT_LINES).value()).isEqualTo(2)
         assertThat(context.measure(key, CoreMetrics.COMPLEXITY).value()).isEqualTo(6)
         assertThat(context.measure(key, CoreMetrics.FUNCTIONS).value()).isEqualTo(2)
-        assertThat(context.measure(key, CoreMetrics.STATEMENTS).value()).isEqualTo(8)
-        verify(fileLinesContext, times(8))
+        assertThat(context.measure(key, CoreMetrics.STATEMENTS).value()).isEqualTo(7)
+        verify(fileLinesContext, times(7))
             .setIntValue(eq(CoreMetrics.EXECUTABLE_LINES_DATA_KEY), anyInt(), eq(1))
         verify(fileLinesContext).save()
     }
