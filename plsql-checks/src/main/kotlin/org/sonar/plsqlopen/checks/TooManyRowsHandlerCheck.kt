@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.isOf
+import org.sonar.plsqlopen.sslr.NullStatement
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -44,7 +46,7 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
             if (child.typeIs(PlSqlGrammar.IDENTIFIER_NAME) && "TOO_MANY_ROWS".equals(child.tokenValue, ignoreCase = true)) {
                 // and have only one NULL_STATEMENT
                 val children = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
-                if (children.size == 1 && children[0].firstChild.typeIs(PlSqlGrammar.NULL_STATEMENT)) {
+                if (children.size == 1 && children[0].firstChild.isOf<NullStatement>()) {
                     addIssue(node, getLocalizedMessage(CHECK_KEY))
                 }
             }

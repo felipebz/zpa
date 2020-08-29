@@ -377,7 +377,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
         private fun createStatements(b: PlSqlGrammarBuilder) {
             b.rule(HOST_AND_INDICATOR_VARIABLE).define(COLON, IDENTIFIER_NAME, b.optional(COLON, IDENTIFIER_NAME))
 
-            b.rule(NULL_STATEMENT).define(NULL, SEMICOLON)
+            b.rule(NULL_STATEMENT, NullStatement::class).define(NULL, SEMICOLON)
 
             b.rule(EXCEPTION_HANDLER).define(
                     WHEN,

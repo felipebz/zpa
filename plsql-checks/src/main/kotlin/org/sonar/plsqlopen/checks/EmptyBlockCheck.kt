@@ -20,6 +20,8 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.isOf
+import org.sonar.plsqlopen.sslr.NullStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
@@ -40,9 +42,9 @@ class EmptyBlockCheck : AbstractBaseCheck() {
 
         val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT)
         if (statements.size == 1) {
-            val nullStatementSelect = statements[0].getChildren(PlSqlGrammar.NULL_STATEMENT)
-            if (nullStatementSelect.isNotEmpty()) {
-                addIssue(statements[0], getLocalizedMessage(CHECK_KEY))
+            val statement = statements[0].firstChild
+            if (statement.isOf<NullStatement>()) {
+                addIssue(statement, getLocalizedMessage(CHECK_KEY))
             }
         }
     }
