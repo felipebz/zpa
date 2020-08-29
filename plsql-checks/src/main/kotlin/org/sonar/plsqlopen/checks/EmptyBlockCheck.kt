@@ -42,7 +42,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
 
         val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT)
         if (statements.size == 1) {
-            val statement = statements[0].firstChild
+            val statement = statements[0]
             if (statement.isOf<NullStatement>()) {
                 addIssue(statement, getLocalizedMessage(CHECK_KEY))
             }

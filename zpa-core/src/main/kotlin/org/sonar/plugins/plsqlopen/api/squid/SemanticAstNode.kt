@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api.squid
 import com.sonar.sslr.api.AstNode
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plsqlopen.sslr.Tree
+import org.sonar.plsqlopen.sslr.TreeImpl
 
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -41,8 +42,16 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
         get() = this.symbol?.type() ?: field
 
     val tree: Tree by lazy {
-        PlSqlGrammarBuilder.classForType(astNode.type)
-            .getDeclaredConstructor(SemanticAstNode::class.java)
+        var type = PlSqlGrammarBuilder.classForType(astNode.type)
+        if (type == TreeImpl::class.java) {
+            var node = astNode
+            while (type == TreeImpl::class.java && node.numberOfChildren == 1) {
+                node = node.firstChild
+                type = PlSqlGrammarBuilder.classForType(node.type)
+            }
+        }
+
+        type.getDeclaredConstructor(SemanticAstNode::class.java)
             .newInstance(this)
     }
 

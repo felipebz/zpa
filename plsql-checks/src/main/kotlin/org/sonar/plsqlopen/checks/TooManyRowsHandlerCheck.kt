@@ -46,7 +46,7 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
             if (child.typeIs(PlSqlGrammar.IDENTIFIER_NAME) && "TOO_MANY_ROWS".equals(child.tokenValue, ignoreCase = true)) {
                 // and have only one NULL_STATEMENT
                 val children = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
-                if (children.size == 1 && children[0].firstChild.isOf<NullStatement>()) {
+                if (children.size == 1 && children[0].isOf<NullStatement>()) {
                     addIssue(node, getLocalizedMessage(CHECK_KEY))
                 }
             }
