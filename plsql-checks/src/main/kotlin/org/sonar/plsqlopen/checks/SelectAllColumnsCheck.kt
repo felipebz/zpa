@@ -68,7 +68,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
             val intoClause = node.parent.getFirstChild(DmlGrammar.INTO_CLAUSE)
 
             if (intoClause != null) {
-                val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME)
+                val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
                 val type = semantic(variablesInInto[0]).plSqlType
                 if (variablesInInto.size == 1 && (type == PlSqlType.ROWTYPE || type == PlSqlType.ASSOCIATIVE_ARRAY)) {
                     return

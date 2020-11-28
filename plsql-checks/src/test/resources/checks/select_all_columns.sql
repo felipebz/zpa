@@ -25,6 +25,10 @@ begin
     into var
     from user.emp;
 
+  select * -- Noncompliant
+    into pkg.var
+    from emp;
+
   -- valid code
   select emp.empno
     into var
