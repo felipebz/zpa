@@ -24,7 +24,7 @@ jobs:
     steps:
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          key: 'maven | "$(Agent.OS)" | **/pom.xml, !bin/its/sources/**'
           restoreKeys: |
             maven | "$(Agent.OS)"
             maven
