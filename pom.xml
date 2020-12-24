@@ -76,7 +76,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <kotlin.version>1.4.21</kotlin.version>
     <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-    <dokka.version>0.10.0</dokka.version>
+    <dokka.version>1.4.20</dokka.version>
   </properties>
 
   <dependencyManagement>
@@ -269,8 +269,13 @@
           </execution>
         </executions>
         <configuration>
-          <jdkVersion>8</jdkVersion>
-          <reportUndocumented>false</reportUndocumented>
+          <dokkaPlugins>
+            <plugin>
+              <groupId>org.jetbrains.dokka</groupId>
+              <artifactId>kotlin-as-java-plugin</artifactId>
+              <version>${dokka.version}</version>
+            </plugin>
+          </dokkaPlugins>
         </configuration>
       </plugin>
     </plugins>

@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Set JDK 11 as default
+JAVA_HOME=$JAVA_HOME_11_X64
+
 case "$TESTS" in
 
 ci)
@@ -13,9 +16,6 @@ ci)
   ;;
 
 it)
-  # Set JDK 11 as default
-  JAVA_HOME=$JAVA_HOME_11_X64
-
   mkdir -p $MAVEN_CACHE_FOLDER
   wget https://docs.oracle.com/en/database/oracle/oracle-database/19/zip/oracle-database_19.zip -O $MAVEN_CACHE_FOLDER/oracle-database_19.zip
 
