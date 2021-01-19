@@ -1,9 +1,9 @@
 # Z PL/SQL Analyzer - ZPA
 
 [![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) ](https://github.com/felipebz/zpa/releases/latest)
-[![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=master)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
-[![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/felipebz/z-plsql-analyzer/3/master.svg)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
-[![Azure DevOps tests](https://img.shields.io/azure-devops/tests/felipebz/z-plsql-analyzer/3/master.svg)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master)
+[![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=main)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main)
+[![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/felipebz/z-plsql-analyzer/3/main.svg)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main)
+[![Azure DevOps tests](https://img.shields.io/azure-devops/tests/felipebz/z-plsql-analyzer/3/main.svg)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main)
 [![Quality Gate Status](https://sonarqube.felipezorzo.com.br/api/project_badges/measure?project=org.sonar.plsqlopen%3Aplsql&metric=alert_status)](https://sonarqube.felipezorzo.com.br/dashboard?id=org.sonar.plsqlopen%3Aplsql)
 
 The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle SQL code.
@@ -21,7 +21,7 @@ See some examples in our [SonarQube instance](https://sonarqube.felipezorzo.com.
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).
 
-If you like to live on the bleeding edge, you can use the [latest development version](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=master&view=results). Download it from the button "Artifacts" in Azure DevOps.
+If you like to live on the bleeding edge, you can use the [latest development version](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main&view=results). Download it from the button "Artifacts" in Azure DevOps.
 
 ## Contribute
 
@@ -45,8 +45,8 @@ If you're interested in a stable API to integrate ZPA with another software, ple
 
 There are two sets of integration tests:
 
-- [plugin](https://github.com/felipebz/zpa/tree/master/its/plugin): checks if the metrics are imported correctly in SonarQube
-- [ruling](https://github.com/felipebz/zpa/tree/master/its/ruling): checks the quality of parser and rules against real-world code
+- [plugin](https://github.com/felipebz/zpa/tree/main/its/plugin): checks if the metrics are imported correctly in SonarQube
+- [ruling](https://github.com/felipebz/zpa/tree/main/its/ruling): checks the quality of parser and rules against real-world code
 
 To run the integrations tests, update the submodules:
 

@@ -8,7 +8,7 @@ JAVA_HOME=$JAVA_HOME_11_X64
 case "$TESTS" in
 
 ci)
-  if [ "$BUILD_SOURCEBRANCH" == "refs/heads/master" ] && [ "$SYSTEM_PULLREQUEST_ISFORK" == "False" ]; then
+  if [ "$BUILD_SOURCEBRANCH" == "refs/heads/main" ] && [ "$SYSTEM_PULLREQUEST_ISFORK" == "False" ]; then
     ./mvnw $MAVEN_OPTS source:jar dokka:javadocJar deploy --settings=.settings.xml -B -e -V
   else
     ./mvnw $MAVEN_OPTS verify -B -e -V
