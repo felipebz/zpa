@@ -32,5 +32,6 @@ interface ZpaRule {
     var status: RuleStatus
     var severity: String
     var htmlDescription: String
+    var isActivatedByDefault: Boolean
     fun createParam(fieldKey: String): ZpaRuleParam
 }

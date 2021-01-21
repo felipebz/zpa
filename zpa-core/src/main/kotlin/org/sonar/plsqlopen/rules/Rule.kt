@@ -49,6 +49,8 @@ class Rule(override val key: String) : ZpaRule {
 
     override var template: Boolean = false
 
+    override var isActivatedByDefault = false
+
     override fun createParam(fieldKey: String): ZpaRuleParam {
         val param = RuleParam(fieldKey)
         parameters.add(param)

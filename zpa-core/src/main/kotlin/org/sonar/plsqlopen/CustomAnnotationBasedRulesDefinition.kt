@@ -24,6 +24,7 @@ import org.sonar.plsqlopen.rules.RulesDefinitionAnnotationLoader
 import org.sonar.plsqlopen.rules.ZpaRepository
 import org.sonar.plsqlopen.rules.ZpaRule
 import org.sonar.plsqlopen.utils.getAnnotation
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.annotations.RuleTemplate
@@ -71,6 +72,11 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
             val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
             if (ruleInfo != null) {
                 rule.scope = ruleInfo.scope
+            }
+
+            val activatedByDefault = getAnnotation(ruleClass, ActivatedByDefault::class.java)
+            if (activatedByDefault != null) {
+                rule.isActivatedByDefault = true
             }
 
             newRules.add(rule)

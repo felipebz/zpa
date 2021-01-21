@@ -82,6 +82,13 @@ class SonarQubeRuleAdapter(private val newRule: RulesDefinition.NewRule) : ZpaRu
             newRule.setHtmlDescription(value)
         }
 
+    override var isActivatedByDefault: Boolean
+        get() = throw IllegalAccessException("Getter is not available")
+        set(value) {
+            newRule.setActivatedByDefault(value)
+        }
+
+
     override fun createParam(fieldKey: String): ZpaRuleParam =
         SonarQubeRuleParamAdapter(newRule.createParam(fieldKey))
 }
