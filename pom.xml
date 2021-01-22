@@ -63,7 +63,7 @@
     <license.title>Z PL/SQL Analyzer</license.title>
     <license.owner>Felipe Zorzo</license.owner>
     <license.mailto>mailto:felipebzorzo AT gmail DOT com</license.mailto>
-    <license.years>${project.inceptionYear}-2020</license.years>
+    <license.years>${project.inceptionYear}-2021</license.years>
     <license.name>GNU LGPL v3</license.name>
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     <jdk.min.version>1.8</jdk.min.version>
