@@ -42,19 +42,20 @@ jobs:
 
 
   - job: Windows
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     pool:
       vmImage: 'windows-latest'
 
     steps:
       - task: SonarQubePrepare@4
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
         inputs:
           SonarQube: 'SonarQube'
-          scannerMode: 'Other'
+          scannerMode: 'Other' 
 
       - task: Maven@3
         inputs:
           goals: 'org.jacoco:jacoco-maven-plugin:prepare-agent package org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate'
+          options: '-Dsonar.branch.name='
           jdkVersionOption: 1.11
           sonarQubeRunAnalysis: true
 
