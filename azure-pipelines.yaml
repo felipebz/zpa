@@ -1,7 +1,7 @@
 jobs:
   - job: Linux
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-latest'
 
     variables:
       MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -43,7 +43,7 @@ jobs:
 
   - job: Windows
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
 
     steps:
       - task: SonarQubePrepare@4
