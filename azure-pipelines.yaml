@@ -47,6 +47,15 @@ jobs:
       vmImage: 'windows-latest'
 
     steps:
+      - task: Cache@2
+        inputs:
+          key: 'maven | "$(Agent.OS)" | **/pom.xml, !bin/its/sources/**'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+        
       - task: SonarQubePrepare@4
         inputs:
           SonarQube: 'SonarQube'
