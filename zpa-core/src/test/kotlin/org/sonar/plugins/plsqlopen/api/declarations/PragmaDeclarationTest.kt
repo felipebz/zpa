@@ -29,7 +29,7 @@ class PragmaDeclarationTest : RuleTest() {
 
     @Before
     fun init() {
-        setRootRule(PlSqlGrammar.PRAGMA_DECLARATION)
+        setRootRule(PlSqlGrammar.PRAGMA_DEPRECATE)
     }
 
     @Test
@@ -60,6 +60,12 @@ class PragmaDeclarationTest : RuleTest() {
     @Test
     fun matchesUdfPragma() {
         assertThat(p).matches("pragma udf;")
+    }
+
+    @Test
+    fun matchesPragmaDeprecate() {
+        assertThat(p).matches("pragma deprecate(object);")
+        assertThat(p).matches("pragma deprecate(object, 'object is deprecated');")
     }
 
 }

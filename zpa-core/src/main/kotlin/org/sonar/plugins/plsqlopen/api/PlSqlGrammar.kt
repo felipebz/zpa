@@ -828,7 +828,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     RESTRICT_REFERENCES_PRAGMA,
                     UDF_PRAGMA))
 
-            b.rule(PRAGMA_DEPRECATE).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING), RPARENTHESIS, SEMICOLON)
+            b.rule(PRAGMA_DEPRECATE).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS, SEMICOLON)
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
