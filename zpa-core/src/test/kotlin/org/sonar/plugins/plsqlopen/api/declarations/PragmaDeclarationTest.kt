@@ -29,7 +29,7 @@ class PragmaDeclarationTest : RuleTest() {
 
     @Before
     fun init() {
-        setRootRule(PlSqlGrammar.PRAGMA_DEPRECATE)
+        setRootRule(PlSqlGrammar.PRAGMA_DECLARATION)
     }
 
     @Test

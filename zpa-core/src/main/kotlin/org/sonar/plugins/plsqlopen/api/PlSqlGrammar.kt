@@ -820,15 +820,16 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON)
 
+            b.rule(PRAGMA_DEPRECATE).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS, SEMICOLON)
+
             b.rule(PRAGMA_DECLARATION).define(b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
                     AUTONOMOUS_TRANSACTION_PRAGMA,
                     SERIALLY_REUSABLE_PRAGMA,
                     INTERFACE_PRAGMA,
                     RESTRICT_REFERENCES_PRAGMA,
-                    UDF_PRAGMA))
-
-            b.rule(PRAGMA_DEPRECATE).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS, SEMICOLON)
+                    UDF_PRAGMA,
+                    PRAGMA_DEPRECATE))
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
