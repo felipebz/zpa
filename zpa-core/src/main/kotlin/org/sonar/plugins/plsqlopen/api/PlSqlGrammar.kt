@@ -155,8 +155,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
     INTERFACE_PRAGMA,
     RESTRICT_REFERENCES_PRAGMA,
     UDF_PRAGMA,
+    DEPRECATE_PRAGMA,
     PRAGMA_DECLARATION,
-    PRAGMA_DEPRECATE,
     HOST_AND_INDICATOR_VARIABLE,
     JAVA_DECLARATION,
     C_DECLARATION,
@@ -820,7 +820,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON)
 
-            b.rule(PRAGMA_DEPRECATE).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS, SEMICOLON)
+            b.rule(DEPRECATE_PRAGMA).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS, SEMICOLON)
 
             b.rule(PRAGMA_DECLARATION).define(b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
@@ -829,7 +829,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     INTERFACE_PRAGMA,
                     RESTRICT_REFERENCES_PRAGMA,
                     UDF_PRAGMA,
-                    PRAGMA_DEPRECATE))
+                    DEPRECATE_PRAGMA))
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
