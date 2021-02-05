@@ -1130,7 +1130,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.firstOf(
                             b.sequence(b.firstOf(IS, AS), OBJECT),
                             b.sequence(UNDER, UNIT_NAME)),
-                    LPARENTHESIS, b.optional(DEPRECATE_PRAGMA, COMMA), b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA), b.optional(DEPRECATE_PRAGMA, COMMA)), RPARENTHESIS,
+                    LPARENTHESIS, b.optional(DEPRECATE_PRAGMA, COMMA), b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA), b.optional(DEPRECATE_PRAGMA, b.optional(COMMA))), RPARENTHESIS,
                     b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)))
 
             b.rule(CREATE_TYPE).define(
