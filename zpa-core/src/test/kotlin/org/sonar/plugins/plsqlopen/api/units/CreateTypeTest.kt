@@ -230,4 +230,61 @@ class CreateTypeTest : RuleTest() {
                         + "x number(5),"
                         + "order member function bar return number);")
     }
+
+    @Test
+    fun deprecatedType() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "  pragma deprecate (foo),"
+                + "x number(5),"
+                + "member function bar return number);")
+    }
+
+    @Test
+    fun deprecatedTypeWithComment() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "  pragma deprecate (foo, 'is deprecated'),"
+                + "x number(5),"
+                + "member function bar return number);")
+    }
+
+    @Test
+    fun deprecatedTypeVariable() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "x number(5),"
+                + "  pragma deprecate (x),"
+                + "member function bar return number);")
+    }
+
+    @Test
+    fun deprecatedTypeVariableWithComment() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "x number(5),"
+                + "  pragma deprecate (x, 'is deprecated'),"
+                + "member function bar return number);")
+    }
+
+    @Test
+    fun deprecatedTypeProcedure() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "x number(5),"
+                + "member function bar return number,"
+                + "  pragma deprecate (bar)"
+                + ");")
+    }
+
+    @Test
+    fun deprecatedTypeProcedureWithComment() {
+        assertThat(p).matches(
+            "create or replace type foo as object ("
+                + "x number(5),"
+                + "member function bar return number,"
+                + "  pragma deprecate (bar, 'is deprecated')"
+                + ");")
+    }
+
 }

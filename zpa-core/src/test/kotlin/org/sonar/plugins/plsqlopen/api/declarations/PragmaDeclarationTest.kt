@@ -62,4 +62,10 @@ class PragmaDeclarationTest : RuleTest() {
         assertThat(p).matches("pragma udf;")
     }
 
+    @Test
+    fun matchesPragmaDeprecate() {
+        assertThat(p).matches("pragma deprecate(object);")
+        assertThat(p).matches("pragma deprecate(object, 'object is deprecated');")
+    }
+
 }

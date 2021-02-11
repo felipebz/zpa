@@ -155,6 +155,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     INTERFACE_PRAGMA,
     RESTRICT_REFERENCES_PRAGMA,
     UDF_PRAGMA,
+    DEPRECATE_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     JAVA_DECLARATION,
@@ -819,13 +820,16 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(UDF_PRAGMA).define(PRAGMA, UDF, SEMICOLON)
 
+            b.rule(DEPRECATE_PRAGMA).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS)
+
             b.rule(PRAGMA_DECLARATION).define(b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
                     AUTONOMOUS_TRANSACTION_PRAGMA,
                     SERIALLY_REUSABLE_PRAGMA,
                     INTERFACE_PRAGMA,
                     RESTRICT_REFERENCES_PRAGMA,
-                    UDF_PRAGMA))
+                    UDF_PRAGMA,
+                    b.sequence(DEPRECATE_PRAGMA, SEMICOLON)))
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
@@ -1126,7 +1130,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.firstOf(
                             b.sequence(b.firstOf(IS, AS), OBJECT),
                             b.sequence(UNDER, UNIT_NAME)),
-                    LPARENTHESIS, b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA)), RPARENTHESIS,
+                    LPARENTHESIS, b.optional(DEPRECATE_PRAGMA, COMMA), b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA), b.optional(DEPRECATE_PRAGMA, b.optional(COMMA))), RPARENTHESIS,
                     b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)))
 
             b.rule(CREATE_TYPE).define(
