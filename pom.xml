@@ -74,7 +74,7 @@
     <sonar-packaging.version>1.18.0.372</sonar-packaging.version>
     <jar.plugin.version>3.1.1</jar.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kotlin.version>1.4.21</kotlin.version>
+    <kotlin.version>1.4.31</kotlin.version>
     <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     <dokka.version>1.4.20</dokka.version>
   </properties>
@@ -203,6 +203,9 @@
         </executions>
         <configuration>
           <jvmTarget>1.8</jvmTarget>
+          <args>
+            <arg>-Xuse-ir</arg>
+          </args>
         </configuration>
       </plugin>
       <plugin>
