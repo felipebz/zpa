@@ -46,6 +46,10 @@ jobs:
     pool:
       vmImage: 'windows-latest'
 
+    variables:
+      MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)\.m2\repository
+      MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
     steps:
       - task: Cache@2
         inputs:
