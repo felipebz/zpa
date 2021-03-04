@@ -64,7 +64,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     CONCATENATION_EXPRESSION,
                     b.optional(NOT), LIKE,
                     CONCATENATION_EXPRESSION,
-                    b.optional(ESCAPE, CONCATENATION_EXPRESSION)).skip()
+                    b.optional(ESCAPE, CONCATENATION_EXPRESSION))
 
             b.rule(BETWEEN_CONDITION).define(
                     CONCATENATION_EXPRESSION,
