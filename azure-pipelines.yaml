@@ -35,10 +35,8 @@ jobs:
           ./ci.sh
         displayName: 'Build with Maven'
         env:
-          DEPLOY_USERNAME: $(DEPLOY_USERNAME)
-          DEPLOY_PASSWORD: $(DEPLOY_PASSWORD)
-          BINTRAY_DEPLOY_PASSWORD: $(BINTRAY_DEPLOY_PASSWORD)
-          BINTRAY_DEPLOY_USERNAME: $(BINTRAY_DEPLOY_USERNAME)
+          GITHUB_DEPLOY_TOKEN: $(GITHUB_DEPLOY_TOKEN)
+          GITHUB_DEPLOY_USERNAME: $(GITHUB_DEPLOY_USERNAME)
 
 
   - job: Windows

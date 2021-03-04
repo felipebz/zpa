@@ -284,24 +284,11 @@
     </plugins>
   </build>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>jcenter</id>
-      <name>JCenter</name>
-      <url>https://jcenter.bintray.com/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <distributionManagement>
     <repository>
-      <id>bintray-felipebz-maven</id>
-      <name>felipebz-maven</name>
-      <url>https://api.bintray.com/maven/felipebz/maven/org.sonar.plsqlopen/;publish=1</url>
+      <id>github</id>
+      <name>GitHub Maven Packages</name>
+      <url>https://maven.pkg.github.com/felipebz/zpa</url>
     </repository>
-    <snapshotRepository>
-      <id>snapshots</id>
-      <name>oss-jfrog-artifactory-snapshots</name>
-      <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
-    </snapshotRepository>
   </distributionManagement>
 </project>

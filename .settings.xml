@@ -3,54 +3,34 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <servers>
     <server>
-      <id>bintray-felipebz-maven</id>
-      <username>${env.BINTRAY_DEPLOY_USERNAME}</username>
-      <password>${env.BINTRAY_DEPLOY_PASSWORD}</password>
-    </server>
-    <server>
-      <username>${env.DEPLOY_USERNAME}</username>
-      <password>${env.DEPLOY_PASSWORD}</password>
-      <id>snapshots</id>
+      <id>github</id>
+      <username>${env.GITHUB_DEPLOY_USERNAME}</username>
+      <password>${env.GITHUB_DEPLOY_TOKEN}</password>
     </server>
   </servers>
   <profiles>
     <profile>
+      <id>github</id>
       <repositories>
         <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
           <id>central</id>
-          <name>libs-release</name>
-          <url>https://oss.jfrog.org/artifactory/libs-release</url>
+          <url>https://repo1.maven.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
         </repository>
         <repository>
-          <snapshots />
-          <id>snapshots</id>
-          <name>libs-snapshot</name>
-          <url>https://oss.jfrog.org/artifactory/libs-snapshot</url>
+          <id>jcenter</id>
+          <name>jcenter</name>
+          <url>https://jcenter.bintray.com</url>
+        </repository>
+        <repository>
+          <id>github</id>
+          <name>GitHub Maven Packages</name>
+          <url>https://maven.pkg.github.com/felipebz/zpa</url>
         </repository>
       </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>central</id>
-          <name>plugins-release</name>
-          <url>https://oss.jfrog.org/artifactory/plugins-release</url>
-        </pluginRepository>
-        <pluginRepository>
-          <snapshots />
-          <id>snapshots</id>
-          <name>plugins-release</name>
-          <url>https://oss.jfrog.org/artifactory/plugins-release</url>
-        </pluginRepository>
-      </pluginRepositories>
-      <id>artifactory</id>
     </profile>
   </profiles>
   <activeProfiles>
-    <activeProfile>artifactory</activeProfile>
+    <activeProfile>github</activeProfile>
   </activeProfiles>
 </settings>
