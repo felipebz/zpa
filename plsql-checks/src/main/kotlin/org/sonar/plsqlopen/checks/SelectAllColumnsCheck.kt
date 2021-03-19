@@ -69,9 +69,11 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
 
             if (intoClause != null) {
                 val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
-                val type = semantic(variablesInInto[0]).plSqlType
-                if (variablesInInto.size == 1 && (type == PlSqlType.ROWTYPE || type == PlSqlType.ASSOCIATIVE_ARRAY)) {
-                    return
+                if (variablesInInto.size > 0) {
+                    val type = semantic(variablesInInto[0]).plSqlType
+                    if (variablesInInto.size == 1 && (type == PlSqlType.ROWTYPE || type == PlSqlType.ASSOCIATIVE_ARRAY)) {
+                        return
+                    }
                 }
             }
 
