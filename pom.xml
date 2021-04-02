@@ -286,9 +286,9 @@
 
   <distributionManagement>
     <repository>
-      <id>github</id>
-      <name>GitHub Maven Packages</name>
-      <url>https://maven.pkg.github.com/felipebz/zpa</url>
+      <id>azure</id>
+      <name>Azure Artifacts</name>
+      <url>https://pkgs.dev.azure.com/felipebz/z-plsql-analyzer/_packaging/public_feed/maven/v1</url>
     </repository>
   </distributionManagement>
 </project>

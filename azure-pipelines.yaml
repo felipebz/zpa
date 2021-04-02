@@ -35,8 +35,8 @@ jobs:
           ./ci.sh
         displayName: 'Build with Maven'
         env:
-          GITHUB_DEPLOY_TOKEN: $(GITHUB_DEPLOY_TOKEN)
-          GITHUB_DEPLOY_USERNAME: $(GITHUB_DEPLOY_USERNAME)
+          DEPLOY_TOKEN: $(DEPLOY_TOKEN)
+          DEPLOY_USERNAME: $(DEPLOY_USERNAME)
 
 
   - job: Windows
