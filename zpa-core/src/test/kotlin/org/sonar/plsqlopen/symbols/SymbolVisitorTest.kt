@@ -90,6 +90,26 @@ end;
     }
 
     @Test
+    fun record() {
+        val symbols = scan("""
+declare
+  type my_record is record (x number);
+  variable my_record;
+begin
+  null;
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val type = symbols.find("my_record", 2, 8)
+        assertThat(type.type()).isEqualTo(PlSqlType.RECORD)
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat(variable.type()).isEqualTo(PlSqlType.RECORD)
+        assertThat(variable.references()).isEmpty()
+    }
+
+    @Test
     fun forLoop() {
         val symbols = scan("""
 begin
