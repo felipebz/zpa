@@ -1,0 +1,19 @@
+<p>
+  Usar uma condição LIKE sem um curinga (% ou _) é suspeito. Um desenvolvedor pode supor que o curinha foi esquecido
+  ou se deveria ser um teste de igualdade.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+if (last_name like 'Smith') ...
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+if (last_name like 'Smith%') ...
+
+-- or
+if (last_name = 'Smith') ...
+</pre>

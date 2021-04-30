@@ -77,6 +77,7 @@ object CheckList {
                 VariableNameCheck::class.java,
                 ToCharInOrderByCheck::class.java,
                 DisabledTestCheck::class.java,
-                RedundantExpectationCheck::class.java)
+                RedundantExpectationCheck::class.java,
+                UnnecessaryLikeCheck::class.java)
 
 }

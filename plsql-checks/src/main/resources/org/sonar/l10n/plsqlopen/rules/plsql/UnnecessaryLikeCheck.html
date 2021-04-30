@@ -1,0 +1,19 @@
+<p>
+  Using a LIKE condition without a wildcard (% or _) is suspicious. A maintainer can suppose whether a wildcard is
+  forgotten or it is meant as equality test.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+if (last_name like 'Smith') ...
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+if (last_name like 'Smith%') ...
+
+-- or
+if (last_name = 'Smith') ...
+</pre>
