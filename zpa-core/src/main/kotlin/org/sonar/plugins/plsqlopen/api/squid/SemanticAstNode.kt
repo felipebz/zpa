@@ -55,6 +55,10 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
             .newInstance(this)
     }
 
+    val allTokensToString: String by lazy {
+        tokens.joinToString(" ") { it.originalValue }
+    }
+
     init {
         super.setFromIndex(astNode.fromIndex)
         super.setToIndex(astNode.toIndex)
