@@ -37,13 +37,13 @@ class TokenLocation private constructor(
     fun endColumn() = endColumn
 
     companion object {
-        private val pattern = Regex("\r?\n|\r")
+        private val pattern = Regex("\\R")
 
         fun from(token: Token): TokenLocation {
             val lineCount: Int
             var lastLineLength = 0
 
-            if (token.value.contains("\n") || token.value.contains("\r")) {
+            if (token.value.contains(pattern)) {
                 val lines = pattern.split(token.value)
                 lineCount = lines.size
                 lastLineLength = lines[lines.size - 1].length
