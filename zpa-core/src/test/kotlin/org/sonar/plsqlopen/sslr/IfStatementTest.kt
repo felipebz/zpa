@@ -34,7 +34,7 @@ class IfStatementTest : TreeTest<IfStatement>(PlSqlGrammar.IF_STATEMENT) {
 
         assertThat(tree.condition.allTokensToString).isEqualTo("true")
         assertThat(tree.statements).hasSize(1)
-        assertThat(tree.statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.statements[0].tree).isInstanceOf(NullStatement::class.java)
         assertThat(tree.elsifClauses).hasSize(0)
         assertThat(tree.elseClause).isNull()
     }
@@ -50,12 +50,12 @@ class IfStatementTest : TreeTest<IfStatement>(PlSqlGrammar.IF_STATEMENT) {
 
         assertThat(tree.condition.allTokensToString).isEqualTo("true")
         assertThat(tree.statements).hasSize(1)
-        assertThat(tree.statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.statements[0].tree).isInstanceOf(NullStatement::class.java)
 
         assertThat(tree.elsifClauses).hasSize(1)
         assertThat(tree.elsifClauses[0].condition.allTokensToString).isEqualTo("x = 1")
         assertThat(tree.elsifClauses[0].statements).hasSize(1)
-        assertThat(tree.elsifClauses[0].statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.elsifClauses[0].statements[0].tree).isInstanceOf(NullStatement::class.java)
 
         assertThat(tree.elseClause).isNull()
     }
@@ -76,20 +76,20 @@ class IfStatementTest : TreeTest<IfStatement>(PlSqlGrammar.IF_STATEMENT) {
 
         assertThat(tree.condition.allTokensToString).isEqualTo("true")
         assertThat(tree.statements).hasSize(1)
-        assertThat(tree.statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.statements[0].tree).isInstanceOf(NullStatement::class.java)
 
         assertThat(tree.elsifClauses).hasSize(2)
         assertThat(tree.elsifClauses[0].condition.allTokensToString).isEqualTo("x = 1")
         assertThat(tree.elsifClauses[0].statements).hasSize(1)
-        assertThat(tree.elsifClauses[0].statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.elsifClauses[0].statements[0].tree).isInstanceOf(NullStatement::class.java)
 
         assertThat(tree.elsifClauses[1].condition.allTokensToString).isEqualTo("x = 2")
         assertThat(tree.elsifClauses[1].statements).hasSize(1)
-        assertThat(tree.elsifClauses[1].statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.elsifClauses[1].statements[0].tree).isInstanceOf(NullStatement::class.java)
 
         assertThat(tree.elseClause).isNotNull
         assertThat(tree.elseClause!!.statements).hasSize(1)
-        assertThat(tree.elseClause!!.statements[0].allTokensToString).isEqualTo("null ;")
+        assertThat(tree.elseClause!!.statements[0].tree).isInstanceOf(NullStatement::class.java)
     }
 
 }
