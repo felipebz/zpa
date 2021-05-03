@@ -29,6 +29,10 @@ begin
     into pkg.var
     from emp;
 
+  select * -- Noncompliant TODO: fix this false positive
+    into row_table(1)
+    from emp;
+
   -- valid code
   select emp.empno
     into var
