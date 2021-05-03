@@ -74,9 +74,9 @@
     <sonar-packaging.version>1.18.0.372</sonar-packaging.version>
     <jar.plugin.version>3.1.1</jar.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kotlin.version>1.4.31</kotlin.version>
+    <kotlin.version>1.4.32</kotlin.version>
     <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-    <dokka.version>1.4.20</dokka.version>
+    <dokka.version>1.4.32</dokka.version>
   </properties>
 
   <dependencyManagement>
