@@ -19,6 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api.matchers
 
+import java.util.*
+
 @FunctionalInterface
 interface NameCriteria {
 
@@ -41,7 +43,8 @@ interface NameCriteria {
         @JvmStatic
         fun startsWith(prefix: String): NameCriteria =
             object : NameCriteria {
-                override fun matches(name: String) = name.toUpperCase().startsWith(prefix.toUpperCase())
+                override fun matches(name: String) = name.uppercase(Locale.getDefault())
+                    .startsWith(prefix.uppercase(Locale.getDefault()))
             }
 
         @JvmStatic

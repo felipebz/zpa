@@ -24,6 +24,7 @@ import com.sonar.sslr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
+import java.util.*
 
 @Rule(key = UnnecessaryAliasInQueryCheck.CHECK_KEY, priority = Priority.MINOR)
 @ConstantRemediation("1min")
@@ -56,7 +57,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
 
 
             if (table != null) {
-                tableReferences.getOrPut(table.tokenOriginalValue.toLowerCase()) { mutableListOf() }
+                tableReferences.getOrPut(table.tokenOriginalValue.lowercase(Locale.getDefault())) { mutableListOf() }
                     .add(TableReference(table, alias))
             }
         }

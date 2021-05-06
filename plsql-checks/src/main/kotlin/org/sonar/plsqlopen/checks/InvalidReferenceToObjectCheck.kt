@@ -25,6 +25,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
+import java.util.*
 
 @Rule(key = InvalidReferenceToObjectCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
@@ -99,7 +100,9 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
             }
 
             if (reportIssue) {
-                addIssue(argument, getLocalizedMessage(CHECK_KEY), value, verifier.matcher.methodName.toUpperCase())
+                addIssue(argument, getLocalizedMessage(CHECK_KEY), value,
+                    verifier.matcher.methodName.uppercase(Locale.getDefault())
+                )
 
             }
 
