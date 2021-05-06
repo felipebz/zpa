@@ -91,12 +91,11 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
 
             val value = argument.tokenOriginalValue.replace("'", "")
 
-            var reportIssue = false
-            when (verifier.type) {
-                ObjectType.ALERT -> reportIssue = validateAlert(value)
-                ObjectType.BLOCK -> reportIssue = validateBlock(value)
-                ObjectType.ITEM -> reportIssue = validateItem(value)
-                ObjectType.LOV -> reportIssue = validateLov(value)
+            val reportIssue = when (verifier.type) {
+                ObjectType.ALERT -> validateAlert(value)
+                ObjectType.BLOCK -> validateBlock(value)
+                ObjectType.ITEM -> validateItem(value)
+                ObjectType.LOV -> validateLov(value)
             }
 
             if (reportIssue) {
@@ -140,10 +139,10 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
         ALERT, BLOCK, ITEM, LOV
     }
 
-    private inner class Verifier internal constructor(internal val matcher: MethodMatcher, argumentToCheck: Int, val type: ObjectType) {
-        internal val argumentToCheck: Int = argumentToCheck - 1
+    private inner class Verifier(val matcher: MethodMatcher, argumentToCheck: Int, val type: ObjectType) {
+        val argumentToCheck: Int = argumentToCheck - 1
 
-        internal constructor(matcher: MethodMatcher, type: ObjectType) : this(matcher, 1, type)
+        constructor(matcher: MethodMatcher, type: ObjectType) : this(matcher, 1, type)
     }
 
     private fun isVarcharLiteral(argument: AstNode): Boolean {

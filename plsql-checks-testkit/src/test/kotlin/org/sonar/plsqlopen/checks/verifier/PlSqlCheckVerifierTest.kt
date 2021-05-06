@@ -164,8 +164,8 @@ class PlSqlCheckVerifierTest {
 
     private class FakeCheck : PlSqlCheck() {
 
-        internal var issues = hashMapOf<Int, MutableList<String>>()
-        internal var preciseIssues = linkedMapOf<Int, MutableList<IssueLocation>>()
+        var issues = hashMapOf<Int, MutableList<String>>()
+        var preciseIssues = linkedMapOf<Int, MutableList<IssueLocation>>()
 
         fun withDefaultIssues(): FakeCheck {
             return this.withIssue(1, "message")

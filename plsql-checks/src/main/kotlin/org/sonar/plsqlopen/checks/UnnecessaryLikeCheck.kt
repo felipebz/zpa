@@ -20,9 +20,6 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.plsqlopen.isOf
-import org.sonar.plsqlopen.sslr.NullStatement
-import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.ConditionsGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword

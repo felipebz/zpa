@@ -21,11 +21,11 @@ package org.sonar.plsqlopen.rules
 
 class ActiveRule(private val repository: ZpaRepository, private val rule: ZpaRule) : ZpaActiveRule {
 
-    override fun internalKey(): String? = rule.key
+    override fun internalKey(): String = rule.key
 
     override fun language(): String = "plsqlopen"
 
-    override fun param(key: String): String? = ""
+    override fun param(key: String): String = ""
 
     override fun params(): Map<String, String> = emptyMap()
 

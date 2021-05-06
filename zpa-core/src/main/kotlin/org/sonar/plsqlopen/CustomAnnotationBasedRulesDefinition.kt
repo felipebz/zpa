@@ -38,13 +38,8 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
                                            private val languageKey: String,
                                            private val ruleMetadataLoader: RuleMetadataLoader) {
     private val locale: Locale = Locale.getDefault()
-    private val externalDescriptionBasePath: String
-
-    init {
-        this.externalDescriptionBasePath = String.format("%s/rules/plsql",
-            getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale))
-
-    }
+    private val externalDescriptionBasePath: String = String.format("%s/rules/plsql",
+        getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale))
 
     fun addRuleClasses(failIfNoExplicitKey: Boolean, ruleClasses: Iterable<Class<*>>) {
         val loader = RulesDefinitionAnnotationLoader(ruleMetadataLoader)
