@@ -8,11 +8,11 @@
 
 The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle SQL code.
 
-Currently you can use it in [SonarQube](https://www.sonarqube.org). SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
+Currently you can use it in a [SonarQube](https://www.sonarqube.org) on-premise instance. SonarQube is an open platform to manage code quality. This project supports SonarQube 6.7.x and newer.
 
 See some examples in our [SonarQube instance](https://sonarqube.felipezorzo.com.br/projects?languages=plsqlopen)!
 
-**Soon**: you'll be able to analyze code without using the SonarQube environment with [zpa-cli](https://github.com/felipebz/zpa-cli) and more.
+Do you want to use this analyzer in a project hosted on [SonarCloud](https://sonarcloud.io)? Try the [zpa-cli](https://github.com/felipebz/zpa-cli)!
 
 ## Installation
 
@@ -22,6 +22,13 @@ See some examples in our [SonarQube instance](https://sonarqube.felipezorzo.com.
 - Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).
 
 If you like to live on the bleeding edge, you can use the [latest development version](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main&view=results). Download it from the button "Artifacts" in Azure DevOps.
+
+## Compatibility matrix
+
+| ZPA version     | SonarQube version |
+|-----------------|-------------------|
+| 2.4.0 (current) | 6.7 LTS - 8.9 LTS |
+| 3.0.0 (next)    | 7.6 - 8.9 LTS     |
 
 ## Contribute
 
