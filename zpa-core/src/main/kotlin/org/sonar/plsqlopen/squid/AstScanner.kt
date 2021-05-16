@@ -42,7 +42,6 @@ import java.io.InterruptedIOException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import kotlin.streams.toList
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
 class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  private val formsMetadata: FormsMetadata?,
@@ -107,12 +106,6 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         val ruleInfo = getAnnotation(check, RuleInfo::class.java)
         if (ruleInfo != null) {
             return ruleInfo.scope === RuleInfo.Scope.ALL || ruleInfo.scope === scope
-        } else {
-            // TODO: remove this code in the next release
-            val oldRuleInfo = getAnnotation(check, OldRuleInfo::class.java)
-            if (oldRuleInfo != null) {
-                return oldRuleInfo.scope.name === RuleInfo.Scope.ALL.name || oldRuleInfo.scope.name === scope.name
-            }
         }
         return scope === RuleInfo.Scope.MAIN
     }

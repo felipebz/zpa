@@ -19,11 +19,9 @@
  */
 package org.sonar.plsqlopen
 
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
+import org.assertj.core.api.Assertions.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.sonar.api.server.debt.DebtRemediationFunction.Type
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.api.server.rule.RulesDefinition.*
@@ -38,9 +36,6 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     private val context = Context()
 
-    @get:org.junit.Rule
-    var thrown: ExpectedException = ExpectedException.none()
-
     @Before
     fun setup() {
         Locale.setDefault(Locale.ROOT)
@@ -54,8 +49,9 @@ class CustomAnnotationBasedRulesDefinitionTest {
     @Test
     fun classWithoutRuleAnnotation() {
         class NotRuleClass
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(NotRuleClass::class.java)
+        assertThatIllegalArgumentException().isThrownBy {
+            buildSingleRuleRepository(NotRuleClass::class.java)
+        }
     }
 
     @Test
@@ -82,8 +78,9 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     @Test
     fun ruleWithoutExpliciKey() {
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(RuleClassWithoutAnnotationDefinedKey::class.java)
+        assertThatIllegalArgumentException().isThrownBy {
+            buildSingleRuleRepository(RuleClassWithoutAnnotationDefinedKey::class.java)
+        }
     }
 
     @Test
@@ -129,8 +126,9 @@ class CustomAnnotationBasedRulesDefinitionTest {
         @ConstantRemediation("xxx")
         class MyInvalidRuleClass
 
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(MyInvalidRuleClass::class.java)
+        assertThatIllegalArgumentException().isThrownBy {
+            buildSingleRuleRepository(MyInvalidRuleClass::class.java)
+        }
     }
 
     @Test

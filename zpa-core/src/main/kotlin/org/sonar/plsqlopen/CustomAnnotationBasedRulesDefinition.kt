@@ -31,8 +31,6 @@ import org.sonar.plugins.plsqlopen.api.annotations.RuleTemplate
 import java.io.IOException
 import java.net.URL
 import java.util.*
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation as OldConstantRemediation
-import org.sonar.plugins.plsqlopen.api.annnotations.RuleInfo as OldRuleInfo
 
 class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository,
                                            private val languageKey: String,
@@ -52,18 +50,16 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
             val rule = newRule(ruleClass, failIfNoExplicitKey)
             addHtmlDescription(rule)
             rule.template = getAnnotation(ruleClass, RuleTemplate::class.java) != null
+
             try {
-                setupSqaleModel(rule, ruleClass)
+                val constant = getAnnotation(ruleClass, ConstantRemediation::class.java)
+                if (constant != null) {
+                    rule.remediationConstant = constant.value
+                }
             } catch (e: RuntimeException) {
-                throw IllegalArgumentException("Could not setup SQALE model on $ruleClass", e)
+                throw IllegalArgumentException("Invalid remediation constant on $ruleClass", e)
             }
 
-            val oldRuleInfo = getAnnotation(ruleClass, OldRuleInfo::class.java)
-            if (oldRuleInfo != null) {
-                rule.scope = RuleInfo.Scope.valueOf(oldRuleInfo.scope.name)
-            }
-
-            // TODO: remove this code in the next release
             val ruleInfo = getAnnotation(ruleClass, RuleInfo::class.java)
             if (ruleInfo != null) {
                 rule.scope = ruleInfo.scope
@@ -141,19 +137,6 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
          */
         fun load(repository: ZpaRepository, languageKey: String, ruleClasses: Iterable<Class<*>>, ruleMetadataLoader: RuleMetadataLoader) {
             CustomAnnotationBasedRulesDefinition(repository, languageKey, ruleMetadataLoader).addRuleClasses(true, ruleClasses)
-        }
-
-        private fun setupSqaleModel(rule: ZpaRule, ruleClass: Class<*>) {
-            // TODO: remove this code in the next release
-            val oldConstant = getAnnotation(ruleClass, OldConstantRemediation::class.java)
-            if (oldConstant != null) {
-                rule.remediationConstant = oldConstant.value
-            }
-
-            val constant = getAnnotation(ruleClass, ConstantRemediation::class.java)
-            if (constant != null) {
-                rule.remediationConstant = constant.value
-            }
         }
 
         fun getLocalizedFolderName(baseName: String, locale: Locale): String {
