@@ -2,12 +2,11 @@ package com.company.plsql;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
-import org.sonar.plugins.plsqlopen.api.annnotations.ActivatedByDefault;
-import org.sonar.plugins.plsqlopen.api.annnotations.ConstantRemediation;
+import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault;
+import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
 import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.sslr.AstNode;
-
 
 @Rule(
     name = "Avoid DML on table USER",
