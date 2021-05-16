@@ -86,6 +86,10 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         val newWalker = PlSqlAstWalker(checksToRun)
         newWalker.walk(newVisitorContext)
 
+        val issues = checksToRun.flatMap {
+            (it as PlSqlCheck).issues().map { issue -> ZpaIssue(inputFile, it, issue) }
+        }
+
         return AstScannerResult(
             executedChecks = checksToRun,
             linesWithNoSonar = metricsVisitor.linesWithNoSonar,
@@ -95,7 +99,8 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
             linesOfComments = metricsVisitor.getLinesOfComments().size,
             complexity = complexityVisitor.complexity,
             numberOfFunctions = functionComplexityVisitor.numberOfFunctions,
-            executableLines = metricsVisitor.getExecutableLines())
+            executableLines = metricsVisitor.getExecutableLines(),
+            issues = issues)
     }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {

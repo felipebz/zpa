@@ -36,8 +36,6 @@ import org.sonar.plsqlopen.metrics.CpdVisitor
 import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
 import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
-import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck.PreciseIssue
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.Serializable
 
@@ -72,17 +70,11 @@ class PlSqlAstScanner(private val context: SensorContext,
 
     private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
-
         val result = astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)))
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        for (check in result.executedChecks) {
-            val issues = (check as PlSqlCheck).issues()
-            if (issues.isNotEmpty()) {
-                saveIssues(inputFile, check, issues)
-            }
-        }
+        saveIssues(inputFile, result.issues)
 
         val symbolSaver = SonarQubeSymbolTable(context, inputFile)
         symbolSaver.save(result.symbols)
@@ -104,36 +96,30 @@ class PlSqlAstScanner(private val context: SensorContext,
 
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
-
         val result = astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile)))
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        for (check in result.executedChecks) {
-            val issues = (check as PlSqlCheck).issues()
-            if (issues.isNotEmpty()) {
-                saveIssues(inputFile, check, issues)
-            }
-        }
+        saveIssues(inputFile, result.issues)
 
         val symbolTable = SonarQubeSymbolTable(context, inputFile)
         symbolTable.save(result.symbols)
     }
 
-    private fun saveIssues(inputFile: InputFile, check: PlSqlVisitor, issues: List<PreciseIssue>) {
-        val rule = plsqlChecks.ruleKey(check) as SonarQubeRuleKeyAdapter
-        for (preciseIssue in issues) {
+    private fun saveIssues(inputFile: InputFile, issues: List<ZpaIssue>) {
+        for (issue in issues) {
+            val rule = plsqlChecks.ruleKey(issue.check) as SonarQubeRuleKeyAdapter
 
             val newIssue = context.newIssue().forRule(rule.ruleKey)
 
-            val cost = preciseIssue.cost()
+            val cost = issue.cost
             if (cost != null) {
                 newIssue.gap(cost.toDouble())
             }
 
-            newIssue.at(newLocation(inputFile, newIssue, preciseIssue.primaryLocation()))
+            newIssue.at(newLocation(inputFile, newIssue, issue.primaryLocation))
 
-            for (secondaryLocation in preciseIssue.secondaryLocations()) {
+            for (secondaryLocation in issue.secondaryLocations) {
                 newIssue.addLocation(newLocation(inputFile, newIssue, secondaryLocation))
             }
 

@@ -19,6 +19,8 @@
  */
 package org.sonar.plsqlopen.squid
 
+import org.sonar.plugins.plsqlopen.api.PlSqlFile
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
@@ -31,5 +33,16 @@ data class AstScannerResult internal constructor(
     val linesOfComments: Int,
     val complexity: Int,
     val numberOfFunctions:  Int,
-    val executableLines: Set<Int>
+    val executableLines: Set<Int>,
+    val issues: List<ZpaIssue>
 )
+
+data class ZpaIssue internal constructor(
+    val file: PlSqlFile,
+    val check: PlSqlCheck,
+    private val issue: PlSqlCheck.PreciseIssue
+) {
+    val cost = issue.cost()
+    val primaryLocation = issue.primaryLocation()
+    val secondaryLocations = issue.secondaryLocations()
+}
