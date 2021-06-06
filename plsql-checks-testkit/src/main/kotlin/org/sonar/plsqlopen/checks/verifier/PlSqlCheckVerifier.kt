@@ -102,19 +102,15 @@ class PlSqlCheckVerifier : PlSqlCheck() {
     companion object {
 
         @JvmStatic
-        fun scanFileForIssues(file: File, metadata: FormsMetadata?, check: PlSqlCheck): List<PreciseIssue> {
-            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver()), check)
-            return check.issues()
-        }
-
-        @JvmStatic
         @JvmOverloads
         fun verify(path: String, check: PlSqlCheck, metadata: FormsMetadata? = null) {
             val verifier = PlSqlCheckVerifier()
             val file = File(path)
-            TestPlSqlVisitorRunner.scanFile(file, metadata, verifier)
 
-            val actualIssues = getActualIssues(file, metadata, check)
+            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver()), verifier, check)
+            val issues = check.issues()
+
+            val actualIssues = issues.sortedBy { it.primaryLocation().startLine() }.iterator()
             val expectedIssues = verifier.expectedIssues.sortedBy { it.line }
 
             for (expected in expectedIssues) {
@@ -174,12 +170,6 @@ class PlSqlCheckVerifier : PlSqlCheck() {
             }
 
             return result.sorted()
-        }
-
-        private fun getActualIssues(file: File, metadata: FormsMetadata?, check: PlSqlCheck): Iterator<PreciseIssue> {
-            val issues = scanFileForIssues(file, metadata, check)
-            val sortedIssues = issues.sortedBy { it.primaryLocation().startLine() }
-            return sortedIssues.iterator()
         }
 
         private fun line(issue: PreciseIssue): Int {
