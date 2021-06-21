@@ -25,9 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-const val CHECK_KEY = "UnnecessaryLikeCheck"
-
-@Rule(key = CHECK_KEY, priority = Priority.MINOR, tags = [Tags.CONFUSING])
+@Rule(key = UnnecessaryLikeCheck.CHECK_KEY, priority = Priority.MINOR, tags = [Tags.CONFUSING])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -53,5 +51,10 @@ class UnnecessaryLikeCheck : AbstractBaseCheck() {
             addIssue(node, getLocalizedMessage(CHECK_KEY))
         }
     }
+
+    companion object {
+        internal const val CHECK_KEY = "UnnecessaryLikeCheck"
+    }
+
 }
 
