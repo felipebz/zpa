@@ -69,6 +69,7 @@ jobs:
           options: '-Dsonar.branch.name='
           jdkVersionOption: 1.11
           sonarQubeRunAnalysis: true
+          mavenOptions: '$(MAVEN_OPTS)'
 
       - task: CopyFiles@2
         displayName: 'Copy artifact: sonar-plsql-open-plugin'
