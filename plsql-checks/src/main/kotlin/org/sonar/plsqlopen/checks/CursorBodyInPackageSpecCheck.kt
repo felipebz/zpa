@@ -28,7 +28,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
 
-@Rule(key = CursorBodyInPackageSpecCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {
@@ -42,13 +42,9 @@ class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {
         for (cursor in cursors) {
             val cursorDeclaration = cursor.declaration().parent
             if (cursorDeclaration.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
-                addIssue(cursorDeclaration, getLocalizedMessage(CHECK_KEY), cursor.name())
+                addIssue(cursorDeclaration, getLocalizedMessage(), cursor.name())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "CursorBodyInPackageSpec"
     }
 
 }

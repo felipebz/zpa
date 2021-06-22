@@ -24,7 +24,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = VariableInitializationWithFunctionCallCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -40,13 +40,9 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
 
             val expression = node.lastChild
             if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "VariableInitializationWithFunctionCall"
     }
 
 }

@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = UnnecessaryElseCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -37,7 +37,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
         val ifStatement = node.parent
 
         if (!hasElsifClause(ifStatement) && hasTerminationStatement(ifStatement)) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine)
+            addLineIssue(getLocalizedMessage(), node.tokenLine)
         }
     }
 
@@ -53,10 +53,6 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
             }
         }
         return false
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "UnnecessaryElse"
     }
 
 }

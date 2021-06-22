@@ -28,7 +28,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.regex.Pattern
 
-@Rule(key = UnusedParameterCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("30min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -91,7 +91,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
 
 
             if (symbol.usages().isEmpty()) {
-                addIssue(symbol.declaration().parent, getLocalizedMessage(CHECK_KEY),
+                addIssue(symbol.declaration().parent, getLocalizedMessage(),
                         symbol.declaration().tokenOriginalValue)
             }
 
@@ -99,7 +99,6 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        internal const val CHECK_KEY = "UnusedParameter"
         val DECLARATION_OR_CONSTRUCTOR =
             arrayOf(PlSqlGrammar.PROCEDURE_DECLARATION,
                 PlSqlGrammar.FUNCTION_DECLARATION,

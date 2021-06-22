@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = RaiseStandardExceptionCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -66,13 +66,9 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
             val exceptionName = exceptionIdentifier.tokenOriginalValue
 
             if (standardExceptions.contains(exceptionName.uppercase(Locale.getDefault()))) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), exceptionIdentifier.tokenLine, exceptionName)
+                addLineIssue(getLocalizedMessage(), exceptionIdentifier.tokenLine, exceptionName)
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "RaiseStandardException"
     }
 
 }

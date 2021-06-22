@@ -25,19 +25,15 @@ import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
-@Rule(key = DisabledTestCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UTPLSQL])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL])
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault
 class DisabledTestCheck : AbstractBaseCheck() {
 
     override fun visitComment(trivia: Trivia, content: String) {
         if (content.trim().equals("%disabled", ignoreCase = true)) {
-            addIssue(trivia.token, getLocalizedMessage(CHECK_KEY))
+            addIssue(trivia.token, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "DisabledTest"
     }
 
 }

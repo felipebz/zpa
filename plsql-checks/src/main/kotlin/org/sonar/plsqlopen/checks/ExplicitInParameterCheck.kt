@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ExplicitInParameterCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,12 +36,8 @@ class ExplicitInParameterCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (!node.hasDirectChildren(PlSqlKeyword.IN, PlSqlKeyword.OUT)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ExplicitInParameter"
     }
 
 }

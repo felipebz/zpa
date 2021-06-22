@@ -25,7 +25,7 @@ import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = CollapsibleIfStatementsCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.CLUMSY])
+@Rule(priority = Priority.MAJOR, tags = [Tags.CLUMSY])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -39,7 +39,7 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
         val ifStatement = node.asTree<IfStatement>()
         val singleIfChild = singleIfChild(ifStatement)
         if (singleIfChild != null && !hasElseOrElsif(ifStatement) && !hasElseOrElsif(singleIfChild)) {
-            addIssue(singleIfChild, getLocalizedMessage(CHECK_KEY))
+            addIssue(singleIfChild, getLocalizedMessage())
         }
     }
 
@@ -56,10 +56,6 @@ class CollapsibleIfStatementsCheck : AbstractBaseCheck() {
             }
         }
         return null
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "CollapsibleIfStatements"
     }
 
 }

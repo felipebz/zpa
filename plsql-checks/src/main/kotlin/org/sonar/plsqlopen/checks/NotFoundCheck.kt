@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = NotFoundCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -43,13 +43,9 @@ class NotFoundCheck : AbstractBaseCheck() {
             val percentCandidate = foundCandidate.previousAstNode
 
             if (percentCandidate.typeIs(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate.tokenValue) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "NotFound"
     }
 
 }

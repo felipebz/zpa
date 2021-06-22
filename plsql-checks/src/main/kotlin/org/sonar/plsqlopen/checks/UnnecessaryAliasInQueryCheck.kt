@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = UnnecessaryAliasInQueryCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
@@ -77,7 +77,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
             }
 
             if (alias != null && reference.alias != null && alias.length < acceptedLength) {
-                addIssue(reference.alias, getLocalizedMessage(CHECK_KEY),
+                addIssue(reference.alias, getLocalizedMessage(),
                         reference.table.tokenOriginalValue,
                         reference.alias.tokenOriginalValue)
             }
@@ -87,7 +87,6 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
     internal class TableReference(val table: AstNode, val alias: AstNode?)
 
     companion object {
-        internal const val CHECK_KEY = "UnnecessaryAliasInQuery"
         private const val DEFAULT_ACCEPTED_LENGTH = 3
     }
 

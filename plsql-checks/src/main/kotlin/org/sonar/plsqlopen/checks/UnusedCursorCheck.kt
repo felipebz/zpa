@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
-@Rule(key = UnusedCursorCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -48,14 +48,10 @@ class UnusedCursorCheck : AbstractBaseCheck() {
         val symbols = scope.getSymbols(Symbol.Kind.CURSOR)
         for (symbol in symbols) {
             if (symbol.usages().isEmpty() && !symbol.declaration().parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
-                addIssue(symbol.declaration().parent, getLocalizedMessage(CHECK_KEY),
+                addIssue(symbol.declaration().parent, getLocalizedMessage(),
                         symbol.declaration().tokenOriginalValue)
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "UnusedCursor"
     }
 
 }

@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = CommitRollbackCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("30min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
@@ -49,12 +49,8 @@ class CommitRollbackCheck : AbstractBaseCheck() {
         val isInsideABlockStatement = outerScope?.tree()?.typeIs(PlSqlGrammar.BLOCK_STATEMENT) ?: false
 
         if (!isRollbackToSavepoint && !currentScopeIsAutonomousTransaction && !isInsideABlockStatement) {
-            addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine, node.tokenValue)
+            addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokenValue)
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "CommitRollback"
     }
 
 }

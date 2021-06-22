@@ -24,7 +24,7 @@ import com.sonar.sslr.xpath.api.AstNodeXPathQuery
 import org.sonar.plsqlopen.squid.AnalysisException
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = XPathCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @RuleTemplate
 class XPathCheck : AbstractBaseCheck() {
@@ -64,8 +64,6 @@ class XPathCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        internal const val CHECK_KEY = "XPath"
-
         private const val DEFAULT_XPATH_QUERY = ""
         private const val DEFAULT_MESSAGE = "The XPath expression matches this piece of code"
     }

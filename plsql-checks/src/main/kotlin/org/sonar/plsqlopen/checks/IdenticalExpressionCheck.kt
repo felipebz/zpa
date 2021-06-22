@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.ConditionsGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = IdenticalExpressionCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -42,15 +42,11 @@ class IdenticalExpressionCheck : AbstractBaseCheck() {
             val rightSide = node.lastChild
 
             if (CheckUtils.equalNodes(leftSide, rightSide)) {
-                addIssue(leftSide, getLocalizedMessage(CHECK_KEY), operator.tokenValue)
+                addIssue(leftSide, getLocalizedMessage(), operator.tokenValue)
                         .secondary(rightSide, "Original")
             }
 
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "IdenticalExpression"
     }
 
 }

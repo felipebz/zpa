@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = DeclareSectionWithoutDeclarationsCheck.CHECK_KEY, priority = Priority.INFO)
+@Rule(priority = Priority.INFO)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,12 +36,8 @@ class DeclareSectionWithoutDeclarationsCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (node.hasDirectChildren(PlSqlKeyword.DECLARE) && !node.hasDescendant(PlSqlGrammar.DECLARE_SECTION)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "DeclareSectionWithoutDeclarations"
     }
 
 }

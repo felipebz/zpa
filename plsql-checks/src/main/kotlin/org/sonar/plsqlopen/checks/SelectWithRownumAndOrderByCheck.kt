@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = SelectWithRownumAndOrderByCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -54,7 +54,7 @@ class SelectWithRownumAndOrderByCheck : AbstractBaseCheck() {
         for (comparison in whereComparisonConditions) {
             for (child in comparison.getChildren(PlSqlGrammar.VARIABLE_NAME)) {
                 if ("rownum".equals(child.tokenValue, ignoreCase = true) && node == child.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)) {
-                    addIssue(comparison, getLocalizedMessage(CHECK_KEY))
+                    addIssue(comparison, getLocalizedMessage())
                 }
             }
         }
@@ -62,10 +62,6 @@ class SelectWithRownumAndOrderByCheck : AbstractBaseCheck() {
 
     private fun hasOrderByClause(node: AstNode): Boolean {
         return node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "SelectWithRownumAndOrderBy"
     }
 
 }

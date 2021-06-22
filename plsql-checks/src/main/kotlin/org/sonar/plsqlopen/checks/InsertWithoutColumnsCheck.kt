@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-@Rule(key = InsertWithoutColumnsCheck.CHECK_KEY, priority = Priority.CRITICAL, tags = [Tags.CONVENTION, Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.CONVENTION, Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -47,12 +47,8 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
                 return
             }
 
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "InsertWithoutColumns"
     }
 
 }

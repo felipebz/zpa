@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = FunctionWithOutParameterCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("1h")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,12 +36,8 @@ class FunctionWithOutParameterCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (node.hasParent(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_FUNCTION) && node.hasDirectChildren(PlSqlKeyword.OUT)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "FunctionWithOutParameter"
     }
 
 }

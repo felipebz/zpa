@@ -25,7 +25,7 @@ import org.sonar.plsqlopen.sslr.NullStatement
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = EmptyBlockCheck.CHECK_KEY, priority = Priority.MINOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MINOR, tags = [Tags.UNUSED])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -44,13 +44,9 @@ class EmptyBlockCheck : AbstractBaseCheck() {
         if (statements.size == 1) {
             val statement = statements[0]
             if (statement.isOf<NullStatement>()) {
-                addIssue(statement, getLocalizedMessage(CHECK_KEY))
+                addIssue(statement, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "EmptyBlock"
     }
 
 }

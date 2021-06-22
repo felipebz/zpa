@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 import java.util.*
 
-@Rule(key = InvalidReferenceToObjectCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
@@ -99,7 +99,7 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
             }
 
             if (reportIssue) {
-                addIssue(argument, getLocalizedMessage(CHECK_KEY), value,
+                addIssue(argument, getLocalizedMessage(), value,
                     verifier.matcher.methodName.uppercase(Locale.getDefault())
                 )
 
@@ -149,10 +149,6 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
         return if (argument.typeIs(PlSqlGrammar.LITERAL)) {
             argument.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)
         } else false
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "InvalidReferenceToObject"
     }
 
 }

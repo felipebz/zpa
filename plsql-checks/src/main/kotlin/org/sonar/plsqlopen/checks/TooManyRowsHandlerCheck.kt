@@ -26,7 +26,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = TooManyRowsHandlerCheck.CHECK_KEY, priority = Priority.CRITICAL, tags = [Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -47,14 +47,11 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
                 // and have only one NULL_STATEMENT
                 val children = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
                 if (children.size == 1 && children[0].isOf<NullStatement>()) {
-                    addIssue(node, getLocalizedMessage(CHECK_KEY))
+                    addIssue(node, getLocalizedMessage())
                 }
             }
         }
     }
 
-    companion object {
-        internal const val CHECK_KEY = "TooManyRowsHandler"
-    }
 }
 

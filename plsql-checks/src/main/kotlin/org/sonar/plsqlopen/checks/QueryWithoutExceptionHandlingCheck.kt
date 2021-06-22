@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = QueryWithoutExceptionHandlingCheck.CHECK_KEY, priority = Priority.CRITICAL)
+@Rule(priority = Priority.CRITICAL)
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
@@ -49,18 +49,14 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
             val parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION)
 
             if (!parentBlock.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         } else {
             val hasExceptionHandler = context.currentScope?.hasExceptionHandler() ?: false
             if (!hasExceptionHandler) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "QueryWithoutExceptionHandling"
     }
 
 }

@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-@Rule(key = SelectAllColumnsCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.PERFORMANCE])
+@Rule(priority = Priority.MAJOR, tags = [Tags.PERFORMANCE])
 @ConstantRemediation("30min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -75,13 +75,8 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
                 }
             }
 
-
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "SelectAllColumns"
     }
 
 }

@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = CharacterDatatypeUsageCheck.CHECK_KEY, priority = Priority.MINOR, tags = [Tags.OBSOLETE])
+@Rule(priority = Priority.MINOR, tags = [Tags.OBSOLETE])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -38,12 +38,11 @@ class CharacterDatatypeUsageCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val datatype = node.firstChild
         if (datatype.typeIs(CHAR_DATATYPE)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY), datatype.tokenValue)
+            addIssue(node, getLocalizedMessage(), datatype.tokenValue)
         }
     }
 
     companion object {
-        internal const val CHECK_KEY = "CharacterDatatypeUsage"
         val CHAR_DATATYPE = arrayOf(PlSqlKeyword.CHAR, PlSqlKeyword.VARCHAR)
     }
 

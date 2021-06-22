@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = VariableHidingCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -45,14 +45,11 @@ class VariableHidingCheck : AbstractBaseCheck() {
                 val originalVariable = symbols.last.declaration()
 
                 if (originalVariable != identifier) {
-                    addIssue(identifier, getLocalizedMessage(CHECK_KEY), name, originalVariable.tokenLine)
+                    addIssue(identifier, getLocalizedMessage(), name, originalVariable.tokenLine)
                             .secondary(originalVariable, "Original")
                 }
             }
         }
     }
 
-    companion object {
-        internal const val CHECK_KEY = "VariableHiding"
-    }
 }

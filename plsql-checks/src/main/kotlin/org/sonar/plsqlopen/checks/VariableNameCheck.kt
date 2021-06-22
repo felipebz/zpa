@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.regex.Pattern
 
-@Rule(key = VariableNameCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -46,13 +46,11 @@ class VariableNameCheck : AbstractBaseCheck() {
         val name = identifier.tokenOriginalValue
 
         if (!pattern.matcher(name).matches()) {
-            addIssue(identifier, getLocalizedMessage(CHECK_KEY), name, regexp)
+            addIssue(identifier, getLocalizedMessage(), name, regexp)
         }
     }
 
     companion object {
-        internal const val CHECK_KEY = "VariableName"
-
         private const val DEFAULT_REGEXP = "[a-zA-Z]([a-zA-Z0-9_]*[a-zA-Z0-9])?"
     }
 

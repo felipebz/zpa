@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
-@Rule(key = UnusedVariableCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -44,14 +44,10 @@ class UnusedVariableCheck : AbstractBaseCheck() {
         val symbols = scope.getSymbols(Symbol.Kind.VARIABLE)
         for (symbol in symbols) {
             if (symbol.usages().isEmpty()) {
-                addIssue(symbol.declaration(), getLocalizedMessage(CHECK_KEY),
+                addIssue(symbol.declaration(), getLocalizedMessage(),
                         symbol.declaration().tokenOriginalValue)
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "UnusedVariable"
     }
 
 }

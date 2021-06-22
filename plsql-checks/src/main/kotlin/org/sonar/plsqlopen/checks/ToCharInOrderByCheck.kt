@@ -20,14 +20,13 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
-import org.sonar.plsqlopen.checks.ToCharInOrderByCheck.Companion.CHECK_KEY
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-@Rule(key = CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -41,7 +40,7 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
         val expression = node.firstChild
 
         if (toChar.matches(expression)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
 
         if (expression.type === PlSqlGrammar.LITERAL && semantic(expression).plSqlType === PlSqlType.NUMERIC) {
@@ -55,14 +54,13 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
                 val selectColumn = columns[index - 1].firstChild
 
                 if (toChar.matches(selectColumn)) {
-                    addIssue(node, getLocalizedMessage(CHECK_KEY))
+                    addIssue(node, getLocalizedMessage())
                 }
             }
         }
     }
 
     companion object {
-        internal const val CHECK_KEY = "ToCharInOrderBy"
         private val toChar = MethodMatcher.create().name("to_char").withNoParameterConstraint()
     }
 

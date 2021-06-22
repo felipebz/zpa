@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = SameConditionCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -53,7 +53,7 @@ class SameConditionCheck : AbstractBaseCheck() {
         for (j in 0 until index) {
             val otherCondition = conditions[j]
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                addIssue(condition, getLocalizedMessage(CHECK_KEY), otherCondition.token.line)
+                addIssue(condition, getLocalizedMessage(), otherCondition.token.line)
                         .secondary(otherCondition, "Original")
                 return
             }
@@ -68,10 +68,6 @@ class SameConditionCheck : AbstractBaseCheck() {
             }
         }
         return expressions
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "SameCondition"
     }
 
 }

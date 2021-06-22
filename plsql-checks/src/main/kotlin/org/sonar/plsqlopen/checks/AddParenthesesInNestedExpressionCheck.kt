@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = AddParenthesesInNestedExpressionCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,12 +36,8 @@ class AddParenthesesInNestedExpressionCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val andExpressions = node.getChildren(PlSqlGrammar.AND_EXPRESSION)
         for (andExpression in andExpressions) {
-            addIssue(andExpression, getLocalizedMessage(CHECK_KEY))
+            addIssue(andExpression, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "AddParenthesesInNestedExpression"
     }
 
 }

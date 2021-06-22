@@ -24,7 +24,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ComparisonWithBooleanCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -38,14 +38,10 @@ class ComparisonWithBooleanCheck : AbstractBaseCheck() {
         val children = node.getChildren(PlSqlGrammar.LITERAL)
         for (child in children) {
             if (child.firstChild.typeIs(PlSqlGrammar.BOOLEAN_LITERAL)) {
-                addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine, child.tokenValue)
+                addLineIssue(getLocalizedMessage(), node.tokenLine, child.tokenValue)
                 return
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ComparisonWithBoolean"
     }
 
 }

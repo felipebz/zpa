@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
-@Rule(key = VariableInCountCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -54,12 +54,8 @@ class VariableInCountCheck : AbstractBaseCheck() {
         val value = arguments[0]
         val symbol = semantic(value).symbol
         if (symbol != null) {
-            addIssue(currentNode, getLocalizedMessage(CHECK_KEY), value.tokenOriginalValue)
+            addIssue(currentNode, getLocalizedMessage(), value.tokenOriginalValue)
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "VariableInCount"
     }
 
 }

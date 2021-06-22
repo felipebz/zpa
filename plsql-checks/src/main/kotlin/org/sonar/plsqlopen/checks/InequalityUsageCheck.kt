@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = InequalityUsageCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.OBSOLETE])
+@Rule(priority = Priority.MAJOR, tags = [Tags.OBSOLETE])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -34,11 +34,7 @@ class InequalityUsageCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        addLineIssue(getLocalizedMessage(CHECK_KEY), node.tokenLine, node.tokenValue)
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "InequalityUsage"
+        addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokenValue)
     }
 
 }

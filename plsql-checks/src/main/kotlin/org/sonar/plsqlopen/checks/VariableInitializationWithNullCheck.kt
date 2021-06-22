@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = VariableInitializationWithNullCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -37,13 +37,9 @@ class VariableInitializationWithNullCheck : AbstractBaseCheck() {
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.RECORD_FIELD_DECLARATION)) {
             val expression = node.lastChild
             if (CheckUtils.isNullLiteralOrEmptyString(expression)) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "VariableInitializationWithNull"
     }
 
 }

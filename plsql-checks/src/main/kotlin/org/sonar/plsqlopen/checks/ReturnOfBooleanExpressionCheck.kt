@@ -27,7 +27,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ReturnOfBooleanExpressionCheck.CHECK_KEY, priority = Priority.MINOR, tags = [Tags.CLUMSY])
+@Rule(priority = Priority.MINOR, tags = [Tags.CLUMSY])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -47,7 +47,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
 
             if (firstBoolean != null && secondBoolean != null
                     && firstBoolean.tokenValue != secondBoolean.tokenValue) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
     }
@@ -81,10 +81,6 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
 
     private fun getBooleanLiteral(expression: AstNode?): AstNode? {
         return expression?.getFirstChild(PlSqlGrammar.BOOLEAN_LITERAL)
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ReturnOfBooleanExpression"
     }
 
 }

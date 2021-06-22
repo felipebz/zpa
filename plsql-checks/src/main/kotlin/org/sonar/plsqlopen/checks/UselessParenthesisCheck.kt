@@ -24,7 +24,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = UselessParenthesisCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -37,12 +37,8 @@ class UselessParenthesisCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val parent = node.parent
         if (parent.typeIs(PlSqlGrammar.BRACKED_EXPRESSION) && parent.numberOfChildren == 3) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "UselessParenthesis"
     }
 
 }

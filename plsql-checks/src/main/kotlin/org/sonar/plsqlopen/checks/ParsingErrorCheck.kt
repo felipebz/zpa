@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 
-@Rule(key = ParsingErrorCheck.CHECK_KEY, priority = Priority.INFO)
+@Rule(priority = Priority.INFO)
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 class ParsingErrorCheck : AbstractBaseCheck() {
 
@@ -41,11 +41,7 @@ class ParsingErrorCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        addIssue(node, getLocalizedMessage(CHECK_KEY))
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ParsingError"
+        addIssue(node, getLocalizedMessage())
     }
 
 }

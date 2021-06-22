@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = SameBranchCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -53,7 +53,7 @@ class SameBranchCheck : AbstractBaseCheck() {
         val previousBranchIndex = index - 1
         val otherBranch = branches[previousBranchIndex]
         if (CheckUtils.equalNodes(otherBranch, branch)) {
-            addIssue(branch, getLocalizedMessage(CHECK_KEY), otherBranch.token.line)
+            addIssue(branch, getLocalizedMessage(), otherBranch.token.line)
                     .secondary(otherBranch, "Original")
         }
     }
@@ -73,10 +73,6 @@ class SameBranchCheck : AbstractBaseCheck() {
         }
 
         return statementsFromBranches
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "SameBranch"
     }
 
 }

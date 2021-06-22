@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
-@Rule(key = NvlWithNullParameterCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -43,13 +43,9 @@ class NvlWithNullParameterCheck : AbstractBaseCheck() {
 
         for (argument in nvl.getArgumentsValues(node)) {
             if (CheckUtils.isNullLiteralOrEmptyString(argument)) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY), argument.tokenValue)
+                addIssue(node, getLocalizedMessage(), argument.tokenValue)
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "NvlWithNullParameter"
     }
 
 }

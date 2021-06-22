@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
-@Rule(key = RedundantExpectationCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault
@@ -47,14 +47,12 @@ class RedundantExpectationCheck : AbstractBaseCheck() {
 
             val expectedValue = matcherArguments[0]
             if (CheckUtils.equalNodes(actualValue, expectedValue)) {
-                addIssue(actualValue, getLocalizedMessage(CHECK_KEY)).secondary(expectedValue, "Expected value")
+                addIssue(actualValue, getLocalizedMessage()).secondary(expectedValue, "Expected value")
             }
         }
     }
 
     companion object {
-        internal const val CHECK_KEY = "RedundantExpectation"
-
         private val expectMatcher = MethodMatcher.create()
             .packageName("UT")
             .name("EXPECT")

@@ -24,7 +24,7 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = DeadCodeCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -50,7 +50,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
         }
         val nextSibling = node.nextSibling
         if (nextSibling != null && nextSibling.typeIs(PlSqlGrammar.STATEMENT)) {
-            addIssue(nextSibling, getLocalizedMessage(CHECK_KEY))
+            addIssue(nextSibling, getLocalizedMessage())
             return true
         }
         return false
@@ -69,7 +69,6 @@ class DeadCodeCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        internal const val CHECK_KEY = "DeadCode"
         val STATEMENT_OR_CALL = arrayOf(PlSqlGrammar.STATEMENT, PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CALL_STATEMENT)
         val STATEMENT_SECTION = arrayOf(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS)
     }

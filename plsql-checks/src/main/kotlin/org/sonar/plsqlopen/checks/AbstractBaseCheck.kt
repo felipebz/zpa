@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen.checks
 
+import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition.Companion.convertCheckClassName
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.util.*
 
@@ -26,7 +27,9 @@ abstract class AbstractBaseCheck : PlSqlCheck() {
 
     private val bundle: ResourceBundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault())
 
-    protected fun getLocalizedMessage(checkKey: String): String =
-        bundle.getString("$checkKey.message")
+    protected fun getLocalizedMessage(): String {
+        return bundle.getString("${convertCheckClassName(this::class.java)}.message")
+    }
+
 
 }

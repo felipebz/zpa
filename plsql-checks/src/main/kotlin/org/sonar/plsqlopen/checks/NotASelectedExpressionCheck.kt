@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = NotASelectedExpressionCheck.CHECK_KEY, priority = Priority.CRITICAL, tags = [Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -70,7 +70,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
         }
 
         if (!found) {
-            addIssue(orderByItemValue, getLocalizedMessage(CHECK_KEY))
+            addIssue(orderByItemValue, getLocalizedMessage())
         }
     }
 
@@ -97,10 +97,6 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
         }
 
         return values
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "NotASelectedExpression"
     }
 
 }

@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = UnnecessaryNullStatementCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,12 +36,8 @@ class UnnecessaryNullStatementCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val parent = node.parent
         if (parent.previousSibling != null || parent.nextSibling != null) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "UnnecessaryNullStatement"
     }
 
 }

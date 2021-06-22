@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ColumnsShouldHaveTableNameCheck.CHECK_KEY, priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -47,11 +47,7 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
                 !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD) &&
                 semantic(candidate).symbol == null) {
 
-            addIssue(candidate, getLocalizedMessage(CHECK_KEY), candidate.tokenOriginalValue)
+            addIssue(candidate, getLocalizedMessage(), candidate.tokenOriginalValue)
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ColumnsShouldHaveTableName"
     }
 }

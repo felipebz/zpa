@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
-@Rule(key = ToDateWithoutFormatCheck.CHECK_KEY, priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -40,13 +40,9 @@ class ToDateWithoutFormatCheck : AbstractBaseCheck() {
         if (toDate.matches(node)) {
             val argument = toDate.getArgumentsValues(node)[0]
             if (!CheckUtils.isNullLiteralOrEmptyString(argument)) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY))
+                addIssue(node, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ToDateWithoutFormat"
     }
 
 }

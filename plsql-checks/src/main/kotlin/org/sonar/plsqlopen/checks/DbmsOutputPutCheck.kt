@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 
-@Rule(key = DbmsOutputPutCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
@@ -51,11 +51,7 @@ class DbmsOutputPutCheck : AbstractBaseCheck() {
             return
         }
 
-        addIssue(node, getLocalizedMessage(CHECK_KEY))
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "DbmsOutputPut"
+        addIssue(node, getLocalizedMessage())
     }
 
 }

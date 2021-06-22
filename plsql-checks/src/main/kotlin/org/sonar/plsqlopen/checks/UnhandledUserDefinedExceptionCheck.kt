@@ -32,7 +32,7 @@ import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 
-@Rule(key = UnhandledUserDefinedExceptionCheck.CHECK_KEY, priority = Priority.CRITICAL, tags = [Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
@@ -53,7 +53,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
             val checkException = exceptionShouldBeChecked(symbols.first)
 
             if (checkException && !isHandled(identifierName)) {
-                addIssue(node, getLocalizedMessage(CHECK_KEY), identifierName)
+                addIssue(node, getLocalizedMessage(), identifierName)
             }
         }
     }
@@ -91,8 +91,6 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     companion object {
-        internal const val CHECK_KEY = "UnhandledUserDefinedException"
-
         val PACKAGE_SPEC_OR_BODY = arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
     }
 

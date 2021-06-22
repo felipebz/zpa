@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = DuplicatedValueInInCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -69,15 +69,11 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
             val other = values[j]
 
             if (CheckUtils.equalNodes(current, other)) {
-                addIssue(current, getLocalizedMessage(CHECK_KEY), current.tokenOriginalValue)
+                addIssue(current, getLocalizedMessage(), current.tokenOriginalValue)
                         .secondary(other, "Original")
                 return
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "DuplicatedValueInIn"
     }
 
 }

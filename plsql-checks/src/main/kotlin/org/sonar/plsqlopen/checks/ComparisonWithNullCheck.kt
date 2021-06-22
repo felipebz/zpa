@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ComparisonWithNullCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -47,13 +47,9 @@ class ComparisonWithNullCheck : AbstractBaseCheck() {
                     "IS NOT NULL"
                 }
 
-                addIssue(node, getLocalizedMessage(CHECK_KEY), suggestion)
+                addIssue(node, getLocalizedMessage(), suggestion)
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ComparisonWithNull"
     }
 
 }

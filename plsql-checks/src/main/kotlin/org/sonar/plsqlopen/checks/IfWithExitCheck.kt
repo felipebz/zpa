@@ -25,7 +25,7 @@ import org.sonar.plsqlopen.tryGetAsTree
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = IfWithExitCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -41,12 +41,8 @@ class IfWithExitCheck : AbstractBaseCheck() {
         if (ifStatement != null &&
                 ifStatement.elsifClauses.isEmpty() && ifStatement.elseClause == null &&
                 ifStatement.statements.size == 1) {
-            addIssue(ifStatement, getLocalizedMessage(CHECK_KEY))
+            addIssue(ifStatement, getLocalizedMessage())
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "IfWithExit"
     }
 
 }

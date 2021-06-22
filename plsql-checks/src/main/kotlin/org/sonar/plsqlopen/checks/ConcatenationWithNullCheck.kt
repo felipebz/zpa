@@ -23,7 +23,7 @@ import com.sonar.sslr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-@Rule(key = ConcatenationWithNullCheck.CHECK_KEY, priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -36,13 +36,9 @@ class ConcatenationWithNullCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         for (child in node.children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
-                addIssue(child, getLocalizedMessage(CHECK_KEY))
+                addIssue(child, getLocalizedMessage())
             }
         }
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "ConcatenationWithNull"
     }
 
 }

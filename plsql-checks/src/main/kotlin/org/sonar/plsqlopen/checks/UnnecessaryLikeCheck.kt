@@ -25,9 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
-const val CHECK_KEY = "UnnecessaryLikeCheck"
-
-@Rule(key = CHECK_KEY, priority = Priority.MINOR, tags = [Tags.CONFUSING])
+@Rule(priority = Priority.MINOR, tags = [Tags.CONFUSING])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -50,8 +48,9 @@ class UnnecessaryLikeCheck : AbstractBaseCheck() {
 
         val likeNode = node.getFirstChild(PlSqlKeyword.LIKE).nextSibling
         if (likeNode.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && !likeNode.tokenValue.contains(regex)) {
-            addIssue(node, getLocalizedMessage(CHECK_KEY))
+            addIssue(node, getLocalizedMessage())
         }
     }
+
 }
 

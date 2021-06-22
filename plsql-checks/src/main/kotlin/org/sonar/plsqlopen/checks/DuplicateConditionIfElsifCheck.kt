@@ -26,7 +26,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import java.util.*
 
-@Rule(key = DuplicateConditionIfElsifCheck.CHECK_KEY, priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
@@ -53,7 +53,7 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
         for (j in 0 until index) {
             val otherCondition = conditions[j]
             if (CheckUtils.equalNodes(otherCondition, condition)) {
-                addIssue(condition, getLocalizedMessage(CHECK_KEY), otherCondition.token.line)
+                addIssue(condition, getLocalizedMessage(), otherCondition.token.line)
                         .secondary(otherCondition, "Original")
                 return
             }
@@ -70,10 +70,6 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
         }
 
         return conditionsFromBranches
-    }
-
-    companion object {
-        internal const val CHECK_KEY = "DuplicateConditionIfElsif"
     }
 
 }
