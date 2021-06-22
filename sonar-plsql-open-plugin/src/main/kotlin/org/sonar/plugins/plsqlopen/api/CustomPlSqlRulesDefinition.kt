@@ -37,7 +37,7 @@ abstract class CustomPlSqlRulesDefinition : RulesDefinition, ZpaRulesDefinition 
 
         // Load metadata from check classes' annotations
         CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(repo), PlSql.KEY, SonarQubeRuleMetadataLoader())
-            .addRuleClasses(false, checkClasses().toList())
+            .addRuleClasses(checkClasses().toList())
 
         repo.done()
     }

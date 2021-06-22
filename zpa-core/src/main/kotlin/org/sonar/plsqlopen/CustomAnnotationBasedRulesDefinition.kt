@@ -39,7 +39,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
     private val externalDescriptionBasePath: String = String.format("%s/rules/plsql",
         getLocalizedFolderName(String.format("/org/sonar/l10n/%s", languageKey), locale))
 
-    fun addRuleClasses(failIfNoExplicitKey: Boolean, ruleClasses: Iterable<Class<*>>) {
+    fun addRuleClasses(ruleClasses: Iterable<Class<*>>) {
         val loader = RulesDefinitionAnnotationLoader(ruleMetadataLoader)
         for (annotatedClass in ruleClasses) {
             loader.load(repository, annotatedClass)
@@ -47,7 +47,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
 
         val newRules = ArrayList<ZpaRule>()
         for (ruleClass in ruleClasses) {
-            val rule = newRule(ruleClass, failIfNoExplicitKey)
+            val rule = newRule(ruleClass)
             addHtmlDescription(rule)
             rule.template = getAnnotation(ruleClass, RuleTemplate::class.java) != null
 
@@ -91,16 +91,8 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
 
     }
 
-    private fun newRule(ruleClass: Class<*>, failIfNoExplicitKey: Boolean): ZpaRule {
-        val ruleAnnotation = ruleMetadataLoader.getRuleAnnotation(ruleClass)
-                ?: throw IllegalArgumentException("No Rule annotation was found on $ruleClass")
-        var ruleKey = ruleAnnotation.key
-        if (ruleKey.isEmpty()) {
-            if (failIfNoExplicitKey) {
-                throw IllegalArgumentException("No key is defined in Rule annotation of $ruleClass")
-            }
-            ruleKey = ruleClass.canonicalName
-        }
+    private fun newRule(ruleClass: Class<*>): ZpaRule {
+        val ruleKey = getRuleKey(ruleMetadataLoader, ruleClass)
         return repository.rule(ruleKey) ?: throw IllegalStateException("Rule $ruleKey was not created")
     }
 
@@ -136,7 +128,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
          * @param ruleClasses classes to add
          */
         fun load(repository: ZpaRepository, languageKey: String, ruleClasses: Iterable<Class<*>>, ruleMetadataLoader: RuleMetadataLoader) {
-            CustomAnnotationBasedRulesDefinition(repository, languageKey, ruleMetadataLoader).addRuleClasses(true, ruleClasses)
+            CustomAnnotationBasedRulesDefinition(repository, languageKey, ruleMetadataLoader).addRuleClasses(ruleClasses)
         }
 
         fun getLocalizedFolderName(baseName: String, locale: Locale): String {
@@ -157,6 +149,20 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
             }
 
             return path
+        }
+
+        fun convertCheckClassName(ruleClass: Class<*>): String {
+            var name = ruleClass.simpleName
+            if (name.endsWith("Check")) {
+                name = name.substring(0, name.length - 5)
+            }
+            return name
+        }
+
+        fun getRuleKey(ruleMetadataLoader: RuleMetadataLoader, ruleClass: Class<*>): String {
+            val ruleAnnotation = ruleMetadataLoader.getRuleAnnotation(ruleClass)
+                ?: throw IllegalArgumentException("No Rule annotation was found on $ruleClass")
+            return ruleAnnotation.key.ifEmpty { convertCheckClassName(ruleClass) }
         }
     }
 

@@ -76,16 +76,10 @@ class CustomAnnotationBasedRulesDefinitionTest {
     internal class RuleClassWithoutAnnotationDefinedKey
 
     @Test
-    fun ruleWithoutExpliciKey() {
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(RuleClassWithoutAnnotationDefinedKey::class.java)
-    }
-
-    @Test
     fun ruleWithoutExplicitKeyCanBeAcceptable() {
-        val repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, false, RuleClassWithoutAnnotationDefinedKey::class.java)
+        val repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, RuleClassWithoutAnnotationDefinedKey::class.java)
         val rule = repository.availableRules()[0]
-        assertThat(rule.key).isEqualTo(RuleClassWithoutAnnotationDefinedKey::class.java.canonicalName)
+        assertThat(rule.key).isEqualTo(RuleClassWithoutAnnotationDefinedKey::class.java.simpleName)
         assertThat(rule.name).isEqualTo("name1")
     }
 
@@ -150,13 +144,13 @@ class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     private fun buildRepository(vararg classes: Class<*>): Repository {
-        return buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, true, *classes)
+        return buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, *classes)
     }
 
-    private fun buildRepository(languageKey: String, failIfNoExplicitKey: Boolean, vararg classes: Class<*>): Repository {
+    private fun buildRepository(languageKey: String, vararg classes: Class<*>): Repository {
         val newRepository = createRepository()
         CustomAnnotationBasedRulesDefinition(newRepository, languageKey, RuleMetadataLoader())
-                .addRuleClasses(failIfNoExplicitKey, classes.toList())
+                .addRuleClasses(classes.toList())
         return newRepository
     }
 

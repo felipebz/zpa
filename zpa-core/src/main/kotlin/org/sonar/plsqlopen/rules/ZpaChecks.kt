@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen.rules
 
+import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition.Companion.getRuleKey
 import org.sonar.plsqlopen.utils.getFields
 import java.lang.reflect.Field
 import java.util.*
@@ -46,13 +47,11 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
         ruleByCheck[obj] = ruleKey
     }
 
-    fun addAnnotatedChecks(checkClassesOrObjects: Iterable<Any>): ZpaChecks<C> {
-        val checksByEngineKey = HashMap<String, Any>()
+    fun addAnnotatedChecks(checkClassesOrObjects: Iterable<Class<*>>): ZpaChecks<C> {
+        val checksByEngineKey = HashMap<String, Class<*>>()
         for (checkClassesOrObject in checkClassesOrObjects) {
-            val engineKey = annotatedEngineKey(checkClassesOrObject)
-            if (engineKey != null) {
-                checksByEngineKey[engineKey] = checkClassesOrObject
-            }
+            val engineKey = getRuleKey(ruleMetadataLoader, checkClassesOrObject)
+            checksByEngineKey[engineKey] = checkClassesOrObject
         }
 
         for (activeRule in activeRules.findByRepository(repository)) {
@@ -68,19 +67,6 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
             }
         }
         return this
-    }
-
-    private fun annotatedEngineKey(annotatedClassOrObject: Any): String? {
-        var key: String? = null
-        val ruleAnnotation = ruleMetadataLoader.getRuleAnnotation(annotatedClassOrObject)
-        if (ruleAnnotation != null) {
-            key = ruleAnnotation.key
-        }
-        var clazz: Class<*> = annotatedClassOrObject.javaClass
-        if (annotatedClassOrObject is Class<*>) {
-            clazz = annotatedClassOrObject
-        }
-        return if (key.isNullOrBlank()) clazz.canonicalName else key
     }
 
     private fun instantiate(activeRule: ZpaActiveRule, checkClassOrInstance: Any): C {

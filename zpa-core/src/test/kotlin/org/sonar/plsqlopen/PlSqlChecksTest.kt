@@ -39,7 +39,7 @@ class PlSqlChecksTest {
     fun setUp() {
         val repository = Repository(DEFAULT_REPOSITORY_KEY)
         CustomAnnotationBasedRulesDefinition(repository, "plsqlopen", RuleMetadataLoader())
-            .addRuleClasses(false, listOf(MyRule::class.java))
+            .addRuleClasses(listOf(MyRule::class.java))
 
         val customRepository = Repository(CUSTOM_REPOSITORY_KEY)
         customRulesDefinition = MyCustomPlSqlRulesDefinition()
@@ -113,7 +113,7 @@ class PlSqlChecksTest {
     class MyCustomPlSqlRulesDefinition : ZpaRulesDefinition {
         fun define(repository: ZpaRepository) {
             CustomAnnotationBasedRulesDefinition(repository, "plsqlopen", RuleMetadataLoader())
-                .addRuleClasses(false, checkClasses().toList())
+                .addRuleClasses(checkClasses().toList())
         }
 
         override fun repositoryName(): String {

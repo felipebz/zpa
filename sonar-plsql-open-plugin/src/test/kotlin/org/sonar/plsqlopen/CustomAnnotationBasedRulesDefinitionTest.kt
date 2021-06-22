@@ -77,17 +77,10 @@ class CustomAnnotationBasedRulesDefinitionTest {
     internal class RuleClassWithoutAnnotationDefinedKey
 
     @Test
-    fun ruleWithoutExpliciKey() {
-        assertThatIllegalArgumentException().isThrownBy {
-            buildSingleRuleRepository(RuleClassWithoutAnnotationDefinedKey::class.java)
-        }
-    }
-
-    @Test
     fun ruleWithoutExplicitKeyCanBeAcceptable() {
-        val repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, false, RuleClassWithoutAnnotationDefinedKey::class.java)
+        val repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, RuleClassWithoutAnnotationDefinedKey::class.java)
         val rule = repository.rules()[0]
-        assertThat(rule.key()).isEqualTo(RuleClassWithoutAnnotationDefinedKey::class.java.canonicalName)
+        assertThat(rule.key()).isEqualTo(RuleClassWithoutAnnotationDefinedKey::class.java.simpleName)
         assertThat(rule.name()).isEqualTo("name1")
     }
 
@@ -162,13 +155,13 @@ class CustomAnnotationBasedRulesDefinitionTest {
     }
 
     private fun buildRepository(vararg classes: Class<*>): Repository {
-        return buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, true, *classes)
+        return buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, *classes)
     }
 
-    private fun buildRepository(languageKey: String, failIfNoExplicitKey: Boolean, vararg classes: Class<*>): Repository {
+    private fun buildRepository(languageKey: String, vararg classes: Class<*>): Repository {
         val newRepository = createRepository(languageKey)
         CustomAnnotationBasedRulesDefinition(SonarQubeRepositoryAdapter(newRepository), languageKey, SonarQubeRuleMetadataLoader())
-                .addRuleClasses(failIfNoExplicitKey, classes.toList())
+                .addRuleClasses(classes.toList())
         newRepository.done()
         return context.repository(REPO_KEY) ?: fail("Should build a repository")
     }

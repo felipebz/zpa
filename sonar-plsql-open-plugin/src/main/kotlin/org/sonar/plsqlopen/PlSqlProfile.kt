@@ -42,10 +42,8 @@ class PlSqlProfile : BuiltInQualityProfilesDefinition {
 
     private fun addRule(ruleClass: Class<*>, profile: BuiltInQualityProfilesDefinition.NewBuiltInQualityProfile) {
         if (AnnotationUtils.getAnnotation(ruleClass, ActivatedByDefault::class.java) != null) {
-            val ruleKey = ruleMetadataLoader.getRuleAnnotation(ruleClass)?.key
-            if (ruleKey != null) {
-                profile.activateRule(PlSqlRuleRepository.KEY, ruleKey)
-            }
+            val ruleKey = CustomAnnotationBasedRulesDefinition.getRuleKey(ruleMetadataLoader, ruleClass)
+            profile.activateRule(PlSqlRuleRepository.KEY, ruleKey)
         }
     }
 

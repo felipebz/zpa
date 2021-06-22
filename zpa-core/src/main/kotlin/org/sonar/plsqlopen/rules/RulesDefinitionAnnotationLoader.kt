@@ -19,6 +19,7 @@
  */
 package org.sonar.plsqlopen.rules
 
+import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition.Companion.convertCheckClassName
 import org.sonar.plsqlopen.utils.getFields
 import org.sonar.plsqlopen.utils.log.Loggers
 import java.lang.reflect.Field
@@ -41,7 +42,7 @@ class RulesDefinitionAnnotationLoader(private val ruleMetadataLoader: RuleMetada
         }
     }
     private fun loadRule(repo: ZpaRepository, clazz: Class<*>, ruleAnnotation: RuleData): ZpaRule {
-        val ruleKey = ruleAnnotation.key.ifEmpty { clazz.canonicalName }
+        val ruleKey = ruleAnnotation.key.ifEmpty { convertCheckClassName(clazz) }
         val ruleName = ruleAnnotation.name
         val description = ruleAnnotation.description
 
