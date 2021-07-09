@@ -146,9 +146,9 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         val exceptionHandler = node
                 .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
                 .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
-        val inheritanceClause = node.parent.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
+        val inheritanceClause = node.parent?.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
         val isOverridingMember = inheritanceClause != null &&
-            inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
+            inheritanceClause.firstChild?.type !== PlSqlKeyword.NOT &&
             inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)
 
         enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
@@ -173,7 +173,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitFor(node: AstNode) {
         enterScope(node)
-        val identifier = node.getFirstChild(PlSqlKeyword.FOR).nextSibling
+        val identifier = node.getFirstChild(PlSqlKeyword.FOR)?.nextSibling
 
         val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
             PlSqlType.NUMERIC
@@ -186,7 +186,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitForAll(node: AstNode) {
         enterScope(node)
-        val identifier = node.getFirstChild(PlSqlKeyword.FORALL).nextSibling
+        val identifier = node.getFirstChild(PlSqlKeyword.FORALL)?.nextSibling
         createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.NUMERIC)
     }
 
@@ -239,7 +239,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         (node as SemanticAstNode).plSqlType = solveType(node)
     }
 
-    private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, type: PlSqlType): Symbol {
+    private fun createSymbol(identifier: AstNode?, kind: Symbol.Kind, type: PlSqlType): Symbol {
+        checkNotNull(identifier)
         val scope = currentScope
         if (scope == null) {
             throw IllegalStateException("Cannot create a symbol without a scope.")

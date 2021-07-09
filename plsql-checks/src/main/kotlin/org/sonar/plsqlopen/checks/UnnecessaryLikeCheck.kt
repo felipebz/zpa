@@ -38,16 +38,19 @@ class UnnecessaryLikeCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        val lastChild = node.lastChild
+        checkNotNull(lastChild)
+
         val escapeChar = if (node.hasDescendant(PlSqlKeyword.ESCAPE) &&
-            node.lastChild.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL))
-            node.lastChild.tokenValue.trim('\'')
+            lastChild.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL))
+            lastChild.tokenValue.trim('\'')
         else
             ""
 
         val regex = if (escapeChar.isEmpty()) escapeRegex else Regex("[^${Regex.escape(escapeChar)}][%_]")
 
-        val likeNode = node.getFirstChild(PlSqlKeyword.LIKE).nextSibling
-        if (likeNode.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && !likeNode.tokenValue.contains(regex)) {
+        val likeNode = node.getFirstChild(PlSqlKeyword.LIKE)?.nextSibling
+        if (likeNode != null && likeNode.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && !likeNode.tokenValue.contains(regex)) {
             addIssue(node, getLocalizedMessage())
         }
     }

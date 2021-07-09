@@ -39,7 +39,10 @@ class IdenticalExpressionCheck : AbstractBaseCheck() {
         if (operator != null) {
 
             val leftSide = node.firstChild
+            checkNotNull(leftSide)
+
             val rightSide = node.lastChild
+            checkNotNull(rightSide)
 
             if (CheckUtils.equalNodes(leftSide, rightSide)) {
                 addIssue(leftSide, getLocalizedMessage(), operator.tokenValue)

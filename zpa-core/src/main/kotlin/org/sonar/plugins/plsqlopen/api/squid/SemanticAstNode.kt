@@ -44,9 +44,9 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     val tree: Tree by lazy {
         var type = PlSqlGrammarBuilder.classForType(astNode.type)
         if (type == TreeImpl::class.java) {
-            var node = astNode
-            while (type == TreeImpl::class.java && node.numberOfChildren == 1) {
-                node = node.firstChild
+            var node: AstNode = astNode
+            while (type == TreeImpl::class.java && node.hasChildren()) {
+                node = node.children.first()
                 type = PlSqlGrammarBuilder.classForType(node.type)
             }
         }
@@ -60,7 +60,7 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     }
 
     init {
-        super.setFromIndex(astNode.fromIndex)
-        super.setToIndex(astNode.toIndex)
+        super.fromIndex = astNode.fromIndex
+        super.toIndex = astNode.toIndex
     }
 }

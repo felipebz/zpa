@@ -37,7 +37,7 @@ class CharacterDatatypeUsageCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val datatype = node.firstChild
-        if (datatype.typeIs(CHAR_DATATYPE)) {
+        if (datatype != null && datatype.typeIs(CHAR_DATATYPE)) {
             addIssue(node, getLocalizedMessage(), datatype.tokenValue)
         }
     }

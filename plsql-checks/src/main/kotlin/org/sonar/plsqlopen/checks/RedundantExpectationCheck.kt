@@ -36,7 +36,8 @@ class RedundantExpectationCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (expectMatcher.matches(node)) {
-            val expectationNode = node.nextSibling.nextSibling
+            val expectationNode = node.nextSibling?.nextSibling
+            checkNotNull(expectationNode)
 
             val actualValue = expectMatcher.getArgumentsValues(node)[0]
 

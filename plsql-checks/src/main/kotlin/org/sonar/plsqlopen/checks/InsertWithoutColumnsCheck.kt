@@ -38,6 +38,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         if (!node.hasDirectChildren(DmlGrammar.INSERT_COLUMNS)) {
             val value = node.lastChild
+            checkNotNull(value)
 
             if (semantic(value).plSqlType === PlSqlType.ROWTYPE) {
                 return

@@ -22,7 +22,12 @@ package org.sonar.plsqlopen.lexer
 import com.sonar.sslr.impl.Lexer
 import com.sonar.sslr.impl.channel.BlackHoleChannel
 import com.sonar.sslr.impl.channel.IdentifierAndKeywordChannel
-import com.sonar.sslr.impl.channel.RegexpChannelBuilder.*
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.and
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.commentRegexp
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.g
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.o2n
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.or
+import com.sonar.sslr.impl.channel.RegexpChannelBuilder.regexp
 import com.sonar.sslr.impl.channel.UnknownCharacterChannel
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword

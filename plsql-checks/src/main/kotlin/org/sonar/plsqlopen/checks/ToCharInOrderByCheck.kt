@@ -38,6 +38,7 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val expression = node.firstChild
+        checkNotNull(expression)
 
         if (toChar.matches(expression)) {
             addIssue(node, getLocalizedMessage())
@@ -47,11 +48,16 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
             val index = Integer.parseInt(expression.tokenOriginalValue)
 
             val selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)
+            checkNotNull(selectExpression)
+
             val queryBlock = selectExpression.getFirstChild(DmlGrammar.QUERY_BLOCK)
+            checkNotNull(queryBlock)
+
             val columns = queryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
 
             if (columns.size >= index) {
                 val selectColumn = columns[index - 1].firstChild
+                checkNotNull(selectColumn)
 
                 if (toChar.matches(selectColumn)) {
                     addIssue(node, getLocalizedMessage())

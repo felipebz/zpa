@@ -54,12 +54,12 @@ class DefaultTypeSolver {
             type = PlSqlType.BOOLEAN
         } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
             val anchoredDatatype = node.firstChild
-            if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
+            if (anchoredDatatype?.lastChild?.type === PlSqlKeyword.ROWTYPE) {
                 type = PlSqlType.ROWTYPE
             }
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.type() ?: PlSqlType.UNKNOWN
+            type = datatype?.tokenOriginalValue?.let { scope?.getSymbol(it, Symbol.Kind.TYPE)?.type() } ?: PlSqlType.UNKNOWN
         }
         return type
     }

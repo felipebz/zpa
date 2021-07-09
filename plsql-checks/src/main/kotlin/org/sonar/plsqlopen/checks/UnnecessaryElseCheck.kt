@@ -35,6 +35,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val ifStatement = node.parent
+        checkNotNull(ifStatement)
 
         if (!hasElsifClause(ifStatement) && hasTerminationStatement(ifStatement)) {
             addLineIssue(getLocalizedMessage(), node.tokenLine)
@@ -46,7 +47,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
     }
 
     private fun hasTerminationStatement(ifStatement: AstNode): Boolean {
-        for (statement in ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS).children) {
+        ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS)?.children?.forEach { statement ->
             val internal = statement.firstChild
             if (CheckUtils.isTerminationStatement(internal)) {
                 return true

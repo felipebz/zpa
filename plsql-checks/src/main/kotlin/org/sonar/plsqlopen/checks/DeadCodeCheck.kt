@@ -39,13 +39,13 @@ class DeadCodeCheck : AbstractBaseCheck() {
         if (CheckUtils.isTerminationStatement(node)) {
             var parent = node.parent
             while (!checkNode(parent)) {
-                parent = parent.parent
+                parent = parent?.parent
             }
         }
     }
 
-    private fun checkNode(node: AstNode): Boolean {
-        if (!shouldCheckNode(node)) {
+    private fun checkNode(node: AstNode?): Boolean {
+        if (!shouldCheckNode(node) || node == null) {
             return true
         }
         val nextSibling = node.nextSibling

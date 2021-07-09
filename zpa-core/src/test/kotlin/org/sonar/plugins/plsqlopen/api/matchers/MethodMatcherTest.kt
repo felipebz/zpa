@@ -196,11 +196,15 @@ class MethodMatcherTest : RuleTest() {
     }
 
     fun matches(matcher: MethodMatcher, text: String) {
-        assertThat(matcher.matches(p.parse(text).firstChild)).isTrue
+        val node = p.parse(text).firstChild
+        checkNotNull(node)
+        assertThat(matcher.matches(node)).isTrue
     }
 
     fun notMatches(matcher: MethodMatcher, text: String) {
-        assertThat(matcher.matches(p.parse(text).firstChild)).isFalse
+        val node = p.parse(text).firstChild
+        checkNotNull(node)
+        assertThat(matcher.matches(node)).isFalse
     }
 
 }

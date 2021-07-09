@@ -18,8 +18,8 @@
       <artifactId>kotlin-stdlib-jdk8</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sslr</groupId>
-      <artifactId>sslr-core</artifactId>
+      <groupId>com.felipebz.flr</groupId>
+      <artifactId>flr-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -27,8 +27,8 @@
       <version>${gson.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sslr</groupId>
-      <artifactId>sslr-testing-harness</artifactId>
+      <groupId>com.felipebz.flr</groupId>
+      <artifactId>flr-testing-harness</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -39,7 +39,9 @@ class TokenLocation private constructor(
     companion object {
         private val pattern = Regex("\\R")
 
-        fun from(token: Token): TokenLocation {
+        fun from(token: Token?): TokenLocation {
+            checkNotNull(token)
+
             val lineCount: Int
             var lastLineLength = 0
 

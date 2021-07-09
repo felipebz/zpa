@@ -44,8 +44,8 @@ object CheckUtils {
     val terminationStatements: Array<AstNodeType>
         get() = TERMINATION_STATEMENTS.clone()
 
-    fun isNullLiteralOrEmptyString(node: AstNode): Boolean {
-        return (node as SemanticAstNode).plSqlType === PlSqlType.NULL
+    fun isNullLiteralOrEmptyString(node: AstNode?): Boolean {
+        return (node as SemanticAstNode?)?.plSqlType === PlSqlType.NULL
     }
 
     fun isEmptyString(node: AstNode): Boolean {
@@ -117,8 +117,8 @@ object CheckUtils {
         return node
     }
 
-    fun isTerminationStatement(node: AstNode): Boolean {
-        return (node.typeIs(TERMINATION_STATEMENTS) || RAISE_APPLICATION_ERROR_MATCHER.matches(node)) && !node.hasDirectChildren(*WHEN)
+    fun isTerminationStatement(node: AstNode?): Boolean {
+        return (node != null && (node.typeIs(TERMINATION_STATEMENTS) || RAISE_APPLICATION_ERROR_MATCHER.matches(node)) && !node.hasDirectChildren(*WHEN))
     }
 
     fun isProgramUnit(node: AstNode?): Boolean {

@@ -39,20 +39,28 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val firstQueryBlock = node.getFirstChild(DmlGrammar.QUERY_BLOCK)
-        if (!firstQueryBlock.children[1].typeIs(PlSqlKeyword.DISTINCT) || !node.hasDirectChildren(DmlGrammar.ORDER_BY_CLAUSE)) {
-            return
-        }
+        checkNotNull(firstQueryBlock)
 
-        val columns = firstQueryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
-        val orderByItems = node.getFirstChild(DmlGrammar.ORDER_BY_CLAUSE).getChildren(DmlGrammar.ORDER_BY_ITEM)
+        val orderByClause = node.getFirstChild(DmlGrammar.ORDER_BY_CLAUSE)
 
-        for (orderByItem in orderByItems) {
-            checkOrderByItem(orderByItem, columns)
+        if (orderByClause != null) {
+            if (!firstQueryBlock.children[1].typeIs(PlSqlKeyword.DISTINCT)) {
+                return
+            }
+
+            val columns = firstQueryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
+            val orderByItems = orderByClause.getChildren(DmlGrammar.ORDER_BY_ITEM)
+
+            for (orderByItem in orderByItems) {
+                checkOrderByItem(orderByItem, columns)
+            }
         }
     }
 
     private fun checkOrderByItem(orderByItem: AstNode, columns: List<AstNode>) {
-        val orderByItemValue = skipVariableName(orderByItem.firstChild)
+        val firstChild = orderByItem.firstChild
+        checkNotNull(firstChild)
+        val orderByItemValue = skipVariableName(firstChild)
 
         if (orderByItemValue.typeIs(PlSqlGrammar.LITERAL)) {
             return
@@ -74,14 +82,17 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun skipVariableName(node: AstNode): AstNode {
+    private fun skipVariableName(node: AstNode?): AstNode {
+        checkNotNull(node)
         return if (node.typeIs(PlSqlGrammar.VARIABLE_NAME)) {
-            node.firstChild
+            val firstChild = node.firstChild
+            checkNotNull(firstChild)
+            firstChild
         } else node
     }
 
     private fun extractAcceptableValuesFromColumn(column: AstNode): List<AstNode> {
-        val values = ArrayList<AstNode>()
+        val values = ArrayList<AstNode?>()
 
         val selectedExpression = skipVariableName(column.firstChild)
         values.add(selectedExpression)
@@ -96,7 +107,7 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
             values.add(alias)
         }
 
-        return values
+        return values.requireNoNulls()
     }
 
 }

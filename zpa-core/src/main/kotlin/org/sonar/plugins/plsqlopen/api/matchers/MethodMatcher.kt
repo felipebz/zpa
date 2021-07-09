@@ -92,18 +92,16 @@ class MethodMatcher private constructor()
 
     fun getArguments(node: AstNode): List<AstNode> {
         val arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS)
-        return if (arguments != null) {
-            arguments.getChildren(PlSqlGrammar.ARGUMENT)
-        } else ArrayList()
+        return arguments?.getChildren(PlSqlGrammar.ARGUMENT) ?: ArrayList()
 
     }
 
-    fun getArgumentsValues(node: AstNode) =
-        getArguments(node).map { it.lastChild }.toList()
+    fun getArgumentsValues(node: AstNode): List<AstNode> =
+        getArguments(node).map { it.lastChild }.requireNoNulls()
 
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
-        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
+        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME).toMutableList()
 
         if (nodes.isEmpty()) {
             return false
@@ -136,16 +134,17 @@ class MethodMatcher private constructor()
         var result = true
         for ((i, type) in expectedArgumentTypes.withIndex()) {
             val actualArgument = arguments[i].firstChild
-            result = result and (type === PlSqlType.UNKNOWN || type === semantic(actualArgument).plSqlType)
+            result = result && actualArgument != null && (type === PlSqlType.UNKNOWN || type === semantic(actualArgument).plSqlType)
         }
         return result
     }
 
     private fun normalize(node: AstNode): AstNode {
-        if (node.type === PlSqlGrammar.METHOD_CALL || node.type === PlSqlGrammar.CALL_STATEMENT) {
-            var child = normalize(node.firstChild)
-            if (child.firstChild.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE) {
-                child = child.firstChild
+        val firstChild = node.firstChild
+        if (firstChild != null && (node.type === PlSqlGrammar.METHOD_CALL || node.type === PlSqlGrammar.CALL_STATEMENT)) {
+            var child = normalize(firstChild)
+            if (child.firstChild?.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE) {
+                child = child.firstChild as AstNode
             }
             return child
         }

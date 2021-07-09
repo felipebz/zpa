@@ -26,7 +26,9 @@ import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 open class TreeWithStatements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
 
     val statements : Statements by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asTree()
+        val statements = astNode.getFirstChild(PlSqlGrammar.STATEMENTS)
+        checkNotNull(statements)
+        statements.asTree()
     }
 
 }
