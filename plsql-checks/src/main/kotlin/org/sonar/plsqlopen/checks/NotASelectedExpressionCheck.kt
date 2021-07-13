@@ -39,7 +39,6 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val firstQueryBlock = node.getFirstChild(DmlGrammar.QUERY_BLOCK)
-        checkNotNull(firstQueryBlock)
 
         val orderByClause = node.getFirstChild(DmlGrammar.ORDER_BY_CLAUSE)
 
@@ -59,7 +58,6 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
 
     private fun checkOrderByItem(orderByItem: AstNode, columns: List<AstNode>) {
         val firstChild = orderByItem.firstChild
-        checkNotNull(firstChild)
         val orderByItemValue = skipVariableName(firstChild)
 
         if (orderByItemValue.typeIs(PlSqlGrammar.LITERAL)) {
@@ -86,7 +84,6 @@ class NotASelectedExpressionCheck : AbstractBaseCheck() {
         checkNotNull(node)
         return if (node.typeIs(PlSqlGrammar.VARIABLE_NAME)) {
             val firstChild = node.firstChild
-            checkNotNull(firstChild)
             firstChild
         } else node
     }

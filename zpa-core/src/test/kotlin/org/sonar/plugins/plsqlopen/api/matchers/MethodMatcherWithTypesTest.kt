@@ -81,14 +81,12 @@ class MethodMatcherWithTypesTest : RuleTest() {
 
     private fun getAstNodeWithArguments(text: String, vararg types: PlSqlType): SemanticAstNode {
         val child = p.parse(text).firstChild
-        checkNotNull(child)
         val node = getSemanticNode(child)
 
         val arguments = node.getDescendants(PlSqlGrammar.ARGUMENT)
 
         for (i in types.indices) {
             val actualArgument = arguments[i].firstChild
-            checkNotNull(actualArgument)
             MethodMatcher.semantic(actualArgument).plSqlType = types[i]
         }
 

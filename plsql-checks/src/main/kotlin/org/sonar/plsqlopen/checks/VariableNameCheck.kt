@@ -43,7 +43,6 @@ class VariableNameCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        checkNotNull(identifier)
 
         val name = identifier.tokenOriginalValue
 

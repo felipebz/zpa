@@ -46,7 +46,6 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
         if (topParent.typeIs(PlSqlGrammar.CURSOR_DECLARATION)) {
 
             val identifier = topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-            checkNotNull(identifier)
 
             // TODO this is very complex and it probably can be simplified in the future
             val fetchDestination = semantic(identifier)

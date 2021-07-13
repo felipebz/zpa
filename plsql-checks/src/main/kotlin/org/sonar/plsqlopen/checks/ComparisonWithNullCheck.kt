@@ -41,7 +41,7 @@ class ComparisonWithNullCheck : AbstractBaseCheck() {
         for (child in children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
                 val operator = node.getFirstChild(ConditionsGrammar.RELATIONAL_OPERATOR)
-                val suggestion = if (operator?.firstChild.typeIs(PlSqlPunctuator.EQUALS)) {
+                val suggestion = if (operator.firstChild.typeIs(PlSqlPunctuator.EQUALS)) {
                     "IS NULL"
                 } else {
                     "IS NOT NULL"

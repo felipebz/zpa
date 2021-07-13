@@ -50,7 +50,6 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
             if (current.typeIs(PlSqlPunctuator.RPARENTHESIS)) {
                 current = null
             } else if (!current.typeIs(PlSqlPunctuator.COMMA)) {
-                checkNotNull(current)
                 values.add(current)
             }
         }

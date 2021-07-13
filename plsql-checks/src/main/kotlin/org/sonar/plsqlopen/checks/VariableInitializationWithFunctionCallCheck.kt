@@ -40,10 +40,9 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
             checkNotNull(parent)
 
             val datatype = parent.getFirstChild(PlSqlGrammar.DATATYPE)
-            checkNotNull(datatype)
 
             val expression = node.lastChild
-            if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression?.tokenValue) {
+            if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
                 addIssue(node, getLocalizedMessage())
             }
         }

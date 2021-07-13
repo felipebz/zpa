@@ -148,7 +148,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
                 .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
         val inheritanceClause = node.parent?.getFirstChild(PlSqlGrammar.INHERITANCE_CLAUSE)
         val isOverridingMember = inheritanceClause != null &&
-            inheritanceClause.firstChild?.type !== PlSqlKeyword.NOT &&
+            inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
             inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)
 
         enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
@@ -173,7 +173,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitFor(node: AstNode) {
         enterScope(node)
-        val identifier = node.getFirstChild(PlSqlKeyword.FOR)?.nextSibling
+        val identifier = node.getFirstChild(PlSqlKeyword.FOR).nextSibling
 
         val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
             PlSqlType.NUMERIC
@@ -186,7 +186,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitForAll(node: AstNode) {
         enterScope(node)
-        val identifier = node.getFirstChild(PlSqlKeyword.FORALL)?.nextSibling
+        val identifier = node.getFirstChild(PlSqlKeyword.FORALL).nextSibling
         createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.NUMERIC)
     }
 
@@ -226,7 +226,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitVariableName(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        if (identifier != null && currentScope != null) {
+        if (currentScope != null) {
             val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
             if (symbol != null) {
                 symbol.addUsage(identifier)

@@ -47,7 +47,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
     }
 
     private fun hasTerminationStatement(ifStatement: AstNode): Boolean {
-        ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS)?.children?.forEach { statement ->
+        ifStatement.getFirstChild(PlSqlGrammar.STATEMENTS).children.forEach { statement ->
             val internal = statement.firstChild
             if (CheckUtils.isTerminationStatement(internal)) {
                 return true

@@ -40,9 +40,9 @@ class NotFoundCheck : AbstractBaseCheck() {
         if (parent.typeIs(PlSqlGrammar.NOT_EXPRESSION) && node.numberOfChildren == 3) {
 
             val foundCandidate = node.lastChild
-            val percentCandidate = foundCandidate?.previousAstNode
+            val percentCandidate = foundCandidate.previousAstNode
 
-            if (percentCandidate.typeIs(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate?.tokenValue) {
+            if (percentCandidate.typeIs(PlSqlPunctuator.MOD) && "FOUND" == foundCandidate.tokenValue) {
                 addIssue(node, getLocalizedMessage())
             }
         }

@@ -54,12 +54,12 @@ class DefaultTypeSolver {
             type = PlSqlType.BOOLEAN
         } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
             val anchoredDatatype = node.firstChild
-            if (anchoredDatatype?.lastChild?.type === PlSqlKeyword.ROWTYPE) {
+            if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
                 type = PlSqlType.ROWTYPE
             }
         } else {
             val datatype = node.firstChild
-            type = datatype?.tokenOriginalValue?.let { scope?.getSymbol(it, Symbol.Kind.TYPE)?.type() } ?: PlSqlType.UNKNOWN
+            type = datatype.tokenOriginalValue.let { scope?.getSymbol(it, Symbol.Kind.TYPE)?.type() } ?: PlSqlType.UNKNOWN
         }
         return type
     }
@@ -81,7 +81,7 @@ class DefaultTypeSolver {
     }
 
     private fun isEmptyString(node: AstNode): Boolean {
-        val characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL) ?: return false
+        val characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL)
         val value = characterLiteral.tokenValue
         if (value == "''") {
             return true

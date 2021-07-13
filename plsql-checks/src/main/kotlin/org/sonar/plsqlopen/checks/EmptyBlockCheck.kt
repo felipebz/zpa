@@ -40,7 +40,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
             return
         }
 
-        val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS)?.getChildren(PlSqlGrammar.STATEMENT) ?: emptyList()
+        val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT)
         if (statements.size == 1) {
             val statement = statements[0]
             if (statement.isOf<NullStatement>()) {

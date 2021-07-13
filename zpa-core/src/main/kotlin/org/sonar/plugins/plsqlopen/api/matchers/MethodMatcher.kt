@@ -92,7 +92,7 @@ class MethodMatcher private constructor()
 
     fun getArguments(node: AstNode): List<AstNode> {
         val arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS)
-        return arguments?.getChildren(PlSqlGrammar.ARGUMENT) ?: ArrayList()
+        return arguments.getChildren(PlSqlGrammar.ARGUMENT)
 
     }
 
@@ -141,9 +141,9 @@ class MethodMatcher private constructor()
 
     private fun normalize(node: AstNode): AstNode {
         val firstChild = node.firstChild
-        if (firstChild != null && (node.type === PlSqlGrammar.METHOD_CALL || node.type === PlSqlGrammar.CALL_STATEMENT)) {
+        if (node.type === PlSqlGrammar.METHOD_CALL || node.type === PlSqlGrammar.CALL_STATEMENT) {
             var child = normalize(firstChild)
-            if (child.firstChild?.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE) {
+            if (child.firstChild.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE) {
                 child = child.firstChild as AstNode
             }
             return child
