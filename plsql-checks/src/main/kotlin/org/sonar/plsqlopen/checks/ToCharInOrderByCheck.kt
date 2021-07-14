@@ -46,11 +46,9 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
         if (expression.type === PlSqlGrammar.LITERAL && semantic(expression).plSqlType === PlSqlType.NUMERIC) {
             val index = Integer.parseInt(expression.tokenOriginalValue)
 
-            val selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)
-            checkNotNull(selectExpression)
+            val selectExpression = checkNotNull(node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION))
 
             val queryBlock = selectExpression.getFirstChild(DmlGrammar.QUERY_BLOCK)
-
             val columns = queryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
 
             if (columns.size >= index) {

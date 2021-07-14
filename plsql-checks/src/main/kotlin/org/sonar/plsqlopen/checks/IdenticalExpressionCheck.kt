@@ -39,7 +39,6 @@ class IdenticalExpressionCheck : AbstractBaseCheck() {
         if (operator != null) {
 
             val leftSide = node.firstChild
-
             val rightSide = node.lastChild
 
             if (CheckUtils.equalNodes(leftSide, rightSide)) {

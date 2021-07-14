@@ -45,10 +45,8 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
 
         if (topParent.typeIs(PlSqlGrammar.CURSOR_DECLARATION)) {
 
-            val identifier = topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-
             // TODO this is very complex and it probably can be simplified in the future
-            val fetchDestination = semantic(identifier)
+            val fetchDestination = semantic(topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME))
                 .symbol?.usages().orEmpty()
                 .map { it.parent?.parent }
                 .filter { it.typeIs(PlSqlGrammar.FETCH_STATEMENT) }
@@ -60,14 +58,13 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
             }
         }
 
-        var candidate = node.firstChild
-
+        var candidate = node.firstChildOrNull
         if (candidate != null && candidate.typeIs(PlSqlGrammar.OBJECT_REFERENCE)) {
             candidate = candidate.lastChild
         }
 
         if (candidate.typeIs(PlSqlPunctuator.MULTIPLICATION)) {
-            val intoClause = node.parent?.getFirstChild(DmlGrammar.INTO_CLAUSE)
+            val intoClause = node.parent?.getFirstChildOrNull(DmlGrammar.INTO_CLAUSE)
 
             if (intoClause != null) {
                 val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION, PlSqlGrammar.METHOD_CALL)

@@ -27,6 +27,7 @@ open class TreeWithStatements(override val astNode: SemanticAstNode) : TreeImpl(
 
     val statements : Statements by lazy {
         val statements = astNode.getFirstChild(PlSqlGrammar.STATEMENTS)
+        checkNotNull(statements)
         statements.asTree()
     }
 

@@ -43,13 +43,13 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
 
     private fun getInValue(inExpression: AstNode): List<AstNode> {
         val values = ArrayList<AstNode>()
-        var current = inExpression.getFirstChild(PlSqlPunctuator.LPARENTHESIS)
+        var current = inExpression.getFirstChildOrNull(PlSqlPunctuator.LPARENTHESIS)
         while (current != null) {
             current = current.nextSibling
 
             if (current.typeIs(PlSqlPunctuator.RPARENTHESIS)) {
                 current = null
-            } else if (!current.typeIs(PlSqlPunctuator.COMMA)) {
+            } else if (current != null && !current.typeIs(PlSqlPunctuator.COMMA)) {
                 values.add(current)
             }
         }

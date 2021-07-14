@@ -47,8 +47,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     private fun checkScope(scope: Scope) {
         val symbols = scope.getSymbols(Symbol.Kind.CURSOR)
         for (symbol in symbols) {
-            val parent = symbol.declaration().parent
-            checkNotNull(parent)
+            val parent = checkNotNull(symbol.declaration().parent)
 
             if (symbol.usages().isEmpty() && !parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
                 addIssue(parent, getLocalizedMessage(),

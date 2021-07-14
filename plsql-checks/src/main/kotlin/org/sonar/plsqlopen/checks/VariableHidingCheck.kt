@@ -35,7 +35,6 @@ class VariableHidingCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-
         val name = identifier.tokenOriginalValue
 
         val scope = context.symbolTable.getScopeForSymbol(identifier)
