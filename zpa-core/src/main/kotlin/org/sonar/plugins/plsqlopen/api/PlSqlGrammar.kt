@@ -324,7 +324,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             REAL,
                             SIGNTYPE,
                             SMALLINT),
-                    b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(COMMA, DATATYPE_LENGTH), RPARENTHESIS))
+                    b.optional(LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS))
 
             b.rule(CHARACTER_SET_CLAUSE).define(CHARACTER, SET, b.firstOf(ANY_CS, b.sequence(IDENTIFIER_NAME, MOD, CHARSET)))
 

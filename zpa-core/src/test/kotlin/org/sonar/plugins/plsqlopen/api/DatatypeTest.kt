@@ -35,6 +35,8 @@ class DatatypeTest : RuleTest() {
         assertThat(p).matches("number")
         assertThat(p).matches("number(10)")
         assertThat(p).matches("number(10, 2)")
+        assertThat(p).matches("number(*, 2)")
+        assertThat(p).matches("number(10, -2)")
         assertThat(p).matches("number($\$len)")
         assertThat(p).matches("number($\$len, $\$decimals)")
         assertThat(p).matches("clob character set any_cs")
