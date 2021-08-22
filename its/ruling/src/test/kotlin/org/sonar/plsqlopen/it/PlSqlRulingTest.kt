@@ -58,7 +58,7 @@ class PlSqlRulingTest {
                 .setProperty("sonar.zpa.file.suffixes", "sql,typ,pkg,pkb,pks,tab,tps,tpb")
                 .setProperty("sonar.zpa.errorRecoveryEnabled", "false")
                 .setProperty("sonar.cpd.skip", "true")
-                .setEnvironmentVariable("SONAR_RUNNER_OPTS", "-Xmx1024m")
+                .setEnvironmentVariable("SONAR_SCANNER_OPTS", "-Xmx1024m")
     }
 
     private fun executeBuild(build: Build<*>) {
@@ -238,7 +238,7 @@ class PlSqlRulingTest {
                 .addPlugin(FileLocation.byWildcardMavenFilename(
                         File("../../sonar-plsql-open-plugin/target"),
                         "sonar-plsql-open-plugin-*.jar"))
-                .addPlugin(MavenLocation.of("org.sonarsource.sonar-lits-plugin", "sonar-lits-plugin", "0.8.0.1209"))
+                .addPlugin(MavenLocation.of("org.sonarsource.sonar-lits-plugin", "sonar-lits-plugin", "0.9.0.1682"))
                 .restoreProfileAtStartup(FileLocation.of("src/test/resources/profile.xml"))
                 .restoreProfileAtStartup(FileLocation.of("src/test/resources/forms_profile.xml"))
                 .build()
