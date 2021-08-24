@@ -1,0 +1,1 @@
+DROP INDEXTYPE position_indextype FORCE;

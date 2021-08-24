@@ -1,0 +1,1 @@
+SELECT hire_date, hire_date + TO_YMINTERVAL('P1Y2M') FROM employees;

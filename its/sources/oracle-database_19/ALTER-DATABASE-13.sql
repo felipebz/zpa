@@ -1,0 +1,2 @@
+ALTER DATABASE
+    DROP LOGFILE MEMBER 'diskb:log3.log';

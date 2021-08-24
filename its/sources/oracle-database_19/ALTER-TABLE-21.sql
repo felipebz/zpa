@@ -1,0 +1,2 @@
+ALTER TABLE students 
+  MODIFY (last_name COLLATE BINARY_CI);

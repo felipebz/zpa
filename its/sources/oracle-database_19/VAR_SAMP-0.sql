@@ -1,0 +1,1 @@
+(SUM(expr - (SUM(expr) / COUNT(expr)))2) / (COUNT(expr) - 1)

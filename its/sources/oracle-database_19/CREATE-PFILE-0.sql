@@ -1,0 +1,1 @@
+CREATE PFILE = 'my_init.ora' FROM SPFILE = 's_params.ora';

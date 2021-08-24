@@ -1,0 +1,1 @@
+language_territory.characterset

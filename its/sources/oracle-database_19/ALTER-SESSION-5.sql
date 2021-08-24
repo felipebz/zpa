@@ -1,0 +1,1 @@
+FLAGGER = { ENTRY | OFF }

@@ -1,0 +1,2 @@
+SELECT COS(180 * 3.14159265359/180) "Cosine of 180 degrees"
+  FROM DUAL;

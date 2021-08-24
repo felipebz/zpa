@@ -1,0 +1,1 @@
+XMLTable(... COLUMNS xyz)

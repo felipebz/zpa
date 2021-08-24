@@ -1,0 +1,2 @@
+SELECT JSON_QUERY('[0,1,2,3,4]', '$') AS value
+  FROM DUAL;

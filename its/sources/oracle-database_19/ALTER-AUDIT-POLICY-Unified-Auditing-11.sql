@@ -1,0 +1,2 @@
+ALTER AUDIT POLICY order_updates_pol
+  CONDITION DROP;

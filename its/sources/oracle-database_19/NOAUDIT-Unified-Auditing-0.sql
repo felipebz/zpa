@@ -1,0 +1,1 @@
+NOAUDIT POLICY table_pol;

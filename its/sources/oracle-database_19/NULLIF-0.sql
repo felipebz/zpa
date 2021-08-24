@@ -1,0 +1,1 @@
+CASE WHEN expr1 = expr2 THEN NULL ELSE expr1 END

@@ -1,0 +1,1 @@
+CREATE ROLE c##role1 CONTAINER = ALL;

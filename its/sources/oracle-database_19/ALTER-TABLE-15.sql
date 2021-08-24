@@ -1,0 +1,3 @@
+ALTER TABLE countries
+   ENABLE PRIMARY KEY
+   EXCEPTIONS INTO except_table;

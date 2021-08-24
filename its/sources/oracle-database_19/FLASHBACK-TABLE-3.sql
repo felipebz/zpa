@@ -1,0 +1,2 @@
+ALTER TABLE employees_test
+   ENABLE ROW MOVEMENT;

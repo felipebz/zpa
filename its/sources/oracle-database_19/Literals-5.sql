@@ -1,0 +1,1 @@
+SELECT 2 * 1,23 FROM DUAL;

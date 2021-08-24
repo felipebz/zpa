@@ -1,0 +1,2 @@
+INSERT INTO my_table
+  VALUES (4, '03-OCT-02');

@@ -1,0 +1,1 @@
+AVG(expr1) - REGR_SLOPE(expr1, expr2) * AVG(expr2)

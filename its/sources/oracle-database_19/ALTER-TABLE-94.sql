@@ -1,0 +1,1 @@
+ALTER TABLE deptemps ADD (REF(column_value) WITH ROWID);

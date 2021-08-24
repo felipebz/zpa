@@ -1,0 +1,1 @@
+ALTER INDEX cost_ix UNUSABLE;

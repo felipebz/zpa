@@ -1,0 +1,1 @@
+CREATE TABLE games (scores NUMBER CHECK (scores >= 0));

@@ -1,0 +1,1 @@
+CREATE TABLE t (name VARCHAR2(100));

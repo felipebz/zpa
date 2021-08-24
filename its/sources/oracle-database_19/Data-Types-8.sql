@@ -1,0 +1,1 @@
+TIMESTAMP [(fractional_seconds_precision)] WITH LOCAL TIME ZONE

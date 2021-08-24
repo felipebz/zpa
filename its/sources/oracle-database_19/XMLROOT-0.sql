@@ -1,0 +1,1 @@
+<?xml version = "version" [ STANDALONE = "{yes | no}" ]?>

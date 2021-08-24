@@ -1,0 +1,1 @@
+SET last_name = INITCAP(last_name);

@@ -1,0 +1,1 @@
+ALTER INDEX ord_customer_ix REBUILD PARALLEL;

@@ -1,0 +1,1 @@
+SELECT ROUND(15.193,-1) "Round" FROM DUAL;

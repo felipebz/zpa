@@ -1,0 +1,1 @@
+INTERVAL YEAR [(year_precision)] TO MONTH

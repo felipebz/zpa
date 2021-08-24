@@ -1,0 +1,1 @@
+MIN([table.]column), MAX([table.]column)

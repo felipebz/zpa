@@ -1,0 +1,1 @@
+SELECT /*+ PARALLEL_INDEX(table1, index1, 3) */

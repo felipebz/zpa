@@ -1,0 +1,1 @@
+USE_STORED_OUTLINES = { TRUE | FALSE | category_name }

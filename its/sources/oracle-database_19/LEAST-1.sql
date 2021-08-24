@@ -1,0 +1,2 @@
+SELECT LEAST (1, '2.1', '.000832') "Least"
+  FROM DUAL;

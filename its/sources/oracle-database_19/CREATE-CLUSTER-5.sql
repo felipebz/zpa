@@ -1,0 +1,2 @@
+CREATE CLUSTER cust_orders (customer_id NUMBER(6))
+   SIZE 512 SINGLE TABLE HASHKEYS 100;

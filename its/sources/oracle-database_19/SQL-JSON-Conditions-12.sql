@@ -1,0 +1,1 @@
+JSON_EQUAL('{a:"1"}', '{a:1 }') -> FALSE

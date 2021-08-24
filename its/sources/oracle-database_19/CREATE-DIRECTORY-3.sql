@@ -1,0 +1,1 @@
+CREATE OR REPLACE DIRECTORY bfile_dir AS '/usr/bin/bfile_dir';

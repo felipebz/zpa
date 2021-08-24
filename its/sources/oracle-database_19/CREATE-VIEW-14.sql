@@ -1,0 +1,1 @@
+SELECT VALUE(e) FROM warehouse_view e;

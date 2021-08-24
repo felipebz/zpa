@@ -1,0 +1,1 @@
+last_name LIKE 'SMITH_'

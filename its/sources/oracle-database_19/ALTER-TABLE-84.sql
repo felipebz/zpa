@@ -1,0 +1,2 @@
+ALTER TABLE departments 
+    DROP PRIMARY KEY CASCADE;

@@ -1,0 +1,2 @@
+ALTER SESSION
+   SET NLS_SORT = XSpanish;

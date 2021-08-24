@@ -1,0 +1,1 @@
+FLASHBACK TABLE print_media TO BEFORE DROP RENAME TO print_media_old;

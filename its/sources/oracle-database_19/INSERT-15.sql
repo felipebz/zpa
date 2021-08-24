@@ -1,0 +1,1 @@
+ALTER TABLE long_tab DROP COLUMN long_pics;

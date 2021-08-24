@@ -1,0 +1,1 @@
+REGR_COUNT(expr1, expr2) * COVAR_POP(expr1, expr2)

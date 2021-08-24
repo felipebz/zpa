@@ -1,0 +1,1 @@
+CREATE DIRECTORY mydir AS '/scratch/../file_data';

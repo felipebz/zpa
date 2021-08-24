@@ -1,0 +1,3 @@
+ALTER TABLESPACE <shadow_tablespace_name> 
+   ENABLE 
+   LOST WRITE PROTECTION

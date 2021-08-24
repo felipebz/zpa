@@ -1,0 +1,3 @@
+ALTER TABLE list_customers SPLIT PARTITION rest 
+   VALUES ('MEXICO', 'COLOMBIA')
+   INTO (PARTITION south, PARTITION rest);

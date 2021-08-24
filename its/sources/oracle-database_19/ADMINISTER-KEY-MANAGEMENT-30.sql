@@ -1,0 +1,4 @@
+ADMINISTER KEY MANAGEMENT
+  UPDATE SECRET 'secret2' FOR CLIENT 'client2'
+  USING TAG 'New Tag 2'
+  IDENTIFIED BY "user_id:password";

@@ -1,0 +1,1 @@
+SELECT VAR_POP(salary) FROM employees;

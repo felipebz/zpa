@@ -1,0 +1,1 @@
+ALTER INDEX upper_ix RENAME TO upper_name_ix;

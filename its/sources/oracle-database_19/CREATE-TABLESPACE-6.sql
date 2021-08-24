@@ -1,0 +1,3 @@
+CREATE TABLESPACE tbs_01 
+   DATAFILE 'tbs_f2.dbf' SIZE 40M 
+   ONLINE;

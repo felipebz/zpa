@@ -1,0 +1,1 @@
+CREATE TABLE books (title VARCHAR2(100), author person_t);

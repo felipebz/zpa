@@ -1,0 +1,1 @@
+ALTER ROLE dw_manager IDENTIFIED USING hr.admin;

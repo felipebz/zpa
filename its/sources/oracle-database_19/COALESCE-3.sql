@@ -1,0 +1,2 @@
+CASE WHEN expr1 IS NOT NULL THEN expr1 
+   ELSE COALESCE (expr2, ..., exprn) END

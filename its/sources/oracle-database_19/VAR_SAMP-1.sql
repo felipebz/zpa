@@ -1,0 +1,1 @@
+SELECT VAR_SAMP(salary) FROM employees;

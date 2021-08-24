@@ -1,0 +1,1 @@
+CREATE ROLE dw_manager;

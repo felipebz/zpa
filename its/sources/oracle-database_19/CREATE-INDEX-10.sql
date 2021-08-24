@@ -1,0 +1,1 @@
+CREATE INDEX upper_ix ON employees (UPPER(last_name));

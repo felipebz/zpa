@@ -1,0 +1,2 @@
+ALTER DATABASE 
+    RECOVER LOGFILE 'diskc:log3.log';

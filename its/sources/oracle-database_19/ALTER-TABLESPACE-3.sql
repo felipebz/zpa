@@ -1,0 +1,3 @@
+ALTER TABLESPACE <shadow_tablespace_name> 
+   SUSPEND 
+   LOST WRITE PROTECTION

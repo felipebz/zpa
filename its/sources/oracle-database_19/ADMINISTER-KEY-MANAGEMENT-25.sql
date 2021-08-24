@@ -1,0 +1,4 @@
+ADMINISTER KEY MANAGEMENT
+  SET ENCRYPTION KEY IDENTIFIED BY "user_id:password"
+  MIGRATE USING software_keystore_password
+  WITH BACKUP;

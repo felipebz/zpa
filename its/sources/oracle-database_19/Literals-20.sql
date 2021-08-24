@@ -1,0 +1,2 @@
+INSERT INTO my_table
+  VALUES (5, TRUNC(SYSDATE));

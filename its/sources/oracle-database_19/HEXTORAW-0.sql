@@ -1,0 +1,3 @@
+CREATE TABLE test (raw_col RAW(10));
+
+INSERT INTO test VALUES (HEXTORAW('7D'));

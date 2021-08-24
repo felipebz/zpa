@@ -1,0 +1,2 @@
+CONNECT sh
+REVOKE UPDATE ON hr.employees FROM oe;

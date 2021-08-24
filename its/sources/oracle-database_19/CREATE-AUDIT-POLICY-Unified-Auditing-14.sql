@@ -1,0 +1,2 @@
+CREATE AUDIT POLICY all_actions_pol
+  ACTIONS ALL;

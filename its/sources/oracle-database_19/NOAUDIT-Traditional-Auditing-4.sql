@@ -1,0 +1,3 @@
+NOAUDIT SELECT 
+   ON hr.employees
+   WHENEVER SUCCESSFUL;

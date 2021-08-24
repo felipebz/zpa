@@ -1,0 +1,1 @@
+DROP SEQUENCE oe.customers_seq;

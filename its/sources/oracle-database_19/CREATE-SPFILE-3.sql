@@ -1,0 +1,1 @@
+spfile = 's_params.ora'

@@ -1,0 +1,1 @@
+ALTER TABLE print_media_part DROP PARTITION p3;

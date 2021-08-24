@@ -1,0 +1,1 @@
+RENAME departments_new TO emp_departments;

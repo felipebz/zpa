@@ -1,0 +1,3 @@
+SELECT col1
+  FROM t
+  WHERE col1 IS JSON STRICT;

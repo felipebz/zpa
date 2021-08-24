@@ -1,0 +1,2 @@
+GRANT SELECT, UPDATE 
+   ON emp_view TO PUBLIC;

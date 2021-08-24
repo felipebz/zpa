@@ -1,0 +1,1 @@
+SELECT TZ_OFFSET('US/Eastern') FROM DUAL;

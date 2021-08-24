@@ -1,0 +1,1 @@
+CAST (<table subquery> AS MULTISET) IS A SET

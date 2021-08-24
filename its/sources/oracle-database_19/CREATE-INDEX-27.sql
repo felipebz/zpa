@@ -1,0 +1,1 @@
+CREATE BITMAP INDEX typeid_i ON books (SYS_TYPEID(author));

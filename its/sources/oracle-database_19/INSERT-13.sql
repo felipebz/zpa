@@ -1,0 +1,1 @@
+CREATE TABLE lob_tab (pic_id NUMBER, lob_pics BLOB);

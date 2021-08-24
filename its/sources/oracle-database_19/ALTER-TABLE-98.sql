@@ -1,0 +1,2 @@
+ALTER TABLE staff 
+   ADD (REF(dept) WITH ROWID);

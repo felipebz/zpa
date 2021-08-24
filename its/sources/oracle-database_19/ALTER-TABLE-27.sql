@@ -1,0 +1,1 @@
+ALTER TABLE t1 DROP (pk, fk, c1);

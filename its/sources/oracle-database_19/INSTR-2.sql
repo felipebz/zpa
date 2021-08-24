@@ -1,0 +1,2 @@
+SELECT INSTRB('CORPORATE FLOOR','OR',5,2) "Instring in bytes"
+  FROM DUAL;

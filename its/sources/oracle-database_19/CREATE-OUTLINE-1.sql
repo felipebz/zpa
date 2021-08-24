@@ -1,0 +1,2 @@
+CREATE OR REPLACE PRIVATE OUTLINE my_salaries
+   FROM salaries;

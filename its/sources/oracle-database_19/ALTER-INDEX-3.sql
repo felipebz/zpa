@@ -1,0 +1,1 @@
+ALTER INDEX upper_ix PARALLEL;

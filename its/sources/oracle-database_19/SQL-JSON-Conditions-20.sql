@@ -1,0 +1,1 @@
+CREATE TABLE families (family_doc VARCHAR2(200));

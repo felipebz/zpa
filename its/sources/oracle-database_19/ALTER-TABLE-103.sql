@@ -1,0 +1,1 @@
+SELECT t1.*, anydata.getTypeName(t1.x) typename FROM t1;

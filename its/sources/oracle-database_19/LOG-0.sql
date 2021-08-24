@@ -1,0 +1,2 @@
+SELECT LOG(10,100) "Log base 10 of 100"
+  FROM DUAL;

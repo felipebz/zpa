@@ -1,0 +1,1 @@
+SELECT TO_BLOB(raw_column) blob FROM raw_table;

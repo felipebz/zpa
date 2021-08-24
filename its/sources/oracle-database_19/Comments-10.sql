@@ -1,0 +1,3 @@
+SELECT /*+ DYNAMIC_SAMPLING(employees 1) */ *
+  FROM employees 
+  WHERE ...

@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW LOG ON order_items WITH (product_id);

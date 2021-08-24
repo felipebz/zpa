@@ -1,0 +1,1 @@
+SELECT TRANSLATE('SQL*Plus User''s Guide', ' */''', '___') FROM DUAL;

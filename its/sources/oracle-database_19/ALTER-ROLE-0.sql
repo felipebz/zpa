@@ -1,0 +1,1 @@
+ALTER ROLE warehouse_user NOT IDENTIFIED;

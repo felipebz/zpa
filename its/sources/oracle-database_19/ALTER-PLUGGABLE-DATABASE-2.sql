@@ -1,0 +1,1 @@
+ALTER PLUGGABLE DATABASE CONTAINERS HOST='myhost.example.com';

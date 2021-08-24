@@ -1,0 +1,2 @@
+ALTER TABLE print_media_demo
+   TRUNCATE PARTITION p1 DROP STORAGE;

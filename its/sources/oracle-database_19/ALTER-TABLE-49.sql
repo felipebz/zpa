@@ -1,0 +1,3 @@
+ALTER TABLE list_customers SPLIT PARTITION rest 
+   VALUES ('CHINA', 'THAILAND')
+   INTO (PARTITION asia, PARTITION rest);

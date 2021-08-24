@@ -1,0 +1,2 @@
+ALTER DISKGROUP dgroup_01
+  DROP TEMPLATE template_01;

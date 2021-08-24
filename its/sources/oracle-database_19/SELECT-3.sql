@@ -1,0 +1,2 @@
+a NATURAL LEFT JOIN (b LEFT JOIN c ON b.c1 = c.c1) 
+   (a NATURAL LEFT JOIN b) LEFT JOIN c ON b.c1 = c.c1

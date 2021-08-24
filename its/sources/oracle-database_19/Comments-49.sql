@@ -1,0 +1,3 @@
+SELECT /*+ORDERED PQ_DISTRIBUTE(s BROADCAST, NONE) USE_HASH (s) */ column_list
+  FROM r,s
+  WHERE r.c=s.c;

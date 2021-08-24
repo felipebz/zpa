@@ -1,0 +1,1 @@
+DROP PROFILE app_user CASCADE;

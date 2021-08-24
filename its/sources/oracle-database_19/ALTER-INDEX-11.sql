@@ -1,0 +1,2 @@
+ALTER INDEX cost_ix
+   DROP PARTITION p1;

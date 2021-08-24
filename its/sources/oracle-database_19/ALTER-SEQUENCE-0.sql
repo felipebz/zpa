@@ -1,0 +1,2 @@
+ALTER SEQUENCE customers_seq 
+   MAXVALUE 1500;

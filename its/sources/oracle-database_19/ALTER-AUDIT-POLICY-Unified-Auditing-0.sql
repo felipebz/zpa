@@ -1,0 +1,1 @@
+ALTER AUDIT POLICY hr_audit_policy ADD ONLY TOPLEVEL

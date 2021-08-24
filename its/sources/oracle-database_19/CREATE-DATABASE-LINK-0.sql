@@ -1,0 +1,2 @@
+CREATE PUBLIC DATABASE LINK remote 
+   USING 'remote';

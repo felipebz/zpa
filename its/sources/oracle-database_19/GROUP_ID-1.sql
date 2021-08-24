@@ -1,0 +1,1 @@
+HAVING GROUP_ID() < 1

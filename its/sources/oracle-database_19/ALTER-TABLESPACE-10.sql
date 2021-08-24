@@ -1,0 +1,2 @@
+ALTER TABLESPACE tbs_03
+    DROP DATAFILE 'tbs_f04.dbf';

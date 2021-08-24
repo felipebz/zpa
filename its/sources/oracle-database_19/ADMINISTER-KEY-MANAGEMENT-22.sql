@@ -1,0 +1,4 @@
+ADMINISTER KEY MANAGEMENT
+  EXPORT KEYS WITH SECRET "my_secret"
+  TO '/etc/TDE/export.exp'
+  IDENTIFIED BY password;

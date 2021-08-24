@@ -1,0 +1,4 @@
+CREATE ROLLBACK SEGMENT rbs_one
+   TABLESPACE rbs_ts
+   STORAGE
+   ( INITIAL 10K );

@@ -1,0 +1,3 @@
+CREATE MATERIALIZED VIEW LOG ON sales 
+   WITH ROWID, SEQUENCE(amount_sold, time_id, prod_id)
+   INCLUDING NEW VALUES;

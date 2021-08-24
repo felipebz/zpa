@@ -1,0 +1,2 @@
+SELECT INSTR('CORPORATE FLOOR','OR', 3, 2) "Instring"
+  FROM DUAL;

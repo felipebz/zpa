@@ -1,0 +1,5 @@
+'Hello'
+'ORACLE.dbs'
+'Jackie''s raincoat'
+'09-MAR-98'
+N'nchar literal'

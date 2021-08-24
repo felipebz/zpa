@@ -1,0 +1,2 @@
+CREATE AUDIT POLICY read_dir_pol
+  ACTIONS READ ON DIRECTORY bfile_dir;

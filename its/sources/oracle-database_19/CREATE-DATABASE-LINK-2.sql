@@ -1,0 +1,3 @@
+CREATE DATABASE LINK local 
+   CONNECT TO hr IDENTIFIED BY password
+   USING 'local';

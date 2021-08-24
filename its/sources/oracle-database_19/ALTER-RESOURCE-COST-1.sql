@@ -1,0 +1,1 @@
+cost = (100 * CPU_PER_SESSION) + (1 * CONNECT_TIME)

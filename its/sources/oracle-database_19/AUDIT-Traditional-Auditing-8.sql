@@ -1,0 +1,1 @@
+AUDIT READ ON DIRECTORY bfile_dir;

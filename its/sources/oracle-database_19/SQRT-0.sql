@@ -1,0 +1,1 @@
+SELECT SQRT(26) "Square root" FROM DUAL;

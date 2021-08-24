@@ -1,0 +1,2 @@
+ALTER TABLESPACE stocks 
+   ADD DATAFILE 'stock4.dbf' SIZE 10M REUSE;

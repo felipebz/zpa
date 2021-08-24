@@ -1,0 +1,2 @@
+ALTER AUDIT POLICY table_pol
+  ADD ROLES dba;

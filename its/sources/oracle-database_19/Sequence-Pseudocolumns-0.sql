@@ -1,0 +1,2 @@
+sequence.CURRVAL
+sequence.NEXTVAL

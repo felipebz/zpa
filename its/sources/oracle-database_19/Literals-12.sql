@@ -1,0 +1,3 @@
+SELECT COUNT(*) 
+  FROM employees 
+  WHERE salary < BINARY_DOUBLE_INFINITY;

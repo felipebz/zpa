@@ -1,0 +1,1 @@
+SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER') = 'myclient'

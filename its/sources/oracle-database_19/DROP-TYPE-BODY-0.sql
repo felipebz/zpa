@@ -1,0 +1,1 @@
+DROP TYPE BODY data_typ1;

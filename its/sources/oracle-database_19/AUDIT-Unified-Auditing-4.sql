@@ -1,0 +1,1 @@
+AUDIT POLICY read_dir_pol EXCEPT hr;

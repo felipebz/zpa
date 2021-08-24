@@ -1,0 +1,2 @@
+ALTER CLUSTER personnel
+   SIZE 1024 CACHE;

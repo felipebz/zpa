@@ -1,0 +1,1 @@
+CREATE INDEX index ON table (SUBSTR(column, 0, n));

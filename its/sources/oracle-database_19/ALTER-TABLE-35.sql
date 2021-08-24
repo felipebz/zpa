@@ -1,0 +1,1 @@
+ALTER TABLE countries_demo INITRANS 4;

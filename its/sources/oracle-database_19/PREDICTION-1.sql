@@ -1,0 +1,1 @@
+SQL> select * from dt_sh_sample_cost;

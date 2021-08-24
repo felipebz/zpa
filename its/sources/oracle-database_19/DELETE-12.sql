@@ -1,0 +1,1 @@
+SELECT * FROM product_price_history;

@@ -1,0 +1,2 @@
+ALTER INDEX cost_ix
+   RENAME PARTITION p3 TO p3_Q3;

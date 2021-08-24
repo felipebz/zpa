@@ -1,0 +1,1 @@
+ANALYZE INDEX inv_product_ix VALIDATE STRUCTURE;

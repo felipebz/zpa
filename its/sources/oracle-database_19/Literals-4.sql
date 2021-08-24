@@ -1,0 +1,1 @@
+SELECT 2 * 1.23, 3 * '2,34' FROM DUAL;

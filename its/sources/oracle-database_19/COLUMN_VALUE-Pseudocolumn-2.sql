@@ -1,0 +1,2 @@
+SELECT t.COLUMN_VALUE
+  FROM TABLE(phone(1,2,3)) t;

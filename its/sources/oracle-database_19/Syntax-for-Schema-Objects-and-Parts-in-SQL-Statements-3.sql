@@ -1,0 +1,6 @@
+CREATE VIEW Q1_2000_sales AS
+  SELECT *
+    FROM sales PARTITION (SALES_Q1_2000);
+
+DELETE FROM Q1_2000_sales
+  WHERE amount_sold < 0;

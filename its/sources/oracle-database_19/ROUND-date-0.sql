@@ -1,0 +1,2 @@
+SELECT ROUND (TO_DATE ('27-OCT-00'),'YEAR')
+   "New Year" FROM DUAL;

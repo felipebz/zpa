@@ -1,0 +1,4 @@
+REVOKE REFERENCES 
+    ON hr.employees 
+    FROM oe 
+    CASCADE CONSTRAINTS;

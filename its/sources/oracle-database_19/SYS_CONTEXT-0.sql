@@ -1,0 +1,5 @@
+CONNECT OE
+Enter password: password
+
+SELECT SYS_CONTEXT ('USERENV', 'SESSION_USER') 
+   FROM DUAL;

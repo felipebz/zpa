@@ -1,0 +1,1 @@
+CREATE USER scott_global IDENTIFIED GLOBALLY AS ‘cn=scott taylor,ou=sales,dc=abccorp,dc=com’;

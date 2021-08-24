@@ -1,0 +1,1 @@
+CREATE TABLE departments_obj_t OF department_typ;

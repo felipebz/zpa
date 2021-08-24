@@ -1,0 +1,1 @@
+TIMESTAMP '1999-04-15 8:00:00 US/Pacific'

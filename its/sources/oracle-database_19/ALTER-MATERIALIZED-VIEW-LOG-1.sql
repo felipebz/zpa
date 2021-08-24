@@ -1,0 +1,3 @@
+ALTER MATERIALIZED VIEW LOG ON employees
+   ADD (commission_pct)
+   EXCLUDING NEW VALUES;

@@ -1,0 +1,1 @@
+ALTER SESSION SET nls_date_format = 'dd-mon-yyyy hh24:mi';

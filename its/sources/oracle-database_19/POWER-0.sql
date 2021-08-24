@@ -1,0 +1,2 @@
+SELECT POWER(3,2) "Raised"
+  FROM DUAL;

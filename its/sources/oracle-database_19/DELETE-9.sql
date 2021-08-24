@@ -1,0 +1,1 @@
+DELETE (SELECT * FROM product_price_history) WHERE  currency_code = 'EUR';

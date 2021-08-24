@@ -1,0 +1,1 @@
+DROP INDEX ord_customer_ix_demo;

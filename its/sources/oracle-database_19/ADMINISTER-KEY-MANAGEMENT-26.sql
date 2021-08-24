@@ -1,0 +1,3 @@
+ADMINISTER KEY MANAGEMENT
+  SET ENCRYPTION KEY IDENTIFIED BY software_keystore_password
+  REVERSE MIGRATE USING "user_id:password";

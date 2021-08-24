@@ -1,0 +1,1 @@
+UPDATE clerk SET job_id = 'PU_MAN' WHERE employee_id = 118;

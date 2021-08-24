@@ -1,0 +1,1 @@
+JSON_EQUAL('[1]', '[}' ERROR ON ERROR)

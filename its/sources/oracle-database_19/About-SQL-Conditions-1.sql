@@ -1,0 +1,1 @@
+NVL(salary, 0) + NVL(salary + (salary*commission_pct, 0) > 25000)

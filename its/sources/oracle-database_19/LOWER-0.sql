@@ -1,0 +1,2 @@
+SELECT LOWER('MR. SCOTT MCMILLAN') "Lowercase"
+  FROM DUAL;

@@ -1,0 +1,2 @@
+ANALYZE TABLE orders
+   LIST CHAINED ROWS INTO chained_rows;

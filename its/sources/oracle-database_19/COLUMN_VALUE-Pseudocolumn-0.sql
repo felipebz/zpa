@@ -1,0 +1,2 @@
+SELECT *
+  FROM XMLTABLE('<a>123</a>');

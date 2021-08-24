@@ -1,0 +1,2 @@
+AUDIT SELECT TABLE, UPDATE TABLE
+    BY hr, oe;

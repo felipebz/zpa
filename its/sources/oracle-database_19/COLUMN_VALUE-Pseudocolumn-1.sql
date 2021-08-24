@@ -1,0 +1,4 @@
+CREATE TYPE phone AS TABLE OF NUMBER;   
+/
+CREATE TYPE phone_list AS TABLE OF phone;
+/

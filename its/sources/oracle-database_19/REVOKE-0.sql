@@ -1,0 +1,2 @@
+REVOKE DROP ANY TABLE 
+    FROM hr, oe;

@@ -1,0 +1,2 @@
+CREATE TABLE new_emps (new_sal NUMBER, ...);
+CREATE FUNCTION new_sal RETURN NUMBER IS BEGIN ... END;

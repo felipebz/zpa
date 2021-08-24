@@ -1,0 +1,2 @@
+ALTER TABLE oe.customers
+   FLASHBACK ARCHIVE;

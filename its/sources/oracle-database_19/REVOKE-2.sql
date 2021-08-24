@@ -1,0 +1,2 @@
+REVOKE CREATE TABLESPACE 
+   FROM dw_manager;

@@ -1,0 +1,2 @@
+CREATE AUDIT POLICY dp_actions_pol
+  ACTIONS COMPONENT = datapump IMPORT;

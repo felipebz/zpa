@@ -30,7 +30,7 @@ fun main() {
 class OracleDocsExtractor {
 
     fun extract() {
-        val zipFile = ZipFile(System.getProperty("oracleDocs"))
+        val zipFile = ZipFile(System.getProperty("oracleDocs")) // example: https://docs.oracle.com/en/database/oracle/oracle-database/19/zip/oracle-database_19.zip
         val outputDir = File("../sources/oracle-database_19")
 
         if (outputDir.exists()) {

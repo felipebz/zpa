@@ -1,0 +1,1 @@
+SELECT TRUNC(15.79,1) "Truncate" FROM DUAL;

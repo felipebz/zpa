@@ -1,0 +1,1 @@
+DROP TYPE person_t FORCE;

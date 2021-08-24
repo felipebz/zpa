@@ -1,0 +1,1 @@
+SUM(s)['Mouse Pad',year BETWEEN CV()-2 AND CV()-1]

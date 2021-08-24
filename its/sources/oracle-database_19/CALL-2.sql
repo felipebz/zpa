@@ -1,0 +1,1 @@
+CALL emp_mgmt.remove_dept(162);

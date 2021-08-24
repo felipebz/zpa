@@ -1,0 +1,2 @@
+SELECT ASIN(.3) "Arc_Sine"
+  FROM DUAL;

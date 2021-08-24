@@ -1,0 +1,2 @@
+FLASHBACK TABLE employees_test
+  TO TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' minute);

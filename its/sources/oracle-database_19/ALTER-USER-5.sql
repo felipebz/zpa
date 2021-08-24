@@ -1,0 +1,2 @@
+ALTER USER sh 
+    DEFAULT ROLE ALL EXCEPT dw_manager;

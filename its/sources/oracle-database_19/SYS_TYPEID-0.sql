@@ -1,0 +1,1 @@
+SELECT name, SYS_TYPEID(VALUE(p)) "Type_id" FROM persons p;

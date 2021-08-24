@@ -1,0 +1,2 @@
+SELECT SIN(30 * 3.14159265359/180)
+ "Sine of 30 degrees" FROM DUAL;

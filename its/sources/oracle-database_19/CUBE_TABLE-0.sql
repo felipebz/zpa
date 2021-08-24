@@ -1,0 +1,1 @@
+SELECT ... FROM TABLE(CUBE_TABLE('arg'));

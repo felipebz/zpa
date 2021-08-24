@@ -1,0 +1,3 @@
+CREATE TABLESPACE tbs_03 
+   DATAFILE 'tbs_f03.dbf' SIZE 20M
+   LOGGING;

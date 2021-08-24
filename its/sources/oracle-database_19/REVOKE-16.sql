@@ -1,0 +1,1 @@
+REVOKE READ ON DIRECTORY bfile_dir FROM hr;

@@ -1,0 +1,2 @@
+SELECT CHR(67)||CHR(65)||CHR(84) "Dog"
+  FROM DUAL;

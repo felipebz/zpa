@@ -1,0 +1,1 @@
+DROP TABLESPACE <shadow_tablespace_name>

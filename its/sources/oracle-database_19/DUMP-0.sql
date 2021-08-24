@@ -1,0 +1,2 @@
+SELECT DUMP('abc', 1016)
+  FROM DUAL;

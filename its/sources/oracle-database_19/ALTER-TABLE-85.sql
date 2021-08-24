@@ -1,0 +1,2 @@
+ALTER TABLE departments
+    DROP CONSTRAINT pk_dept CASCADE;

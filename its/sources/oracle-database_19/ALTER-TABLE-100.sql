@@ -1,0 +1,2 @@
+CREATE OR REPLACE TYPE clob_typ AS OBJECT (c clob);
+/

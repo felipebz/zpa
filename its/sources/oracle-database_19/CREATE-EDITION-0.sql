@@ -1,0 +1,5 @@
+GRANT CREATE ANY EDITION, DROP ANY EDITION to HR;
+Grant succeeded.
+
+ALTER USER hr ENABLE EDITIONS;
+User altered.

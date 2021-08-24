@@ -1,0 +1,1 @@
+CREATE ROLE warehouse_user IDENTIFIED GLOBALLY;

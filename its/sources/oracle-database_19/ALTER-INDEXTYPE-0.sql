@@ -1,0 +1,1 @@
+ALTER INDEXTYPE position_indextype COMPILE;

@@ -1,0 +1,5 @@
+CREATE USER app_user1
+   IDENTIFIED EXTERNALLY
+   DEFAULT TABLESPACE example
+   QUOTA 5M ON example
+   PROFILE app_user;

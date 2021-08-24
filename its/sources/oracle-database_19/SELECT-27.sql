@@ -1,0 +1,1 @@
+SELECT COUNT(*) * 10 FROM orders SAMPLE(10) SEED (1);

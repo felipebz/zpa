@@ -1,0 +1,4 @@
+ALTER AUDIT POLICY hr_admin_pol
+  DROP PRIVILEGES CREATE ANY TABLE
+       ACTIONS LOCK TABLE
+       ROLES audit_viewer;

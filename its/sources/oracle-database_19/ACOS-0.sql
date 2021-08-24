@@ -1,0 +1,2 @@
+SELECT ACOS(.3)"Arc_Cosine"
+  FROM DUAL;

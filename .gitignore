@@ -47,5 +47,3 @@ dependency-reduced-pom.xml
 
 # SonarQube
 .scannerwork
-
-its/sources/oracle-database_19/

@@ -1,0 +1,3 @@
+ALTER DATABASE   
+   ADD LOGFILE MEMBER 'diskc:log3.log'  
+   TO GROUP 3;

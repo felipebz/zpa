@@ -1,0 +1,1 @@
+SELECT * FROM rect_tab x WHERE x.area() > 100;

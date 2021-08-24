@@ -1,0 +1,1 @@
+CREATE TABLE offices OF dept_t;

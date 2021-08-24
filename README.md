@@ -63,13 +63,11 @@ Build the main plugin and the custom rules example:
 
     ./mvnw clean install
     ./mvnw -f plsql-custom-rules/pom.xml package
-    
-Download the [Oracle HTML documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/zip/oracle-database_19.zip) to any folder.
-    
+
 Then run the tests:
 
-    ./mvnw test -Pit -DoracleDocs="path/to/oracle-database_19.zip"
+    ./mvnw test -Pit
 
 By default the tests will be executed using SonarQube 6.7.x LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[6.7]` (for SonarQube 6.7.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
 
-    ./mvnw test -Pit -DoracleDocs="path/to/oracle-database_19.zip" -Dsonar.runtimeVersion=7.7
+    ./mvnw test -Pit -Dsonar.runtimeVersion=7.7

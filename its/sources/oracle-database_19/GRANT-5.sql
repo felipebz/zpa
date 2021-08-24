@@ -1,0 +1,1 @@
+GRANT SELECT ON sh.sales TO warehouse_user;

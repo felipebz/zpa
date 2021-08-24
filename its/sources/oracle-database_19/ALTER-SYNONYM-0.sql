@@ -1,0 +1,1 @@
+ALTER SYNONYM offices COMPILE;

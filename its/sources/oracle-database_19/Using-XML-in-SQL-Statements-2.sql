@@ -1,0 +1,1 @@
+SELECT e.getClobVal() FROM xwarehouses e;

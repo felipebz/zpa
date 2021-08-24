@@ -1,0 +1,1 @@
+STARTUP PFILE=new_param.ora

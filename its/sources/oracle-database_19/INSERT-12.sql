@@ -1,0 +1,1 @@
+CREATE TABLE long_tab (pic_id NUMBER, long_pics LONG RAW);

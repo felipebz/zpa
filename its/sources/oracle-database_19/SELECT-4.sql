@@ -1,0 +1,1 @@
+COALESCE (a, b) = a if a NOT NULL, else b.

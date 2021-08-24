@@ -17,7 +17,6 @@ ci)
 
 it)
   mkdir -p $MAVEN_CACHE_FOLDER
-  wget https://docs.oracle.com/en/database/oracle/oracle-database/19/zip/oracle-database_19.zip -O $MAVEN_CACHE_FOLDER/oracle-database_19.zip
 
   git submodule update --init --recursive
 
@@ -31,7 +30,7 @@ it)
     # To run the integration tests with SQ 6.7 we'll to use JDK 8
     JAVA_HOME=$JAVA_HOME_8_X64
   fi
-  ../mvnw $MAVEN_OPTS -Dsonar.runtimeVersion="$SQ_VERSION" -DoracleDocs="$MAVEN_CACHE_FOLDER/oracle-database_19.zip" -Pit verify -e -B -V
+  ../mvnw $MAVEN_OPTS -Dsonar.runtimeVersion="$SQ_VERSION" -Pit verify -e -B -V
   ;;
 
 esac

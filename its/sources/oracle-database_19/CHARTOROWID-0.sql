@@ -1,0 +1,3 @@
+SELECT last_name
+  FROM employees
+  WHERE ROWID = CHARTOROWID('AAAFd1AAFAAAABSAA/');

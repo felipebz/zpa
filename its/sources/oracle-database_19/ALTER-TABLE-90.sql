@@ -1,0 +1,1 @@
+ALTER TABLE employees MODIFY LOB (resume) (NOCACHE);

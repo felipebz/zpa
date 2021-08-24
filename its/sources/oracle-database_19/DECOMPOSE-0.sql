@@ -1,0 +1,2 @@
+SELECT DECOMPOSE ('Châteaux')
+  FROM DUAL; 

@@ -1,0 +1,1 @@
+SELECT hr.new_sal FROM new_emps;

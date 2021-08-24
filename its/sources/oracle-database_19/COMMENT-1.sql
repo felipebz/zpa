@@ -1,0 +1,1 @@
+COMMENT ON COLUMN employees.job_id IS '';

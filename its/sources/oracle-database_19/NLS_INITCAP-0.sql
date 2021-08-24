@@ -1,0 +1,1 @@
+'NLS_SORT = sort'

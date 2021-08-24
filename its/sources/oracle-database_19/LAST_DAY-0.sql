@@ -1,0 +1,4 @@
+SELECT SYSDATE,
+       LAST_DAY(SYSDATE) "Last",
+       LAST_DAY(SYSDATE) - SYSDATE "Days Left"
+  FROM DUAL;

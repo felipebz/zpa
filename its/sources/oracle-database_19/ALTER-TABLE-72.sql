@@ -1,0 +1,2 @@
+ALTER TABLE employees
+   MODIFY (salary ENCRYPT USING 'AES256' 'NOMAC');

@@ -1,0 +1,1 @@
+SELECT SINH(1) "Hyperbolic sine of 1" FROM DUAL;

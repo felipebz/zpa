@@ -1,0 +1,1 @@
+'NLS_DATE_LANGUAGE = language'

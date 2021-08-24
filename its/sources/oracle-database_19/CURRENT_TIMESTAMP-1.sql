@@ -1,0 +1,1 @@
+CREATE TABLE current_test (col1 TIMESTAMP WITH TIME ZONE);

@@ -1,0 +1,2 @@
+SELECT LENGTHB ('CANDIDE') "Length in bytes"
+  FROM DUAL;

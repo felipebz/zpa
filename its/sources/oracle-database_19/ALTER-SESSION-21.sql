@@ -1,0 +1,5 @@
+ALTER SESSION
+   SET NLS_CURRENCY = 'DM'; 
+
+SELECT TO_CHAR( SUM(salary), 'L999G999D99') Total
+   FROM employees; 

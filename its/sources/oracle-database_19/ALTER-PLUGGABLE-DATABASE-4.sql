@@ -1,0 +1,1 @@
+ALTER PLUGGABLE DATABASE <pdbname> CONTAINERS HOST='myhost.example.com';

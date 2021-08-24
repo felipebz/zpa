@@ -1,0 +1,2 @@
+SELECT SUBSTR('ABCDEFG',3,4) "Substring"
+     FROM DUAL;

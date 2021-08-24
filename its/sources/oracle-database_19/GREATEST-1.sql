@@ -1,0 +1,2 @@
+SELECT GREATEST (1, '3.925', '2.4') "Greatest"
+  FROM DUAL;

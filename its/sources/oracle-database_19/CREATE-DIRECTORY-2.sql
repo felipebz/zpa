@@ -1,0 +1,1 @@
+CREATE DIRECTORY admin AS '/disk1/oracle/admin';

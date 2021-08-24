@@ -1,0 +1,2 @@
+GRANT ALL ON bonuses TO hr 
+   WITH GRANT OPTION;
