@@ -87,4 +87,18 @@ class InsertStatementTest : RuleTest() {
         assertThat(p).matches("insert into tab (x) values (1) returning x into y;")
     }
 
+    @Test
+    fun matchesMultiTableInsert() {
+        assertThat(p).matches("insert all into tab (x) values (y) into tab (x) values (y) select 1 y from dual;")
+    }
+
+    @Test
+    fun matchesMultiTableConditionalInsert() {
+        assertThat(p).matches("insert all " +
+            "when y < 0 then into tab (x) values (y) " +
+            "when y > 0 then into tab (x) values (y) " +
+            "else into tab (x) values (y) " +
+            "select 1 y from dual;")
+    }
+
 }

@@ -66,6 +66,11 @@ enum class DmlGrammar : GrammarRuleKey {
     UPDATE_EXPRESSION,
     INSERT_COLUMNS,
     INSERT_EXPRESSION,
+    SINGLE_TABLE_INSERT,
+    INSERT_INTO_CLAUSE,
+    VALUES_CLAUSE,
+    MULTI_TABLE_INSERT,
+    CONDITIONAL_INSERT_CLAUSE,
     MERGE_EXPRESSION,
     MERGE_UPDATE_CLAUSE,
     MERGE_INSERT_CLAUSE,
@@ -262,14 +267,44 @@ enum class DmlGrammar : GrammarRuleKey {
         private fun createInsertExpression(b: PlSqlGrammarBuilder) {
             b.rule(INSERT_COLUMNS).define(LPARENTHESIS, MEMBER_EXPRESSION, b.zeroOrMore(COMMA, MEMBER_EXPRESSION), RPARENTHESIS)
 
-            b.rule(INSERT_EXPRESSION).define(
-                    INSERT, INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME),
-                    b.optional(INSERT_COLUMNS),
-                    b.firstOf(
-                            b.sequence(VALUES, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
-                            b.sequence(VALUES, EXPRESSION),
-                            SELECT_EXPRESSION),
-                    b.optional(RETURNING_INTO_CLAUSE))
+            b.rule(INSERT_EXPRESSION).define(INSERT, b.firstOf(SINGLE_TABLE_INSERT, MULTI_TABLE_INSERT))
+
+            b.rule(SINGLE_TABLE_INSERT).define(
+                INSERT_INTO_CLAUSE,
+                b.firstOf(
+                    b.sequence(VALUES_CLAUSE, b.optional(RETURNING_INTO_CLAUSE)),
+                    SELECT_EXPRESSION),
+                b.optional(ERROR_LOGGING_CLAUSE))
+
+            b.rule(INSERT_INTO_CLAUSE).define(INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
+
+            b.rule(VALUES_CLAUSE).define(
+                VALUES,
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, b.firstOf(EXPRESSION, DEFAULT), b.zeroOrMore(b.sequence(COMMA, b.firstOf(EXPRESSION, DEFAULT))), RPARENTHESIS),
+                    EXPRESSION))
+
+            b.rule(MULTI_TABLE_INSERT).define(
+                b.firstOf(
+                    b.sequence(ALL, b.oneOrMore(b.sequence(INSERT_INTO_CLAUSE, b.optional(VALUES_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)))),
+                    CONDITIONAL_INSERT_CLAUSE),
+                SELECT_EXPRESSION)
+
+            b.rule(CONDITIONAL_INSERT_CLAUSE).define(
+                b.optional(b.firstOf(ALL, FIRST)),
+                WHEN, EXPRESSION, THEN, INSERT_INTO_CLAUSE,
+                b.optional(VALUES_CLAUSE),
+                b.optional(ERROR_LOGGING_CLAUSE),
+                b.zeroOrMore(INSERT_INTO_CLAUSE, b.optional(VALUES_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
+                b.zeroOrMore(WHEN, EXPRESSION, THEN, INSERT_INTO_CLAUSE,
+                    b.optional(VALUES_CLAUSE),
+                    b.optional(ERROR_LOGGING_CLAUSE),
+                    b.zeroOrMore(INSERT_INTO_CLAUSE, b.optional(VALUES_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE))),
+                b.optional(ELSE, INSERT_INTO_CLAUSE,
+                    b.optional(VALUES_CLAUSE),
+                    b.optional(ERROR_LOGGING_CLAUSE),
+                    b.zeroOrMore(INSERT_INTO_CLAUSE, b.optional(VALUES_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE))))
+
         }
 
         private fun createMergeExpression(b: PlSqlGrammarBuilder) {

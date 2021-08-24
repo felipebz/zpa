@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.AstNode
+import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -32,18 +33,18 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class InsertWithoutColumnsCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(DmlGrammar.INSERT_EXPRESSION)
+        subscribeTo(DmlGrammar.SINGLE_TABLE_INSERT)
     }
 
     override fun visitNode(node: AstNode) {
-        if (!node.hasDirectChildren(DmlGrammar.INSERT_COLUMNS)) {
-            val value = node.lastChild
+        if (!node.hasDescendant(DmlGrammar.INSERT_COLUMNS)) {
+            val valuesClause = node.lastChild
 
-            if (semantic(value).plSqlType === PlSqlType.ROWTYPE) {
+            if (valuesClause.typeIs(DmlGrammar.VALUES_CLAUSE) && semantic(valuesClause.lastChild).plSqlType === PlSqlType.ROWTYPE) {
                 return
             }
 
-            if (node.parent?.parent?.type === PlSqlGrammar.FORALL_STATEMENT) {
+            if (node.parent?.parent?.parent?.type === PlSqlGrammar.FORALL_STATEMENT) {
                 return
             }
 
