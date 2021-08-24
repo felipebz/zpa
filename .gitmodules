@@ -1,15 +1,20 @@
 [submodule "its/sources/pljson"]
 	path = its/sources/pljson
 	url = https://github.com/pljson/pljson.git
+	ignore = dirty
 [submodule "its/sources/alexandria-plsql-utils"]
 	path = its/sources/alexandria-plsql-utils
 	url = https://github.com/mortenbra/alexandria-plsql-utils.git
+	ignore = dirty
 [submodule "its/sources/utPLSQL"]
 	path = its/sources/utPLSQL2
 	url = https://github.com/utPLSQL/utPLSQL.git
+	ignore = dirty
 [submodule "its/sources/utPLSQL3"]
 	path = its/sources/utPLSQL3
 	url = https://github.com/utPLSQL/utPLSQL/
+	ignore = dirty
 [submodule "its/sources/Doag-Forms"]
 	path = its/sources/Doag-Forms
 	url = https://github.com/Doag/Forms.git
+	ignore = dirty
