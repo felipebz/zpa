@@ -2189,9 +2189,6 @@
 'oracle-database_19:INSERT-6.sql':[
 4,
 ],
-'oracle-database_19:INSERT-9.sql':[
-6,
-],
 'oracle-database_19:ISO-Standards-0.sql':[
 1,
 ],
@@ -2908,9 +2905,6 @@
 ],
 'oracle-database_19:UPDATE-5.sql':[
 1,
-],
-'oracle-database_19:UPDATE-6.sql':[
-4,
 ],
 'oracle-database_19:USERENV-0.sql':[
 1,

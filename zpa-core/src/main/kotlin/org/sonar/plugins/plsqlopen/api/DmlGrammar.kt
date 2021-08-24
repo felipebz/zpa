@@ -241,7 +241,7 @@ enum class DmlGrammar : GrammarRuleKey {
         private fun createDeleteExpression(b: PlSqlGrammarBuilder) {
             b.rule(RETURNING_INTO_CLAUSE).define(
                     b.firstOf(RETURNING, RETURN),
-                    b.optional(OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE)),
+                    b.optional(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
                     INTO_CLAUSE)
 
             b.rule(DELETE_EXPRESSION).define(

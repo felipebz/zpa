@@ -84,7 +84,7 @@ class InsertStatementTest : RuleTest() {
 
     @Test
     fun matchesInsertWithReturningInto() {
-        assertThat(p).matches("insert into tab (x) values (1) returning x into y;")
+        assertThat(p).matches("insert into tab (x) values (1) returning x*2 into y;")
     }
 
     @Test
