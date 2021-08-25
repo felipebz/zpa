@@ -54,7 +54,7 @@ object PlSqlLexer {
 
         + ")")
 
-    private const val DATE_LITERAL = "(?i)(?:DATE '\\d{4}-\\d{2}-\\d{2}')"
+    private const val DATE_LITERAL = "(?i)(?:DATE\\s*?'\\d{4}-\\d{2}-\\d{2}')"
 
     private val SIMPLE_IDENTIFIER = and("[\\w\\p{L}]", o2n("[\\w\\p{L}#$]"))
 

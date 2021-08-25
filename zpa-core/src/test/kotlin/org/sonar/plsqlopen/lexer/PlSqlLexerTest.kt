@@ -149,6 +149,8 @@ class PlSqlLexerTest {
     fun dateLiteral() {
         assertThatIsToken("DATE '2015-01-01'", PlSqlTokenType.DATE_LITERAL)
         assertThatIsToken("date '2015-01-01'", PlSqlTokenType.DATE_LITERAL)
+        assertThatIsToken("date'2015-01-01'", PlSqlTokenType.DATE_LITERAL)
+        assertThatIsToken("date    '2015-01-01'", PlSqlTokenType.DATE_LITERAL)
     }
 
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {
