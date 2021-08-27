@@ -276,7 +276,9 @@ enum class DmlGrammar : GrammarRuleKey {
                     SELECT_EXPRESSION),
                 b.optional(ERROR_LOGGING_CLAUSE))
 
-            b.rule(INSERT_INTO_CLAUSE).define(INTO, TABLE_REFERENCE, b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
+            b.rule(INSERT_INTO_CLAUSE).define(INTO,
+                b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), TABLE_REFERENCE),
+                b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
 
             b.rule(VALUES_CLAUSE).define(
                 VALUES,

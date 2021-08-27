@@ -2174,9 +2174,6 @@
   "INSERT-21.sql": [
     9
   ],
-  "INSERT-3.sql": [
-    3
-  ],
   "INSERT-6.sql": [
     5
   ],
@@ -2675,11 +2672,8 @@
   "SELECT-45.sql": [
     8
   ],
-  "SELECT-52.sql": [
-    2
-  ],
   "SELECT-53.sql": [
-    2
+    3
   ],
   "SELECT-54.sql": [
     2

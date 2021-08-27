@@ -88,6 +88,11 @@ class InsertStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesSimpleInsertInQuery() {
+        assertThat(p).matches("insert into (select x from tab) values (1);")
+    }
+
+    @Test
     fun matchesMultiTableInsert() {
         assertThat(p).matches("insert all into tab (x) values (y) into tab (x) values (y) select 1 y from dual;")
     }
