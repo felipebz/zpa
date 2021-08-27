@@ -2174,9 +2174,6 @@
   "INSERT-21.sql": [
     9
   ],
-  "INSERT-6.sql": [
-    5
-  ],
   "ISO-Standards-0.sql": [
     2
   ],
@@ -2648,6 +2645,18 @@
   "SELECT-19.sql": [
     3
   ],
+  "SELECT-23.sql": [
+    2
+  ],
+  "SELECT-25.sql": [
+    2
+  ],
+  "SELECT-26.sql": [
+    2
+  ],
+  "SELECT-27.sql": [
+    2
+  ],
   "SELECT-29.sql": [
     3
   ],
@@ -2695,6 +2704,12 @@
   ],
   "SELECT-70.sql": [
     2
+  ],
+  "SELECT-73.sql": [
+    3
+  ],
+  "SELECT-74.sql": [
+    3
   ],
   "SELECT-75.sql": [
     4
@@ -2803,6 +2818,9 @@
   ],
   "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-1.sql": [
     2
+  ],
+  "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-3.sql": [
+    4
   ],
   "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql": [
     3

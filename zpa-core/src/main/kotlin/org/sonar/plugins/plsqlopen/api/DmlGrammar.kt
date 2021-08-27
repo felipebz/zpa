@@ -166,12 +166,12 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                             OBJECT_REFERENCE),
-                    b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING)), ALIAS))
+                    b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG)), ALIAS))
 
             b.rule(FROM_CLAUSE).define(
                     FROM,
-                    b.oneOrMore(b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
-                            b.zeroOrMore(COMMA, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE))))
+                    b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                    b.zeroOrMore(COMMA, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE)))
 
             b.rule(WHERE_CLAUSE).define(WHERE, EXPRESSION)
 
@@ -324,6 +324,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(ERROR_LOGGING_CLAUSE).define(
                     LOG, ERRORS,
                     b.optional(INTO, TABLE_REFERENCE),
+                    b.optional(LPARENTHESIS, EXPRESSION, RPARENTHESIS),
                     b.optional(REJECT, LIMIT, b.firstOf(EXPRESSION, UNLIMITED)))
 
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
