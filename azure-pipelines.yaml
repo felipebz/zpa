@@ -46,6 +46,7 @@ jobs:
 
     variables:
       MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)\.m2\repository
+      SONAR_USER_HOME: $(Pipeline.Workspace)\.m2\.sonar
       MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
     steps:
