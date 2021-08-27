@@ -1,0 +1,44 @@
+{
+  "examples/filepath1.pkg": [
+    104
+  ],
+  "examples/mybooks_setup.sql": [
+    17
+  ],
+  "examples/str2list.pkg": [
+    62
+  ],
+  "source/ut_assertion.tab": [
+    33
+  ],
+  "source/ut_config.pkb": [
+    680
+  ],
+  "source/ut_gen.pkb": [
+    222
+  ],
+  "source/ut_i_preprocess.sql": [
+    23
+  ],
+  "source/ut_i_synonyms.sql": [
+    24
+  ],
+  "source/ut_outcome.tab": [
+    22
+  ],
+  "source/ut_package.tab": [
+    21
+  ],
+  "source/ut_receq.tab": [
+    12
+  ],
+  "source/ut_suite.tab": [
+    17
+  ],
+  "source/ut_test.tab": [
+    14
+  ],
+  "source/ut_testcase.tab": [
+    25
+  ]
+}

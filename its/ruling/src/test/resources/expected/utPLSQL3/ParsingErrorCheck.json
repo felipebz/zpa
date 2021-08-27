@@ -1,0 +1,47 @@
+{
+  "old_tests/lib/mystats/mystats.sql": [
+    425
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.IncludesInvalidPackageBodiesInTheRun.sql": [
+    15
+  ],
+  "old_tests/ut_utils/common/ut_utils.clob_to_table.sql": [
+    5
+  ],
+  "old_tests/ut_utils/common/ut_utils.table_to_clob.sql": [
+    3
+  ],
+  "source/core/annotations/ut_annotation_cache.sql": [
+    24
+  ],
+  "source/core/annotations/ut_annotation_cache_info.sql": [
+    22
+  ],
+  "source/core/annotations/ut_annotation_cache_manager.pkb": [
+    94
+  ],
+  "source/core/coverage/ut_coverage_sources_tmp.sql": [
+    24
+  ],
+  "source/core/output_buffers/ut_output_buffer_info_tmp.sql": [
+    23
+  ],
+  "source/core/output_buffers/ut_output_buffer_tmp.sql": [
+    27
+  ],
+  "source/create_synonyms_and_grants_for_public.sql": [
+    106
+  ],
+  "source/create_user_grants.sql": [
+    37
+  ],
+  "source/create_user_synonyms.sql": [
+    37
+  ],
+  "source/create_utplsql_owner.sql": [
+    30
+  ],
+  "source/define_ut3_owner_param.sql": [
+    49
+  ]
+}

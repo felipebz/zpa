@@ -1,0 +1,3026 @@
+{
+  "ADMINISTER-KEY-MANAGEMENT-1.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-10.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-11.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-12.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-13.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-14.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-15.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-16.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-18.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-19.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-2.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-20.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-21.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-22.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-23.sql": [
+    2
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-24.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-25.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-26.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-27.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-28.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-29.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-3.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-30.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-31.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-32.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-4.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-5.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-6.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-7.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-8.sql": [
+    1
+  ],
+  "ADMINISTER-KEY-MANAGEMENT-9.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-0.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-1.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-10.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-11.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-12.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-2.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-3.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-4.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-5.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-6.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-7.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-8.sql": [
+    1
+  ],
+  "ALTER-AUDIT-POLICY-Unified-Auditing-9.sql": [
+    1
+  ],
+  "ALTER-CLUSTER-0.sql": [
+    1
+  ],
+  "ALTER-CLUSTER-1.sql": [
+    1
+  ],
+  "ALTER-DATABASE-1.sql": [
+    1
+  ],
+  "ALTER-DATABASE-10.sql": [
+    1
+  ],
+  "ALTER-DATABASE-11.sql": [
+    1
+  ],
+  "ALTER-DATABASE-12.sql": [
+    1
+  ],
+  "ALTER-DATABASE-13.sql": [
+    1
+  ],
+  "ALTER-DATABASE-14.sql": [
+    1
+  ],
+  "ALTER-DATABASE-15.sql": [
+    1
+  ],
+  "ALTER-DATABASE-16.sql": [
+    1
+  ],
+  "ALTER-DATABASE-17.sql": [
+    1
+  ],
+  "ALTER-DATABASE-18.sql": [
+    1
+  ],
+  "ALTER-DATABASE-19.sql": [
+    1
+  ],
+  "ALTER-DATABASE-2.sql": [
+    1
+  ],
+  "ALTER-DATABASE-20.sql": [
+    1
+  ],
+  "ALTER-DATABASE-21.sql": [
+    1
+  ],
+  "ALTER-DATABASE-22.sql": [
+    1
+  ],
+  "ALTER-DATABASE-23.sql": [
+    1
+  ],
+  "ALTER-DATABASE-24.sql": [
+    1
+  ],
+  "ALTER-DATABASE-25.sql": [
+    1
+  ],
+  "ALTER-DATABASE-26.sql": [
+    1
+  ],
+  "ALTER-DATABASE-27.sql": [
+    1
+  ],
+  "ALTER-DATABASE-28.sql": [
+    1
+  ],
+  "ALTER-DATABASE-3.sql": [
+    1
+  ],
+  "ALTER-DATABASE-4.sql": [
+    1
+  ],
+  "ALTER-DATABASE-5.sql": [
+    1
+  ],
+  "ALTER-DATABASE-6.sql": [
+    1
+  ],
+  "ALTER-DATABASE-7.sql": [
+    1
+  ],
+  "ALTER-DATABASE-8.sql": [
+    1
+  ],
+  "ALTER-DATABASE-9.sql": [
+    1
+  ],
+  "ALTER-DATABASE-LINK-0.sql": [
+    1
+  ],
+  "ALTER-DIMENSION-0.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-0.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-1.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-10.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-11.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-12.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-13.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-2.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-3.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-4.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-5.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-6.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-7.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-8.sql": [
+    1
+  ],
+  "ALTER-DISKGROUP-9.sql": [
+    1
+  ],
+  "ALTER-INDEX-0.sql": [
+    1
+  ],
+  "ALTER-INDEX-1.sql": [
+    1
+  ],
+  "ALTER-INDEX-10.sql": [
+    1
+  ],
+  "ALTER-INDEX-11.sql": [
+    1
+  ],
+  "ALTER-INDEX-12.sql": [
+    1
+  ],
+  "ALTER-INDEX-2.sql": [
+    1
+  ],
+  "ALTER-INDEX-3.sql": [
+    1
+  ],
+  "ALTER-INDEX-4.sql": [
+    1
+  ],
+  "ALTER-INDEX-5.sql": [
+    1
+  ],
+  "ALTER-INDEX-6.sql": [
+    1
+  ],
+  "ALTER-INDEX-7.sql": [
+    1
+  ],
+  "ALTER-INDEX-8.sql": [
+    4
+  ],
+  "ALTER-INDEX-9.sql": [
+    1
+  ],
+  "ALTER-INDEXTYPE-0.sql": [
+    1
+  ],
+  "ALTER-JAVA-0.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-0.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-1.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-2.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-3.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-4.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-5.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-6.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-LOG-0.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-VIEW-LOG-1.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-0.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-1.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-2.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-3.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-4.sql": [
+    1
+  ],
+  "ALTER-MATERIALIZED-ZONEMAP-5.sql": [
+    1
+  ],
+  "ALTER-OPERATOR-0.sql": [
+    1
+  ],
+  "ALTER-OUTLINE-0.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-0.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-1.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-10.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-11.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-12.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-13.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-14.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-15.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-16.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-17.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-18.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-19.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-2.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-3.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-4.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-5.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-6.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-7.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-8.sql": [
+    1
+  ],
+  "ALTER-PLUGGABLE-DATABASE-9.sql": [
+    1
+  ],
+  "ALTER-PROFILE-0.sql": [
+    1
+  ],
+  "ALTER-PROFILE-1.sql": [
+    1
+  ],
+  "ALTER-PROFILE-2.sql": [
+    1
+  ],
+  "ALTER-PROFILE-3.sql": [
+    1
+  ],
+  "ALTER-PROFILE-4.sql": [
+    1
+  ],
+  "ALTER-PROFILE-5.sql": [
+    1
+  ],
+  "ALTER-PROFILE-6.sql": [
+    1
+  ],
+  "ALTER-PROFILE-7.sql": [
+    1
+  ],
+  "ALTER-PROFILE-8.sql": [
+    1
+  ],
+  "ALTER-PROFILE-9.sql": [
+    1
+  ],
+  "ALTER-RESOURCE-COST-0.sql": [
+    1
+  ],
+  "ALTER-RESOURCE-COST-1.sql": [
+    1
+  ],
+  "ALTER-RESOURCE-COST-2.sql": [
+    1
+  ],
+  "ALTER-RESOURCE-COST-3.sql": [
+    1
+  ],
+  "ALTER-ROLE-0.sql": [
+    1
+  ],
+  "ALTER-ROLE-1.sql": [
+    1
+  ],
+  "ALTER-ROLE-2.sql": [
+    1
+  ],
+  "ALTER-ROLLBACK-SEGMENT-0.sql": [
+    1
+  ],
+  "ALTER-ROLLBACK-SEGMENT-1.sql": [
+    1
+  ],
+  "ALTER-SEQUENCE-0.sql": [
+    1
+  ],
+  "ALTER-SEQUENCE-1.sql": [
+    1
+  ],
+  "ALTER-SESSION-10.sql": [
+    1
+  ],
+  "ALTER-SESSION-11.sql": [
+    1
+  ],
+  "ALTER-SESSION-2.sql": [
+    1
+  ],
+  "ALTER-SESSION-22.sql": [
+    4
+  ],
+  "ALTER-SESSION-3.sql": [
+    1
+  ],
+  "ALTER-SESSION-4.sql": [
+    1
+  ],
+  "ALTER-SESSION-5.sql": [
+    1
+  ],
+  "ALTER-SESSION-6.sql": [
+    1
+  ],
+  "ALTER-SESSION-7.sql": [
+    1
+  ],
+  "ALTER-SESSION-8.sql": [
+    1
+  ],
+  "ALTER-SESSION-9.sql": [
+    1
+  ],
+  "ALTER-SYNONYM-0.sql": [
+    1
+  ],
+  "ALTER-SYNONYM-1.sql": [
+    1
+  ],
+  "ALTER-SYNONYM-2.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-0.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-10.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-11.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-12.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-13.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-14.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-15.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-16.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-17.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-18.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-19.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-20.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-21.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-22.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-23.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-25.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-26.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-3.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-4.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-5.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-6.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-7.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-8.sql": [
+    1
+  ],
+  "ALTER-SYSTEM-9.sql": [
+    1
+  ],
+  "ALTER-TABLE-0.sql": [
+    3
+  ],
+  "ALTER-TABLE-1.sql": [
+    1
+  ],
+  "ALTER-TABLE-10.sql": [
+    2
+  ],
+  "ALTER-TABLE-101.sql": [
+    1
+  ],
+  "ALTER-TABLE-12.sql": [
+    2
+  ],
+  "ALTER-TABLE-13.sql": [
+    2
+  ],
+  "ALTER-TABLE-15.sql": [
+    2
+  ],
+  "ALTER-TABLE-16.sql": [
+    3
+  ],
+  "ALTER-TABLE-17.sql": [
+    2
+  ],
+  "ALTER-TABLE-18.sql": [
+    2
+  ],
+  "ALTER-TABLE-2.sql": [
+    1
+  ],
+  "ALTER-TABLE-21.sql": [
+    2
+  ],
+  "ALTER-TABLE-23.sql": [
+    2
+  ],
+  "ALTER-TABLE-25.sql": [
+    1
+  ],
+  "ALTER-TABLE-26.sql": [
+    1
+  ],
+  "ALTER-TABLE-27.sql": [
+    1
+  ],
+  "ALTER-TABLE-28.sql": [
+    1
+  ],
+  "ALTER-TABLE-29.sql": [
+    1
+  ],
+  "ALTER-TABLE-3.sql": [
+    1
+  ],
+  "ALTER-TABLE-31.sql": [
+    1
+  ],
+  "ALTER-TABLE-33.sql": [
+    1
+  ],
+  "ALTER-TABLE-35.sql": [
+    1
+  ],
+  "ALTER-TABLE-36.sql": [
+    1
+  ],
+  "ALTER-TABLE-37.sql": [
+    1
+  ],
+  "ALTER-TABLE-38.sql": [
+    1
+  ],
+  "ALTER-TABLE-39.sql": [
+    1
+  ],
+  "ALTER-TABLE-40.sql": [
+    12
+  ],
+  "ALTER-TABLE-41.sql": [
+    2
+  ],
+  "ALTER-TABLE-42.sql": [
+    2
+  ],
+  "ALTER-TABLE-43.sql": [
+    2
+  ],
+  "ALTER-TABLE-44.sql": [
+    2
+  ],
+  "ALTER-TABLE-45.sql": [
+    1
+  ],
+  "ALTER-TABLE-46.sql": [
+    2
+  ],
+  "ALTER-TABLE-47.sql": [
+    1
+  ],
+  "ALTER-TABLE-48.sql": [
+    2
+  ],
+  "ALTER-TABLE-49.sql": [
+    1
+  ],
+  "ALTER-TABLE-51.sql": [
+    10
+  ],
+  "ALTER-TABLE-52.sql": [
+    1
+  ],
+  "ALTER-TABLE-53.sql": [
+    1
+  ],
+  "ALTER-TABLE-54.sql": [
+    2
+  ],
+  "ALTER-TABLE-55.sql": [
+    1
+  ],
+  "ALTER-TABLE-56.sql": [
+    2
+  ],
+  "ALTER-TABLE-57.sql": [
+    1
+  ],
+  "ALTER-TABLE-58.sql": [
+    1
+  ],
+  "ALTER-TABLE-59.sql": [
+    3
+  ],
+  "ALTER-TABLE-61.sql": [
+    2
+  ],
+  "ALTER-TABLE-62.sql": [
+    1
+  ],
+  "ALTER-TABLE-63.sql": [
+    2
+  ],
+  "ALTER-TABLE-64.sql": [
+    2
+  ],
+  "ALTER-TABLE-65.sql": [
+    1
+  ],
+  "ALTER-TABLE-66.sql": [
+    1
+  ],
+  "ALTER-TABLE-67.sql": [
+    1
+  ],
+  "ALTER-TABLE-69.sql": [
+    1
+  ],
+  "ALTER-TABLE-71.sql": [
+    1
+  ],
+  "ALTER-TABLE-72.sql": [
+    2
+  ],
+  "ALTER-TABLE-73.sql": [
+    2
+  ],
+  "ALTER-TABLE-74.sql": [
+    2
+  ],
+  "ALTER-TABLE-75.sql": [
+    2
+  ],
+  "ALTER-TABLE-76.sql": [
+    2
+  ],
+  "ALTER-TABLE-78.sql": [
+    2
+  ],
+  "ALTER-TABLE-8.sql": [
+    1
+  ],
+  "ALTER-TABLE-80.sql": [
+    1
+  ],
+  "ALTER-TABLE-82.sql": [
+    2
+  ],
+  "ALTER-TABLE-83.sql": [
+    1
+  ],
+  "ALTER-TABLE-84.sql": [
+    2
+  ],
+  "ALTER-TABLE-85.sql": [
+    2
+  ],
+  "ALTER-TABLE-87.sql": [
+    1
+  ],
+  "ALTER-TABLE-88.sql": [
+    1
+  ],
+  "ALTER-TABLE-89.sql": [
+    1
+  ],
+  "ALTER-TABLE-9.sql": [
+    2
+  ],
+  "ALTER-TABLE-90.sql": [
+    1
+  ],
+  "ALTER-TABLE-91.sql": [
+    1
+  ],
+  "ALTER-TABLE-92.sql": [
+    10
+  ],
+  "ALTER-TABLE-93.sql": [
+    3
+  ],
+  "ALTER-TABLE-94.sql": [
+    1
+  ],
+  "ALTER-TABLE-96.sql": [
+    1
+  ],
+  "ALTER-TABLE-97.sql": [
+    2
+  ],
+  "ALTER-TABLE-98.sql": [
+    2
+  ],
+  "ALTER-TABLESPACE-0.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-1.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-10.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-11.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-12.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-13.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-14.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-15.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-16.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-2.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-3.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-4.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-5.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-6.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-7.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-8.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-9.sql": [
+    1
+  ],
+  "ALTER-TABLESPACE-SET-0.sql": [
+    1
+  ],
+  "ALTER-USER-0.sql": [
+    1
+  ],
+  "ALTER-USER-1.sql": [
+    1
+  ],
+  "ALTER-USER-10.sql": [
+    1
+  ],
+  "ALTER-USER-11.sql": [
+    1
+  ],
+  "ALTER-USER-12.sql": [
+    1
+  ],
+  "ALTER-USER-2.sql": [
+    1
+  ],
+  "ALTER-USER-3.sql": [
+    1
+  ],
+  "ALTER-USER-4.sql": [
+    1
+  ],
+  "ALTER-USER-5.sql": [
+    1
+  ],
+  "ALTER-USER-6.sql": [
+    1
+  ],
+  "ALTER-USER-7.sql": [
+    1
+  ],
+  "ALTER-USER-8.sql": [
+    1
+  ],
+  "ALTER-USER-9.sql": [
+    1
+  ],
+  "ALTER-VIEW-0.sql": [
+    1
+  ],
+  "ANALYZE-0.sql": [
+    1
+  ],
+  "ANALYZE-1.sql": [
+    1
+  ],
+  "ANALYZE-2.sql": [
+    1
+  ],
+  "ANALYZE-3.sql": [
+    1
+  ],
+  "ANALYZE-4.sql": [
+    1
+  ],
+  "ANALYZE-5.sql": [
+    1
+  ],
+  "ANALYZE-6.sql": [
+    1
+  ],
+  "ANSI-Standards-0.sql": [
+    1
+  ],
+  "ANSI-Standards-1.sql": [
+    1
+  ],
+  "APPROX_MEDIAN-0.sql": [
+    2
+  ],
+  "APPROX_MEDIAN-1.sql": [
+    2
+  ],
+  "APPROX_MEDIAN-2.sql": [
+    2
+  ],
+  "APPROX_PERCENTILE-0.sql": [
+    2
+  ],
+  "APPROX_PERCENTILE-1.sql": [
+    2
+  ],
+  "APPROX_PERCENTILE-2.sql": [
+    2
+  ],
+  "APPROX_PERCENTILE-3.sql": [
+    3
+  ],
+  "APPROX_PERCENTILE_DETAIL-0.sql": [
+    2
+  ],
+  "ASSOCIATE-STATISTICS-0.sql": [
+    1
+  ],
+  "ASSOCIATE-STATISTICS-1.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-0.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-1.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-10.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-11.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-12.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-13.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-14.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-15.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-2.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-3.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-4.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-5.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-6.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-7.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-8.sql": [
+    1
+  ],
+  "AUDIT-Traditional-Auditing-9.sql": [
+    1
+  ],
+  "AUDIT-Unified-Auditing-0.sql": [
+    1
+  ],
+  "AUDIT-Unified-Auditing-2.sql": [
+    1
+  ],
+  "AUDIT-Unified-Auditing-4.sql": [
+    1
+  ],
+  "AUDIT-Unified-Auditing-6.sql": [
+    1
+  ],
+  "AUDIT-Unified-Auditing-8.sql": [
+    1
+  ],
+  "About-SQL-Conditions-0.sql": [
+    1
+  ],
+  "About-SQL-Conditions-1.sql": [
+    1
+  ],
+  "About-SQL-Conditions-2.sql": [
+    1
+  ],
+  "About-SQL-Conditions-3.sql": [
+    1
+  ],
+  "About-SQL-Expressions-0.sql": [
+    1
+  ],
+  "About-SQL-Expressions-1.sql": [
+    1
+  ],
+  "About-SQL-Operators-0.sql": [
+    1
+  ],
+  "About-SQL-Operators-1.sql": [
+    1
+  ],
+  "About-SQL-Operators-2.sql": [
+    1
+  ],
+  "About-User-Defined-Functions-0.sql": [
+    1
+  ],
+  "About-User-Defined-Functions-3.sql": [
+    1
+  ],
+  "BETWEEN-Condition-0.sql": [
+    1
+  ],
+  "BETWEEN-Condition-1.sql": [
+    1
+  ],
+  "BETWEEN-Condition-2.sql": [
+    1
+  ],
+  "BETWEEN-Condition-3.sql": [
+    1
+  ],
+  "BETWEEN-Condition-4.sql": [
+    1
+  ],
+  "BFILENAME-0.sql": [
+    1
+  ],
+  "BITMAP_CONSTRUCT_AGG-0.sql": [
+    1
+  ],
+  "CALL-0.sql": [
+    1
+  ],
+  "CALL-1.sql": [
+    1
+  ],
+  "CALL-2.sql": [
+    1
+  ],
+  "CALL-3.sql": [
+    1
+  ],
+  "CALL-4.sql": [
+    8
+  ],
+  "CAST-2.sql": [
+    3
+  ],
+  "CAST-3.sql": [
+    3
+  ],
+  "CAST-4.sql": [
+    3
+  ],
+  "CAST-5.sql": [
+    3
+  ],
+  "CHR-5.sql": [
+    1
+  ],
+  "CLUSTER_DETAILS-0.sql": [
+    2
+  ],
+  "CLUSTER_DETAILS-1.sql": [
+    3
+  ],
+  "CLUSTER_DISTANCE-0.sql": [
+    5
+  ],
+  "CLUSTER_ID-0.sql": [
+    1
+  ],
+  "CLUSTER_ID-1.sql": [
+    3
+  ],
+  "CLUSTER_PROBABILITY-0.sql": [
+    3
+  ],
+  "CLUSTER_SET-0.sql": [
+    2
+  ],
+  "COALESCE-0.sql": [
+    1
+  ],
+  "COALESCE-1.sql": [
+    1
+  ],
+  "COALESCE-2.sql": [
+    1
+  ],
+  "COALESCE-3.sql": [
+    1
+  ],
+  "COLLATE-Operator-0.sql": [
+    3
+  ],
+  "COLLECT-1.sql": [
+    4
+  ],
+  "COLUMN_VALUE-Pseudocolumn-4.sql": [
+    6
+  ],
+  "COMPOSE-0.sql": [
+    4
+  ],
+  "CORR-0.sql": [
+    1
+  ],
+  "CORR-2.sql": [
+    2
+  ],
+  "COVAR_POP-0.sql": [
+    1
+  ],
+  "COVAR_SAMP-0.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-10.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-12.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-13.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-14.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-16.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-17.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-18.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-19.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-20.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-21.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-22.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-5.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-6.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-7.sql": [
+    1
+  ],
+  "CREATE-AUDIT-POLICY-Unified-Auditing-9.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-0.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-1.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-2.sql": [
+    2
+  ],
+  "CREATE-CLUSTER-3.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-4.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-5.sql": [
+    1
+  ],
+  "CREATE-CLUSTER-6.sql": [
+    1
+  ],
+  "CREATE-CONTEXT-0.sql": [
+    1
+  ],
+  "CREATE-CONTROLFILE-0.sql": [
+    3
+  ],
+  "CREATE-DATABASE-0.sql": [
+    1
+  ],
+  "CREATE-DATABASE-1.sql": [
+    1
+  ],
+  "CREATE-DATABASE-LINK-0.sql": [
+    1
+  ],
+  "CREATE-DATABASE-LINK-2.sql": [
+    1
+  ],
+  "CREATE-DATABASE-LINK-6.sql": [
+    1
+  ],
+  "CREATE-DIMENSION-0.sql": [
+    1
+  ],
+  "CREATE-DIMENSION-1.sql": [
+    1
+  ],
+  "CREATE-DIMENSION-2.sql": [
+    1
+  ],
+  "CREATE-DIRECTORY-0.sql": [
+    1
+  ],
+  "CREATE-DIRECTORY-1.sql": [
+    1
+  ],
+  "CREATE-DIRECTORY-2.sql": [
+    1
+  ],
+  "CREATE-DIRECTORY-3.sql": [
+    1
+  ],
+  "CREATE-DISKGROUP-0.sql": [
+    1
+  ],
+  "CREATE-EDITION-0.sql": [
+    2
+  ],
+  "CREATE-EDITION-1.sql": [
+    1
+  ],
+  "CREATE-EDITION-3.sql": [
+    2
+  ],
+  "CREATE-EDITION-5.sql": [
+    2
+  ],
+  "CREATE-EDITION-6.sql": [
+    2
+  ],
+  "CREATE-FLASHBACK-ARCHIVE-0.sql": [
+    1
+  ],
+  "CREATE-FLASHBACK-ARCHIVE-1.sql": [
+    1
+  ],
+  "CREATE-FLASHBACK-ARCHIVE-2.sql": [
+    2
+  ],
+  "CREATE-FLASHBACK-ARCHIVE-3.sql": [
+    2
+  ],
+  "CREATE-INDEX-0.sql": [
+    1
+  ],
+  "CREATE-INDEX-1.sql": [
+    1
+  ],
+  "CREATE-INDEX-10.sql": [
+    1
+  ],
+  "CREATE-INDEX-12.sql": [
+    1
+  ],
+  "CREATE-INDEX-13.sql": [
+    1
+  ],
+  "CREATE-INDEX-15.sql": [
+    1
+  ],
+  "CREATE-INDEX-17.sql": [
+    1
+  ],
+  "CREATE-INDEX-18.sql": [
+    1
+  ],
+  "CREATE-INDEX-19.sql": [
+    1
+  ],
+  "CREATE-INDEX-2.sql": [
+    1
+  ],
+  "CREATE-INDEX-20.sql": [
+    1
+  ],
+  "CREATE-INDEX-21.sql": [
+    1
+  ],
+  "CREATE-INDEX-22.sql": [
+    1
+  ],
+  "CREATE-INDEX-23.sql": [
+    31
+  ],
+  "CREATE-INDEX-24.sql": [
+    1
+  ],
+  "CREATE-INDEX-25.sql": [
+    1
+  ],
+  "CREATE-INDEX-26.sql": [
+    1
+  ],
+  "CREATE-INDEX-27.sql": [
+    1
+  ],
+  "CREATE-INDEX-4.sql": [
+    1
+  ],
+  "CREATE-INDEX-5.sql": [
+    1
+  ],
+  "CREATE-INDEX-6.sql": [
+    5
+  ],
+  "CREATE-INDEX-7.sql": [
+    1
+  ],
+  "CREATE-INDEX-8.sql": [
+    1
+  ],
+  "CREATE-INDEXTYPE-0.sql": [
+    1
+  ],
+  "CREATE-JAVA-1.sql": [
+    1
+  ],
+  "CREATE-JAVA-2.sql": [
+    1
+  ],
+  "CREATE-JAVA-3.sql": [
+    1
+  ],
+  "CREATE-LOCKDOWN-PROFILE-0.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-2.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-3.sql": [
+    3
+  ],
+  "CREATE-MATERIALIZED-VIEW-4.sql": [
+    5
+  ],
+  "CREATE-MATERIALIZED-VIEW-5.sql": [
+    2
+  ],
+  "CREATE-MATERIALIZED-VIEW-6.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-7.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-8.sql": [
+    4
+  ],
+  "CREATE-MATERIALIZED-VIEW-9.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-0.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-1.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-2.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-3.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-4.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-5.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-6.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-7.sql": [
+    2
+  ],
+  "CREATE-MATERIALIZED-VIEW-LOG-8.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-0.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-1.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-2.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-3.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-4.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-5.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-6.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-7.sql": [
+    1
+  ],
+  "CREATE-MATERIALIZED-ZONEMAP-8.sql": [
+    1
+  ],
+  "CREATE-OPERATOR-0.sql": [
+    9
+  ],
+  "CREATE-OUTLINE-0.sql": [
+    1
+  ],
+  "CREATE-OUTLINE-1.sql": [
+    1
+  ],
+  "CREATE-OUTLINE-2.sql": [
+    1
+  ],
+  "CREATE-PFILE-0.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-0.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-1.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-10.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-11.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-2.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-3.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-4.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-5.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-7.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-8.sql": [
+    1
+  ],
+  "CREATE-PLUGGABLE-DATABASE-9.sql": [
+    1
+  ],
+  "CREATE-PROFILE-0.sql": [
+    1
+  ],
+  "CREATE-PROFILE-1.sql": [
+    1
+  ],
+  "CREATE-PROFILE-2.sql": [
+    1
+  ],
+  "CREATE-PROFILE-3.sql": [
+    1
+  ],
+  "CREATE-RESTORE-POINT-0.sql": [
+    1
+  ],
+  "CREATE-ROLE-0.sql": [
+    1
+  ],
+  "CREATE-ROLE-1.sql": [
+    1
+  ],
+  "CREATE-ROLE-2.sql": [
+    1
+  ],
+  "CREATE-ROLE-3.sql": [
+    1
+  ],
+  "CREATE-ROLE-4.sql": [
+    1
+  ],
+  "CREATE-ROLE-5.sql": [
+    1
+  ],
+  "CREATE-ROLE-6.sql": [
+    1
+  ],
+  "CREATE-ROLLBACK-SEGMENT-0.sql": [
+    1
+  ],
+  "CREATE-ROLLBACK-SEGMENT-1.sql": [
+    1
+  ],
+  "CREATE-SCHEMA-0.sql": [
+    1
+  ],
+  "CREATE-SEQUENCE-0.sql": [
+    1
+  ],
+  "CREATE-SEQUENCE-1.sql": [
+    5
+  ],
+  "CREATE-SPFILE-0.sql": [
+    1
+  ],
+  "CREATE-SPFILE-2.sql": [
+    1
+  ],
+  "CREATE-SPFILE-3.sql": [
+    1
+  ],
+  "CREATE-TABLE-0.sql": [
+    1
+  ],
+  "CREATE-TABLE-1.sql": [
+    1
+  ],
+  "CREATE-TABLE-10.sql": [
+    1
+  ],
+  "CREATE-TABLE-11.sql": [
+    3
+  ],
+  "CREATE-TABLE-12.sql": [
+    1
+  ],
+  "CREATE-TABLE-14.sql": [
+    1
+  ],
+  "CREATE-TABLE-16.sql": [
+    2
+  ],
+  "CREATE-TABLE-17.sql": [
+    2
+  ],
+  "CREATE-TABLE-19.sql": [
+    3
+  ],
+  "CREATE-TABLE-2.sql": [
+    1
+  ],
+  "CREATE-TABLE-20.sql": [
+    12
+  ],
+  "CREATE-TABLE-21.sql": [
+    14
+  ],
+  "CREATE-TABLE-22.sql": [
+    8
+  ],
+  "CREATE-TABLE-23.sql": [
+    12
+  ],
+  "CREATE-TABLE-24.sql": [
+    10
+  ],
+  "CREATE-TABLE-25.sql": [
+    6
+  ],
+  "CREATE-TABLE-26.sql": [
+    1
+  ],
+  "CREATE-TABLE-27.sql": [
+    1
+  ],
+  "CREATE-TABLE-28.sql": [
+    4
+  ],
+  "CREATE-TABLE-29.sql": [
+    4
+  ],
+  "CREATE-TABLE-30.sql": [
+    4
+  ],
+  "CREATE-TABLE-35.sql": [
+    1
+  ],
+  "CREATE-TABLE-38.sql": [
+    7
+  ],
+  "CREATE-TABLE-4.sql": [
+    25
+  ],
+  "CREATE-TABLE-43.sql": [
+    12
+  ],
+  "CREATE-TABLE-45.sql": [
+    9
+  ],
+  "CREATE-TABLE-47.sql": [
+    15
+  ],
+  "CREATE-TABLE-49.sql": [
+    1
+  ],
+  "CREATE-TABLE-5.sql": [
+    2
+  ],
+  "CREATE-TABLE-50.sql": [
+    5
+  ],
+  "CREATE-TABLE-51.sql": [
+    5
+  ],
+  "CREATE-TABLE-52.sql": [
+    3
+  ],
+  "CREATE-TABLE-53.sql": [
+    16
+  ],
+  "CREATE-TABLE-9.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-0.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-1.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-10.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-11.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-12.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-13.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-14.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-15.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-2.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-3.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-4.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-5.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-6.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-7.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-8.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-9.sql": [
+    1
+  ],
+  "CREATE-TABLESPACE-SET-0.sql": [
+    1
+  ],
+  "CREATE-USER-0.sql": [
+    1
+  ],
+  "CREATE-USER-1.sql": [
+    1
+  ],
+  "CREATE-USER-2.sql": [
+    1
+  ],
+  "CREATE-USER-3.sql": [
+    1
+  ],
+  "CREATE-USER-4.sql": [
+    1
+  ],
+  "CREATE-VIEW-1.sql": [
+    1
+  ],
+  "CREATE-VIEW-10.sql": [
+    2
+  ],
+  "CREATE-VIEW-13.sql": [
+    16
+  ],
+  "CREATE-VIEW-2.sql": [
+    1
+  ],
+  "CREATE-VIEW-7.sql": [
+    5
+  ],
+  "CREATE-VIEW-8.sql": [
+    4
+  ],
+  "CUBE_TABLE-0.sql": [
+    1
+  ],
+  "CUME_DIST-0.sql": [
+    1
+  ],
+  "CV-0.sql": [
+    5
+  ],
+  "Character-Set-Support-0.sql": [
+    1
+  ],
+  "Character-Set-Support-1.sql": [
+    1
+  ],
+  "Comments-0.sql": [
+    17
+  ],
+  "Comments-1.sql": [
+    6
+  ],
+  "Comments-10.sql": [
+    3
+  ],
+  "Comments-2.sql": [
+    1
+  ],
+  "Comments-27.sql": [
+    1
+  ],
+  "Comments-38.sql": [
+    2
+  ],
+  "Comments-4.sql": [
+    1
+  ],
+  "Comments-42.sql": [
+    1
+  ],
+  "Comments-45.sql": [
+    1
+  ],
+  "Comments-47.sql": [
+    2
+  ],
+  "Compound-Expressions-0.sql": [
+    1
+  ],
+  "DELETE-11.sql": [
+    1
+  ],
+  "DELETE-4.sql": [
+    1
+  ],
+  "DELETE-6.sql": [
+    10
+  ],
+  "DELETE-8.sql": [
+    12
+  ],
+  "DENSE_RANK-0.sql": [
+    1
+  ],
+  "DISASSOCIATE-STATISTICS-0.sql": [
+    1
+  ],
+  "Data-Type-Comparison-Rules-3.sql": [
+    2
+  ],
+  "Data-Types-0.sql": [
+    1
+  ],
+  "Data-Types-1.sql": [
+    1
+  ],
+  "Data-Types-10.sql": [
+    1
+  ],
+  "Data-Types-15.sql": [
+    1
+  ],
+  "Data-Types-16.sql": [
+    3
+  ],
+  "Data-Types-17.sql": [
+    1
+  ],
+  "Data-Types-18.sql": [
+    1
+  ],
+  "Data-Types-19.sql": [
+    1
+  ],
+  "Data-Types-2.sql": [
+    1
+  ],
+  "Data-Types-6.sql": [
+    1
+  ],
+  "Data-Types-7.sql": [
+    1
+  ],
+  "Data-Types-8.sql": [
+    1
+  ],
+  "Data-Types-9.sql": [
+    1
+  ],
+  "Database-Object-Names-and-Qualifiers-0.sql": [
+    1
+  ],
+  "Database-Object-Names-and-Qualifiers-1.sql": [
+    1
+  ],
+  "Database-Object-Names-and-Qualifiers-2.sql": [
+    1
+  ],
+  "Database-Object-Names-and-Qualifiers-3.sql": [
+    1
+  ],
+  "Database-Object-Names-and-Qualifiers-4.sql": [
+    1
+  ],
+  "EXISTS-Condition-0.sql": [
+    1
+  ],
+  "EXPLAIN-PLAN-0.sql": [
+    1
+  ],
+  "EXPLAIN-PLAN-3.sql": [
+    1
+  ],
+  "EXTRACT-datetime-3.sql": [
+    1
+  ],
+  "Expression-Lists-0.sql": [
+    1
+  ],
+  "Expression-Lists-3.sql": [
+    8
+  ],
+  "FEATURE_DETAILS-0.sql": [
+    2
+  ],
+  "FEATURE_DETAILS-1.sql": [
+    3
+  ],
+  "FEATURE_ID-0.sql": [
+    1
+  ],
+  "FEATURE_SET-0.sql": [
+    20
+  ],
+  "FEATURE_VALUE-0.sql": [
+    2
+  ],
+  "FLASHBACK-DATABASE-0.sql": [
+    2
+  ],
+  "FLASHBACK-DATABASE-1.sql": [
+    3
+  ],
+  "FLASHBACK-TABLE-1.sql": [
+    2
+  ],
+  "FLASHBACK-TABLE-3.sql": [
+    2
+  ],
+  "FLASHBACK-TABLE-4.sql": [
+    5
+  ],
+  "FLASHBACK-TABLE-6.sql": [
+    1
+  ],
+  "FLASHBACK-TABLE-8.sql": [
+    1
+  ],
+  "FLASHBACK-TABLE-9.sql": [
+    1
+  ],
+  "FROM_TZ-0.sql": [
+    1
+  ],
+  "Floating-Point-Conditions-0.sql": [
+    1
+  ],
+  "Floating-Point-Conditions-1.sql": [
+    2
+  ],
+  "Floating-Point-Conditions-2.sql": [
+    1
+  ],
+  "Floating-Point-Conditions-3.sql": [
+    2
+  ],
+  "Format-Models-1.sql": [
+    1
+  ],
+  "Format-Models-10.sql": [
+    1
+  ],
+  "Format-Models-11.sql": [
+    1
+  ],
+  "Format-Models-12.sql": [
+    1
+  ],
+  "Format-Models-13.sql": [
+    1
+  ],
+  "Format-Models-14.sql": [
+    1
+  ],
+  "Format-Models-15.sql": [
+    1
+  ],
+  "Format-Models-16.sql": [
+    1
+  ],
+  "Format-Models-17.sql": [
+    1
+  ],
+  "Format-Models-18.sql": [
+    1
+  ],
+  "Format-Models-19.sql": [
+    1
+  ],
+  "Format-Models-2.sql": [
+    1
+  ],
+  "Format-Models-20.sql": [
+    1
+  ],
+  "Format-Models-21.sql": [
+    1
+  ],
+  "Format-Models-22.sql": [
+    1
+  ],
+  "Format-Models-23.sql": [
+    1
+  ],
+  "Format-Models-24.sql": [
+    1
+  ],
+  "Format-Models-25.sql": [
+    1
+  ],
+  "Format-Models-26.sql": [
+    1
+  ],
+  "Format-Models-27.sql": [
+    1
+  ],
+  "Format-Models-28.sql": [
+    1
+  ],
+  "Format-Models-29.sql": [
+    1
+  ],
+  "Format-Models-3.sql": [
+    1
+  ],
+  "Format-Models-30.sql": [
+    1
+  ],
+  "Format-Models-31.sql": [
+    1
+  ],
+  "Format-Models-32.sql": [
+    1
+  ],
+  "Format-Models-33.sql": [
+    1
+  ],
+  "Format-Models-34.sql": [
+    1
+  ],
+  "Format-Models-35.sql": [
+    1
+  ],
+  "Format-Models-36.sql": [
+    1
+  ],
+  "Format-Models-37.sql": [
+    1
+  ],
+  "Format-Models-38.sql": [
+    1
+  ],
+  "Format-Models-39.sql": [
+    1
+  ],
+  "Format-Models-4.sql": [
+    1
+  ],
+  "Format-Models-40.sql": [
+    1
+  ],
+  "Format-Models-41.sql": [
+    1
+  ],
+  "Format-Models-42.sql": [
+    1
+  ],
+  "Format-Models-43.sql": [
+    1
+  ],
+  "Format-Models-44.sql": [
+    1
+  ],
+  "Format-Models-45.sql": [
+    1
+  ],
+  "Format-Models-47.sql": [
+    3
+  ],
+  "Format-Models-5.sql": [
+    1
+  ],
+  "Format-Models-58.sql": [
+    1
+  ],
+  "Format-Models-59.sql": [
+    1
+  ],
+  "Format-Models-6.sql": [
+    1
+  ],
+  "Format-Models-7.sql": [
+    1
+  ],
+  "Format-Models-8.sql": [
+    1
+  ],
+  "Format-Models-9.sql": [
+    1
+  ],
+  "Function-Expressions-0.sql": [
+    1
+  ],
+  "Function-Expressions-1.sql": [
+    1
+  ],
+  "Function-Expressions-2.sql": [
+    1
+  ],
+  "Function-Expressions-3.sql": [
+    1
+  ],
+  "Functions-0.sql": [
+    1
+  ],
+  "GROUP_ID-0.sql": [
+    8
+  ],
+  "GROUP_ID-1.sql": [
+    1
+  ],
+  "Graphic-Syntax-Diagrams-1.sql": [
+    1
+  ],
+  "Graphic-Syntax-Diagrams-2.sql": [
+    1
+  ],
+  "Hierarchical-Queries-0.sql": [
+    1
+  ],
+  "Hierarchical-Queries-1.sql": [
+    3
+  ],
+  "Hierarchical-Queries-5.sql": [
+    11
+  ],
+  "IN-Condition-0.sql": [
+    1
+  ],
+  "IN-Condition-2.sql": [
+    1
+  ],
+  "IN-Condition-6.sql": [
+    1
+  ],
+  "INSERT-21.sql": [
+    8
+  ],
+  "INSERT-3.sql": [
+    2
+  ],
+  "INSERT-6.sql": [
+    4
+  ],
+  "ISO-Standards-0.sql": [
+    1
+  ],
+  "ITERATION_NUMBER-0.sql": [
+    5
+  ],
+  "Interval-Expressions-0.sql": [
+    1
+  ],
+  "JSON_ARRAY-0.sql": [
+    2
+  ],
+  "JSON_ARRAYAGG-0.sql": [
+    1
+  ],
+  "JSON_OBJECTAGG-0.sql": [
+    1
+  ],
+  "JSON_QUERY-1.sql": [
+    1
+  ],
+  "JSON_QUERY-10.sql": [
+    2
+  ],
+  "JSON_QUERY-11.sql": [
+    2
+  ],
+  "JSON_QUERY-2.sql": [
+    1
+  ],
+  "JSON_QUERY-4.sql": [
+    1
+  ],
+  "JSON_QUERY-5.sql": [
+    1
+  ],
+  "JSON_QUERY-6.sql": [
+    1
+  ],
+  "JSON_QUERY-7.sql": [
+    1
+  ],
+  "JSON_QUERY-8.sql": [
+    2
+  ],
+  "JSON_QUERY-9.sql": [
+    2
+  ],
+  "JSON_TABLE-0.sql": [
+    4
+  ],
+  "JSON_TABLE-10.sql": [
+    4
+  ],
+  "JSON_TABLE-11.sql": [
+    3
+  ],
+  "JSON_TABLE-12.sql": [
+    3
+  ],
+  "JSON_TABLE-2.sql": [
+    4
+  ],
+  "JSON_TABLE-4.sql": [
+    4
+  ],
+  "JSON_TABLE-5.sql": [
+    4
+  ],
+  "JSON_TABLE-6.sql": [
+    4
+  ],
+  "JSON_TABLE-7.sql": [
+    3
+  ],
+  "JSON_TABLE-8.sql": [
+    3
+  ],
+  "JSON_TABLE-9.sql": [
+    3
+  ],
+  "JSON_VALUE-1.sql": [
+    1
+  ],
+  "JSON_VALUE-9.sql": [
+    2
+  ],
+  "LOCK-TABLE-0.sql": [
+    1
+  ],
+  "LOCK-TABLE-1.sql": [
+    1
+  ],
+  "Literals-0.sql": [
+    1
+  ],
+  "Literals-1.sql": [
+    1
+  ],
+  "Literals-13.sql": [
+    1
+  ],
+  "Literals-14.sql": [
+    1
+  ],
+  "Literals-2.sql": [
+    1
+  ],
+  "Literals-21.sql": [
+    1
+  ],
+  "Literals-22.sql": [
+    1
+  ],
+  "Literals-23.sql": [
+    1
+  ],
+  "Literals-24.sql": [
+    1
+  ],
+  "Literals-25.sql": [
+    1
+  ],
+  "Literals-26.sql": [
+    1
+  ],
+  "Literals-27.sql": [
+    1
+  ],
+  "Literals-28.sql": [
+    1
+  ],
+  "Literals-29.sql": [
+    1
+  ],
+  "Literals-30.sql": [
+    1
+  ],
+  "Literals-6.sql": [
+    2
+  ],
+  "Literals-7.sql": [
+    1
+  ],
+  "Literals-8.sql": [
+    1
+  ],
+  "Logical-Conditions-0.sql": [
+    1
+  ],
+  "Logical-Conditions-2.sql": [
+    1
+  ],
+  "Logical-Conditions-4.sql": [
+    1
+  ],
+  "MEDIAN-0.sql": [
+    1
+  ],
+  "MOD-1.sql": [
+    1
+  ],
+  "Model-Conditions-0.sql": [
+    5
+  ],
+  "Model-Conditions-1.sql": [
+    5
+  ],
+  "Model-Expressions-0.sql": [
+    5
+  ],
+  "Model-Expressions-1.sql": [
+    1
+  ],
+  "Model-Expressions-2.sql": [
+    1
+  ],
+  "Model-Expressions-3.sql": [
+    1
+  ],
+  "Multiset-Operators-0.sql": [
+    1
+  ],
+  "Multiset-Operators-2.sql": [
+    2
+  ],
+  "NCHR-0.sql": [
+    4
+  ],
+  "NLSSORT-0.sql": [
+    1
+  ],
+  "NLSSORT-2.sql": [
+    6
+  ],
+  "NLS_INITCAP-0.sql": [
+    1
+  ],
+  "NOAUDIT-Traditional-Auditing-0.sql": [
+    1
+  ],
+  "NOAUDIT-Traditional-Auditing-1.sql": [
+    1
+  ],
+  "NOAUDIT-Traditional-Auditing-2.sql": [
+    1
+  ],
+  "NOAUDIT-Traditional-Auditing-3.sql": [
+    1
+  ],
+  "NOAUDIT-Traditional-Auditing-4.sql": [
+    1
+  ],
+  "NOAUDIT-Unified-Auditing-0.sql": [
+    1
+  ],
+  "NOAUDIT-Unified-Auditing-3.sql": [
+    1
+  ],
+  "NOAUDIT-Unified-Auditing-5.sql": [
+    1
+  ],
+  "NOAUDIT-Unified-Auditing-7.sql": [
+    1
+  ],
+  "NULLIF-0.sql": [
+    1
+  ],
+  "Null-Conditions-0.sql": [
+    1
+  ],
+  "Oracle-Support-for-Optional-Features-of-SQLFoundation2011-0.sql": [
+    1
+  ],
+  "Oracle-Support-for-Optional-Features-of-SQLFoundation2011-1.sql": [
+    1
+  ],
+  "PERCENTILE_CONT-0.sql": [
+    1
+  ],
+  "PERCENTILE_CONT-1.sql": [
+    2
+  ],
+  "PERCENTILE_CONT-2.sql": [
+    2
+  ],
+  "PERCENTILE_DISC-0.sql": [
+    2
+  ],
+  "PERCENT_RANK-0.sql": [
+    1
+  ],
+  "PREDICTION-0.sql": [
+    3
+  ],
+  "PREDICTION-1.sql": [
+    1
+  ],
+  "PREDICTION-2.sql": [
+    5
+  ],
+  "PREDICTION_BOUNDS-0.sql": [
+    4
+  ],
+  "PREDICTION_COST-1.sql": [
+    1
+  ],
+  "PREDICTION_COST-2.sql": [
+    3
+  ],
+  "PREDICTION_DETAILS-0.sql": [
+    1
+  ],
+  "PREDICTION_DETAILS-1.sql": [
+    5
+  ],
+  "PREDICTION_PROBABILITY-0.sql": [
+    5
+  ],
+  "PREDICTION_PROBABILITY-1.sql": [
+    6
+  ],
+  "PREDICTION_SET-0.sql": [
+    3
+  ],
+  "PRESENTNNV-0.sql": [
+    5
+  ],
+  "PRESENTV-0.sql": [
+    5
+  ],
+  "PREVIOUS-0.sql": [
+    4
+  ],
+  "PURGE-1.sql": [
+    1
+  ],
+  "PURGE-2.sql": [
+    1
+  ],
+  "PURGE-3.sql": [
+    1
+  ],
+  "Pattern-matching-Conditions-0.sql": [
+    1
+  ],
+  "Pattern-matching-Conditions-5.sql": [
+    1
+  ],
+  "Pattern-matching-Conditions-6.sql": [
+    1
+  ],
+  "Pattern-matching-Conditions-7.sql": [
+    1
+  ],
+  "Pattern-matching-Conditions-8.sql": [
+    1
+  ],
+  "Placeholder-Expressions-0.sql": [
+    1
+  ],
+  "RANK-0.sql": [
+    1
+  ],
+  "RANK-1.sql": [
+    1
+  ],
+  "REF-1.sql": [
+    1
+  ],
+  "REFTOHEX-0.sql": [
+    1
+  ],
+  "REGEXP_INSTR-0.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-0.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-1.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-2.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-3.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-4.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-5.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-6.sql": [
+    1
+  ],
+  "REGR_-Linear-Regression-Functions-7.sql": [
+    1
+  ],
+  "RENAME-0.sql": [
+    1
+  ],
+  "RENAME-1.sql": [
+    2
+  ],
+  "REVOKE-0.sql": [
+    1
+  ],
+  "REVOKE-1.sql": [
+    1
+  ],
+  "REVOKE-10.sql": [
+    1
+  ],
+  "REVOKE-12.sql": [
+    1
+  ],
+  "REVOKE-15.sql": [
+    1
+  ],
+  "REVOKE-16.sql": [
+    1
+  ],
+  "REVOKE-19.sql": [
+    2
+  ],
+  "REVOKE-2.sql": [
+    1
+  ],
+  "REVOKE-3.sql": [
+    1
+  ],
+  "REVOKE-5.sql": [
+    1
+  ],
+  "REVOKE-6.sql": [
+    1
+  ],
+  "REVOKE-8.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-0.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-1.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-10.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-11.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-2.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-3.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-4.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-5.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-6.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-7.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-8.sql": [
+    1
+  ],
+  "ROUND-and-TRUNC-Date-Functions-9.sql": [
+    1
+  ],
+  "ROUND-number-0.sql": [
+    1
+  ],
+  "SELECT-0.sql": [
+    2
+  ],
+  "SELECT-1.sql": [
+    1
+  ],
+  "SELECT-10.sql": [
+    1
+  ],
+  "SELECT-12.sql": [
+    2
+  ],
+  "SELECT-14.sql": [
+    2
+  ],
+  "SELECT-15.sql": [
+    2
+  ],
+  "SELECT-16.sql": [
+    2
+  ],
+  "SELECT-17.sql": [
+    2
+  ],
+  "SELECT-18.sql": [
+    2
+  ],
+  "SELECT-19.sql": [
+    2
+  ],
+  "SELECT-29.sql": [
+    2
+  ],
+  "SELECT-3.sql": [
+    2
+  ],
+  "SELECT-30.sql": [
+    2
+  ],
+  "SELECT-31.sql": [
+    3
+  ],
+  "SELECT-35.sql": [
+    11
+  ],
+  "SELECT-4.sql": [
+    1
+  ],
+  "SELECT-44.sql": [
+    5
+  ],
+  "SELECT-45.sql": [
+    7
+  ],
+  "SELECT-52.sql": [
+    1
+  ],
+  "SELECT-53.sql": [
+    1
+  ],
+  "SELECT-54.sql": [
+    1
+  ],
+  "SELECT-55.sql": [
+    2
+  ],
+  "SELECT-57.sql": [
+    1
+  ],
+  "SELECT-61.sql": [
+    2
+  ],
+  "SELECT-63.sql": [
+    1
+  ],
+  "SELECT-7.sql": [
+    3
+  ],
+  "SELECT-70.sql": [
+    1
+  ],
+  "SELECT-75.sql": [
+    3
+  ],
+  "SELECT-77.sql": [
+    13
+  ],
+  "SELECT-78.sql": [
+    3
+  ],
+  "SELECT-8.sql": [
+    4
+  ],
+  "SELECT-83.sql": [
+    2
+  ],
+  "SELECT-88.sql": [
+    3
+  ],
+  "SELECT-9.sql": [
+    1
+  ],
+  "SELECT-94.sql": [
+    3
+  ],
+  "SET-CONSTRAINTS-1.sql": [
+    2
+  ],
+  "SOUNDEX-0.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-10.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-11.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-12.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-13.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-18.sql": [
+    2
+  ],
+  "SQL-JSON-Conditions-2.sql": [
+    3
+  ],
+  "SQL-JSON-Conditions-21.sql": [
+    1
+  ],
+  "SQL-JSON-Conditions-3.sql": [
+    3
+  ],
+  "SQL-JSON-Conditions-4.sql": [
+    3
+  ],
+  "SQL-JSON-Conditions-7.sql": [
+    2
+  ],
+  "SQL-JSON-Conditions-8.sql": [
+    2
+  ],
+  "SQL-JSON-Conditions-9.sql": [
+    4
+  ],
+  "SYS_CONTEXT-0.sql": [
+    2
+  ],
+  "SYS_CONTEXT-1.sql": [
+    2
+  ],
+  "SYS_CONTEXT-3.sql": [
+    1
+  ],
+  "SYS_EXTRACT_UTC-0.sql": [
+    1
+  ],
+  "SYS_GUID-0.sql": [
+    1
+  ],
+  "SYS_OP_ZONE_ID-0.sql": [
+    1
+  ],
+  "SYS_OP_ZONE_ID-1.sql": [
+    1
+  ],
+  "SYS_OP_ZONE_ID-2.sql": [
+    1
+  ],
+  "SYS_OP_ZONE_ID-3.sql": [
+    1
+  ],
+  "Sequence-Pseudocolumns-0.sql": [
+    1
+  ],
+  "Sequence-Pseudocolumns-1.sql": [
+    1
+  ],
+  "Sequence-Pseudocolumns-2.sql": [
+    1
+  ],
+  "Simple-Expressions-0.sql": [
+    1
+  ],
+  "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-1.sql": [
+    1
+  ],
+  "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql": [
+    2
+  ],
+  "TIMESTAMP_TO_SCN-0.sql": [
+    3
+  ],
+  "TO_BINARY_DOUBLE-3.sql": [
+    1
+  ],
+  "TO_BINARY_FLOAT-1.sql": [
+    1
+  ],
+  "TO_CHAR-datetime-0.sql": [
+    1
+  ],
+  "TO_CHAR-datetime-2.sql": [
+    3
+  ],
+  "TO_CHAR-datetime-5.sql": [
+    5
+  ],
+  "TO_CHAR-datetime-6.sql": [
+    5
+  ],
+  "TO_CHAR-number-0.sql": [
+    1
+  ],
+  "TO_DATE-0.sql": [
+    1
+  ],
+  "TO_DATE-3.sql": [
+    2
+  ],
+  "TO_DSINTERVAL-1.sql": [
+    1
+  ],
+  "TO_DSINTERVAL-2.sql": [
+    2
+  ],
+  "TO_LOB-0.sql": [
+    1
+  ],
+  "TO_NUMBER-2.sql": [
+    1
+  ],
+  "TO_SINGLE_BYTE-0.sql": [
+    3
+  ],
+  "TO_TIMESTAMP-1.sql": [
+    2
+  ],
+  "TO_TIMESTAMP_TZ-2.sql": [
+    2
+  ],
+  "TO_YMINTERVAL-2.sql": [
+    2
+  ],
+  "TRUNC-date-1.sql": [
+    5
+  ],
+  "TRUNC-date-2.sql": [
+    5
+  ],
+  "TRUNC-date-4.sql": [
+    5
+  ],
+  "TRUNCATE-CLUSTER-0.sql": [
+    1
+  ],
+  "TRUNCATE-TABLE-0.sql": [
+    1
+  ],
+  "TRUNCATE-TABLE-1.sql": [
+    1
+  ],
+  "Type-Constructor-Expressions-1.sql": [
+    1
+  ],
+  "UPDATE-4.sql": [
+    1
+  ],
+  "UPDATE-5.sql": [
+    1
+  ],
+  "USERENV-0.sql": [
+    1
+  ],
+  "Using-Extensible-Indexing-3.sql": [
+    1
+  ],
+  "Using-Extensible-Indexing-4.sql": [
+    1
+  ],
+  "Using-Extensible-Indexing-6.sql": [
+    1
+  ],
+  "Using-XML-in-SQL-Statements-0.sql": [
+    1
+  ],
+  "Using-XML-in-SQL-Statements-4.sql": [
+    1
+  ],
+  "Using-XML-in-SQL-Statements-5.sql": [
+    17
+  ],
+  "Using-XML-in-SQL-Statements-6.sql": [
+    1
+  ],
+  "Using-XML-in-SQL-Statements-8.sql": [
+    4
+  ],
+  "Using-XML-in-SQL-Statements-9.sql": [
+    4
+  ],
+  "VALIDATE_CONVERSION-0.sql": [
+    1
+  ],
+  "VALIDATE_CONVERSION-1.sql": [
+    1
+  ],
+  "VALIDATE_CONVERSION-2.sql": [
+    1
+  ],
+  "VAR_POP-0.sql": [
+    1
+  ],
+  "VAR_SAMP-0.sql": [
+    1
+  ],
+  "XMLCDATA-0.sql": [
+    1
+  ],
+  "XMLCOMMENT-0.sql": [
+    1
+  ],
+  "XMLDATA-Pseudocolumn-0.sql": [
+    1
+  ],
+  "XMLDATA-Pseudocolumn-1.sql": [
+    2
+  ],
+  "XMLDATA-Pseudocolumn-2.sql": [
+    2
+  ],
+  "XMLPI-0.sql": [
+    1
+  ],
+  "XMLROOT-0.sql": [
+    1
+  ],
+  "XMLTABLE-0.sql": [
+    1
+  ],
+  "XMLTABLE-1.sql": [
+    1
+  ],
+  "XMLTRANSFORM-0.sql": [
+    21
+  ],
+  "constraint-1.sql": [
+    9
+  ],
+  "constraint-10.sql": [
+    5
+  ],
+  "constraint-11.sql": [
+    4
+  ],
+  "constraint-2.sql": [
+    3
+  ],
+  "constraint-20.sql": [
+    9
+  ],
+  "constraint-22.sql": [
+    4
+  ],
+  "constraint-24.sql": [
+    9
+  ],
+  "constraint-26.sql": [
+    3
+  ],
+  "constraint-5.sql": [
+    2
+  ],
+  "constraint-6.sql": [
+    2
+  ],
+  "constraint-8.sql": [
+    9
+  ],
+  "file_specification-0.sql": [
+    1
+  ],
+  "file_specification-1.sql": [
+    1
+  ],
+  "file_specification-2.sql": [
+    1
+  ],
+  "file_specification-3.sql": [
+    1
+  ],
+  "file_specification-4.sql": [
+    1
+  ],
+  "file_specification-5.sql": [
+    1
+  ],
+  "storage_clause-0.sql": [
+    5
+  ]
+}
