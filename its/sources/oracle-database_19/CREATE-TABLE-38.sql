@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE customers_demo (
   customer_id number(6),
   cust_first_name varchar2(20),

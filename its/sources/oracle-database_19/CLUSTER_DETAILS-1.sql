@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CLUSTER_DETAILS.html
 SELECT * FROM (
      SELECT cust_id,
           CLUSTER_ID(INTO 4 USING *) OVER () cls,

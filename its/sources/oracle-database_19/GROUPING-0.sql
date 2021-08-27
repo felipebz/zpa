@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/GROUPING.html
 SELECT 
     DECODE(GROUPING(department_name), 1, 'ALL DEPARTMENTS', department_name)
       AS department,

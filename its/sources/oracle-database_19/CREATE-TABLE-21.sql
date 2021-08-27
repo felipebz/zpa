@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TYPE phone AS OBJECT (telephone NUMBER);
 /
 CREATE TYPE phone_list AS TABLE OF phone;

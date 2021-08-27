@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html
 name = 'SMITH' 
 employees.department_id = departments.department_id 
 hire_date > '01-JAN-08' 

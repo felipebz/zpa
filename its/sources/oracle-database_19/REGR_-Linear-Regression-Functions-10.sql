@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGR_-Linear-Regression-Functions.html
 SELECT job_id,
 REGR_COUNT(SYSDATE-hire_date, salary) count
    FROM employees

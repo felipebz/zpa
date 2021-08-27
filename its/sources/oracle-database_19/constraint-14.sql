@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE products
     ( product_id VARCHAR2(20) COLLATE BINARY_CI
            CONSTRAINT product_pk PRIMARY KEY

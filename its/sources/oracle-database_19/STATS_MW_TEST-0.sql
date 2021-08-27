@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/STATS_MW_TEST.html
 SELECT STATS_MW_TEST
          (cust_gender, amount_sold, 'STATISTIC') z_statistic,
        STATS_MW_TEST

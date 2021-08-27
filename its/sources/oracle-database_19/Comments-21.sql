@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT /*+ MERGE(v) */ e1.last_name, e1.salary, v.avg_salary
    FROM employees e1,
         (SELECT department_id, avg(salary) avg_salary 

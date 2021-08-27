@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/VARIANCE.html
 SELECT last_name, salary, VARIANCE(salary) 
       OVER (ORDER BY hire_date) "Variance"
    FROM employees 

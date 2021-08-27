@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Expression-Lists.html
 SELECT 
 prod_category, prod_subcategory, country_id, cust_city, count(*)
    FROM  products, sales, customers

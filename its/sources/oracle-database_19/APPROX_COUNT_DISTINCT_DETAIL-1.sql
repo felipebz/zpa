@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/APPROX_COUNT_DISTINCT_DETAIL.html
 CREATE MATERIALIZED VIEW monthly_prod_count_mv AS
   SELECT year,
          month,

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/DECODE.html
 SELECT product_id,
        DECODE (warehouse_id, 1, 'Southlake', 
                              2, 'San Francisco', 

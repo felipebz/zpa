@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/STDDEV_SAMP.html
 SELECT department_id, last_name, hire_date, salary, 
    STDDEV_SAMP(salary) OVER (PARTITION BY department_id 
       ORDER BY hire_date 

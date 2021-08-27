@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Arithmetic-Operators.html
 SELECT *
   FROM order_items
   WHERE quantity = -1

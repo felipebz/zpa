@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-VIEW.html
 CREATE TABLE warehouse_table 
 (
   WarehouseID       NUMBER,

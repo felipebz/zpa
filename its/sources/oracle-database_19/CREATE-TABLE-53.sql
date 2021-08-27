@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TYPE address_t AS OBJECT
   ( hno    NUMBER,
     street VARCHAR2(40),

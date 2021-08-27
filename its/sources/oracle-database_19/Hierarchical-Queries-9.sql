@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html
 SELECT name, SUM(salary) "Total_Salary" FROM (
    SELECT CONNECT_BY_ROOT last_name as name, Salary
       FROM employees

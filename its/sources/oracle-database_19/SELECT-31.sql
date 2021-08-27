@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 UPDATE employees SET salary =      
    (SELECT salary FROM employees
    AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '2' MINUTE)

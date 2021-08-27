@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 CREATE TABLE pivot_table AS
 SELECT * FROM
 (SELECT EXTRACT(YEAR FROM order_date) year, order_mode, order_total FROM orders)

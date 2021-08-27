@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Multiset-Operators.html
 UPDATE customers_demo cd
   SET cust_address_ntab = 
     CAST(MULTISET(SELECT cust_address

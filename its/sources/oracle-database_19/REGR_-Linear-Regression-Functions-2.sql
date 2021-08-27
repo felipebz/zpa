@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGR_-Linear-Regression-Functions.html
 NULL if VAR_POP(expr2)  = 0
 
                         1 if VAR_POP(expr1)  = 0 and 

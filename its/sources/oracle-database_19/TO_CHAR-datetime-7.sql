@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_CHAR-datetime.html
 WITH nums AS (  
   SELECT 10 n FROM dual union  
   SELECT 9.99 n FROM dual union  

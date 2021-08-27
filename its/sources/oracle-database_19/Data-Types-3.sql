@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Data-Types.html
 CREATE TABLE test (col1 NUMBER(5,2), col2 FLOAT(5));
 
 INSERT INTO test VALUES (1.23, 1.23);

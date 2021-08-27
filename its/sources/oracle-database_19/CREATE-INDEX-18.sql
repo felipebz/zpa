@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-INDEX.html
 CREATE INDEX cost_ix ON sales (amount_sold)
    GLOBAL PARTITION BY RANGE (amount_sold)
       (PARTITION p1 VALUES LESS THAN (1000),

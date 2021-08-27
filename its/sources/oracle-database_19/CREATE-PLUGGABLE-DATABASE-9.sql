@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-PLUGGABLE-DATABASE.html
 CREATE PLUGGABLE DATABASE salespdb
   ADMIN USER salesadm IDENTIFIED BY password
   ROLES = (dba)

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT DECODE(GROUPING(department_name), 1, 'All Departments',
       department_name) AS department_name,
    DECODE(GROUPING(job_id), 1, 'All Jobs', job_id) AS job_id,

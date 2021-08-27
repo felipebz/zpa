@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Using-XML-in-SQL-Statements.html
 INSERT INTO xwarehouses VALUES 
   (xmltype('<?xml version="1.0"?>
   <Warehouse>

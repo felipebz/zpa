@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE hash_products 
     ( product_id          NUMBER(6)   PRIMARY KEY
     , product_name        VARCHAR2(50) 

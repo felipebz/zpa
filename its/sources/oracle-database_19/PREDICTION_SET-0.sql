@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/PREDICTION_SET.html
 SELECT T.cust_id, S.prediction, S.probability, S.cost
   FROM (SELECT cust_id,
                PREDICTION_SET(dt_sh_clas_sample COST MODEL USING *) pset

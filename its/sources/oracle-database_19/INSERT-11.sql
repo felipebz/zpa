@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT INTO books VALUES (
    'An Autobiography', person_t('Bob', 1234));
 INSERT INTO books VALUES (

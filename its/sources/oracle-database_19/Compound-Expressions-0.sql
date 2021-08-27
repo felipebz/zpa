@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Compound-Expressions.html
 ('CLARK' || 'SMITH') 
 LENGTH('MOOSE') * 57 
 SQRT(144) + 72 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE promotions_var2
     ( promo_id         NUMBER(6)
     , promo_name       VARCHAR2(20)

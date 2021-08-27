@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 CREATE TABLE inventory (time_id    DATE,
                         product    VARCHAR2(10),
                         quantity   NUMBER);

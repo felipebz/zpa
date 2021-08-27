@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-MATERIALIZED-VIEW.html
 CREATE MATERIALIZED VIEW LOG ON times
    WITH ROWID, SEQUENCE (time_id, calendar_year)
    INCLUDING NEW VALUES;

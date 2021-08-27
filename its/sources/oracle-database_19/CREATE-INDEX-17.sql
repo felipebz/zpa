@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-INDEX.html
 CREATE UNIQUE INDEX promo_ix ON orders
    (CASE WHEN promotion_id =2 THEN customer_id ELSE NULL END,
     CASE WHEN promotion_id = 2 THEN promotion_id ELSE NULL END);

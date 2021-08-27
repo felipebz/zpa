@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT time_id, product, LAST_VALUE(quantity IGNORE NULLS) 
    OVER (PARTITION BY product ORDER BY time_id) quantity 
    FROM ( SELECT times.time_id, product, quantity 

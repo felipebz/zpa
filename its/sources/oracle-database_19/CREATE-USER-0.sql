@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-USER.html
 CREATE USER sidney 
     IDENTIFIED BY out_standing1 
     DEFAULT TABLESPACE example 

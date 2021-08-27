@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-CLUSTER.html
 CREATE CLUSTER sales (amount_sold NUMBER, prod_id NUMBER)
   HASHKEYS 100000
   HASH IS (amount_sold * 10 + prod_id)

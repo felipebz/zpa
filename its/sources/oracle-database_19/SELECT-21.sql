@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT last_name, job_id, salary, department_id 
    FROM employees 
    WHERE NOT (job_id = 'PU_CLERK' AND department_id = 30)

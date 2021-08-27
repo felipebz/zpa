@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/FIRST.html
 SELECT department_id,
        MIN(salary) KEEP (DENSE_RANK FIRST ORDER BY commission_pct) "Worst",
        MAX(salary) KEEP (DENSE_RANK LAST ORDER BY commission_pct) "Best"

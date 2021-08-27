@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COLUMN_VALUE-Pseudocolumn.html
 CREATE TABLE my_customers (
     cust_id       NUMBER,
     name          VARCHAR2(25),

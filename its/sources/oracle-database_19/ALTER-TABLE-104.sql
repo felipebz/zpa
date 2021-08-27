@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 CREATE FUNCTION get_xmltype (ad IN ANYDATA) RETURN VARCHAR2 AS
       rtn_val PLS_INTEGER;
       my_xmltype XMLType;

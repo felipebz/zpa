@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 CREATE TABLE print_media_part (
     product_id NUMBER(6),
     ad_id              NUMBER(6),

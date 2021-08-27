@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 WITH 
    dept_costs AS (
       SELECT department_name, SUM(salary) dept_total

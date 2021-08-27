@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT a.department_id "Department",
    a.num_emp/b.total_count "%_Employees",
    a.sal_sum/b.total_sal "%_Salary"

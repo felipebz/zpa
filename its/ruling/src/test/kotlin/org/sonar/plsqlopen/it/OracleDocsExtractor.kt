@@ -57,6 +57,8 @@ class OracleDocsExtractor {
 
                                 if (text.isNotEmpty()) {
                                     val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
+                                    val path = entry.name.substring(entry.name.indexOf("sqlrf"))
+                                    text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/19/$path\n$text"
                                     File(outputDir.absolutePath, name).writeText(text, Charsets.UTF_8)
                                 }
                             } catch (e: Exception) {

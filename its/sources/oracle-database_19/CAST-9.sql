@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CAST.html
 CREATE TABLE projects 
   (employee_id NUMBER, project_name VARCHAR2(10));
 

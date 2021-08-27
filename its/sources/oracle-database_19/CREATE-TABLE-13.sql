@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TYPE person_t AS OBJECT (name VARCHAR2(100), ssn NUMBER) 
    NOT FINAL;
 /

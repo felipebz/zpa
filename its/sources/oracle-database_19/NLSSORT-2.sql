@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/NLSSORT.html
 SELECT *
   FROM test
   WHERE name > 'Gaberd'

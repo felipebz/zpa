@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/PERCENTILE_CONT.html
 SELECT last_name, salary, department_id,
        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary DESC) 
          OVER (PARTITION BY department_id) "Percentile_Cont",

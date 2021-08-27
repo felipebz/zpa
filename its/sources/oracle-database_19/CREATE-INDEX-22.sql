@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-INDEX.html
 CREATE BITMAP INDEX product_bm_ix 
    ON hash_products(list_price)
    LOCAL(PARTITION ix_p1 TABLESPACE tbs_01,

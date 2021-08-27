@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGEXP_SUBSTR.html
 with strings as (   
   select 'ABC123' str from dual union all   
   select 'A1B2C3' str from dual union all   

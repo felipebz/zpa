@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT /*+ USE_BAND(e1 e2) */
   e1.last_name
   || ' has salary between 100 less and 100 more than '

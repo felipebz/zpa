@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE divisions  
    (div_no    NUMBER  CONSTRAINT check_divno
               CHECK (div_no BETWEEN 10 AND 99) 

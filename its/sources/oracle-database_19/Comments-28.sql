@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT /*+ NO_MERGE(v) NO_PUSH_PRED(v) */ *
   FROM employees e,
        (SELECT manager_id

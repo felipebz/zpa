@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Logical-Conditions.html
 SELECT *
   FROM employees
   WHERE NOT (job_id IS NULL)

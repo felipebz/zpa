@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/MEDIAN.html
 if (CRN = FRN = RN) then
       (value of expression from row at RN)
    else

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/NLSSORT.html
 ALTER SESSION SET NLS_COMP = 'LINGUISTIC';
 ALTER SESSION SET NLS_SORT = 'XDanish';
 

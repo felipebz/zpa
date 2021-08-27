@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_CHAR-datetime.html
 ALTER SESSION SET TIME_ZONE = '-8:00';
 INSERT INTO date_tab VALUES (  
    TIMESTAMP'1999-12-01 10:00:00',

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements.html
 CREATE TYPE cust_address_typ
   OID '82A4AF6A4CD1656DE034080020E0EE3D'
   AS OBJECT

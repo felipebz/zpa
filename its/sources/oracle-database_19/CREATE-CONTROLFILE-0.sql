@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-CONTROLFILE.html
 STARTUP NOMOUNT
 
 CREATE CONTROLFILE REUSE DATABASE "demo" NORESETLOGS NOARCHIVELOG

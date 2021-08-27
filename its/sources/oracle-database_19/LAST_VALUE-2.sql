@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LAST_VALUE.html
 SELECT employee_id, last_name, salary, hire_date,
        LAST_VALUE(hire_date)
          OVER (ORDER BY salary DESC, employee_id ROWS BETWEEN UNBOUNDED PRECEDING

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT department_id, last_name, salary 
    FROM employees x 
    WHERE salary > (SELECT AVG(salary) 

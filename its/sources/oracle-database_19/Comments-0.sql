@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT last_name, employee_id, salary + NVL(commission_pct, 0), 
        job_id, e.department_id
   /* Select all employees whose compensation is

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE order_detail 
   (CONSTRAINT pk_od PRIMARY KEY (order_id, part_no), 
    order_id    NUMBER 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE locations_demo
     ( location_id    NUMBER(4) CONSTRAINT loc_id_pk PRIMARY KEY
     , street_address VARCHAR2(40)

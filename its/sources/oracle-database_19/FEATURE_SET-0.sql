@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/FEATURE_SET.html
 WITH
 feat_tab AS (
 SELECT F.feature_id fid,

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-DATABASE-LINK.html
 INSERT INTO employees@local
    (employee_id, last_name, email, hire_date, job_id)
    VALUES (999, 'Claus', 'sclaus@example.com', SYSDATE, 'SH_CLERK');

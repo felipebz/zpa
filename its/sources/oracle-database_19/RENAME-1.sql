@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/RENAME.html
 CREATE TABLE temporary 
    (employee_id, start_date, end_date, job_id, dept_id) 
 AS SELECT 

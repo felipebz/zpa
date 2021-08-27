@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ITERATION_NUMBER.html
 SELECT country, prod, year, s
   FROM sales_view_ref
   MODEL

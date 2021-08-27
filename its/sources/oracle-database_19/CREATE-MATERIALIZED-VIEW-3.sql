@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-MATERIALIZED-VIEW.html
 CREATE MATERIALIZED VIEW sales_by_month_by_state
      TABLESPACE example
      PARALLEL 4

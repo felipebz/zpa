@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 CREATE TABLE t1 (
    pk NUMBER PRIMARY KEY,
    fk NUMBER,

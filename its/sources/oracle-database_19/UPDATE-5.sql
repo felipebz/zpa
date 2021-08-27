@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/UPDATE.html
 CREATE TABLE people_demo1 OF people_typ;
 
 CREATE TABLE people_demo2 OF people_typ;

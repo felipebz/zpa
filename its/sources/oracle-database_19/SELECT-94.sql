@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT *
 FROM Ticker MATCH_RECOGNIZE (
      PARTITION BY symbol

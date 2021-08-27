@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/IN-Condition.html
 SELECT employee_id, last_name FROM employees
    WHERE (employee_id, LEVEL) 
       IN (SELECT employee_id, 2 FROM employees)

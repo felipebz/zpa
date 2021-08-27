@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COVAR_POP.html
 SELECT job_id, 
        COVAR_POP(SYSDATE-hire_date, salary) AS covar_pop,
        COVAR_SAMP(SYSDATE-hire_date, salary) AS covar_samp

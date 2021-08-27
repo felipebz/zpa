@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/PREDICTION_BOUNDS.html
 SELECT count(cust_id) cust_count, cust_marital_status
   FROM (SELECT cust_id, cust_marital_status
     FROM mining_data_apply_v

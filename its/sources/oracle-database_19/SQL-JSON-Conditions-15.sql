@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SQL-JSON-Conditions.html
 INSERT INTO t VALUES ('[{first:"John"}, {middle:"Mark"}, {last:"Smith"}]');
 INSERT INTO t VALUES ('[{first:"Mary"}, {last:"Jones"}]');
 INSERT INTO t VALUES ('[{first:"Jeff"}, {last:"Williams"}]');

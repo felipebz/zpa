@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE print_media_demo
    ( product_id NUMBER(6)
    , ad_id NUMBER(6)

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT INTO people (person_id, given_name, family_name, title) 
   WITH names AS ( 
     SELECT 4, 'Ruth',     'Fox',      'Mrs'    FROM dual UNION ALL 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 CREATE SEQUENCE s1 START WITH 1;
 
 CREATE TABLE t1 (name VARCHAR2(10));

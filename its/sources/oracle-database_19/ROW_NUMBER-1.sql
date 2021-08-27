@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ROW_NUMBER.html
 SELECT sales_2000.channel_desc, sales_2000.prod_name,
        sales_2000.amt amt_2000,  top_5_prods_1999_year.amt amt_1999,
        sales_2000.amt  - top_5_prods_1999_year.amt amt_diff

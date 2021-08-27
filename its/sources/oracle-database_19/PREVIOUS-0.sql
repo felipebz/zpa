@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/PREVIOUS.html
 SELECT dim_col, cur_val, num_of_iterations
   FROM (SELECT 1 AS dim_col, 10 AS cur_val FROM dual)
   MODEL

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Type-Constructor-Expressions.html
 CREATE TABLE warehouse_tab OF warehouse_typ;
 
 INSERT INTO warehouse_tab 

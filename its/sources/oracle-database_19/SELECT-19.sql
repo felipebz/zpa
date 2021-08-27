@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 WITH
   emp_count (eid, emp_last, mgr_id, mgrLevel, salary, cnt_employees) AS
   (

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/GROUPING_ID.html
 SELECT channel_id, promo_id, sum(amount_sold) s_sales,
        GROUPING(channel_id) gc,
        GROUPING(promo_id) gp,

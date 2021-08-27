@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_DATE.html
 ALTER SESSION SET NLS_TERRITORY = 'KOREAN';
 
 SELECT TO_DATE(

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT ALL
       INTO sales (prod_id, cust_id, time_id, amount)
       VALUES (product_id, customer_id, weekly_start_date, sales_sun)

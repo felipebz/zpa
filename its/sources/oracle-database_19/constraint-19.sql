@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TYPE person_name AS OBJECT
    (first_name VARCHAR2(30), last_name VARCHAR2(30));
 /

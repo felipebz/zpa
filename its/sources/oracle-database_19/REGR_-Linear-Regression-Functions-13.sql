@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGR_-Linear-Regression-Functions.html
 SELECT job_id,
 REGR_SXY(SYSDATE-hire_date, salary) regr_sxy,
 REGR_SXX(SYSDATE-hire_date, salary) regr_sxx,

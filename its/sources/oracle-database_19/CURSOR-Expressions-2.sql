@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CURSOR-Expressions.html
 SELECT e1.last_name FROM employees e1
    WHERE f(
    CURSOR(SELECT e2.hire_date FROM employees e2

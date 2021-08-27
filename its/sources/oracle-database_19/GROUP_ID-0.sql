@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/GROUP_ID.html
 SELECT co.country_region, co.country_subregion,
        SUM(s.amount_sold) "Revenue", GROUP_ID() g
   FROM sales s, customers c, countries co

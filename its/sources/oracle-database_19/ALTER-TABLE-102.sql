@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 INSERT INTO t1
   VALUES(1, anydata.convertobject(XMLType('<Test>This is test XML</Test>')));
 

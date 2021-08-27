@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/XMLTABLE.html
 SELECT warehouse_name warehouse,
    warehouse2."Water", warehouse2."Rail"
    FROM warehouses,

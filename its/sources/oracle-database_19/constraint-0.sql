@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE promotions_var1
     ( promo_id         NUMBER(6)
                        CONSTRAINT promo_id_u  UNIQUE

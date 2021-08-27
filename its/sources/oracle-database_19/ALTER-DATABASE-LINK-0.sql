@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-DATABASE-LINK.html
 ALTER DATABASE LINK private_link 
   CONNECT TO hr IDENTIFIED BY hr_new_password;
 

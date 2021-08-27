@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/VALIDATE_CONVERSION.html
 SELECT VALIDATE_CONVERSION(1000 AS BINARY_DOUBLE)
   FROM DUAL;
 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT FIRST
    WHEN ottl <= 100000 THEN
       INTO small_orders

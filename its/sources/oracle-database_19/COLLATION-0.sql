@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COLLATION.html
 CREATE TABLE id_table
   (name VARCHAR2(64) COLLATE BINARY_AI,
    id VARCHAR2(8) COLLATE BINARY_CI);

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 INSERT INTO empl_h (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, Part_name)  
 VALUES (1, 'Jane', 'Doe', 'example.com', '415.555.0100', '10-Feb-2014', '1001', 5001,'HIRE_Q1');
 

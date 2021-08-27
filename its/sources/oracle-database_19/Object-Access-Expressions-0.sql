@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Object-Access-Expressions.html
 CREATE TABLE short_orders (
    sales_rep VARCHAR2(25), item order_item_typ);
 

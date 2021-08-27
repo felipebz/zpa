@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Using-XML-in-SQL-Statements.html
 INSERT INTO xwarehouses VALUES(   xmltype.createxml('<?xml version="1.0"?>
    <who:Warehouse xmlns:who="http://www.example.com/xwarehouses.xsd" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 

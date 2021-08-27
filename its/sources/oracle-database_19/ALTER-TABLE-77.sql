@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 INSERT INTO product_information (product_id, product_name, 
    list_price)
    VALUES (300, 'left-handed mouse', 40.50); 

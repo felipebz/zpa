@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT t1.department_id, t2.* 
    FROM hr_info t1, TABLE(CAST(MULTISET(
       SELECT t3.last_name, t3.department_id, t3.salary 

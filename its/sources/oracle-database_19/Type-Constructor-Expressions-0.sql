@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Type-Constructor-Expressions.html
 CREATE TYPE address_book_t AS TABLE OF cust_address_typ; 
 DECLARE 
    myaddr cust_address_typ := cust_address_typ( 

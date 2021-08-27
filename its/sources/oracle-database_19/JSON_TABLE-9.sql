@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 SELECT *
 FROM JSON_TABLE('{a:100, b:200, c:{d:300, e:400}}', '$'
 COLUMNS (outer_value_0 NUMBER PATH '$.a',

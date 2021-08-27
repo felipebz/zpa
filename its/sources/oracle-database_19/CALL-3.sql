@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CALL.html
 ALTER TYPE warehouse_typ
       ADD MEMBER FUNCTION ret_name
       RETURN VARCHAR2

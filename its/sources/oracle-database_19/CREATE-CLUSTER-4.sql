@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-CLUSTER.html
 CREATE CLUSTER address
    (postal_code NUMBER, country_id CHAR(2))
    HASHKEYS 20

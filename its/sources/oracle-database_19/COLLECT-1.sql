@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COLLECT.html
 CREATE TYPE warehouse_name_t AS TABLE OF VARCHAR2(35);
 /
 

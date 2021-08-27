@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html
 SELECT last_name "Employee", CONNECT_BY_ISCYCLE "Cycle",
    LEVEL, SYS_CONNECT_BY_PATH(last_name, '/') "Path"
    FROM employees

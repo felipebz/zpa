@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 ALTER TABLE dept_20
    ADD CONSTRAINT fk_empid_hiredate
    FOREIGN KEY (employee_id, hire_date)

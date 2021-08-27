@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/XMLELEMENT.html
 SELECT XMLELEMENT("Emp", XMLATTRIBUTES(e.employee_id, e.last_name),
    XMLELEMENT("Dept", XMLATTRIBUTES(e.department_id,
    (SELECT d.department_name FROM departments d

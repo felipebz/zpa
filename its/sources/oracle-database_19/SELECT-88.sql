@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 SELECT select_list 
     FROM table1 t_alias1 
     WHERE expr operator 

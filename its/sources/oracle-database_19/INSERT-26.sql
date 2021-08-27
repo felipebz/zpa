@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 CREATE TABLE people ( 
   person_id   INTEGER NOT NULL PRIMARY KEY, 
   given_name  VARCHAR2(100) NOT NULL, 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/STATS_T_TEST_.html
 SELECT SUBSTR(cust_income_level, 1, 22) income_level,
        AVG(DECODE(cust_gender, 'M', amount_sold, null)) sold_to_men,
        AVG(DECODE(cust_gender, 'F', amount_sold, null)) sold_to_women,

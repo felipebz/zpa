@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CORR.html
 SELECT employee_id, job_id, 
        TO_CHAR((SYSDATE - hire_date) YEAR TO MONTH ) "Yrs-Mns",     salary, 
        CORR(SYSDATE-hire_date, salary)

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/PREDICTION_PROBABILITY.html
 SELECT cust_id, cust_marital_status, rank_anom, anom_det FROM
     (SELECT cust_id, cust_marital_status, anom_det,
             rank() OVER (PARTITION BY CUST_MARITAL_STATUS

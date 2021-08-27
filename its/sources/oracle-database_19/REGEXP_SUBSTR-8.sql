@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGEXP_SUBSTR.html
 with strings as (    
   select 'LHRJFK/010315/JOHNDOE' str from dual union all    
   select 'CDGLAX/050515/JANEDOE' str from dual union all    

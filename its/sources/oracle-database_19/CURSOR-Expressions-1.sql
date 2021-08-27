@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CURSOR-Expressions.html
 CREATE FUNCTION f(cur SYS_REFCURSOR, mgr_hiredate DATE) 
    RETURN NUMBER IS
    emp_hiredate DATE;

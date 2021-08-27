@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CLUSTER_DETAILS.html
 SELECT S.cluster_id, probability prob,
        CLUSTER_DETAILS(em_sh_clus_sample, S.cluster_id, 5 USING T.*) det
 FROM

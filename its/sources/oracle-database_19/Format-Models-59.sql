@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Format-Models.html
 STATIC FUNCTION createFormat(
      enclTag IN varchar2 := 'ROWSET',
      schemaType IN varchar2 := 'NO_SCHEMA',

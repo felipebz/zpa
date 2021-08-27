@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 CREATE OR REPLACE VIEW sales_view_ref AS
   SELECT country_name country,
          prod_name prod,

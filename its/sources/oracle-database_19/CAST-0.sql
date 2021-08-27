@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CAST.html
 SELECT CAST('22-OCT-1997'
        AS TIMESTAMP WITH LOCAL TIME ZONE) 
   FROM DUAL;

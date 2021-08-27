@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SAVEPOINT.html
 UPDATE employees 
     SET salary = 7000 
     WHERE last_name = 'Banda';

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/DELETE.html
 CREATE TABLE product_price_history ( 
   product_id          INTEGER NOT NULL, 
   price               INTEGER NOT NULL, 

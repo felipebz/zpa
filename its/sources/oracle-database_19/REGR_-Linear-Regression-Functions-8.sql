@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REGR_-Linear-Regression-Functions.html
 SELECT job_id, employee_id ID, salary,
 REGR_SLOPE(SYSDATE-hire_date, salary)
    OVER (PARTITION BY job_id) slope,

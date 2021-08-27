@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 WITH
   org_chart (eid, emp_last, mgr_id, reportLevel, salary, job_id) AS
   (

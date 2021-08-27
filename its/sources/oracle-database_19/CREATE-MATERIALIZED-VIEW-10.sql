@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-MATERIALIZED-VIEW.html
 CREATE MATERIALIZED VIEW my_warranty_orders
    AS SELECT w.order_id, w.line_item_id, o.order_date
    FROM warranty_orders w, orders o

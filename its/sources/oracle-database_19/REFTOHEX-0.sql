@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/REFTOHEX.html
 CREATE TABLE warehouse_table OF warehouse_typ
    (PRIMARY KEY (warehouse_id));
 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TABLE dept_20 
    (employee_id     NUMBER(4), 
     last_name       VARCHAR2(10), 

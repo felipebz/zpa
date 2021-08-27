@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Simple-Expressions.html
 employees.last_name 
 'this is a text string'
 10 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
 CREATE INDEX cost_ix ON costs(channel_id) LOCAL;
 
 ALTER TABLE costs

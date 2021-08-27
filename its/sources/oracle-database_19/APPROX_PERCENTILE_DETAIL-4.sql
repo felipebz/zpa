@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/APPROX_PERCENTILE_DETAIL.html
 SELECT country,
        state,
        TO_APPROX_PERCENTILE(state_detail, .25, 'NUMBER') "25th Percentile",

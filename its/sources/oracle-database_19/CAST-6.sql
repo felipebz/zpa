@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CAST.html
 CREATE TYPE address_book_t AS TABLE OF cust_address_typ;
 /
 CREATE TYPE address_array_t AS VARRAY(3) OF cust_address_typ;

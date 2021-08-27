@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CALL.html
 CREATE OR REPLACE FUNCTION ret_warehouse_typ(x warehouse_typ) 
   RETURN warehouse_typ
   IS

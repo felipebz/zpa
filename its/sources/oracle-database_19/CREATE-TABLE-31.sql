@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE range_sales
     ( prod_id        NUMBER(6)
     , cust_id        NUMBER

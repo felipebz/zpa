@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/BFILENAME.html
 CREATE DIRECTORY media_dir AS '/demo/schema/product_media';
 
 INSERT INTO print_media (product_id, ad_id, ad_graphic)

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/DEREF.html
 INSERT INTO address_table VALUES
   ('1 First', 'G45 EU8', 'Paris', 'CA', 'US');
 

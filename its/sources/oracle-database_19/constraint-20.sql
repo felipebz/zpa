@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html
 CREATE TYPE cust_address_typ_new AS OBJECT
     ( street_address     VARCHAR2(40)
     , postal_code        VARCHAR2(10)

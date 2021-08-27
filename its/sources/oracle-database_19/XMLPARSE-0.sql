@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/XMLPARSE.html
 SELECT XMLPARSE(CONTENT '124 <purchaseOrder poNo="12435"> 
    <customerName> Acme Enterprises</customerName>
    <itemNo>32987457</itemNo>

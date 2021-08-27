@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/XMLDIFF.html
 SELECT XMLDIFF(
 XMLTYPE('<?xml version="1.0"?>
 <bk:book xmlns:bk="http://example.com">

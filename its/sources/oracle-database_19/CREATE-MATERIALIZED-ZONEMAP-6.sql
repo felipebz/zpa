@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-MATERIALIZED-ZONEMAP.html
 CREATE MATERIALIZED ZONEMAP sales_zmap
   AS SELECT SYS_OP_ZONE_ID(s.rowid),
             MIN(cust_state_province), MAX(cust_state_province),

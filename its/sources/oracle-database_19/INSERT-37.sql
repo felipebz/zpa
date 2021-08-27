@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT ALL 
   /* Everyone is a person, so insert all rows into people */ 
   WHEN 1=1 THEN 

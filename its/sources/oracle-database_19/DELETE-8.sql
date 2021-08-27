@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/DELETE.html
 DECLARE 
   currency product_price_history.currency_code%TYPE; 
 BEGIN 

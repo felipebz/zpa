@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT /*+ NO_MERGE(seattle_dept) */ e1.last_name, seattle_dept.department_name
   FROM employees e1,
        (SELECT location_id, department_id, department_name

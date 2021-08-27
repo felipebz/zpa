@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 WITH
   reports_to_101 (eid, emp_last, mgr_id, reportLevel) AS
   (

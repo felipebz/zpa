@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html
 UPDATE employees SET manager_id = 145
    WHERE employee_id = 100;
 

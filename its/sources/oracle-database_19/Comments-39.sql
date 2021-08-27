@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comments.html
 SELECT  /*+ ORDERED */ o.order_id, c.customer_id, l.unit_price * l.quantity
   FROM customers c, order_items l, orders o
   WHERE c.cust_last_name = 'Taylor'

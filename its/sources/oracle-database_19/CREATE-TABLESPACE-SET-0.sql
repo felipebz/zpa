@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLESPACE-SET.html
 CREATE TABLESPACE SET ts1
   IN SHARDSPACE sgr1 
   USING TEMPLATE

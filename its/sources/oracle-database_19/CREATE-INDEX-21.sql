@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-INDEX.html
 CREATE INDEX sales_ix ON composite_sales(time_id, prod_id)
    STORAGE (INITIAL 1M)
    LOCAL

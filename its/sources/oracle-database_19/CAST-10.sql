@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CAST.html
 SELECT e.last_name,
        CAST(MULTISET(SELECT p.project_name
                        FROM projects p 

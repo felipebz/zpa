@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-DIMENSION.html
 CREATE DIMENSION customers_dim
    LEVEL customer IS (customers.cust_id)
    LEVEL status IS (customers.cust_marital_status) SKIP WHEN NULL

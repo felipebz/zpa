@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE part_order_items (
     order_id        NUMBER(12) PRIMARY KEY,
     line_item_id    NUMBER(3),

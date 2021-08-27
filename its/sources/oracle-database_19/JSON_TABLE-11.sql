@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 SELECT c.*
 FROM customer t,
 JSON_TABLE(t.json COLUMNS(

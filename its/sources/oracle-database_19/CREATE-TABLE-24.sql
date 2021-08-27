@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE countries_demo
     ( country_id      CHAR(2)
       CONSTRAINT country_id_nn_demo NOT NULL

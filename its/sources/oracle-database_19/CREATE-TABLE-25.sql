@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-TABLE.html
 CREATE TABLE dept_external (
    deptno     NUMBER(6),
    dname      VARCHAR2(20),

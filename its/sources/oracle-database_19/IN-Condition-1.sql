@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/IN-Condition.html
 SELECT * FROM employees
   WHERE job_id IN
   ('PU_CLERK','SH_CLERK')

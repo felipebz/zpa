@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 SELECT *
 FROM JSON_TABLE('[1,2,["a","b"]]', '$'
 COLUMNS (outer_value_0 NUMBER PATH '$[0]',

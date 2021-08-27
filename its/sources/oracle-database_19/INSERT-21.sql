@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 CREATE TABLE small_orders 
    (order_id       NUMBER(12)   NOT NULL,
     customer_id    NUMBER(6)    NOT NULL,

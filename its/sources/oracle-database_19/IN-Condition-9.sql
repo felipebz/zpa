@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/IN-Condition.html
 SELECT v.employee_id, v.last_name, v.lev FROM
       (SELECT employee_id, last_name, LEVEL lev 
       FROM employees v

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html
 INSERT INTO 
    (SELECT employee_id, last_name, email, hire_date, job_id, 
       salary, commission_pct FROM employees) 

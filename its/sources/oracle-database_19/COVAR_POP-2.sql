@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COVAR_POP.html
 SELECT product_id, supplier_id,
        COVAR_POP(list_price, min_price) 
          OVER (ORDER BY product_id, supplier_id)

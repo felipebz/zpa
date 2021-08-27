@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/FEATURE_DETAILS.html
 SELECT S.feature_id fid, value val,
        FEATURE_DETAILS(nmf_sh_sample, S.feature_id, 5 using T.*) det
    FROM

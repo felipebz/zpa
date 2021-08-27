@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Using-Extensible-Indexing.html
 CREATE OR REPLACE TYPE position_im AUTHID CURRENT_USER AS OBJECT
 (
   curnum  NUMBER,

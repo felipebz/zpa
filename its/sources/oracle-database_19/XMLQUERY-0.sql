@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/XMLQUERY.html
 SELECT warehouse_name,
 EXTRACTVALUE(warehouse_spec, '/Warehouse/Area'),
 XMLQuery(

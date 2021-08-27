@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CAST.html
 SELECT s.custno, s.name,
        CAST(MULTISET(SELECT ca.street_address,   
                             ca.postal_code, 

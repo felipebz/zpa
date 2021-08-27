@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CREATE-SCHEMA.html
 CREATE SCHEMA AUTHORIZATION oe
    CREATE TABLE new_product 
       (color VARCHAR2(10)  PRIMARY KEY, quantity NUMBER) 

@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CLUSTER_DISTANCE.html
 SELECT cust_id
   FROM (
     SELECT cust_id,

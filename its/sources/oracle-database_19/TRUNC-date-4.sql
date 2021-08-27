@@ -1,3 +1,4 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TRUNC-date.html
 WITH dates AS (   
   SELECT date'2015-01-01' d FROM dual union   
   SELECT date'2015-01-10' d FROM dual union   
