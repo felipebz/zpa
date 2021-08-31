@@ -24,7 +24,7 @@ import com.sonar.sslr.api.GenericTokenType
 import com.sonar.sslr.api.Token
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import org.sonar.api.batch.sensor.internal.SensorContextTester

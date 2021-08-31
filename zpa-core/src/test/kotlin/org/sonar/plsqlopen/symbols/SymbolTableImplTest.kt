@@ -21,7 +21,7 @@ package org.sonar.plsqlopen.symbols
 
 import com.sonar.sslr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType

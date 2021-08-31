@@ -19,13 +19,13 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class AnchoredDatatypeTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(PlSqlGrammar.ANCHORED_DATATYPE)
     }

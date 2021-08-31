@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.metrics
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import java.io.File
 

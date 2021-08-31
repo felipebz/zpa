@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api.expressions
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 
@@ -28,7 +28,7 @@ import org.sonar.sslr.tests.Assertions.assertThat
 
 class SetExpressionTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(PlSqlGrammar.EXPRESSION)
     }

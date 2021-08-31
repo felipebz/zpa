@@ -26,7 +26,7 @@ import com.sonar.sslr.test.lexer.LexerMatchers.hasToken
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.not
 import org.junit.Assert.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar

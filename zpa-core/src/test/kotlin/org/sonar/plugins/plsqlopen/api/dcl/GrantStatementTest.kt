@@ -19,15 +19,15 @@
  */
 package org.sonar.plugins.plsqlopen.api.dcl
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DclGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class GrantStatementTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(DclGrammar.GRANT_STATEMENT)
     }

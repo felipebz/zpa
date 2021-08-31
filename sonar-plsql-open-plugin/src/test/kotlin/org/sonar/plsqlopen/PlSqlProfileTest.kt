@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition.Context
 import org.sonar.plsqlopen.checks.CheckList
 

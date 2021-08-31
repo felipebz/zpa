@@ -19,12 +19,12 @@
  */
 package org.sonar.plsqlopen.checks
 
-import org.junit.Before
+import org.junit.jupiter.api.BeforeEach
 import java.util.*
 
 abstract class BaseCheckTest {
 
-    @Before
+    @BeforeEach
     fun setUp() {
         Locale.setDefault(Locale.ENGLISH)
     }

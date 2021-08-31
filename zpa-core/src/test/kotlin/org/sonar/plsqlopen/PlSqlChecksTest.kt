@@ -21,8 +21,8 @@ package org.sonar.plsqlopen
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.rules.*
 import org.sonar.plugins.plsqlopen.api.ZpaRulesDefinition
 import org.sonar.plugins.plsqlopen.api.annotations.Rule
@@ -35,7 +35,7 @@ class PlSqlChecksTest {
     private lateinit var customRulesDefinition: MyCustomPlSqlRulesDefinition
     private val ruleMetadataLoader = RuleMetadataLoader()
 
-    @Before
+    @BeforeEach
     fun setUp() {
         val repository = Repository(DEFAULT_REPOSITORY_KEY)
         CustomAnnotationBasedRulesDefinition(repository, "plsqlopen", RuleMetadataLoader())

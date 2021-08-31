@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api.units
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
@@ -29,7 +29,7 @@ class SimpleDmlTriggerTest : RuleTest() {
 
     private val body = " begin null; end;"
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(PlSqlGrammar.SIMPLE_DML_TRIGGER)
     }

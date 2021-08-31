@@ -21,7 +21,7 @@ package org.sonar.plsqlopen.symbols
 
 import org.assertj.core.api.Assertions.*
 import org.assertj.core.groups.Tuple
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol

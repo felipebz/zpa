@@ -22,8 +22,8 @@ package org.sonar.plsqlopen.symbols
 import com.nhaarman.mockitokotlin2.whenever
 import com.sonar.sslr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
@@ -38,7 +38,7 @@ class DefaultTypeSolverTest {
     private val p = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
     private val typeSolver = DefaultTypeSolver()
 
-    @Before
+    @BeforeEach
     fun setup() {
         scope = ScopeImpl(null, mockAstNode())
     }

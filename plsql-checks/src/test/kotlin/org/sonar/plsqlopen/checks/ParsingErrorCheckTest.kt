@@ -21,7 +21,7 @@ package org.sonar.plsqlopen.checks
 
 import com.sonar.sslr.api.RecognitionException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext

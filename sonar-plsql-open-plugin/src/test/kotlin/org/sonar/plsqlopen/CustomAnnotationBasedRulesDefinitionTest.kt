@@ -20,8 +20,8 @@
 package org.sonar.plsqlopen
 
 import org.assertj.core.api.Assertions.*
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.api.server.debt.DebtRemediationFunction.Type
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.api.server.rule.RulesDefinition.*
@@ -36,7 +36,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     private val context = Context()
 
-    @Before
+    @BeforeEach
     fun setup() {
         Locale.setDefault(Locale.ROOT)
     }

@@ -19,7 +19,8 @@
  */
 package org.sonar.plsqlopen.checks
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier
 import org.sonar.plsqlopen.squid.AnalysisException
 
@@ -50,9 +51,11 @@ class XPathCheckTest : BaseCheckTest() {
         analyze("xpath.sql", "")
     }
 
-    @Test(expected = AnalysisException::class)
+    @Test
     fun invalid_query() {
-        analyze("xpath.sql", "+++")
+        assertThrows<AnalysisException> {
+            analyze("xpath.sql", "+++")
+        }
     }
 
     private fun analyze(fileName: String, xpathQuery: String) {

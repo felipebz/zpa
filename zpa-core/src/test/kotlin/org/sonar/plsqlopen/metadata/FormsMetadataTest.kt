@@ -22,7 +22,7 @@ package org.sonar.plsqlopen.metadata
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class FormsMetadataTest {
 

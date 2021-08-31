@@ -20,9 +20,8 @@
 package org.sonar.plsqlopen.highlight
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import org.sonar.api.batch.sensor.highlighting.TypeOfText
 import org.sonar.api.batch.sensor.internal.SensorContextTester
@@ -32,26 +31,22 @@ import java.nio.charset.StandardCharsets
 
 class PlSqlHighlighterVisitorTest {
 
-    @get:Rule
-    var temp = TemporaryFolder()
-
     @Test
-    fun shouldAnalyse_lf() {
-        verifyHighlighting("\n")
+    fun shouldAnalyse_lf(@TempDir dir: File) {
+        verifyHighlighting(dir, "\n")
     }
 
     @Test
-    fun shouldAnalyse_crlf() {
-        verifyHighlighting("\r\n")
+    fun shouldAnalyse_crlf(@TempDir dir: File) {
+        verifyHighlighting(dir, "\r\n")
     }
 
     @Test
-    fun shouldAnalyse_cr() {
-        verifyHighlighting("\r")
+    fun shouldAnalyse_cr(@TempDir dir: File) {
+        verifyHighlighting(dir, "\r")
     }
 
-    private fun verifyHighlighting(eol: String) {
-        val baseDir = temp.newFolder()
+    private fun verifyHighlighting(baseDir: File, eol: String) {
         val file = File(baseDir, "test.sql")
         val content = File("src/test/resources/highlight/highlight.sql")
             .readText()

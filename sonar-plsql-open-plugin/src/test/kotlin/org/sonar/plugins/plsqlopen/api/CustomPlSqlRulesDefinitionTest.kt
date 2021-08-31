@@ -20,7 +20,7 @@
 package org.sonar.plugins.plsqlopen.api
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty

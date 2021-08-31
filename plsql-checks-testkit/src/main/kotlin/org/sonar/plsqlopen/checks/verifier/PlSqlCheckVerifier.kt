@@ -20,15 +20,14 @@
 package org.sonar.plsqlopen.checks.verifier
 
 import com.sonar.sslr.api.Trivia
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assert.fail
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.io.File
-import java.util.*
 
 class PlSqlCheckVerifier : PlSqlCheck() {
 
@@ -137,28 +136,22 @@ class PlSqlCheckVerifier : PlSqlCheck() {
                 fail("Unexpected issue at line " + line(actual) + ": \"" + actual.primaryLocation().message() + "\"")
             }
             expected.message?.let {
-                assertThat(actual.primaryLocation().message()).`as`("Bad message at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, actual.primaryLocation().message(), "Bad message at line " + expected.line)
             }
             expected.effortToFix?.let {
-                assertThat(actual.cost()).`as`("Bad effortToFix at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, actual.cost(), "Bad effortToFix at line " + expected.line)
             }
             expected.startColumn?.let {
-                assertThat(actual.primaryLocation().startLineOffset() + 1).`as`("Bad start column at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, actual.primaryLocation().startLineOffset() + 1, "Bad start column at line " + expected.line)
             }
             expected.endColumn?.let {
-                assertThat(actual.primaryLocation().endLineOffset() + 1).`as`("Bad end column at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, actual.primaryLocation().endLineOffset() + 1, "Bad end column at line " + expected.line)
             }
             expected.endLine?.let {
-                assertThat(actual.primaryLocation().endLine()).`as`("Bad end line at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, actual.primaryLocation().endLine(), "Bad end line at line " + expected.line)
             }
             expected.secondaryLines?.let {
-                assertThat(secondary(actual)).`as`("Bad secondary locations at line " + expected.line)
-                        .isEqualTo(it)
+                assertEquals(it, secondary(actual), "Bad secondary locations at line " + expected.line)
             }
         }
 

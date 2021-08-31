@@ -20,9 +20,9 @@
 package org.sonar.plsqlopen
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
-import org.junit.rules.ExpectedException
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.sonar.plsqlopen.rules.Repository
 import org.sonar.plsqlopen.rules.RuleMetadataLoader
 import org.sonar.plsqlopen.rules.ZpaRule
@@ -34,10 +34,7 @@ import java.util.*
 
 class CustomAnnotationBasedRulesDefinitionTest {
 
-    @get:org.junit.Rule
-    var thrown: ExpectedException = ExpectedException.none()
-
-    @Before
+    @BeforeEach
     fun setup() {
         Locale.setDefault(Locale.ROOT)
     }
@@ -50,8 +47,9 @@ class CustomAnnotationBasedRulesDefinitionTest {
     @Test
     fun classWithoutRuleAnnotation() {
         class NotRuleClass
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(NotRuleClass::class.java)
+        assertThrows<IllegalArgumentException> {
+            buildSingleRuleRepository(NotRuleClass::class.java)
+        }
     }
 
     @Test
@@ -118,8 +116,9 @@ class CustomAnnotationBasedRulesDefinitionTest {
         @ConstantRemediation("xxx")
         class MyInvalidRuleClass
 
-        thrown.expect(IllegalArgumentException::class.java)
-        buildSingleRuleRepository(MyInvalidRuleClass::class.java)
+        assertThrows<IllegalArgumentException> {
+            buildSingleRuleRepository(MyInvalidRuleClass::class.java)
+        }
     }
 
     @Test

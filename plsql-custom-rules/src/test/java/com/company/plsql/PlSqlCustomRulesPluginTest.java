@@ -1,17 +1,17 @@
 package com.company.plsql;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PlSqlCustomRulesPluginTest {
 
     @Test
     public void testRepository() {
         PlSqlCustomRulesDefinition plugin = new PlSqlCustomRulesDefinition();
-        assertThat(plugin.repositoryName()).isEqualTo("Company");
-        assertThat(plugin.repositoryKey()).isEqualTo("my-rules");
-        assertThat(plugin.checkClasses().length).isEqualTo(1);
+        assertEquals("Company", plugin.repositoryName());
+        assertEquals("my-rules", plugin.repositoryKey());
+        assertEquals(1, plugin.checkClasses().length);
     }
 
 }

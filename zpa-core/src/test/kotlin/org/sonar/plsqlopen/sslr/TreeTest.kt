@@ -19,14 +19,14 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import org.junit.Before
+import org.junit.jupiter.api.BeforeEach
 import org.sonar.plsqlopen.getSemanticNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 
 abstract class TreeTest<T : Tree>(private val root: PlSqlGrammar) : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(root)
     }

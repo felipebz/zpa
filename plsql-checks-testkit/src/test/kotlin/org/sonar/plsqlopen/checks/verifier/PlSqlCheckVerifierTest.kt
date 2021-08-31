@@ -23,8 +23,8 @@ import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.GenericTokenType
 import com.sonar.sslr.api.Token
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Fail
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.IssueLocation
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.net.URI
@@ -43,7 +43,7 @@ class PlSqlCheckVerifierTest {
 
         try {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
             assertThat(e).hasMessage("Unexpected issue at line 4: \"extra message\"")
         }
@@ -56,7 +56,7 @@ class PlSqlCheckVerifierTest {
 
         try {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
             assertThat(e).hasMessage("Missing issue at line 1")
         }
@@ -68,7 +68,7 @@ class PlSqlCheckVerifierTest {
 
         try {
             PlSqlCheckVerifier.verify(FILENAME_ISSUES, visitor)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
             assertThat(e).hasMessage("Missing issue at line 1")
         }
@@ -84,7 +84,7 @@ class PlSqlCheckVerifierTest {
     fun verify_should_fail_when_using_incorrect_shift() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_shift.sql", noEffectCheck)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
             assertThat(e).hasMessage("Use only '@+N' or '@-N' to shifts messages.")
         }
@@ -95,7 +95,7 @@ class PlSqlCheckVerifierTest {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
                     noEffectCheck)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: IllegalStateException) {
             assertThat(e).hasMessage("Invalid param at line 1: invalid")
         }
@@ -106,7 +106,7 @@ class PlSqlCheckVerifierTest {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
                     noEffectCheck)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: IllegalStateException) {
             assertThat(e).hasMessage("Invalid param at line 1: invalid")
         }
@@ -117,9 +117,9 @@ class PlSqlCheckVerifierTest {
         val visitor = FakeCheck().withDefaultIssues()
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
-            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[[]4]> but was:<[[3, ]4]>")
+            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: <[4]> but was: <[3, 4]>")
         }
     }
 
@@ -128,9 +128,9 @@ class PlSqlCheckVerifierTest {
         val visitor = FakeCheck().withDefaultIssues()
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor)
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: AssertionError) {
-            assertThat(e).hasMessage("[Bad secondary locations at line 8] expected:<[3, 4[, 5]]> but was:<[3, 4[]]>")
+            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: <[3, 4, 5]> but was: <[3, 4]>")
         }
     }
 
@@ -138,7 +138,7 @@ class PlSqlCheckVerifierTest {
     fun verify_should_fail_when_precision_location_comment_is_invalid() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_comment.sql", FakeCheck())
-            Fail.fail<Any>("Test should fail")
+            fail("Test should fail")
         } catch (e: IllegalStateException) {
             assertThat(e).hasMessage("Line 3: comments asserting a precise location should start at column 1")
         }

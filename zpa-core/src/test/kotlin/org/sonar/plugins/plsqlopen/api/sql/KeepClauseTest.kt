@@ -19,15 +19,15 @@
  */
 package org.sonar.plugins.plsqlopen.api.sql
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class KeepClauseTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(DmlGrammar.KEEP_CLAUSE)
     }

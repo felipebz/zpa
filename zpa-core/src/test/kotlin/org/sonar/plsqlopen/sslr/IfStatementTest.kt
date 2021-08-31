@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.sslr
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 
 class IfStatementTest : TreeTest<IfStatement>(PlSqlGrammar.IF_STATEMENT) {

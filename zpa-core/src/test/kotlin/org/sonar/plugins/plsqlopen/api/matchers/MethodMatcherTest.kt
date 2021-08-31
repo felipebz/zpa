@@ -20,20 +20,15 @@
 package org.sonar.plugins.plsqlopen.api.matchers
 
 import org.assertj.core.api.Assertions.assertThat
-
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.ExpectedException
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 
 class MethodMatcherTest : RuleTest() {
 
-    @Rule @JvmField
-    var exception: ExpectedException = ExpectedException.none()
-
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(PlSqlGrammar.EXPRESSION)
     }
@@ -149,50 +144,57 @@ class MethodMatcherTest : RuleTest() {
     @Test
     fun shouldFailIfNameIsCalledMoreThanOnce() {
         val matcher = MethodMatcher.create().name("name")
-        exception.expect(IllegalStateException::class.java)
-        matcher.name("name")
+        assertThrows<IllegalStateException> {
+            matcher.name("name")
+        }
     }
 
     @Test
     fun shouldFailIfPackageNameIsCalledMoreThanOnce() {
         val matcher = MethodMatcher.create().packageName("name")
-        exception.expect(IllegalStateException::class.java)
-        matcher.packageName("name")
+        assertThrows<IllegalStateException> {
+            matcher.packageName("name")
+        }
     }
 
     @Test
     fun shouldFailIfSchemaIsCalledMoreThanOnce() {
         val matcher = MethodMatcher.create().schema("name")
-        exception.expect(IllegalStateException::class.java)
-        matcher.schema("name")
+        assertThrows<IllegalStateException> {
+            matcher.schema("name")
+        }
     }
 
     @Test
     fun shouldFailIfAddParameterIsCalledAfterWithNoParameterConstraint() {
         val matcher = MethodMatcher.create().withNoParameterConstraint()
-        exception.expect(IllegalStateException::class.java)
-        matcher.addParameter()
+        assertThrows<IllegalStateException> {
+            matcher.addParameter()
+        }
     }
 
     @Test
     fun shouldFailIfAddParametersIsCalledAfterWithNoParameterConstraint() {
         val matcher = MethodMatcher.create().withNoParameterConstraint()
-        exception.expect(IllegalStateException::class.java)
-        matcher.addParameters(2)
+        assertThrows<IllegalStateException> {
+            matcher.addParameters(2)
+        }
     }
 
     @Test
     fun shouldFailIfWithNoParameterConstraintIsCalledAfterAddParameter() {
         val matcher = MethodMatcher.create().addParameter()
-        exception.expect(IllegalStateException::class.java)
-        matcher.withNoParameterConstraint()
+        assertThrows<IllegalStateException> {
+            matcher.withNoParameterConstraint()
+        }
     }
 
     @Test
     fun shouldFailIfWithNoParameterConstraintIsCalledAfterAddParameters() {
         val matcher = MethodMatcher.create().addParameters(2)
-        exception.expect(IllegalStateException::class.java)
-        matcher.withNoParameterConstraint()
+        assertThrows<IllegalStateException> {
+            matcher.withNoParameterConstraint()
+        }
     }
 
     fun matches(matcher: MethodMatcher, text: String) {

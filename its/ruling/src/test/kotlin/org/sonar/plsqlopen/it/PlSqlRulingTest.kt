@@ -20,8 +20,8 @@
 package org.sonar.plsqlopen.it
 
 import com.google.gson.GsonBuilder
-import org.junit.Assert.fail
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.InvalidReferenceToObjectCheck
 import org.sonar.plsqlopen.checks.ParsingErrorCheck
 import org.sonar.plsqlopen.metadata.FormsMetadata

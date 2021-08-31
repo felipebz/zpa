@@ -20,15 +20,10 @@
 package org.sonar.plsqlopen.toolkit
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.ExpectedException
+import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 
 class PlSqlConfigurationModelTest {
-
-    @get:Rule
-    var thrown: ExpectedException = ExpectedException.none()
 
     @Test
     fun getConfiguration_charset() {

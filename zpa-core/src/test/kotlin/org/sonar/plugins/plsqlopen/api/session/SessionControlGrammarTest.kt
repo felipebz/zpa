@@ -19,15 +19,15 @@
  */
 package org.sonar.plugins.plsqlopen.api.session
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.plugins.plsqlopen.api.SessionControlGrammar
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class SessionControlGrammarTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(SessionControlGrammar.SESSION_CONTROL_COMMAND)
     }

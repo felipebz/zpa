@@ -19,16 +19,16 @@
  */
 package org.sonar.plugins.plsqlopen.api.ddl
 
-import org.junit.Before
-import org.junit.Ignore
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DdlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class TableColumnDefinitionTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(DdlGrammar.TABLE_COLUMN_DEFINITION)
     }
@@ -54,7 +54,7 @@ class TableColumnDefinitionTest : RuleTest() {
     }
 
     @Test
-    @Ignore
+    @Disabled
     fun matchesEncryptWithSpecification() {
         assertThat(p).matches("id number encrypt using 'AES256'")
     }
@@ -70,7 +70,7 @@ class TableColumnDefinitionTest : RuleTest() {
     }
 
     @Test
-    @Ignore
+    @Disabled
     fun matchesInlineRefConstraint() {
         assertThat(p).matches("id number with rowid")
     }

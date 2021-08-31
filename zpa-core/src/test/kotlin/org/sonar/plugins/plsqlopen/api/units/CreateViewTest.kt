@@ -19,16 +19,16 @@
  */
 package org.sonar.plugins.plsqlopen.api.units
 
-import org.junit.Before
-import org.junit.Ignore
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class CreateViewTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(PlSqlGrammar.CREATE_VIEW)
     }
@@ -94,7 +94,7 @@ class CreateViewTest : RuleTest() {
     }
 
     @Test
-    @Ignore
+    @Disabled
     fun matchesViewWithConstraints() {
         assertThat(p).matches(
             """create view emp_sal (emp_id, last_name,
@@ -104,7 +104,7 @@ as select employee_id, last_name, email from employees;""")
     }
 
     @Test
-    @Ignore
+    @Disabled
     fun matchesObjectView() {
         assertThat(p).matches(
             """create or replace view oc_inventories of inventory_typ
@@ -114,7 +114,7 @@ as select product_id from inventories;""")
 
 
     @Test
-    @Ignore
+    @Disabled
     fun matchesXmlView() {
         assertThat(p).matches(
             """create view warehouse_view of xmltype

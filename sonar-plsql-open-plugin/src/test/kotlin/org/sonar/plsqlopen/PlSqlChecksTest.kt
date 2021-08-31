@@ -21,8 +21,8 @@ package org.sonar.plsqlopen
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder
 import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.rule.RuleKey
@@ -41,7 +41,7 @@ class PlSqlChecksTest {
     private lateinit var customRulesDefinition: MyCustomPlSqlRulesDefinition
     private val ruleMetadataLoader = SonarQubeRuleMetadataLoader()
 
-    @Before
+    @BeforeEach
     fun setUp() {
         activeRules = SonarQubeActiveRulesAdapter(ActiveRulesBuilder()
                 .addRule(NewActiveRule.Builder().setRuleKey(RuleKey.of(DEFAULT_REPOSITORY_KEY, DEFAULT_RULE_KEY)).build())

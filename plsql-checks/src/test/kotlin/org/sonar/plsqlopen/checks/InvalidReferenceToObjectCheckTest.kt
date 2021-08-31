@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.checks
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier
 import org.sonar.plsqlopen.metadata.Block
 import org.sonar.plsqlopen.metadata.FormsMetadata

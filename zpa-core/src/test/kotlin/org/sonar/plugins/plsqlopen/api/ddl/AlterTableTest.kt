@@ -19,15 +19,15 @@
  */
 package org.sonar.plugins.plsqlopen.api.ddl
 
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DdlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.sslr.tests.Assertions.assertThat
 
 class AlterTableTest : RuleTest() {
 
-    @Before
+    @BeforeEach
     fun init() {
         setRootRule(DdlGrammar.ALTER_TABLE)
     }
