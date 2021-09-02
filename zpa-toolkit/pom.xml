@@ -19,8 +19,8 @@
       <artifactId>kotlin-stdlib-jdk8</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sslr</groupId>
-      <artifactId>sslr-toolkit</artifactId>
+      <groupId>com.felipebz.flr</groupId>
+      <artifactId>flr-toolkit</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>

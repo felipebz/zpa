@@ -22,7 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.sonar.sslr.api.AstNode
 import com.sonar.sslr.api.TokenType
 
-enum class PlSqlKeyword(private val value: String, val isReserved: Boolean = false) : TokenType {
+enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = false) : TokenType {
     ALL("all", true),
     ALTER("alter", true),
     AND("and", true),
@@ -501,10 +501,6 @@ enum class PlSqlKeyword(private val value: String, val isReserved: Boolean = fal
     INLINE("inline"),
     UDF("udf"),
     DEPRECATE("deprecate");
-
-    override fun getName() = name
-
-    override fun getValue() = value
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 

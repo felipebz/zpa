@@ -91,10 +91,8 @@ class MethodMatcher private constructor()
     }
 
     fun getArguments(node: AstNode): List<AstNode> {
-        val arguments = node.getFirstChild(PlSqlGrammar.ARGUMENTS)
-        return if (arguments != null) {
-            arguments.getChildren(PlSqlGrammar.ARGUMENT)
-        } else ArrayList()
+        val arguments = node.getFirstChildOrNull(PlSqlGrammar.ARGUMENTS)
+        return arguments?.getChildren(PlSqlGrammar.ARGUMENT) ?: ArrayList()
 
     }
 
@@ -103,7 +101,7 @@ class MethodMatcher private constructor()
 
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
-        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
+        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME).toMutableList()
 
         if (nodes.isEmpty()) {
             return false

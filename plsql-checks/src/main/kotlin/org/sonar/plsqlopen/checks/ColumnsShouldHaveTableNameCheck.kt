@@ -37,15 +37,16 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         var candidate = node.firstChild
-        if (candidate.firstChild != null) {
+        if (candidate.hasChildren()) {
             candidate = candidate.firstChild
         }
 
         val selectExpression = node.parent
-        if (selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size > 1 &&
-                candidate.typeIs(PlSqlGrammar.IDENTIFIER_NAME) &&
-                !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD) &&
-                semantic(candidate).symbol == null) {
+        if (selectExpression != null &&
+            selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size > 1 &&
+            candidate.typeIs(PlSqlGrammar.IDENTIFIER_NAME) &&
+            !candidate.hasDirectChildren(PlSqlGrammar.NON_RESERVED_KEYWORD) &&
+            semantic(candidate).symbol == null) {
 
             addIssue(candidate, getLocalizedMessage(), candidate.tokenOriginalValue)
         }

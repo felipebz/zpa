@@ -41,14 +41,14 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val intoClause = node.getFirstDescendant(DmlGrammar.INTO_CLAUSE)
-        if (intoClause.firstChild.typeIs(PlSqlKeyword.BULK)) {
+        if (intoClause?.firstChild.typeIs(PlSqlKeyword.BULK)) {
             return
         }
 
         if (strictMode) {
-            val parentBlock = node.getFirstAncestor(PlSqlGrammar.STATEMENTS_SECTION)
+            val parentBlock = node.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
 
-            if (!parentBlock.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
+            if (parentBlock?.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER) == false) {
                 addIssue(node, getLocalizedMessage())
             }
         } else {

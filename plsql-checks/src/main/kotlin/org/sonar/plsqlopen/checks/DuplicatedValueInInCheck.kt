@@ -43,7 +43,7 @@ class DuplicatedValueInInCheck : AbstractBaseCheck() {
 
     private fun getInValue(inExpression: AstNode): List<AstNode> {
         val values = ArrayList<AstNode>()
-        var current: AstNode? = inExpression.getFirstChild(PlSqlPunctuator.LPARENTHESIS)
+        var current = inExpression.getFirstChildOrNull(PlSqlPunctuator.LPARENTHESIS)
         while (current != null) {
             current = current.nextSibling
 

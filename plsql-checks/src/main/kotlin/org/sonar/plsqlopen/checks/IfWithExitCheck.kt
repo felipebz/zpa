@@ -37,7 +37,7 @@ class IfWithExitCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val statement = node.parent
-        val ifStatement = statement.parent.parent.tryGetAsTree<IfStatement>()
+        val ifStatement = statement?.parent?.parent?.tryGetAsTree<IfStatement>()
         if (ifStatement != null &&
                 ifStatement.elsifClauses.isEmpty() && ifStatement.elseClause == null &&
                 ifStatement.statements.size == 1) {

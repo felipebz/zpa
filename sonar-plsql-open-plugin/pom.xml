@@ -19,8 +19,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.sonarsource.sslr</groupId>
-      <artifactId>sslr-core</artifactId>
+      <groupId>com.felipebz.flr</groupId>
+      <artifactId>flr-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>

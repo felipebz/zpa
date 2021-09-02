@@ -35,7 +35,7 @@ class IdenticalExpressionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val operator = node.getFirstChild(ConditionsGrammar.RELATIONAL_OPERATOR)
+        val operator = node.getFirstChildOrNull(ConditionsGrammar.RELATIONAL_OPERATOR)
         if (operator != null) {
 
             val leftSide = node.firstChild

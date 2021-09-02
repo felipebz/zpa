@@ -19,15 +19,11 @@
  */
 package org.sonar.plsqlopen.toolkit
 
-import com.google.common.annotations.VisibleForTesting
 import com.sonar.sslr.api.Grammar
 import com.sonar.sslr.impl.Parser
-import org.slf4j.LoggerFactory
-import org.sonar.colorizer.KeywordsTokenizer
-import org.sonar.colorizer.Tokenizer
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
+import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.sslr.toolkit.AbstractConfigurationModel
 import org.sonar.sslr.toolkit.ConfigurationProperty
 import org.sonar.sslr.toolkit.Validators
@@ -35,37 +31,31 @@ import java.nio.charset.Charset
 
 class PlSqlConfigurationModel : AbstractConfigurationModel() {
 
-    @VisibleForTesting
     internal var charsetProperty = ConfigurationProperty("Charset",
-            CHARSET_PROPERTY_KEY,
-            getPropertyOrDefaultValue(CHARSET_PROPERTY_KEY, "UTF-8"),
-            Validators.charsetValidator())
+        CHARSET_PROPERTY_KEY,
+        getPropertyOrDefaultValue(CHARSET_PROPERTY_KEY, "UTF-8"),
+        Validators.charsetValidator())
 
-    @VisibleForTesting
     internal var errorRecoveryProperty = ConfigurationProperty("Error recovery",
-            ERROR_RECOVERY_PROPERTY_KEY,
-            getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "true"))
+        ERROR_RECOVERY_PROPERTY_KEY,
+        getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "true"))
 
     internal val configuration: PlSqlConfiguration
-        @VisibleForTesting
         get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), java.lang.Boolean.valueOf(errorRecoveryProperty.value))
 
-    override fun getCharset(): Charset = Charset.forName(charsetProperty.value)
+    override val charset: Charset
+        get() = Charset.forName(charsetProperty.value)
 
-    override fun getProperties(): List<ConfigurationProperty> =
-        listOf(charsetProperty, errorRecoveryProperty)
+    override val properties: List<ConfigurationProperty>
+        get() = listOf(charsetProperty, errorRecoveryProperty)
 
     override fun doGetParser(): Parser<Grammar> = PlSqlParser.create(configuration)
 
-    override fun doGetTokenizers(): List<Tokenizer> =
-        listOf<Tokenizer>(KeywordsTokenizer("<span class=\"k\">", "</span>", *PlSqlKeyword.keywordValues()))
-
     companion object {
-        private val LOG = LoggerFactory.getLogger(PlSqlConfigurationModel::class.java)
+        private val LOG = Loggers.getLogger(PlSqlConfigurationModel::class.java)
         private const val CHARSET_PROPERTY_KEY = "sonar.sourceEncoding"
         private const val ERROR_RECOVERY_PROPERTY_KEY = "sonar.zpa.errorRecoveryEnabled"
 
-        @VisibleForTesting
         internal fun getPropertyOrDefaultValue(propertyKey: String, defaultValue: String): String {
             val propertyValue = System.getProperty(propertyKey)
 

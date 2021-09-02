@@ -34,7 +34,7 @@ class EmptyStringAssignmentCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val value = node.getLastChild(PlSqlGrammar.LITERAL)
+        val value = node.getLastChildOrNull(PlSqlGrammar.LITERAL)
 
         if (value != null && CheckUtils.isEmptyString(value)) {
             addIssue(node, getLocalizedMessage())

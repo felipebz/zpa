@@ -52,8 +52,8 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
 
         val tableReferences = hashMapOf<String, MutableList<TableReference>>()
         for (fromClause in node.getDescendants(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)) {
-            val table = fromClause.getFirstChild(DmlGrammar.TABLE_REFERENCE)
-            val alias = fromClause.getFirstChild(DmlGrammar.ALIAS)
+            val table = fromClause.getFirstChildOrNull(DmlGrammar.TABLE_REFERENCE)
+            val alias = fromClause.getFirstChildOrNull(DmlGrammar.ALIAS)
 
 
             if (table != null) {

@@ -81,7 +81,7 @@ class DefaultTypeSolver {
     }
 
     private fun isEmptyString(node: AstNode): Boolean {
-        val characterLiteral = node.getFirstChild(PlSqlGrammar.CHARACTER_LITERAL) ?: return false
+        val characterLiteral = node.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL) ?: return false
         val value = characterLiteral.tokenValue
         if (value == "''") {
             return true

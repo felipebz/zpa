@@ -35,7 +35,7 @@ class IfStatement(override val astNode: SemanticAstNode) : TreeWithStatements(as
     }
 
     val elseClause : ElseClause? by lazy {
-        astNode.getFirstChild(PlSqlGrammar.ELSE_CLAUSE)?.asTree()
+        astNode.getFirstChildOrNull(PlSqlGrammar.ELSE_CLAUSE)?.asTree()
     }
 
 }

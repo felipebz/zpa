@@ -28,9 +28,7 @@ enum class PlSqlTokenType : TokenType {
     NUMBER_LITERAL,
     DATE_LITERAL;
 
-    override fun getName() = name
-
-    override fun getValue() = name
+    override val value = name
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 }

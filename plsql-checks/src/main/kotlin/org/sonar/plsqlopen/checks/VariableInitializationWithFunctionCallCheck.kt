@@ -36,10 +36,10 @@ class VariableInitializationWithFunctionCallCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (node.hasParent(PlSqlGrammar.VARIABLE_DECLARATION)) {
-            val datatype = node.parent.getFirstChild(PlSqlGrammar.DATATYPE)
+            val datatype = node.parent?.getFirstChild(PlSqlGrammar.DATATYPE)
 
             val expression = node.lastChild
-            if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype.tokenValue != expression.tokenValue) {
+            if (expression.typeIs(PlSqlGrammar.METHOD_CALL) && datatype?.tokenValue != expression.tokenValue) {
                 addIssue(node, getLocalizedMessage())
             }
         }

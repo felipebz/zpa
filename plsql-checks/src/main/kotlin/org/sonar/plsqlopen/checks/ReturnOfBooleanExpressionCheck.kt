@@ -71,7 +71,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
         if (node != null) {
             val child = node.firstChild
             if (child.typeIs(PlSqlGrammar.RETURN_STATEMENT)) {
-                val expression = child.getFirstChild(PlSqlGrammar.LITERAL)
+                val expression = child.getFirstChildOrNull(PlSqlGrammar.LITERAL)
 
                 return getBooleanLiteral(expression)
             }
@@ -80,7 +80,7 @@ class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
     }
 
     private fun getBooleanLiteral(expression: AstNode?): AstNode? {
-        return expression?.getFirstChild(PlSqlGrammar.BOOLEAN_LITERAL)
+        return expression?.getFirstChildOrNull(PlSqlGrammar.BOOLEAN_LITERAL)
     }
 
 }

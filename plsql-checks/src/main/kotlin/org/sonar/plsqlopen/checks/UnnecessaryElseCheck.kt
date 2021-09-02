@@ -34,7 +34,7 @@ class UnnecessaryElseCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val ifStatement = node.parent
+        val ifStatement = checkNotNull(node.parent)
 
         if (!hasElsifClause(ifStatement) && hasTerminationStatement(ifStatement)) {
             addLineIssue(getLocalizedMessage(), node.tokenLine)

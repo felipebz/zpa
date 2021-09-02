@@ -60,7 +60,7 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     }
 
     init {
-        super.setFromIndex(astNode.fromIndex)
-        super.setToIndex(astNode.toIndex)
+        super.fromIndex = astNode.fromIndex
+        super.toIndex = astNode.toIndex
     }
 }

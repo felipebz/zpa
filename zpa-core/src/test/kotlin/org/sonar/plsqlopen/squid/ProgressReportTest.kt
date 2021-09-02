@@ -19,7 +19,6 @@
  */
 package org.sonar.plsqlopen.squid
 
-import com.google.common.collect.ImmutableList
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeast
 import com.nhaarman.mockitokotlin2.mock
@@ -40,7 +39,7 @@ class ProgressReportTest {
 
             val report = ProgressReport(ProgressReport::class.java.name, 50, logger)
 
-            report.start(ImmutableList.of("foo.java", "foo.java"))
+            report.start(listOf("foo.java", "foo.java"))
 
             // Wait for start message
             waitForMessage(report)
@@ -74,7 +73,7 @@ class ProgressReportTest {
             val logger: Logger = mock()
 
             val report = ProgressReport(ProgressReport::class.java.name, 50, logger)
-            report.start(ImmutableList.of("foo.java", "foo.java"))
+            report.start(listOf("foo.java", "foo.java"))
 
             // Wait for start message
             waitForMessage(report)

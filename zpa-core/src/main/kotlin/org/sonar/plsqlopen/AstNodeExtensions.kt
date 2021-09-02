@@ -25,10 +25,10 @@ import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 
-fun AstNode.typeIs(type: AstNodeType): Boolean = this.type == type
+fun AstNode?.typeIs(type: AstNodeType): Boolean = this?.type == type
 
-fun AstNode.typeIs(types: Array<out AstNodeType>): Boolean  =
-    types.any { it == type }
+fun AstNode?.typeIs(types: Array<out AstNodeType>): Boolean  =
+    types.any { it == this?.type }
 
 inline fun <reified T : Tree> AstNode.asTree(): T =
     this.asSemantic().tree as T
