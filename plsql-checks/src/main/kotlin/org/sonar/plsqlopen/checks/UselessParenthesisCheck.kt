@@ -36,7 +36,7 @@ class UselessParenthesisCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val parent = node.parent
-        if (parent.typeIs(PlSqlGrammar.BRACKED_EXPRESSION) && parent?.numberOfChildren == 3) {
+        if (parent.typeIs(PlSqlGrammar.BRACKED_EXPRESSION) && parent.numberOfChildren == 3) {
             addIssue(node, getLocalizedMessage())
         }
     }

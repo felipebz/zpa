@@ -41,7 +41,7 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val intoClause = node.getFirstDescendant(DmlGrammar.INTO_CLAUSE)
-        if (intoClause?.firstChild.typeIs(PlSqlKeyword.BULK)) {
+        if (intoClause.firstChild.typeIs(PlSqlKeyword.BULK)) {
             return
         }
 

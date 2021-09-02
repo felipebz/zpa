@@ -146,7 +146,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         val exceptionHandler = node
                 .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
                 .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
-        val inheritanceClause = node.parent?.getFirstChildOrNull(PlSqlGrammar.INHERITANCE_CLAUSE)
+        val inheritanceClause = node.parent.getFirstChildOrNull(PlSqlGrammar.INHERITANCE_CLAUSE)
         val isOverridingMember = inheritanceClause != null &&
             inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
             inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)

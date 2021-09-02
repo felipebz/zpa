@@ -38,7 +38,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val topParent = node.parent?.parent?.parent
+        val topParent = node.parent.parent.parent
         if (topParent == null || topParent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
             return
         }
@@ -48,9 +48,9 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
             // TODO this is very complex and it probably can be simplified in the future
             val fetchDestination = semantic(topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME))
                 .symbol?.usages().orEmpty()
-                .map { it.parent?.parent }
+                .map { it.parent.parent }
                 .filter { it.typeIs(PlSqlGrammar.FETCH_STATEMENT) }
-                .map { it?.getFirstChild(DmlGrammar.INTO_CLAUSE)?.getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME) }
+                .map { it.getFirstChild(DmlGrammar.INTO_CLAUSE).getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME) }
                 .firstOrNull()
 
             if (fetchDestination != null && semantic(fetchDestination).plSqlType == PlSqlType.ROWTYPE) {
@@ -65,7 +65,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
         }
 
         if (candidate.typeIs(PlSqlPunctuator.MULTIPLICATION)) {
-            val intoClause = node.parent?.getFirstChildOrNull(DmlGrammar.INTO_CLAUSE)
+            val intoClause = node.parent.getFirstChildOrNull(DmlGrammar.INTO_CLAUSE)
 
             if (intoClause != null) {
                 val variablesInInto = intoClause.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION, PlSqlGrammar.METHOD_CALL)

@@ -39,7 +39,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
         if (CheckUtils.isTerminationStatement(node)) {
             var parent = node.parent
             while (!checkNode(parent)) {
-                parent = parent?.parent
+                parent = parent.parent
             }
         }
     }

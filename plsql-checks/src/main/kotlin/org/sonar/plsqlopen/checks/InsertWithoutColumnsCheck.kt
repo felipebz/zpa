@@ -44,7 +44,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
                 return
             }
 
-            if (node.parent?.parent?.parent?.type === PlSqlGrammar.FORALL_STATEMENT) {
+            if (node.parent.parent.parent.type === PlSqlGrammar.FORALL_STATEMENT) {
                 return
             }
 

@@ -84,8 +84,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
         for (symbol in symbols) {
 
             // SELF parameter in type members
-            if (scope.tree().parent?.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) == true &&
-                symbol.name().equals("self", ignoreCase = true)) {
+            if (scope.tree().parent.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) && symbol.name().equals("self", ignoreCase = true)) {
                 continue
             }
 

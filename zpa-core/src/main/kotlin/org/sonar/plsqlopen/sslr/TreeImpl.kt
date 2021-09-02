@@ -25,7 +25,7 @@ import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 open class TreeImpl(override val astNode: SemanticAstNode) : Tree {
 
     override val parent: Tree? by lazy {
-        astNode.parent?.asSemantic()?.tree
+        astNode.parent.asSemantic().tree
     }
 
 }
