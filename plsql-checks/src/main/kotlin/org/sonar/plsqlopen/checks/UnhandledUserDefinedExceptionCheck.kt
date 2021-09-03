@@ -69,7 +69,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
         do {
             val scopeNode = outerScope?.tree()
 
-            val statements = scopeNode?.getFirstChild(PlSqlGrammar.STATEMENTS_SECTION)
+            val statements = scopeNode?.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)
             if (statements != null) {
                 for (handler in statements.getChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
                     if (handler.hasDirectChildren(PlSqlKeyword.OTHERS) && !handler.hasDescendant(PlSqlKeyword.SQLERRM)) {

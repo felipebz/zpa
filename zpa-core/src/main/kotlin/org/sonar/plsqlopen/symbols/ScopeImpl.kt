@@ -41,7 +41,7 @@ class ScopeImpl(private val outer: Scope?,
     override fun identifier(): String? {
         if (identifier == null) {
             identifier = ""
-            val identifierNode = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
+            val identifierNode = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
             if (identifierNode != null) {
                 this.identifier = identifierNode.tokenOriginalValue
             }

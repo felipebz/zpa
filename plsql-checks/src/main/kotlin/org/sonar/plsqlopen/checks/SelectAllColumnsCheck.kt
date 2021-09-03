@@ -39,7 +39,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         val topParent = node.parent.parent.parent
-        if (topParent == null || topParent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
+        if (topParent.typeIs(PlSqlGrammar.EXISTS_EXPRESSION)) {
             return
         }
 

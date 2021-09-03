@@ -76,7 +76,7 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun visitToken(ast: AstNode) {
-        if (ast.token != null && lastVisitedToken !== ast.token) {
+        if (ast.hasToken() && lastVisitedToken !== ast.token) {
             lastVisitedToken = ast.token
             for (astAndTokenVisitor in checks) {
                 astAndTokenVisitor.visitToken(ast.token)

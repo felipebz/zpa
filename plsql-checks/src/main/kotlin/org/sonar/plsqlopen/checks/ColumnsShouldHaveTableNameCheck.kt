@@ -41,7 +41,7 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
             candidate = candidate.firstChild
         }
 
-        val selectExpression = node.parent
+        val selectExpression = node.parentOrNull
         if (selectExpression != null &&
             selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size > 1 &&
             candidate.typeIs(PlSqlGrammar.IDENTIFIER_NAME) &&
