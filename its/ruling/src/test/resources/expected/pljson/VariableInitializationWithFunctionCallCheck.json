@@ -1,0 +1,54 @@
+{
+  "examples/ex13.sql": [
+    30,
+    45
+  ],
+  "examples/ex14.sql": [
+    29,
+    40
+  ],
+  "src/addons/json_dyn.sql": [
+    76
+  ],
+  "src/addons/json_helper.sql": [
+    325,
+    326,
+    370,
+    393
+  ],
+  "src/addons/json_xml.sql": [
+    142
+  ],
+  "src/json_body.typ": [
+    101
+  ],
+  "src/json_ext.sql": [
+    437,
+    453,
+    583,
+    595,
+    651,
+    652,
+    663,
+    715,
+    727,
+    774,
+    775,
+    786
+  ],
+  "src/json_list_body.typ": [
+    53,
+    110,
+    270,
+    283,
+    296,
+    314,
+    331
+  ],
+  "src/json_printer.sql": [
+    311,
+    323,
+    338,
+    551
+  ]
+}

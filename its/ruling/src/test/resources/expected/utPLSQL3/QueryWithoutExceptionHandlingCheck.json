@@ -1,0 +1,112 @@
+{
+  "examples/award_bonus/award_bonus.sql": [
+    8
+  ],
+  "source/api/ut.pkb": [
+    561
+  ],
+  "source/check_sys_grants.sql": [
+    15
+  ],
+  "source/core/annotations/ut_annotation_manager.pkb": [
+    143
+  ],
+  "source/core/coverage/proftab.sql": [
+    4,
+    33,
+    64,
+    96
+  ],
+  "source/core/output_buffers/ut_output_table_buffer.tpb": [
+    32
+  ],
+  "source/core/ut_dbms_output_cache.sql": [
+    22
+  ],
+  "source/core/ut_metadata.pkb": [
+    166
+  ],
+  "source/core/ut_utils.pkb": [
+    568
+  ],
+  "source/expectations/data_values/ut_compound_data_helper.pkb": [
+    163
+  ],
+  "source/expectations/data_values/ut_curr_usr_compound_helper.pkb": [
+    100,
+    106,
+    109,
+    189
+  ],
+  "source/uninstall_coverage_tables.sql": [
+    23
+  ],
+  "test/api/test_ut_run.pkb": [
+    520
+  ],
+  "test/api/test_ut_runner.pkb": [
+    254,
+    261,
+    319
+  ],
+  "test/core/annotations/test_annotation_manager.pkb": [
+    77,
+    85,
+    108,
+    116,
+    136,
+    177,
+    214
+  ],
+  "test/core/expectations/test_expectations_cursor.pkb": [
+    1817,
+    1823,
+    1849,
+    1855,
+    1881,
+    1887,
+    1913,
+    1920,
+    1957,
+    1963
+  ],
+  "test/core/reporters/test_coverage.pkb": [
+    6
+  ],
+  "test/core/reporters/test_extended_coverage.pkb": [
+    8,
+    16
+  ],
+  "test/core/reporters/test_junit_reporter.pkb": [
+    169
+  ],
+  "test/core/reporters/test_tfs_junit_reporter.pkb": [
+    152
+  ],
+  "test/core/test_output_buffer.pkb": [
+    13,
+    17,
+    42,
+    59,
+    64
+  ],
+  "test/core/test_suite_builder.pkb": [
+    19
+  ],
+  "test/core/test_ut_executable.pkb": [
+    75
+  ],
+  "test/core/test_ut_utils.pkb": [
+    10,
+    271
+  ],
+  "test/helpers/other_dummy_object.tps": [
+    4
+  ],
+  "test/helpers/test_dummy_object.tps": [
+    4
+  ],
+  "test/helpers/ut_test_table.sql": [
+    4
+  ]
+}

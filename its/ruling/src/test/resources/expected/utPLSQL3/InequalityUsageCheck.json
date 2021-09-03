@@ -1,0 +1,65 @@
+{
+  "development/utplsql_style_check.sql": [
+    28,
+    45
+  ],
+  "examples/award_bonus/test_award_bonus.pkg": [
+    53
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.AllowsDescriptionsWithComma.sql": [
+    57
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.CacheInvalidaesOnPackageDrop.sql": [
+    41
+  ],
+  "old_tests/ut_test/ut_test.TestOutputGathering.sql": [
+    92
+  ],
+  "old_tests/ut_test/ut_test.TestOutputGatheringWhenEmpty.sql": [
+    44
+  ],
+  "old_tests/ut_utils/ut_utils.append_to_clob.worksWithMultiByteChars.sql": [
+    31
+  ],
+  "source/check_sys_grants.sql": [
+    10
+  ],
+  "source/core/annotations/ut_annotation_manager.pkb": [
+    112
+  ],
+  "source/core/annotations/ut_annotation_parser.pkb": [
+    81
+  ],
+  "source/core/types/ut_executable.tpb": [
+    91,
+    94,
+    170
+  ],
+  "source/core/ut_suite_manager.pkb": [
+    73
+  ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb": [
+    245
+  ],
+  "source/reporters/ut_documentation_reporter.tpb": [
+    70,
+    77
+  ],
+  "source/reporters/ut_junit_reporter.tpb": [
+    43,
+    113
+  ],
+  "source/reporters/ut_tfs_junit_reporter.tpb": [
+    118
+  ],
+  "source/uninstall_synonyms.sql": [
+    14
+  ],
+  "test/api/test_ut_run.pkb": [
+    30,
+    33
+  ],
+  "test/install_tests.sql": [
+    129
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "examples/ex8.sql": [
+    62,
+    66,
+    73
+  ],
+  "src/addons/json_helper.sql": [
+    373,
+    376,
+    396,
+    399
+  ]
+}

@@ -22,11 +22,13 @@ package org.sonar.plsqlopen.it
 import com.google.gson.GsonBuilder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import org.sonar.plsqlopen.checks.CheckList
 import org.sonar.plsqlopen.checks.InvalidReferenceToObjectCheck
 import org.sonar.plsqlopen.checks.ParsingErrorCheck
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.squid.AstScanner
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -176,7 +178,7 @@ class PlSqlRulingTest {
         val metadataFilePath = Paths.get(baseDir.absolutePath, "metadata.json")
         val metadata = if (metadataFilePath.exists()) FormsMetadata.loadFromFile(metadataFilePath.toString()) else null
 
-        val checks = listOf(ParsingErrorCheck(), InvalidReferenceToObjectCheck())
+        val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
         val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8)
 
         val issues = baseDir
@@ -186,6 +188,7 @@ class PlSqlRulingTest {
             .map { scanner.scanFile(InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8)) }
             .flatMap { it.issues }
 
+        var differences = ""
         for (check in checks) {
             val export = issues.filter { it.check == check }
                 .groupBy({ (it.file as InputFile).pathRelativeToBase }, { it.primaryLocation.startLine() })
@@ -196,14 +199,18 @@ class PlSqlRulingTest {
             val expectedContent = if (expectedFile.exists()) expectedFile.readText() else null
 
             if (actualContent == null && expectedFile.exists()) {
-                fail("Expected issues on $expectedFile were not found")
+                differences += "\nExpected issues on $expectedFile were not found"
             } else if (actualContent != null && expectedContent != actualContent) {
                 val actualFile = File("target/actual/$project/${check::class.simpleName}.json")
                 actualFile.parentFile.mkdirs()
                 actualFile.writeText(actualContent)
 
-                fail("Issues differences on $expectedFile")
+                differences += "\nIssues differences on $expectedFile"
             }
+        }
+
+        if (differences.isNotEmpty()) {
+            fail(differences)
         }
     }
 

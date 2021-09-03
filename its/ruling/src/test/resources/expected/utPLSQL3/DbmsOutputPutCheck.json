@@ -1,0 +1,240 @@
+{
+  "examples/developer_examples/RunExampleTestAnnotationsParsingTimeHugePackage.sql": [
+    17,
+    18
+  ],
+  "examples/developer_examples/RunExampleTestSuite.sql": [
+    37,
+    38,
+    39,
+    40,
+    43,
+    44,
+    47
+  ],
+  "old_tests/helpers/test_reporters.pkb": [
+    6,
+    12,
+    17,
+    22,
+    28,
+    35,
+    43,
+    51,
+    57,
+    62
+  ],
+  "old_tests/lib/RunSummary.sql": [
+    4,
+    11,
+    13
+  ],
+  "old_tests/lib/RunTest.sql": [
+    16,
+    17,
+    18
+  ],
+  "old_tests/lib/mystats/mystats_pkg.sql": [
+    193,
+    194,
+    195,
+    196,
+    212,
+    218,
+    219,
+    331,
+    337,
+    346,
+    350,
+    351,
+    361,
+    367,
+    369,
+    421,
+    441
+  ],
+  "old_tests/ut_expectations/ut_expectation_processor.stackOnFailedTest.sql": [
+    36
+  ],
+  "old_tests/ut_expectations/ut_expectation_processor.stackOnUtFail.sql": [
+    36
+  ],
+  "old_tests/ut_metadata/ut_metadata.form_name.TrimStandaloneProgramName.sql": [
+    14
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.providesCorrectLineFromStacktrace.sql": [
+    29
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.reportMultipleWarnings.sql": [
+    69,
+    70
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.reportTestTiming.sql": [
+    45
+  ],
+  "old_tests/ut_reporters/ut_html_reporter.DefaultSchemaCoverage.sql": [
+    15
+  ],
+  "old_tests/ut_reporters/ut_html_reporter.UserOverrideSchemaCoverage.sql": [
+    16
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.AllowsDescriptionsWithComma.sql": [
+    58
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.CacheInvalidaesOnPackageDrop.sql": [
+    42
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.get_schema_ut_packages.IncludesPackagesWithSutePath.sql": [
+    23,
+    24
+  ],
+  "old_tests/ut_test/ut_test.AfterEachProcedureNameNull.sql": [
+    17
+  ],
+  "old_tests/ut_test/ut_test.ApplicationInfoOnExecution.sql": [
+    45,
+    105,
+    110,
+    115,
+    120,
+    125,
+    130,
+    137,
+    139
+  ],
+  "old_tests/ut_test/ut_test.BeforeEachProcedureNameNull.sql": [
+    18
+  ],
+  "old_tests/ut_test/ut_test.IgnoreTollbackToSavepointException.sql": [
+    14
+  ],
+  "old_tests/ut_test/ut_test.OwnerNameInvalid.sql": [
+    14
+  ],
+  "old_tests/ut_test/ut_test.PackageInInvalidState.sql": [
+    19
+  ],
+  "old_tests/ut_test/ut_test.PackageNameInvalid.sql": [
+    13
+  ],
+  "old_tests/ut_test/ut_test.PackageNameNull.sql": [
+    13
+  ],
+  "old_tests/ut_test/ut_test.ProcedureNameInvalid.sql": [
+    13
+  ],
+  "old_tests/ut_test/ut_test.ProcedureNameNull.sql": [
+    13
+  ],
+  "old_tests/ut_test/ut_test.ReportWarningOnRollbackFailed.sql": [
+    49,
+    51
+  ],
+  "old_tests/ut_test/ut_test.SetupProcedureNameNull.sql": [
+    18
+  ],
+  "old_tests/ut_test/ut_test.TeardownProcedureNameNull.sql": [
+    17
+  ],
+  "old_tests/ut_test/ut_test.TestOutputGathering.sql": [
+    33,
+    39,
+    44,
+    50,
+    56,
+    62,
+    67,
+    94,
+    96
+  ],
+  "old_tests/ut_test/ut_test.TestOutputGatheringWhenEmpty.sql": [
+    18,
+    46,
+    48
+  ],
+  "old_tests/ut_utils/ut_utils.append_to_clob.worksWithMultiByteChars.sql": [
+    33,
+    34
+  ],
+  "old_tests/ut_utils/ut_utils.clob_to_table_multibyte.sql": [
+    19
+  ],
+  "old_tests/ut_utils/ut_utils.test_result_to_char.RunsWithInvalidValues.sql": [
+    12
+  ],
+  "old_tests/ut_utils/ut_utils.test_result_to_char.RunsWithNullValue.sql": [
+    12
+  ],
+  "old_tests/ut_utils/ut_utils.test_result_to_char.Success.sql": [
+    12
+  ],
+  "source/api/ut_runner.pkb": [
+    147,
+    148
+  ],
+  "source/core/annotations/ut_annotation_parser.pkb": [
+    221,
+    223
+  ],
+  "source/core/coverage/proftab.sql": [
+    25,
+    56,
+    88,
+    102
+  ],
+  "source/core/output_buffers/ut_output_table_buffer.tpb": [
+    139
+  ],
+  "source/core/ut_utils.pkb": [
+    73,
+    85,
+    481,
+    483
+  ],
+  "source/install.sql": [
+    325,
+    326
+  ],
+  "source/uninstall.sql": [
+    34,
+    35,
+    36
+  ],
+  "source/uninstall_all.sql": [
+    36,
+    37,
+    38
+  ],
+  "source/uninstall_coverage_tables.sql": [
+    15,
+    29
+  ],
+  "source/uninstall_objects.sql": [
+    275,
+    288,
+    293,
+    298,
+    299
+  ],
+  "source/uninstall_synonyms.sql": [
+    6,
+    21,
+    24,
+    27,
+    28,
+    35,
+    52,
+    57,
+    61,
+    62
+  ],
+  "test/api/test_ut_runner.pkb": [
+    201
+  ],
+  "test/core/test_ut_executable.pkb": [
+    96
+  ],
+  "test/install_tests.sql": [
+    139
+  ]
+}

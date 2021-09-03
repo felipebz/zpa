@@ -1,0 +1,152 @@
+{
+  "examples/ex10.sql": [
+    46,
+    50,
+    54,
+    58,
+    62,
+    66,
+    70
+  ],
+  "examples/ex11.sql": [
+    45,
+    46,
+    51,
+    52
+  ],
+  "examples/ex12.sql": [
+    31,
+    33
+  ],
+  "examples/ex13.sql": [
+    34
+  ],
+  "examples/ex14.sql": [
+    35,
+    46
+  ],
+  "examples/ex17.sql": [
+    45,
+    47,
+    48
+  ],
+  "examples/ex2.sql": [
+    34,
+    35
+  ],
+  "examples/ex3.sql": [
+    44,
+    46
+  ],
+  "examples/ex4.sql": [
+    31,
+    31,
+    52,
+    55,
+    59
+  ],
+  "examples/ex5.sql": [
+    31,
+    31,
+    54
+  ],
+  "examples/ex6.sql": [
+    34,
+    34
+  ],
+  "examples/ex7.sql": [
+    32,
+    32,
+    40
+  ],
+  "examples/ex8.sql": [
+    94,
+    103,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122
+  ],
+  "examples/ex9.sql": [
+    53,
+    55,
+    58,
+    60,
+    64,
+    67,
+    76,
+    82,
+    88
+  ],
+  "src/addons/json_util_pkg.sql": [
+    332,
+    333,
+    336,
+    337
+  ],
+  "src/json_ext.sql": [
+    568,
+    614,
+    615,
+    682,
+    683,
+    746,
+    747,
+    805,
+    806
+  ],
+  "src/json_parser.sql": [
+    144,
+    149
+  ],
+  "src/json_printer.sql": [
+    555,
+    567,
+    578,
+    587,
+    593
+  ],
+  "testsuite/json_ext_test.sql": [
+    30,
+    37
+  ],
+  "testsuite/json_helper_test.sql": [
+    30,
+    37
+  ],
+  "testsuite/json_list_test.sql": [
+    30,
+    37
+  ],
+  "testsuite/json_parser_test.sql": [
+    31,
+    38,
+    72,
+    82,
+    127,
+    128,
+    182,
+    192,
+    193,
+    194
+  ],
+  "testsuite/json_path_test.sql": [
+    15,
+    22
+  ],
+  "testsuite/json_test.sql": [
+    15,
+    22
+  ],
+  "testsuite/json_unicode_test.sql": [
+    56,
+    63,
+    243
+  ],
+  "testsuite/simple_test.sql": [
+    15,
+    22
+  ]
+}

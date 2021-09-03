@@ -1,0 +1,10 @@
+{
+  "src/json_body.typ": [
+    74,
+    105
+  ],
+  "testsuite/json_parser_test.sql": [
+    42,
+    61
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "extras/pdfgen_pkg.pkb": [
+    878,
+    897
+  ],
+  "extras/utl_file_nonstandard.pkb": [
+    26,
+    27
+  ],
+  "ora/amazon_aws_auth_pkg.pkb": [
+    20
+  ],
+  "ora/amazon_aws_s3_pkg.pks": [
+    54
+  ],
+  "ora/ftp_util_pkg.pkb": [
+    146,
+    642,
+    684
+  ],
+  "ora/google_translate_pkg.pkb": [
+    17,
+    145
+  ],
+  "ora/google_translate_pkg.pks": [
+    108
+  ],
+  "ora/paypal_util_pkg.pkb": [
+    207
+  ],
+  "ora/sylk_util_pkg.pkb": [
+    53,
+    148
+  ]
+}

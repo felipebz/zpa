@@ -1,0 +1,192 @@
+{
+  "examples/award_bonus/test_award_bonus.pkg": [
+    40,
+    53
+  ],
+  "examples/remove_rooms_by_name/test_remove_rooms_by_name.pkg": [
+    52,
+    56,
+    64,
+    74,
+    83,
+    93
+  ],
+  "old_tests/ut_expectations/ut_expectation_processor.stackOnFailedTest.sql": [
+    26
+  ],
+  "old_tests/ut_expectations/ut_expectation_processor.stackOnUtFail.sql": [
+    26
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.providesCorrectLineFromStacktrace.sql": [
+    19
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.reportMultipleWarnings.sql": [
+    59
+  ],
+  "old_tests/ut_reporters/ut_documentation_reporter.reportTestTiming.sql": [
+    35
+  ],
+  "old_tests/ut_reporters/ut_html_reporter.DefaultSchemaCoverage.sql": [
+    7
+  ],
+  "old_tests/ut_reporters/ut_html_reporter.UserOverrideSchemaCoverage.sql": [
+    7
+  ],
+  "old_tests/ut_suite_manager/ut_suite_manager.CacheInvalidaesOnPackageDrop.sql": [
+    21,
+    34
+  ],
+  "old_tests/ut_test/ut_test.ReportWarningOnRollbackFailed.sql": [
+    27
+  ],
+  "source/core/output_buffers/ut_output_table_buffer.tpb": [
+    84
+  ],
+  "test/api/test_ut_run.pkb": [
+    507,
+    599,
+    623,
+    669
+  ],
+  "test/api/test_ut_runner.pkb": [
+    164,
+    170,
+    205,
+    222,
+    231,
+    236,
+    241,
+    283,
+    305,
+    440,
+    453,
+    466,
+    479,
+    492,
+    506,
+    525
+  ],
+  "test/core.pkb": [
+    61
+  ],
+  "test/core/annotations/test_annot_throws_exception.pkb": [
+    236
+  ],
+  "test/core/annotations/test_annotation_manager.pkb": [
+    249
+  ],
+  "test/core/annotations/test_before_after_test_annotation.pkb": [
+    203,
+    218,
+    229,
+    242,
+    254,
+    267,
+    275,
+    295
+  ],
+  "test/core/expectations/test_expectations_cursor.pkb": [
+    89,
+    90,
+    133,
+    145,
+    157,
+    169,
+    181,
+    203,
+    215,
+    228,
+    880
+  ],
+  "test/core/expectations/unary/test_expect_to_be_empty.pkb": [
+    12,
+    23,
+    36,
+    53,
+    64
+  ],
+  "test/core/expectations/unary/test_expect_to_have_count.pkb": [
+    12,
+    23,
+    36,
+    51,
+    62
+  ],
+  "test/core/reporters.pkb": [
+    141
+  ],
+  "test/core/reporters/test_coverage.pkb": [
+    141,
+    163,
+    186,
+    210,
+    230,
+    244
+  ],
+  "test/core/reporters/test_coverage/test_cov_cobertura_reporter.pkb": [
+    28
+  ],
+  "test/core/reporters/test_coverage/test_coverage_sonar_reporter.pkb": [
+    18
+  ],
+  "test/core/reporters/test_coverage/test_coveralls_reporter.pkb": [
+    21,
+    60
+  ],
+  "test/core/reporters/test_coverage/test_html_extended_reporter.pkb": [
+    12
+  ],
+  "test/core/reporters/test_coverage/test_html_proftab_reporter.pkb": [
+    12
+  ],
+  "test/core/reporters/test_documentation_reporter.pkb": [
+    46
+  ],
+  "test/core/reporters/test_extended_coverage.pkb": [
+    125,
+    147,
+    172
+  ],
+  "test/core/reporters/test_junit_reporter.pkb": [
+    100,
+    114,
+    128,
+    142,
+    155,
+    174,
+    189,
+    216,
+    238,
+    294,
+    306,
+    329
+  ],
+  "test/core/reporters/test_sonar_test_reporter.pkb": [
+    17
+  ],
+  "test/core/reporters/test_teamcity_reporter.pkb": [
+    77,
+    96,
+    115
+  ],
+  "test/core/reporters/test_tfs_junit_reporter.pkb": [
+    78,
+    92,
+    106,
+    119,
+    132,
+    157,
+    172,
+    185
+  ],
+  "test/core/test_output_buffer.pkb": [
+    13,
+    31,
+    59
+  ],
+  "test/core/test_suite_manager.pkb": [
+    1022,
+    1028,
+    1065
+  ]
+}

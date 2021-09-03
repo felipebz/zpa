@@ -1,0 +1,14 @@
+{
+  "old_tests/ut_utils/ut_utils.clob_to_table_multibyte.sql": [
+    6
+  ],
+  "source/core/types/ut_executable_test.tpb": [
+    30
+  ],
+  "test/core/expectations/test_expectations_cursor.pkb": [
+    588
+  ],
+  "test/core/test_ut_utils.pkb": [
+    290
+  ]
+}
