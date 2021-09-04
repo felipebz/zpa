@@ -19,13 +19,12 @@
  */
 package org.sonar.plsqlopen.lexer
 
-import com.sonar.sslr.api.Token
 import com.sonar.sslr.api.TokenType
 import com.sonar.sslr.test.lexer.LexerMatchers.hasComment
 import com.sonar.sslr.test.lexer.LexerMatchers.hasToken
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.not
-import org.junit.Assert.assertThat
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
@@ -40,14 +39,14 @@ class PlSqlLexerTest {
 
     @Test
     fun multilineComment() {
-        assertThat<List<Token>>(lexer.lex("/* multine \n comment */"), hasComment("/* multine \n comment */"))
-        assertThat<List<Token>>(lexer.lex("/**/"), hasComment("/**/"))
+        assertThat(lexer.lex("/* multine \n comment */"), hasComment("/* multine \n comment */"))
+        assertThat(lexer.lex("/**/"), hasComment("/**/"))
     }
 
     @Test
     fun inlineComment() {
-        assertThat<List<Token>>(lexer.lex("before -- inline \n new line"), hasComment("-- inline "))
-        assertThat<List<Token>>(lexer.lex("--"), hasComment("--"))
+        assertThat(lexer.lex("before -- inline \n new line"), hasComment("-- inline "))
+        assertThat(lexer.lex("--"), hasComment("--"))
     }
 
     @Test
@@ -154,11 +153,11 @@ class PlSqlLexerTest {
     }
 
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {
-        assertThat<List<Token>>(lexer.lex(sourceCode), hasToken(sourceCode, tokenType))
+        assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType))
     }
 
     private fun assertThatIsNotToken(sourceCode: String, tokenType: TokenType) {
-        assertThat<List<Token>>(lexer.lex(sourceCode), not<List<Token>>(hasToken(sourceCode, tokenType)))
+        assertThat(lexer.lex(sourceCode), not(hasToken(sourceCode, tokenType)))
     }
 
     @Test
