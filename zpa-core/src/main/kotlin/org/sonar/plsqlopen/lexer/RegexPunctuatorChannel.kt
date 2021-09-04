@@ -57,7 +57,7 @@ class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer>() {
         }
     }
 
-    override fun consume(code: CodeReader, lexer: Lexer): Boolean {
+    override fun consume(code: CodeReader, output: Lexer): Boolean {
         for ((punctuator, matcher) in tokenMatchers) {
             try {
                 if (code.popTo(matcher, tmpBuilder) > 0) {
@@ -66,12 +66,12 @@ class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer>() {
                     val token = tokenBuilder
                             .setType(punctuator)
                             .setValueAndOriginalValue(value)
-                            .setURI(lexer.uri)
+                            .setURI(output.uri)
                             .setLine(code.previousCursor.line)
                             .setColumn(code.previousCursor.column)
                             .build()
 
-                    lexer.addToken(token)
+                    output.addToken(token)
 
                     tmpBuilder.delete(0, tmpBuilder.length)
                     return true

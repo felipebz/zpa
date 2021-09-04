@@ -120,7 +120,7 @@ class PlSqlSquidSensorTest {
         assertThat(context.measure(key, CoreMetrics.COMPLEXITY)).isNull()
         assertThat(context.measure(key, CoreMetrics.FUNCTIONS)).isNull()
         assertThat(context.measure(key, CoreMetrics.STATEMENTS)).isNull()
-        verifyZeroInteractions(fileLinesContext)
+        verifyNoInteractions(fileLinesContext)
 
         // but should save highlighting data
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD)
