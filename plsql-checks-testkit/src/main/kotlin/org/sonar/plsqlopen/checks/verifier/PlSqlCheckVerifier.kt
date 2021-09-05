@@ -20,8 +20,6 @@
 package org.sonar.plsqlopen.checks.verifier
 
 import com.sonar.sslr.api.Trivia
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
@@ -47,7 +45,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
                 val shiftValue = spaceSplit[0]
 
                 if (shiftValue[1] != '+' && shiftValue[1] != '-') {
-                    fail("Use only '@+N' or '@-N' to shifts messages.")
+                    throw AssertionError("Use only '@+N' or '@-N' to shifts messages.")
                 }
 
                 issueLine += Integer.valueOf(shiftValue.substring(1))
@@ -80,12 +78,9 @@ class PlSqlCheckVerifier : PlSqlCheck() {
         val line = token.line
         val text = token.value
         if (token.column > 1) {
-            throw IllegalStateException(
-                    "Line $line: comments asserting a precise location should start at column 1")
+            throw IllegalStateException("Line $line: comments asserting a precise location should start at column 1")
         }
-        val missingAssertionMessage = String.format(
-                "Invalid test file: a precise location is provided at line %s but no issue is asserted at line %s",
-                line, line - 1)
+        val missingAssertionMessage = "Invalid test file: a precise location is provided at line $line but no issue is asserted at line ${line - 1}"
         if (expectedIssues.isEmpty()) {
             throw IllegalStateException(missingAssertionMessage)
         }
@@ -116,42 +111,37 @@ class PlSqlCheckVerifier : PlSqlCheck() {
                 if (actualIssues.hasNext()) {
                     verifyIssue(expected, actualIssues.next())
                 } else {
-                    throw AssertionError("Missing issue at line " + expected.line)
+                    throw AssertionError("Missing issue at line ${expected.line}")
                 }
             }
 
             if (actualIssues.hasNext()) {
                 val issue = actualIssues.next()
-                throw AssertionError(
-                        "Unexpected issue at line " + line(issue) + ": \"" + issue.primaryLocation().message() + "\"")
+                throw AssertionError("Unexpected issue at line ${line(issue)}: \"${issue.primaryLocation().message()}\"")
             }
 
         }
 
         private fun verifyIssue(expected: TestIssue, actual: PreciseIssue) {
             if (line(actual) > expected.line) {
-                fail("Missing issue at line " + expected.line)
+                throw AssertionError("Missing issue at line ${expected.line}")
             }
             if (line(actual) < expected.line) {
-                fail("Unexpected issue at line " + line(actual) + ": \"" + actual.primaryLocation().message() + "\"")
+                throw AssertionError("Unexpected issue at line ${line(actual)}: \"${actual.primaryLocation().message()}\"")
             }
-            expected.message?.let {
-                assertEquals(it, actual.primaryLocation().message(), "Bad message at line " + expected.line)
+            assertEquals(expected.message, actual.primaryLocation().message(), "Bad message at line ${expected.line}")
+            assertEquals(expected.effortToFix, actual.cost(), "Bad effortToFix at line ${expected.line}")
+            assertEquals(expected.startColumn, actual.primaryLocation().startLineOffset() + 1, "Bad start column at line ${expected.line}")
+            assertEquals(expected.endColumn, actual.primaryLocation().endLineOffset() + 1, "Bad end column at line ${expected.line}")
+            assertEquals(expected.endLine, actual.primaryLocation().endLine(), "Bad end line at line ${expected.line}")
+            if (expected.secondaryLines != null && expected.secondaryLines != secondary(actual)) {
+                throw AssertionError("Bad secondary locations at line ${expected.line} ==> expected: ${expected.secondaryLines} but was: ${secondary(actual)}")
             }
-            expected.effortToFix?.let {
-                assertEquals(it, actual.cost(), "Bad effortToFix at line " + expected.line)
-            }
-            expected.startColumn?.let {
-                assertEquals(it, actual.primaryLocation().startLineOffset() + 1, "Bad start column at line " + expected.line)
-            }
-            expected.endColumn?.let {
-                assertEquals(it, actual.primaryLocation().endLineOffset() + 1, "Bad end column at line " + expected.line)
-            }
-            expected.endLine?.let {
-                assertEquals(it, actual.primaryLocation().endLine(), "Bad end line at line " + expected.line)
-            }
-            expected.secondaryLines?.let {
-                assertEquals(it, secondary(actual), "Bad secondary locations at line " + expected.line)
+        }
+
+        private fun assertEquals(expected: Any?, actual: Any?, message: String) {
+            if (expected != null && expected != actual) {
+                throw AssertionError(message)
             }
         }
 
