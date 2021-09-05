@@ -9,7 +9,7 @@ case "$TESTS" in
 
 ci)
   if [ "$BUILD_SOURCEBRANCH" == "refs/heads/main" ] && [ "$SYSTEM_PULLREQUEST_ISFORK" == "False" ]; then
-    ./gradlew --build-cache publish
+    ./gradlew --build-cache build publish
   else
     ./gradlew --build-cache build
   fi
