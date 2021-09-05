@@ -12,9 +12,7 @@ dependencies {
     implementation(Libs.flr_core)
     implementation(project(":zpa-core"))
     implementation(project(":plsql-checks"))
-    implementation(project(":plsql-checks-testkit")) {
-        exclude("org.junit.jupiter", "junit-jupiter")
-    }
+    implementation(project(":plsql-checks-testkit"))
     compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:${Versions.min_sonarqube_api}")
 }
 
