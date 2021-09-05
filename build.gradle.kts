@@ -130,3 +130,9 @@ subprojects {
         }
     }
 }
+
+sonarqube {
+    properties {
+        property("sonar.projectName", "Z PL/SQL Analyzer")
+    }
+}
