@@ -4,8 +4,7 @@ jobs:
       vmImage: 'ubuntu-latest'
 
     variables:
-      MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-      MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      GRADLE_USER_HOME: $(Pipeline.Workspace)/.cache/.gradle
 
     strategy:
       matrix:
@@ -24,17 +23,15 @@ jobs:
     steps:
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | "$(TESTS)" | "$(SQ_VERSION)" | azure-pipelines.yaml, **/pom.xml, !its/sources/**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
+          key: 'gradle | "$(Agent.OS)" | "$(TESTS)" | "$(SQ_VERSION)" | azure-pipelines.yaml, **/build.gradle.kts'
+          path: $(Pipeline.Workspace)/.cache
 
       - script: |
           ./ci.sh
-        displayName: 'Build with Maven'
+        displayName: 'Build'
         env:
           DEPLOY_TOKEN: $(DEPLOY_TOKEN)
           DEPLOY_USERNAME: $(DEPLOY_USERNAME)
-
 
   - job: Windows
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
@@ -42,30 +39,28 @@ jobs:
       vmImage: 'windows-latest'
 
     variables:
-      MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)\.cache\.m2\repository
+      GRADLE_USER_HOME: $(Pipeline.Workspace)\.cache\.gradle
       SONAR_USER_HOME: $(Pipeline.Workspace)\.cache\.sonar
-      MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
     steps:
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | azure-pipelines.yaml, **/pom.xml, !its/sources/**'
+          key: 'gradle | "$(Agent.OS)" | azure-pipelines.yaml, **/build.gradle.kts, !its/sources/**'
           path: $(Pipeline.Workspace)\.cache
         
       - task: SonarQubePrepare@4
         inputs:
           SonarQube: 'SonarQube'
-          scannerMode: 'Other' 
+          scannerMode: 'Other'
 
-      - task: Maven@3
+      - task: Gradle@2
         inputs:
-          goals: 'org.jacoco:jacoco-maven-plugin:prepare-agent package org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate'
-          options: '-Dsonar.branch.name='
+          gradleWrapperFile: 'gradlew'
+          tasks: 'build jacocoTestReport'
+          options: '--build-cache -Dsonar.branch.name='
           jdkVersionOption: 1.11
           sonarQubeRunAnalysis: true
-          mavenOptions: '$(MAVEN_OPTS)'
 
-      - task: PublishCodeCoverageResults@1
-        inputs:
-          summaryFileLocation: '$(System.DefaultWorkingDirectory)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'
-          reportDirectory: '$(System.DefaultWorkingDirectory)/report-aggregate/target/site/jacoco-aggregate'
+      - script: |
+          # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
+          ./gradlew --stop

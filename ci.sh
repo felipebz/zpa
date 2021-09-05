@@ -9,29 +9,26 @@ case "$TESTS" in
 
 ci)
   if [ "$BUILD_SOURCEBRANCH" == "refs/heads/main" ] && [ "$SYSTEM_PULLREQUEST_ISFORK" == "False" ]; then
-    ./mvnw $MAVEN_OPTS source:jar dokka:javadocJar deploy --settings=.settings.xml -B -e -V
+    ./gradlew --build-cache publish
   else
-    ./mvnw $MAVEN_OPTS verify -B -e -V
+    ./gradlew --build-cache build
   fi
   ;;
 
 it)
-  mkdir -p $MAVEN_CACHE_FOLDER
-
   git submodule update --init --recursive
 
-  ./mvnw install -Dmaven.test.skip=true -e -B
+  ./gradlew --build-cache publishToMavenLocal -x test
 
-  ./mvnw -f plsql-custom-rules/pom.xml package -e -B
+  mvn -f plsql-custom-rules/pom.xml package -e -B
 
-  cd its
-
-  if [ "$SQ_VERSION" == "LATEST_RELEASE[6.7]" ]; then
+  if [ "$SQ_VERSION" == "7.6" ]; then
     # To run the integration tests with SQ 6.7 we'll to use JDK 8
     JAVA_HOME=$JAVA_HOME_8_X64
   fi
-  ../mvnw $MAVEN_OPTS -Dsonar.runtimeVersion="$SQ_VERSION" -Pit verify -e -B -V
+  ./gradlew --build-cache test -Dsonar.runtimeVersion="$SQ_VERSION" -Pit
   ;;
 
 esac
 
+./gradlew --stop

@@ -61,13 +61,13 @@ To run the integrations tests, update the submodules:
     
 Build the main plugin and the custom rules example:
 
-    ./mvnw clean install
+    ./gradlew publishToMavenLocal
     ./mvnw -f plsql-custom-rules/pom.xml package
 
 Then run the tests:
 
-    ./mvnw test -Pit
+    ./gradlew test -Pit
 
 By default the tests will be executed using SonarQube 6.7.x LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[6.7]` (for SonarQube 6.7.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
 
-    ./mvnw test -Pit -Dsonar.runtimeVersion=7.7
+    ./gradlew test -Pit -Dsonar.runtimeVersion=7.7

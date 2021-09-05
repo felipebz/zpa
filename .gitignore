@@ -1,6 +1,5 @@
 *.pydevproject
 .metadata
-.gradle
 bin/
 tmp/
 *.tmp
@@ -47,3 +46,17 @@ dependency-reduced-pom.xml
 
 # SonarQube
 .scannerwork
+
+# ---- Gradle
+.gradle
+**/build/
+!src/**/build/
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Cache of project
+.gradletasknamecache
