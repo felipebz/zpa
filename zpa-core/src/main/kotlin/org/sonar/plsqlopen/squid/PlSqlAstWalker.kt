@@ -45,12 +45,21 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
         val tree = context.rootTree()
         if (tree != null) {
-            for (check in checks) {
-                check.visitFile(tree)
-            }
-            visit(tree)
-            for (check in checks) {
-                check.leaveFile(tree)
+            try {
+                for (check in checks) {
+                    check.visitFile(tree)
+                }
+                visit(tree)
+                for (check in checks) {
+                    check.leaveFile(tree)
+                }
+            } catch (e: Exception) {
+                val plsqlFile = context.plSqlFile()
+                if (plsqlFile != null) {
+                    throw AnalysisException("Error executing checks on file ${plsqlFile.fileName()}: ${e.message}", e)
+                } else {
+                    throw AnalysisException("Error executing checks: ${e.message}", e)
+                }
             }
         }
     }

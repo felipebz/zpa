@@ -26,6 +26,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.IssueLocation
+import org.sonar.plsqlopen.squid.AnalysisException
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.net.URI
 
@@ -96,8 +97,8 @@ class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute.sql",
                     noEffectCheck)
             fail("Test should fail")
-        } catch (e: IllegalStateException) {
-            assertThat(e).hasMessage("Invalid param at line 1: invalid")
+        } catch (e: AnalysisException) {
+            assertThat(e).hasMessage("Error executing checks on file check_verifier_incorrect_attribute.sql: Invalid param at line 1: invalid")
         }
     }
 
@@ -107,8 +108,8 @@ class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_attribute2.sql",
                     noEffectCheck)
             fail("Test should fail")
-        } catch (e: IllegalStateException) {
-            assertThat(e).hasMessage("Invalid param at line 1: invalid")
+        } catch (e: AnalysisException) {
+            assertThat(e).hasMessage("Error executing checks on file check_verifier_incorrect_attribute2.sql: Invalid param at line 1: invalid")
         }
     }
 
@@ -139,8 +140,8 @@ class PlSqlCheckVerifierTest {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_comment.sql", FakeCheck())
             fail("Test should fail")
-        } catch (e: IllegalStateException) {
-            assertThat(e).hasMessage("Line 3: comments asserting a precise location should start at column 1")
+        } catch (e: AnalysisException) {
+            assertThat(e).hasMessage("Error executing checks on file check_verifier_incorrect_comment.sql: Line 3: comments asserting a precise location should start at column 1")
         }
     }
 
@@ -148,8 +149,8 @@ class PlSqlCheckVerifierTest {
     fun verify_unexpected_precise_location() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location.sql", FakeCheck())
-        } catch (e: IllegalStateException) {
-            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
+        } catch (e: AnalysisException) {
+            assertThat(e).hasMessage("Error executing checks on file check_verifier_unexpected_precise_location.sql: Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
         }
     }
 
@@ -157,8 +158,8 @@ class PlSqlCheckVerifierTest {
     fun verify_unexpected_precise_location2() {
         try {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_unexpected_precise_location2.sql", FakeCheck())
-        } catch (e: IllegalStateException) {
-            assertThat(e).hasMessage("Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
+        } catch (e: AnalysisException) {
+            assertThat(e).hasMessage("Error executing checks on file check_verifier_unexpected_precise_location2.sql: Invalid test file: a precise location is provided at line 3 but no issue is asserted at line 2")
         }
     }
 
