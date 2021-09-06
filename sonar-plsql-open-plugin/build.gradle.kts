@@ -46,26 +46,22 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     }
 }
 
+tasks.build {
+    dependsOn(shadowJar)
+}
+
 tasks.jar {
     enabled = false
 }
 
 publishing {
     publications.withType<MavenPublication>().configureEach {
-        //artifact(shadowJar)
         project.extensions.configure<ShadowExtension> {
             val publication = this@configureEach
             publication.pom.withXml { asNode().remove((asNode().get("dependencies") as groovy.util.NodeList).first() as groovy.util.Node) }
             component(this@configureEach)
         }
     }
-    /*publications {
-        create<MavenPublication>("shadow") {
-            project.extensions.configure<com.github.jengelman.gradle.plugins.shadow.ShadowExtension>() {
-                component(this@create)
-            }
-        }
-    }*/
 }
 
 description = "Z PL/SQL Analyzer for SonarQube"
