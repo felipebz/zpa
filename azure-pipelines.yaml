@@ -61,12 +61,6 @@ jobs:
           jdkVersionOption: 1.11
           sonarQubeRunAnalysis: true
 
-      - task: PublishCodeCoverageResults@1
-        inputs:
-          codeCoverageTool: 'JaCoCo'
-          summaryFileLocation: '$(Pipeline.Workspace)/**/build/reports/jacoco/test/jacocoTestReport.xml'
-          reportDirectory: '$(Pipeline.Workspace)/**/build/reports/jacoco/test/html'
-
       - script: |
           # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
           ./gradlew --stop
