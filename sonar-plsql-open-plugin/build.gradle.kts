@@ -3,6 +3,8 @@ import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.ShadowExtension
+import groovy.util.Node
+import groovy.util.NodeList
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
@@ -54,11 +56,23 @@ tasks.jar {
     enabled = false
 }
 
+// Disable Gradle module metadata as it lists wrong dependencies
+tasks.withType<GenerateModuleMetadata> {
+    enabled = false
+}
+
 publishing {
     publications.withType<MavenPublication>().configureEach {
         project.extensions.configure<ShadowExtension> {
             val publication = this@configureEach
-            publication.pom.withXml { asNode().remove((asNode().get("dependencies") as groovy.util.NodeList).first() as groovy.util.Node) }
+            publication.pom.withXml {
+                val pomNode = asNode()
+
+                val dependencyNodes = pomNode.get("dependencies") as NodeList
+                dependencyNodes.forEach {
+                    (it as Node).parent().remove(it)
+                }
+            }
             component(this@configureEach)
         }
     }
