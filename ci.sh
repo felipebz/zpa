@@ -20,7 +20,7 @@ it)
 
   ./gradlew --build-cache publishToMavenLocal -x test
 
-  mvn -f plsql-custom-rules/pom.xml package -e -B
+  ./gradlew build -p plsql-custom-rules
 
   if [ "$SQ_VERSION" == "7.6" ]; then
     # To run the integration tests with SQ 6.7 we'll to use JDK 8

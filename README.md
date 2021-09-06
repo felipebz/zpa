@@ -60,8 +60,8 @@ To run the integrations tests, update the submodules:
     
 Build the main plugin and the custom rules example:
 
-    ./gradlew publishToMavenLocal
-    mvn -f plsql-custom-rules/pom.xml package
+    ./gradlew build publishToMavenLocal
+    ./gradlew build -p plsql-custom-rules
 
 Then run the tests:
 

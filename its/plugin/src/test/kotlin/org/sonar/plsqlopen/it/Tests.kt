@@ -42,7 +42,7 @@ object Tests {
                     File("../../sonar-plsql-open-plugin/build/libs"),
                     "sonar-plsql-open-plugin-*.jar"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    File("../../plsql-custom-rules/target"),
+                    File("../../plsql-custom-rules/build/libs"),
                     "plsql-custom-rules-*.jar"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/it-profile.xml"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build()
