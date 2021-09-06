@@ -6,6 +6,14 @@ end;
 /
 
 begin
+  -- This is not valid code as it causes "PLS-00428: an INTO clause is expected in this SELECT statement" when compiling on
+  -- the database, but I'll keep this example here because the file is being parser correctly and the check shouldn't crash.
+  select 1 -- Noncompliant {{Handle exceptions of this query.}}
+    from dual;
+end;
+/
+
+begin
   if (true) then 
     select 1 -- Noncompliant
       into var
