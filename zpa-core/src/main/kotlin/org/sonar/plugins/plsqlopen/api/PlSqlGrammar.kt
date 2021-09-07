@@ -239,12 +239,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         b.nextNot(b.firstOf(VALID_INPUT, EOF)),
                         b.anyToken()))
 
-                b.rule(FILE_INPUT).define(b.oneOrMore(b.firstOf(
+                b.rule(FILE_INPUT).define(b.zeroOrMore(b.firstOf(
                         VALID_INPUT,
                         RECOVERY)), EOF)
             } else {
                 b.rule(RECOVERY).define(b.nothing())
-                b.rule(FILE_INPUT).define(b.oneOrMore(VALID_INPUT), EOF)
+                b.rule(FILE_INPUT).define(b.zeroOrMore(VALID_INPUT), EOF)
             }
 
             createLiterals(b)
