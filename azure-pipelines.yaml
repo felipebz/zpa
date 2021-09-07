@@ -1,66 +1,83 @@
-jobs:
-  - job: Linux
-    pool:
-      vmImage: 'ubuntu-latest'
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-latest'
+    it-min:
+      imageName: 'ubuntu-latest'
+      sq_version: 7.6
+      jdkVersion: 1.8
+    it-latest:
+      imageName: 'ubuntu-latest'
+      sq_version: LATEST
+      jdkVersion: 1.11
+    it-dev:
+      imageName: 'ubuntu-latest'
+      sq_version: DEV
+      jdkVersion: 1.11
+    windows:
+      imageName: 'windows-latest'
 
-    variables:
-      GRADLE_USER_HOME: $(Pipeline.Workspace)/.cache/.gradle
+pool:
+  vmImage: $(imageName)
 
-    strategy:
-      matrix:
-        CI:
-          TESTS: ci
-        ITS-MIN:
-          TESTS: it
-          SQ_VERSION: 7.6
-        ITS-LATEST:
-          TESTS: it
-          SQ_VERSION: LATEST_RELEASE
-        ITS-NEXT:
-          TESTS: it
-          SQ_VERSION: DEV
+variables:
+  GRADLE_USER_HOME: $(Pipeline.Workspace)/.cache/.gradle
+  SONAR_USER_HOME: $(Pipeline.Workspace)/.cache/.sonar
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 
-    steps:
-      - task: Cache@2
-        inputs:
-          key: 'gradle | "$(Agent.OS)" | "$(TESTS)" | "$(SQ_VERSION)" | azure-pipelines.yaml, **/build.gradle.kts'
-          path: $(Pipeline.Workspace)/.cache
+steps:
+  - checkout: self
+    submodules: recursive
 
-      - script: |
-          ./ci.sh
-        displayName: 'Build'
-        env:
-          DEPLOY_TOKEN: $(DEPLOY_TOKEN)
-          DEPLOY_USERNAME: $(DEPLOY_USERNAME)
+  - task: Cache@2
+    inputs:
+      key: 'gradle | "$(Agent.OS)" | "${sq_version}" | azure-pipelines.yaml, **/build.gradle.kts, !its/sources/**'
+      path: $(Pipeline.Workspace)/.cache
 
-  - job: Windows
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    pool:
-      vmImage: 'windows-latest'
+  - task: Gradle@2
+    displayName: Build ZPA
+    inputs:
+      tasks: 'build'
+      options: '--build-cache'
 
-    variables:
-      GRADLE_USER_HOME: $(Pipeline.Workspace)\.cache\.gradle
-      SONAR_USER_HOME: $(Pipeline.Workspace)\.cache\.sonar
+  - task: Gradle@2
+    displayName: Build example of custom plugin
+    condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
+    inputs:
+      tasks: 'build -p plsql-custom-rules'
 
-    steps:
-      - task: Cache@2
-        inputs:
-          key: 'gradle | "$(Agent.OS)" | azure-pipelines.yaml, **/build.gradle.kts, !its/sources/**'
-          path: $(Pipeline.Workspace)\.cache
-        
-      - task: SonarQubePrepare@4
-        inputs:
-          SonarQube: 'SonarQube'
-          scannerMode: 'Other'
+  - task: Gradle@2
+    displayName: Run integration tests
+    condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
+    inputs:
+      tasks: 'test -Pit'
+      options: '--build-cache'
+      jdkVersionOption: $(jdkVersion)
 
-      - task: Gradle@2
-        inputs:
-          gradleWrapperFile: 'gradlew'
-          tasks: 'build jacocoTestReport'
-          options: '--build-cache -Dsonar.branch.name='
-          jdkVersionOption: 1.11
-          sonarQubeRunAnalysis: true
+  - task: SonarQubePrepare@4
+    displayName: Prepare SonarQube analysis
+    condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
+    inputs:
+      SonarQube: 'SonarQube'
+      scannerMode: 'Other'
 
-      - script: |
-          # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
-          ./gradlew --stop
+  - task: Gradle@2
+    displayName: Run SonarQube analysis
+    condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
+    inputs:
+      tasks: 'build'
+      options: '--build-cache -Dsonar.branch.name='
+      sonarQubeRunAnalysis: true
+
+  - task: Gradle@2
+    displayName: Publish artifacts
+    condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
+    inputs:
+      tasks: '--build-cache publish'
+    env:
+      DEPLOY_TOKEN: $(DEPLOY_TOKEN)
+      DEPLOY_USERNAME: $(DEPLOY_USERNAME)
+
+  - script: |
+      # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
+      ./gradlew --stop
