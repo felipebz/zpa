@@ -18,7 +18,7 @@ ci)
 it)
   git submodule update --init --recursive
 
-  ./gradlew --build-cache publishToMavenLocal -x test
+  ./gradlew --build-cache publishToMavenLocal -x test -x dokka
 
   ./gradlew build -p plsql-custom-rules
 
