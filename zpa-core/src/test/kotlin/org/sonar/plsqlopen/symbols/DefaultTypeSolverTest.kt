@@ -19,12 +19,12 @@
  */
 package org.sonar.plsqlopen.symbols
 
-import com.nhaarman.mockitokotlin2.whenever
 import com.sonar.sslr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.whenever
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
