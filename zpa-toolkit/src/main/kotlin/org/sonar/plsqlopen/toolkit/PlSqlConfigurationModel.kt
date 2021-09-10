@@ -38,7 +38,8 @@ class PlSqlConfigurationModel : AbstractConfigurationModel() {
 
     internal var errorRecoveryProperty = ConfigurationProperty("Error recovery",
         ERROR_RECOVERY_PROPERTY_KEY,
-        getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "true"))
+        getPropertyOrDefaultValue(ERROR_RECOVERY_PROPERTY_KEY, "true"),
+        Validators.booleanValidator())
 
     internal val configuration: PlSqlConfiguration
         get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), java.lang.Boolean.valueOf(errorRecoveryProperty.value))
