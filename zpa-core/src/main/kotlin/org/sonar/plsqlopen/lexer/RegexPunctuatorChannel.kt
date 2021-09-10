@@ -19,21 +19,17 @@
  */
 package org.sonar.plsqlopen.lexer
 
-import java.util.Arrays
-import java.util.Comparator
-import java.util.LinkedHashMap
-import java.util.regex.Matcher
-import java.util.regex.Pattern
-
-import org.sonar.sslr.channel.Channel
-import org.sonar.sslr.channel.CodeReader
-
 import com.sonar.sslr.api.Token
 import com.sonar.sslr.api.TokenType
 import com.sonar.sslr.impl.Lexer
 import com.sonar.sslr.impl.LexerException
+import org.sonar.sslr.channel.Channel
+import org.sonar.sslr.channel.CodeReader
+import java.util.*
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
-class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer>() {
+class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer> {
     private val tokenMatchers = LinkedHashMap<TokenType, Matcher>()
     private val tmpBuilder = StringBuilder()
     private val tokenBuilder = Token.builder()
