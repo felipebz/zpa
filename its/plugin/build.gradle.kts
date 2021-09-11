@@ -6,7 +6,7 @@ dependencies {
 
 tasks.test {
     onlyIf {
-        project.hasProperty("it")
+        project.hasProperty("it") || System.getProperty("idea.active") != null
     }
     filter {
         includeTestsMatching("org.sonar.plsqlopen.it.Tests")
