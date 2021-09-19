@@ -1,5 +1,5 @@
 object Versions {
-    const val junit = "5.7.2"
+    const val junit = "5.8.0"
     const val assertj = "3.20.2"
     const val mockito = "3.12.4"
     const val mockito_kotlin = "3.2.0"

@@ -1,6 +1,6 @@
-import java.util.Date
-import java.time.format.DateTimeFormatter
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 plugins {
     java
@@ -20,7 +20,7 @@ dependencies {
     compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:$minSonarQubeVersion")
     compileOnly("org.sonar.plsqlopen:sonar-plsql-open-plugin:3.0.0-SNAPSHOT")
     testImplementation("org.sonar.plsqlopen:plsql-checks-testkit:3.0.0-SNAPSHOT")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.7.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.0")
 }
 
 configurations {
