@@ -1,7 +1,7 @@
 /**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2021 Felipe Zorzo
- * mailto:felipebzorzo AT gmail DOT com
+ * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@ import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
-import java.util.*
 
 @Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")

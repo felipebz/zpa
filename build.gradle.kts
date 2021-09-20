@@ -136,6 +136,7 @@ subprojects {
                             id.set("felipebz")
                             name.set("Felipe Zorzo")
                             url.set("https://felipezorzo.com.br")
+                            email.set("felipe@felipezorzo.com.br")
                         }
                     }
                 }

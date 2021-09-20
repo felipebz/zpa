@@ -1,7 +1,7 @@
-/**
+/**Don't execute plugin its on IntelliJ automatically
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2021 Felipe Zorzo
- * mailto:felipebzorzo AT gmail DOT com
+ * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

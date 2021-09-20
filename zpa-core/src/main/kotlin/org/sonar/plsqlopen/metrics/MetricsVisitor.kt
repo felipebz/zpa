@@ -1,7 +1,7 @@
 /**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2021 Felipe Zorzo
- * mailto:felipebzorzo AT gmail DOT com
+ * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@ import com.sonar.sslr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer
-import java.util.*
 
 class MetricsVisitor : PlSqlCheck() {
 

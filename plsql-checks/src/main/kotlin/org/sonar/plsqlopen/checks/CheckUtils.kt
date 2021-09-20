@@ -1,7 +1,7 @@
 /**
  * Z PL/SQL Analyzer
  * Copyright (C) 2015-2021 Felipe Zorzo
- * mailto:felipebzorzo AT gmail DOT com
+ * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
-import java.util.*
 
 object CheckUtils {
 
