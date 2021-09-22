@@ -1,4 +1,4 @@
-rootProject.name = "plsql"
+rootProject.name = "zpa"
 include(":its:plugin")
 include(":its:ruling")
 include(":plsql-checks")
