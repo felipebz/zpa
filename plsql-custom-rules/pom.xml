@@ -30,8 +30,8 @@
 
     <dependency>
       <groupId>org.sonar.plsqlopen</groupId>
-      <artifactId>plsql-checks-testkit</artifactId>
-      <version>${sonarplsqlopen.version}</version>
+      <artifactId>zpa-checks-testkit</artifactId>
+      <version>${zpa.version}</version>
       <scope>test</scope>
     </dependency>
 

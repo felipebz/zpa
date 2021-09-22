@@ -14,13 +14,13 @@ dependencies {
     implementation(Libs.flr_core)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
-    implementation(project(":plsql-checks-testkit"))
+    implementation(project(":zpa-checks-testkit"))
     compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:${Versions.min_sonarqube_api}")
 }
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
-        exclude(project(":plsql-checks-testkit"))
+        exclude(project(":zpa-checks-testkit"))
     }
     relocate("com.sonar.sslr.api", "org.sonar.plugins.plsqlopen.api.sslr")
     archiveClassifier.set("")
