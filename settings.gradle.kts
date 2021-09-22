@@ -1,7 +1,7 @@
 rootProject.name = "zpa"
 include(":its:plugin")
 include(":its:ruling")
-include(":plsql-checks")
+include(":zpa-checks")
 include(":plsql-checks-testkit")
 include(":sonar-zpa-plugin")
 include(":zpa-core")

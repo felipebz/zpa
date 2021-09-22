@@ -1,6 +1,6 @@
 dependencies {
     testImplementation(project(":zpa-core"))
-    testImplementation(project(":plsql-checks"))
+    testImplementation(project(":zpa-checks"))
     testImplementation(Libs.gson)
     testImplementation("org.jsoup:jsoup:${Versions.jsoup}")
 }

@@ -1,10 +1,10 @@
-import java.util.Date
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.ShadowExtension
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import groovy.util.Node
 import groovy.util.NodeList
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
@@ -13,7 +13,7 @@ plugins {
 dependencies {
     implementation(Libs.flr_core)
     implementation(project(":zpa-core"))
-    implementation(project(":plsql-checks"))
+    implementation(project(":zpa-checks"))
     implementation(project(":plsql-checks-testkit"))
     compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:${Versions.min_sonarqube_api}")
 }

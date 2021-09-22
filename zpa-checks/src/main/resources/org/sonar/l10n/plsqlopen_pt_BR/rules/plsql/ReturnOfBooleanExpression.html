@@ -1,0 +1,19 @@
+<p>
+O retorno de literais boolean envolvidos em um IF-THEN-ELSE devem ser simplificados.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+IF expression THEN
+  RETURN TRUE;
+ELSE
+  RETURN FALSE;
+END IF;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+RETURN expression;
+</pre>
