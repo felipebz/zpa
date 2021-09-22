@@ -39,8 +39,8 @@ object Tests {
     val ORCHESTRATOR: Orchestrator = Orchestrator.builderEnv()
             .setSonarVersion(System.getProperty("sonar.runtimeVersion", "7.6"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    File("../../sonar-plsql-open-plugin/build/libs"),
-                    "sonar-plsql-open-plugin-*.jar"))
+                    File("../../sonar-zpa-plugin/build/libs"),
+                    "sonar-zpa-plugin-*.jar"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     File("../../plsql-custom-rules/build/libs"),
                     "plsql-custom-rules-*.jar"))
