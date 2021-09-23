@@ -66,6 +66,11 @@ subprojects {
         testLogging {
             events("passed", "skipped", "failed")
         }
+        finalizedBy(tasks.jacocoTestReport)
+    }
+
+    tasks.jacocoTestReport {
+        dependsOn(tasks.test) // tests are required to run before generating the report
     }
 
     jacoco {

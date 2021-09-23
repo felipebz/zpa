@@ -37,7 +37,7 @@ steps:
   - task: Gradle@2
     displayName: Build ZPA
     inputs:
-      tasks: 'build jacocoTestReport'
+      tasks: 'build publishToMavenLocal'
       options: '--build-cache'
 
   - task: Gradle@2
