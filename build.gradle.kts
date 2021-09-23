@@ -120,6 +120,15 @@ subprojects {
                     password = project.findProperty("gpr.key") as String? ?: System.getenv("DEPLOY_TOKEN")
                 }
             }
+            maven {
+                val releaseRepo = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                val snapshotRepo = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                url = if (project.version.toString().endsWith("SNAPSHOT")) snapshotRepo else releaseRepo
+                credentials {
+                    username = project.findProperty("ossrh.user") as String? ?: System.getenv("OSSRH_USERNAME")
+                    password = project.findProperty("ossrh.password") as String? ?: System.getenv("OSSRH_PASSWORD")
+                }
+            }
         }
         publications {
             create<MavenPublication>("maven") {
@@ -130,7 +139,9 @@ subprojects {
                 }
 
                 pom {
+                    name.set(project.description)
                     description.set(project.description)
+                    url.set("https://felipezorzo.com.br/zpa")
                     organization {
                         name.set("Felipe Zorzo")
                         url.set("https://felipezorzo.com.br")
@@ -144,6 +155,8 @@ subprojects {
                     }
                     scm {
                         url.set("https://github.com/felipebz/zpa")
+                        connection.set("scm:git:https://github.com/felipebz/zpa.git")
+                        developerConnection.set("scm:git:https://github.com/felipebz/zpa.git")
                     }
                     developers {
                         developer {

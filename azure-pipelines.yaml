@@ -84,6 +84,8 @@ steps:
     env:
       DEPLOY_TOKEN: $(DEPLOY_TOKEN)
       DEPLOY_USERNAME: $(DEPLOY_USERNAME)
+      OSSRH_USERNAME: $(OSSRH_USERNAME)
+      OSSRH_PASSWORD: $(OSSRH_PASSWORD)
 
   - script: |
       # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
