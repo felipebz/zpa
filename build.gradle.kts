@@ -6,6 +6,7 @@ import java.util.*
 plugins {
     `java-library`
     `maven-publish`
+    signing
     jacoco
     kotlin("jvm") version "1.5.31"
     id("org.jetbrains.dokka") version ("1.4.32")
@@ -39,6 +40,7 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "jacoco")
     apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "signing")
 
     dependencies {
         implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
@@ -99,6 +101,13 @@ subprojects {
         dependsOn(tasks.dokkaJavadoc)
         from(tasks.dokkaJavadoc.flatMap { it.outputDirectory })
         archiveClassifier.set("javadoc")
+    }
+
+    signing {
+        setRequired({
+            gradle.taskGraph.hasTask("publish")
+        })
+        sign(publishing.publications)
     }
 
     publishing {

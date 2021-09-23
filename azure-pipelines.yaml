@@ -34,6 +34,12 @@ steps:
       key: 'gradle | "$(Agent.OS)" | "${sq_version}" | azure-pipelines.yaml, **/build.gradle.kts, !its/sources/**'
       path: $(Pipeline.Workspace)/.cache
 
+  - task: DownloadSecureFile@1
+    condition: and(succeeded(), eq(variables.isMain, 'true'))
+    name: gpgKey
+    inputs:
+      secureFile: 'secring.gpg'
+
   - task: Gradle@2
     displayName: Build ZPA
     inputs:
@@ -73,7 +79,8 @@ steps:
     displayName: Publish artifacts
     condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
     inputs:
-      tasks: '--build-cache publish'
+      tasks: 'publish'
+      options: '--build-cache -Psigning.secretKeyRingFile=$(gpgKey.secureFilePath) -Psigning.keyId=$(GPG_KEY_ID) -Psigning.password=$(GPG_KEY_PASSWORD)'
     env:
       DEPLOY_TOKEN: $(DEPLOY_TOKEN)
       DEPLOY_USERNAME: $(DEPLOY_USERNAME)
