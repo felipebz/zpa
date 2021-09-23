@@ -3,7 +3,7 @@
 [![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) ](https://github.com/felipebz/zpa/releases/latest)
 [![Build Status](https://dev.azure.com/felipebz/z-plsql-analyzer/_apis/build/status/Build?branchName=main)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main)
 [![Azure DevOps tests](https://img.shields.io/azure-devops/tests/felipebz/z-plsql-analyzer/3/main.svg)](https://dev.azure.com/felipebz/z-plsql-analyzer/_build/latest?definitionId=3&branchName=main)
-[![Quality Gate Status](https://sonarqube.felipezorzo.com.br/api/project_badges/measure?project=org.sonar.plsqlopen%3Aplsql&metric=alert_status)](https://sonarqube.felipezorzo.com.br/dashboard?id=org.sonar.plsqlopen%3Aplsql)
+[![Quality Gate Status](https://sonarqube.felipezorzo.com.br/api/project_badges/measure?project=com.felipebz.zpa%3Azpa&metric=alert_status)](https://sonarqube.felipezorzo.com.br/dashboard?id=com.felipebz.zpa%3Azpa)
 
 The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle SQL code.
 
