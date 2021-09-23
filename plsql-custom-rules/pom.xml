@@ -22,14 +22,14 @@
     </dependency>
 
     <dependency>
-      <groupId>org.sonar.plsqlopen</groupId>
+      <groupId>com.felipebz.zpa</groupId>
       <artifactId>sonar-zpa-plugin</artifactId>
       <version>${zpa.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.sonar.plsqlopen</groupId>
+      <groupId>com.felipebz.zpa</groupId>
       <artifactId>zpa-checks-testkit</artifactId>
       <version>${zpa.version}</version>
       <scope>test</scope>

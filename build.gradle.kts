@@ -30,7 +30,7 @@ allprojects {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    group = "org.sonar.plsqlopen"
+    group = "com.felipebz.zpa"
     version = "3.0.0-SNAPSHOT"
 }
 
