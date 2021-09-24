@@ -41,7 +41,6 @@ import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.InterruptedIOException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import kotlin.streams.toList
 
 class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  private val formsMetadata: FormsMetadata?,
@@ -64,15 +63,13 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
 
         if (inputFile.type() == PlSqlFile.Type.MAIN) {
             checksToRun.addAll(
-                checks.stream()
-                    .filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
-                    .filter { check -> check is PlSqlCheck }
+                checks.filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
+                    .filterIsInstance<PlSqlCheck>()
                     .filter { check -> ruleHasScope(check, RuleInfo.Scope.MAIN) }
                     .toList())
         } else {
             checksToRun.addAll(
-                checks.stream()
-                    .filter { check -> check is PlSqlCheck }
+                checks.filterIsInstance<PlSqlCheck>()
                     .filter { check -> ruleHasScope(check, RuleInfo.Scope.TEST) }
                     .toList())
         }
