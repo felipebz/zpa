@@ -69,7 +69,7 @@ object PlSqlLexer {
         Lexer.builder()
             .withCharset(conf.charset)
             .withFailIfNoChannelToConsumeOneCharacter(true)
-            .withChannel(BlackHoleChannel("\\s(?!&)"))
+            .withChannel(BlackHoleChannel("(\\s(?!&))++"))
             .withChannel(commentRegexp(COMMENT))
             .withChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL))
             .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
