@@ -157,7 +157,15 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.optional(QUERY_PARTITION_CLAUSE),
                             b.optional(ON_OR_USING_EXPRESSION)))
 
-            b.rule(JOIN_CLAUSE).define(DML_TABLE_EXPRESSION_CLAUSE, b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE)))
+            b.rule(JOIN_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(LPARENTHESIS, JOIN_CLAUSE, RPARENTHESIS),
+                            DML_TABLE_EXPRESSION_CLAUSE),
+                        b.oneOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE))),
+                    b.sequence(LPARENTHESIS, JOIN_CLAUSE, RPARENTHESIS)
+                ))
 
             b.rule(SELECT_COLUMN).define(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME, b.nextNot(COLLECT)))
 

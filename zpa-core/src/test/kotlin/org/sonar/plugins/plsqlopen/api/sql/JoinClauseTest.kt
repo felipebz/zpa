@@ -38,6 +38,11 @@ class JoinClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesSimpleJoinInParenthesis() {
+        assertThat(p).matches("(foo join bar on foo.a = bar.a)")
+    }
+
+    @Test
     fun matchesSimpleJoinWithTableAlias() {
         assertThat(p).matches("foo f join bar b on f.a = b.a")
     }
@@ -212,5 +217,9 @@ class JoinClauseTest : RuleTest() {
         assertThat(p).matches("foo join (select a from bar) b on foo.a = b.a")
     }
 
+    @Test
+    fun matchesNestedJoin() {
+        assertThat(p).matches("(foo join bar on foo.a = bar.a) join bar on foo.a = bar.a")
+    }
 
 }
