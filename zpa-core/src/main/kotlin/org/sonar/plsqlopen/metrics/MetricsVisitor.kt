@@ -19,9 +19,9 @@
  */
 package org.sonar.plsqlopen.metrics
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.Token
-import com.sonar.sslr.api.Trivia
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer

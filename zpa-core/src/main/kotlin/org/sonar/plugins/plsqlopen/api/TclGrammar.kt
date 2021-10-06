@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
+import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.COMMA
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.SEMICOLON
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class TclGrammar : GrammarRuleKey {
 

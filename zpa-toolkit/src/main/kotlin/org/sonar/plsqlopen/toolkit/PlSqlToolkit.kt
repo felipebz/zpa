@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.toolkit
 
-import org.sonar.sslr.toolkit.Toolkit
+import com.felipebz.flr.toolkit.Toolkit
 
 fun main() {
     val toolkit = Toolkit("Z PL/SQL Analyzer Toolkit", PlSqlConfigurationModel())

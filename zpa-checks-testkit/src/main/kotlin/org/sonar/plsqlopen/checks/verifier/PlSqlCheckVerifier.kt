@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.checks.verifier
 
-import com.sonar.sslr.api.Trivia
+import com.felipebz.flr.api.Trivia
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver

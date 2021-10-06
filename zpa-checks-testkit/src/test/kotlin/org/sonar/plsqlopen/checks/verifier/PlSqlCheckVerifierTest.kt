@@ -19,9 +19,9 @@
  */
 package org.sonar.plsqlopen.checks.verifier
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.GenericTokenType
-import com.sonar.sslr.api.Token
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.GenericTokenType
+import com.felipebz.flr.api.Token
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail

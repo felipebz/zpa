@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.RecognitionException
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.RecognitionException
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.symbols.SymbolTableImpl
 import org.sonar.plugins.plsqlopen.api.symbols.Scope

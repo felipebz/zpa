@@ -19,12 +19,12 @@
  */
 package org.sonar.plsqlopen.lexer
 
-import com.sonar.sslr.api.Token
-import com.sonar.sslr.api.TokenType
-import com.sonar.sslr.impl.Lexer
-import com.sonar.sslr.impl.LexerException
-import org.sonar.sslr.channel.Channel
-import org.sonar.sslr.channel.CodeReader
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.TokenType
+import com.felipebz.flr.impl.Lexer
+import com.felipebz.flr.impl.LexerException
+import com.felipebz.flr.channel.Channel
+import com.felipebz.flr.channel.CodeReader
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern

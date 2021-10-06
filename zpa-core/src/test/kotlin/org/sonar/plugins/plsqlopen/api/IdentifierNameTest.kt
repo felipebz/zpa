@@ -21,7 +21,7 @@ package org.sonar.plugins.plsqlopen.api
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.sonar.sslr.tests.Assertions.assertThat
+import com.felipebz.flr.tests.Assertions.assertThat
 
 class IdentifierNameTest : RuleTest() {
 

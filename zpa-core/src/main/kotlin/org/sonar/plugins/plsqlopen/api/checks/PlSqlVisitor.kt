@@ -19,10 +19,10 @@
  */
 package org.sonar.plugins.plsqlopen.api.checks
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
-import com.sonar.sslr.api.Token
-import com.sonar.sslr.api.Trivia
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import org.sonar.plsqlopen.squid.PlSqlAstWalker
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 

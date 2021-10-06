@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import java.util.*
 
 open class Symbol(private val declaration: AstNode, private val kind: Kind, private val scope: Scope, type: PlSqlType?) {

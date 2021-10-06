@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.Trivia
+import com.felipebz.flr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault
 import org.sonar.plugins.plsqlopen.api.annotations.Priority
 import org.sonar.plugins.plsqlopen.api.annotations.Rule

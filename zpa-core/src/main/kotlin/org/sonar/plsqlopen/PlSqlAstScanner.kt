@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 fun getSemanticNode(node: AstNode): SemanticAstNode {

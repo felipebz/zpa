@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.GenericTokenType.EOF
-import com.sonar.sslr.api.GenericTokenType.IDENTIFIER
+import com.felipebz.flr.api.GenericTokenType.EOF
+import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.sslr.*
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
@@ -32,8 +32,8 @@ import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.*
 import org.sonar.plugins.plsqlopen.api.SessionControlGrammar.SESSION_CONTROL_COMMAND
 import org.sonar.plugins.plsqlopen.api.SqlPlusGrammar.SQLPLUS_COMMAND
 import org.sonar.plugins.plsqlopen.api.TclGrammar.*
-import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
+import com.felipebz.flr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.LexerfulGrammarBuilder
 
 enum class PlSqlGrammar : GrammarRuleKey {
 

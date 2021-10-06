@@ -19,9 +19,9 @@
  */
 package org.sonar.plsqlopen.highlight
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.Token
-import com.sonar.sslr.api.Trivia
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting

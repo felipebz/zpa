@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen
 
-import com.sonar.sslr.api.GenericTokenType
-import com.sonar.sslr.api.Token
+import com.felipebz.flr.api.GenericTokenType
+import com.felipebz.flr.api.Token
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.net.URI

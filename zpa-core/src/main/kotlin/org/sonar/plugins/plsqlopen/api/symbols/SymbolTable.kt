@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 
 interface SymbolTable {
 

@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.squid
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plsqlopen.sslr.TreeImpl

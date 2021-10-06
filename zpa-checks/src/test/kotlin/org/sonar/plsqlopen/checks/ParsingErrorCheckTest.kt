@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.RecognitionException
+import com.felipebz.flr.api.RecognitionException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.parser.PlSqlParser

@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.xpath.api.AstNodeXPathQuery
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.xpath.api.AstNodeXPathQuery
 import org.sonar.plsqlopen.squid.AnalysisException
 import org.sonar.plugins.plsqlopen.api.annotations.*
 

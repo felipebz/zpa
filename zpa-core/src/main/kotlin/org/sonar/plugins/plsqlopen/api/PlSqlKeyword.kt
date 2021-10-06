@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.TokenType
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.TokenType
 
 enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = false) : TokenType {
     ALL("all", true),

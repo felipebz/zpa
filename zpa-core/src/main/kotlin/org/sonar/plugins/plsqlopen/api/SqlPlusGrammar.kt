@@ -20,7 +20,7 @@
 package org.sonar.plugins.plsqlopen.api
 
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class SqlPlusGrammar : GrammarRuleKey {
 

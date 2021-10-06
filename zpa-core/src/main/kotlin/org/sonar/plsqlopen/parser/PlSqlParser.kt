@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen.parser
 
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.impl.Parser
+import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.lexer.PlSqlLexer
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar

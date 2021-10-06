@@ -19,12 +19,12 @@
  */
 package org.sonar.plsqlopen.sslr
 
-import com.sonar.sslr.api.AstNodeType
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.api.TokenType
-import org.sonar.sslr.grammar.GrammarRuleBuilder
-import org.sonar.sslr.grammar.GrammarRuleKey
-import org.sonar.sslr.grammar.LexerfulGrammarBuilder
+import com.felipebz.flr.api.AstNodeType
+import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.api.TokenType
+import com.felipebz.flr.grammar.GrammarRuleBuilder
+import com.felipebz.flr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.LexerfulGrammarBuilder
 import kotlin.reflect.KClass
 
 class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {

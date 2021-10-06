@@ -19,14 +19,14 @@
  */
 package org.sonar.plsqlopen.toolkit
 
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.impl.Parser
+import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.utils.log.Loggers
-import org.sonar.sslr.toolkit.AbstractConfigurationModel
-import org.sonar.sslr.toolkit.ConfigurationProperty
-import org.sonar.sslr.toolkit.Validators
+import com.felipebz.flr.toolkit.AbstractConfigurationModel
+import com.felipebz.flr.toolkit.ConfigurationProperty
+import com.felipebz.flr.toolkit.Validators
 import java.nio.charset.Charset
 
 class PlSqlConfigurationModel : AbstractConfigurationModel() {

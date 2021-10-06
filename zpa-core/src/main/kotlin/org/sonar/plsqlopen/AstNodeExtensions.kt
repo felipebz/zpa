@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 

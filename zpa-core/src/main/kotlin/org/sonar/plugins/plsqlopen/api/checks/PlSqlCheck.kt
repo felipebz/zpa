@@ -19,8 +19,8 @@
  */
 package org.sonar.plugins.plsqlopen.api.checks
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.Token
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
 import org.sonar.plsqlopen.checks.IssueLocation
 import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext

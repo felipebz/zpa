@@ -19,9 +19,9 @@
  */
 package org.sonar.plsqlopen.lexer
 
-import com.sonar.sslr.api.TokenType
-import com.sonar.sslr.test.lexer.LexerMatchers.hasComment
-import com.sonar.sslr.test.lexer.LexerMatchers.hasToken
+import com.felipebz.flr.api.TokenType
+import com.felipebz.flr.test.lexer.LexerMatchers.hasComment
+import com.felipebz.flr.test.lexer.LexerMatchers.hasToken
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.not
 import org.hamcrest.MatcherAssert.assertThat

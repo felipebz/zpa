@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.AstNodeType
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*

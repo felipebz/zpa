@@ -19,11 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.impl.Parser
+import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 import java.nio.charset.StandardCharsets
 
 abstract class RuleTest {

@@ -24,7 +24,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.CONCATENATION_EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.OBJECT_REFERENCE
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class ConditionsGrammar : GrammarRuleKey {
 

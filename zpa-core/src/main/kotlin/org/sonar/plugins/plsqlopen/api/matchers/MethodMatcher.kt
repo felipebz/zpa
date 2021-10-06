@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.matchers
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType

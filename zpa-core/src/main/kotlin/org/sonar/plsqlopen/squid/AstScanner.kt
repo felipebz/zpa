@@ -19,9 +19,9 @@
  */
 package org.sonar.plsqlopen.squid
 
-import com.sonar.sslr.api.Grammar
-import com.sonar.sslr.api.RecognitionException
-import com.sonar.sslr.impl.Parser
+import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.api.RecognitionException
+import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
 import org.sonar.plsqlopen.getSemanticNode
 import org.sonar.plsqlopen.metadata.FormsMetadata

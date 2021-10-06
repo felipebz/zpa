@@ -19,13 +19,13 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import com.sonar.sslr.api.GenericTokenType
+import com.felipebz.flr.api.GenericTokenType
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.UNIT_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class DclGrammar : GrammarRuleKey {
 

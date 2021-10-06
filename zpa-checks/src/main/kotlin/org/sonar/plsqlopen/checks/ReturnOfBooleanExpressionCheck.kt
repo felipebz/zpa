@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.IfStatement
 import org.sonar.plsqlopen.sslr.TreeWithStatements

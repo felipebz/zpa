@@ -23,7 +23,7 @@ import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import org.sonar.sslr.grammar.GrammarRuleKey
+import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 

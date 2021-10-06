@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen
 
-import com.sonar.sslr.api.Token
+import com.felipebz.flr.api.Token
 
 class TokenLocation private constructor(
     private val line: Int,

@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols
 
-import com.sonar.sslr.api.AstNode
+import com.felipebz.flr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`

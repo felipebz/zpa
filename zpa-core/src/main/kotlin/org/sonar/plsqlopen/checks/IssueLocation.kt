@@ -19,8 +19,8 @@
  */
 package org.sonar.plsqlopen.checks
 
-import com.sonar.sslr.api.AstNode
-import com.sonar.sslr.api.Token
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
 import org.sonar.plsqlopen.TokenLocation
 
 abstract class IssueLocation private constructor(private val message: String) {

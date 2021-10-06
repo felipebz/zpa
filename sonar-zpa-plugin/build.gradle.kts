@@ -22,7 +22,7 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
         exclude(project(":zpa-checks-testkit"))
     }
-    relocate("com.sonar.sslr.api", "org.sonar.plugins.plsqlopen.api.sslr")
+    relocate("com.felipebz.flr.api", "org.sonar.plugins.plsqlopen.api.sslr")
     archiveClassifier.set("")
     manifest {
         val buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.systemDefault()).format(Date().toInstant())

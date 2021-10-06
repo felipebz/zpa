@@ -19,7 +19,7 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import org.sonar.sslr.grammar.GrammarRuleBuilder
+import com.felipebz.flr.grammar.GrammarRuleBuilder
 
 internal fun GrammarRuleBuilder.define(e: Any): GrammarRuleBuilder =
     this.`is`(e)

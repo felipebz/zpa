@@ -22,7 +22,7 @@ package org.sonar.plugins.plsqlopen.api.units
 import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
-import org.sonar.sslr.tests.Assertions.assertThat
+import com.felipebz.flr.tests.Assertions.assertThat
 
 class RecoveryTest : RuleTest() {
 
