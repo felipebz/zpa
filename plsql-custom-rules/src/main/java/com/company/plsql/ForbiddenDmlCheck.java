@@ -2,10 +2,10 @@ package com.company.plsql;
 
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
+import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.annotations.ActivatedByDefault;
 import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation;
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck;
-import org.sonar.plugins.plsqlopen.api.DmlGrammar;
 import org.sonar.plugins.plsqlopen.api.sslr.AstNode;
 
 @Rule(
@@ -25,7 +25,7 @@ public class ForbiddenDmlCheck extends PlSqlCheck {
 
     @Override
     public void visitNode(AstNode node) {
-        AstNode table = node.getFirstChild(DmlGrammar.TABLE_REFERENCE);
+        AstNode table = node.getFirstChildOrNull(DmlGrammar.TABLE_REFERENCE);
         
         if (table != null && table.getTokenOriginalValue().equalsIgnoreCase("user")) {
             addIssue(table, "Replace this query by a function of the USER_WRAPPER package.");
