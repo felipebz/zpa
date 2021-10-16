@@ -26,8 +26,8 @@ If you like to live on the bleeding edge, you can use the [latest development ve
 
 | ZPA version     | SonarQube version |
 |-----------------|-------------------|
-| 2.4.0 (current) | 6.7 LTS - 8.9 LTS |
-| 3.0.0 (next)    | 7.6 - 8.9 LTS     |
+| 2.4.0           | 6.7 LTS - 8.9 LTS |
+| 3.0.0 (current) | 7.6 - latest      |
 
 ## Contribute
 
@@ -67,6 +67,6 @@ Then run the tests:
 
     ./gradlew test -Pit
 
-By default the tests will be executed using SonarQube 6.7.x LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[6.7]` (for SonarQube 6.7.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
+By default the tests will be executed using SonarQube 7.6. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[6.7]` (for SonarQube 6.7.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
 
     ./gradlew test -Pit -Dsonar.runtimeVersion=7.7
