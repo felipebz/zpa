@@ -22,7 +22,7 @@ allprojects {
         mavenCentral()
         mavenLocal()
         maven {
-            setUrl("https://pkgs.dev.azure.com/felipebz/z-plsql-analyzer/_packaging/public_feed/maven/v1")
+            setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/")
         }
     }
 

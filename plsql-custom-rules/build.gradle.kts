@@ -10,7 +10,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        url = uri("https://pkgs.dev.azure.com/felipebz/z-plsql-analyzer/_packaging/public_feed/maven/v1")
+        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 }
 
