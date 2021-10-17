@@ -28,7 +28,6 @@ import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.IssueLocation
 import org.sonar.plsqlopen.squid.AnalysisException
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
-import java.net.URI
 
 class PlSqlCheckVerifierTest {
 
@@ -223,7 +222,6 @@ class PlSqlCheckVerifierTest {
                     .setColumn(startCharacter - 1)
                     .setValueAndOriginalValue("")
                     .setType(GenericTokenType.IDENTIFIER)
-                    .setURI(URI("tests://unittest"))
                     .build()
 
             val lastToken = Token.builder()
@@ -231,7 +229,6 @@ class PlSqlCheckVerifierTest {
                     .setColumn(endCharacter - 1)
                     .setValueAndOriginalValue("")
                     .setType(GenericTokenType.IDENTIFIER)
-                    .setURI(URI("tests://unittest"))
                     .build()
 
             val node = AstNode(token)

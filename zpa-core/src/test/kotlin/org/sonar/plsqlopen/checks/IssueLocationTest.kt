@@ -24,7 +24,6 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.net.URI
 
 class IssueLocationTest {
 
@@ -77,7 +76,6 @@ class IssueLocationTest {
             .setColumn(startCharacter)
             .setValueAndOriginalValue("")
             .setType(GenericTokenType.IDENTIFIER)
-            .setURI(URI("tests://unittest"))
             .build()
 
         val lastToken = Token.builder()
@@ -85,7 +83,6 @@ class IssueLocationTest {
             .setColumn(endCharacter - 1)
             .setValueAndOriginalValue("")
             .setType(GenericTokenType.IDENTIFIER)
-            .setURI(URI("tests://unittest"))
             .build()
 
         val node = AstNode(token)

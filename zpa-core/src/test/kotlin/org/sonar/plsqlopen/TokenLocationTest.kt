@@ -23,7 +23,6 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.net.URI
 
 class TokenLocationTest {
 
@@ -83,6 +82,5 @@ class TokenLocationTest {
             .setColumn(startCharacter)
             .setValueAndOriginalValue(value)
             .setType(GenericTokenType.IDENTIFIER)
-            .setURI(URI("tests://unittest"))
             .build()
 }

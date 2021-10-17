@@ -31,7 +31,6 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.io.File
-import java.net.URI
 import java.nio.charset.StandardCharsets
 
 class SonarQubeSymbolTableTest {
@@ -66,7 +65,6 @@ class SonarQubeSymbolTableTest {
                 .setColumn(character)
                 .setValueAndOriginalValue(" ")
                 .setType(GenericTokenType.IDENTIFIER)
-                .setURI(URI("tests://unittest"))
                 .build()
 
         val lastToken = Token.builder()
@@ -74,7 +72,6 @@ class SonarQubeSymbolTableTest {
                 .setColumn(character + 2)
                 .setValueAndOriginalValue(" ")
                 .setType(GenericTokenType.IDENTIFIER)
-                .setURI(URI("tests://unittest"))
                 .build()
 
         val node = AstNode(token)
