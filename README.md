@@ -15,19 +15,20 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 
 ## Installation
 
-- Download the [latest sonar-plsql-open-plugin release](https://github.com/felipebz/zpa/releases/latest) and copy to the SONARQUBE_HOME/extensions/plugins directory;
+- Download the [latest sonar-zpa-plugin release](https://github.com/felipebz/zpa/releases/latest) and copy to the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).
 
-If you like to live on the bleeding edge, you can use the [latest development version](https://felipezorzo.com.br/api/download/org.sonar.plsqlopen:sonar-zpa-plugin:latest).
+If you like to live on the bleeding edge, you can use the [latest development version](https://felipezorzo.com.br/api/download/com.felipebz.zpa:sonar-zpa-plugin:latest).
 
 ## Compatibility matrix
 
-| ZPA version     | SonarQube version |
-|-----------------|-------------------|
-| 2.4.0           | 6.7 LTS - 8.9 LTS |
-| 3.0.0 (current) | 7.6 - latest      |
+| ZPA version            | SonarQube version |
+|------------------------|-------------------|
+| 2.4.0                  | 6.7 LTS - 8.9 LTS |
+| 3.0.0 (current)        | 7.6 - latest      |
+| 3.1.0 (in development) | 7.6 - latest      |
 
 ## Contribute
 
