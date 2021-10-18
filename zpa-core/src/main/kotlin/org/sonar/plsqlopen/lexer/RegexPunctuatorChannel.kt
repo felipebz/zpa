@@ -26,13 +26,10 @@ import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerException
 import com.felipebz.flr.impl.LexerOutput
 import java.util.*
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<LexerOutput> {
-    private val tokenMatchers = LinkedHashMap<TokenType, Matcher>()
-    private val tmpBuilder = StringBuilder()
-    private val tokenBuilder = Token.builder()
+    private val tokenMatchers = LinkedHashMap<TokenType, Pattern>()
 
     private class PunctuatorComparator : Comparator<TokenType> {
 
@@ -49,12 +46,16 @@ class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<LexerOutpu
         Arrays.sort(punctuators, PunctuatorComparator())
 
         for (punctuator in punctuators) {
-            tokenMatchers[punctuator] = Pattern.compile(punctuator.value).matcher("")
+            tokenMatchers[punctuator] = Pattern.compile(punctuator.value)
         }
     }
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        for ((punctuator, matcher) in tokenMatchers) {
+        val tmpBuilder = StringBuilder()
+        val tokenBuilder = Token.builder()
+
+        for ((punctuator, pattern) in tokenMatchers) {
+            val matcher = pattern.matcher("")
             try {
                 if (code.popTo(matcher, tmpBuilder) > 0) {
                     val value = tmpBuilder.toString()
