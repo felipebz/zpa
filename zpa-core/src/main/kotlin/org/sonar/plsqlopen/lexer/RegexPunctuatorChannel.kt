@@ -23,13 +23,13 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
-import com.felipebz.flr.impl.Lexer
 import com.felipebz.flr.impl.LexerException
+import com.felipebz.flr.impl.LexerOutput
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer> {
+class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<LexerOutput> {
     private val tokenMatchers = LinkedHashMap<TokenType, Matcher>()
     private val tmpBuilder = StringBuilder()
     private val tokenBuilder = Token.builder()
@@ -53,7 +53,7 @@ class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<Lexer> {
         }
     }
 
-    override fun consume(code: CodeReader, output: Lexer): Boolean {
+    override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         for ((punctuator, matcher) in tokenMatchers) {
             try {
                 if (code.popTo(matcher, tmpBuilder) > 0) {
