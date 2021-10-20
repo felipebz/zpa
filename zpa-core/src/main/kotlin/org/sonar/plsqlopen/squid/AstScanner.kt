@@ -41,6 +41,8 @@ import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.InterruptedIOException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  private val formsMetadata: FormsMetadata?,
@@ -79,11 +81,13 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         checksToRun.add(functionComplexityVisitor)
         checksToRun.addAll(extraVisitors)
 
-        val newWalker = PlSqlAstWalker(checksToRun)
-        newWalker.walk(newVisitorContext)
+        val issues = lock.withLock {
+            val newWalker = PlSqlAstWalker(checksToRun)
+            newWalker.walk(newVisitorContext)
 
-        val issues = checksToRun.flatMap {
-            (it as PlSqlCheck).issues().map { issue -> ZpaIssue(inputFile, it, issue) }
+            checksToRun.flatMap {
+                (it as PlSqlCheck).issues().map { issue -> ZpaIssue(inputFile, it, issue) }
+            }
         }
 
         return AstScannerResult(
@@ -96,7 +100,8 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
             complexity = complexityVisitor.complexity,
             numberOfFunctions = functionComplexityVisitor.numberOfFunctions,
             executableLines = metricsVisitor.getExecutableLines(),
-            issues = issues)
+            issues = issues
+        )
     }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
@@ -142,6 +147,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
 
     companion object {
         private val LOG = Loggers.getLogger(AstScanner::class.java)
+        private val lock = ReentrantLock()
     }
 
 }
