@@ -1,11 +1,11 @@
 object Versions {
-    const val junit = "5.8.0"
-    const val assertj = "3.20.2"
-    const val mockito = "3.12.4"
-    const val mockito_kotlin = "3.2.0"
+    const val junit = "5.8.1"
+    const val assertj = "3.21.0"
+    const val mockito = "4.0.0"
+    const val mockito_kotlin = "4.0.0"
     const val flr = "1.1.0-SNAPSHOT"
     const val gson = "2.8.8"
-    const val jsoup = "1.14.2"
+    const val jsoup = "1.14.3"
     const val min_sonarqube_api = "7.6"
     const val sonarqube_orchestrator = "3.35.1.2719"
 
