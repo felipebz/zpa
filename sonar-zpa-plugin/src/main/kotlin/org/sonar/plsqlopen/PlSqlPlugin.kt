@@ -33,33 +33,42 @@ class PlSqlPlugin : Plugin {
         Loggers.factory = SonarQubeLoggers()
 
         context.addExtensions(
-                PropertyDefinition.builder(FILE_SUFFIXES_KEY)
-                        .name("File Suffixes")
-                        .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
-                        .category(DEFAULT_CATEGORY)
-                        .onQualifiers(Qualifiers.PROJECT)
-                        .defaultValue("sql,pkg,pks,pkb")
-                        .multiValues(true)
-                        .build(),
-                PropertyDefinition.builder(FORMS_METADATA_KEY)
-                        .name("Oracle Forms metadata file")
-                        .description("Path to the JSON file with the Oracle Forms metadata.")
-                        .category(DEFAULT_CATEGORY)
-                        .onQualifiers(Qualifiers.PROJECT)
-                        .build(),
-                PropertyDefinition.builder(ERROR_RECOVERY_KEY)
-                        .name("Parse error recovery")
-                        .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
-                        .category(DEFAULT_CATEGORY)
-                        .onQualifiers(Qualifiers.PROJECT)
-                        .type(PropertyType.BOOLEAN)
-                        .defaultValue("true")
-                        .build(),
+            PropertyDefinition.builder(FILE_SUFFIXES_KEY)
+                .name("File Suffixes")
+                .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
+                .category(DEFAULT_CATEGORY)
+                .onQualifiers(Qualifiers.PROJECT)
+                .defaultValue("sql,pkg,pks,pkb")
+                .multiValues(true)
+                .build(),
+            PropertyDefinition.builder(FORMS_METADATA_KEY)
+                .name("Oracle Forms metadata file")
+                .description("Path to the JSON file with the Oracle Forms metadata.")
+                .category(DEFAULT_CATEGORY)
+                .onQualifiers(Qualifiers.PROJECT)
+                .build(),
+            PropertyDefinition.builder(ERROR_RECOVERY_KEY)
+                .name("Parse error recovery")
+                .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
+                .category(DEFAULT_CATEGORY)
+                .onQualifiers(Qualifiers.PROJECT)
+                .type(PropertyType.BOOLEAN)
+                .defaultValue("true")
+                .build(),
+            PropertyDefinition.builder(CONCURRENT_EXECUTION_KEY)
+                .name("[Experimental] Enable concurrent execution")
+                .description("Enable concurrent analysis of files.")
+                .category(DEFAULT_CATEGORY)
+                .onQualifiers(Qualifiers.PROJECT)
+                .type(PropertyType.BOOLEAN)
+                .defaultValue("false")
+                .build(),
 
-                PlSql::class.java,
-                PlSqlProfile::class.java,
-                PlSqlSquidSensor::class.java,
-                PlSqlRuleRepository::class.java)
+            PlSql::class.java,
+            PlSqlProfile::class.java,
+            PlSqlSquidSensor::class.java,
+            PlSqlRuleRepository::class.java
+        )
     }
 
     companion object {
@@ -67,6 +76,7 @@ class PlSqlPlugin : Plugin {
         internal const val FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes"
         internal const val FORMS_METADATA_KEY = "sonar.zpa.forms.metadata"
         internal const val ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled"
+        internal const val CONCURRENT_EXECUTION_KEY = "sonar.zpa.concurrentExecution"
     }
 
 }
