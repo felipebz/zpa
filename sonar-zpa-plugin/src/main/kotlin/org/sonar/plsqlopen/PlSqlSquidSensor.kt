@@ -74,8 +74,12 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         }
 
         files.forEach {
-            scanner.scanFile(it)
-            progressReport.nextFile()
+            try {
+                scanner.scanFile(it)
+                progressReport.nextFile()
+            } catch (e: Exception) {
+                logger.error("Error during analysis of file $it", e)
+            }
         }
 
         progressReport.stop()

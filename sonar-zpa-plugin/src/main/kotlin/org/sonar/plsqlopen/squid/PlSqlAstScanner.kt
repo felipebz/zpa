@@ -38,6 +38,8 @@ import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.Serializable
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class PlSqlAstScanner(private val context: SensorContext,
                       checks: Collection<PlSqlVisitor>,
@@ -74,23 +76,26 @@ class PlSqlAstScanner(private val context: SensorContext,
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        saveIssues(inputFile, result.issues)
+        lock.withLock { // needed because SonarQube 7.6 save this data in a non thread-safe way
+            saveIssues(inputFile, result.issues)
 
-        val symbolSaver = SonarQubeSymbolTable(context, inputFile)
-        symbolSaver.save(result.symbols)
+            val symbolSaver = SonarQubeSymbolTable(context, inputFile)
+            symbolSaver.save(result.symbols)
 
-        saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, result.numberOfStatements)
-        saveMetricOnFile(inputFile, CoreMetrics.NCLOC, result.linesOfCode)
-        saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, result.linesOfComments)
-        saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, result.complexity)
-        saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, result.numberOfFunctions)
+            saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, result.numberOfStatements)
+            saveMetricOnFile(inputFile, CoreMetrics.NCLOC, result.linesOfCode)
+            saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, result.linesOfComments)
+            saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, result.complexity)
+            saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, result.numberOfFunctions)
 
-        if (fileLinesContextFactory != null) {
-            val fileLinesContext = fileLinesContextFactory.createFor(inputFile)
-            for (line in result.executableLines) {
-                fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1)
+
+            if (fileLinesContextFactory != null) {
+                val fileLinesContext = fileLinesContextFactory.createFor(inputFile)
+                for (line in result.executableLines) {
+                    fileLinesContext.setIntValue(CoreMetrics.EXECUTABLE_LINES_DATA_KEY, line, 1)
+                }
+                fileLinesContext.save()
             }
-            fileLinesContext.save()
         }
     }
 
@@ -100,10 +105,12 @@ class PlSqlAstScanner(private val context: SensorContext,
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
-        saveIssues(inputFile, result.issues)
+        lock.withLock { // needed because SonarQube 7.6 save this data in a non thread-safe way
+            saveIssues(inputFile, result.issues)
 
-        val symbolTable = SonarQubeSymbolTable(context, inputFile)
-        symbolTable.save(result.symbols)
+            val symbolTable = SonarQubeSymbolTable(context, inputFile)
+            symbolTable.save(result.symbols)
+        }
     }
 
     private fun saveIssues(inputFile: InputFile, issues: List<ZpaIssue>) {
@@ -149,6 +156,10 @@ class PlSqlAstScanner(private val context: SensorContext,
 
         newLocation.message(location.message())
         return newLocation
+    }
+
+    companion object {
+        private val lock = ReentrantLock()
     }
 
 }
