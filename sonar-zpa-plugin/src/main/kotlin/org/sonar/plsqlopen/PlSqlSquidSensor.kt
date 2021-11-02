@@ -48,7 +48,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
             .addCustomChecks(customRulesDefinition)
 
     private val isErrorRecoveryEnabled = settings.getBoolean(PlSqlPlugin.ERROR_RECOVERY_KEY).orElse(false)
-    private val isConcurrentModeEnabled = settings.getBoolean(PlSqlPlugin.CONCURRENT_EXECUTION_KEY).orElse(false)
+    private val isConcurrentModeEnabled = settings.getBoolean(PlSqlPlugin.CONCURRENT_EXECUTION_KEY).orElse(true)
 
     private val formsMetadata = FormsMetadata.loadFromFile(settings.get(PlSqlPlugin.FORMS_METADATA_KEY)
         .orElse(null))

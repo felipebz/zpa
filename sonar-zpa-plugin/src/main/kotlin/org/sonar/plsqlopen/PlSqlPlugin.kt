@@ -61,7 +61,7 @@ class PlSqlPlugin : Plugin {
                 .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)
                 .type(PropertyType.BOOLEAN)
-                .defaultValue("false")
+                .defaultValue("true")
                 .build(),
 
             PlSql::class.java,
