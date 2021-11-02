@@ -55,15 +55,15 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
         }
 
         for (activeRule in activeRules.findByRepository(repository)) {
-            val engineKey = if (activeRule.templateRuleKey().isNullOrBlank())
-                activeRule.ruleKey().rule()
+            val engineKey = if (activeRule.templateRuleKey.isNullOrBlank())
+                activeRule.ruleKey.rule
             else
-                activeRule.templateRuleKey()
+                activeRule.templateRuleKey
 
             val checkClassesOrObject = checksByEngineKey[engineKey]
             if (checkClassesOrObject != null) {
                 val obj = instantiate(activeRule, checkClassesOrObject)
-                add(activeRule.ruleKey(), obj)
+                add(activeRule.ruleKey, obj)
             }
         }
         return this
@@ -86,11 +86,11 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
     }
 
     private fun failToInstantiateCheck(activeRule: ZpaActiveRule, checkClassOrInstance: Any, e: Exception): RuntimeException {
-        throw IllegalStateException(String.format("Fail to instantiate class %s for rules %s", checkClassOrInstance, activeRule.ruleKey()), e)
+        throw IllegalStateException(String.format("Fail to instantiate class %s for rules %s", checkClassOrInstance, activeRule.ruleKey), e)
     }
 
     private fun configureFields(activeRule: ZpaActiveRule, check: Any) {
-        for ((key, value) in activeRule.params()) {
+        for ((key, value) in activeRule.params) {
             val field = getField(check, key) ?: throw IllegalStateException(
                 String.format("The field '%s' does not exist or is not annotated with @RuleProperty in the class %s", key, check.javaClass.name))
             if (value.isNotBlank()) {

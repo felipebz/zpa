@@ -20,6 +20,6 @@
 package org.sonar.plsqlopen.rules
 
 interface ZpaRuleKey {
-    fun rule(): String
-    fun repository(): String
+    val rule: String
+    val repository: String
 }

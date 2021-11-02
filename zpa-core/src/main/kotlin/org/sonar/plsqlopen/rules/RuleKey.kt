@@ -19,11 +19,10 @@
  */
 package org.sonar.plsqlopen.rules
 
-class RuleKey(private val repository: String, private val key: String) : ZpaRuleKey {
+class RuleKey(override val repository: String, private val key: String) : ZpaRuleKey {
 
-    override fun repository(): String = repository
-
-    override fun rule(): String = key
+    override val rule: String
+        get() = key
 
     override fun toString(): String = "$repository:$key"
 

@@ -20,11 +20,11 @@
 package org.sonar.plsqlopen.rules
 
 interface ZpaActiveRule {
-    fun ruleKey(): ZpaRuleKey
-    fun severity(): String
-    fun language(): String
+    val ruleKey: ZpaRuleKey
+    val severity: String
+    val language: String
     fun param(key: String): String?
-    fun params(): Map<String, String>
-    fun internalKey(): String?
-    fun templateRuleKey(): String?
+    val params: Map<String, String>
+    val internalKey: String?
+    val templateRuleKey: String?
 }

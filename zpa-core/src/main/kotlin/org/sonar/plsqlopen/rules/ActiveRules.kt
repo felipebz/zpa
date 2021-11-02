@@ -29,7 +29,7 @@ class ActiveRules : ZpaActiveRules {
 
     override fun findByRepository(repository: String): Collection<ZpaActiveRule> {
         val repo = this.repositories.first { it.key == repository }
-        return repo.availableRules().map { ActiveRule(repo, it) }
+        return repo.availableRules.map { ActiveRule(repo, it) }
     }
 
 }

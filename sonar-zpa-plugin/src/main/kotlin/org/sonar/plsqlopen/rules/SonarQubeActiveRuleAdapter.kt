@@ -23,19 +23,25 @@ import org.sonar.api.batch.rule.ActiveRule
 
 class SonarQubeActiveRuleAdapter(private val activeRule: ActiveRule) : ZpaActiveRule {
 
-    override fun ruleKey(): ZpaRuleKey = SonarQubeRuleKeyAdapter(activeRule.ruleKey())
+    override val ruleKey: ZpaRuleKey
+        get() = SonarQubeRuleKeyAdapter(activeRule.ruleKey())
 
-    override fun severity(): String = activeRule.severity()
+    override val severity: String
+        get() = activeRule.severity()
 
-    override fun language(): String = activeRule.language()
+    override val language: String
+        get() = activeRule.language()
 
     override fun param(key: String): String? = activeRule.param(key)
 
-    override fun params(): Map<String, String> = activeRule.params()
+    override val params: Map<String, String>
+        get() = activeRule.params()
 
-    override fun internalKey(): String? = activeRule.internalKey()
+    override val internalKey: String?
+        get() = activeRule.internalKey()
 
-    override fun templateRuleKey(): String? = activeRule.templateRuleKey()
+    override val templateRuleKey: String?
+        get() = activeRule.templateRuleKey()
 
     override fun toString(): String = activeRule.toString()
 

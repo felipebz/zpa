@@ -23,9 +23,11 @@ import org.sonar.api.rule.RuleKey
 
 class SonarQubeRuleKeyAdapter(val ruleKey: RuleKey) : ZpaRuleKey {
 
-    override fun rule(): String = ruleKey.rule()
+    override val rule: String
+        get() = ruleKey.rule()
 
-    override fun repository(): String = ruleKey.repository()
+    override val repository: String
+        get() = ruleKey.repository()
 
     override fun toString(): String = ruleKey.toString()
 

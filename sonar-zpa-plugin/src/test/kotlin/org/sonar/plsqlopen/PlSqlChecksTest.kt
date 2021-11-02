@@ -62,8 +62,8 @@ class PlSqlChecksTest {
 
         assertThat(checks.all()).hasSize(1)
         assertThat(checks.ruleKey(defaultVisitor)).isNotNull
-        assertThat(checks.ruleKey(defaultVisitor)?.rule()).isEqualTo(DEFAULT_RULE_KEY)
-        assertThat(checks.ruleKey(defaultVisitor)?.repository()).isEqualTo(DEFAULT_REPOSITORY_KEY)
+        assertThat(checks.ruleKey(defaultVisitor)?.rule).isEqualTo(DEFAULT_RULE_KEY)
+        assertThat(checks.ruleKey(defaultVisitor)?.repository).isEqualTo(DEFAULT_REPOSITORY_KEY)
     }
 
     @Test
@@ -75,8 +75,8 @@ class PlSqlChecksTest {
 
         assertThat(checks.all()).hasSize(1)
         assertThat(checks.ruleKey(customVisitor)).isNotNull
-        assertThat(checks.ruleKey(customVisitor)?.rule()).isEqualTo(CUSTOM_RULE_KEY)
-        assertThat(checks.ruleKey(customVisitor)?.repository()).isEqualTo(CUSTOM_REPOSITORY_KEY)
+        assertThat(checks.ruleKey(customVisitor)?.rule).isEqualTo(CUSTOM_RULE_KEY)
+        assertThat(checks.ruleKey(customVisitor)?.repository).isEqualTo(CUSTOM_REPOSITORY_KEY)
     }
 
     @Test

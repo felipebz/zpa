@@ -41,7 +41,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     @Test
     fun noClassToAdd() {
-        assertThat(buildRepository().availableRules()).isEmpty()
+        assertThat(buildRepository().availableRules).isEmpty()
     }
 
     @Test
@@ -76,7 +76,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
     @Test
     fun ruleWithoutExplicitKeyCanBeAcceptable() {
         val repository = buildRepository(LANGUAGE_KEY_WITH_RESOURCE_BUNDLE, RuleClassWithoutAnnotationDefinedKey::class.java)
-        val rule = repository.availableRules()[0]
+        val rule = repository.availableRules[0]
         assertThat(rule.key).isEqualTo(RuleClassWithoutAnnotationDefinedKey::class.java.simpleName)
         assertThat(rule.name).isEqualTo("name1")
     }
@@ -128,7 +128,7 @@ class CustomAnnotationBasedRulesDefinitionTest {
         class RuleClass
 
         val repository = load(RuleClass::class.java)
-        assertThat(repository.availableRules()).hasSize(1)
+        assertThat(repository.availableRules).hasSize(1)
     }
 
     private fun assertParam(param: ZpaRuleParam, expectedKey: String, expectedDescription: String?) {
@@ -138,8 +138,8 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
     private fun buildSingleRuleRepository(ruleClass: Class<*>): ZpaRule {
         val repository = buildRepository(ruleClass)
-        assertThat(repository.availableRules()).hasSize(1)
-        return repository.availableRules()[0]
+        assertThat(repository.availableRules).hasSize(1)
+        return repository.availableRules[0]
     }
 
     private fun buildRepository(vararg classes: Class<*>): Repository {
