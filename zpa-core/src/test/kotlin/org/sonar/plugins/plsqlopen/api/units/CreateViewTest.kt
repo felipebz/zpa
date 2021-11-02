@@ -19,12 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api.units
 
+import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
-import com.felipebz.flr.tests.Assertions.assertThat
 
 class CreateViewTest : RuleTest() {
 
@@ -91,47 +90,6 @@ class CreateViewTest : RuleTest() {
     @Test
     fun matchesViewWithCheckOptionAndName() {
         assertThat(p).matches("create view foo as select 1, 2, 3 from dual with check option constraint cons_name;")
-    }
-
-    @Test
-    @Disabled
-    fun matchesViewWithConstraints() {
-        assertThat(p).matches(
-            """create view emp_sal (emp_id, last_name,
-email unique rely disable novalidate,
-constraint id_pk primary key (emp_id) rely disable novalidate)
-as select employee_id, last_name, email from employees;""")
-    }
-
-    @Test
-    @Disabled
-    fun matchesObjectView() {
-        assertThat(p).matches(
-            """create or replace view oc_inventories of inventory_typ
-with object oid (product_id)
-as select product_id from inventories;""")
-    }
-
-
-    @Test
-    @Disabled
-    fun matchesXmlView() {
-        assertThat(p).matches(
-            """create view warehouse_view of xmltype
-xmlschema "http://www.example.com/xwarehouses.xsd"
-element "warehouse"
-with object id
-(extract(object_value, '/warehouse/area/text()').getnumberval())
-as select xmlelement("warehouse",
-xmlforest(warehouseid as "building",
-area as "area",
-docks as "docks",
-docktype as "docktype",
-wateraccess as "wateraccess",
-railaccess as "railaccess",
-parking as "parking",
-vclearance as "vclearance"))
-from warehouse_table;""")
     }
 
     @Test

@@ -19,12 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api.ddl
 
+import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DdlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
-import com.felipebz.flr.tests.Assertions.assertThat
 
 class TableColumnDefinitionTest : RuleTest() {
 
@@ -54,12 +53,6 @@ class TableColumnDefinitionTest : RuleTest() {
     }
 
     @Test
-    @Disabled
-    fun matchesEncryptWithSpecification() {
-        assertThat(p).matches("id number encrypt using 'AES256'")
-    }
-
-    @Test
     fun matchesInlineConstraint() {
         assertThat(p).matches("id number constraint pktab primary key")
     }
@@ -67,12 +60,6 @@ class TableColumnDefinitionTest : RuleTest() {
     @Test
     fun matchesMultipleConstraints() {
         assertThat(p).matches("id number constraint pktab primary key check (id > 0)")
-    }
-
-    @Test
-    @Disabled
-    fun matchesInlineRefConstraint() {
-        assertThat(p).matches("id number with rowid")
     }
 
 }
