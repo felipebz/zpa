@@ -56,7 +56,7 @@ class PlSqlPlugin : Plugin {
                 .defaultValue("true")
                 .build(),
             PropertyDefinition.builder(CONCURRENT_EXECUTION_KEY)
-                .name("[Experimental] Enable concurrent execution")
+                .name("Enable concurrent execution")
                 .description("Enable concurrent analysis of files.")
                 .category(DEFAULT_CATEGORY)
                 .onQualifiers(Qualifiers.PROJECT)

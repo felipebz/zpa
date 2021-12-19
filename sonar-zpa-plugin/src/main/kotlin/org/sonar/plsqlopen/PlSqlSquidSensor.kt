@@ -67,7 +67,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         progressReport.start(inputFiles.map { it.toString() })
 
         val files = if (isConcurrentModeEnabled) {
-            logger.info("Using the experimental concurrent execution")
+            logger.info("Concurrent mode enabled")
             inputFiles.parallelStream()
         } else {
             inputFiles.stream()
