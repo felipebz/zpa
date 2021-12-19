@@ -26,9 +26,9 @@ If you like to live on the bleeding edge, you can use the [latest development ve
 
 | ZPA version            | SonarQube version |
 |------------------------|-------------------|
-| 2.4.0                  | 6.7 LTS - 8.9 LTS |
-| 3.0.0 (current)        | 7.6 - latest      |
-| 3.1.0 (in development) | 7.6 - latest      |
+| 3.0.0                  | 7.6 - latest      |
+| 3.1.0 (current)        | 7.6 - latest      |
+| 3.2.0 (in development) | 7.6 - latest      |
 
 ## Contribute
 
