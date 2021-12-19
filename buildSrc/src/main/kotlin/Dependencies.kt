@@ -3,7 +3,7 @@ object Versions {
     const val assertj = "3.21.0"
     const val mockito = "4.0.0"
     const val mockito_kotlin = "4.0.0"
-    const val flr = "1.1.0-SNAPSHOT"
+    const val flr = "1.1.0"
     const val gson = "2.8.8"
     const val jsoup = "1.14.3"
     const val min_sonarqube_api = "7.6"
