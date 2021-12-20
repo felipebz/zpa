@@ -68,6 +68,6 @@ Then run the tests:
 
     ./gradlew test -Pit
 
-By default the tests will be executed using SonarQube 7.6. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[6.7]` (for SonarQube 6.7.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
+By default the tests will be executed using SonarQube 8.9 LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[8.9]` (for SonarQube 8.9.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
 
-    ./gradlew test -Pit -Dsonar.runtimeVersion=7.7
+    ./gradlew test -Pit -Dsonar.runtimeVersion=9.0

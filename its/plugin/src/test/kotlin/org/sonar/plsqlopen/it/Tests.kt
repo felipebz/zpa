@@ -37,7 +37,7 @@ object Tests {
     @JvmField
     @ClassRule
     val ORCHESTRATOR: Orchestrator = Orchestrator.builderEnv()
-            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "7.6"))
+            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     File("../../sonar-zpa-plugin/build/libs"),
                     "sonar-zpa-plugin-*.jar"))

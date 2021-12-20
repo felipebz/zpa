@@ -4,7 +4,7 @@ strategy:
       imageName: 'ubuntu-latest'
     it-min:
       imageName: 'ubuntu-latest'
-      sq_version: LTS
+      sq_version: LATEST_RELEASE[8.9]
     it-latest:
       imageName: 'ubuntu-latest'
       sq_version: LATEST
@@ -53,7 +53,7 @@ steps:
     displayName: Run integration tests
     condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
     inputs:
-      tasks: 'test -Pit'
+      tasks: 'test -Pit -Dsonar.runtimeVersion=${sq_version}'
       options: '--build-cache'
 
   - task: SonarQubePrepare@4
