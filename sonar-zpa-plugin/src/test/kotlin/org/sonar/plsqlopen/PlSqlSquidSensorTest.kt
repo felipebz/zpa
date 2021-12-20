@@ -59,7 +59,7 @@ class PlSqlSquidSensorTest {
         fileLinesContext = mock(FileLinesContext::class.java)
         `when`(fileLinesContextFactory.createFor(any(InputFile::class.java))).thenReturn(fileLinesContext)
 
-        sensor = PlSqlSquidSensor(activeRules, MapSettings().asConfig(), NoSonarFilter(), fileLinesContextFactory, null)
+        sensor = PlSqlSquidSensor(activeRules, MapSettings().asConfig(), mock(NoSonarFilter::class.java), fileLinesContextFactory, null)
     }
 
     @Test

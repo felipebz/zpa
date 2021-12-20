@@ -23,6 +23,7 @@ import org.assertj.core.api.Assertions.assertThat
 
 import org.junit.jupiter.api.Test
 import org.sonar.api.Plugin
+import org.sonar.api.SonarEdition
 import org.sonar.api.SonarQubeSide
 import org.sonar.api.internal.SonarRuntimeImpl
 import org.sonar.api.utils.Version
@@ -31,7 +32,7 @@ class PlSqlPluginTest {
 
     @Test
     fun testGetExtensions() {
-        val context = Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER))
+        val context = Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER, SonarEdition.COMMUNITY))
         val plugin = PlSqlPlugin()
         plugin.define(context)
         assertThat(context.extensions).hasSize(8)

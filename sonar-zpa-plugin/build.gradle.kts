@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":zpa-checks"))
     implementation(project(":zpa-checks-testkit"))
     compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:${Versions.min_sonarqube_api}")
+    testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:${Versions.min_sonarqube_api}")
 }
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
@@ -42,7 +43,7 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
             "Plugin-OrganizationUrl" to "https://felipezorzo.com.br",
             "Plugin-SourcesUrl" to "https://github.com/felipebz/zpa",
             "Plugin-Version" to project.version,
-            "Sonar-Version" to "7.6",
+            "Sonar-Version" to Versions.min_sonarqube_api,
             "SonarLint-Supported" to "false"
         ))
     }

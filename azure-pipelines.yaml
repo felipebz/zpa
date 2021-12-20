@@ -4,16 +4,13 @@ strategy:
       imageName: 'ubuntu-latest'
     it-min:
       imageName: 'ubuntu-latest'
-      sq_version: 7.6
-      jdkVersion: 1.8
+      sq_version: LTS
     it-latest:
       imageName: 'ubuntu-latest'
       sq_version: LATEST
-      jdkVersion: 1.11
     it-dev:
       imageName: 'ubuntu-latest'
       sq_version: DEV
-      jdkVersion: 1.11
     windows:
       imageName: 'windows-latest'
 
@@ -58,7 +55,6 @@ steps:
     inputs:
       tasks: 'test -Pit'
       options: '--build-cache'
-      jdkVersionOption: $(jdkVersion)
 
   - task: SonarQubePrepare@4
     displayName: Prepare SonarQube analysis
