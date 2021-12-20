@@ -53,7 +53,7 @@ steps:
     displayName: Run integration tests
     condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
     inputs:
-      tasks: 'test -Pit -Dsonar.runtimeVersion=${sq_version} --info'
+      tasks: 'test -Pit -Dsonar.runtimeVersion=$(sq_version) --info'
       options: '--build-cache'
 
   - task: SonarQubePrepare@4
