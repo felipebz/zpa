@@ -7,7 +7,7 @@ strategy:
       sq_version: LATEST_RELEASE[8.9]
     it-latest:
       imageName: 'ubuntu-latest'
-      sq_version: LATEST
+      sq_version: LATEST_RELEASE
     it-dev:
       imageName: 'ubuntu-latest'
       sq_version: DEV

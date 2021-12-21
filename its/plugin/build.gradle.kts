@@ -12,6 +12,7 @@ tasks.test {
         includeTestsMatching("org.sonar.plsqlopen.it.Tests")
     }
     systemProperty("java.awt.headless", "true")
+    systemProperty("sonar.runtimeVersion", System.getProperty("sonar.runtimeVersion"))
     outputs.upToDateWhen { false }
 }
 
