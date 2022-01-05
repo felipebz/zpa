@@ -21,6 +21,7 @@ dependencies {
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
         exclude(project(":zpa-checks-testkit"))
+        exclude(dependency("jaxen:jaxen"))
     }
     relocate("com.felipebz.flr.api", "org.sonar.plugins.plsqlopen.api.sslr")
     archiveClassifier.set("")
