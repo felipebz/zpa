@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2021 Felipe Zorzo
+ * Copyright (C) 2015-2022 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.CONCATENATION_EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.OBJECT_REFERENCE
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
-import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class ConditionsGrammar : GrammarRuleKey {
 

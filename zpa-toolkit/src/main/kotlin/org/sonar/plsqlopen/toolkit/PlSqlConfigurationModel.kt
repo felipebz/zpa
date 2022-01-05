@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2021 Felipe Zorzo
+ * Copyright (C) 2015-2022 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -21,12 +21,12 @@ package org.sonar.plsqlopen.toolkit
 
 import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.impl.Parser
-import org.sonar.plsqlopen.parser.PlSqlParser
-import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import org.sonar.plsqlopen.utils.log.Loggers
 import com.felipebz.flr.toolkit.AbstractConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
 import com.felipebz.flr.toolkit.Validators
+import org.sonar.plsqlopen.parser.PlSqlParser
+import org.sonar.plsqlopen.squid.PlSqlConfiguration
+import org.sonar.plsqlopen.utils.log.Loggers
 import java.nio.charset.Charset
 
 class PlSqlConfigurationModel : AbstractConfigurationModel() {

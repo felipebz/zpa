@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2021 Felipe Zorzo
+ * Copyright (C) 2015-2022 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.api.Grammar
+import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import com.felipebz.flr.grammar.GrammarRuleKey
 import java.nio.charset.StandardCharsets
 
 abstract class RuleTest {

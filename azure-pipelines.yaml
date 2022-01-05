@@ -32,7 +32,6 @@ steps:
       path: $(Pipeline.Workspace)/.cache
 
   - task: DownloadSecureFile@1
-    condition: and(succeeded(), eq(variables.isMain, 'true'))
     name: gpgKey
     inputs:
       secureFile: 'secring.gpg'
@@ -73,7 +72,7 @@ steps:
 
   - task: Gradle@2
     displayName: Publish artifacts
-    condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
+    condition: and(succeeded(), eq(variables['System.JobName'], 'linux'))
     inputs:
       tasks: 'publish'
       options: '--build-cache -Psigning.secretKeyRingFile=$(gpgKey.secureFilePath) -Psigning.keyId=$(GPG_KEY_ID) -Psigning.password=$(GPG_KEY_PASSWORD)'
