@@ -198,7 +198,7 @@ class PlSqlRulingTest {
 
             if (actualContent == null && expectedFile.exists()) {
                 differences += "\nExpected issues on $expectedFile were not found"
-            } else if (actualContent != null && expectedContent != actualContent) {
+            } else if (actualContent != null && expectedContent.normalizeLineEndings() != actualContent.normalizeLineEndings()) {
                 val actualFile = File("target/actual/$project/${check::class.simpleName}.json")
                 actualFile.parentFile.mkdirs()
                 actualFile.writeText(actualContent)
@@ -210,6 +210,10 @@ class PlSqlRulingTest {
         if (differences.isNotEmpty()) {
             fail(differences)
         }
+    }
+
+    private fun String?.normalizeLineEndings(): String? {
+        return this?.replace("\r\n", "\n")
     }
 
 }
