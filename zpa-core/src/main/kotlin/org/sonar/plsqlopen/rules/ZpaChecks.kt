@@ -21,33 +21,34 @@ package org.sonar.plsqlopen.rules
 
 import org.sonar.plsqlopen.CustomAnnotationBasedRulesDefinition.Companion.getRuleKey
 import org.sonar.plsqlopen.utils.getFields
+import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.lang.reflect.Field
 import java.util.*
 
-open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
-                                    private val repository: String,
-                                    private val ruleMetadataLoader: RuleMetadataLoader) {
-    private val checkByRule = HashMap<ZpaRuleKey, C>()
-    private val ruleByCheck = IdentityHashMap<C, ZpaRuleKey>()
+open class ZpaChecks constructor(private val activeRules: ZpaActiveRules,
+                                 private val repository: String,
+                                 private val ruleMetadataLoader: RuleMetadataLoader) {
+    private val checkByRule = HashMap<ZpaRuleKey, PlSqlVisitor>()
+    private val ruleByCheck = IdentityHashMap<PlSqlVisitor, ZpaRuleKey>()
 
-    fun of(ruleKey: ZpaRuleKey): C? {
+    fun of(ruleKey: ZpaRuleKey): PlSqlVisitor? {
         return checkByRule[ruleKey]
     }
 
-    fun all(): Collection<C> {
+    fun all(): Collection<PlSqlVisitor> {
         return checkByRule.values
     }
 
-    fun ruleKey(check: C): ZpaRuleKey? {
+    fun ruleKey(check: PlSqlVisitor): ZpaRuleKey? {
         return ruleByCheck[check]
     }
 
-    private fun add(ruleKey: ZpaRuleKey, obj: C) {
+    private fun add(ruleKey: ZpaRuleKey, obj: PlSqlVisitor) {
         checkByRule[ruleKey] = obj
         ruleByCheck[obj] = ruleKey
     }
 
-    fun addAnnotatedChecks(checkClassesOrObjects: Iterable<Class<*>>): ZpaChecks<C> {
+    fun addAnnotatedChecks(checkClassesOrObjects: Iterable<Class<*>>): ZpaChecks {
         val checksByEngineKey = HashMap<String, Class<*>>()
         for (checkClassesOrObject in checkClassesOrObjects) {
             val engineKey = getRuleKey(ruleMetadataLoader, checkClassesOrObject)
@@ -63,20 +64,21 @@ open class ZpaChecks<C> constructor(private val activeRules: ZpaActiveRules,
             val checkClassesOrObject = checksByEngineKey[engineKey]
             if (checkClassesOrObject != null) {
                 val obj = instantiate(activeRule, checkClassesOrObject)
+                obj.activeRule = activeRule
                 add(activeRule.ruleKey, obj)
             }
         }
         return this
     }
 
-    private fun instantiate(activeRule: ZpaActiveRule, checkClassOrInstance: Any): C {
+    private fun instantiate(activeRule: ZpaActiveRule, checkClassOrInstance: Any): PlSqlVisitor {
         try {
             var check = checkClassOrInstance
             if (check is Class<*>) {
                 check = (checkClassOrInstance as Class<*>).getDeclaredConstructor().newInstance()
             }
             configureFields(activeRule, check)
-            return check as C
+            return check as PlSqlVisitor
         } catch (e: InstantiationException) {
             throw failToInstantiateCheck(activeRule, checkClassOrInstance, e)
         } catch (e: IllegalAccessException) {

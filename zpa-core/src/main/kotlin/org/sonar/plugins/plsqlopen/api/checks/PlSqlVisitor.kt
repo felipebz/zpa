@@ -23,12 +23,16 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
+import org.sonar.plsqlopen.rules.ZpaActiveRule
 import org.sonar.plsqlopen.squid.PlSqlAstWalker
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 
 open class PlSqlVisitor {
 
     lateinit var context: PlSqlVisitorContext
+    lateinit var activeRule: ZpaActiveRule
+      internal set
+
     private val astNodeTypesToVisit = mutableSetOf<AstNodeType>()
 
     fun subscribedKinds(): Set<AstNodeType> = astNodeTypesToVisit

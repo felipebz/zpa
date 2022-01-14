@@ -27,12 +27,12 @@ import org.sonar.plugins.plsqlopen.api.ZpaRulesDefinition
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 
 class PlSqlChecks private constructor(private val activeRules: ZpaActiveRules, private val ruleMetadataLoader: RuleMetadataLoader) {
-    private val checksByRepository = hashSetOf<ZpaChecks<PlSqlVisitor>>()
+    private val checksByRepository = hashSetOf<ZpaChecks>()
 
-    val checks: Set<ZpaChecks<PlSqlVisitor>> = checksByRepository
+    val checks: Set<ZpaChecks> = checksByRepository
 
     fun addChecks(repositoryKey: String, checkClass: Iterable<Class<*>>): PlSqlChecks {
-        checksByRepository.add(ZpaChecks<PlSqlVisitor>(activeRules, repositoryKey, ruleMetadataLoader)
+        checksByRepository.add(ZpaChecks(activeRules, repositoryKey, ruleMetadataLoader)
                 .addAnnotatedChecks(checkClass))
 
         return this
