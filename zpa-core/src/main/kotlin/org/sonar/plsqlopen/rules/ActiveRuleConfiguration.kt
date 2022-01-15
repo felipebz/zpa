@@ -22,6 +22,6 @@ package org.sonar.plsqlopen.rules
 class ActiveRuleConfiguration(
     val repositoryKey: String,
     val key: String,
-    val severity: String,
-    val parameters: Map<String, String>
+    val severity: String? = null,
+    val parameters: Map<String, String> = emptyMap()
 )
