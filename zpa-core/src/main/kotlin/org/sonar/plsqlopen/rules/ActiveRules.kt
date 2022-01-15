@@ -35,10 +35,9 @@ class ActiveRules : ZpaActiveRules {
     override fun findByRepository(repository: String): Collection<ZpaActiveRule> {
         val repo = this.repositories.first { it.key == repository }
         return repo.availableRules
-            .map {
-                val configuration = activeRulesConfiguration.firstOrNull { r -> r.key == it.key && r.repositoryKey == repo.key }
-                ActiveRule(repo, it, configuration)
-            }
+            .map { it to activeRulesConfiguration.firstOrNull { r -> r.keyIs(repo.key, it.key) } }
+            .filter { activeRulesConfiguration.isEmpty() || it.second != null }
+            .map { ActiveRule(repo, it.first, it.second) }
     }
 
 }

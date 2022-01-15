@@ -24,4 +24,8 @@ class ActiveRuleConfiguration(
     val key: String,
     val severity: String? = null,
     val parameters: Map<String, String> = emptyMap()
-)
+) {
+    fun keyIs(repositoryKey: String, key: String): Boolean {
+        return this.repositoryKey == repositoryKey && this.key == key
+    }
+}
