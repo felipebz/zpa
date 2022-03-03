@@ -799,7 +799,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     LPARENTHESIS, RECORD_FIELD_DECLARATION, b.zeroOrMore(COMMA, RECORD_FIELD_DECLARATION), RPARENTHESIS,
                     SEMICOLON)
 
-            b.rule(NESTED_TABLE_DEFINITION).define(TABLE, OF, DATATYPE, b.optional(NOT, NULL))
+            b.rule(NESTED_TABLE_DEFINITION).define(TABLE, OF, DATATYPE)
 
             b.rule(TABLE_OF_DECLARATION).define(
                     TYPE, IDENTIFIER_NAME, IS, NESTED_TABLE_DEFINITION,
@@ -809,7 +809,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(VARRAY_TYPE_DEFINITION).define(
                     b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)),
                     LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS,
-                    OF, DATATYPE, b.optional(NOT, NULL))
+                    OF, DATATYPE)
 
             b.rule(VARRAY_DECLARATION).define(
                     TYPE, IDENTIFIER_NAME, IS, VARRAY_TYPE_DEFINITION, SEMICOLON)
