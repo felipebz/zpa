@@ -58,6 +58,11 @@ class DatatypeTest : RuleTest() {
         assertThat(p).matches("interval day(2) to second")
         assertThat(p).matches("interval day to second(6)")
         assertThat(p).matches("interval day(2) to second(6)")
+        assertThat(p).matches("my_datatype")
+        assertThat(p).matches("my_char(5)")
+        assertThat(p).matches("my_char(5 char)")
+        assertThat(p).matches("my_char character set any_cs")
+        assertThat(p).matches("my_number(10,2)")
     }
 
 }

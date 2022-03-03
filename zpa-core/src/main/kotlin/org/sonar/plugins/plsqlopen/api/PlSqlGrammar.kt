@@ -355,7 +355,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ANCHORED_DATATYPE).define(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE))
 
-            b.rule(CUSTOM_DATATYPE).define(MEMBER_EXPRESSION)
+            b.rule(CUSTOM_DATATYPE).define(
+                MEMBER_EXPRESSION,
+                b.optional(b.firstOf(
+                    b.sequence(LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS),
+                    b.sequence(
+                        b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
+                        b.optional(CHARACTER_SET_CLAUSE))
+                )))
 
             b.rule(REF_DATATYPE).define(REF, CUSTOM_DATATYPE)
 
