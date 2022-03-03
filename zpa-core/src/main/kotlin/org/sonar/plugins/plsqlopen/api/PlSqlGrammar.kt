@@ -305,7 +305,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(NUMERIC_DATATYPE_CONSTRAINT).define(
                 LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS
-            ).skip()
+            )
 
             b.rule(NUMERIC_DATATYPE).define(
                     b.firstOf(
@@ -334,11 +334,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(LOB_DATATYPE).define(b.firstOf(BFILE, BLOB, CLOB, NCLOB), b.optional(CHARACTER_SET_CLAUSE))
 
-
             b.rule(CHARACTER_DATATYPE_CONSTRAINT).define(
                 b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
                 b.optional(CHARACTER_SET_CLAUSE)
-            ).skip()
+            )
 
             b.rule(CHARACTER_DATAYPE).define(
                     b.firstOf(
