@@ -155,7 +155,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(KEY_COMPRESSION).define(
                     b.firstOf(
                             b.sequence(MAPPING, TABLE),
-                            NOMMAPING))
+                            NOMAPPING))
 
             b.rule(LOB_STORAGE_CLAUSE).define(
                     b.sequence(LOB,
@@ -211,7 +211,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.sequence(INITIAL, SIZE_CLAUSE),
                                     b.sequence(NEXT, SIZE_CLAUSE),
                                     b.sequence(MINEXTENTS, INTEGER_LITERAL),
-                                    b.sequence(MANEXTENTS, b.firstOf(INTEGER_LITERAL, UNLIMITED)),
+                                    b.sequence(MAXEXTENTS, b.firstOf(INTEGER_LITERAL, UNLIMITED)),
                                     b.sequence(PCTINCREASE, INTEGER_LITERAL),
                                     b.sequence(FREELISTS, INTEGER_LITERAL),
                                     b.sequence(FREELIST, GROUPS, INTEGER_LITERAL),

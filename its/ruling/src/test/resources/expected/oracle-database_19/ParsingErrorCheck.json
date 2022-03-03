@@ -662,9 +662,6 @@
   "ALTER-TABLE-31.sql": [
     2
   ],
-  "ALTER-TABLE-33.sql": [
-    2
-  ],
   "ALTER-TABLE-35.sql": [
     2
   ],
@@ -2108,6 +2105,9 @@
   "Format-Models-5.sql": [
     2
   ],
+  "Format-Models-54.sql": [
+    3
+  ],
   "Format-Models-58.sql": [
     2
   ],
@@ -2716,9 +2716,6 @@
   ],
   "SELECT-77.sql": [
     14
-  ],
-  "SELECT-78.sql": [
-    4
   ],
   "SELECT-8.sql": [
     5
