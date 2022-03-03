@@ -41,8 +41,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
     DATATYPE,
     DATATYPE_LENGTH,
     CHARACTER_SET_CLAUSE,
+    NUMERIC_DATATYPE_CONSTRAINT,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
+    CHARACTER_DATATYPE_CONSTRAINT,
     CHARACTER_DATAYPE,
     BOOLEAN_DATATYPE,
     DATE_DATATYPE,
@@ -301,6 +303,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
         private fun createDatatypes(b: PlSqlGrammarBuilder) {
             b.rule(DATATYPE_LENGTH).define(b.firstOf(INTEGER_LITERAL, INQUIRY_DIRECTIVE)).skip()
 
+            b.rule(NUMERIC_DATATYPE_CONSTRAINT).define(
+                LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS
+            ).skip()
+
             b.rule(NUMERIC_DATATYPE).define(
                     b.firstOf(
                             BINARY_DOUBLE,
@@ -322,11 +328,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             REAL,
                             SIGNTYPE,
                             SMALLINT),
-                    b.optional(LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS))
+                    b.optional(NUMERIC_DATATYPE_CONSTRAINT))
 
             b.rule(CHARACTER_SET_CLAUSE).define(CHARACTER, SET, b.firstOf(ANY_CS, b.sequence(IDENTIFIER_NAME, MOD, CHARSET)))
 
             b.rule(LOB_DATATYPE).define(b.firstOf(BFILE, BLOB, CLOB, NCLOB), b.optional(CHARACTER_SET_CLAUSE))
+
+
+            b.rule(CHARACTER_DATATYPE_CONSTRAINT).define(
+                b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
+                b.optional(CHARACTER_SET_CLAUSE)
+            ).skip()
 
             b.rule(CHARACTER_DATAYPE).define(
                     b.firstOf(
@@ -341,8 +353,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             UROWID,
                             VARCHAR,
                             VARCHAR2),
-                    b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
-                    b.optional(CHARACTER_SET_CLAUSE))
+                CHARACTER_DATATYPE_CONSTRAINT)
 
             b.rule(BOOLEAN_DATATYPE).define(BOOLEAN)
 
@@ -357,12 +368,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(CUSTOM_DATATYPE).define(
                 MEMBER_EXPRESSION,
-                b.optional(b.firstOf(
-                    b.sequence(LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS),
-                    b.sequence(
-                        b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
-                        b.optional(CHARACTER_SET_CLAUSE))
-                )))
+                b.optional(b.firstOf(NUMERIC_DATATYPE_CONSTRAINT, CHARACTER_DATATYPE_CONSTRAINT)))
 
             b.rule(REF_DATATYPE).define(REF, CUSTOM_DATATYPE)
 
