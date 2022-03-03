@@ -19,13 +19,13 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
-import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
@@ -54,6 +54,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     XMLTABLE_EXPRESSION,
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
+    TABLE_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
 
     companion object {
@@ -79,7 +80,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     XMLPI_EXPRESSION,
                     XMLTABLE_EXPRESSION,
                     CAST_EXPRESSION,
-                    TRIM_EXPRESSION)).skip()
+                    TRIM_EXPRESSION,
+                    TABLE_EXPRESSION)).skip()
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
@@ -95,6 +97,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
                     AS, DATATYPE,
                     RPARENTHESIS)
+
+            b.rule(TABLE_EXPRESSION).define(
+                TABLE, LPARENTHESIS,
+                EXPRESSION,
+                RPARENTHESIS)
         }
 
         private fun createDateFunctions(b: PlSqlGrammarBuilder) {
