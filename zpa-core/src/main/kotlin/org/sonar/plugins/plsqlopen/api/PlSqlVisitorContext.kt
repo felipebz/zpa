@@ -26,10 +26,10 @@ import org.sonar.plsqlopen.symbols.SymbolTableImpl
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
 
-class PlSqlVisitorContext private constructor(private val rootTree: AstNode?,
-                                              private val plSqlFile: PlSqlFile?,
-                                              private val parsingException: RecognitionException?,
-                                              var formsMetadata: FormsMetadata?) {
+open class PlSqlVisitorContext private constructor(private val rootTree: AstNode?,
+                                                   private val plSqlFile: PlSqlFile?,
+                                                   private val parsingException: RecognitionException?,
+                                                   var formsMetadata: FormsMetadata?) {
     var symbolTable: SymbolTable = SymbolTableImpl()
     var currentScope: Scope? = null
 
