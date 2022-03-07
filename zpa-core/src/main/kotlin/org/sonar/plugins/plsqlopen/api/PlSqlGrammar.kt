@@ -363,13 +363,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.sequence(INTERVAL, DAY, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS),
                             TO, SECOND, b.optional(LPARENTHESIS, DATATYPE_LENGTH, RPARENTHESIS))))
 
-            b.rule(ANCHORED_DATATYPE).define(CUSTOM_DATATYPE, MOD, b.firstOf(TYPE, ROWTYPE))
+            b.rule(ANCHORED_DATATYPE).define(MEMBER_EXPRESSION, MOD, b.firstOf(TYPE, ROWTYPE))
 
             b.rule(CUSTOM_DATATYPE).define(
                 MEMBER_EXPRESSION,
                 b.optional(b.firstOf(NUMERIC_DATATYPE_CONSTRAINT, CHARACTER_DATATYPE_CONSTRAINT)))
 
-            b.rule(REF_DATATYPE).define(REF, CUSTOM_DATATYPE)
+            b.rule(REF_DATATYPE).define(REF, MEMBER_EXPRESSION)
 
             b.rule(DATATYPE).define(b.firstOf(
                     NUMERIC_DATATYPE,
