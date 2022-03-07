@@ -335,9 +335,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(LOB_DATATYPE).define(b.firstOf(BFILE, BLOB, CLOB, NCLOB), b.optional(CHARACTER_SET_CLAUSE))
 
             b.rule(CHARACTER_DATATYPE_CONSTRAINT).define(
-                b.optional(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS),
-                b.optional(CHARACTER_SET_CLAUSE)
-            )
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, DATATYPE_LENGTH, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS, b.optional(CHARACTER_SET_CLAUSE)),
+                    CHARACTER_SET_CLAUSE))
 
             b.rule(CHARACTER_DATAYPE).define(
                     b.firstOf(
@@ -352,7 +352,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             UROWID,
                             VARCHAR,
                             VARCHAR2),
-                CHARACTER_DATATYPE_CONSTRAINT)
+                b.optional(CHARACTER_DATATYPE_CONSTRAINT))
 
             b.rule(BOOLEAN_DATATYPE).define(BOOLEAN)
 
