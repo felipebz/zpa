@@ -101,6 +101,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun visitNodeInternal(node: AstNode) {
         if (node.type === PlSqlGrammar.VARIABLE_DECLARATION) {
             visitVariableDeclaration(node)
+        } else if (node.type === PlSqlGrammar.EXCEPTION_DECLARATION) {
+            visitExceptionDeclaration(node)
         } else if (node.type === PlSqlGrammar.CUSTOM_SUBTYPE) {
             visitCustomSubtypeDeclaration(node)
         } else if (node.type === PlSqlGrammar.TABLE_OF_DECLARATION) {
@@ -196,6 +198,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
         val type = solveType(datatype)
         createSymbol(identifier, Symbol.Kind.VARIABLE, type)
+    }
+
+    private fun visitExceptionDeclaration(node: AstNode) {
+        val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+
+        createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.EXCEPTION)
     }
 
     private fun visitCustomSubtypeDeclaration(node: AstNode) {

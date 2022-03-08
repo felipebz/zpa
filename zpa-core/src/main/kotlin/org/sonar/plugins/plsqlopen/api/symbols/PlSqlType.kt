@@ -30,7 +30,8 @@ enum class PlSqlType {
     ROWTYPE,
     ASSOCIATIVE_ARRAY,
     NULL,
-    RECORD;
+    RECORD,
+    EXCEPTION;
 
     val isCharacter: Boolean
         get() = this == CHARACTER

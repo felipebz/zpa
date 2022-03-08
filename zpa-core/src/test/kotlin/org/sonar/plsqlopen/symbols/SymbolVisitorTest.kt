@@ -273,7 +273,7 @@ end;
         assertThat(symbols).hasSize(1)
 
         val ex = symbols.find("ex", 2, 3)
-        assertThat(ex.type()).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(ex.type()).isEqualTo(PlSqlType.EXCEPTION)
         assertThat(ex.references()).containsExactly(
             tuple(6, 8))
     }

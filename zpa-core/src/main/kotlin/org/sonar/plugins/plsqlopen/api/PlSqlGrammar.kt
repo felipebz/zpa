@@ -139,6 +139,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     // Declarations
     DEFAULT_VALUE_ASSIGNMENT,
     VARIABLE_DECLARATION,
+    EXCEPTION_DECLARATION,
     PARAMETER_DECLARATION,
     CURSOR_PARAMETER_DECLARATION,
     CURSOR_DECLARATION,
@@ -765,13 +766,15 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ))
 
             b.rule(VARIABLE_DECLARATION).define(IDENTIFIER_NAME,
-                    b.optional(CONSTANT),
-                    b.firstOf(
-                            b.sequence(
-                                    DATATYPE,
-                                    b.optional(DEFAULT_VALUE_ASSIGNMENT)),
-                            EXCEPTION),
-                    SEMICOLON)
+                b.optional(CONSTANT),
+                b.firstOf(
+                    b.sequence(
+                        DATATYPE,
+                        b.optional(DEFAULT_VALUE_ASSIGNMENT)),
+                    EXCEPTION),
+                SEMICOLON)
+
+            b.rule(EXCEPTION_DECLARATION).define(IDENTIFIER_NAME, EXCEPTION, SEMICOLON)
 
             b.rule(CUSTOM_SUBTYPE).define(
                     SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
@@ -843,6 +846,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
+                    EXCEPTION_DECLARATION,
                     VARIABLE_DECLARATION,
                     PROCEDURE_DECLARATION,
                     FUNCTION_DECLARATION,
