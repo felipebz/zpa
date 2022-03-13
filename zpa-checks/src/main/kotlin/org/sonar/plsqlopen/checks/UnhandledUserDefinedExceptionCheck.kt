@@ -59,7 +59,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     private fun exceptionShouldBeChecked(exceptionDeclaration: Symbol): Boolean {
-        val scopeOfDeclaration = exceptionDeclaration.scope().tree()
+        val scopeOfDeclaration = exceptionDeclaration.scope.tree
         val isPackage = scopeOfDeclaration.typeIs(PACKAGE_SPEC_OR_BODY)
         return !isPackage
     }
@@ -67,7 +67,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     private fun isHandled(identifierName: String): Boolean {
         var outerScope = context.currentScope
         do {
-            val scopeNode = outerScope?.tree()
+            val scopeNode = outerScope?.tree
 
             val statements = scopeNode?.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)
             if (statements != null) {
@@ -84,7 +84,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
                 }
             }
 
-            outerScope = outerScope?.outer()
+            outerScope = outerScope?.outer
         } while (outerScope != null)
 
         return false

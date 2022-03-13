@@ -59,7 +59,7 @@ class DefaultTypeSolver {
             }
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.type() ?: PlSqlType.UNKNOWN
+            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.type ?: PlSqlType.UNKNOWN
         }
         return type
     }

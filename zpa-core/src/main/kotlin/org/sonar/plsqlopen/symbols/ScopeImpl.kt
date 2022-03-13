@@ -25,31 +25,17 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 
-class ScopeImpl(private val outer: Scope?,
-                private val node: AstNode,
+class ScopeImpl(override val outer: Scope?,
+                override val tree: AstNode,
                 override val isAutonomousTransaction: Boolean = false,
-                private val hasExceptionHandler: Boolean = false,
+                override val hasExceptionHandler: Boolean = false,
                 override val isOverridingMember: Boolean = false) : Scope {
-    private var identifier: String? = null
 
     override val symbols = mutableListOf<Symbol>()
 
-    override fun tree() = node
-
-    override fun outer() = outer
-
-    override fun identifier(): String? {
-        if (identifier == null) {
-            identifier = ""
-            val identifierNode = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
-            if (identifierNode != null) {
-                this.identifier = identifierNode.tokenOriginalValue
-            }
-        }
-        return identifier
+    override val identifier: String? by lazy {
+        tree.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
     }
-
-    override fun hasExceptionHandler() = hasExceptionHandler
 
     /**
      * @param kind of the symbols to look for
@@ -62,8 +48,8 @@ class ScopeImpl(private val outer: Scope?,
         val result = ArrayDeque<Symbol>()
         var scope: Scope? = this
         while (scope != null) {
-            scope.symbols.filterTo(result) { it.called(name) && (kinds.isEmpty() || kinds.contains(it.kind())) }
-            scope = scope.outer()
+            scope.symbols.filterTo(result) { it.called(name) && (kinds.isEmpty() || kinds.contains(it.kind)) }
+            scope = scope.outer
         }
 
         return result
@@ -77,11 +63,11 @@ class ScopeImpl(private val outer: Scope?,
         var scope: Scope? = this
         while (scope != null) {
             for (s in scope.symbols) {
-                if (s.called(name) && (kinds.isEmpty() || kinds.contains(s.kind()))) {
+                if (s.called(name) && (kinds.isEmpty() || kinds.contains(s.kind))) {
                     return s
                 }
             }
-            scope = scope.outer()
+            scope = scope.outer
         }
 
         return null

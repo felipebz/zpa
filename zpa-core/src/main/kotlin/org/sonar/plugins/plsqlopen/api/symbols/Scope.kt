@@ -26,10 +26,10 @@ interface Scope {
     val isAutonomousTransaction: Boolean
     val isOverridingMember: Boolean
     val symbols: List<Symbol>
-    fun tree(): AstNode
-    fun outer(): Scope?
-    fun identifier(): String?
-    fun hasExceptionHandler(): Boolean
+    val tree: AstNode
+    val outer: Scope?
+    val identifier: String?
+    val hasExceptionHandler: Boolean
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind

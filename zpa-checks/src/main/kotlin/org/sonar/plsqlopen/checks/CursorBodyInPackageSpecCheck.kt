@@ -40,9 +40,9 @@ class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val cursors = context.currentScope?.getSymbols(Kind.CURSOR) ?: emptyList()
         for (cursor in cursors) {
-            val cursorDeclaration = cursor.declaration().parent
+            val cursorDeclaration = cursor.declaration.parent
             if (cursorDeclaration.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
-                addIssue(cursorDeclaration, getLocalizedMessage(), cursor.name())
+                addIssue(cursorDeclaration, getLocalizedMessage(), cursor.name)
             }
         }
     }

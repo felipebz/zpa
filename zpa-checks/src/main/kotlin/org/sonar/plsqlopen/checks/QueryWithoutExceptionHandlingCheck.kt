@@ -52,7 +52,7 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
                 addIssue(node, getLocalizedMessage())
             }
         } else {
-            val hasExceptionHandler = context.currentScope?.hasExceptionHandler() ?: false
+            val hasExceptionHandler = context.currentScope?.hasExceptionHandler ?: false
             if (!hasExceptionHandler) {
                 addIssue(node, getLocalizedMessage())
             }

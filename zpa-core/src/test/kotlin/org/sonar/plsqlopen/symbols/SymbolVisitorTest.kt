@@ -42,8 +42,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val variable = symbols.find("variable", 2, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(variable.references()).containsExactly(
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).containsExactly(
             tuple(4, 3))
     }
 
@@ -60,11 +60,11 @@ end;
         assertThat(symbols).hasSize(2)
 
         val type = symbols.find("my_number", 2, 11)
-        assertThat(type.type()).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(type.type).isEqualTo(PlSqlType.NUMERIC)
 
         val variable = symbols.find("variable", 3, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(variable.references()).containsExactly(
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).containsExactly(
             tuple(5, 3))
     }
 
@@ -81,11 +81,11 @@ end;
         assertThat(symbols).hasSize(2)
 
         val type = symbols.find("my_array", 2, 8)
-        assertThat(type.type()).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+        assertThat(type.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
 
         val variable = symbols.find("variable", 3, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
-        assertThat(variable.references()).containsExactly(
+        assertThat(variable.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+        assertThat(variable.references).containsExactly(
             tuple(5, 3))
     }
 
@@ -102,11 +102,11 @@ end;
         assertThat(symbols).hasSize(2)
 
         val type = symbols.find("my_record", 2, 8)
-        assertThat(type.type()).isEqualTo(PlSqlType.RECORD)
+        assertThat(type.type).isEqualTo(PlSqlType.RECORD)
 
         val variable = symbols.find("variable", 3, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.RECORD)
-        assertThat(variable.references()).isEmpty()
+        assertThat(variable.type).isEqualTo(PlSqlType.RECORD)
+        assertThat(variable.references).isEmpty()
     }
 
     @Test
@@ -121,8 +121,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val i = symbols.find("i", 2, 7)
-        assertThat(i.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(i.references()).isEmpty()
+        assertThat(i.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i.references).isEmpty()
     }
 
     @Test
@@ -140,13 +140,13 @@ end;
         assertThat(symbols).hasSize(2)
 
         val i = symbols.find("i", 2, 3)
-        assertThat(i.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(i.references()).containsExactly(
+        assertThat(i.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i.references).containsExactly(
             tuple(7, 7))
 
         val i2 = symbols.find("i", 4, 7)
-        assertThat(i2.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(i2.references()).containsExactly(
+        assertThat(i2.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(i2.references).containsExactly(
             tuple(5, 9))
     }
 
@@ -161,8 +161,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val foo = symbols.find("foo", 2, 10)
-        assertThat(foo.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(foo.references()).containsExactly(
+        assertThat(foo.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(foo.references).containsExactly(
             tuple(3, 31))
     }
 
@@ -177,8 +177,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val x = symbols.find("x", 1, 22)
-        assertThat(x.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(x.references()).isEmpty()
+        assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references).isEmpty()
     }
 
     @Test
@@ -192,8 +192,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val x = symbols.find("x", 1, 21)
-        assertThat(x.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(x.references()).isEmpty()
+        assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references).isEmpty()
     }
 
     @Test
@@ -206,8 +206,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val variable = symbols.find("variable", 2, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(variable.references()).isEmpty()
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).isEmpty()
     }
 
     @Test
@@ -220,8 +220,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val variable = symbols.find("variable", 2, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(variable.references()).isEmpty()
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).isEmpty()
     }
 
     @Test
@@ -241,20 +241,20 @@ end;
         assertThat(symbols).hasSize(3)
 
         val cur = symbols.find("cur", 2, 10)
-        assertThat(cur.type()).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(cur.references()).containsExactly(
+        assertThat(cur.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(cur.references).containsExactly(
             tuple(5, 12),
             tuple(7, 8),
             tuple(8, 9),
             tuple(9, 9))
 
         val c = symbols.find("c", 2, 14)
-        assertThat(c.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(c.references()).isEmpty()
+        assertThat(c.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(c.references).isEmpty()
 
         val variable = symbols.find("variable", 5, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.ROWTYPE)
-        assertThat(variable.references()).containsExactly(
+        assertThat(variable.type).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(variable.references).containsExactly(
             tuple(8, 18))
     }
 
@@ -273,8 +273,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val ex = symbols.find("ex", 2, 3)
-        assertThat(ex.type()).isEqualTo(PlSqlType.EXCEPTION)
-        assertThat(ex.references()).containsExactly(
+        assertThat(ex.type).isEqualTo(PlSqlType.EXCEPTION)
+        assertThat(ex.references).containsExactly(
             tuple(6, 8))
     }
 
@@ -291,8 +291,8 @@ end;
         assertThat(symbols).hasSize(1)
 
         val variable = symbols.find("variable", 3, 3)
-        assertThat(variable.type()).isEqualTo(PlSqlType.NUMERIC)
-        assertThat(variable.references()).containsExactly(
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).containsExactly(
             tuple(5, 3))
     }
 
@@ -303,15 +303,15 @@ end;
 
     private fun List<Symbol>.find(name: String, line: Int, column: Int): Symbol {
         val symbol = this.firstOrNull {
-            it.name() == name &&
-                it.declaration().token.line == line &&
-                it.declaration().token.column == offset(column)
+            it.name == name &&
+                it.declaration.token.line == line &&
+                it.declaration.token.column == offset(column)
         }
         return symbol ?: fail("No symbol named $name was found at line $line and column ${offset(column)}")
     }
 
-    private fun Symbol.references(): List<Tuple> =
-        this.usages().map { tuple(it.token.line, it.token.column + 1) }
+    private val Symbol.references: List<Tuple>
+        get() = this.usages.map { tuple(it.token.line, it.token.column + 1) }
 
     private fun offset(offset: Int): Int {
         return offset - 1

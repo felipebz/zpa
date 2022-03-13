@@ -31,13 +31,13 @@ class SonarQubeSymbolTable(context: SensorContext, inputFile: InputFile) {
 
     fun save(symbols: List<Symbol>) {
         for (symbol in symbols) {
-            val symbolNode = symbol.declaration()
+            val symbolNode = symbol.declaration
 
             val symbolLocation = TokenLocation.from(symbolNode.token)
             val newSymbol = symbolizable.newSymbol(symbolLocation.line(), symbolLocation.column(),
                     symbolLocation.endLine(), symbolLocation.endColumn())
 
-            for (usage in symbol.usages()) {
+            for (usage in symbol.usages) {
                 val usageLocation = TokenLocation.from(usage.token)
                 newSymbol.newReference(usageLocation.line(), usageLocation.column(), usageLocation.endLine(), usageLocation.endColumn())
             }

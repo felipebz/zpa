@@ -33,9 +33,9 @@ class SymbolTest {
         val scope = mock(Scope::class.java)
         val symbol = createSymbol(scope, "foo", Kind.VARIABLE)
 
-        assertThat(symbol.name()).isEqualTo("foo")
-        assertThat(symbol.kind()).isEqualTo(Kind.VARIABLE)
-        assertThat(symbol.scope()).isEqualTo(scope)
+        assertThat(symbol.name).isEqualTo("foo")
+        assertThat(symbol.kind).isEqualTo(Kind.VARIABLE)
+        assertThat(symbol.scope).isEqualTo(scope)
         assertThat(symbol.toString()).startsWith("Symbol{name='foo', kind=VARIABLE, scope=")
     }
 
@@ -49,7 +49,7 @@ class SymbolTest {
         modifiers.add(node)
         symbol.addModifiers(modifiers)
 
-        assertThat(symbol.modifiers()).containsExactly(node)
+        assertThat(symbol.modifiers).containsExactly(node)
     }
 
     @Test

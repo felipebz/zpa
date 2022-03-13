@@ -36,7 +36,7 @@ class SymbolTableImpl : SymbolTable {
 
     override fun getScopeFor(symbol: AstNode): Scope? {
         for (scope in scopes) {
-            if (scope.tree() == symbol) {
+            if (scope.tree == symbol) {
                 return scope
             }
         }
@@ -45,12 +45,12 @@ class SymbolTableImpl : SymbolTable {
 
     override fun getScopeForSymbol(node: AstNode): Scope? {
         val symbol = getSymbolFor(node)
-        return symbol?.scope()
+        return symbol?.scope
     }
 
     override fun getSymbolFor(node: AstNode): Symbol? {
         for (symbol in symbols) {
-            if (symbol.declaration() == node) {
+            if (symbol.declaration == node) {
                 return symbol
             }
         }
@@ -72,7 +72,7 @@ class SymbolTableImpl : SymbolTable {
     override fun getSymbols(kind: Symbol.Kind): List<Symbol> {
         val result = ArrayList<Symbol>()
         for (symbol in symbols) {
-            if (kind == symbol.kind()) {
+            if (kind == symbol.kind) {
                 result.add(symbol)
             }
         }
@@ -87,7 +87,7 @@ class SymbolTableImpl : SymbolTable {
     override fun getSymbols(name: String): List<Symbol> {
         val result = ArrayList<Symbol>()
         for (symbol in symbols) {
-            if (name.equals(symbol.name(), ignoreCase = true)) {
+            if (name.equals(symbol.name, ignoreCase = true)) {
                 result.add(symbol)
             }
         }

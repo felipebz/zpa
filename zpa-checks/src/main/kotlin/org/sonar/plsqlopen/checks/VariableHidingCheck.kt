@@ -42,7 +42,7 @@ class VariableHidingCheck : AbstractBaseCheck() {
             val symbols = scope.getSymbolsAcessibleInScope(name)
 
             if (symbols.size > 1) {
-                val originalVariable = symbols.last.declaration()
+                val originalVariable = symbols.last.declaration
 
                 if (originalVariable != identifier) {
                     addIssue(identifier, getLocalizedMessage(), name, originalVariable.tokenLine)

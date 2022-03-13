@@ -34,8 +34,8 @@ class ScopeImplTest {
     fun testScope() {
         val node = mock(AstNode::class.java)
         val scope = ScopeImpl(null, node)
-        assertThat(scope.outer()).isNull()
-        assertThat(scope.tree()).isEqualTo(node)
+        assertThat(scope.outer).isNull()
+        assertThat(scope.tree).isEqualTo(node)
         assertThat(scope.isAutonomousTransaction).isFalse
     }
 

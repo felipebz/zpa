@@ -47,7 +47,7 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
 
             // TODO this is very complex and it probably can be simplified in the future
             val fetchDestination = semantic(topParent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME))
-                .symbol?.usages().orEmpty()
+                .symbol?.usages.orEmpty()
                 .map { it.parent.parent }
                 .filter { it.typeIs(PlSqlGrammar.FETCH_STATEMENT) }
                 .map { it.getFirstChild(DmlGrammar.INTO_CLAUSE).getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME) }

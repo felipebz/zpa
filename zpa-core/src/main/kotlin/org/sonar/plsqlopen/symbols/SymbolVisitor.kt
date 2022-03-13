@@ -75,7 +75,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     override fun leaveNode(node: AstNode) {
         if (node.typeIs(scopeHolders)) {
-            context.currentScope = context.currentScope?.outer()
+            context.currentScope = context.currentScope?.outer
         }
     }
 
@@ -274,7 +274,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             }
 
             if (this != null) {
-                exception = this.hasExceptionHandler() || java.lang.Boolean.TRUE == exceptionHandler
+                exception = this.hasExceptionHandler || java.lang.Boolean.TRUE == exceptionHandler
             } else if (exceptionHandler != null) {
                 exception = exceptionHandler
             }
@@ -288,7 +288,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun leaveScope() {
         val scope = currentScope
         requireNotNull(scope) { "Current scope should never be null when calling method \"leaveScope\"" }
-        currentScope = scope.outer()
+        currentScope = scope.outer
     }
 
     private fun solveType(node: AstNode?): PlSqlType {

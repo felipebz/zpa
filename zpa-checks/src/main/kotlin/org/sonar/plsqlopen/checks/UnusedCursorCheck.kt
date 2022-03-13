@@ -36,7 +36,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     override fun leaveFile(node: AstNode) {
         val scopes = context.symbolTable.scopes
         for (scope in scopes) {
-            val isCreatePackage = scope.tree().typeIs(PlSqlGrammar.CREATE_PACKAGE)
+            val isCreatePackage = scope.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE)
             if (isCreatePackage) {
                 continue
             }
@@ -47,11 +47,11 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     private fun checkScope(scope: Scope) {
         val symbols = scope.getSymbols(Symbol.Kind.CURSOR)
         for (symbol in symbols) {
-            val parent = checkNotNull(symbol.declaration().parent)
+            val parent = checkNotNull(symbol.declaration.parent)
 
-            if (symbol.usages().isEmpty() && !parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
+            if (symbol.usages.isEmpty() && !parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
                 addIssue(parent, getLocalizedMessage(),
-                        symbol.declaration().tokenOriginalValue)
+                        symbol.declaration.tokenOriginalValue)
             }
         }
     }

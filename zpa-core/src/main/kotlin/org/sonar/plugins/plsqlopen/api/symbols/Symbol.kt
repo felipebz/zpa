@@ -22,12 +22,12 @@ package org.sonar.plugins.plsqlopen.api.symbols
 import com.felipebz.flr.api.AstNode
 import java.util.*
 
-open class Symbol(private val declaration: AstNode, private val kind: Kind, private val scope: Scope, type: PlSqlType?) {
-
-    private val name: String = declaration.tokenOriginalValue
-    private val usages = ArrayList<AstNode>()
-    private val modifiers = ArrayList<AstNode>()
-    private var type: PlSqlType? = null
+open class Symbol(val declaration: AstNode,
+                  val kind: Kind,
+                  val scope: Scope,
+                  type: PlSqlType?) {
+    private val internalUsages = mutableListOf<AstNode>()
+    private var internalModifiers = mutableListOf<AstNode>()
 
     enum class Kind(val value: String) {
         VARIABLE("variable"),
@@ -36,15 +36,15 @@ open class Symbol(private val declaration: AstNode, private val kind: Kind, priv
         TYPE("type"),
     }
 
-    init {
-        if (type != null) {
-            this.type = type
-        } else {
-            this.type = PlSqlType.UNKNOWN
-        }
-    }
+    val name: String = declaration.tokenOriginalValue
 
-    fun modifiers(): List<AstNode> = Collections.unmodifiableList(modifiers)
+    val type: PlSqlType = type ?: PlSqlType.UNKNOWN
+
+    val modifiers: List<AstNode>
+        get() = Collections.unmodifiableList(internalModifiers)
+
+    val usages: List<AstNode>
+        get() = Collections.unmodifiableList(internalUsages)
 
     fun hasModifier(modifier: String): Boolean {
         for (syntaxToken in modifiers) {
@@ -56,28 +56,16 @@ open class Symbol(private val declaration: AstNode, private val kind: Kind, priv
     }
 
     fun addModifiers(modifiers: List<AstNode>) {
-        this.modifiers.addAll(modifiers)
+        internalModifiers.addAll(modifiers)
     }
 
     fun addUsage(usage: AstNode) {
-        usages.add(usage)
+        internalUsages.add(usage)
     }
-
-    fun usages(): List<AstNode> = usages
-
-    fun scope() = scope
-
-    fun name() = name
-
-    fun declaration() = declaration
 
     fun `is`(kind: Kind) = kind == this.kind
 
     fun called(name: String) = name.equals(this.name, ignoreCase = true)
-
-    fun kind() = kind
-
-    fun type() = type
 
     override fun toString() = "Symbol{name='$name', kind=$kind, scope=$scope}"
 }
