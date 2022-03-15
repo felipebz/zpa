@@ -25,17 +25,24 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
 
-class ScopeImpl(override val outer: Scope?,
-                override val tree: AstNode,
+class ScopeImpl(override val outer: Scope? = null,
+                private val node: AstNode? = null,
                 override val isAutonomousTransaction: Boolean = false,
                 override val hasExceptionHandler: Boolean = false,
-                override val isOverridingMember: Boolean = false) : Scope {
+                override val isOverridingMember: Boolean = false,
+                identifierForTesting: String? = null) : Scope {
+
+    override val tree: AstNode
+        get() = node ?: throw IllegalStateException("Scope has no tree")
 
     override val symbols = mutableListOf<Symbol>()
 
-    override val identifier: String? by lazy {
-        tree.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
-    }
+    override val identifier: String? =
+        try {
+            identifierForTesting ?: tree.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
+        } catch (e: Exception) {
+            ""
+        }
 
     /**
      * @param kind of the symbols to look for

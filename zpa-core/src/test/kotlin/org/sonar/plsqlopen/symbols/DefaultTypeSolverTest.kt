@@ -40,7 +40,7 @@ class DefaultTypeSolverTest {
 
     @BeforeEach
     fun setup() {
-        scope = ScopeImpl(null, mockAstNode())
+        scope = ScopeImpl()
     }
 
     @Test
