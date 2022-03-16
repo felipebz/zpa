@@ -44,6 +44,19 @@ class ScopeImpl(override val outer: Scope? = null,
             ""
         }
 
+    override val path: List<String> by lazy {
+        val path = ArrayList<String>()
+        var scope: Scope? = this
+        while (scope != null) {
+            val identifier = scope.identifier
+            if (identifier != null) {
+                path.add(identifier)
+            }
+            scope = scope.outer
+        }
+        path
+    }
+
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind
@@ -67,10 +80,14 @@ class ScopeImpl(override val outer: Scope? = null,
     }
 
     override fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol? {
+        return getSymbol(name, emptyList(), *kinds)
+    }
+
+    override fun getSymbol(name: String, path: List<String>, vararg kinds: Symbol.Kind): Symbol? {
         var scope: Scope? = this
         while (scope != null) {
             for (s in scope.symbols) {
-                if (s.called(name) && (kinds.isEmpty() || kinds.contains(s.kind))) {
+                if (s.called(name) && (path.isEmpty() || pathContainedIn(path, scope)) && (kinds.isEmpty() || kinds.contains(s.kind))) {
                     return s
                 }
             }
@@ -79,4 +96,18 @@ class ScopeImpl(override val outer: Scope? = null,
 
         return null
     }
+
+    // check if path is a prefix of this scope's path
+    private fun pathContainedIn(path: List<String>, scope: Scope): Boolean {
+        if (path.size > scope.path.size) {
+            return false
+        }
+        for (i in path.indices) {
+            if (!path[i].equals(scope.path[i], ignoreCase = true)) {
+                return false
+            }
+        }
+        return true
+    }
+
 }

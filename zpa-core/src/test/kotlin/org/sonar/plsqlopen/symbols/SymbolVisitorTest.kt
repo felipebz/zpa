@@ -296,6 +296,67 @@ end;
             tuple(5, 3))
     }
 
+    @Test
+    fun fullVariableReference() {
+        val symbols = scan("""
+create procedure foo is
+  x number;
+begin
+  x := 1;
+  foo.x := 1;
+  bar.x := 1;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val x = symbols.find("x", 2, 3)
+        assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references).containsExactly(
+            tuple(4, 3),
+            tuple(5, 7))
+    }
+
+    @Test
+    fun fullVariableReferenceForOuterScope() {
+        val symbols = scan("""
+create procedure foo is
+  x number;
+  
+  procedure bar is
+  begin
+    foo.x := 1;
+  end;
+begin
+  null;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val x = symbols.find("x", 2, 3)
+        assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references).containsExactly(
+            tuple(6, 9))
+    }
+
+    @Test
+    fun variableReferenceWithPath() {
+        val symbols = scan("""
+procedure foo is
+  cursor cur(x number) is
+  select cur.x from dual;
+begin
+  null;
+end;
+/
+""")
+        assertThat(symbols).hasSize(2)
+
+        val x = symbols.find("x", 2, 14)
+        assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(x.references).containsExactly(
+            tuple(3, 14))
+    }
+
     private fun scan(contents: String): List<Symbol> {
         TestPlSqlVisitorRunner.scan(contents, null, visitor)
         return visitor.symbols

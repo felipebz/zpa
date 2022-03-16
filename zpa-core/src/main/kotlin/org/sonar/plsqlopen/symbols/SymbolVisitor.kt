@@ -111,6 +111,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             visitRecordDeclaration(node)
         } else if (node.type === PlSqlGrammar.VARIABLE_NAME) {
             visitVariableName(node)
+        } else if (node.type === PlSqlGrammar.MEMBER_EXPRESSION) {
+            visitMemberExpression(node)
         } else if (node.type === PlSqlGrammar.CURSOR_DECLARATION) {
             visitCursor(node)
         } else if (node.type === PlSqlGrammar.BLOCK_STATEMENT) {
@@ -236,6 +238,20 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         val identifier = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
         if (identifier != null && currentScope != null) {
             val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
+            if (symbol != null) {
+                symbol.addUsage(identifier)
+                semantic(node).symbol = symbol
+            }
+        }
+    }
+
+    private fun visitMemberExpression(node: AstNode) {
+        val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
+        val path = parts.dropLast(1).map { it.tokenOriginalValue }.reversed()
+        val identifier = parts.last()
+
+        if (currentScope != null) {
+            val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue, path)
             if (symbol != null) {
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol

@@ -30,6 +30,7 @@ interface Scope {
     val outer: Scope?
     val identifier: String?
     val hasExceptionHandler: Boolean
+    val path: List<String>
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind
@@ -39,4 +40,5 @@ interface Scope {
     fun getSymbolsAcessibleInScope(name: String, vararg kinds: Symbol.Kind): Deque<Symbol>
     fun addSymbol(symbol: Symbol)
     fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol?
+    fun getSymbol(name: String, path: List<String>, vararg kinds: Symbol.Kind): Symbol?
 }
