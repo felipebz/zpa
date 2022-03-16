@@ -20,20 +20,6 @@
   "extras/utl_file_nonstandard.pkb": [
     20
   ],
-  "ora/ntlm_http_pkg.pkb": [
-    278,
-    279,
-    280,
-    281,
-    282,
-    283,
-    318,
-    319,
-    320,
-    321,
-    322,
-    323
-  ],
   "ora/soap_server_pkg.pkb": [
     88
   ],
