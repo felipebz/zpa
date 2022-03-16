@@ -79,10 +79,12 @@ end;
 
 create or replace package body test is
   package_body_var number;
+  qualified_var number;
   
   procedure proc is
   begin
     package_body_var := 0;
+    test.qualified_var := 0;
     test.var := 0;
   end;
 end;

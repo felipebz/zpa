@@ -53,3 +53,10 @@ create type body t as
   end;
 end;
 /
+procedure foo is
+  cursor cur(x number) is
+  select 1 from dual where cur.x = 1; -- don't report violation because "cur.x" refers to the cursor parameter
+begin
+  null;
+end;
+/
