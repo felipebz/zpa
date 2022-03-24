@@ -64,7 +64,7 @@ class DeadCodeCheck : AbstractBaseCheck() {
         return if (node.typeIs(STATEMENT_OR_CALL)) {
             true
         } else {
-            node.typeIs(STATEMENT_SECTION) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLER)
+            node.typeIs(STATEMENT_SECTION) && !node.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS)
         }
     }
 

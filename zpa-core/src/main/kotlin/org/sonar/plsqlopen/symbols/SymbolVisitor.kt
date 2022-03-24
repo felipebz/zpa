@@ -149,7 +149,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             .flatMap { it.getChildren(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA).asSequence() }.any()
         val exceptionHandler = node
                 .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
-                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
+                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLERS).asSequence() }.any()
         val inheritanceClause = node.parent.getFirstChildOrNull(PlSqlGrammar.INHERITANCE_CLAUSE)
         val isOverridingMember = inheritanceClause != null &&
             inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
@@ -171,7 +171,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun visitBlock(node: AstNode) {
         val exceptionHandler = node
                 .getChildren(PlSqlGrammar.STATEMENTS_SECTION).asSequence()
-                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLER).asSequence() }.any()
+                .flatMap { it.getChildren(PlSqlGrammar.EXCEPTION_HANDLERS).asSequence() }.any()
         enterScope(node, exceptionHandler =  exceptionHandler)
     }
 
@@ -290,7 +290,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
             }
 
             if (this != null) {
-                exception = this.hasExceptionHandler || java.lang.Boolean.TRUE == exceptionHandler
+                exception = this.hasExceptionHandler || (exceptionHandler == true)
             } else if (exceptionHandler != null) {
                 exception = exceptionHandler
             }

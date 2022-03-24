@@ -166,6 +166,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CALL_SPECIFICATION,
 
     DECLARE_SECTION,
+    EXCEPTION_HANDLERS,
     EXCEPTION_HANDLER,
     IDENTIFIER_NAME,
     NON_RESERVED_KEYWORD,
@@ -397,12 +398,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(OR, b.firstOf(OTHERS, OBJECT_REFERENCE)),
                     THEN, STATEMENTS)
 
+            b.rule(EXCEPTION_HANDLERS).define(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER))
+
             b.rule(LABEL).define(LLABEL, IDENTIFIER_NAME, RLABEL)
 
             b.rule(STATEMENTS_SECTION).define(
                     BEGIN,
                     STATEMENTS,
-                    b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)),
+                    b.optional(EXCEPTION_HANDLERS),
                     END, b.optional(IDENTIFIER_NAME), SEMICOLON)
 
             b.rule(BLOCK_STATEMENT).define(
@@ -968,7 +971,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(TPS_BODY).define(
                     b.oneOrMore(STATEMENT),
-                    b.optional(EXCEPTION, b.oneOrMore(EXCEPTION_HANDLER)))
+                    b.optional(EXCEPTION_HANDLERS))
 
             b.rule(DDL_EVENT).define(
                     b.firstOf(
