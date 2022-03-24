@@ -140,7 +140,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
     DEFAULT_VALUE_ASSIGNMENT,
     VARIABLE_DECLARATION,
     EXCEPTION_DECLARATION,
+    PARAMETER_DECLARATIONS,
     PARAMETER_DECLARATION,
+    CURSOR_PARAMETER_DECLARATIONS,
     CURSOR_PARAMETER_DECLARATION,
     CURSOR_DECLARATION,
     RECORD_FIELD_DECLARATION,
@@ -714,6 +716,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
             )
 
+            b.rule(PARAMETER_DECLARATIONS).define(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS)
+
             b.rule(JAVA_DECLARATION).define(LANGUAGE, JAVA, NAME, STRING_LITERAL)
 
             b.rule(C_DECLARATION).define(
@@ -745,7 +749,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
             b.rule(PROCEDURE_DECLARATION).define(
                     PROCEDURE, IDENTIFIER_NAME,
-                    b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                    b.optional(PARAMETER_DECLARATIONS),
                     b.optional(b.firstOf(
                             SEMICOLON,
                             b.sequence(b.firstOf(IS, AS),
@@ -757,7 +761,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/function.htm
             b.rule(FUNCTION_DECLARATION).define(
                     FUNCTION, IDENTIFIER_NAME,
-                    b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                    b.optional(PARAMETER_DECLARATIONS),
                     RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED)),
                     b.optional(RESULT_CACHE, b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
                     b.optional(b.firstOf(
@@ -789,9 +793,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(IN),
                     DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT))
 
+            b.rule(CURSOR_PARAMETER_DECLARATIONS).define(
+                LPARENTHESIS, b.oneOrMore(CURSOR_PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS)
+
             b.rule(CURSOR_DECLARATION).define(
                     CURSOR, IDENTIFIER_NAME,
-                    b.optional(LPARENTHESIS, b.oneOrMore(CURSOR_PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                    b.optional(CURSOR_PARAMETER_DECLARATIONS),
                     b.optional(RETURN, DATATYPE),
                     b.optional(IS, SELECT_EXPRESSION), SEMICOLON)
 
@@ -1015,7 +1022,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(CREATE_PROCEDURE).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     PROCEDURE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
-                    b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                    b.optional(PARAMETER_DECLARATIONS),
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                     b.zeroOrMore(b.firstOf(
                             b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
@@ -1035,7 +1042,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(CREATE_FUNCTION).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     FUNCTION, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
-                    b.optional(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS),
+                    b.optional(PARAMETER_DECLARATIONS),
                     RETURN, DATATYPE,
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                     b.zeroOrMore(b.firstOf(

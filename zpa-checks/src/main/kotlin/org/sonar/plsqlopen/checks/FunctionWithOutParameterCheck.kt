@@ -35,7 +35,7 @@ class FunctionWithOutParameterCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.hasParent(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_FUNCTION) && node.hasDirectChildren(PlSqlKeyword.OUT)) {
+        if (node.parent.hasParent(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_FUNCTION) && node.hasDirectChildren(PlSqlKeyword.OUT)) {
             addIssue(node, getLocalizedMessage())
         }
     }
