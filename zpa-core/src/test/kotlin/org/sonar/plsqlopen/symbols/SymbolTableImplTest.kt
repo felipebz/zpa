@@ -24,9 +24,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
 
 class SymbolTableImplTest {
 
@@ -77,7 +77,7 @@ class SymbolTableImplTest {
         val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
-        val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
+        val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
 
         assertThat(symbolTable.getSymbolFor(node)).isEqualTo(symbol)
         assertThat(symbolTable.getSymbolFor(node2)).isNull()
@@ -96,7 +96,7 @@ class SymbolTableImplTest {
         val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
-        symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
+        symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
 
         assertThat(symbolTable.getScopeForSymbol(node)).isEqualTo(scope)
         assertThat(symbolTable.getScopeForSymbol(node2)).isNull()
@@ -109,8 +109,8 @@ class SymbolTableImplTest {
         val node = newAstNodeForTest("foo")
 
         val symbolTable = SymbolTableImpl()
-        val symbol1 = symbolTable.declareSymbol(node, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
-        val symbol2 = symbolTable.declareSymbol(node, Kind.VARIABLE, scope, PlSqlType.UNKNOWN)
+        val symbol1 = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
+        val symbol2 = symbolTable.declareSymbol(node, Kind.VARIABLE, scope, UnknownDatatype())
 
         assertThat(symbolTable.getSymbols(Kind.CURSOR)).containsExactly(symbol1)
         assertThat(symbolTable.getSymbols(Kind.VARIABLE)).containsExactly(symbol2)
@@ -125,8 +125,8 @@ class SymbolTableImplTest {
         val node2 = newAstNodeForTest("FOO")
 
         val symbolTable = SymbolTableImpl()
-        val symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, PlSqlType.UNKNOWN)
-        val symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, PlSqlType.UNKNOWN)
+        val symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, UnknownDatatype())
+        val symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, UnknownDatatype())
 
         assertThat(symbolTable.getSymbols("foo")).containsExactly(symbol1, symbol2)
         assertThat(symbolTable.getSymbols("bar")).isEmpty()

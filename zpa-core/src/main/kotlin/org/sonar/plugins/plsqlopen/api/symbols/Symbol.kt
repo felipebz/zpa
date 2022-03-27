@@ -20,12 +20,14 @@
 package org.sonar.plugins.plsqlopen.api.symbols
 
 import com.felipebz.flr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
 import java.util.*
 
 open class Symbol(val declaration: AstNode,
                   val kind: Kind,
                   val scope: Scope,
-                  type: PlSqlType?) {
+                  datatype: PlSqlDatatype?) {
     private val internalUsages = mutableListOf<AstNode>()
     private var internalModifiers = mutableListOf<AstNode>()
 
@@ -38,7 +40,9 @@ open class Symbol(val declaration: AstNode,
 
     val name: String = declaration.tokenOriginalValue
 
-    val type: PlSqlType = type ?: PlSqlType.UNKNOWN
+    val type: PlSqlType = datatype?.type ?: PlSqlType.UNKNOWN
+
+    val datatype: PlSqlDatatype = datatype ?: UnknownDatatype(declaration)
 
     val modifiers: List<AstNode>
         get() = Collections.unmodifiableList(internalModifiers)

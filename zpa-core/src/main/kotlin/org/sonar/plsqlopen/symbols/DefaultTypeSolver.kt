@@ -23,59 +23,57 @@ import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.*
 
 class DefaultTypeSolver {
 
-    fun solve(node: AstNode?, scope: Scope?): PlSqlType {
-        if (node != null) {
-            if (node.type === PlSqlGrammar.DATATYPE) {
-                return solveDatatype(node, scope)
-            } else if (node.type === PlSqlGrammar.LITERAL) {
-                return solveLiteral(node)
-            }
+    fun solve(node: AstNode, scope: Scope?): PlSqlDatatype {
+        if (node.type === PlSqlGrammar.DATATYPE) {
+            return solveDatatype(node, scope)
+        } else if (node.type === PlSqlGrammar.LITERAL) {
+            return solveLiteral(node)
         }
-        return PlSqlType.UNKNOWN
+        return UnknownDatatype(node)
     }
 
-    private fun solveDatatype(node: AstNode, scope: Scope?): PlSqlType {
-        var type = PlSqlType.UNKNOWN
+    private fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
+        var type: PlSqlDatatype = UnknownDatatype(node)
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
-            type = PlSqlType.CHARACTER
+            type = CharacterDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
-            type = PlSqlType.NUMERIC
+            type = NumericDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
-            type = PlSqlType.DATE
+            type = DateDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
-            type = PlSqlType.LOB
+            type = LobDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
-            type = PlSqlType.BOOLEAN
+            type = BooleanDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
             val anchoredDatatype = node.firstChild
             if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
-                type = PlSqlType.ROWTYPE
+                type = RowtypeDatatype(node)
             }
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.type ?: PlSqlType.UNKNOWN
+            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype(node)
         }
         return type
     }
 
-    private fun solveLiteral(node: AstNode): PlSqlType {
-        var type = PlSqlType.UNKNOWN
+    private fun solveLiteral(node: AstNode): PlSqlDatatype {
+        var type: PlSqlDatatype = UnknownDatatype(node)
         if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
-            type = PlSqlType.NULL
+            type = NullDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
-            type = PlSqlType.CHARACTER
+            type = CharacterDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
-            type = PlSqlType.NUMERIC
+            type = NumericDatatype(node)
         } else if (node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL)) {
-            type = PlSqlType.DATE
+            type = DateDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL)) {
-            type = PlSqlType.BOOLEAN
+            type = BooleanDatatype(node)
         }
         return type
     }

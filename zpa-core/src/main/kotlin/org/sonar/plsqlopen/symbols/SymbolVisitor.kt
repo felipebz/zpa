@@ -27,9 +27,9 @@ import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.*
 
 class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
@@ -167,7 +167,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitCursor(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.CURSOR, PlSqlType.UNKNOWN)
+        createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype(identifier))
         enterScope(node)
     }
 
@@ -183,9 +183,9 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         val identifier = node.getFirstChild(PlSqlKeyword.FOR).nextSibling
 
         val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
-            PlSqlType.NUMERIC
+            NumericDatatype(node)
         } else {
-            PlSqlType.ROWTYPE
+            RowtypeDatatype(node)
         }
 
         createSymbol(identifier, Symbol.Kind.VARIABLE, type)
@@ -194,12 +194,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun visitForAll(node: AstNode) {
         enterScope(node)
         val identifier = node.getFirstChild(PlSqlKeyword.FORALL).nextSibling
-        createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.NUMERIC)
+        createSymbol(identifier, Symbol.Kind.VARIABLE, NumericDatatype(node))
     }
 
     private fun visitVariableDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        val datatype = node.getFirstChildOrNull(PlSqlGrammar.DATATYPE)
+        val datatype = node.getFirstChild(PlSqlGrammar.DATATYPE)
 
         val type = solveType(datatype)
         createSymbol(identifier, Symbol.Kind.VARIABLE, type)
@@ -208,7 +208,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     private fun visitExceptionDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
 
-        createSymbol(identifier, Symbol.Kind.VARIABLE, PlSqlType.EXCEPTION)
+        createSymbol(identifier, Symbol.Kind.VARIABLE, ExceptionDatatype(node))
     }
 
     private fun visitCustomSubtypeDeclaration(node: AstNode) {
@@ -221,12 +221,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
 
     private fun visitAssociativeArrayDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.TYPE, PlSqlType.ASSOCIATIVE_ARRAY)
+        createSymbol(identifier, Symbol.Kind.TYPE, AssociativeArrayDatatype(node))
     }
 
     private fun visitRecordDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.TYPE, PlSqlType.RECORD)
+        createSymbol(identifier, Symbol.Kind.TYPE, RecordDatatype(node))
     }
 
     private fun visitParameterDeclaration(node: AstNode) {
@@ -263,15 +263,15 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun visitLiteral(node: AstNode) {
-        (node as SemanticAstNode).plSqlType = solveType(node)
+        (node as SemanticAstNode).plSqlDatatype = solveType(node)
     }
 
-    private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, type: PlSqlType): Symbol {
+    private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, plSqlDatatype: PlSqlDatatype): Symbol {
         val scope = currentScope
         if (scope == null) {
             throw IllegalStateException("Cannot create a symbol without a scope.")
         } else {
-            val symbol = symbolTable.declareSymbol(identifier, kind, scope, type)
+            val symbol = symbolTable.declareSymbol(identifier, kind, scope, plSqlDatatype)
             semantic(identifier).symbol = symbol
             return symbol
         }
@@ -310,12 +310,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
         currentScope = scope.outer
     }
 
-    private fun solveType(node: AstNode?): PlSqlType {
-        var type = PlSqlType.UNKNOWN
-        if (typeSolver != null) {
-            type = typeSolver.solve(node, currentScope)
-        }
-        return type
+    private fun solveType(node: AstNode): PlSqlDatatype {
+        return typeSolver?.solve(node, currentScope) ?: UnknownDatatype(node)
     }
 
 }

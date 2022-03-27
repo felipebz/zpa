@@ -27,6 +27,10 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.CharacterDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.DateDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
 
 class MethodMatcherWithTypesTest : RuleTest() {
 
@@ -38,28 +42,28 @@ class MethodMatcherWithTypesTest : RuleTest() {
     @Test
     fun matchesMethodWhenTheTypeIsNotSpecifiedInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter()
-        val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
+        val node = getAstNodeWithArguments("func(x)", NumericDatatype())
         assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun matchesMethodWhenTheTypeIsSpecifiedAsUnknownInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN)
-        val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
+        val node = getAstNodeWithArguments("func(x)", NumericDatatype())
         assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun matchesMethodWhenTheTypeIsSpecifiedInTheMatcher() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC)
-        val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
+        val node = getAstNodeWithArguments("func(x)", NumericDatatype())
         assertThat(matcher.matches(node)).isTrue
     }
 
     @Test
     fun notMatchesMethodWhenTheTypeIsDifferentFromExpectation() {
         val matcher = MethodMatcher.create().name("func").addParameter(PlSqlType.CHARACTER)
-        val node = getAstNodeWithArguments("func(x)", PlSqlType.NUMERIC)
+        val node = getAstNodeWithArguments("func(x)", NumericDatatype())
         assertThat(matcher.matches(node)).isFalse
     }
 
@@ -67,7 +71,7 @@ class MethodMatcherWithTypesTest : RuleTest() {
     fun matchesMethodWithMultipleParametersWhenTheTypeIsSpecifiedInTheMatcher() {
         val matcher = MethodMatcher.create().name("func")
                 .addParameters(PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
-        val node = getAstNodeWithArguments("func(x, y, z)", PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
+        val node = getAstNodeWithArguments("func(x, y, z)", NumericDatatype(), CharacterDatatype(), DateDatatype())
         assertThat(matcher.matches(node)).isTrue
     }
 
@@ -75,20 +79,21 @@ class MethodMatcherWithTypesTest : RuleTest() {
     fun noMatchesMethodWithMultipleParametersWhenTheAnyTypeIsDifferentFromExpectation() {
         val matcher = MethodMatcher.create().name("func")
                 .addParameters(PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.DATE)
-        val node = getAstNodeWithArguments("func(x, y, z)", PlSqlType.NUMERIC, PlSqlType.CHARACTER, PlSqlType.CHARACTER)
+        val node = getAstNodeWithArguments("func(x, y, z)", NumericDatatype(), CharacterDatatype(), CharacterDatatype())
         assertThat(matcher.matches(node)).isFalse
     }
 
-    private fun getAstNodeWithArguments(text: String, vararg types: PlSqlType): SemanticAstNode {
+    private fun getAstNodeWithArguments(text: String, vararg types: PlSqlDatatype): SemanticAstNode {
         val node = getSemanticNode(p.parse(text).firstChild)
 
         val arguments = node.getDescendants(PlSqlGrammar.ARGUMENT)
 
         for (i in types.indices) {
             val actualArgument = arguments[i].firstChild
-            MethodMatcher.semantic(actualArgument).plSqlType = types[i]
+            MethodMatcher.semantic(actualArgument).plSqlDatatype = types[i]
         }
 
         return node
     }
+
 }

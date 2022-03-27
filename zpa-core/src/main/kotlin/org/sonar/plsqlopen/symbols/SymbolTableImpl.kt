@@ -20,10 +20,10 @@
 package org.sonar.plsqlopen.symbols
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
 
 class SymbolTableImpl : SymbolTable {
 
@@ -57,8 +57,8 @@ class SymbolTableImpl : SymbolTable {
         return null
     }
 
-    fun declareSymbol(name: AstNode, kind: Symbol.Kind, scope: Scope, type: PlSqlType): Symbol {
-        val symbol = Symbol(name, kind, scope, type)
+    fun declareSymbol(name: AstNode, kind: Symbol.Kind, scope: Scope, plSqlDatatype: PlSqlDatatype): Symbol {
+        val symbol = Symbol(name, kind, scope, plSqlDatatype)
         symbols.add(symbol)
         scope.addSymbol(symbol)
         return symbol

@@ -26,6 +26,7 @@ import org.sonar.plsqlopen.sslr.TreeImpl
 
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
 
 class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
 
@@ -38,8 +39,11 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
             }
         }
 
-    var plSqlType: PlSqlType? = PlSqlType.UNKNOWN
-        get() = this.symbol?.type ?: field
+    var plSqlDatatype: PlSqlDatatype? = null
+        get() = this.symbol?.datatype ?: field
+
+    val plSqlType: PlSqlType?
+        get() = plSqlDatatype?.type
 
     val tree: Tree by lazy {
         var type = PlSqlGrammarBuilder.classForType(astNode.type)
