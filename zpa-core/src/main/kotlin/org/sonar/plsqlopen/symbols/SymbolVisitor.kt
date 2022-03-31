@@ -31,7 +31,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.*
 
-class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
+class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
 
     private val scopeHolders = arrayOf<AstNodeType>(
         PlSqlGrammar.CREATE_PROCEDURE,
@@ -311,7 +311,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver?) : PlSqlCheck() {
     }
 
     private fun solveType(node: AstNode): PlSqlDatatype {
-        return typeSolver?.solve(node, currentScope) ?: UnknownDatatype(node)
+        return typeSolver.solve(node, currentScope)
     }
 
 }
