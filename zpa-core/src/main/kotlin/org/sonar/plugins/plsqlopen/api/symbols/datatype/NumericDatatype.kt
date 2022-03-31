@@ -24,16 +24,30 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class NumericDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class NumericDatatype : PlSqlDatatype {
+
     override val type = PlSqlType.NUMERIC
+    val length: Int?
+    val precision: Int?
 
-    private val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
+    constructor() {
+        length = null
+        precision = null
+    }
 
-    val length = constraint
-        ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
-        ?.tokenValue?.toInt()
+    constructor(length: Int?, precision: Int?) {
+        this.length = length
+        this.precision = precision
+    }
 
-    val precision = constraint
-        ?.getLastChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
-        ?.tokenValue?.toInt()
+    constructor(node: AstNode? = null) {
+        val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
+        length = constraint
+            ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
+            ?.tokenValue?.toInt()
+        precision = constraint
+            ?.getLastChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
+            ?.tokenValue?.toInt()
+    }
+
 }

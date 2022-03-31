@@ -24,12 +24,24 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class CharacterDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class CharacterDatatype : PlSqlDatatype {
+
     override val type = PlSqlType.CHARACTER
+    val length: Int?
 
-    private val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.CHARACTER_DATATYPE_CONSTRAINT)
+    constructor() {
+        length = null
+    }
 
-    val length = constraint
-        ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
-        ?.tokenValue?.toInt()
+    constructor(length: Int?) {
+        this.length = length
+    }
+
+    constructor(node: AstNode? = null) {
+        val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.CHARACTER_DATATYPE_CONSTRAINT)
+        length = constraint
+            ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
+            ?.tokenValue?.toInt()
+    }
+
 }
