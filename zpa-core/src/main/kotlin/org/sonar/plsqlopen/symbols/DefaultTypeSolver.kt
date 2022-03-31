@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.*
 
-class DefaultTypeSolver {
+open class DefaultTypeSolver {
 
     fun solve(node: AstNode, scope: Scope?): PlSqlDatatype {
         if (node.type === PlSqlGrammar.DATATYPE) {
@@ -38,7 +38,7 @@ class DefaultTypeSolver {
         return UnknownDatatype(node)
     }
 
-    private fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
+    open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
         var type: PlSqlDatatype = UnknownDatatype(node)
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
             type = CharacterDatatype(node)
@@ -62,7 +62,7 @@ class DefaultTypeSolver {
         return type
     }
 
-    private fun solveLiteral(node: AstNode): PlSqlDatatype {
+    open fun solveLiteral(node: AstNode): PlSqlDatatype {
         var type: PlSqlDatatype = UnknownDatatype(node)
         if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
             type = NullDatatype(node)
