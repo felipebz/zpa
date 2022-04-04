@@ -34,7 +34,7 @@ class CharacterDatatype : PlSqlDatatype {
     }
 
     constructor(length: Int?) {
-        this.length = length
+        this.length = if (length != null && length > 0) length else null
     }
 
     constructor(node: AstNode? = null) {

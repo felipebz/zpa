@@ -36,8 +36,8 @@ class NumericDatatype : PlSqlDatatype {
     }
 
     constructor(length: Int?, precision: Int?) {
-        this.length = length
-        this.precision = precision
+        this.length = if (length != null && length > 0) length else null
+        this.precision = if (precision != null && precision > 0) precision else null
     }
 
     constructor(node: AstNode? = null) {
