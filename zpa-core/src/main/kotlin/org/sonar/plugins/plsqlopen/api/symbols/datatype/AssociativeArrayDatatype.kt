@@ -24,4 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class AssociativeArrayDatatype(private val node: AstNode? = null) : PlSqlDatatype {
     override val type = PlSqlType.ASSOCIATIVE_ARRAY
+
+    override fun toString(): String {
+        return "AssociativeArrayDatatype{node=$node}"
+    }
 }

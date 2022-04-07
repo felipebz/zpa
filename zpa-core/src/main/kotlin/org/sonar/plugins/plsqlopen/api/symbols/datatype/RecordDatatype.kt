@@ -24,4 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class RecordDatatype(private val node: AstNode? = null) : PlSqlDatatype {
     override val type = PlSqlType.RECORD
+
+    override fun toString(): String {
+        return "RecordDatatype{node=$node}"
+    }
 }

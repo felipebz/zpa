@@ -44,4 +44,8 @@ class CharacterDatatype : PlSqlDatatype {
             ?.tokenValue?.toInt()
     }
 
+    override fun toString(): String {
+        return "CharacterDatatype{length=$length}"
+    }
+
 }

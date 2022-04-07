@@ -24,4 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class NullDatatype(private val node: AstNode? = null) : PlSqlDatatype {
     override val type = PlSqlType.NULL
+
+    override fun toString(): String {
+        return "NullDatatype{node=$node}"
+    }
 }

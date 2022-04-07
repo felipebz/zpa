@@ -24,4 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class RowtypeDatatype(private val node: AstNode? = null) : PlSqlDatatype {
     override val type = PlSqlType.ROWTYPE
+
+    override fun toString(): String {
+        return "RowtypeDatatype{node=$node}"
+    }
 }

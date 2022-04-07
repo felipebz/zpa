@@ -50,4 +50,8 @@ class NumericDatatype : PlSqlDatatype {
             ?.tokenValue?.toInt()
     }
 
+    override fun toString(): String {
+        return "NumericDatatype{length=$length, precision=$precision}"
+    }
+
 }

@@ -110,4 +110,6 @@ class ScopeImpl(override val outer: Scope? = null,
         return true
     }
 
+    override fun toString() = "Scope{identifier='$identifier', type=${tree.type}, path=$path}"
+
 }
