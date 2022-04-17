@@ -46,6 +46,15 @@ create package body test is
 end;
 /
 
+create package test2 is
+  var number;
+end;
+/
+create package body test2 is
+  var number; -- Noncompliant {{This variable "var" hides the declaration on line 50.}} [[secondary=50]]
+end;
+/
+
 -- correct
 declare
   outer_var number;  

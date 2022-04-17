@@ -225,6 +225,33 @@ end;
     }
 
     @Test
+    fun packageSpecAndBodyOnSameFile() {
+        val symbols = scan("""
+create package pkg as
+  variable number;
+end;
+create package body pkg as
+  variable2 number;
+  
+begin
+  variable := 0;
+  variable2 := 0;
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val variable = symbols.find("variable", 2, 3)
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable.references).containsExactly(tuple(8, 3))
+
+        val variable2 = symbols.find("variable2", 5, 3)
+        assertThat(variable2.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(variable2.references).containsExactly(tuple(9, 3))
+
+        assertThat(variable2.scope.outer).isEqualTo(variable.scope)
+    }
+
+    @Test
     fun cursor() {
         val symbols = scan("""
 declare

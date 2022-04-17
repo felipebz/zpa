@@ -162,6 +162,11 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
     }
 
     private fun visitPackage(node: AstNode) {
+        val packageName = node.getFirstChild(PlSqlGrammar.UNIT_NAME).tokenOriginalValue
+        val packageScope = symbolTable.scopes.firstOrNull { it.identifier == packageName && it.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE) }
+        if (packageScope != null) {
+            currentScope = packageScope
+        }
         enterScope(node, autonomousTransaction = false, exceptionHandler = false)
     }
 
@@ -307,7 +312,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
     private fun leaveScope() {
         val scope = currentScope
         requireNotNull(scope) { "Current scope should never be null when calling method \"leaveScope\"" }
-        currentScope = scope.outer
+
+        currentScope = if (scope.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE_BODY) && scope.outer?.tree?.typeIs(PlSqlGrammar.CREATE_PACKAGE) == true){
+            scope.outer?.outer
+        } else {
+            scope.outer
+        }
     }
 
     private fun solveType(node: AstNode): PlSqlDatatype {
