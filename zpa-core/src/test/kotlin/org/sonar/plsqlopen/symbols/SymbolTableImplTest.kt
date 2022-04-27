@@ -22,8 +22,8 @@ package org.sonar.plsqlopen.symbols
 import com.felipebz.flr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
@@ -65,12 +65,6 @@ class SymbolTableImplTest {
     }
 
     @Test
-    fun doNotReturnSymbolIfNotIdentified() {
-        val symbolTable = SymbolTableImpl()
-        assertThat(symbolTable.getSymbolFor(newAstNodeForTest("foo"))).isNull()
-    }
-
-    @Test
     fun returnSymbolForNode() {
         val node = newAstNodeForTest("foo")
         val node2 = newAstNodeForTest("bar")
@@ -79,14 +73,8 @@ class SymbolTableImplTest {
         val symbolTable = SymbolTableImpl()
         val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
 
-        assertThat(symbolTable.getSymbolFor(node)).isEqualTo(symbol)
-        assertThat(symbolTable.getSymbolFor(node2)).isNull()
-    }
-
-    @Test
-    fun doNotReturnScopeForSymbolIfNotIdentified() {
-        val symbolTable = SymbolTableImpl()
-        assertThat(symbolTable.getScopeForSymbol(newAstNodeForTest("foo"))).isNull()
+        assertThat(symbolTable.symbols.find { it.declaration == node }).isEqualTo(symbol)
+        assertThat(symbolTable.symbols.find { it.declaration == node2 }).isNull()
     }
 
     @Test
@@ -98,8 +86,8 @@ class SymbolTableImplTest {
         val symbolTable = SymbolTableImpl()
         symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
 
-        assertThat(symbolTable.getScopeForSymbol(node)).isEqualTo(scope)
-        assertThat(symbolTable.getScopeForSymbol(node2)).isNull()
+        assertThat(symbolTable.symbols.find { it.declaration == node }?.scope).isEqualTo(scope)
+        assertThat(symbolTable.symbols.find { it.declaration == node2 }?.scope).isNull()
     }
 
     @Test
@@ -112,9 +100,9 @@ class SymbolTableImplTest {
         val symbol1 = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
         val symbol2 = symbolTable.declareSymbol(node, Kind.VARIABLE, scope, UnknownDatatype())
 
-        assertThat(symbolTable.getSymbols(Kind.CURSOR)).containsExactly(symbol1)
-        assertThat(symbolTable.getSymbols(Kind.VARIABLE)).containsExactly(symbol2)
-        assertThat(symbolTable.getSymbols(Kind.PARAMETER)).isEmpty()
+        assertThat(symbolTable.symbols.filter { it.kind == Kind.CURSOR }).containsExactly(symbol1)
+        assertThat(symbolTable.symbols.filter { it.kind == Kind.VARIABLE }).containsExactly(symbol2)
+        assertThat(symbolTable.symbols.filter { it.kind == Kind.PARAMETER }).isEmpty()
     }
 
     @Test
@@ -128,8 +116,8 @@ class SymbolTableImplTest {
         val symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, UnknownDatatype())
         val symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, UnknownDatatype())
 
-        assertThat(symbolTable.getSymbols("foo")).containsExactly(symbol1, symbol2)
-        assertThat(symbolTable.getSymbols("bar")).isEmpty()
+        assertThat(symbolTable.symbols.filter { it.name.equals("foo", ignoreCase = true) }).containsExactly(symbol1, symbol2)
+        assertThat(symbolTable.symbols.filter { it.name.equals("bar", ignoreCase = true) }).isEmpty()
     }
 
     private fun newAstNodeForTest(value: String): AstNode {

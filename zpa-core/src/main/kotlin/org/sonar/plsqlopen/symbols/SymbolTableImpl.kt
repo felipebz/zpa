@@ -43,55 +43,11 @@ class SymbolTableImpl : SymbolTable {
         return null
     }
 
-    override fun getScopeForSymbol(node: AstNode): Scope? {
-        val symbol = getSymbolFor(node)
-        return symbol?.scope
-    }
-
-    override fun getSymbolFor(node: AstNode): Symbol? {
-        for (symbol in symbols) {
-            if (symbol.declaration == node) {
-                return symbol
-            }
-        }
-        return null
-    }
-
     fun declareSymbol(name: AstNode, kind: Symbol.Kind, scope: Scope, plSqlDatatype: PlSqlDatatype): Symbol {
         val symbol = Symbol(name, kind, scope, plSqlDatatype)
         symbols.add(symbol)
         scope.addSymbol(symbol)
         return symbol
-    }
-
-    /**
-     *
-     * @param kind kind of symbols to look for
-     * @return list of symbols with the given kind
-     */
-    override fun getSymbols(kind: Symbol.Kind): List<Symbol> {
-        val result = ArrayList<Symbol>()
-        for (symbol in symbols) {
-            if (kind == symbol.kind) {
-                result.add(symbol)
-            }
-        }
-        return result
-    }
-
-    /**
-     *
-     * @param name name of symbols to look for
-     * @return list of symbols with the given name
-     */
-    override fun getSymbols(name: String): List<Symbol> {
-        val result = ArrayList<Symbol>()
-        for (symbol in symbols) {
-            if (name.equals(symbol.name, ignoreCase = true)) {
-                result.add(symbol)
-            }
-        }
-        return result
     }
 
 }

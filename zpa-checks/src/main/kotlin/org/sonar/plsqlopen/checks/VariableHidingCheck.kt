@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -38,7 +39,7 @@ class VariableHidingCheck : AbstractBaseCheck() {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
         val name = identifier.tokenOriginalValue
 
-        val scope = context.symbolTable.getScopeForSymbol(identifier)
+        val scope = identifier.asSemantic().symbol?.scope
         if (scope != null) {
             val symbols = scope.getSymbolsAcessibleInScope(name, Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER)
 

@@ -27,13 +27,5 @@ interface SymbolTable {
 
     val scopes: Set<Scope>
 
-    fun getSymbols(kind: Symbol.Kind): List<Symbol>
-
-    fun getSymbols(name: String): List<Symbol>
-
     fun getScopeFor(symbol: AstNode): Scope?
-
-    fun getScopeForSymbol(node: AstNode): Scope?
-
-    fun getSymbolFor(node: AstNode): Symbol?
 }
