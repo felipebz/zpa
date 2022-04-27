@@ -26,7 +26,7 @@ interface Scope {
     val isAutonomousTransaction: Boolean
     val isOverridingMember: Boolean
     val symbols: List<Symbol>
-    val tree: AstNode
+    val tree: AstNode?
     val outer: Scope?
     val identifier: String?
     val hasExceptionHandler: Boolean

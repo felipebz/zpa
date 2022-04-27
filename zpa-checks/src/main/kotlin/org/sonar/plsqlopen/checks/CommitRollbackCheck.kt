@@ -39,7 +39,7 @@ class CommitRollbackCheck : AbstractBaseCheck() {
         val scope = context.currentScope
 
         var outerScope = scope
-        while (outerScope?.outer != null) {
+        while (outerScope?.outer != null && outerScope.outer?.tree != null) {
             outerScope = outerScope.outer
         }
 

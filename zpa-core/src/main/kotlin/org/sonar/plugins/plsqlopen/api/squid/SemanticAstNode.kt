@@ -34,9 +34,8 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
         set(symbol) {
             field = symbol
 
-            for (node in children) {
-                (node as SemanticAstNode).symbol = symbol
-            }
+            val child = if (children.count() == 1) children[0] else return
+            (child as SemanticAstNode).symbol = symbol
         }
 
     var plSqlDatatype: PlSqlDatatype? = null

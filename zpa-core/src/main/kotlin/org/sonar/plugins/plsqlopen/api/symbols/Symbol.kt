@@ -36,6 +36,10 @@ open class Symbol(val declaration: AstNode,
         PARAMETER("parameter"),
         CURSOR("cursor"),
         TYPE("type"),
+        PACKAGE("package"),
+        PROCEDURE("procedure"),
+        FUNCTION("function"),
+        TRIGGER("trigger"),
     }
 
     val name: String = declaration.tokenOriginalValue

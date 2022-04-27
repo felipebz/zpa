@@ -174,7 +174,11 @@ begin
   null;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val foo = symbols.find("foo", 1, 18)
+        assertThat(foo.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(foo.references).isEmpty()
 
         val x = symbols.find("x", 1, 22)
         assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
@@ -189,7 +193,11 @@ begin
   null;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val foo = symbols.find("foo", 1, 17)
+        assertThat(foo.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(foo.references).isEmpty()
 
         val x = symbols.find("x", 1, 21)
         assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
@@ -203,7 +211,11 @@ create package pkg as
   variable number;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val pkg = symbols.find("pkg", 1, 16)
+        assertThat(pkg.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(pkg.references).isEmpty()
 
         val variable = symbols.find("variable", 2, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
@@ -217,7 +229,11 @@ create package body pkg as
   variable number;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val pkg = symbols.find("pkg", 1, 21)
+        assertThat(pkg.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(pkg.references).isEmpty()
 
         val variable = symbols.find("variable", 2, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
@@ -238,7 +254,11 @@ begin
   variable2 := 0;
 end;
 """)
-        assertThat(symbols).hasSize(2)
+        assertThat(symbols).hasSize(3)
+
+        val pkg = symbols.find("pkg", 1, 16)
+        assertThat(pkg.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(pkg.references).containsExactly(tuple(4, 21))
 
         val variable = symbols.find("variable", 2, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
@@ -315,7 +335,11 @@ begin
   variable := :old.id;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val baz = symbols.find("baz", 1, 16)
+        assertThat(baz.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(baz.references).isEmpty()
 
         val variable = symbols.find("variable", 3, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
@@ -334,7 +358,12 @@ begin
   bar.x := 1;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
+
+        val foo = symbols.find("foo", 1, 18)
+        assertThat(foo.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(foo.references).containsExactly(
+            tuple(5, 3))
 
         val x = symbols.find("x", 2, 3)
         assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
@@ -357,12 +386,21 @@ begin
   null;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(3)
+
+        val foo = symbols.find("foo", 1, 18)
+        assertThat(foo.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(foo.references).containsExactly(
+            tuple(6, 5))
 
         val x = symbols.find("x", 2, 3)
         assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)
         assertThat(x.references).containsExactly(
             tuple(6, 9))
+
+        val bar = symbols.find("bar", 4, 13)
+        assertThat(bar.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(bar.references).isEmpty()
     }
 
     @Test
@@ -376,7 +414,11 @@ begin
 end;
 /
 """)
-        assertThat(symbols).hasSize(2)
+        assertThat(symbols).hasSize(3)
+
+        val foo = symbols.find("foo", 1, 11)
+        assertThat(foo.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(foo.references).isEmpty()
 
         val x = symbols.find("x", 2, 14)
         assertThat(x.type).isEqualTo(PlSqlType.NUMERIC)

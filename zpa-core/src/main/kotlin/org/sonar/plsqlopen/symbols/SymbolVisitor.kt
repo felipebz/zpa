@@ -53,7 +53,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
         PlSqlGrammar.FORALL_STATEMENT)
 
     private var symbolTable = SymbolTableImpl()
-    private var currentScope: Scope? = null
+    private var currentScope: Scope? = ScopeImpl()
 
     val symbols: List<Symbol> = symbolTable.symbols
 
@@ -124,16 +124,16 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
         } else if (node.type === PlSqlGrammar.PARAMETER_DECLARATION || node.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
             visitParameterDeclaration(node)
         } else if (node.type === PlSqlGrammar.CREATE_PROCEDURE ||
-                node.type === PlSqlGrammar.PROCEDURE_DECLARATION ||
-                node.type === PlSqlGrammar.CREATE_FUNCTION ||
-                node.type === PlSqlGrammar.FUNCTION_DECLARATION ||
-                node.type === PlSqlGrammar.SIMPLE_DML_TRIGGER ||
-                node.type === PlSqlGrammar.INSTEAD_OF_DML_TRIGGER ||
-                node.type === PlSqlGrammar.COMPOUND_DML_TRIGGER ||
-                node.type === PlSqlGrammar.SYSTEM_TRIGGER ||
-                node.type === PlSqlGrammar.CREATE_TYPE ||
-                node.type === PlSqlGrammar.CREATE_TYPE_BODY ||
-                node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) {
+            node.type === PlSqlGrammar.PROCEDURE_DECLARATION ||
+            node.type === PlSqlGrammar.CREATE_FUNCTION ||
+            node.type === PlSqlGrammar.FUNCTION_DECLARATION ||
+            node.type === PlSqlGrammar.SIMPLE_DML_TRIGGER ||
+            node.type === PlSqlGrammar.INSTEAD_OF_DML_TRIGGER ||
+            node.type === PlSqlGrammar.COMPOUND_DML_TRIGGER ||
+            node.type === PlSqlGrammar.SYSTEM_TRIGGER ||
+            node.type === PlSqlGrammar.CREATE_TYPE ||
+            node.type === PlSqlGrammar.CREATE_TYPE_BODY ||
+            node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) {
             visitUnit(node)
         } else if (node.type === PlSqlGrammar.CREATE_PACKAGE || node.type === PlSqlGrammar.CREATE_PACKAGE_BODY) {
             visitPackage(node)
@@ -158,14 +158,50 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
             inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
             inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)
 
+        val identifier = if (node.parent.type == PlSqlGrammar.CREATE_TRIGGER) {
+            node.parent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
+        } else {
+            node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
+        }
+
+        val datatype = node.getFirstChildOrNull(PlSqlKeyword.RETURN)?.nextSibling
+        val type = if (datatype != null) solveType(datatype) else UnknownDatatype(identifier)
+        val symbolKind = when(node.type) {
+            PlSqlGrammar.CREATE_PROCEDURE -> Symbol.Kind.PROCEDURE
+            PlSqlGrammar.PROCEDURE_DECLARATION -> Symbol.Kind.PROCEDURE
+
+            PlSqlGrammar.CREATE_FUNCTION -> Symbol.Kind.FUNCTION
+            PlSqlGrammar.FUNCTION_DECLARATION -> Symbol.Kind.FUNCTION
+
+            PlSqlGrammar.SIMPLE_DML_TRIGGER -> Symbol.Kind.TRIGGER
+            PlSqlGrammar.INSTEAD_OF_DML_TRIGGER -> Symbol.Kind.TRIGGER
+            PlSqlGrammar.COMPOUND_DML_TRIGGER -> Symbol.Kind.TRIGGER
+            PlSqlGrammar.SYSTEM_TRIGGER  -> Symbol.Kind.TRIGGER
+
+            PlSqlGrammar.CREATE_TYPE -> Symbol.Kind.TYPE
+            PlSqlGrammar.CREATE_TYPE_BODY -> Symbol.Kind.TYPE
+            PlSqlGrammar.TYPE_CONSTRUCTOR  -> Symbol.Kind.TYPE
+            else -> {
+                throw IllegalArgumentException("Unknown unit type: ${node.type}")
+            }
+        }
+
+        createSymbol(identifier, symbolKind, type)
         enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
     }
 
     private fun visitPackage(node: AstNode) {
-        val packageName = node.getFirstChild(PlSqlGrammar.UNIT_NAME).tokenOriginalValue
-        val packageScope = symbolTable.scopes.firstOrNull { it.identifier == packageName && it.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE) }
+        val identifier = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
+        val packageScope = symbolTable.scopes.firstOrNull { it.identifier == identifier.tokenOriginalValue && it.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE) }
         if (packageScope != null) {
             currentScope = packageScope
+            val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
+            if (symbol != null) {
+                symbol.addUsage(identifier)
+                semantic(node).symbol = symbol
+            }
+        } else {
+            createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype(identifier))
         }
         enterScope(node, autonomousTransaction = false, exceptionHandler = false)
     }
@@ -178,8 +214,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
 
     private fun visitBlock(node: AstNode) {
         val exceptionHandler = node
-                .getFirstChild(PlSqlGrammar.STATEMENTS_SECTION)
-                .hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS)
+            .getFirstChild(PlSqlGrammar.STATEMENTS_SECTION)
+            .hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS)
         enterScope(node, exceptionHandler =  exceptionHandler)
     }
 

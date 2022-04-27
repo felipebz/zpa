@@ -32,14 +32,14 @@ class ScopeImpl(override val outer: Scope? = null,
                 override val isOverridingMember: Boolean = false,
                 identifierForTesting: String? = null) : Scope {
 
-    override val tree: AstNode
-        get() = node ?: throw IllegalStateException("Scope has no tree")
+    override val tree: AstNode?
+        get() = node
 
     override val symbols = mutableListOf<Symbol>()
 
     override val identifier: String? =
         try {
-            identifierForTesting ?: tree.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
+            identifierForTesting ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
         } catch (e: Exception) {
             ""
         }
@@ -110,6 +110,6 @@ class ScopeImpl(override val outer: Scope? = null,
         return true
     }
 
-    override fun toString() = "Scope{identifier='$identifier', type=${tree.type}, path=$path}"
+    override fun toString() = "Scope{identifier='$identifier', type=${tree?.type}, path=$path}"
 
 }

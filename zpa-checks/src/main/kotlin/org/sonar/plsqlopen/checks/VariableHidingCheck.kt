@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.checks
 import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
 @Rule(priority = Priority.MAJOR)
 @ConstantRemediation("5min")
@@ -39,7 +40,7 @@ class VariableHidingCheck : AbstractBaseCheck() {
 
         val scope = context.symbolTable.getScopeForSymbol(identifier)
         if (scope != null) {
-            val symbols = scope.getSymbolsAcessibleInScope(name)
+            val symbols = scope.getSymbolsAcessibleInScope(name, Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER)
 
             if (symbols.size > 1) {
                 val originalVariable = symbols.last.declaration
