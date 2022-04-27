@@ -44,8 +44,7 @@ class UnusedVariableCheck : AbstractBaseCheck() {
         val symbols = scope.getSymbols(Symbol.Kind.VARIABLE)
         for (symbol in symbols) {
             if (symbol.usages.isEmpty()) {
-                addIssue(symbol.declaration, getLocalizedMessage(),
-                        symbol.declaration.tokenOriginalValue)
+                addIssue(symbol.declaration, getLocalizedMessage(), symbol.name)
             }
         }
     }

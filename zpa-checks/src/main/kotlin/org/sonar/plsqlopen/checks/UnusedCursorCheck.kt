@@ -50,8 +50,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
             val parent = checkNotNull(symbol.declaration.parent)
 
             if (symbol.usages.isEmpty() && !parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
-                addIssue(parent, getLocalizedMessage(),
-                        symbol.declaration.tokenOriginalValue)
+                addIssue(parent, getLocalizedMessage(), symbol.name)
             }
         }
     }

@@ -91,8 +91,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
 
             if (symbol.usages.isEmpty()) {
                 val parent = checkNotNull(symbol.declaration.parent)
-                addIssue(parent, getLocalizedMessage(),
-                        symbol.declaration.tokenOriginalValue)
+                addIssue(parent, getLocalizedMessage(), symbol.name)
             }
 
         }
