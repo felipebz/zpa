@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class ExceptionDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class ExceptionDatatype : PlSqlDatatype {
     override val type = PlSqlType.EXCEPTION
 
     override fun toString(): String {
-        return "ExceptionDatatype{node=$node}"
+        return "ExceptionDatatype"
     }
 }

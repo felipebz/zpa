@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class DateDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class DateDatatype : PlSqlDatatype {
     override val type = PlSqlType.DATE
 
     override fun toString(): String {
-        return "DateDatatype{node=$node}"
+        return "DateDatatype"
     }
 }

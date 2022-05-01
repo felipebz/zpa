@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class UnknownDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class UnknownDatatype : PlSqlDatatype {
     override val type = PlSqlType.UNKNOWN
 
     override fun toString(): String {
-        return "UnknownDatatype{node=$node}"
+        return "UnknownDatatype"
     }
 }

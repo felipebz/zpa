@@ -35,45 +35,45 @@ open class DefaultTypeSolver {
         } else if (node.type === PlSqlGrammar.LITERAL) {
             return solveLiteral(node)
         }
-        return UnknownDatatype(node)
+        return UnknownDatatype()
     }
 
     open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype(node)
+        var type: PlSqlDatatype = UnknownDatatype()
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
             type = CharacterDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
             type = NumericDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
-            type = DateDatatype(node)
+            type = DateDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
-            type = LobDatatype(node)
+            type = LobDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
-            type = BooleanDatatype(node)
+            type = BooleanDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
             val anchoredDatatype = node.firstChild
             if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
-                type = RowtypeDatatype(node)
+                type = RowtypeDatatype()
             }
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype(node)
+            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype()
         }
         return type
     }
 
     open fun solveLiteral(node: AstNode): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype(node)
+        var type: PlSqlDatatype = UnknownDatatype()
         if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
-            type = NullDatatype(node)
+            type = NullDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
             type = CharacterDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
             type = NumericDatatype(node)
         } else if (node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL)) {
-            type = DateDatatype(node)
+            type = DateDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL)) {
-            type = BooleanDatatype(node)
+            type = BooleanDatatype()
         }
         return type
     }

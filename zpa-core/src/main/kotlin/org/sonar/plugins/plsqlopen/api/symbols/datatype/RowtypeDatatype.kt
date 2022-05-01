@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class RowtypeDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class RowtypeDatatype : PlSqlDatatype {
     override val type = PlSqlType.ROWTYPE
 
     override fun toString(): String {
-        return "RowtypeDatatype{node=$node}"
+        return "RowtypeDatatype"
     }
 }

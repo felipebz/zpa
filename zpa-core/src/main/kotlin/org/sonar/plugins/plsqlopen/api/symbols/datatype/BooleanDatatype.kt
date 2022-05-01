@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class BooleanDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class BooleanDatatype : PlSqlDatatype {
     override val type = PlSqlType.BOOLEAN
 
     override fun toString(): String {
-        return "BooleanDatatype{node=$node}"
+        return "BooleanDatatype"
     }
 }

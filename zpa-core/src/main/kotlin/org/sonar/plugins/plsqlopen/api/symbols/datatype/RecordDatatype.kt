@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class RecordDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class RecordDatatype : PlSqlDatatype {
     override val type = PlSqlType.RECORD
 
     override fun toString(): String {
-        return "RecordDatatype{node=$node}"
+        return "RecordDatatype"
     }
 }

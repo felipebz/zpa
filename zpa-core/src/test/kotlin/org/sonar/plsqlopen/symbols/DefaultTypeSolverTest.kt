@@ -98,7 +98,7 @@ class DefaultTypeSolverTest {
 
     @Test
     fun identifyCustomType() {
-        val symbol = createSymbol("my_type", Symbol.Kind.TYPE, RowtypeDatatype(mockAstNode()))
+        val symbol = createSymbol("my_type", Symbol.Kind.TYPE, RowtypeDatatype())
         scope.addSymbol(symbol)
 
         val type = solveTypeFromDatatype("my_type")

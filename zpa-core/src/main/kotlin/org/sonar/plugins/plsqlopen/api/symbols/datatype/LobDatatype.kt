@@ -19,13 +19,12 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class LobDatatype(private val node: AstNode? = null) : PlSqlDatatype {
+class LobDatatype : PlSqlDatatype {
     override val type = PlSqlType.LOB
 
     override fun toString(): String {
-        return "LobDatatype{node=$node}"
+        return "LobDatatype"
     }
 }
