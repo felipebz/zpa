@@ -20,6 +20,7 @@
 package org.sonar.plugins.plsqlopen.api.symbols
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import java.util.*
 
 interface Scope {
@@ -31,6 +32,9 @@ interface Scope {
     val identifier: String?
     val hasExceptionHandler: Boolean
     val path: List<String>
+    val innerScopes: List<Scope>
+    val type: AstNodeType?
+    val isGlobal: Boolean
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind
@@ -41,4 +45,5 @@ interface Scope {
     fun addSymbol(symbol: Symbol)
     fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol?
     fun getSymbol(name: String, path: List<String>, vararg kinds: Symbol.Kind): Symbol?
+    fun addInnerScope(scope: Scope)
 }

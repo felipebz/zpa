@@ -20,26 +20,38 @@
 package org.sonar.plsqlopen.symbols
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class ScopeImpl(override val outer: Scope? = null,
-                private val node: AstNode? = null,
+                node: AstNode? = null,
                 override val isAutonomousTransaction: Boolean = false,
                 override val hasExceptionHandler: Boolean = false,
                 override val isOverridingMember: Boolean = false,
-                identifierForTesting: String? = null) : Scope {
+                identifier: String? = null,
+                type: AstNodeType? = null,
+                private val globalScope: Scope? = null) : Scope {
 
-    override val tree: AstNode?
-        get() = node
+    private val mutex = ReentrantLock()
+
+    init {
+        outer?.addInnerScope(this)
+    }
+
+    override val tree: AstNode? = node
+
+    override val type: AstNodeType? = tree?.type ?: type
 
     override val symbols = mutableListOf<Symbol>()
 
     override val identifier: String? =
         try {
-            identifierForTesting ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
+            identifier ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
         } catch (e: Exception) {
             ""
         }
@@ -56,6 +68,11 @@ class ScopeImpl(override val outer: Scope? = null,
         }
         path
     }
+    override val innerScopes = mutableListOf<Scope>()
+
+    override val isGlobal: Boolean = globalScope != null ||
+        (outer as? ScopeImpl)?.globalScope != null ||
+        (outer?.type in arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_TYPE) && outer?.isGlobal == true)
 
     /**
      * @param kind of the symbols to look for
@@ -77,6 +94,12 @@ class ScopeImpl(override val outer: Scope? = null,
 
     override fun addSymbol(symbol: Symbol) {
         symbols.add(symbol)
+    }
+
+    override fun addInnerScope(scope: Scope) {
+        mutex.withLock {
+            innerScopes.add(scope)
+        }
     }
 
     override fun getSymbol(name: String, vararg kinds: Symbol.Kind): Symbol? {
@@ -110,6 +133,6 @@ class ScopeImpl(override val outer: Scope? = null,
         return true
     }
 
-    override fun toString() = "Scope{identifier='$identifier', type=${tree?.type}, path=$path}"
+    override fun toString() = "Scope{identifier='$identifier', type=$type, path=$path}"
 
 }

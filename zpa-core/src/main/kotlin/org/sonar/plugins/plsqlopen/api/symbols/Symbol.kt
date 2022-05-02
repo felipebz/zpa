@@ -20,14 +20,16 @@
 package org.sonar.plugins.plsqlopen.api.symbols
 
 import com.felipebz.flr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
 import java.util.*
 
-open class Symbol(val declaration: AstNode,
+open class Symbol(val node: AstNode?,
                   val kind: Kind,
                   val scope: Scope,
-                  datatype: PlSqlDatatype?) {
+                  datatype: PlSqlDatatype?,
+                  name: String = "") {
     private val internalUsages = mutableListOf<AstNode>()
     private var internalModifiers = mutableListOf<AstNode>()
 
@@ -42,17 +44,25 @@ open class Symbol(val declaration: AstNode,
         TRIGGER("trigger"),
     }
 
-    val name: String = declaration.tokenOriginalValue
+    val declaration by lazy { node ?: throw IllegalStateException("Symbol must have a declaration") }
+
+    val name: String = node?.tokenOriginalValue ?: name
 
     val type: PlSqlType = datatype?.type ?: PlSqlType.UNKNOWN
 
-    val datatype: PlSqlDatatype = datatype ?: UnknownDatatype(declaration)
+    val datatype: PlSqlDatatype = datatype ?: UnknownDatatype()
 
     val modifiers: List<AstNode>
         get() = Collections.unmodifiableList(internalModifiers)
 
     val usages: List<AstNode>
         get() = Collections.unmodifiableList(internalUsages)
+
+    val isGlobal: Boolean = if (kind in arrayOf(Kind.VARIABLE, Kind.CURSOR, Kind.TYPE)) {
+        scope.isGlobal && scope.type == PlSqlGrammar.CREATE_PACKAGE
+    } else {
+        scope.isGlobal
+    }
 
     fun hasModifier(modifier: String): Boolean {
         for (syntaxToken in modifiers) {

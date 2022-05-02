@@ -28,7 +28,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
 class SymbolVisitorTest {
 
-    private val visitor = SymbolVisitor(DefaultTypeSolver())
+    private val visitor = SymbolVisitor(DefaultTypeSolver(), ScopeImpl())
 
     @Test
     fun variableDeclaration() {

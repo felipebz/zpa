@@ -23,6 +23,7 @@ import com.felipebz.flr.api.Trivia
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
+import org.sonar.plsqlopen.symbols.ScopeImpl
 import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import java.io.File
@@ -101,7 +102,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
             val verifier = PlSqlCheckVerifier()
             val file = File(path)
 
-            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver()), verifier, check)
+            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver(), ScopeImpl()), verifier, check)
             val issues = check.issues()
 
             val actualIssues = issues.sortedBy { it.primaryLocation().startLine() }.iterator()

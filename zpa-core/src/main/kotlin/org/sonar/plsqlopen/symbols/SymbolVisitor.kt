@@ -31,7 +31,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.*
 
-class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
+class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globalScope: Scope? = null) : PlSqlCheck() {
 
     private val scopeHolders = arrayOf<AstNodeType>(
         PlSqlGrammar.CREATE_PROCEDURE,
@@ -53,18 +53,48 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
         PlSqlGrammar.FORALL_STATEMENT)
 
     private var symbolTable = SymbolTableImpl()
-    private var currentScope: Scope? = ScopeImpl()
+    private lateinit var fileScope: Scope
+    private var currentScope: Scope? = null
 
     val symbols: List<Symbol> = symbolTable.symbols
 
     override fun init() {
         subscribeTo(*scopeHolders)
+        fileScope = ScopeImpl(globalScope = globalScope)
+        currentScope = fileScope
     }
 
     override fun visitFile(node: AstNode) {
         visit(node)
 
         context.symbolTable = symbolTable
+
+        if (globalScope != null) {
+            for (innerScope in fileScope.innerScopes) {
+                declareGlobalSymbols(innerScope, globalScope)
+            }
+        }
+    }
+
+    private fun declareGlobalSymbols(current: Scope, outer: Scope) {
+        val scope = ScopeImpl(
+            outer = outer,
+            node = null,
+            isAutonomousTransaction = current.isAutonomousTransaction,
+            hasExceptionHandler = current.hasExceptionHandler,
+            isOverridingMember = current.isOverridingMember,
+            identifier = current.identifier,
+            type = current.type,
+        )
+
+        for (symbol in current.symbols.filter { it.isGlobal }) {
+            val newSymbol = Symbol(null, symbol.kind, scope, symbol.datatype, symbol.name)
+            scope.addSymbol(newSymbol)
+        }
+
+        for (innerScope in current.innerScopes.filter { it.isGlobal }) {
+            declareGlobalSymbols(innerScope, scope)
+        }
     }
 
     override fun visitNode(node: AstNode) {
@@ -165,7 +195,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
         }
 
         val datatype = node.getFirstChildOrNull(PlSqlKeyword.RETURN)?.nextSibling
-        val type = if (datatype != null) solveType(datatype) else UnknownDatatype(identifier)
+        val type = if (datatype != null) solveType(datatype) else UnknownDatatype()
         val symbolKind = when(node.type) {
             PlSqlGrammar.CREATE_PROCEDURE -> Symbol.Kind.PROCEDURE
             PlSqlGrammar.PROCEDURE_DECLARATION -> Symbol.Kind.PROCEDURE
@@ -201,14 +231,14 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
                 semantic(node).symbol = symbol
             }
         } else {
-            createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype(identifier))
+            createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype())
         }
         enterScope(node, autonomousTransaction = false, exceptionHandler = false)
     }
 
     private fun visitCursor(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype(identifier))
+        createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype())
         enterScope(node)
     }
 
@@ -226,7 +256,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
         val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
             NumericDatatype(node)
         } else {
-            RowtypeDatatype(node)
+            RowtypeDatatype()
         }
 
         createSymbol(identifier, Symbol.Kind.VARIABLE, type)
@@ -249,7 +279,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
     private fun visitExceptionDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
 
-        createSymbol(identifier, Symbol.Kind.VARIABLE, ExceptionDatatype(node))
+        createSymbol(identifier, Symbol.Kind.VARIABLE, ExceptionDatatype())
     }
 
     private fun visitCustomSubtypeDeclaration(node: AstNode) {
@@ -267,7 +297,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver) : PlSqlCheck() {
 
     private fun visitRecordDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.TYPE, RecordDatatype(node))
+        createSymbol(identifier, Symbol.Kind.TYPE, RecordDatatype())
     }
 
     private fun visitParameterDeclaration(node: AstNode) {

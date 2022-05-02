@@ -30,6 +30,7 @@ import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor
 import org.sonar.plsqlopen.metrics.MetricsVisitor
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
+import org.sonar.plsqlopen.symbols.ScopeImpl
 import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plsqlopen.utils.getAnnotation
 import org.sonar.plsqlopen.utils.log.Loggers
@@ -50,6 +51,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  charset: Charset = StandardCharsets.UTF_8) {
 
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
+    private val globalScope = ScopeImpl()
 
     fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor> = emptyList()) : AstScannerResult {
         val newVisitorContext = getPlSqlVisitorContext(inputFile)
@@ -57,7 +59,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         val metricsVisitor = MetricsVisitor()
         val complexityVisitor = ComplexityVisitor()
         val functionComplexityVisitor = FunctionComplexityVisitor()
-        val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
+        val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), globalScope)
 
         val checksToRun = mutableListOf<PlSqlVisitor>()
         checksToRun.add(symbolVisitor)
