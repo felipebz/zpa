@@ -40,21 +40,21 @@ class TokenLocation private constructor(
         private val pattern = Regex("\\R")
 
         fun from(token: Token): TokenLocation {
-            val lineCount: Int
             var lastLineLength = 0
 
-            if (token.value.contains(pattern)) {
-                val lines = pattern.split(token.value)
-                lineCount = lines.size
+            val lines = pattern.split(token.value)
+            val lineCount = if (lines.size > 1) {
                 lastLineLength = lines[lines.size - 1].length
+                lines.size
             } else {
-                lineCount = 1
+                1
             }
 
-            var endLineOffset = token.column + token.value.length
             val endLine = token.line + lineCount - 1
-            if (endLine != token.line) {
-                endLineOffset = lastLineLength
+            val endLineOffset = if (endLine != token.line) {
+                lastLineLength
+            } else {
+                token.column + token.value.length
             }
             return TokenLocation(token.line, token.column, endLine, endLineOffset)
         }
