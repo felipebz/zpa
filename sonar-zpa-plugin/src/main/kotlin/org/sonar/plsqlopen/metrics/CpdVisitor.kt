@@ -24,7 +24,6 @@ import com.felipebz.flr.api.Token
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens
-import org.sonar.plsqlopen.TokenLocation
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 
@@ -47,8 +46,7 @@ class CpdVisitor(context: SensorContext, inputFile: InputFile) : PlSqlCheck() {
     }
 
     private fun saveCpdTokens(token: Token) {
-        val location = TokenLocation.from(token)
-        newCpdTokens.addToken(location.line(), location.column(), location.endLine(), location.endColumn(), token.value)
+        newCpdTokens.addToken(token.line, token.column, token.endLine, token.endColumn, token.value)
     }
 
     override fun leaveFile(node: AstNode) {

@@ -22,7 +22,6 @@ package org.sonar.plsqlopen.symbols
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable
-import org.sonar.plsqlopen.TokenLocation
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
 class SonarQubeSymbolTable(context: SensorContext, inputFile: InputFile) {
@@ -33,13 +32,13 @@ class SonarQubeSymbolTable(context: SensorContext, inputFile: InputFile) {
         for (symbol in symbols) {
             val symbolNode = symbol.declaration
 
-            val symbolLocation = TokenLocation.from(symbolNode.token)
-            val newSymbol = symbolizable.newSymbol(symbolLocation.line(), symbolLocation.column(),
-                    symbolLocation.endLine(), symbolLocation.endColumn())
+            val symbolToken = symbolNode.token
+            val newSymbol = symbolizable.newSymbol(symbolToken.line, symbolToken.column,
+                symbolToken.endLine, symbolToken.endColumn)
 
             for (usage in symbol.usages) {
-                val usageLocation = TokenLocation.from(usage.token)
-                newSymbol.newReference(usageLocation.line(), usageLocation.column(), usageLocation.endLine(), usageLocation.endColumn())
+                val usageToken = usage.token
+                newSymbol.newReference(usageToken.line, usageToken.column, usageToken.endLine, usageToken.endColumn)
             }
         }
         symbolizable.save()

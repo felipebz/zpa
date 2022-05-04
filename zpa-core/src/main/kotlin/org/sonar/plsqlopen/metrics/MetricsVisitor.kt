@@ -51,8 +51,7 @@ class MetricsVisitor : PlSqlCheck() {
     }
 
     override fun visitToken(token: Token) {
-        val tokenLines = token.value.split("\n")
-        for (line in token.line until token.line + tokenLines.size) {
+        for (line in token.line .. token.endLine) {
             linesOfCode.add(line)
         }
     }

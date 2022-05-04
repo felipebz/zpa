@@ -26,7 +26,6 @@ import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting
 import org.sonar.api.batch.sensor.highlighting.TypeOfText
-import org.sonar.plsqlopen.TokenLocation
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
@@ -58,8 +57,7 @@ class PlSqlHighlighterVisitor(context: SensorContext, inputFile: InputFile) : Pl
     }
 
     private fun highlight(token: Token, code: TypeOfText) {
-        val location = TokenLocation.from(token)
-        highlighting.highlight(location.line(), location.column(), location.endLine(), location.endColumn(), code)
+        highlighting.highlight(token.line, token.column, token.endLine, token.endColumn, code)
     }
 
 }

@@ -21,7 +21,6 @@ package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
-import org.sonar.plsqlopen.TokenLocation
 
 abstract class IssueLocation private constructor(private val message: String) {
 
@@ -38,25 +37,25 @@ abstract class IssueLocation private constructor(private val message: String) {
     private class PreciseIssueLocation : IssueLocation {
 
         private val firstToken: Token
-        private val lastTokenLocation: TokenLocation
+        private val lastToken: Token
 
         constructor(node: AstNode, message: String) : super(message) {
             this.firstToken = node.token
-            this.lastTokenLocation = TokenLocation.from(node.lastToken)
+            this.lastToken = node.lastToken
         }
 
         constructor(startNode: AstNode, endNode: AstNode, message: String) : super(message) {
             this.firstToken = startNode.token
-            this.lastTokenLocation = TokenLocation.from(endNode.lastToken)
+            this.lastToken = endNode.lastToken
         }
 
         override fun startLine() = firstToken.line
 
         override fun startLineOffset() = firstToken.column
 
-        override fun endLine() = lastTokenLocation.endLine()
+        override fun endLine() = lastToken.endLine
 
-        override fun endLineOffset() = lastTokenLocation.endColumn()
+        override fun endLineOffset() = lastToken.endColumn
 
     }
 
