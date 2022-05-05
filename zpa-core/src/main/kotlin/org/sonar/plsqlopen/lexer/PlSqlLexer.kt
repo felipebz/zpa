@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.lexer
 import com.felipebz.flr.impl.Lexer
 import com.felipebz.flr.impl.channel.BlackHoleChannel
 import com.felipebz.flr.impl.channel.IdentifierAndKeywordChannel
+import com.felipebz.flr.impl.channel.PunctuatorChannel
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.and
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.commentRegexp
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.g
@@ -76,7 +77,8 @@ object PlSqlLexer {
             .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
             .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
             .withChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false, PlSqlKeyword.values()))
-            .withChannel(RegexPunctuatorChannel(*PlSqlPunctuator.values()))
+            .withChannel(RegexPunctuatorChannel(*PlSqlPunctuator.values().filter { it.isRegex }.toTypedArray()))
+            .withChannel(PunctuatorChannel(*PlSqlPunctuator.values().filter { !it.isRegex }.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",
                 "\\\$if.*?\\\$then",

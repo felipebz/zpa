@@ -22,38 +22,38 @@ package org.sonar.plugins.plsqlopen.api
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.TokenType
 
-enum class PlSqlPunctuator(override val value: String) : TokenType {
+enum class PlSqlPunctuator(override val value: String, val isRegex: Boolean = false) : TokenType {
     // Based on http://docs.oracle.com/cd/B19306_01/appdev.102/b14261/fundamentals.htm#sthref297
     COMMA(","),
-    PLUS("\\+"),
+    PLUS("+"),
     MINUS("-"),
     MOD("%"),
-    DOT("\\."),
+    DOT("."),
     DIVISION("/"),
-    LPARENTHESIS("\\("),
-    RPARENTHESIS("\\)"),
+    LPARENTHESIS("("),
+    RPARENTHESIS(")"),
     COLON(":"),
     SEMICOLON(";"),
-    MULTIPLICATION("\\*"),
+    MULTIPLICATION("*"),
     EQUALS("="),
     LESSTHAN("<"),
     GREATERTHAN(">"),
     REMOTE("@"),
     SUBTRACTION("-"),
     ASSIGNMENT(":="),
-    ASSOCIATION("=\\s*?>"),
-    CONCATENATION("\\|\\|"),
-    EXPONENTIATION("\\*\\*"),
+    CONCATENATION("||"),
+    EXPONENTIATION("**"),
     LLABEL("<<"),
     RLABEL(">>"),
-    RANGE("\\.\\."),
-    NOTEQUALS("<\\s*?>"),
-    NOTEQUALS2("!\\s*?="),
-    NOTEQUALS3("~\\s*?="),
-    NOTEQUALS4("\\^\\s*?="),
-    LESSTHANOREQUAL("<\\s*?="),
-    GREATERTHANOREQUAL(">\\s*?="),
-    DOUBLEDOLLAR("\\$\\$");
+    RANGE(".."),
+    DOUBLEDOLLAR("$$"),
+    ASSOCIATION("=\\s*?>", true),
+    NOTEQUALS("<\\s*?>", true),
+    NOTEQUALS2("!\\s*?=", true),
+    NOTEQUALS3("~\\s*?=", true),
+    NOTEQUALS4("\\^\\s*?=", true),
+    LESSTHANOREQUAL("<\\s*?=", true),
+    GREATERTHANOREQUAL(">\\s*?=", true);
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 }
