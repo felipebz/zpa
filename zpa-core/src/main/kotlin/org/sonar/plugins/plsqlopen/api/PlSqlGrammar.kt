@@ -74,6 +74,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     BRACKED_EXPRESSION,
     MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION,
+    OUTER_JOIN_PLUS_SIGN,
     OBJECT_REFERENCE,
     POSTFIX_EXPRESSION,
     IN_EXPRESSION,
@@ -632,10 +633,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
                     METHOD_CALL)).skipIfOneChild()
 
+            b.rule(OUTER_JOIN_PLUS_SIGN).define(LPARENTHESIS, PLUS, RPARENTHESIS)
+
             b.rule(OBJECT_REFERENCE).define(
                     b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
                     b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
-                    b.optional(LPARENTHESIS, PLUS, RPARENTHESIS)).skipIfOneChild()
+                    b.optional(OUTER_JOIN_PLUS_SIGN)).skipIfOneChild()
 
             b.rule(POSTFIX_EXPRESSION).define(OBJECT_REFERENCE,
                     b.optional(b.firstOf(
