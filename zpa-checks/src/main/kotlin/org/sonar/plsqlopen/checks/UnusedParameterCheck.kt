@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -54,7 +53,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             val scopeNode = scope.tree ?: continue
 
             // ignore procedure/function specification and overriding members
-            if (scopeNode.typeIs(DECLARATION_OR_CONSTRUCTOR)) {
+            if (scope.type in DECLARATION_OR_CONSTRUCTOR) {
                 // is specification?
                 if (!scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
                     continue
@@ -62,13 +61,12 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             }
 
             // cursor declaration (without implementation)
-            if (scopeNode.typeIs(PlSqlGrammar.CURSOR_DECLARATION) && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
+            if (scope.type == PlSqlGrammar.CURSOR_DECLARATION && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
                 continue
             }
 
             // ignore methods by name
-            if (scopeNode.typeIs(PROCEDURE_OR_FUNCTION) &&
-                ignoreRegex != null) {
+            if (scope.type in PROCEDURE_OR_FUNCTION && ignoreRegex != null) {
                 val matchesRegex = ignoreRegex?.matcher(scope.identifier)?.matches() ?: false
                 if (matchesRegex) {
                     continue
@@ -84,7 +82,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
         for (symbol in symbols) {
 
             // SELF parameter in type members
-            if (scope.tree?.parent.typeIs(PlSqlGrammar.TYPE_SUBPROGRAM) && symbol.name.equals("self", ignoreCase = true)) {
+            if (scope.outer?.type == PlSqlGrammar.CREATE_TYPE_BODY && symbol.name.equals("self", ignoreCase = true)) {
                 continue
             }
 

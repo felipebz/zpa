@@ -22,7 +22,6 @@ package org.sonar.plsqlopen.checks
 import com.felipebz.flr.api.AstNode
 import org.sonar.plsqlopen.asTree
 import org.sonar.plsqlopen.sslr.RaiseStatement
-import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.ConstantRemediation
@@ -59,9 +58,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     private fun exceptionShouldBeChecked(exceptionDeclaration: Symbol): Boolean {
-        val scopeOfDeclaration = exceptionDeclaration.scope.tree
-        val isPackage = scopeOfDeclaration.typeIs(PACKAGE_SPEC_OR_BODY)
-        return !isPackage
+        return exceptionDeclaration.scope.type !in PACKAGE_SPEC_OR_BODY
     }
 
     private fun isHandled(identifierName: String): Boolean {

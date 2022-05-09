@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -36,8 +35,7 @@ class UnusedCursorCheck : AbstractBaseCheck() {
     override fun leaveFile(node: AstNode) {
         val scopes = context.symbolTable.scopes
         for (scope in scopes) {
-            val isCreatePackage = scope.tree.typeIs(PlSqlGrammar.CREATE_PACKAGE)
-            if (isCreatePackage) {
+            if (scope.type == PlSqlGrammar.CREATE_PACKAGE) {
                 continue
             }
             checkScope(scope)

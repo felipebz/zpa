@@ -39,14 +39,14 @@ class CommitRollbackCheck : AbstractBaseCheck() {
         val scope = context.currentScope
 
         var outerScope = scope
-        while (outerScope?.outer != null && outerScope.outer?.tree != null) {
+        while (outerScope?.outer != null && outerScope.outer?.type != null) {
             outerScope = outerScope.outer
         }
 
         val isRollbackToSavepoint = node.typeIs(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO)
 
         val currentScopeIsAutonomousTransaction = scope?.isAutonomousTransaction ?: false
-        val isInsideABlockStatement = outerScope?.tree?.typeIs(PlSqlGrammar.BLOCK_STATEMENT) ?: false
+        val isInsideABlockStatement = outerScope?.type == PlSqlGrammar.BLOCK_STATEMENT
 
         if (!isRollbackToSavepoint && !currentScopeIsAutonomousTransaction && !isInsideABlockStatement) {
             addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokenValue)
