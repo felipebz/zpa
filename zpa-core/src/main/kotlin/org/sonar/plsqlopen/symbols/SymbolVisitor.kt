@@ -52,7 +52,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         PlSqlGrammar.CURSOR_DECLARATION,
         PlSqlGrammar.FORALL_STATEMENT)
 
-    private var symbolTable = SymbolTableImpl()
+    val symbolTable = SymbolTableImpl()
     private lateinit var fileScope: Scope
     private var currentScope: Scope? = null
 
@@ -61,6 +61,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     override fun init() {
         subscribeTo(*scopeHolders)
         fileScope = ScopeImpl(globalScope = globalScope)
+        symbolTable.addScope(fileScope)
         currentScope = fileScope
     }
 
