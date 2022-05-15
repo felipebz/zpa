@@ -9,6 +9,7 @@ plugins {
 dependencies {
     implementation(Libs.flr_xpath)
     implementation(Libs.flr_toolkit)
+    implementation("com.formdev:flatlaf:2.2")
     implementation(project(":zpa-core"))
 }
 

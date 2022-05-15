@@ -23,8 +23,8 @@ package com.felipebz.flr.toolkit
 import com.felipebz.flr.internal.toolkit.SourceCodeModel
 import com.felipebz.flr.internal.toolkit.ToolkitPresenter
 import com.felipebz.flr.internal.toolkit.ToolkitViewImpl
+import com.formdev.flatlaf.FlatIntelliJLaf
 import javax.swing.SwingUtilities
-import javax.swing.UIManager
 
 /**
  * Creates a Toolkit with a title, and the given [ConfigurationModel].
@@ -34,19 +34,10 @@ import javax.swing.UIManager
  *
  * @since 1.17
  */
-public class Toolkit(private val title: String, private val configurationModel: ConfigurationModel) {
-    public fun run() {
+class Toolkit(private val title: String, private val configurationModel: ConfigurationModel) {
+    fun run() {
         SwingUtilities.invokeLater {
-            try {
-                for (info in UIManager.getInstalledLookAndFeels()) {
-                    if ("Nimbus" == info.name) {
-                        UIManager.setLookAndFeel(info.className)
-                        break
-                    }
-                }
-            } catch (e: Exception) {
-                throw RuntimeException(e)
-            }
+            FlatIntelliJLaf.setup()
             val model = SourceCodeModel(configurationModel)
             val presenter = ToolkitPresenter(configurationModel, model)
             presenter.setView(ToolkitViewImpl(presenter))
