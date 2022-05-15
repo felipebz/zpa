@@ -39,6 +39,8 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
         private set
     lateinit var astNode: AstNode
         private set
+    lateinit var symbolTable: SymbolTable
+        private set
 
     fun setSourceCode(source: File, charset: Charset) {
         astNode = getSemanticNode(configurationModel.parser.parse(source))
@@ -47,22 +49,23 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
         } catch (e: IOException) {
             throw RuntimeException(e)
         }
+        loadSymbolTable()
     }
 
     fun setSourceCode(sourceCode: String) {
         astNode = getSemanticNode(configurationModel.parser.parse(sourceCode))
         this.sourceCode = sourceCode
+        loadSymbolTable()
     }
 
     val xml: String
         get() = AstXmlPrinter.print(astNode)
 
-    val symbolTable: SymbolTable
-        get() {
-            val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
-            symbolVisitor.context = PlSqlVisitorContext(astNode, null, null)
-            symbolVisitor.init()
-            symbolVisitor.visitFile(astNode)
-            return symbolVisitor.symbolTable
-        }
+    private fun loadSymbolTable() {
+        val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
+        symbolVisitor.context = PlSqlVisitorContext(astNode, null, null)
+        symbolVisitor.init()
+        symbolVisitor.visitFile(astNode)
+        symbolTable = symbolVisitor.symbolTable
+    }
 }

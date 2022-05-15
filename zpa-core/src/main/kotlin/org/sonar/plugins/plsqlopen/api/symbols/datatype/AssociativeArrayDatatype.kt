@@ -30,6 +30,6 @@ class AssociativeArrayDatatype(node: AstNode? = null) : PlSqlDatatype {
         ?: throw IllegalStateException("Associative array must have a nested type")
 
     override fun toString(): String {
-        return "AssociativeArrayDatatype{nestedType=$nestedType}"
+        return "AssociativeArray{nestedType=$nestedType}"
     }
 }

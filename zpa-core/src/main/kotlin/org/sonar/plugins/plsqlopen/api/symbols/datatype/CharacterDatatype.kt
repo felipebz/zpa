@@ -45,7 +45,7 @@ class CharacterDatatype : PlSqlDatatype {
     }
 
     override fun toString(): String {
-        return "CharacterDatatype{length=$length}"
+        return "Character{length=$length}"
     }
 
 }

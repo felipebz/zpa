@@ -25,6 +25,6 @@ class RowtypeDatatype : PlSqlDatatype {
     override val type = PlSqlType.ROWTYPE
 
     override fun toString(): String {
-        return "RowtypeDatatype"
+        return "Rowtype"
     }
 }

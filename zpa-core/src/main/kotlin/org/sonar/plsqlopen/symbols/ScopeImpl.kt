@@ -133,6 +133,6 @@ class ScopeImpl(override val outer: Scope? = null,
         return true
     }
 
-    override fun toString() = "Scope{identifier='$identifier', type=$type, path=$path}"
+    override fun toString() = "${identifier ?: "<unnamed scope>"} type=$type path=$path"
 
 }

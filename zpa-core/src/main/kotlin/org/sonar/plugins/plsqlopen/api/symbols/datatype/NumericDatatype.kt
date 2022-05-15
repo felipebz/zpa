@@ -51,7 +51,7 @@ class NumericDatatype : PlSqlDatatype {
     }
 
     override fun toString(): String {
-        return "NumericDatatype{length=$length, precision=$precision}"
+        return "Numeric{length=$length, precision=$precision}"
     }
 
 }

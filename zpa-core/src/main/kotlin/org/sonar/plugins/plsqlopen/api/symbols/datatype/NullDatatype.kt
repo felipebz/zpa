@@ -25,6 +25,6 @@ class NullDatatype : PlSqlDatatype {
     override val type = PlSqlType.NULL
 
     override fun toString(): String {
-        return "NullDatatype"
+        return "Null"
     }
 }

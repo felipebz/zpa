@@ -25,6 +25,6 @@ class UnknownDatatype : PlSqlDatatype {
     override val type = PlSqlType.UNKNOWN
 
     override fun toString(): String {
-        return "UnknownDatatype"
+        return "Unknown"
     }
 }

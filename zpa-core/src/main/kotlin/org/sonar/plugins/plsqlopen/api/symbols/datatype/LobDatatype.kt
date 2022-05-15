@@ -25,6 +25,6 @@ class LobDatatype : PlSqlDatatype {
     override val type = PlSqlType.LOB
 
     override fun toString(): String {
-        return "LobDatatype"
+        return "Lob"
     }
 }

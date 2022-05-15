@@ -25,6 +25,6 @@ class ExceptionDatatype : PlSqlDatatype {
     override val type = PlSqlType.EXCEPTION
 
     override fun toString(): String {
-        return "ExceptionDatatype"
+        return "Exception"
     }
 }

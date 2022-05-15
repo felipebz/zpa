@@ -25,6 +25,6 @@ class DateDatatype : PlSqlDatatype {
     override val type = PlSqlType.DATE
 
     override fun toString(): String {
-        return "DateDatatype"
+        return "Date"
     }
 }

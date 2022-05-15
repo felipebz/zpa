@@ -25,6 +25,6 @@ class RecordDatatype : PlSqlDatatype {
     override val type = PlSqlType.RECORD
 
     override fun toString(): String {
-        return "RecordDatatype"
+        return "Record"
     }
 }

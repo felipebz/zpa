@@ -25,6 +25,6 @@ class BooleanDatatype : PlSqlDatatype {
     override val type = PlSqlType.BOOLEAN
 
     override fun toString(): String {
-        return "BooleanDatatype"
+        return "Boolean"
     }
 }

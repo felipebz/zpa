@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.sslr.TreeImpl
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
 
 class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
 
@@ -60,6 +61,14 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
 
     val allTokensToString: String by lazy {
         tokens.joinToString(" ") { it.originalValue }
+    }
+
+    override fun toString(): String {
+        return super.toString() + if (plSqlDatatype != null && plSqlDatatype !is UnknownDatatype) {
+            " datatype=$plSqlDatatype"
+        } else {
+            ""
+        }
     }
 
     init {
