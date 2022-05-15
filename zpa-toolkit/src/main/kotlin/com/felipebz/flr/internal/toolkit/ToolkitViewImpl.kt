@@ -81,6 +81,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
 
     private fun initComponents() {
         setSize(1000, 700)
+        setLocationRelativeTo(null)
         defaultCloseOperation = EXIT_ON_CLOSE
         layout = BorderLayout(0, 5)
         astTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
