@@ -23,6 +23,11 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
 import com.felipebz.flr.toolkit.ConfigurationModel
+import org.sonar.plsqlopen.getSemanticNode
+import org.sonar.plsqlopen.symbols.DefaultTypeSolver
+import org.sonar.plsqlopen.symbols.SymbolVisitor
+import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
+import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
 import java.io.File
 import java.io.IOException
 import java.nio.charset.Charset
@@ -36,7 +41,7 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
         private set
 
     fun setSourceCode(source: File, charset: Charset) {
-        astNode = configurationModel.parser.parse(source)
+        astNode = getSemanticNode(configurationModel.parser.parse(source))
         try {
             sourceCode = String(Files.readAllBytes(Paths.get(source.path)), charset)
         } catch (e: IOException) {
@@ -45,10 +50,19 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
     }
 
     fun setSourceCode(sourceCode: String) {
-        astNode = configurationModel.parser.parse(sourceCode)
+        astNode = getSemanticNode(configurationModel.parser.parse(sourceCode))
         this.sourceCode = sourceCode
     }
 
     val xml: String
         get() = AstXmlPrinter.print(astNode)
+
+    val symbolTable: SymbolTable
+        get() {
+            val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
+            symbolVisitor.context = PlSqlVisitorContext(astNode, null, null)
+            symbolVisitor.init()
+            symbolVisitor.visitFile(astNode)
+            return symbolVisitor.symbolTable
+        }
 }

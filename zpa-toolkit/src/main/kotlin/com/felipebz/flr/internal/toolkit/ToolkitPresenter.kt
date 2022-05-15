@@ -68,6 +68,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displaySourceCode("")
         view.displayAst(null)
         view.displayXml("")
+        view.displayScope(null)
         view.disableXPathEvaluateButton()
         initConfigurationTab()
         view.run()
@@ -88,9 +89,11 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
                 throw RuntimeException(e)
             }
             model.setSourceCode(fileToParse, configurationModel.charset)
+            val symbolTable = model.symbolTable
             view.displaySourceCode(model.sourceCode)
             view.displayAst(model.astNode)
             view.displayXml(model.xml)
+            view.displayScope(symbolTable.scopes.firstOrNull())
             view.scrollSourceCodeTo(Point(0, 0))
             view.setFocusOnAbstractSyntaxTreeView()
             view.enableXPathEvaluateButton()
@@ -101,10 +104,12 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.clearConsole()
         val sourceCode = view.sourceCode
         model.setSourceCode(sourceCode)
+        val symbolTable = model.symbolTable
         val sourceCodeScrollbarPosition = view.sourceCodeScrollbarPosition
         view.displaySourceCode(model.sourceCode)
         view.displayAst(model.astNode)
         view.displayXml(model.xml)
+        view.displayScope(symbolTable.scopes.firstOrNull())
         view.scrollSourceCodeTo(sourceCodeScrollbarPosition)
         view.setFocusOnAbstractSyntaxTreeView()
         view.enableXPathEvaluateButton()
@@ -134,6 +139,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
     fun onSourceCodeKeyTyped() {
         view.displayAst(null)
         view.displayXml("")
+        view.displayScope(null)
         view.clearSourceCodeHighlights()
         view.disableXPathEvaluateButton()
     }

@@ -21,6 +21,7 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import java.awt.Point
 import java.io.File
 
@@ -71,6 +72,13 @@ internal interface ToolkitView {
      * @param xml The string to display
      */
     fun displayXml(xml: String)
+
+    /**
+     * Display the given scope.
+     *
+     * @param scope The scope to display
+     */
+    fun displayScope(scope: Scope?)
 
     /**
      * Get the current source code editor scrollbars' position point.

@@ -21,6 +21,7 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
@@ -47,6 +48,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val configurationOuterPanel = JPanel(BorderLayout())
     private val configurationScrollPane = JScrollPane(configurationOuterPanel)
     private val configurationPropertiesPanels: MutableMap<String?, ConfigurationPropertyPanel> = HashMap()
+    private val symbolTree = JTree()
+    private val symbolTreeScrollPane = JScrollPane(symbolTree)
     private val sourceCodeLabel = JLabel(" Source Code")
     private val sourceCodeEditorPane = JEditorPane()
     private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
@@ -93,6 +96,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.add("XML", xmlScrollPane)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
+        tabbedPane.add("Symbols", symbolTreeScrollPane)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
         sourceCodeEditorPane.isEditable = true
@@ -174,6 +178,15 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
 
     override fun displayXml(xml: String) {
         xmlTextArea.text = xml
+    }
+
+    override fun displayScope(scope: Scope?) {
+        if (scope == null) {
+            symbolTree.model = EMPTY_TREE_MODEL
+        } else {
+            val treeNode = getScopeTreeNode(scope)
+            symbolTree.model = DefaultTreeModel(treeNode)
+        }
     }
 
     override val sourceCodeScrollbarPosition: Point
@@ -400,6 +413,21 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 for (trivia in astNode.token.trivia) {
                     treeNode.add(DefaultMutableTreeNode(trivia))
                 }
+            }
+            return treeNode
+        }
+
+        private fun getScopeTreeNode(scope: Scope): DefaultMutableTreeNode {
+            val treeNode = DefaultMutableTreeNode(scope)
+            if (scope.symbols.isEmpty()) {
+                treeNode.add(DefaultMutableTreeNode("<no symbols>"))
+            } else {
+                for (symbol in scope.symbols) {
+                    treeNode.add(DefaultMutableTreeNode(symbol))
+                }
+            }
+            for (innerScope in scope.innerScopes) {
+                treeNode.add(getScopeTreeNode(innerScope))
             }
             return treeNode
         }
