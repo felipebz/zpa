@@ -1,10 +1,13 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.hierynomus.gradle.license.tasks.LicenseCheck
+import com.hierynomus.gradle.license.tasks.LicenseFormat
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
 }
 
 dependencies {
+    implementation(Libs.flr_xpath)
     implementation(Libs.flr_toolkit)
     implementation(project(":zpa-core"))
 }
@@ -29,6 +32,14 @@ publishing {
     publications.withType<MavenPublication> {
         artifact(shadowJar)
     }
+}
+
+tasks.withType<LicenseFormat>().configureEach {
+    skipExistingHeaders = true
+}
+
+tasks.withType<LicenseCheck>().configureEach {
+    skipExistingHeaders = true
 }
 
 description = "Z PL/SQL Analyzer :: SSLR Toolkit"
