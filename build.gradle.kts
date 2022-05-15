@@ -48,6 +48,7 @@ subprojects {
         testImplementation(Libs.junit_jupiter)
         testImplementation(Libs.assertj)
         testImplementation(Libs.mockito)
+        testImplementation(Libs.mockito_kotlin)
     }
 
     configurations {
