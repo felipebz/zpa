@@ -54,7 +54,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val symbolTree = JTree()
     private val symbolTreeScrollPane = JScrollPane(symbolTree)
     private val sourceCodeLabel = JLabel(" Source Code")
-    private val sourceCodeEditorPane = JEditorPane()
+    private val sourceCodeEditorPane = JTextArea()
     private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
     private val sourceCodeOpenButton = JButton()
     private val sourceCodeParseButton = JButton()
@@ -107,7 +107,6 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.add("Scopes/Symbols", symbolTreeScrollPane)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
-        sourceCodeEditorPane.isEditable = true
         sourceCodeEditorPane.font = Font.decode("Monospaced")
         (sourceCodeEditorPane.caret as DefaultCaret).updatePolicy = DefaultCaret.UPDATE_WHEN_ON_EDT
         sourceCodeEditorPane.document.addDocumentListener(object : DocumentListener {
