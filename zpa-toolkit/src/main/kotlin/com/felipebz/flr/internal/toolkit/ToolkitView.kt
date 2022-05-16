@@ -21,6 +21,7 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import java.awt.Point
 import java.io.File
@@ -132,7 +133,7 @@ internal interface ToolkitView {
      *
      * @param astNode The AST node to highlight
      */
-    fun highlightSourceCode(astNode: AstNode)
+    fun highlightSourceCode(startToken: Token, endToken: Token)
 
     /**
      * Clear all the highlights in the source code editor.
@@ -169,6 +170,8 @@ internal interface ToolkitView {
      * @return The list of selected AST nodes
      */
     val selectedAstNodes: List<AstNode>
+
+    val selectedSymbolOrScopeTree: AstNode?
 
     /**
      * Append the given message to the console view.

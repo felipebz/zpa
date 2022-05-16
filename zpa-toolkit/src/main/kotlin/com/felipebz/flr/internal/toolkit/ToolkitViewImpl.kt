@@ -21,7 +21,9 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
@@ -89,6 +91,10 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             if (!astSelectionEventDisabled) {
                 presenter.onAstSelectionChanged()
             }
+        }
+        symbolTree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
+        symbolTree.addTreeSelectionListener {
+            presenter.onSymbolSelectionChanged()
         }
         consoleTextArea.isEditable = false
         consoleTextArea.font = Font.decode("Monospaced")
@@ -243,12 +249,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         }
     }
 
-    override fun highlightSourceCode(astNode: AstNode) {
-        if (!astNode.hasToken()) {
-            return
-        }
-        val startToken = astNode.token
-        val endToken = checkNotNull(astNode.lastToken)
+    override fun highlightSourceCode(startToken: Token, endToken: Token) {
         val startOffset = lineOffsets.getStartOffset(startToken)
         val endOffset = lineOffsets.getEndOffset(endToken)
         try {
@@ -347,6 +348,14 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 }
             }
             return acc
+        }
+
+    override val selectedSymbolOrScopeTree: AstNode?
+        get() {
+            val treeNode = symbolTree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
+            val symbol = treeNode.userObject as? Symbol
+            val scope = treeNode.userObject as? Scope
+            return symbol?.declaration ?: scope?.tree
         }
 
     override fun appendToConsole(message: String?) {

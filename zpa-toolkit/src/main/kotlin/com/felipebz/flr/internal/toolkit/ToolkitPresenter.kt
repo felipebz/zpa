@@ -128,7 +128,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
                     firstAstNode = resultObject
                 }
                 view.selectAstNode(resultObject)
-                view.highlightSourceCode(resultObject)
+                view.highlightSourceCode(resultObject.token, resultObject.lastToken)
             }
         }
         view.scrollAstTo(firstAstNode)
@@ -158,9 +158,18 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             if (firstAstNode == null) {
                 firstAstNode = astNode
             }
-            view.highlightSourceCode(astNode)
+            view.highlightSourceCode(astNode.token, astNode.lastToken)
         }
         view.scrollSourceCodeTo(firstAstNode)
+    }
+
+    fun onSymbolSelectionChanged() {
+        view.clearSourceCodeHighlights()
+        val astNode = view.selectedSymbolOrScopeTree
+        if (astNode != null) {
+            view.highlightSourceCode(astNode.token, astNode.lastToken)
+            view.scrollSourceCodeTo(astNode)
+        }
     }
 
     fun onConfigurationPropertyFocusLost(name: String) {
