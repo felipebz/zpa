@@ -128,7 +128,9 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
                     firstAstNode = resultObject
                 }
                 view.selectAstNode(resultObject)
-                view.highlightSourceCode(resultObject.token, resultObject.lastToken)
+                if (resultObject.hasToken()) {
+                    view.highlightSourceCode(resultObject.token, resultObject.lastToken)
+                }
             }
         }
         view.scrollAstTo(firstAstNode)
@@ -158,7 +160,9 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             if (firstAstNode == null) {
                 firstAstNode = astNode
             }
-            view.highlightSourceCode(astNode.token, astNode.lastToken)
+            if (astNode.hasToken()) {
+                view.highlightSourceCode(astNode.token, astNode.lastToken)
+            }
         }
         view.scrollSourceCodeTo(firstAstNode)
     }

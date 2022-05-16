@@ -31,6 +31,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
+import org.sonar.plsqlopen.symbols.SymbolTableImpl
 import java.awt.Point
 import java.io.File
 import java.io.PrintWriter
@@ -144,6 +145,7 @@ class ToolkitPresenterTest {
         whenever(model.sourceCode).thenReturn("my_mocked_highlighted_source_code")
         whenever(model.astNode).thenReturn(astNode)
         whenever(model.xml).thenReturn("my_mocked_xml")
+        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(
             whenever(mock<ConfigurationModel>().charset).thenReturn(StandardCharsets.UTF_8).getMock(),
             model
@@ -211,6 +213,7 @@ class ToolkitPresenterTest {
         val astNode = mock<AstNode>()
         whenever(model.astNode).thenReturn(astNode)
         whenever(model.xml).thenReturn("my_mocked_xml")
+        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onSourceCodeParseButtonClick()
@@ -230,15 +233,16 @@ class ToolkitPresenterTest {
         val view = mock<ToolkitView>()
         whenever(view.xPath).thenReturn("//foo")
         val model = mock<SourceCodeModel>()
-        val astNode = AstNode(GenericTokenType.IDENTIFIER, "foo", null)
+        val astNode = AstNode(GenericTokenType.IDENTIFIER, "foo", mock())
         whenever(model.astNode).thenReturn(astNode)
+        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onXPathEvaluateButtonClick()
         verify(view).clearAstSelections()
         verify(view).clearSourceCodeHighlights()
         verify(view).selectAstNode(astNode)
-        verify(view).highlightSourceCode(astNode)
+        verify(view).highlightSourceCode(astNode.token, astNode.lastToken)
         verify(view).scrollAstTo(astNode)
     }
 
@@ -251,6 +255,7 @@ class ToolkitPresenterTest {
         val childAstNode = AstNode(GenericTokenType.IDENTIFIER, "foo", null)
         astNode.addChild(childAstNode)
         whenever(model.astNode).thenReturn(astNode)
+        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onXPathEvaluateButtonClick()
@@ -280,7 +285,7 @@ class ToolkitPresenterTest {
         verify(view).clearAstSelections()
         verify(view).clearSourceCodeHighlights()
         verify(view, never()).selectAstNode(any())
-        verify(view, never()).highlightSourceCode(any())
+        verify(view, never()).highlightSourceCode(any(), any())
         verify(view).scrollAstTo(null)
         verify(view).scrollSourceCodeTo(null as AstNode?)
         verify(view).setFocusOnAbstractSyntaxTreeView()
@@ -321,8 +326,6 @@ class ToolkitPresenterTest {
         presenter.setView(view)
         presenter.onAstSelectionChanged()
         verify(view).clearSourceCodeHighlights()
-        verify(view).highlightSourceCode(firstAstNode)
-        verify(view).highlightSourceCode(secondAstNode)
         verify(view).scrollSourceCodeTo(firstAstNode)
         verify(view, never()).scrollSourceCodeTo(secondAstNode)
     }

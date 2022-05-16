@@ -22,8 +22,8 @@ package org.sonar.plugins.plsqlopen.api.symbols
 import com.felipebz.flr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
 
 class SymbolTest {
@@ -36,7 +36,7 @@ class SymbolTest {
         assertThat(symbol.name).isEqualTo("foo")
         assertThat(symbol.kind).isEqualTo(Kind.VARIABLE)
         assertThat(symbol.scope).isEqualTo(scope)
-        assertThat(symbol.toString()).startsWith("Symbol{name='foo', kind=VARIABLE, scope=")
+        assertThat(symbol.toString()).startsWith("Symbol name=foo kind=VARIABLE datatype=Unknown")
     }
 
     @Test
