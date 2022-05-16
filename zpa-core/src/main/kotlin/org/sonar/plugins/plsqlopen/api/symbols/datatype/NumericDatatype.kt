@@ -42,12 +42,18 @@ class NumericDatatype : PlSqlDatatype {
 
     constructor(node: AstNode? = null) {
         val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
-        length = constraint
-            ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
-            ?.tokenValue?.toInt()
-        precision = constraint
-            ?.getLastChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
-            ?.tokenValue?.toInt()
+
+        val numericConstraints = constraint?.getChildren(PlSqlTokenType.INTEGER_LITERAL)
+
+        if (numericConstraints != null) {
+            length = numericConstraints.first().tokenValue.toInt()
+            precision = if (numericConstraints.size > 1) {
+                numericConstraints.last().tokenValue.toInt()
+            } else null
+        } else {
+            length = null
+            precision = null
+        }
     }
 
     override fun toString(): String {
