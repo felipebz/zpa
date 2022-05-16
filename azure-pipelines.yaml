@@ -36,11 +36,18 @@ steps:
     inputs:
       secureFile: 'secring.gpg'
 
+  - task: JavaToolInstaller@0
+    inputs:
+      versionSpec: '11'
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'
+
   - task: Gradle@2
     displayName: Build ZPA
     inputs:
       tasks: 'build publishToMavenLocal'
       options: '--build-cache'
+      jdkVersionOption: 1.11
 
   - task: Gradle@2
     displayName: Build example of custom plugin
