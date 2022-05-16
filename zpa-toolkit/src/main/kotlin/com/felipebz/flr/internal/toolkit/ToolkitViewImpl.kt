@@ -103,7 +103,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.add("XML", xmlScrollPane)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
-        tabbedPane.add("Symbols", symbolTreeScrollPane)
+        tabbedPane.add("Scopes/Symbols", symbolTreeScrollPane)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
         sourceCodeEditorPane.isEditable = true
@@ -352,10 +352,13 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
 
     override val selectedSymbolOrScopeTree: AstNode?
         get() {
-            val treeNode = symbolTree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
-            val symbol = treeNode.userObject as? Symbol
-            val scope = treeNode.userObject as? Scope
-            return symbol?.declaration ?: scope?.tree
+            val treeNode = symbolTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
+            return when (val userObject = treeNode?.userObject) {
+                is Symbol -> userObject.declaration
+                is Scope -> userObject.tree
+                is AstNode -> userObject
+                else -> null
+            }
         }
 
     override fun appendToConsole(message: String?) {
@@ -432,12 +435,28 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             if (scope.symbols.isEmpty()) {
                 treeNode.add(DefaultMutableTreeNode("<no symbols>"))
             } else {
+                val symbolsNode = DefaultMutableTreeNode("Symbols")
                 for (symbol in scope.symbols) {
-                    treeNode.add(DefaultMutableTreeNode(symbol))
+                    val symbolNode = DefaultMutableTreeNode(symbol)
+                    if (symbol.usages.isEmpty()) {
+                        symbolNode.add(DefaultMutableTreeNode("<no usages>"))
+                    } else {
+                        val usagesNode = DefaultMutableTreeNode("Usages")
+                        for (usage in symbol.usages) {
+                            usagesNode.add(DefaultMutableTreeNode(usage))
+                        }
+                        symbolNode.add(usagesNode)
+                    }
+                    symbolsNode.add(symbolNode)
                 }
+                treeNode.add(symbolsNode)
             }
-            for (innerScope in scope.innerScopes) {
-                treeNode.add(getScopeTreeNode(innerScope))
+            if (scope.innerScopes.isNotEmpty()) {
+                val innerScopesNode = DefaultMutableTreeNode("Scopes")
+                for (innerScope in scope.innerScopes) {
+                    innerScopesNode.add(getScopeTreeNode(innerScope))
+                }
+                treeNode.add(innerScopesNode)
             }
             return treeNode
         }
