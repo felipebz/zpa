@@ -103,7 +103,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
-        tabbedPane.add("Scopes/Symbols", symbolTreeScrollPane)
+        tabbedPane.add("Symbol table", symbolTreeScrollPane)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
         sourceCodeEditorPane.font = Font.decode("Monospaced")
