@@ -86,7 +86,6 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         setSize(1000, 700)
         setLocationRelativeTo(null)
         defaultCloseOperation = EXIT_ON_CLOSE
-        layout = BorderLayout(0, 5)
         astTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
         astTree.addTreeSelectionListener {
             if (!astSelectionEventDisabled) {
@@ -137,7 +136,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         sourceCodePanel.add(sourceCodeEditorScrollPane, BorderLayout.CENTER)
         sourceCodePanel.add(sourceCodeButtonsPanel, BorderLayout.SOUTH)
         splitPane.dividerLocation = width / 2
-        add(splitPane, BorderLayout.CENTER)
+        add(splitPane)
+
         xmlPanel.add(xmlScrollPane, BorderLayout.CENTER)
         xpathPanel.add(xpathLabel, BorderLayout.NORTH)
         xpathPanel.add(Box.createHorizontalGlue(), BorderLayout.WEST)
