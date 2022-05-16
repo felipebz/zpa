@@ -92,7 +92,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 presenter.onAstSelectionChanged()
             }
         }
-        symbolTree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
+        symbolTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
         symbolTree.addTreeSelectionListener {
             presenter.onSymbolSelectionChanged()
         }
@@ -100,10 +100,10 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         consoleTextArea.font = Font.decode("Monospaced")
         tabbedPane.tabPlacement = JTabbedPane.TOP
         tabbedPane.add("Abstract Syntax Tree", astTreeScrollPane)
+        tabbedPane.add("Symbol table", symbolTreeScrollPane)
         tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
-        tabbedPane.add("Symbol table", symbolTreeScrollPane)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
         sourceCodeEditorPane.font = Font.decode("Monospaced")
@@ -360,15 +360,25 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             return acc
         }
 
-    override val selectedSymbolOrScopeTree: AstNode?
+    override val selectedSymbolOrScopeTrees: List<AstNode>
         get() {
-            val treeNode = symbolTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
-            return when (val userObject = treeNode?.userObject) {
-                is Symbol -> userObject.declaration
-                is Scope -> userObject.tree
-                is AstNode -> userObject
-                else -> null
+            val acc = mutableListOf<AstNode>()
+            val selectedPaths = symbolTree.selectionPaths
+            if (selectedPaths != null) {
+                for (selectedPath in selectedPaths) {
+                    val treeNode = selectedPath.lastPathComponent as DefaultMutableTreeNode
+                    val node = when (val userObject = treeNode.userObject) {
+                        is Symbol -> userObject.declaration
+                        is Scope -> userObject.tree
+                        is AstNode -> userObject
+                        else -> null
+                    }
+                    if (node != null) {
+                        acc.add(node)
+                    }
+                }
             }
+            return acc
         }
 
     override fun appendToConsole(message: String?) {

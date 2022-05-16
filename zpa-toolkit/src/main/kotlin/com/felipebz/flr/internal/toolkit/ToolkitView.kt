@@ -171,7 +171,7 @@ internal interface ToolkitView {
      */
     val selectedAstNodes: List<AstNode>
 
-    val selectedSymbolOrScopeTree: AstNode?
+    val selectedSymbolOrScopeTrees: List<AstNode>
 
     /**
      * Append the given message to the console view.

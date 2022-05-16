@@ -169,11 +169,14 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
 
     fun onSymbolSelectionChanged() {
         view.clearSourceCodeHighlights()
-        val astNode = view.selectedSymbolOrScopeTree
-        if (astNode != null) {
+        var firstAstNode: AstNode? = null
+        for (astNode in view.selectedSymbolOrScopeTrees) {
+            if (firstAstNode == null) {
+                firstAstNode = astNode
+            }
             view.highlightSourceCode(astNode.token, astNode.lastToken)
-            view.scrollSourceCodeTo(astNode)
         }
+        view.scrollSourceCodeTo(firstAstNode)
     }
 
     fun onConfigurationPropertyFocusLost(name: String) {
