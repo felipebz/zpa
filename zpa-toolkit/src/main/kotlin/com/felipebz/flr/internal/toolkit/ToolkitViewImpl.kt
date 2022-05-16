@@ -126,6 +126,15 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 presenter.onSourceCodeTextCursorMoved()
             }
         }
+        sourceCodeEditorPane.addMouseWheelListener {
+            if (it.isControlDown) {
+                sourceCodeEditorPane.font = Font(
+                    sourceCodeEditorPane.font.name,
+                    sourceCodeEditorPane.font.style,
+                    if (it.unitsToScroll > 0) sourceCodeEditorPane.font.size - 2 else sourceCodeEditorPane.font.size + 2
+                )
+            }
+        }
         sourceCodeOpenButton.text = "Open Source File"
         sourceCodeOpenButton.addActionListener { presenter.onSourceCodeOpenButtonClick() }
         sourceCodeParseButton.text = "Parse Source Code"
