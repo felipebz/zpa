@@ -44,6 +44,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val astTreeScrollPane = JScrollPane(astTree)
     private val xmlTextArea = JTextArea()
     private val xmlScrollPane = JScrollPane(xmlTextArea)
+    private val xmlPanel = JPanel(BorderLayout(10, 2))
     private val consoleTextArea = JTextArea()
     private val consoleScrollPane = JScrollPane(consoleTextArea)
     private val configurationInnerPanel = JPanel(GridBagLayout())
@@ -100,7 +101,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         consoleTextArea.font = Font.decode("Monospaced")
         tabbedPane.tabPlacement = JTabbedPane.TOP
         tabbedPane.add("Abstract Syntax Tree", astTreeScrollPane)
-        tabbedPane.add("XML", xmlScrollPane)
+        tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
         tabbedPane.add("Scopes/Symbols", symbolTreeScrollPane)
@@ -138,6 +139,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         sourceCodePanel.add(sourceCodeButtonsPanel, BorderLayout.SOUTH)
         splitPane.dividerLocation = width / 2
         add(splitPane, BorderLayout.CENTER)
+        xmlPanel.add(xmlScrollPane, BorderLayout.CENTER)
         xpathPanel.add(xpathLabel, BorderLayout.NORTH)
         xpathPanel.add(Box.createHorizontalGlue(), BorderLayout.WEST)
         xpathTextArea.text = "//IDENTIFIER"
@@ -149,7 +151,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         xpathButton.addActionListener { presenter.onXPathEvaluateButtonClick() }
         xpathButtonPanel.add(xpathButton)
         southPanel.add(xpathButtonPanel, BorderLayout.SOUTH)
-        add(southPanel, BorderLayout.SOUTH)
+        xmlPanel.add(southPanel, BorderLayout.SOUTH)
     }
 
     override fun run() {
