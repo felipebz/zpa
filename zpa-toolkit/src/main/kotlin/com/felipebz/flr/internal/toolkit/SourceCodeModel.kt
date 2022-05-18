@@ -29,10 +29,7 @@ import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
 import java.io.File
-import java.io.IOException
 import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Paths
 
 internal class SourceCodeModel(private val configurationModel: ConfigurationModel) {
     lateinit var sourceCode: String
@@ -43,13 +40,7 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
         private set
 
     fun setSourceCode(source: File, charset: Charset) {
-        astNode = getSemanticNode(configurationModel.parser.parse(source))
-        try {
-            sourceCode = String(Files.readAllBytes(Paths.get(source.path)), charset)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        }
-        loadSymbolTable()
+        setSourceCode(source.readText(charset))
     }
 
     fun setSourceCode(sourceCode: String) {
