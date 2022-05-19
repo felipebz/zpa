@@ -29,6 +29,7 @@ import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import java.awt.geom.Rectangle2D
 import java.io.File
+import java.text.DecimalFormat
 import java.util.*
 import javax.swing.*
 import javax.swing.event.DocumentEvent
@@ -37,6 +38,8 @@ import javax.swing.text.BadLocationException
 import javax.swing.text.DefaultCaret
 import javax.swing.text.DefaultHighlighter.DefaultHighlightPainter
 import javax.swing.tree.*
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFrame(), ToolkitView {
     private val tabbedPane = JTabbedPane()
@@ -69,6 +72,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val fileChooser = JFileChooser()
     private val xpathButton = JButton()
     private val xpathButtonPanel = JPanel()
+    private val statisticsPanel = JPanel(BorderLayout())
+    private val statisticsInnerPanel = JPanel(GridLayout(3, 2, 10, 2))
+    private val inputSizeLabel = JLabel()
+    private val numberOfTokensLabel = JLabel()
+    private val parseTimeLabel = JLabel()
 
     @Transient
     private lateinit var lineOffsets: LineOffsets
@@ -99,11 +107,12 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         consoleTextArea.isEditable = false
         consoleTextArea.font = Font.decode("Monospaced")
         tabbedPane.tabPlacement = JTabbedPane.TOP
-        tabbedPane.add("Abstract Syntax Tree", astTreeScrollPane)
+        tabbedPane.add("AST", astTreeScrollPane)
         tabbedPane.add("Symbol table", symbolTreeScrollPane)
         tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
+        tabbedPane.add("Statistics", statisticsPanel)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
         sourceCodeEditorPane.font = Font.decode("Monospaced")
@@ -160,6 +169,14 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         xpathButtonPanel.add(xpathButton)
         southPanel.add(xpathButtonPanel, BorderLayout.SOUTH)
         xmlPanel.add(southPanel, BorderLayout.SOUTH)
+
+        statisticsInnerPanel.add(JLabel("Input size:").apply { horizontalAlignment = JLabel.RIGHT })
+        statisticsInnerPanel.add(inputSizeLabel)
+        statisticsInnerPanel.add(JLabel("Numer of tokens:").apply { horizontalAlignment = JLabel.RIGHT })
+        statisticsInnerPanel.add(numberOfTokensLabel)
+        statisticsInnerPanel.add(JLabel("Parse time:").apply { horizontalAlignment = JLabel.RIGHT })
+        statisticsInnerPanel.add(parseTimeLabel)
+        statisticsPanel.add(statisticsInnerPanel, BorderLayout.NORTH)
     }
 
     override fun run() {
@@ -204,6 +221,13 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             val treeNode = getScopeTreeNode(scope)
             symbolTree.model = DefaultTreeModel(treeNode)
         }
+    }
+
+    override fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long) {
+        val format = DecimalFormat("#,###")
+        inputSizeLabel.text = "${format.format(numberOfCharacters)} characters, ${format.format(numberOfLines)} lines"
+        numberOfTokensLabel.text = format.format(numberOfTokens)
+        parseTimeLabel.text = parseTime.toDuration(DurationUnit.NANOSECONDS).toString(DurationUnit.MILLISECONDS, 2)
     }
 
     override val sourceCodeScrollbarPosition: Point

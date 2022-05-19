@@ -81,6 +81,8 @@ internal interface ToolkitView {
      */
     fun displayScope(scope: Scope?)
 
+    fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long)
+
     /**
      * Get the current source code editor scrollbars' position point.
      *

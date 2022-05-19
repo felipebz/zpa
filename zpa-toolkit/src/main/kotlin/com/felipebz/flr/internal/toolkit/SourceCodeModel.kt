@@ -30,6 +30,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
 import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
 import java.io.File
 import java.nio.charset.Charset
+import kotlin.system.measureNanoTime
 
 internal class SourceCodeModel(private val configurationModel: ConfigurationModel) {
     lateinit var sourceCode: String
@@ -38,13 +39,17 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
         private set
     lateinit var symbolTable: SymbolTable
         private set
+    var parseTime: Long = 0
+        private set
 
     fun setSourceCode(source: File, charset: Charset) {
         setSourceCode(source.readText(charset))
     }
 
     fun setSourceCode(sourceCode: String) {
-        astNode = getSemanticNode(configurationModel.parser.parse(sourceCode))
+        parseTime = measureNanoTime {
+            astNode = getSemanticNode(configurationModel.parser.parse(sourceCode))
+        }
         this.sourceCode = sourceCode
         loadSymbolTable()
     }
