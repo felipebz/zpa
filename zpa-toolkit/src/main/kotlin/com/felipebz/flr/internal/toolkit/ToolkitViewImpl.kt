@@ -72,7 +72,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val fileChooser = JFileChooser()
     private val xpathButton = JButton()
     private val xpathButtonPanel = JPanel()
-    private val statisticsPanel = JPanel(BorderLayout())
+    private val statisticsPanel = JPanel(FlowLayout(FlowLayout.LEADING))
     private val statisticsInnerPanel = JPanel(GridLayout(3, 2, 10, 2))
     private val inputSizeLabel = JLabel()
     private val numberOfTokensLabel = JLabel()
@@ -176,7 +176,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         statisticsInnerPanel.add(numberOfTokensLabel)
         statisticsInnerPanel.add(JLabel("Parse time:").apply { horizontalAlignment = JLabel.RIGHT })
         statisticsInnerPanel.add(parseTimeLabel)
-        statisticsPanel.add(statisticsInnerPanel, BorderLayout.NORTH)
+        statisticsPanel.add(statisticsInnerPanel)
     }
 
     override fun run() {
