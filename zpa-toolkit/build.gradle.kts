@@ -10,12 +10,14 @@ dependencies {
     implementation(Libs.flr_xpath)
     implementation(Libs.flr_toolkit)
     implementation("com.formdev:flatlaf:2.2")
+    implementation("com.fifesoft:rsyntaxtextarea:3.2.0")
     implementation(project(":zpa-core"))
 }
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
         exclude(dependency("com.formdev:flatlaf"))
+        exclude(dependency("com.fifesoft:rsyntaxtextarea"))
     }
     archiveClassifier.set("")
     manifest {
