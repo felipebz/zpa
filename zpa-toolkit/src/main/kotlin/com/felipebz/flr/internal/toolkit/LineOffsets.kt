@@ -26,7 +26,6 @@ import kotlin.math.min
 internal class LineOffsets(code: String) {
     private val lineOffsets: MutableMap<Int, Int> = HashMap()
     private val endOffset: Int
-    val normalizedSourceCode: String
 
     fun getStartOffset(token: Token): Int {
         return getOffset(token.line, token.column)
@@ -59,6 +58,5 @@ internal class LineOffsets(code: String) {
             currentOffset += lines[line - 1].length + 1
         }
         endOffset = currentOffset - 1
-        normalizedSourceCode = lines.joinToString("\n")
     }
 }

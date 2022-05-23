@@ -22,8 +22,6 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
-import org.fife.ui.rtextarea.RTextScrollPane
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.awt.*
@@ -59,8 +57,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val symbolTree = JTree()
     private val symbolTreeScrollPane = JScrollPane(symbolTree)
     private val sourceCodeLabel = JLabel(" Source Code")
-    private val sourceCodeEditorPane = RSyntaxTextArea()
-    private val sourceCodeEditorScrollPane = RTextScrollPane(sourceCodeEditorPane)
+    private val sourceCodeEditorPane = JTextArea()
+    private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
     private val sourceCodeOpenButton = JButton()
     private val sourceCodeParseButton = JButton()
     private val sourceCodeButtonsPanel = JPanel()
@@ -196,8 +194,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     override fun displaySourceCode(newSourceCode: String) {
         try {
             sourceCodeTextCursorMovedEventDisabled = true
+            sourceCodeEditorPane.text = newSourceCode
             lineOffsets = LineOffsets(newSourceCode)
-            sourceCodeEditorPane.text = lineOffsets.normalizedSourceCode
         } finally {
             sourceCodeTextCursorMovedEventDisabled = false
         }
