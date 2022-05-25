@@ -138,7 +138,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 presenter.onSourceCodeTextCursorMoved()
             }
         }
-        sourceCodeEditorPane.addMouseWheelListener {
+        sourceCodeEditorScrollPane.addMouseWheelListener {
             if (it.isControlDown) {
                 sourceCodeEditorPane.font = Font(
                     sourceCodeEditorPane.font.name,
