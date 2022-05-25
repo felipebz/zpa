@@ -57,7 +57,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val symbolTree = JTree()
     private val symbolTreeScrollPane = JScrollPane(symbolTree)
     private val sourceCodeLabel = JLabel(" Source Code")
-    private val sourceCodeEditorPane = JTextArea()
+    private val sourceCodeEditorPane = NoWrapJTextPane()
     private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
     private val sourceCodeOpenButton = JButton()
     private val sourceCodeParseButton = JButton()
@@ -85,6 +85,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val highlighter = DefaultHighlightPainter(Color.LIGHT_GRAY)
     private var sourceCodeTextCursorMovedEventDisabled = false
     private var astSelectionEventDisabled = false
+    private var isSourceCodeFormatted = false
 
     init {
         initComponents()
@@ -120,10 +121,12 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         sourceCodeEditorPane.document.addDocumentListener(object : DocumentListener {
             override fun removeUpdate(e: DocumentEvent) {
                 presenter.onSourceCodeKeyTyped()
+                clearSourceCodeHighlight()
             }
 
             override fun insertUpdate(e: DocumentEvent) {
                 presenter.onSourceCodeKeyTyped()
+                clearSourceCodeHighlight()
             }
 
             override fun changedUpdate(e: DocumentEvent) {
@@ -191,11 +194,13 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         }
     }
 
-    override fun displaySourceCode(newSourceCode: String) {
+    override fun displaySourceCode(newSourceCode: String, tokens: List<Token>) {
         try {
             sourceCodeTextCursorMovedEventDisabled = true
             sourceCodeEditorPane.text = newSourceCode
             lineOffsets = LineOffsets(newSourceCode)
+            SourceCodeStyler.style(sourceCodeEditorPane.styledDocument, lineOffsets, tokens)
+            isSourceCodeFormatted = tokens.isNotEmpty()
         } finally {
             sourceCodeTextCursorMovedEventDisabled = false
         }
@@ -313,6 +318,16 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
 
     override fun clearSourceCodeHighlights() {
         sourceCodeEditorPane.highlighter.removeAllHighlights()
+    }
+
+    fun clearSourceCodeHighlight() {
+        SwingUtilities.invokeLater {
+            if (isSourceCodeFormatted && astTree.model === EMPTY_TREE_MODEL) {
+                val styledDocument = sourceCodeEditorPane.styledDocument
+                styledDocument.setCharacterAttributes(0, styledDocument.length, SourceCodeStyler.defaultStyle, true)
+                isSourceCodeFormatted = false
+            }
+        }
     }
 
     override fun scrollSourceCodeTo(astNode: AstNode?) {

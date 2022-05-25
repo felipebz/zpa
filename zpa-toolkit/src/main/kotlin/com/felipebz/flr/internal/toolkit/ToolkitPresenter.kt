@@ -65,7 +65,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         checkInitialized()
         initUncaughtExceptionsHandler()
         view.setTitle(title)
-        view.displaySourceCode("")
+        view.displaySourceCode("", emptyList())
         view.displayAst(null)
         view.displayXml("")
         view.displayScope(null)
@@ -81,17 +81,13 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             view.clearConsole()
             try {
                 view.displaySourceCode(
-                    String(
-                        Files.readAllBytes(Paths.get(fileToParse.path)),
-                        configurationModel.charset
-                    )
-                )
+                    String(Files.readAllBytes(Paths.get(fileToParse.path)), configurationModel.charset), emptyList())
             } catch (e: IOException) {
                 throw RuntimeException(e)
             }
             model.setSourceCode(fileToParse, configurationModel.charset)
             val symbolTable = model.symbolTable
-            view.displaySourceCode(model.sourceCode)
+            view.displaySourceCode(model.sourceCode, model.astNode.tokens)
             view.displayAst(model.astNode)
             view.displayXml(model.xml)
             view.displayScope(symbolTable.scopes.firstOrNull())
@@ -108,7 +104,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         model.setSourceCode(sourceCode)
         val symbolTable = model.symbolTable
         val sourceCodeScrollbarPosition = view.sourceCodeScrollbarPosition
-        view.displaySourceCode(model.sourceCode)
+        view.displaySourceCode(model.sourceCode, model.astNode.tokens)
         view.displayAst(model.astNode)
         view.displayXml(model.xml)
         view.displayScope(symbolTable.scopes.firstOrNull())

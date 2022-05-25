@@ -58,7 +58,7 @@ internal interface ToolkitView {
      *
      * @param newSourceCode The HTML highlighted source code
      */
-    fun displaySourceCode(newSourceCode: String)
+    fun displaySourceCode(newSourceCode: String, tokens: List<Token>)
 
     /**
      * Display the abstract syntax tree view starting from a given node.

@@ -104,7 +104,7 @@ class ToolkitPresenterTest {
         presenter.run("my_mocked_title")
         assertThat(Thread.currentThread().uncaughtExceptionHandler is ThreadGroup).isFalse()
         verify(view).setTitle("my_mocked_title")
-        verify(view).displaySourceCode("")
+        verify(view).displaySourceCode("", emptyList())
         verify(view).displayAst(null)
         verify(view).displayXml("")
         verify(view).disableXPathEvaluateButton()
@@ -154,7 +154,7 @@ class ToolkitPresenterTest {
         presenter.onSourceCodeOpenButtonClick()
         verify(view).pickFileToParse()
         verify(view).clearConsole()
-        verify(view).displaySourceCode("my_mocked_highlighted_source_code")
+        verify(view).displaySourceCode("my_mocked_highlighted_source_code", emptyList())
         verify(model).setSourceCode(file, StandardCharsets.UTF_8)
         verify(view).displayAst(astNode)
         verify(view).displayXml("my_mocked_xml")
@@ -180,7 +180,7 @@ class ToolkitPresenterTest {
             throw AssertionError("Expected an exception")
         } catch (e: RuntimeException) {
             verify(view).clearConsole()
-            verify(view).displaySourceCode("parse_error.txt")
+            verify(view).displaySourceCode("parse_error.txt", emptyList())
         }
     }
 
@@ -195,7 +195,7 @@ class ToolkitPresenterTest {
         verify(view).pickFileToParse()
         verify(view, never()).clearConsole()
         verify(model, never()).setSourceCode(any(), any())
-        verify(view, never()).displaySourceCode(anyString())
+        verify(view, never()).displaySourceCode(anyString(), any())
         verify(view, never()).displayAst(any())
         verify(view, never()).displayXml(anyString())
         verify(view, never()).scrollSourceCodeTo(any<Point>())
@@ -220,7 +220,7 @@ class ToolkitPresenterTest {
         verify(view).clearConsole()
         verify(view).sourceCode
         verify(model).setSourceCode("my_mocked_source")
-        verify(view).displaySourceCode("my_mocked_highlighted_source_code")
+        verify(view).displaySourceCode("my_mocked_highlighted_source_code", emptyList())
         view.displayAst(astNode)
         view.displayXml("my_mocked_xml")
         view.scrollSourceCodeTo(point)
