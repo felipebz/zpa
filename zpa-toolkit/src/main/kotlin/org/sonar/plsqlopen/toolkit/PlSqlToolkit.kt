@@ -22,6 +22,6 @@ package org.sonar.plsqlopen.toolkit
 import com.felipebz.flr.toolkit.Toolkit
 
 fun main() {
-    val toolkit = Toolkit("Z PL/SQL Analyzer Toolkit", PlSqlConfigurationModel())
+    val toolkit = Toolkit("ZPA Toolkit", PlSqlConfigurationModel())
     toolkit.run()
 }
