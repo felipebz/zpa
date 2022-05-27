@@ -97,6 +97,14 @@ class ForStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesForInQuery() {
+        assertThat(p).matches(""
+            + "for i in (select col from tab) loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
     fun matchesNestedForLoop() {
         assertThat(p).matches(""
                 + "for i in 1..2 loop "
@@ -120,6 +128,120 @@ class ForStatementTest : RuleTest() {
                 + "<<foo>> for i in 1..2 loop "
                 + "null; "
                 + "end loop foo;")
+    }
+
+    @Test
+    fun matchesForLoopWithIncrement() {
+        assertThat(p).matches(""
+            + "for i in 1..2 by 2 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithFloatIncrement() {
+        assertThat(p).matches(""
+            + "for i in 1..2 by 0.2 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesReverseForLoopWithIncrement() {
+        assertThat(p).matches(""
+            + "for i in reverse 1..2 by 0.2 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithExplicitDatatype() {
+        assertThat(p).matches(""
+            + "for i number in 1..2 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithSkipCondition() {
+        assertThat(p).matches(""
+            + "for i in 1..10 when val <> 5 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithMutipleIterationControl() {
+        assertThat(p).matches(""
+            + "for i in 1, i * 2 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithRepeatExpression() {
+        assertThat(p).matches(""
+            + "for i in 1, repeat i * 2 while i < 100 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithMutableVariable() {
+        assertThat(p).matches(""
+            + "for i mutable in 1..10 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithMutableVariableAndExplicitDatatype() {
+        assertThat(p).matches(""
+            + "for i mutable number(2) in 1..10 loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopIndicesOf() {
+        assertThat(p).matches(""
+            + "for i in indices of arr loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopValuesOf() {
+        assertThat(p).matches(""
+            + "for i in values of arr loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopPairsOf() {
+        assertThat(p).matches(""
+            + "for i, val in pairs of arr loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesForLoopWithExecuteImmediate() {
+        assertThat(p).matches(""
+            + "for i in (execute immediate 'select col from tab') loop "
+            + "null; "
+            + "end loop;")
+    }
+
+    @Test
+    fun matchesComplexForLoop() {
+        assertThat(p).matches(""
+            + "for i in reverse 1..3," +
+            "      repeat i*2 while i <= 8," +
+            "      indices of arr loop "
+            + "null; "
+            + "end loop;")
     }
 
 }

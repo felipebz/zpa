@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
 
 class SymbolVisitorTest {
 
@@ -148,6 +149,43 @@ end;
         assertThat(i2.type).isEqualTo(PlSqlType.NUMERIC)
         assertThat(i2.references).containsExactly(
             tuple(5, 9))
+    }
+
+    @Test
+    fun forLoopWithExplicitDatatype() {
+        val symbols = scan("""
+begin
+  for i number(5) in 1..2 loop
+    null;
+  end loop;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val i = symbols.find("i", 2, 7)
+        assertThat(i.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat((i.datatype as NumericDatatype).length).isEqualTo(5)
+        assertThat(i.references).isEmpty()
+    }
+
+    @Test
+    fun forLoopPairsOf() {
+        val symbols = scan("""
+begin
+  for i, v in pairs of x loop
+    null;
+  end loop;
+end;
+""")
+        assertThat(symbols).hasSize(2)
+
+        val i = symbols.find("i", 2, 7)
+        assertThat(i.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(i.references).isEmpty()
+
+        val v = symbols.find("v", 2, 10)
+        assertThat(i.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(i.references).isEmpty()
     }
 
     @Test

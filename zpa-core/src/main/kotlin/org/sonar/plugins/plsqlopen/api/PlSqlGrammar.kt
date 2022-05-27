@@ -110,6 +110,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
     EXIT_STATEMENT,
     CONTINUE_STATEMENT,
     GOTO_STATEMENT,
+    ITERATOR,
+    ITERAND_DECLARATION,
+    ITERATION_CTL_SEQ,
+    QUAL_ITERATION_CTL,
+    PRED_CLAUSE_SEQ,
+    ITERATION_CONTROL,
+    STEPPED_CONTROL,
+    SINGLE_EXPRESSION_CONTROL,
+    VALUES_OF_CONTROL,
+    INDICES_OF_CONTROL,
+    PAIRS_OF_CONTROL,
+    DYNAMIC_SQL,
     FOR_STATEMENT,
     WHILE_STATEMENT,
     RETURN_STATEMENT,
@@ -438,13 +450,49 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(GOTO_STATEMENT).define(b.optional(LABEL), GOTO, b.optional(IDENTIFIER_NAME), SEMICOLON)
 
+            b.rule(ITERATOR).define(
+                ITERAND_DECLARATION,
+                b.optional(COMMA, ITERAND_DECLARATION),
+                IN, ITERATION_CTL_SEQ)
+
+            b.rule(ITERAND_DECLARATION).define(
+                IDENTIFIER_NAME,
+                b.optional(b.firstOf(MUTABLE, IMMUTABLE)),
+                b.optional(DATATYPE))
+
+            b.rule(ITERATION_CTL_SEQ).define(QUAL_ITERATION_CTL, b.zeroOrMore(COMMA, QUAL_ITERATION_CTL)).skip()
+
+            b.rule(QUAL_ITERATION_CTL).define(b.optional(REVERSE), ITERATION_CONTROL, PRED_CLAUSE_SEQ)
+
+            b.rule(PRED_CLAUSE_SEQ).define(b.optional(WHILE, EXPRESSION), b.optional(WHEN, EXPRESSION)).skip()
+
+            b.rule(ITERATION_CONTROL).define(b.firstOf(
+                STEPPED_CONTROL,
+                VALUES_OF_CONTROL,
+                INDICES_OF_CONTROL,
+                PAIRS_OF_CONTROL,
+                SINGLE_EXPRESSION_CONTROL,
+                DYNAMIC_SQL)).skip()
+
+            b.rule(STEPPED_CONTROL).define(EXPRESSION, RANGE, EXPRESSION, b.optional(BY, OBJECT_REFERENCE))
+
+            b.rule(SINGLE_EXPRESSION_CONTROL).define(b.optional(REPEAT), CONCATENATION_EXPRESSION)
+
+            b.rule(VALUES_OF_CONTROL).define(VALUES, OF, b.firstOf(OBJECT_REFERENCE, DYNAMIC_SQL))
+
+            b.rule(INDICES_OF_CONTROL).define(INDICES, OF, b.firstOf(OBJECT_REFERENCE, DYNAMIC_SQL))
+
+            b.rule(PAIRS_OF_CONTROL).define(PAIRS, OF, b.firstOf(OBJECT_REFERENCE, DYNAMIC_SQL))
+
+            b.rule(DYNAMIC_SQL).define(
+                LPARENTHESIS,
+                EXECUTE, IMMEDIATE, CONCATENATION_EXPRESSION,
+                b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
+                RPARENTHESIS)
+
             b.rule(FOR_STATEMENT).define(
                     b.optional(LABEL),
-                    FOR, IDENTIFIER_NAME, IN, b.optional(REVERSE),
-                    b.firstOf(
-                            b.sequence(EXPRESSION, RANGE, EXPRESSION),
-                            OBJECT_REFERENCE),
-                    LOOP,
+                    FOR, ITERATOR, LOOP,
                     STATEMENTS,
                     END, LOOP, b.optional(IDENTIFIER_NAME), SEMICOLON)
 

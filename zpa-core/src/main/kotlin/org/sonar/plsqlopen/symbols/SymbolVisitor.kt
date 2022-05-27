@@ -24,7 +24,6 @@ import com.felipebz.flr.api.AstNodeType
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
@@ -252,15 +251,25 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitFor(node: AstNode) {
         enterScope(node)
-        val identifier = node.getFirstChild(PlSqlKeyword.FOR).nextSibling
+        val iterator = node.getFirstChild(PlSqlGrammar.ITERATOR)
+        val declarations = iterator.getChildren(PlSqlGrammar.ITERAND_DECLARATION)
+        val control = iterator.getFirstChild(PlSqlGrammar.QUAL_ITERATION_CTL)
 
-        val type = if (node.hasDirectChildren(PlSqlPunctuator.RANGE)) {
+        val iteratorType = if (control.hasDirectChildren(PlSqlGrammar.STEPPED_CONTROL)) {
             NumericDatatype(node)
-        } else {
+        } else if (control.hasDirectChildren(PlSqlGrammar.SINGLE_EXPRESSION_CONTROL) ||
+                   control.hasDirectChildren(PlSqlGrammar.DYNAMIC_SQL)) {
             RowtypeDatatype()
+        } else {
+            UnknownDatatype()
         }
 
-        createSymbol(identifier, Symbol.Kind.VARIABLE, type)
+        for (declaration in declarations) {
+            val identifier = declaration.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+            val datatype = declaration.getFirstChildOrNull(PlSqlGrammar.DATATYPE)
+            val type = if (datatype != null) solveType(datatype) else iteratorType
+            createSymbol(identifier, Symbol.Kind.VARIABLE, type)
+        }
     }
 
     private fun visitForAll(node: AstNode) {
