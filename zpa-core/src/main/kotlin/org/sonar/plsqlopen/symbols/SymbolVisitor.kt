@@ -222,7 +222,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitPackage(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
-        val packageScope = symbolTable.scopes.firstOrNull { it.identifier == identifier.tokenOriginalValue && it.type == PlSqlGrammar.CREATE_PACKAGE }
+        val packageScope = symbolTable.scopes.lastOrNull { it.identifier == identifier.tokenOriginalValue && it.type == PlSqlGrammar.CREATE_PACKAGE }
         if (packageScope != null) {
             currentScope = packageScope
             val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
