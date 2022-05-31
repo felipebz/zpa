@@ -41,6 +41,7 @@ enum class PlSqlPunctuator(override val value: String, val isRegex: Boolean = fa
     REMOTE("@"),
     SUBTRACTION("-"),
     ASSIGNMENT(":="),
+    SINGLE_PIPE("|"),
     CONCATENATION("||"),
     EXPONENTIATION("**"),
     LLABEL("<<"),

@@ -90,6 +90,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
     TREAT_AS_EXPRESSION,
     SET_EXPRESSION,
     METHOD_CALL,
+    SEQUENCE_ITERATOR_CHOICE,
+    POSITIONAL_CHOICE_OPTION,
+    POSITIONAL_CHOICE_LIST,
+    NAMED_CHOICE_LIST,
+    INDEXED_CHOICE_LIST,
+    BASIC_ITERATOR_CHOICE,
+    INDEX_ITERATOR_CHOICE,
+    EXPLICIT_CHOICE_OPTION,
+    EXPLICIT_CHOICE_LIST,
+    OTHERS_CHOICE,
+    QUALIFIED_EXPRESSION,
     CALL_EXPRESSION,
     CASE_EXPRESSION,
     AT_TIME_ZONE_EXPRESSION,
@@ -674,12 +685,53 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(METHOD_CALL).define(MEMBER_EXPRESSION, b.oneOrMore(ARGUMENTS))
 
+            b.rule(SEQUENCE_ITERATOR_CHOICE).define(FOR, ITERATOR, SEQUENCE, ASSOCIATION, EXPRESSION)
+
+            b.rule(POSITIONAL_CHOICE_OPTION).define(b.firstOf(
+                SEQUENCE_ITERATOR_CHOICE,
+                b.sequence(EXPRESSION, b.nextNot(b.firstOf(SINGLE_PIPE, ASSOCIATION))))).skip()
+
+            b.rule(POSITIONAL_CHOICE_LIST).define(
+                POSITIONAL_CHOICE_OPTION,
+                b.zeroOrMore(COMMA, POSITIONAL_CHOICE_OPTION)
+            )
+
+            b.rule(NAMED_CHOICE_LIST).define(
+                IDENTIFIER_NAME,
+                b.zeroOrMore(SINGLE_PIPE, IDENTIFIER_NAME),
+                ASSOCIATION, EXPRESSION)
+
+            b.rule(INDEXED_CHOICE_LIST).define(
+                EXPRESSION,
+                b.zeroOrMore(SINGLE_PIPE, EXPRESSION),
+                ASSOCIATION, EXPRESSION)
+
+            b.rule(BASIC_ITERATOR_CHOICE).define(
+                FOR, ITERATOR, ASSOCIATION, EXPRESSION)
+
+            b.rule(INDEX_ITERATOR_CHOICE).define(
+                FOR, ITERATOR, INDEX, EXPRESSION, ASSOCIATION, EXPRESSION)
+
+            b.rule(EXPLICIT_CHOICE_OPTION).define(
+                b.firstOf(NAMED_CHOICE_LIST, INDEXED_CHOICE_LIST, BASIC_ITERATOR_CHOICE, INDEX_ITERATOR_CHOICE)).skip()
+
+            b.rule(EXPLICIT_CHOICE_LIST).define(
+                EXPLICIT_CHOICE_OPTION, b.zeroOrMore(COMMA, EXPLICIT_CHOICE_OPTION))
+
+            b.rule(QUALIFIED_EXPRESSION).define(
+                MEMBER_EXPRESSION,
+                LPARENTHESIS,
+                b.optional(POSITIONAL_CHOICE_LIST),
+                b.optional(EXPLICIT_CHOICE_LIST),
+                RPARENTHESIS)
+
             b.rule(CALL_EXPRESSION).define(b.firstOf(
                     TREAT_AS_EXPRESSION,
                     SET_EXPRESSION,
                     SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
                     AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
-                    METHOD_CALL)).skipIfOneChild()
+                    METHOD_CALL,
+                    QUALIFIED_EXPRESSION)).skipIfOneChild()
 
             b.rule(OUTER_JOIN_PLUS_SIGN).define(LPARENTHESIS, PLUS, RPARENTHESIS)
 
