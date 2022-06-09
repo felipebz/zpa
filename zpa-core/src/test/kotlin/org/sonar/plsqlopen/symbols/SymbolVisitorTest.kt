@@ -184,8 +184,8 @@ end;
         assertThat(i.references).isEmpty()
 
         val v = symbols.find("v", 2, 10)
-        assertThat(i.type).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(i.references).isEmpty()
+        assertThat(v.type).isEqualTo(PlSqlType.UNKNOWN)
+        assertThat(v.references).isEmpty()
     }
 
     @Test
