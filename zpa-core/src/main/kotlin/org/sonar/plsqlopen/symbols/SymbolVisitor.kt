@@ -216,8 +216,9 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             }
         }
 
-        createSymbol(identifier, symbolKind, type)
+        val symbol = createSymbol(identifier, symbolKind, type)
         enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
+        symbol.innerScope = currentScope
     }
 
     private fun visitPackage(node: AstNode) {
@@ -230,16 +231,19 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol
             }
+            enterScope(node, autonomousTransaction = false, exceptionHandler = false)
         } else {
-            createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype())
+            val symbol = createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype())
+            enterScope(node, autonomousTransaction = false, exceptionHandler = false)
+            symbol.innerScope = currentScope
         }
-        enterScope(node, autonomousTransaction = false, exceptionHandler = false)
     }
 
     private fun visitCursor(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype())
+        val symbol = createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype())
         enterScope(node)
+        symbol.innerScope = currentScope
     }
 
     private fun visitBlock(node: AstNode) {

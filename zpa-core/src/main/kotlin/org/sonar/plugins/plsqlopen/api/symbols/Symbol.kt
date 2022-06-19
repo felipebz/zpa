@@ -64,6 +64,8 @@ open class Symbol(val node: AstNode?,
         scope.isGlobal
     }
 
+    var innerScope: Scope? = null
+
     fun hasModifier(modifier: String): Boolean {
         for (syntaxToken in modifiers) {
             if (syntaxToken.tokenOriginalValue.equals(modifier, ignoreCase = true)) {
