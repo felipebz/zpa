@@ -10,7 +10,9 @@ dependencies {
 }
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
-    minimize()
+    minimize {
+        exclude(dependency("jaxen:jaxen"))
+    }
     archiveClassifier.set("")
     manifest {
         attributes(mapOf("Main-Class" to "org.sonar.plsqlopen.toolkit.PlSqlToolkitKt"))
