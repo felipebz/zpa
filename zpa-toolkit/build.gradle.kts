@@ -16,6 +16,7 @@ dependencies {
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
         exclude(dependency("com.formdev:flatlaf"))
+        exclude(dependency("jaxen:jaxen"))
     }
     archiveClassifier.set("")
     manifest {
