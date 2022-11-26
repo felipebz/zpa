@@ -14,6 +14,12 @@ repositories {
     }
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
 val minSonarQubeVersion = "8.9.0.43852"
 
 dependencies {
@@ -62,8 +68,6 @@ tasks.jar {
 group = "com.company"
 version = "1.0-SNAPSHOT"
 description = "Company PL/SQL Rules"
-java.sourceCompatibility = JavaVersion.VERSION_1_8
-java.targetCompatibility = JavaVersion.VERSION_1_8
 
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
