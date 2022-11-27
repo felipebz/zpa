@@ -1,0 +1,23 @@
+{
+  "alerts": [
+    "INFO"
+  ],
+  "blocks": [
+    {
+      "name": "C",
+      "items": [
+        "CBOX",
+        "DUMMY"
+      ]
+    },
+    {
+      "name": "CBX",
+      "items": [
+        "LABEL",
+        "ELEMENT",
+        "CBOX_SAVE"
+      ]
+    }
+  ],
+  "lovs": []
+}

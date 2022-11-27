@@ -61,7 +61,7 @@ If you're interested in a stable API to integrate ZPA with another software, ple
 There are two sets of integration tests:
 
 - [plugin](https://github.com/felipebz/zpa/tree/main/its/plugin): checks if the metrics are imported correctly in SonarQube
-- [ruling](https://github.com/felipebz/zpa/tree/main/its/ruling): checks the quality of parser and rules against real-world code
+- [zpa-checks](https://github.com/felipebz/zpa/tree/main/zpa-checks/src/integrationTest): checks the quality of parser and rules against real-world code
 
 To run the integrations tests, update the submodules:
 

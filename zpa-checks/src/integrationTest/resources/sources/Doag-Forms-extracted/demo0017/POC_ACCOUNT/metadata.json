@@ -1,0 +1,58 @@
+{
+  "alerts": [
+    "INFO",
+    "QUERY"
+  ],
+  "blocks": [
+    {
+      "name": "BLK_ACCOUNT",
+      "items": [
+        "DUMMY",
+        "LABEL_USERNAME",
+        "USERNAME",
+        "UNDER_USERNAME",
+        "MSG_USERNAME",
+        "D_",
+        "LABEL_FULLNAME",
+        "FULLNAME",
+        "UNDER_FULLNAME",
+        "MSG_FULLNAME",
+        "D__",
+        "LABEL_EMAIL",
+        "EMAIL",
+        "UNDER_EMAIL",
+        "MSG_EMAIL",
+        "D___",
+        "LABEL_EMAIL2",
+        "EMAIL2",
+        "UNDER_EMAIL2",
+        "MSG_EMAIL2",
+        "D____",
+        "LABEL_QUERY",
+        "QUERY",
+        "UNDER_QUERY",
+        "MSG_QUERY",
+        "D_____",
+        "LABEL_ANSWER",
+        "ANSWER",
+        "UNDER_ANSWER",
+        "MSG_ANSWER",
+        "D______",
+        "LABEL_PASSWORD",
+        "PASSWORD",
+        "UNDER_PASSWORD",
+        "MSG_PASSWORD",
+        "D_______",
+        "LABEL_PASSWORD_RETRY",
+        "PASSWORD_RETRY",
+        "UNDER_PASSWORD_RETRY",
+        "MSG_PASSWORD_RETRY",
+        "D________",
+        "BT_COMMIT",
+        "CLOSE",
+        "START_DEMO"
+      ]
+    }
+  ],
+  "lovs": []
+}
