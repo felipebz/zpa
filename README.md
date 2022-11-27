@@ -44,7 +44,6 @@ Everyone is welcome to contribute. Note that no matter how you contribute, your 
 
 There are a few things you need to know about the code. It is divided in these modules:
 
-- `its` - Integration tests with SonarQube (more below).
 - `plsql-custom-rules` - Demo project showing how to extend ZPA with custom coding rules.
 - `sonar-zpa-plugin` - The SonarQube plugin itself, this module contains all the code necessary to integrate with the SonarQube platform.
 - `zpa-checks` - The built-in coding rules provided by ZPA.
@@ -60,8 +59,8 @@ If you're interested in a stable API to integrate ZPA with another software, ple
 
 There are two sets of integration tests:
 
-- [sonar-zpa-plugin](https://github.com/felipebz/zpa/tree/main/sonar-zpa-plugin/src/integrationTest): checks if the metrics are imported correctly in SonarQube
-- [zpa-checks](https://github.com/felipebz/zpa/tree/main/zpa-checks/src/integrationTest): checks the quality of parser and rules against real-world code
+- [sonar-zpa-plugin/integrationTest](https://github.com/felipebz/zpa/tree/main/sonar-zpa-plugin/src/integrationTest): checks if the metrics are imported correctly in SonarQube
+- [zpa-checks/integrationTest](https://github.com/felipebz/zpa/tree/main/zpa-checks/src/integrationTest): checks the quality of parser and rules against real-world code
 
 To run the integrations tests, first update the submodules:
 
