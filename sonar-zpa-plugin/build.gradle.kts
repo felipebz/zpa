@@ -19,6 +19,34 @@ dependencies {
     testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:${Versions.min_sonarqube_api}")
 }
 
+testing {
+    suites {
+        val integrationTest by registering(JvmTestSuite::class) {
+            testType.set(TestSuiteType.INTEGRATION_TEST)
+
+            dependencies {
+                implementation(Libs.assertj)
+                implementation("org.sonarsource.sonarqube:sonar-ws:${Versions.min_sonarqube_api}")
+                implementation("org.sonarsource.orchestrator:sonar-orchestrator:${Versions.sonarqube_orchestrator}")
+                runtimeOnly("org.junit.vintage:junit-vintage-engine")
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        filter {
+                            includeTestsMatching("org.sonar.plsqlopen.it.Tests")
+                        }
+                        systemProperty("java.awt.headless", "true")
+                        systemProperty("sonar.runtimeVersion", System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
+                        outputs.upToDateWhen { false }
+                    }
+                }
+            }
+        }
+    }
+}
+
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     minimize {
         exclude(project(":zpa-checks-testkit"))

@@ -56,7 +56,7 @@ class IssueTest {
             orchestrator.server.associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "it-profile")
 
             val build = Tests.createSonarScanner()
-                .setProjectDir(File("projects/metrics/"))
+                .setProjectDir(File("src/integrationTest/resources/projects/metrics/"))
                 .setProjectKey(PROJECT_KEY)
                 .setProjectName(PROJECT_KEY)
                 .setProjectVersion("1.0")

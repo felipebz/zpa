@@ -106,7 +106,7 @@ class MetricsTest {
             orchestrator.server.provisionProject(PROJECT_KEY, PROJECT_KEY)
             orchestrator.server.associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "empty-profile")
 
-            val build = Tests.createSonarScanner().setProjectDir(File("projects/metrics/"))
+            val build = Tests.createSonarScanner().setProjectDir(File("src/integrationTest/resources/projects/metrics/"))
                     .setProjectKey(PROJECT_KEY).setProjectName(PROJECT_KEY).setProjectVersion("1.0").setSourceDirs("src")
                     .setProperty("sonar.sourceEncoding", "UTF-8")
             orchestrator.executeBuild(build)

@@ -60,10 +60,10 @@ If you're interested in a stable API to integrate ZPA with another software, ple
 
 There are two sets of integration tests:
 
-- [plugin](https://github.com/felipebz/zpa/tree/main/its/plugin): checks if the metrics are imported correctly in SonarQube
+- [sonar-zpa-plugin](https://github.com/felipebz/zpa/tree/main/sonar-zpa-plugin/src/integrationTest): checks if the metrics are imported correctly in SonarQube
 - [zpa-checks](https://github.com/felipebz/zpa/tree/main/zpa-checks/src/integrationTest): checks the quality of parser and rules against real-world code
 
-To run the integrations tests, update the submodules:
+To run the integrations tests, first update the submodules:
 
     git submodule update --init --recursive
     
@@ -74,8 +74,8 @@ Build the main plugin and the custom rules example:
 
 Then run the tests:
 
-    ./gradlew test -Pit
+    ./gradlew integrationTest
 
 By default, the tests will be executed using SonarQube 8.9 LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing the specific version or one of `LATEST_RELEASE[8.9]` (for SonarQube 8.9.x LTS), `LATEST_RELEASE` (latest official release) or `DEV` (unstable version, in development): 
 
-    ./gradlew test -Pit -Dsonar.runtimeVersion=9.0
+    ./gradlew integrationTest -Dsonar.runtimeVersion=9.0

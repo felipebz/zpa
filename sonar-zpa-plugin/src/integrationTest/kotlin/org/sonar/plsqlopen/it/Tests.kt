@@ -40,10 +40,10 @@ object Tests {
             .useDefaultAdminCredentialsForBuilds(true)
             .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    File("../../sonar-zpa-plugin/build/libs"),
+                    File("build/libs"),
                     "sonar-zpa-plugin-*.jar"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
-                    File("../../plsql-custom-rules/build/libs"),
+                    File("../plsql-custom-rules/build/libs"),
                     "plsql-custom-rules-*.jar"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/it-profile.xml"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build()
