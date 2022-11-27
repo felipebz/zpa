@@ -20,7 +20,7 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarQube Scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner).
 
-If you like to live on the bleeding edge, you can use the [latest development version](https://felipezorzo.com.br/api/download/com.felipebz.zpa/sonar-zpa-plugin/latest).
+If you like to live on the bleeding edge, you can use the [latest development version](https://github.com/felipebz/zpa/releases/early-access).
 
 ## Compatibility matrix
 
