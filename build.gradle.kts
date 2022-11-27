@@ -12,6 +12,7 @@ plugins {
     id("org.jetbrains.dokka") version ("1.7.20")
     id("com.github.hierynomus.license") version "0.16.1"
     id("org.sonarqube") version "3.5.0.2730"
+    id("org.jreleaser") version "1.3.1"
 }
 
 allprojects {
@@ -165,6 +166,33 @@ subprojects {
                             email.set("felipe@felipezorzo.com.br")
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+jreleaser {
+    project {
+        description.set("Z PL/SQL Analyzer")
+        authors.set(listOf("felipebz"))
+        license.set("LGPL-3.0")
+        links {
+            homepage.set("https://felipezorzo.com.br/zpa/")
+        }
+        inceptionYear.set("2015")
+    }
+    release {
+        github {
+            repoOwner.set("felipebz")
+            overwrite.set(true)
+        }
+    }
+    distributions {
+        listOf("sonar-zpa-plugin", "zpa-toolkit").forEach {
+            create(it) {
+                artifact {
+                    path.set(file("{{distributionName}}/build/libs/{{distributionName}}-{{projectVersion}}.jar"))
                 }
             }
         }

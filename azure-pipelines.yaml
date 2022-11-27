@@ -81,13 +81,14 @@ steps:
     displayName: Publish artifacts
     condition: and(succeeded(), eq(variables['System.JobName'], 'linux'))
     inputs:
-      tasks: 'publish'
+      tasks: 'publish jreleaserFullRelease'
       options: '--build-cache -Psigning.secretKeyRingFile=$(gpgKey.secureFilePath) -Psigning.keyId=$(GPG_KEY_ID) -Psigning.password=$(GPG_KEY_PASSWORD)'
     env:
       DEPLOY_TOKEN: $(DEPLOY_TOKEN)
       DEPLOY_USERNAME: $(DEPLOY_USERNAME)
       OSSRH_USERNAME: $(OSSRH_USERNAME)
       OSSRH_PASSWORD: $(OSSRH_PASSWORD)
+      JRELEASER_GITHUB_TOKEN: $(JRELEASER_GITHUB_TOKEN)
 
   - script: |
       # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)

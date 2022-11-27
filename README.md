@@ -36,7 +36,7 @@ The ZPA Toolkit is visual tool to review the AST (abstract syntax tree) and the 
 
 ![](https://raw.githubusercontent.com/wiki/felipebz/zpa/img/zpa-toolkit.png)
 
-The latest ZPA Toolkit can be downloaded from the [releases page](https://github.com/felipebz/zpa/releases/latest) and it requires JDK 11 or newer. You can also download the [latest development version](https://felipezorzo.com.br/api/download/com.felipebz.zpa/zpa-toolkit/latest). 
+The latest ZPA Toolkit can be downloaded from the [releases page](https://github.com/felipebz/zpa/releases/latest) and it requires JDK 11 or newer. You can also download the [latest development version](https://github.com/felipebz/zpa/releases/early-access). 
 
 ## Contribute
 
