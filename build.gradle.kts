@@ -46,8 +46,6 @@ subprojects {
 
     dependencies {
         implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-        testImplementation(platform(Libs.junit_bom))
-        testImplementation(Libs.junit_jupiter)
         testImplementation(Libs.assertj)
         testImplementation(Libs.mockito)
         testImplementation(Libs.mockito_kotlin)
@@ -63,6 +61,16 @@ subprojects {
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             this.jvmTarget = "11"
+        }
+    }
+
+    testing {
+        suites {
+            configureEach {
+                if (this is JvmTestSuite) {
+                    useJUnitJupiter(Versions.junit)
+                }
+            }
         }
     }
 

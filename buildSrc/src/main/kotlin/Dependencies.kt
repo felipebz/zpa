@@ -13,8 +13,6 @@ object Versions {
 }
 
 object Libs {
-    const val junit_bom = "org.junit:junit-bom:${Versions.junit}"
-    const val junit_jupiter = "org.junit.jupiter:junit-jupiter"
     const val assertj = "org.assertj:assertj-core:${Versions.assertj}"
     const val mockito = "org.mockito:mockito-core:${Versions.mockito}"
     const val mockito_kotlin = "org.mockito.kotlin:mockito-kotlin:${Versions.mockito_kotlin}"
