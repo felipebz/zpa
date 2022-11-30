@@ -20,7 +20,10 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     }
     archiveClassifier.set("")
     manifest {
-        attributes(mapOf("Main-Class" to "org.sonar.plsqlopen.toolkit.PlSqlToolkitKt"))
+        attributes(mapOf(
+            "Main-Class" to "org.sonar.plsqlopen.toolkit.PlSqlToolkitKt",
+            "Add-Opens" to "java.desktop/sun.awt.shell"
+        ))
     }
 }
 
