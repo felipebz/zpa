@@ -19,11 +19,11 @@
  */
 package org.sonar.plugins.plsqlopen.api.sql
 
+import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
-import com.felipebz.flr.tests.Assertions.assertThat
 
 class WhereClauseTest : RuleTest() {
 
@@ -70,6 +70,11 @@ class WhereClauseTest : RuleTest() {
     @Test
     fun matchesExists() {
         assertThat(p).matches("where exists (select 1 from dual)")
+    }
+
+    @Test
+    fun matchesExistsWithUnionInSubquery() {
+        assertThat(p).matches("where exists ((select 1 from dual) union (select 2 from dual))")
     }
 
     @Test
