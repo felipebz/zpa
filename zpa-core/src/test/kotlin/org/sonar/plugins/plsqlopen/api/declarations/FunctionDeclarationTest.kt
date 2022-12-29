@@ -107,4 +107,13 @@ class FunctionDeclarationTest : RuleTest() {
                 + "end;")
     }
 
+    @Test
+    fun matchesParallelEnableFunction() {
+        assertThat(p).matches(""
+            + "function test return number parallel_enable is\n"
+            + "begin\n"
+            + "return 0;\n"
+            + "end;")
+    }
+
 }
