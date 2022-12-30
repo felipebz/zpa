@@ -34,11 +34,25 @@ testing {
             targets {
                 all {
                     testTask.configure {
+                        val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]")
+                        val baseVersion = "\\d.\\d".toRegex().find(runtimeVersion)?.value?.toDouble() ?: 0.0
+
+                        val javaVersion = if (runtimeVersion == "DEV" || runtimeVersion == "LATEST_RELEASE" || baseVersion >= 9.8) {
+                            17
+                        } else {
+                            11
+                        }
+
+                        java {
+                            toolchain {
+                                languageVersion.set(JavaLanguageVersion.of(javaVersion))
+                            }
+                        }
                         filter {
                             includeTestsMatching("org.sonar.plsqlopen.it.Tests")
                         }
                         systemProperty("java.awt.headless", "true")
-                        systemProperty("sonar.runtimeVersion", System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
+                        systemProperty("sonar.runtimeVersion", runtimeVersion)
                         outputs.upToDateWhen { false }
                     }
                 }
