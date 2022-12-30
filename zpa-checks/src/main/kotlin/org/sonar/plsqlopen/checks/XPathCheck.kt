@@ -55,10 +55,11 @@ class XPathCheck : AbstractBaseCheck() {
             val objects = query()?.selectNodes(node) ?: emptyList()
 
             for (obj in objects) {
-                (obj as? AstNode)?.let { addIssue(it, message) }
-                        ?: if (obj is Boolean && obj) {
-                            addFileIssue(message)
-                        }
+                if (obj is AstNode) {
+                    addIssue(obj, message)
+                } else if (obj is Boolean && obj) {
+                    addFileIssue(message)
+                }
             }
         }
     }
