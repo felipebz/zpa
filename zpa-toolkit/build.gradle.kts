@@ -41,12 +41,4 @@ publishing {
     }
 }
 
-tasks.withType<LicenseFormat>().configureEach {
-    skipExistingHeaders = true
-}
-
-tasks.withType<LicenseCheck>().configureEach {
-    skipExistingHeaders = true
-}
-
 description = "Z PL/SQL Analyzer :: SSLR Toolkit"

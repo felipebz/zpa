@@ -1,7 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2010-2021 SonarSource SA
- * Copyright (C) 2021-2021 Felipe Zorzo
+ * Copyright (C) 2015-2023 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
