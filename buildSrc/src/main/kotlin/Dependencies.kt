@@ -6,7 +6,8 @@ object Versions {
     const val flr = "1.2.0"
     const val gson = "2.10"
     const val jsoup = "1.15.3"
-    const val min_sonarqube_api = "8.9.0.43852"
+    const val min_sonarqube = "9.9.0.65466"
+    const val min_sonarqube_api = "9.14.0.375"
     const val sonarqube_orchestrator = "3.40.0.183"
 
     const val plugin_shadow = "7.1.2"

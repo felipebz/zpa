@@ -4,7 +4,7 @@ strategy:
       imageName: 'ubuntu-latest'
     it-min:
       imageName: 'ubuntu-latest'
-      sq_version: LATEST_RELEASE[8.9]
+      sq_version: LATEST_RELEASE[9.9]
     it-latest:
       imageName: 'ubuntu-latest'
       sq_version: LATEST_RELEASE

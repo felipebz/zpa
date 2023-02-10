@@ -20,10 +20,11 @@ java {
     }
 }
 
-val minSonarQubeVersion = "8.9.0.43852"
+val minSonarQubeVersion = "9.9.0.65466"
+val minSonarQubeApiVersion = "9.14.0.375"
 
 dependencies {
-    compileOnly("org.sonarsource.sonarqube:sonar-plugin-api:$minSonarQubeVersion")
+    compileOnly("org.sonarsource.api.plugin:sonar-plugin-api:$minSonarQubeApiVersion")
     compileOnly("com.felipebz.zpa:sonar-zpa-plugin:3.3.0-SNAPSHOT")
     testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:$minSonarQubeVersion")
     testImplementation("com.felipebz.zpa:zpa-checks-testkit:3.3.0-SNAPSHOT")
