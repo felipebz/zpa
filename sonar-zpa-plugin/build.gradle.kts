@@ -5,6 +5,7 @@ import groovy.util.NodeList
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
@@ -35,19 +36,11 @@ testing {
                 all {
                     testTask.configure {
                         val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]")
-                        val baseVersion = "\\d.\\d".toRegex().find(runtimeVersion)?.value?.toDouble() ?: 0.0
 
-                        val javaVersion = if (runtimeVersion == "DEV" || runtimeVersion == "LATEST_RELEASE" || baseVersion >= 9.8) {
-                            17
-                        } else {
-                            11
-                        }
+                        javaLauncher.set(javaToolchains.launcherFor {
+                            languageVersion.set(JavaLanguageVersion.of(17))
+                        })
 
-                        java {
-                            toolchain {
-                                languageVersion.set(JavaLanguageVersion.of(javaVersion))
-                            }
-                        }
                         filter {
                             includeTestsMatching("org.sonar.plsqlopen.it.Tests")
                         }
