@@ -50,7 +50,7 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
             val queryBlock = selectExpression.getFirstChild(DmlGrammar.QUERY_BLOCK)
             val columns = queryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
 
-            if (columns.size >= index) {
+            if (index > 0 && index <= columns.size) {
                 val selectColumn = columns[index - 1].firstChild
 
                 if (toChar.matches(selectColumn)) {
