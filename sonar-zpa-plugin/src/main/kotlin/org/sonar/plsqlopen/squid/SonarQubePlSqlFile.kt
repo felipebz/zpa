@@ -23,10 +23,10 @@ import org.sonar.api.batch.fs.InputFile
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 
 import java.io.IOException
+import java.nio.file.Path
+import kotlin.io.path.toPath
 
 class SonarQubePlSqlFile(val inputFile: InputFile) : PlSqlFile {
-
-    override fun fileName(): String = inputFile.filename()
 
     override fun contents(): String =
         try {
@@ -34,6 +34,10 @@ class SonarQubePlSqlFile(val inputFile: InputFile) : PlSqlFile {
         } catch (e: IOException) {
             throw IllegalStateException("Could not read contents of input file $inputFile", e)
         }
+
+    override fun fileName(): String = inputFile.filename()
+
+    override fun path(): Path = inputFile.uri().toPath()
 
     override fun type(): PlSqlFile.Type =
         when (inputFile.type()) {

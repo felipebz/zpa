@@ -19,11 +19,15 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
+import java.nio.file.Path
+
 interface PlSqlFile {
 
     fun contents(): String
 
     fun fileName(): String
+
+    fun path(): Path
 
     fun type(): Type
 

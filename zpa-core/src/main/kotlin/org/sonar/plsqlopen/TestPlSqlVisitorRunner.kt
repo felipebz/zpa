@@ -29,6 +29,7 @@ import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 
 object TestPlSqlVisitorRunner {
 
@@ -53,6 +54,8 @@ object TestPlSqlVisitorRunner {
             }
 
         override fun fileName(): String = file.name
+
+        override fun path(): Path = file.toPath()
 
         override fun type(): PlSqlFile.Type = PlSqlFile.Type.MAIN
     }

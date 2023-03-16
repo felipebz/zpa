@@ -39,9 +39,11 @@ class InputFile(private val type: PlSqlFile.Type,
 
     override fun fileName(): String  = file.name
 
+    override fun path(): Path = file.toPath()
+
     override fun type(): PlSqlFile.Type = type
 
-    val pathRelativeToBase: String = baseDirPath.relativize(Paths.get(file.absolutePath)).invariantSeparatorsPathString
+    val pathRelativeToBase: String = baseDirPath.relativize(path()).invariantSeparatorsPathString
 
     override fun hashCode(): Int {
         return file.hashCode()
