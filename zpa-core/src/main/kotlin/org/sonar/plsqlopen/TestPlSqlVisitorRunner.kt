@@ -29,18 +29,11 @@ import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 
 object TestPlSqlVisitorRunner {
 
     fun scanFile(file: File, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
-        val context = createContext(TestPlSqlFile.fromFile(file), metadata)
-        val walker = PlSqlAstWalker(visitors.toList())
-        walker.walk(context)
-    }
-
-    fun scan(contents: String, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
-        val context = createContext(TestPlSqlFile.fromString(contents), metadata)
+        val context = createContext(TestPlSqlFile(file), metadata)
         val walker = PlSqlAstWalker(visitors.toList())
         walker.walk(context)
     }
@@ -51,22 +44,17 @@ object TestPlSqlVisitorRunner {
         return PlSqlVisitorContext(rootTree, plSqlFile, metadata)
     }
 
-    private class TestPlSqlFile private constructor(private val contents: String,
-                                                    private val name: String) : PlSqlFile {
-        override fun contents(): String = contents
-        override fun fileName(): String = name
+    private class TestPlSqlFile(private val file: File) : PlSqlFile {
+        override fun contents(): String =
+            try {
+                file.readText()
+            } catch (e: IOException) {
+                throw IllegalStateException("Cannot read $file", e)
+            }
+
+        override fun fileName(): String = file.name
+
         override fun type(): PlSqlFile.Type = PlSqlFile.Type.MAIN
-
-        companion object {
-            fun fromString(contents: String): PlSqlFile = TestPlSqlFile(contents.trim(), "unnamed")
-
-            fun fromFile(file: File): PlSqlFile =
-                try {
-                    TestPlSqlFile(String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8), file.name)
-                } catch (e: IOException) {
-                    throw IllegalStateException("Cannot read $file", e)
-                }
-        }
     }
 
 }

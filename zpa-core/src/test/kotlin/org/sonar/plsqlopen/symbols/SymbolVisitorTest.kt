@@ -22,12 +22,17 @@ package org.sonar.plsqlopen.symbols
 import org.assertj.core.api.Assertions.*
 import org.assertj.core.groups.Tuple
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
+import java.io.File
 
 class SymbolVisitorTest {
+
+    @field:TempDir
+    lateinit var tempFolder: File
 
     private val visitor = SymbolVisitor(DefaultTypeSolver(), ScopeImpl())
 
@@ -502,7 +507,10 @@ end;
     }
 
     private fun scan(contents: String): List<Symbol> {
-        TestPlSqlVisitorRunner.scan(contents, null, visitor)
+        val file = tempFolder.resolve("test.sql")
+        file.writeText(contents.trim())
+
+        TestPlSqlVisitorRunner.scanFile(file, null, visitor)
         return visitor.symbols
     }
 
