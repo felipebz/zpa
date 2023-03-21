@@ -43,6 +43,11 @@ class GroupByClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesSimpleGroupByMultipleColumn() {
+        assertThat(p).matches("group by col, col2")
+    }
+
+    @Test
     fun matchesSimpleGroupByTableColumn() {
         assertThat(p).matches("group by tab.col")
     }
@@ -55,6 +60,21 @@ class GroupByClauseTest : RuleTest() {
     @Test
     fun matchesSimpleGroupByFunctionCall() {
         assertThat(p).matches("group by func(var)")
+    }
+
+    @Test
+    fun matchesSimpleGroupByRollup() {
+        assertThat(p).matches("group by rollup (col)")
+    }
+
+    @Test
+    fun matchesSimpleGroupByCube() {
+        assertThat(p).matches("group by cube (col)")
+    }
+
+    @Test
+    fun matchesSimpleGroupByRollupAndCube() {
+        assertThat(p).matches("group by rollup (col), cube (col)")
     }
 
 }

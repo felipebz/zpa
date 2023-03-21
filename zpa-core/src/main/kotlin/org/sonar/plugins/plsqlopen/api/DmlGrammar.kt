@@ -75,7 +75,9 @@ enum class DmlGrammar : GrammarRuleKey {
     MERGE_UPDATE_CLAUSE,
     MERGE_INSERT_CLAUSE,
     ERROR_LOGGING_CLAUSE,
-    DML_COMMAND;
+    DML_COMMAND,
+    GROUPING_EXPRESSION_LIST,
+    ROLLUP_CUBE_CLAUSE;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
@@ -187,8 +189,19 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(BULK, COLLECT), INTO,
                     OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE))
 
+            b.rule(GROUPING_EXPRESSION_LIST).define(
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, b.optional(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)), RPARENTHESIS),
+                    EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION))
+                )
+
+            b.rule(ROLLUP_CUBE_CLAUSE).define(
+                b.firstOf(ROLLUP, CUBE), LPARENTHESIS, GROUPING_EXPRESSION_LIST, RPARENTHESIS)
+
             b.rule(GROUP_BY_CLAUSE).define(
-                    GROUP, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION))
+                GROUP, BY,
+                b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_EXPRESSION_LIST),
+                b.zeroOrMore(COMMA, b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_EXPRESSION_LIST)))
 
             b.rule(HAVING_CLAUSE).define(HAVING, EXPRESSION)
 
