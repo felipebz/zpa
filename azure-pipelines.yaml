@@ -46,7 +46,7 @@ steps:
     displayName: Build ZPA
     inputs:
       tasks: 'build publishToMavenLocal'
-      options: '--build-cache'
+      options: '--build-cache --refresh-dependencies'
       jdkVersionOption: 1.11
 
   - task: Gradle@2
