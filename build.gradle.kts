@@ -192,7 +192,6 @@ jreleaser {
             changelog {
                 formatted.set(org.jreleaser.model.Active.ALWAYS)
                 preset.set("conventional-commits")
-                format.set("- {{commitShortHash}} {{commitTitle}}")
                 contentTemplate.set(file("template/changelog.tpl"))
                 contributors {
                     enabled.set(false)
