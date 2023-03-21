@@ -1922,9 +1922,6 @@
   "Expression-Lists-0.sql": [
     2
   ],
-  "Expression-Lists-3.sql": [
-    9
-  ],
   "FEATURE_DETAILS-0.sql": [
     3
   ],
@@ -2140,9 +2137,6 @@
   ],
   "Functions-0.sql": [
     2
-  ],
-  "GROUP_ID-0.sql": [
-    9
   ],
   "GROUP_ID-1.sql": [
     2
@@ -2668,9 +2662,6 @@
   ],
   "SELECT-31.sql": [
     4
-  ],
-  "SELECT-35.sql": [
-    12
   ],
   "SELECT-4.sql": [
     2

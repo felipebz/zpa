@@ -77,4 +77,24 @@ class GroupByClauseTest : RuleTest() {
         assertThat(p).matches("group by rollup (col), cube (col)")
     }
 
+    @Test
+    fun matchesSimpleGroupWithEmptyGroupingSets() {
+        assertThat(p).matches("group by grouping sets (())")
+    }
+
+    @Test
+    fun matchesSimpleGroupWithGroupingSets() {
+        assertThat(p).matches("group by grouping sets (col)")
+    }
+
+    @Test
+    fun matchesSimpleGroupWithGroupingSetsWithMultipleColumns() {
+        assertThat(p).matches("group by grouping sets (col, col2)")
+    }
+
+    @Test
+    fun matchesSimpleGroupWithGroupingSetsWithMultipleOptions() {
+        assertThat(p).matches("group by grouping sets (col, col2, rollup (col), cube (col))")
+    }
+
 }
