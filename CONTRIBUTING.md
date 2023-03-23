@@ -21,7 +21,7 @@ If you have an idea for a new feature, please [open an issue](https://github.com
 
 ## Pull Requests
 
-Currently we are not currently accepting pull requests for new features. We appreciate your interest in contributing, but we have limited resources and cannot maintain additional features at this time.
+Currently, we are not currently accepting pull requests for new features. We appreciate your interest in contributing, but we have limited resources and cannot maintain additional features at this time.
 
 We will accept pull requests for minor bug fixes. Please include a detailed description of the bug and the steps to reproduce it.
 
