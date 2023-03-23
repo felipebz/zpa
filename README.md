@@ -40,7 +40,7 @@ The latest ZPA Toolkit can be downloaded from the [releases page](https://github
 
 ## Contribute
 
-Everyone is welcome to contribute. Note that no matter how you contribute, your participation is governed by our [code of conduct](CODE_OF_CONDUCT.md).
+Everyone is welcome to contribute. Please read our [contribution guidelines](CONTRIBUTING.md) for more information.
 
 There are a few things you need to know about the code. It is divided in these modules:
 
