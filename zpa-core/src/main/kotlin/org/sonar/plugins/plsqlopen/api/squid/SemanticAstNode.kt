@@ -39,11 +39,11 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
             (child as SemanticAstNode).symbol = symbol
         }
 
-    var plSqlDatatype: PlSqlDatatype? = null
+    var plSqlDatatype: PlSqlDatatype = UnknownDatatype()
         get() = this.symbol?.datatype ?: field
 
-    val plSqlType: PlSqlType?
-        get() = plSqlDatatype?.type
+    val plSqlType: PlSqlType
+        get() = plSqlDatatype.type
 
     val tree: Tree by lazy {
         var type = PlSqlGrammarBuilder.classForType(astNode.type)
@@ -64,7 +64,7 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     }
 
     override fun toString(): String {
-        return super.toString() + if (plSqlDatatype != null && plSqlDatatype !is UnknownDatatype) {
+        return super.toString() + if (plSqlDatatype !is UnknownDatatype) {
             " datatype=$plSqlDatatype"
         } else {
             ""
