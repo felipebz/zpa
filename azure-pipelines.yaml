@@ -42,34 +42,34 @@ steps:
       jdkArchitectureOption: 'x64'
       jdkSourceOption: 'PreInstalled'
 
-  - task: Gradle@2
+  - task: Gradle@3
     displayName: Build ZPA
     inputs:
       tasks: 'build publishToMavenLocal'
       options: '--build-cache --refresh-dependencies'
       jdkVersionOption: 1.11
 
-  - task: Gradle@2
+  - task: Gradle@3
     displayName: Build example of custom plugin
     condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
     inputs:
       tasks: 'build -p plsql-custom-rules'
 
-  - task: Gradle@2
+  - task: Gradle@3
     displayName: Run integration tests
     condition: and(succeeded(), startsWith(variables['System.JobName'], 'it-'))
     inputs:
       tasks: 'integrationTest -Dsonar.runtimeVersion=$(sq_version) --info'
       options: '--build-cache'
 
-  - task: SonarQubePrepare@4
+  - task: SonarQubePrepare@5
     displayName: Prepare SonarQube analysis
     condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
     inputs:
       SonarQube: 'SonarQube'
       scannerMode: 'Other'
 
-  - task: Gradle@2
+  - task: Gradle@3
     displayName: Run SonarQube analysis
     condition: and(succeeded(), eq(variables.isMain, 'true'), eq(variables['System.JobName'], 'linux'))
     inputs:
@@ -77,7 +77,7 @@ steps:
       options: '--build-cache -Dsonar.branch.name='
       sonarQubeRunAnalysis: true
 
-  - task: Gradle@2
+  - task: Gradle@3
     displayName: Publish artifacts
     condition: and(succeeded(), eq(variables['System.JobName'], 'linux'))
     inputs:
