@@ -45,4 +45,13 @@ class ActiveRule(
     override val templateRuleKey: String?
         get() = null
 
+    override val tags: Array<String>
+        get() = rule.tags
+
+    override val remediationConstant: String
+        get() = rule.remediationConstant
+
+    override val name: String
+        get() = rule.name
+
 }

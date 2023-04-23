@@ -43,6 +43,15 @@ class SonarQubeActiveRuleAdapter(private val activeRule: ActiveRule) : ZpaActive
     override val templateRuleKey: String?
         get() = activeRule.templateRuleKey()
 
+    override val tags: Array<String>
+        get() = throw NotImplementedError()
+
+    override val remediationConstant: String
+        get() = throw NotImplementedError()
+
+    override val name: String
+        get() = throw NotImplementedError()
+
     override fun toString(): String = activeRule.toString()
 
     override fun equals(other: Any?): Boolean = activeRule == other

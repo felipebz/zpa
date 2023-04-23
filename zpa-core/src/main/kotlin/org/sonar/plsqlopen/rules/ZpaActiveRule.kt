@@ -27,4 +27,7 @@ interface ZpaActiveRule {
     val params: Map<String, String>
     val internalKey: String?
     val templateRuleKey: String?
+    val tags: Array<String>
+    val remediationConstant: String
+    val name: String
 }
