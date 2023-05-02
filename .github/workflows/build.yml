@@ -1,0 +1,102 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sqVersion:
+          - LATEST_RELEASE[9.9]
+          - LATEST_RELEASE
+          - DEV
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: |
+            11
+            17
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build publishToMavenLocal --refresh-dependencies
+
+      - name: Build custom rules example
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build
+          build-root-directory: plsql-custom-rules
+
+      - name: Run integration test
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: integrationTest -Dsonar.runtimeVersion=${{ matrix.sqVersion }} --info
+
+  windows-build:
+    name: Test on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: test
+
+  linux-build:
+    name: Build and release
+    needs: [integration-tests, windows-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build --refresh-dependencies
+
+      - if: github.ref == 'refs/heads/main'
+        name: Run SonarQube Scanner
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - if: github.ref == 'refs/heads/main'
+        name: Release artifacts
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: publish jreleaserFullRelease
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_SECRET_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSWORD }}
