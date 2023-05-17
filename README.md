@@ -52,8 +52,6 @@ There are a few things you need to know about the code. It is divided in these m
 
 The API exposed to custom plugins must be located in the package `org.sonar.plugins.plsqlopen.api` (it's a requirement from the SonarQube server). The classes located outside this package are not prepared for external consumption, so if you use them, your code can break without any further notice.
 
-If you're interested in a stable API to integrate ZPA with another software, please [open an issue](https://github.com/felipebz/zpa/issues/new) or [contact us directly](https://felipezorzo.com.br/contact) explaining your needs.
-
 ### Running the integration tests
 
 There are two sets of integration tests:
