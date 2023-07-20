@@ -20,9 +20,9 @@
 package org.sonar.plsqlopen.it
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.BeforeClass
-import org.junit.ClassRule
-import org.junit.Test
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.Measures
 import org.sonarqube.ws.client.measures.ComponentRequest
 import java.io.File
@@ -94,14 +94,14 @@ class MetricsTest {
     companion object {
 
         @JvmField
-        @ClassRule
+        @RegisterExtension
         var orchestrator = Tests.ORCHESTRATOR
 
         private const val PROJECT_KEY = "metrics"
         private const val FILE_NAME = "$PROJECT_KEY:src/source1.sql"
 
         @JvmStatic
-        @BeforeClass
+        @BeforeAll
         fun init() {
             orchestrator.server.provisionProject(PROJECT_KEY, PROJECT_KEY)
             orchestrator.server.associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "empty-profile")

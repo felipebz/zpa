@@ -5,7 +5,6 @@ import groovy.util.NodeList
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
@@ -28,22 +27,18 @@ testing {
             dependencies {
                 implementation(Libs.assertj)
                 implementation("org.sonarsource.sonarqube:sonar-ws:${Versions.min_sonarqube}")
-                implementation("org.sonarsource.orchestrator:sonar-orchestrator:${Versions.sonarqube_orchestrator}")
-                runtimeOnly("org.junit.vintage:junit-vintage-engine")
+                implementation("org.sonarsource.orchestrator:sonar-orchestrator-junit5:${Versions.sonarqube_orchestrator}")
             }
 
             targets {
                 all {
                     testTask.configure {
-                        val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]")
+                        val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]")
 
                         javaLauncher.set(javaToolchains.launcherFor {
                             languageVersion.set(JavaLanguageVersion.of(17))
                         })
 
-                        filter {
-                            includeTestsMatching("org.sonar.plsqlopen.it.Tests")
-                        }
                         systemProperty("java.awt.headless", "true")
                         systemProperty("sonar.runtimeVersion", runtimeVersion)
                         outputs.upToDateWhen { false }

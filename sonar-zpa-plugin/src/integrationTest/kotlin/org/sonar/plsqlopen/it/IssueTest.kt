@@ -21,9 +21,9 @@ package org.sonar.plsqlopen.it
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
-import org.junit.BeforeClass
-import org.junit.ClassRule
-import org.junit.Test
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.client.issues.SearchRequest
 import java.io.File
 
@@ -46,11 +46,11 @@ class IssueTest {
         private const val PROJECT_KEY = "issue"
 
         @JvmField
-        @ClassRule
+        @RegisterExtension
         val orchestrator = Tests.ORCHESTRATOR
 
         @JvmStatic
-        @BeforeClass
+        @BeforeAll
         fun init() {
             orchestrator.server.provisionProject(PROJECT_KEY, PROJECT_KEY)
             orchestrator.server.associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "it-profile")

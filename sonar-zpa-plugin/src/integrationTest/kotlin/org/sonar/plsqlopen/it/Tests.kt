@@ -21,22 +21,19 @@ package org.sonar.plsqlopen.it
 
 import com.sonar.orchestrator.Orchestrator
 import com.sonar.orchestrator.build.SonarScanner
+import com.sonar.orchestrator.junit5.OrchestratorExtension
 import com.sonar.orchestrator.locator.FileLocation
-import org.junit.ClassRule
-import org.junit.runner.RunWith
-import org.junit.runners.Suite
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.client.HttpConnector
 import org.sonarqube.ws.client.WsClient
 import org.sonarqube.ws.client.WsClientFactories
 import java.io.File
 
-@RunWith(Suite::class)
-@Suite.SuiteClasses(MetricsTest::class, IssueTest::class)
 object Tests {
 
     @JvmField
-    @ClassRule
-    val ORCHESTRATOR: Orchestrator = Orchestrator.builderEnv()
+    @RegisterExtension
+    val ORCHESTRATOR: Orchestrator = OrchestratorExtension.builderEnv()
             .useDefaultAdminCredentialsForBuilds(true)
             .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
             .addPlugin(FileLocation.byWildcardMavenFilename(
@@ -46,7 +43,8 @@ object Tests {
                     File("../plsql-custom-rules/build/libs"),
                     "plsql-custom-rules-*.jar"))
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/it-profile.xml"))
-            .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml")).build()
+            .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml"))
+            .build()
 
     fun createSonarScanner(): SonarScanner = SonarScanner.create()
 
