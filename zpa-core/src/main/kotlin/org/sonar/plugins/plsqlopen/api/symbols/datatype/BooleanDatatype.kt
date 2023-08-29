@@ -24,6 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class BooleanDatatype : PlSqlDatatype {
     override val type = PlSqlType.BOOLEAN
 
+    override val name: String = "BOOLEAN"
+
     override fun toString(): String {
         return "Boolean"
     }

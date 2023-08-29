@@ -24,6 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class DateDatatype : PlSqlDatatype {
     override val type = PlSqlType.DATE
 
+    override val name: String = "DATE"
+
     override fun toString(): String {
         return "Date"
     }

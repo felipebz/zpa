@@ -24,6 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class LobDatatype : PlSqlDatatype {
     override val type = PlSqlType.LOB
 
+    override val name: String = "LOB"
+
     override fun toString(): String {
         return "Lob"
     }

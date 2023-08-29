@@ -28,7 +28,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 class RecordDatatype(node: AstNode? = null, currentScope: Scope?, val fields: List<Symbol>) : PlSqlDatatype {
     override val type = PlSqlType.RECORD
 
-    val name: String = currentScope?.let {
+    override val name: String = currentScope?.let {
         if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
             it.identifier + "."
         else "" } +

@@ -24,6 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class ExceptionDatatype : PlSqlDatatype {
     override val type = PlSqlType.EXCEPTION
 
+    override val name: String = "EXCEPTION"
+
     override fun toString(): String {
         return "Exception"
     }

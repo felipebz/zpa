@@ -27,7 +27,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Scope
 class AssociativeArrayDatatype(node: AstNode? = null, currentScope: Scope?, val nestedType: PlSqlDatatype) : PlSqlDatatype {
     override val type = PlSqlType.ASSOCIATIVE_ARRAY
 
-    val name: String = currentScope?.let {
+    override val name: String = currentScope?.let {
         if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
             it.identifier + "."
         else "" } +

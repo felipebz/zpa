@@ -23,4 +23,5 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 interface PlSqlDatatype {
     val type: PlSqlType
+    val name: String?
 }

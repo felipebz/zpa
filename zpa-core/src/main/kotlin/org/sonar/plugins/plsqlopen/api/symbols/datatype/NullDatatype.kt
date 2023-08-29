@@ -24,6 +24,8 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class NullDatatype : PlSqlDatatype {
     override val type = PlSqlType.NULL
 
+    override val name: String = "NULL"
+
     override fun toString(): String {
         return "Null"
     }

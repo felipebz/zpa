@@ -27,6 +27,15 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class NumericDatatype : PlSqlDatatype {
 
     override val type = PlSqlType.NUMERIC
+
+    override val name: String
+        get() = if (this.length == null)
+            "NUMBER()"
+        else if (this.precision == null)
+            "NUMBER(${this.length})"
+        else
+            "NUMBER(${this.length}, ${this.precision})"
+
     val length: Int?
     val precision: Int?
 

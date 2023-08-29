@@ -27,6 +27,13 @@ import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 class CharacterDatatype : PlSqlDatatype {
 
     override val type = PlSqlType.CHARACTER
+
+    override val name: String
+        get() = if (this.length == null)
+            "VARCHAR2"
+        else
+            "VARCHAR2(${this.length})"
+
     val length: Int?
 
     constructor() {
