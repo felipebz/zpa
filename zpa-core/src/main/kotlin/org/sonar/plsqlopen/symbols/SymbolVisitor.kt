@@ -306,12 +306,23 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitAssociativeArrayDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.TYPE, AssociativeArrayDatatype(node))
+        val datatype = node.getFirstChild(PlSqlGrammar.NESTED_TABLE_DEFINITION).getFirstChild(PlSqlGrammar.DATATYPE)
+        createSymbol(identifier, Symbol.Kind.TYPE, AssociativeArrayDatatype(node, currentScope, solveType(datatype)))
     }
 
     private fun visitRecordDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        createSymbol(identifier, Symbol.Kind.TYPE, RecordDatatype())
+
+        val scope = currentScope ?: throw IllegalStateException("Cannot create a symbol without a scope.")
+
+        val fields = node.getChildren(PlSqlGrammar.RECORD_FIELD_DECLARATION).map { field ->
+            val fieldName = field.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+            val datatype = field.getFirstChild(PlSqlGrammar.DATATYPE)
+            val type = solveType(datatype)
+            Symbol(fieldName, Symbol.Kind.VARIABLE, scope, type)
+        }
+
+        createSymbol(identifier, Symbol.Kind.TYPE, RecordDatatype(node, currentScope, fields))
     }
 
     private fun visitParameterDeclaration(node: AstNode) {

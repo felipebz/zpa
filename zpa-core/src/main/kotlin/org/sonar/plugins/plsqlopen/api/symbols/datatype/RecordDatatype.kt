@@ -19,10 +19,20 @@
  */
 package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
+import com.felipebz.flr.api.AstNode
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 
-class RecordDatatype : PlSqlDatatype {
+class RecordDatatype(node: AstNode? = null, currentScope: Scope?, val fields: List<Symbol>) : PlSqlDatatype {
     override val type = PlSqlType.RECORD
+
+    val name: String = currentScope?.let {
+        if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
+            it.identifier + "."
+        else "" } +
+        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue
 
     override fun toString(): String {
         return "Record"

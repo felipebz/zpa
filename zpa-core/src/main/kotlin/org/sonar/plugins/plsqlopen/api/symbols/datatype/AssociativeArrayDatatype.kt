@@ -22,12 +22,16 @@ package org.sonar.plugins.plsqlopen.api.symbols.datatype
 import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
+import org.sonar.plugins.plsqlopen.api.symbols.Scope
 
-class AssociativeArrayDatatype(node: AstNode? = null) : PlSqlDatatype {
+class AssociativeArrayDatatype(node: AstNode? = null, currentScope: Scope?, val nestedType: PlSqlDatatype) : PlSqlDatatype {
     override val type = PlSqlType.ASSOCIATIVE_ARRAY
 
-    val nestedType = node?.getFirstChild(PlSqlGrammar.NESTED_TABLE_DEFINITION)?.getFirstChild(PlSqlGrammar.DATATYPE)?.tokenOriginalValue
-        ?: throw IllegalStateException("Associative array must have a nested type")
+    val name: String = currentScope?.let {
+        if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
+            it.identifier + "."
+        else "" } +
+        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue
 
     override fun toString(): String {
         return "AssociativeArray{nestedType=$nestedType}"

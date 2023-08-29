@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.RecordDatatype
 import java.io.File
 
 class SymbolVisitorTest {
@@ -116,9 +117,48 @@ end;
         assertThat(type.type).isEqualTo(PlSqlType.RECORD)
         assertThat(type.innerScope).isNull()
 
+        val datatype = type.datatype as RecordDatatype
+        assertThat(datatype.name).isEqualTo("my_record");
+
         val variable = symbols.find("variable", 3, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.RECORD)
         assertThat(variable.references).isEmpty()
+    }
+
+    @Test
+    fun recordInProcedure() {
+        val symbols = scan("""
+create or replace procedure my_proc is
+  type my_record is record (x number);
+begin
+  null;
+end;
+""")
+        assertThat(symbols).hasSize(2) // TODO
+
+        val type = symbols.find("my_record", 2, 8)
+        assertThat(type.type).isEqualTo(PlSqlType.RECORD)
+        assertThat(type.innerScope).isNull()
+
+        val datatype = type.datatype as RecordDatatype
+        assertThat(datatype.name).isEqualTo("my_record");
+    }
+
+    @Test
+    fun recordInPackage() {
+        val symbols = scan("""
+create or replace package my_pack is
+  type my_record is record (x number);
+end;
+""")
+        assertThat(symbols).hasSize(2) // TODO
+
+        val type = symbols.find("my_record", 2, 8)
+        assertThat(type.type).isEqualTo(PlSqlType.RECORD)
+        assertThat(type.innerScope).isNull()
+
+        val datatype = type.datatype as RecordDatatype
+        assertThat(datatype.name).isEqualTo("my_pack.my_record");
     }
 
     @Test
