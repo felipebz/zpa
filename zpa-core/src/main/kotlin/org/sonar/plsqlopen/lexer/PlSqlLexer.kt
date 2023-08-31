@@ -76,9 +76,11 @@ object PlSqlLexer {
             .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
             .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
             .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
-            .withChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false, PlSqlKeyword.values()))
+            .withChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
+                PlSqlKeyword.entries.toTypedArray()
+            ))
             .withChannel(RegexPunctuatorChannel(*PlSqlPunctuator.values().filter { it.isRegex }.toTypedArray()))
-            .withChannel(PunctuatorChannel(*PlSqlPunctuator.values().filter { !it.isRegex }.toTypedArray()))
+            .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.filter { !it.isRegex }.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",
                 "\\\$if.*?\\\$then",

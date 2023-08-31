@@ -44,7 +44,7 @@ enum class DclGrammar : GrammarRuleKey {
         }
 
         private fun createDclCommands(b: PlSqlGrammarBuilder) {
-            val keywords = PlSqlKeyword.values().toList()
+            val keywords = PlSqlKeyword.entries
             val rest = keywords.subList(1, keywords.size).toTypedArray()
             b.rule(IDENTIFIER_OR_KEYWORD).define(b.firstOf(GenericTokenType.IDENTIFIER, keywords[0], *rest))
 

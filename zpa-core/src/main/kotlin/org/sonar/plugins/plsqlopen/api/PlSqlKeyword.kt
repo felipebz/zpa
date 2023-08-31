@@ -509,10 +509,10 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 
     companion object {
-        fun keywordValues(): Array<String> =
-            values().map { it.value }.toTypedArray()
+        val keywordValues: List<String> =
+            entries.map { it.value }
 
         val nonReservedKeywords: List<PlSqlKeyword> =
-            values().filter { !it.isReserved }
+            entries.filter { !it.isReserved }
     }
 }
