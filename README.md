@@ -23,11 +23,10 @@ If you like to live on the bleeding edge, you can use the [latest development ve
 
 ## Compatibility matrix
 
-| ZPA version            | SonarQube version (min/max) |
-|------------------------|-----------------------------|
-| 3.1.0                  | 7.6 / 9.9                   |
-| 3.2.1 (current)        | 8.9 / 9.9                   |
-| 3.3.0 (in development) | 9.9 / latest                |
+| ZPA version                          | SonarQube version (min/max) |
+|--------------------------------------|-----------------------------|
+| 3.2.1                                | 8.9 / 9.9                   |
+| 3.3.0 (early-access, in development) | 9.9 / latest                |
 
 ## ZPA Toolkit
 
