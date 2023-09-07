@@ -24,7 +24,6 @@ import com.felipebz.flr.impl.channel.BlackHoleChannel
 import com.felipebz.flr.impl.channel.IdentifierAndKeywordChannel
 import com.felipebz.flr.impl.channel.PunctuatorChannel
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.and
-import com.felipebz.flr.impl.channel.RegexpChannelBuilder.commentRegexp
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.g
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.o2n
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.or
@@ -36,10 +35,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 
 object PlSqlLexer {
-    private const val INLINE_COMMENT = "--[^\\n\\r]*+"
-    private const val MULTILINE_COMMENT = "/\\*[\\s\\S]*?\\*\\/"
-    private const val COMMENT = "(?:$INLINE_COMMENT|$MULTILINE_COMMENT)"
-
     private const val INTEGER_LITERAL = "(?:\\d++)"
 
     private val NUMBER_LITERAL = "(?is)(?:" + or(
@@ -71,7 +66,7 @@ object PlSqlLexer {
             .withCharset(conf.charset)
             .withFailIfNoChannelToConsumeOneCharacter(true)
             .withChannel(BlackHoleChannel("(\\s(?!&))++"))
-            .withChannel(commentRegexp(COMMENT))
+            .withChannel(CommentChannel())
             .withChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL))
             .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
             .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
