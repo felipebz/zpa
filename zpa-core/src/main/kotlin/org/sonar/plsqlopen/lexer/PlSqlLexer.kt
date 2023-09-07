@@ -52,7 +52,6 @@ object PlSqlLexer {
             g("\\[.*?(\\]')"),
             g("<.*?(>')"),
             g("\\{.*?(\\}')"))) // text with user-defined delimiter
-
         + ")")
 
     private const val DATE_LITERAL = "(?i)(?:DATE\\s*?'\\d{4}-\\d{2}-\\d{2}')"
@@ -67,8 +66,8 @@ object PlSqlLexer {
             .withFailIfNoChannelToConsumeOneCharacter(true)
             .withChannel(BlackHoleChannel("(\\s(?!&))++"))
             .withChannel(CommentChannel())
-            .withChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL))
-            .withChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL))
+            .withChannel(NumericChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL)))
+            .withChannel(NumericChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL)))
             .withChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL))
             .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
             .withChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
