@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.lexer
 
 import com.felipebz.flr.api.Token
-import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerException
@@ -32,19 +31,16 @@ import java.util.regex.Pattern
 class RegexPunctuatorChannel(vararg punctuators: PlSqlPunctuator) : Channel<LexerOutput> {
     private val tokenMatchers = LinkedHashMap<PlSqlPunctuator, Pattern>()
 
-    private class PunctuatorComparator : Comparator<TokenType> {
-
-        override fun compare(a: TokenType, b: TokenType): Int {
-            if (a.value.length == b.value.length) {
-                return 0
-            }
-            return if (a.value.length > b.value.length) -1 else 1
-        }
-
-    }
-
     init {
-        Arrays.sort(punctuators, PunctuatorComparator())
+        Arrays.sort(punctuators) { a, b ->
+            if (a.value.length == b.value.length) {
+                0
+            } else if (a.value.length > b.value.length) {
+                -1
+            } else {
+                1
+            }
+        }
 
         for (punctuator in punctuators) {
             tokenMatchers[punctuator] = Pattern.compile(punctuator.value)
