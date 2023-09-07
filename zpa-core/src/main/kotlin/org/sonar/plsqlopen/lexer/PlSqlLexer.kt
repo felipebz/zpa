@@ -69,7 +69,7 @@ object PlSqlLexer {
             .withChannel(NumericChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL)))
             .withChannel(NumericChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL)))
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
-            .withChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL))
+            .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL)))
             .withChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
                 PlSqlKeyword.entries.toTypedArray()
             ))
