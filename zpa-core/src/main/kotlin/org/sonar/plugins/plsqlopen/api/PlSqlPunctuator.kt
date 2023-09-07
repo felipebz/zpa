@@ -56,5 +56,7 @@ enum class PlSqlPunctuator(override val value: String, val isRegex: Boolean = fa
     LESSTHANOREQUAL("<\\s*?=", true),
     GREATERTHANOREQUAL(">\\s*?=", true);
 
+    val firstChar = value.first { it != '\\' }
+
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 }

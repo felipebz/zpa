@@ -25,11 +25,12 @@ import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerException
 import com.felipebz.flr.impl.LexerOutput
+import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import java.util.*
 import java.util.regex.Pattern
 
-class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<LexerOutput> {
-    private val tokenMatchers = LinkedHashMap<TokenType, Pattern>()
+class RegexPunctuatorChannel(vararg punctuators: PlSqlPunctuator) : Channel<LexerOutput> {
+    private val tokenMatchers = LinkedHashMap<PlSqlPunctuator, Pattern>()
 
     private class PunctuatorComparator : Comparator<TokenType> {
 
@@ -55,27 +56,32 @@ class RegexPunctuatorChannel(vararg punctuators: TokenType) : Channel<LexerOutpu
         val tokenBuilder = Token.builder()
 
         for ((punctuator, pattern) in tokenMatchers) {
-            val matcher = pattern.matcher("")
-            try {
-                if (code.popTo(matcher, tmpBuilder) > 0) {
-                    val value = tmpBuilder.toString()
+            // if the next character matches the first character of the punctuator
+            if (code.peek() == punctuator.firstChar.code) {
+                val matcher = pattern.matcher("")
+                try {
+                    if (code.popTo(matcher, tmpBuilder) > 0) {
+                        val value = tmpBuilder.toString()
 
-                    val token = tokenBuilder
+                        val token = tokenBuilder
                             .setType(punctuator)
                             .setValueAndOriginalValue(value)
                             .setLine(code.previousCursor.line)
                             .setColumn(code.previousCursor.column)
                             .build()
 
-                    output.addToken(token)
+                        output.addToken(token)
 
-                    tmpBuilder.delete(0, tmpBuilder.length)
-                    return true
+                        tmpBuilder.delete(0, tmpBuilder.length)
+                        return true
+                    }
+                } catch (e: StackOverflowError) {
+                    throw LexerException(
+                        "The regular expression ${punctuator.value} has led to a stack overflow error.",
+                        e
+                    )
                 }
-            } catch (e: StackOverflowError) {
-                throw LexerException("The regular expression ${punctuator.value} has led to a stack overflow error.", e)
             }
-
         }
         return false
     }
