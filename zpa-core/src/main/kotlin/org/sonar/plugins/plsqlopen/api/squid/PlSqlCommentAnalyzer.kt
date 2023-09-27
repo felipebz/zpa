@@ -24,14 +24,16 @@ object PlSqlCommentAnalyzer {
     fun isBlank(line: String) = line.isBlank()
 
     fun getContents(comment: String) =
-        if (comment.startsWith("--")) {
-            comment.substring(2)
-        } else if (comment.startsWith("/*")) {
-            if (comment.endsWith("*/")) {
+        when (comment[0]) {
+            '-' -> {
+                comment.substring(2)
+            }
+            '/' -> {
                 comment.substring(2, comment.length - 2)
-            } else comment.substring(2)
-        } else {
-            throw IllegalArgumentException()
+            }
+            else -> {
+                throw IllegalArgumentException()
+            }
         }
 
 }
