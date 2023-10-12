@@ -12,7 +12,7 @@ plugins {
     id("org.jetbrains.dokka") version ("1.8.20")
     id("com.github.hierynomus.license") version "0.16.1"
     id("org.sonarqube") version "4.3.0.3225"
-    id("org.jreleaser") version "1.7.0"
+    id("org.jreleaser") version "1.8.0"
 }
 
 allprojects {
