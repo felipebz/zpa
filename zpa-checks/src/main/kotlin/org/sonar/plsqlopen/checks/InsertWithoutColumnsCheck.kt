@@ -20,7 +20,6 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
@@ -41,7 +40,6 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
             val valuesClause = node.getFirstChildOrNull(DmlGrammar.VALUES_CLAUSE);
 
             if (valuesClause != null &&
-                valuesClause.typeIs(DmlGrammar.VALUES_CLAUSE) &&
                 semantic(valuesClause.lastChild).plSqlType === PlSqlType.ROWTYPE) {
                 return
             }
