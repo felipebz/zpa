@@ -13,6 +13,8 @@ begin
 
   insert into tab values var;
 
+  insert into tab values var returning id into v_id;
+
   for r_t in (select * from mytable) loop
       insert into mytable values r_t;
   end loop;

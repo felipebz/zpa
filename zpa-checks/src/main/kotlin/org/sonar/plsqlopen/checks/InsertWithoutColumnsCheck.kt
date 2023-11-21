@@ -38,9 +38,11 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
 
     override fun visitNode(node: AstNode) {
         if (!node.hasDescendant(DmlGrammar.INSERT_COLUMNS)) {
-            val valuesClause = node.lastChild
+            val valuesClause = node.getFirstChildOrNull(DmlGrammar.VALUES_CLAUSE);
 
-            if (valuesClause.typeIs(DmlGrammar.VALUES_CLAUSE) && semantic(valuesClause.lastChild).plSqlType === PlSqlType.ROWTYPE) {
+            if (valuesClause != null &&
+                valuesClause.typeIs(DmlGrammar.VALUES_CLAUSE) &&
+                semantic(valuesClause.lastChild).plSqlType === PlSqlType.ROWTYPE) {
                 return
             }
 
