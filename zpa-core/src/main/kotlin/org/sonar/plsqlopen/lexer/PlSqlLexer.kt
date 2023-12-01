@@ -38,20 +38,20 @@ object PlSqlLexer {
     private const val INTEGER_LITERAL = "(?:\\d++)"
 
     private val NUMBER_LITERAL = "(?is)(?:" + or(
-        "((\\d++(?![.][.])[.]\\d*+)|(?![.][.])[.]\\d++)(e[+-]?\\d++)?[fd]?", // decimal value in floating-point literal
-        "\\d++(e[+-]?\\d++)?[fd]", // integer value in floating-point literal
-        "\\d++(e[+-]?\\d++)") + ")" // number literal in scientific notation
+        "(?:(?:\\d++(?![.][.])[.]\\d*+)|(?![.][.])[.]\\d++)(?:e[+-]?\\d++)?[fd]?", // decimal value in floating-point literal
+        "\\d++(?:e[+-]?\\d++)?[fd]", // integer value in floating-point literal
+        "\\d++(?:e[+-]?\\d++)") + ")" // number literal in scientific notation
 
     private const val CUSTOM_DELIMITER_START = "[^\\s{\\[<\\(]" // any except spacing
-    private const val CUSTOM_DELIMITER_END = "\\5" // same as the start
+    private const val CUSTOM_DELIMITER_END = "\\1" // same as the start
 
     private val STRING_LITERAL = ("(?is)(?:"
-        + or("'([^']|'')*+'", // simple text literal
-        "n?q?'" + or(g(g(CUSTOM_DELIMITER_START) + ".*?(" + CUSTOM_DELIMITER_END + "')"),
-            g("\\(.*?(\\)')"),
-            g("\\[.*?(\\]')"),
-            g("<.*?(>')"),
-            g("\\{.*?(\\}')"))) // text with user-defined delimiter
+        + or("?:'(?:[^']|'')*+'", // simple text literal
+        "n?q?'" + or("?:" + g("?:" + g(CUSTOM_DELIMITER_START) + ".*?(?:" + CUSTOM_DELIMITER_END + "')"),
+            g("?:\\(.*?\\)'"),
+            g("?:\\[.*?\\]'"),
+            g("?:<.*?>'"),
+            g("?:\\{.*?\\}'"))) // text with user-defined delimiter
         + ")")
 
     private const val DATE_LITERAL = "(?i)(?:DATE\\s*?'\\d{4}-\\d{2}-\\d{2}')"
