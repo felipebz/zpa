@@ -35,8 +35,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 
 object PlSqlLexer {
-    private const val INTEGER_LITERAL = "(?:\\d++)"
-
     private val NUMBER_LITERAL = "(?is)(?:" + or(
         "(?:(?:\\d++(?![.][.])[.]\\d*+)|(?![.][.])[.]\\d++)(?:e[+-]?\\d++)?[fd]?", // decimal value in floating-point literal
         "\\d++(?:e[+-]?\\d++)?[fd]", // integer value in floating-point literal
@@ -67,7 +65,7 @@ object PlSqlLexer {
             .withChannel(DiscardWhitespaceChannel())
             .withChannel(CommentChannel())
             .withChannel(NumericChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL)))
-            .withChannel(NumericChannel(regexp(PlSqlTokenType.INTEGER_LITERAL, INTEGER_LITERAL)))
+            .withChannel(IntegerChannel())
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL)))
             .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
