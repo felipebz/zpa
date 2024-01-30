@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2023 Felipe Zorzo
+ * Copyright (C) 2015-2024 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or

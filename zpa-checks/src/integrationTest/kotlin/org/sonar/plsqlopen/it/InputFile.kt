@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2023 Felipe Zorzo
+ * Copyright (C) 2015-2024 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import java.io.File
 import java.nio.charset.Charset
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.invariantSeparatorsPathString
 
 class InputFile(private val type: PlSqlFile.Type,
