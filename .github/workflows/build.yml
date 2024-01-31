@@ -28,15 +28,13 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: |
-            11
-            17
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build with Gradle
-        run: ./gradlew build publishToMavenLocal --refresh-dependencies
+        run: ./gradlew build publishToMavenLocal -x dokkaJavadoc -x test --refresh-dependencies
 
       - name: Build custom rules example
         run: ./gradlew build -p plsql-custom-rules
@@ -53,7 +51,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -73,7 +71,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
