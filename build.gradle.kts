@@ -1,5 +1,6 @@
 import com.hierynomus.gradle.license.tasks.LicenseCheck
 import com.hierynomus.gradle.license.tasks.LicenseFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
@@ -29,9 +30,6 @@ allprojects {
 
     java {
         withSourcesJar()
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(11))
-        }
     }
 
     group = "com.felipebz.zpa"
@@ -59,9 +57,10 @@ subprojects {
         }
     }
 
-    tasks.withType<KotlinCompile>().configureEach {
-        kotlinOptions {
-            this.jvmTarget = "11"
+    kotlin {
+        jvmToolchain(11)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
         }
     }
 
