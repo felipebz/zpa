@@ -34,6 +34,7 @@ class PlSqlPlugin : Plugin {
 
         context.addExtensions(
             PropertyDefinition.builder(FILE_SUFFIXES_KEY)
+                .deprecatedKey(OLD_FILE_SUFFIXES_KEY)
                 .name("File Suffixes")
                 .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
                 .category(DEFAULT_CATEGORY)
@@ -73,7 +74,8 @@ class PlSqlPlugin : Plugin {
 
     companion object {
         private const val DEFAULT_CATEGORY = "Z PL/SQL Analyzer"
-        internal const val FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes"
+        internal const val FILE_SUFFIXES_KEY = "sonar.plsqlopen.file.suffixes"
+        internal const val OLD_FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes"
         internal const val FORMS_METADATA_KEY = "sonar.zpa.forms.metadata"
         internal const val ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled"
         internal const val CONCURRENT_EXECUTION_KEY = "sonar.zpa.concurrentExecution"
