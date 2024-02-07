@@ -71,7 +71,8 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
             "Plugin-SourcesUrl" to "https://github.com/felipebz/zpa",
             "Plugin-Version" to project.version,
             "Sonar-Version" to Versions.min_sonarqube,
-            "SonarLint-Supported" to "false"
+            "SonarLint-Supported" to "false",
+            "Plugin-RequiredForLanguages" to "plsqlopen"
         ))
     }
 }

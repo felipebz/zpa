@@ -56,11 +56,12 @@
       <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
-        <version>1.18.0.372</version>
+        <version>1.23.0.740</version>
         <extensions>true</extensions>
         <configuration>
           <pluginClass>com.company.plsql.PlSqlCustomRulesPlugin</pluginClass>
           <pluginKey>my-rules</pluginKey>
+          <requiredForLanguages>plsqlopen</requiredForLanguages>
         </configuration>
       </plugin>
 

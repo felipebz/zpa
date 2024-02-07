@@ -61,7 +61,8 @@ tasks.jar {
             "Plugin-Name" to "Company PL/SQL Rules",
             "Plugin-Version" to project.version,
             "Sonar-Version" to minSonarQubeVersion,
-            "SonarLint-Supported" to "false"
+            "SonarLint-Supported" to "false",
+            "Plugin-RequiredForLanguages" to "plsqlopen"
         ))
     }
 }
