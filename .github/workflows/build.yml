@@ -12,14 +12,12 @@ jobs:
   integration-tests:
     name: Integration tests
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         sqVersion:
           - LATEST_RELEASE[9.9]
-          - LATEST_RELEASE
-          - DEV
+          - LATEST_RELEASE[10.4]
     steps:
       - uses: actions/checkout@v4
         with:

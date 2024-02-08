@@ -35,10 +35,12 @@ testing {
                     testTask.configure {
                         val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]")
 
-                        javaLauncher.set(javaToolchains.launcherFor {
+                        val launcher = javaToolchains.launcherFor {
                             languageVersion.set(JavaLanguageVersion.of(17))
-                        })
+                        }
+                        javaLauncher.set(launcher)
 
+                        environment("JAVA_HOME", launcher.get().metadata.installationPath.asFile.toString())
                         systemProperty("java.awt.headless", "true")
                         systemProperty("sonar.runtimeVersion", runtimeVersion)
                         outputs.upToDateWhen { false }

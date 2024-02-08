@@ -33,9 +33,11 @@ object Tests {
 
     @JvmField
     @RegisterExtension
-    val ORCHESTRATOR: Orchestrator = OrchestratorExtension.builderEnv()
+    val ORCHESTRATOR: OrchestratorExtension =
+        OrchestratorExtension.builderEnv()
             .useDefaultAdminCredentialsForBuilds(true)
-            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[8.9]"))
+            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]"))
+            .setOrchestratorProperty("orchestrator.artifactory.url", "https://repo1.maven.org/maven2")
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     File("build/libs"),
                     "sonar-zpa-plugin-*.jar"))
@@ -46,7 +48,9 @@ object Tests {
             .restoreProfileAtStartup(FileLocation.ofClasspath("/org/sonar/plsqlopen/it/empty-profile.xml"))
             .build()
 
-    fun createSonarScanner(): SonarScanner = SonarScanner.create()
+    fun createSonarScanner(): SonarScanner =
+        SonarScanner.create()
+            .setScannerVersion("5.0.1.3006")
 
     fun newWsClient(orchestrator: Orchestrator): WsClient =
         WsClientFactories.getDefault()
