@@ -10,7 +10,7 @@ on:
 
 jobs:
   integration-tests:
-    name: Integration tests
+    name: IT
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
