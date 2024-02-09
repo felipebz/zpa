@@ -135,14 +135,12 @@ class PlSqlCheckVerifier : PlSqlCheck() {
             assertEquals(expected.startColumn, actual.primaryLocation().startLineOffset() + 1, "Bad start column at line ${expected.line}")
             assertEquals(expected.endColumn, actual.primaryLocation().endLineOffset() + 1, "Bad end column at line ${expected.line}")
             assertEquals(expected.endLine, actual.primaryLocation().endLine(), "Bad end line at line ${expected.line}")
-            if (expected.secondaryLines != null && expected.secondaryLines != secondary(actual)) {
-                throw AssertionError("Bad secondary locations at line ${expected.line} ==> expected: ${expected.secondaryLines} but was: ${secondary(actual)}")
-            }
+            assertEquals(expected.secondaryLines, secondary(actual), "Bad secondary locations at line ${expected.line}")
         }
 
         private fun assertEquals(expected: Any?, actual: Any?, message: String) {
             if (expected != null && expected != actual) {
-                throw AssertionError(message)
+                throw AssertionError("$message ==> expected: \"${expected}\" but was: \"${actual}\"")
             }
         }
 

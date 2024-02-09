@@ -119,7 +119,7 @@ class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location.sql", visitor)
             fail("Test should fail")
         } catch (e: AssertionError) {
-            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: [4] but was: [3, 4]")
+            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: \"[4]\" but was: \"[3, 4]\"")
         }
     }
 
@@ -130,7 +130,7 @@ class PlSqlCheckVerifierTest {
             PlSqlCheckVerifier.verify("src/test/resources/check_verifier_incorrect_secondary_location2.sql", visitor)
             fail("Test should fail")
         } catch (e: AssertionError) {
-            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: [3, 4, 5] but was: [3, 4]")
+            assertThat(e).hasMessage("Bad secondary locations at line 8 ==> expected: \"[3, 4, 5]\" but was: \"[3, 4]\"")
         }
     }
 
