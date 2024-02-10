@@ -6,9 +6,6 @@ It may work with the commercial editions of SonarQube, but you won't be able to 
 
 ## Highlights
 
-* The property `sonar.zpa.file.suffixes` was renamed to `sonar.plsqlopen.file.suffixes` due to changes in SonarQube 10.4.
-* To support the ["Analyzers loading optimization"](https://docs.sonarsource.com/sonarqube/latest/instance-administration/improving-performance/#optimizing-the-loading-of-analyzers) feature from SonarQube 10.4, custom plugins must set the `Plugin-RequiredForLanguages`to `plsqlopen`. See the [Gradle example here](https://github.com/felipebz/zpa/commit/139994305485b47c0ba510946cb5f71bb2d8e8ef#diff-52b816ab2412e08a7c93600c54a68f08bd474bd2a75583a99bd2fea39b92b56b) and the [Maven example here](https://github.com/felipebz/zpa/commit/139994305485b47c0ba510946cb5f71bb2d8e8ef#diff-ed6c67ecd6bc69e0ef1f0a62ce7a8c35602ab8ae3af32dff5acee39e1324c486).
-
 ## Install/update instructions
 
 * Download the {{#f_release_download_url}}sonar-zpa-plugin-{{projectVersion}}.jar{{/f_release_download_url}} and copy it to the SONARQUBE_HOME/extensions/plugins.
