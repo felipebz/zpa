@@ -33,7 +33,7 @@ allprojects {
     }
 
     group = "com.felipebz.zpa"
-    version = "3.3.0-SNAPSHOT"
+    version = "3.3.0"
 }
 
 subprojects {
