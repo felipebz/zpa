@@ -2,6 +2,7 @@ declare
   var number;
   var2 number;
   var3 number;
+  exc exception;
   
   procedure test is
     var number; -- Noncompliant {{This variable "var" hides the declaration on line 2.}} [[secondary=2]]
@@ -16,7 +17,14 @@ declare
   begin
     null;
   end;
-  
+
+  procedure test2 is
+    exc exception; -- Noncompliant {{This variable "exc" hides the declaration on line 5.}} [[secondary=5]]
+--  ^^^
+  begin
+    null;
+  end;
+
 begin
   declare
     var3 number; -- Noncompliant {{This variable "var3" hides the declaration on line 4.}} [[secondary=4]]
@@ -31,12 +39,12 @@ create package body test is
   var number;
   
   procedure test is
-    var number; -- Noncompliant {{This variable "var" hides the declaration on line 31.}} [[secondary=31]]
+    var number; -- Noncompliant {{This variable "var" hides the declaration on line 39.}} [[secondary=39]]
 --  ^^^
   begin
     for i in 1..10 loop
       declare
-        i number; -- Noncompliant {{This variable "i" hides the declaration on line 37.}} [[secondary=37]]
+        i number; -- Noncompliant {{This variable "i" hides the declaration on line 45.}} [[secondary=45]]
 --      ^
       begin
         null;
@@ -48,10 +56,12 @@ end;
 
 create package test2 is
   var number;
+  exc exception;
 end;
 /
 create package body test2 is
-  var number; -- Noncompliant {{This variable "var" hides the declaration on line 50.}} [[secondary=50]]
+  var number; -- Noncompliant {{This variable "var" hides the declaration on line 58.}} [[secondary=58]]
+  exc exception; -- Noncompliant {{This variable "exc" hides the declaration on line 59.}} [[secondary=59]]
 end;
 /
 

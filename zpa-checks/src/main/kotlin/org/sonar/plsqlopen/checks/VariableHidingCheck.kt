@@ -32,7 +32,7 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 class VariableHidingCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION)
+        subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.EXCEPTION_DECLARATION)
     }
 
     override fun visitNode(node: AstNode) {
