@@ -177,7 +177,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                             OBJECT_REFERENCE),
-                    b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG)), ALIAS))
+                    b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)), ALIAS))
 
             b.rule(FROM_CLAUSE).define(
                     FROM,
