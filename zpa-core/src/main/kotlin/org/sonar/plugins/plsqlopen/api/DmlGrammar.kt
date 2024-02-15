@@ -259,7 +259,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(SELECT_EXPRESSION).define(
                 b.optional(SUBQUERY_FACTORING_CLAUSE),
                 QUERY_BLOCK,
-                b.zeroOrMore(b.firstOf(MINUS_KEYWORD, INTERSECT, b.sequence(UNION, b.optional(ALL))), QUERY_BLOCK),
+                b.zeroOrMore(b.firstOf(MINUS_KEYWORD, INTERSECT, UNION, EXCEPT), b.optional(ALL), QUERY_BLOCK),
                 b.optional(b.firstOf(
                     b.sequence(ORDER_BY_CLAUSE, b.optional(b.firstOf(FOR_UPDATE_CLAUSE, ROW_LIMITING_CLAUSE))),
                     ROW_LIMITING_CLAUSE,

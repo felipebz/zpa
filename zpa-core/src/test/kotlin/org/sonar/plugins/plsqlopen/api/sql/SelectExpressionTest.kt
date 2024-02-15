@@ -111,12 +111,38 @@ class SelectExpressionTest : RuleTest() {
 
     @Test
     fun matchesSelectWithMinus() {
+        assertThat(p).matches("select 1 from dual minus select 2 from dual")
         assertThat(p).matches("(select 1 from dual) minus (select 2 from dual)")
     }
 
     @Test
+    fun matchesSelectWithMinusAll() {
+        assertThat(p).matches("select 1 from dual minus all select 2 from dual")
+        assertThat(p).matches("(select 1 from dual) minus all (select 2 from dual)")
+    }
+
+    @Test
     fun matchesSelectWithIntersect() {
+        assertThat(p).matches("select 1 from dual intersect select 2 from dual")
         assertThat(p).matches("(select 1 from dual) intersect (select 2 from dual)")
+    }
+
+    @Test
+    fun matchesSelectWithIntersectAll() {
+        assertThat(p).matches("select 1 from dual intersect all select 2 from dual")
+        assertThat(p).matches("(select 1 from dual) intersect all (select 2 from dual)")
+    }
+
+    @Test
+    fun matchesSelectWithExcept() {
+        assertThat(p).matches("select 1 from dual except select 2 from dual")
+        assertThat(p).matches("(select 1 from dual) except (select 2 from dual)")
+    }
+
+    @Test
+    fun matchesSelectWithExceptAll() {
+        assertThat(p).matches("select 1 from dual except all select 2 from dual")
+        assertThat(p).matches("(select 1 from dual) except all (select 2 from dual)")
     }
 
     @Test
