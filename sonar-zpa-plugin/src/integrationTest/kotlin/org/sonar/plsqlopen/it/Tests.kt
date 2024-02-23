@@ -36,7 +36,14 @@ object Tests {
     val ORCHESTRATOR: OrchestratorExtension =
         OrchestratorExtension.builderEnv()
             .useDefaultAdminCredentialsForBuilds(true)
-            .setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]"))
+            .apply {
+                val zipFile = System.getProperty("sonar.zipFile")
+                if (zipFile != null) {
+                    setZipFile(File(zipFile))
+                } else {
+                    setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]"))
+                }
+            }
             .setOrchestratorProperty("orchestrator.artifactory.url", "https://repo1.maven.org/maven2")
             .addPlugin(FileLocation.byWildcardMavenFilename(
                     File("build/libs"),

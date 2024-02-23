@@ -34,6 +34,7 @@ testing {
                 all {
                     testTask.configure {
                         val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]")
+                        val zipFile = System.getProperty("sonar.zipFile")
 
                         val launcher = javaToolchains.launcherFor {
                             languageVersion.set(JavaLanguageVersion.of(17))
@@ -43,6 +44,9 @@ testing {
                         environment("JAVA_HOME", launcher.get().metadata.installationPath.asFile.toString())
                         systemProperty("java.awt.headless", "true")
                         systemProperty("sonar.runtimeVersion", runtimeVersion)
+                        if (zipFile != null) {
+                            systemProperty("sonar.zipFile", zipFile)
+                        }
                         outputs.upToDateWhen { false }
                     }
                 }

@@ -18,6 +18,7 @@ jobs:
         sqVersion:
           - LATEST_RELEASE[9.9]
           - LATEST_RELEASE[10.4]
+          - SNAPSHOT
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,8 +38,20 @@ jobs:
       - name: Build custom rules example
         run: ./gradlew build -p plsql-custom-rules
 
-      - name: Run integration test
+      - if: matrix.sqVersion != 'SNAPSHOT'
+        name: Run integration test
         run: ./gradlew integrationTest -Dsonar.runtimeVersion=${{ matrix.sqVersion }} --info
+
+      - if: matrix.sqVersion == 'SNAPSHOT'
+        name: Run integration test
+        run: |
+          SQ_VERSION=10.5
+          curl -s -L "https://nexus.felipezorzo.com.br/service/rest/v1/search/assets/download?repository=maven-snapshots&maven.groupId=org.sonarsource.sonarqube&maven.artifactId=sonar-application&maven.extension=zip&sort=version&maven.baseVersion=$SQ_VERSION-SNAPSHOT" \
+            -u "$AUTH_REPOSITORY" \
+            -o sonar-zpa-plugin/sonar-application-$SQ_VERSION.zip
+          ./gradlew integrationTest -Dsonar.zipFile=sonar-application-$SQ_VERSION.zip --info
+        env:
+          AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
 
   windows-build:
     name: Test on Windows
