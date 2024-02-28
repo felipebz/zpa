@@ -61,7 +61,7 @@ class PlSqlLexerTest {
 
     @Test
     fun simpleNationalCharsetStringLiteral() {
-        assertThatIsToken("n'Test'", PlSqlTokenType.STRING_LITERAL)
+        assertThatIsToken("n'Test string'", PlSqlTokenType.STRING_LITERAL)
     }
 
     @Test

@@ -44,7 +44,7 @@ object PlSqlLexer {
     private const val CUSTOM_DELIMITER_END = "\\1" // same as the start
 
     private val STRING_LITERAL = ("(?is)(?:"
-        + or("?:'(?:[^']|'')*+'", // simple text literal
+        + or("?:n?'(?:[^']|'')*+'", // simple text literal
         "n?q?'" + or("?:" + g("?:" + g(CUSTOM_DELIMITER_START) + ".*?(?:" + CUSTOM_DELIMITER_END + "')"),
             g("?:\\(.*?\\)'"),
             g("?:\\[.*?\\]'"),
