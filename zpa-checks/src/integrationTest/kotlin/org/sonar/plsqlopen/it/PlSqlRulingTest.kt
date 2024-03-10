@@ -199,11 +199,11 @@ class PlSqlRulingTest {
             if (actualContent == null && expectedFile.exists()) {
                 differences += "\nExpected issues on $expectedFile were not found"
             } else if (actualContent != null && expectedContent.normalizeLineEndings() != actualContent.normalizeLineEndings()) {
-                val actualFile = File("target/actual/$project/${check::class.simpleName}.json")
+                val actualFile = File("build/integrationTest/$project/${check::class.simpleName}.json")
                 actualFile.parentFile.mkdirs()
                 actualFile.writeText(actualContent)
 
-                differences += "\nIssues differences on $expectedFile"
+                differences += "\nIssues differences on the expected file $expectedFile (actual: $actualFile)"
             }
         }
 
