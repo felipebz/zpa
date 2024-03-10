@@ -55,6 +55,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
+    CURSOR_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
 
     companion object {
@@ -81,7 +82,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     XMLTABLE_EXPRESSION,
                     CAST_EXPRESSION,
                     TRIM_EXPRESSION,
-                    TABLE_EXPRESSION)).skip()
+                    TABLE_EXPRESSION,
+                    CURSOR_EXPRESSION)).skip()
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
@@ -102,6 +104,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 TABLE, LPARENTHESIS,
                 EXPRESSION,
                 RPARENTHESIS)
+
+            b.rule(CURSOR_EXPRESSION).define(CURSOR, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS)
         }
 
         private fun createDateFunctions(b: PlSqlGrammarBuilder) {
