@@ -261,7 +261,7 @@ class ToolkitPresenterTest {
         verify(view).scrollAstTo(astNode)
         verify(view, never()).scrollAstTo(childAstNode)
         verify(view).scrollSourceCodeTo(astNode.tokenOrNull)
-        verify(view, never()).scrollSourceCodeTo(childAstNode.tokenOrNull)
+        verify(view).scrollSourceCodeTo(childAstNode.tokenOrNull)
     }
 
     @Test
