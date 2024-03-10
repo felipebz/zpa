@@ -102,7 +102,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(TABLE_EXPRESSION).define(
                 TABLE, LPARENTHESIS,
-                EXPRESSION,
+                b.firstOf(DmlGrammar.SELECT_EXPRESSION, EXPRESSION),
                 RPARENTHESIS)
 
             b.rule(CURSOR_EXPRESSION).define(CURSOR, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS)

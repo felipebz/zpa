@@ -37,4 +37,9 @@ class TableExpressionTest : RuleTest() {
         assertThat(p).matches("table(foo)")
     }
 
+    @Test
+    fun matchesTableExpressionWithQuery() {
+        assertThat(p).matches("table(select 1 from dual)")
+    }
+
 }
