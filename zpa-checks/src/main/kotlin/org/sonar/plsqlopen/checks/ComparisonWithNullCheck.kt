@@ -23,7 +23,6 @@ import com.felipebz.flr.api.AstNode
 import org.sonar.plsqlopen.typeIs
 import org.sonar.plugins.plsqlopen.api.ConditionsGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
@@ -41,7 +40,7 @@ class ComparisonWithNullCheck : AbstractBaseCheck() {
         for (child in children) {
             if (CheckUtils.isNullLiteralOrEmptyString(child)) {
                 val operator = node.getFirstChild(ConditionsGrammar.RELATIONAL_OPERATOR)
-                val suggestion = if (operator.firstChild.typeIs(PlSqlPunctuator.EQUALS)) {
+                val suggestion = if (operator.firstChild.typeIs(PlSqlGrammar.EQUALS_OPERATOR)) {
                     "IS NULL"
                 } else {
                     "IS NOT NULL"

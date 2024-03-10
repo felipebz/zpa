@@ -71,8 +71,7 @@ object PlSqlLexer {
             .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
                 PlSqlKeyword.entries.toTypedArray()
             )))
-            .withChannel(RegexPunctuatorChannel(*PlSqlPunctuator.entries.filter { it.isRegex }.toTypedArray()))
-            .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.filter { !it.isRegex }.toTypedArray()))
+            .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",
                 "\\\$if.*?\\\$then",

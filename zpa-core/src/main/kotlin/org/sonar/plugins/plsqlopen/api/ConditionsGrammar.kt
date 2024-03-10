@@ -24,7 +24,6 @@ import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.CONCATENATION_EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.OBJECT_REFERENCE
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 
 enum class ConditionsGrammar : GrammarRuleKey {
 
@@ -46,15 +45,12 @@ enum class ConditionsGrammar : GrammarRuleKey {
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(RELATIONAL_OPERATOR).define(b.firstOf(
-                    EQUALS,
-                    NOTEQUALS,
-                    NOTEQUALS2,
-                    NOTEQUALS3,
-                    NOTEQUALS4,
-                    LESSTHAN,
-                    GREATERTHAN,
-                    LESSTHANOREQUAL,
-                    GREATERTHANOREQUAL),
+                    PlSqlGrammar.EQUALS_OPERATOR,
+                    PlSqlGrammar.NOTEQUALS_OPERATOR,
+                    PlSqlGrammar.LESSTHANOREQUALS_OPERATOR,
+                    PlSqlGrammar.LESSTHAN_OPERATOR,
+                    PlSqlGrammar.GREATERTHANOREQUALS_OPERATOR,
+                    PlSqlGrammar.GREATERTHAN_OPERATOR),
                     b.optional(b.firstOf(ANY, SOME, ALL)))
 
             b.rule(RELATIONAL_CONDITION).define(
@@ -87,9 +83,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     SUBMULTISET_CONDITION))
 
             b.rule(IS_OF_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), OF, b.optional(TYPE),
-                    LPARENTHESIS,
-                    b.optional(ONLY), OBJECT_REFERENCE, b.zeroOrMore(COMMA, b.optional(ONLY), OBJECT_REFERENCE),
-                    RPARENTHESIS)
+                    PlSqlPunctuator.LPARENTHESIS,
+                    b.optional(ONLY), OBJECT_REFERENCE, b.zeroOrMore(PlSqlPunctuator.COMMA, b.optional(ONLY), OBJECT_REFERENCE),
+                    PlSqlPunctuator.RPARENTHESIS
+            )
 
             b.rule(CONDITION).define(b.firstOf(
                     RELATIONAL_CONDITION,

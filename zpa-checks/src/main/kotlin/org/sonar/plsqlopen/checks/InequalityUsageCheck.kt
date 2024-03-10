@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.OBSOLETE])
@@ -30,11 +30,11 @@ import org.sonar.plugins.plsqlopen.api.annotations.*
 class InequalityUsageCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlPunctuator.NOTEQUALS2, PlSqlPunctuator.NOTEQUALS3, PlSqlPunctuator.NOTEQUALS4)
+        subscribeTo(PlSqlGrammar.NOTEQUALS_NONSTANDARD_OPERATOR)
     }
 
     override fun visitNode(node: AstNode) {
-        addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokenValue)
+        addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokens.joinToString("") { it.value })
     }
 
 }

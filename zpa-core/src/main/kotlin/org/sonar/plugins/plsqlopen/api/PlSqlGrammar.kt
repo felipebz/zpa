@@ -64,6 +64,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
     INTERVAL_LITERAL,
     INQUIRY_DIRECTIVE,
 
+    // Operators
+    CONCATENATION_OPERATOR,
+    EQUALS_OPERATOR,
+    NOTEQUALS_STANDARD_OPERATOR,
+    NOTEQUALS_NONSTANDARD_OPERATOR,
+    NOTEQUALS_OPERATOR,
+    LESSTHAN_OPERATOR,
+    LESSTHANOREQUALS_OPERATOR,
+    GREATERTHAN_OPERATOR,
+    GREATERTHANOREQUALS_OPERATOR,
+
     // Expressions
     EXPRESSION,
     AND_EXPRESSION,
@@ -276,6 +287,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             }
 
             createLiterals(b)
+            createOperators(b)
             createDatatypes(b)
             createStatements(b)
             createExpressions(b)
@@ -326,6 +338,26 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(INQUIRY_DIRECTIVE).define(DOUBLEDOLLAR, IDENTIFIER_NAME)
 
             b.rule(LITERAL).define(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, INTERVAL_LITERAL, INQUIRY_DIRECTIVE))
+        }
+
+        private fun createOperators(b: PlSqlGrammarBuilder) {
+            b.rule(CONCATENATION_OPERATOR).define(SINGLE_PIPE, SINGLE_PIPE)
+
+            b.rule(EQUALS_OPERATOR).define(EQUALS)
+
+            b.rule(NOTEQUALS_STANDARD_OPERATOR).define(LESSTHAN, GREATERTHAN)
+
+            b.rule(NOTEQUALS_NONSTANDARD_OPERATOR).define(b.firstOf(EXCLAMATION, CARET, TILDE), EQUALS)
+
+            b.rule(NOTEQUALS_OPERATOR).define(b.firstOf(NOTEQUALS_STANDARD_OPERATOR, NOTEQUALS_NONSTANDARD_OPERATOR))
+
+            b.rule(LESSTHAN_OPERATOR).define(LESSTHAN)
+
+            b.rule(LESSTHANOREQUALS_OPERATOR).define(LESSTHAN, EQUALS)
+
+            b.rule(GREATERTHAN_OPERATOR).define(GREATERTHAN)
+
+            b.rule(GREATERTHANOREQUALS_OPERATOR).define(GREATERTHAN, EQUALS)
         }
 
         private fun createDatatypes(b: PlSqlGrammarBuilder) {
@@ -795,7 +827,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ADDITIVE_EXPRESSION).define(MULTIPLICATIVE_EXPRESSION, b.zeroOrMore(b.firstOf(PLUS, MINUS), MULTIPLICATIVE_EXPRESSION)).skipIfOneChild()
 
-            b.rule(CONCATENATION_EXPRESSION).define(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION, ADDITIVE_EXPRESSION)).skipIfOneChild()
+            b.rule(CONCATENATION_EXPRESSION).define(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION_OPERATOR, ADDITIVE_EXPRESSION)).skipIfOneChild()
 
             b.rule(COMPARISON_EXPRESSION).define(b.firstOf(
                     ConditionsGrammar.CONDITION,
