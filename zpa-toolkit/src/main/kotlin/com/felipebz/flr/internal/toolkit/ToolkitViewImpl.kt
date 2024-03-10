@@ -81,7 +81,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private lateinit var lineOffsets: LineOffsets
 
     @Transient
-    private val highlighter = DefaultHighlightPainter(Color.LIGHT_GRAY)
+    private val highlighter = DefaultHighlightPainter(Color(220, 240, 255))
     private var sourceCodeTextCursorMovedEventDisabled = false
     private var astSelectionEventDisabled = false
     private var isSourceCodeFormatted = false
