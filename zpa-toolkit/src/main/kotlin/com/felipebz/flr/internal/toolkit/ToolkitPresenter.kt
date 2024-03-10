@@ -20,6 +20,7 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Trivia
 import com.felipebz.flr.toolkit.ConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
 import com.felipebz.flr.xpath.api.AstNodeXPathQuery.Companion.create
@@ -132,7 +133,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             }
         }
         view.scrollAstTo(firstAstNode)
-        view.scrollSourceCodeTo(firstAstNode)
+        view.scrollSourceCodeTo(firstAstNode?.tokenOrNull)
         view.setFocusOnAbstractSyntaxTreeView()
     }
 
@@ -163,7 +164,20 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
                 view.highlightSourceCode(astNode.token, astNode.lastToken)
             }
         }
-        view.scrollSourceCodeTo(firstAstNode)
+
+        var firstTrivia: Trivia? = null
+        for (trivia in view.selectedTrivias) {
+            if (firstTrivia == null) {
+                firstTrivia = trivia
+            }
+            view.highlightSourceCode(trivia.token, trivia.tokens.last())
+        }
+
+        if (firstAstNode != null) {
+            view.scrollSourceCodeTo(firstAstNode.tokenOrNull)
+        } else {
+            view.scrollSourceCodeTo(firstTrivia?.token)
+        }
     }
 
     fun onSymbolSelectionChanged() {
@@ -175,7 +189,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             }
             view.highlightSourceCode(astNode.token, astNode.lastToken)
         }
-        view.scrollSourceCodeTo(firstAstNode)
+        view.scrollSourceCodeTo(firstAstNode?.tokenOrNull)
     }
 
     fun onConfigurationPropertyFocusLost(name: String) {

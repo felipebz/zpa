@@ -21,6 +21,7 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import java.awt.*
@@ -329,11 +330,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         }
     }
 
-    override fun scrollSourceCodeTo(astNode: AstNode?) {
-        if (astNode != null && astNode.hasToken()) {
+    override fun scrollSourceCodeTo(token: Token?) {
+        if (token != null) {
             val visibleLines =
                 sourceCodeEditorPane.visibleRect.height / sourceCodeEditorPane.getFontMetrics(sourceCodeEditorPane.font).height
-            val line = astNode.token.line + visibleLines / 2
+            val line = token.line + visibleLines / 2
             try {
                 sourceCodeEditorPane.scrollRectToVisible(toRectangle(sourceCodeEditorPane.modelToView2D(0)))
                 sourceCodeEditorPane.scrollRectToVisible(
@@ -391,6 +392,22 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                     val treeNode = selectedPath.lastPathComponent as DefaultMutableTreeNode
                     val userObject = treeNode.userObject
                     if (userObject is AstNode) {
+                        acc.add(userObject)
+                    }
+                }
+            }
+            return acc
+        }
+
+    override val selectedTrivias: List<Trivia>
+        get() {
+            val acc = mutableListOf<Trivia>()
+            val selectedPaths = astTree.selectionPaths
+            if (selectedPaths != null) {
+                for (selectedPath in selectedPaths) {
+                    val treeNode = selectedPath.lastPathComponent as DefaultMutableTreeNode
+                    val userObject = treeNode.userObject
+                    if (userObject is Trivia) {
                         acc.add(userObject)
                     }
                 }

@@ -260,8 +260,8 @@ class ToolkitPresenterTest {
         presenter.onXPathEvaluateButtonClick()
         verify(view).scrollAstTo(astNode)
         verify(view, never()).scrollAstTo(childAstNode)
-        verify(view).scrollSourceCodeTo(astNode)
-        verify(view, never()).scrollSourceCodeTo(childAstNode)
+        verify(view).scrollSourceCodeTo(astNode.tokenOrNull)
+        verify(view, never()).scrollSourceCodeTo(childAstNode.tokenOrNull)
     }
 
     @Test
@@ -286,7 +286,7 @@ class ToolkitPresenterTest {
         verify(view, never()).selectAstNode(any())
         verify(view, never()).highlightSourceCode(any(), any())
         verify(view).scrollAstTo(null)
-        verify(view).scrollSourceCodeTo(null as AstNode?)
+        verify(view).scrollSourceCodeTo(null as Token?)
         verify(view).setFocusOnAbstractSyntaxTreeView()
     }
 
@@ -325,8 +325,8 @@ class ToolkitPresenterTest {
         presenter.setView(view)
         presenter.onAstSelectionChanged()
         verify(view).clearSourceCodeHighlights()
-        verify(view).scrollSourceCodeTo(firstAstNode)
-        verify(view, never()).scrollSourceCodeTo(secondAstNode)
+        verify(view).scrollSourceCodeTo(firstAstNode.tokenOrNull)
+        verify(view).scrollSourceCodeTo(secondAstNode.tokenOrNull)
     }
 
     @Test

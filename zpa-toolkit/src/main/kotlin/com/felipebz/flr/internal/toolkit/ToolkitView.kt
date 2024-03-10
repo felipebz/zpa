@@ -21,6 +21,7 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import java.awt.Point
 import java.io.File
@@ -142,11 +143,11 @@ internal interface ToolkitView {
     fun clearSourceCodeHighlights()
 
     /**
-     * Scroll the source code editor in order to make the given AST node visible.
+     * Scroll the source code editor in order to make the given token visible.
      *
-     * @param astNode The AST node to make visible, null will lead to a no operation
+     * @param astNode The token to make visible, null will lead to a no operation
      */
-    fun scrollSourceCodeTo(astNode: AstNode?)
+    fun scrollSourceCodeTo(astNode: Token?)
 
     /**
      * Disable the XPath evaluate button.
@@ -171,6 +172,8 @@ internal interface ToolkitView {
      * @return The list of selected AST nodes
      */
     val selectedAstNodes: List<AstNode>
+
+    val selectedTrivias: List<Trivia>
 
     val selectedSymbolOrScopeTrees: List<AstNode>
 
