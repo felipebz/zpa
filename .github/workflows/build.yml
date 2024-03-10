@@ -92,7 +92,7 @@ jobs:
 
       - if: github.ref == 'refs/heads/main'
         name: Run SonarQube Scanner
-        run: ./gradlew sonar
+        run: ./gradlew sonar --info
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
