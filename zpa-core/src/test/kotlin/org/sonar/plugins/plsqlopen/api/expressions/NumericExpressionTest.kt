@@ -144,4 +144,10 @@ class NumericExpressionTest : RuleTest() {
         assertThat(p).matches("collection.prior(1) + 1")
     }
 
+    @Test
+    fun notMatchesQueries() {
+        assertThat(p).notMatches("1 + select 1 from dual")
+        assertThat(p).notMatches("(select 1 from dual) / select 1 from dual")
+    }
+
 }

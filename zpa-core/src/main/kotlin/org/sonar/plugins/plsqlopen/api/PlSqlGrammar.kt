@@ -604,7 +604,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(OPEN_FOR_STATEMENT).define(
                     b.optional(LABEL),
-                    OPEN, MEMBER_EXPRESSION, FOR, EXPRESSION,
+                    OPEN, MEMBER_EXPRESSION, FOR, b.firstOf(SELECT_EXPRESSION, EXPRESSION),
                     b.optional(USING, UNNAMED_ACTUAL_PAMETER, b.zeroOrMore(COMMA, UNNAMED_ACTUAL_PAMETER)),
                     SEMICOLON)
 
@@ -818,7 +818,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     NEW_OBJECT_EXPRESSION,
                     CASE_EXPRESSION,
                     IN_EXPRESSION,
-                    SELECT_EXPRESSION),
+                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                     b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild()
 
             b.rule(EXPONENTIATION_EXPRESSION).define(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild()
