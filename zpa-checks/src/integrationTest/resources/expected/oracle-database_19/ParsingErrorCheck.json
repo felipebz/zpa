@@ -1097,9 +1097,6 @@
   "BETWEEN-Condition-4.sql": [
     2
   ],
-  "BFILENAME-0.sql": [
-    2
-  ],
   "BITMAP_CONSTRUCT_AGG-0.sql": [
     2
   ],
@@ -1284,18 +1281,6 @@
     2
   ],
   "CREATE-DIMENSION-2.sql": [
-    2
-  ],
-  "CREATE-DIRECTORY-0.sql": [
-    2
-  ],
-  "CREATE-DIRECTORY-1.sql": [
-    2
-  ],
-  "CREATE-DIRECTORY-2.sql": [
-    2
-  ],
-  "CREATE-DIRECTORY-3.sql": [
     2
   ],
   "CREATE-DISKGROUP-0.sql": [

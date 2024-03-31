@@ -73,7 +73,9 @@ enum class DdlGrammar : GrammarRuleKey {
     PARTITION_COMPOSITE,
     SUBPARTITION_BY_LIST,
     SUBPARTITION_BY_HASH,
-    SUBPARTITION_TEMPLATE;
+    SUBPARTITION_TEMPLATE,
+    CREATE_DIRECTORY,
+    DROP_DIRECTORY;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
@@ -614,7 +616,26 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.optional(b.firstOf(ORDER, NOORDER))),
                     b.optional(SEMICOLON))
 
-            b.rule(DDL_COMMAND).define(b.firstOf(DDL_COMMENT, CREATE_TABLE, ALTER_TABLE, ALTER_PLSQL_UNIT, DROP_COMMAND, CREATE_SYNONYM, CREATE_SEQUENCE))
+            b.rule(CREATE_DIRECTORY).define(
+                    CREATE, b.optional(OR, REPLACE), DIRECTORY,
+                    b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
+                    b.optional(SHARING, EQUALS_OPERATOR, b.firstOf(METADATA, NONE)),
+                    AS, CHARACTER_LITERAL,
+                    b.optional(SEMICOLON))
+
+            b.rule(DROP_DIRECTORY).define(
+                    DROP, DIRECTORY, b.optional(IF, EXISTS), IDENTIFIER_NAME, b.optional(SEMICOLON))
+
+            b.rule(DDL_COMMAND).define(b.firstOf(
+                DDL_COMMENT,
+                CREATE_TABLE,
+                ALTER_TABLE,
+                ALTER_PLSQL_UNIT,
+                CREATE_SYNONYM,
+                CREATE_SEQUENCE,
+                CREATE_DIRECTORY,
+                DROP_DIRECTORY,
+                DROP_COMMAND))
         }
     }
 

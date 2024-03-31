@@ -189,6 +189,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     DENSE_RANK("dense_rank"),
     DEPRECATE("deprecate"),
     DETERMINISTIC("deterministic"),
+    DIRECTORY("directory"),
     DISABLE("disable"),
     DISASSOCIATE("disassociate"),
     DOCUMENT("document"),
