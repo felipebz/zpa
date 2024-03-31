@@ -25,51 +25,21 @@ import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DdlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 
-class AlterPlsqlUnitTest : RuleTest() {
+class AlterPackageUnitTest : RuleTest() {
 
     @BeforeEach
     fun init() {
-        setRootRule(DdlGrammar.ALTER_PLSQL_UNIT)
-    }
-
-    @Test
-    fun matchesAlterTriggerDisable() {
-        assertThat(p).matches("alter trigger foo disable;")
-    }
-
-    @Test
-    fun matchesAlterTriggerEnable() {
-        assertThat(p).matches("alter trigger foo enable;")
-    }
-
-    @Test
-    fun matchesAlterTriggerDisableWithSchema() {
-        assertThat(p).matches("alter trigger foo.bar disable;")
-    }
-
-    @Test
-    fun matchesAlterTriggerDisableWithQuotedIdentifier() {
-        assertThat(p).matches("alter trigger \"foo\" rename to \"bar\";")
-    }
-
-    @Test
-    fun matchesAlterTriggerCompile() {
-        assertThat(p).matches("alter trigger foo compile;")
-    }
-
-    @Test
-    fun matchesAlterProcedureCompile() {
-        assertThat(p).matches("alter procedure foo compile;")
-    }
-
-    @Test
-    fun matchesAlterFunctionCompile() {
-        assertThat(p).matches("alter function foo compile;")
+        setRootRule(DdlGrammar.ALTER_PACKAGE)
     }
 
     @Test
     fun matchesAlterPackageCompile() {
         assertThat(p).matches("alter package foo compile;")
+    }
+
+    @Test
+    fun matchesAlterPackageIfExists() {
+        assertThat(p).matches("alter package if exists foo compile;")
     }
 
     @Test
@@ -96,4 +66,10 @@ class AlterPlsqlUnitTest : RuleTest() {
     fun matchesAlterPackageCompileSpecificationReuseSettings() {
         assertThat(p).matches("alter package foo compile debug specification reuse settings;")
     }
+
+    @Test
+    fun matchesAlterPackageCompileSpecificationWithOptionAndReuseSettings() {
+        assertThat(p).matches("alter package foo compile debug specification plsql_ccflags='no_op:true' plsql_ccflags='no_op:true' reuse settings;")
+    }
+
 }

@@ -39,11 +39,13 @@ enum class DdlGrammar : GrammarRuleKey {
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
     ALTER_TABLE,
-    ALTER_PLSQL_UNIT,
-    ALTER_PROCEDURE_FUNCTION,
     COMPILE_CLAUSE,
+    COMPILER_PARAMETERS_CLAUSE,
+    ALTER_PROCEDURE,
+    ALTER_FUNCTION,
     ALTER_TRIGGER,
     ALTER_PACKAGE,
+    PACKAGE_COMPILE_CLAUSE,
     DROP_COMMAND,
     CREATE_SYNONYM,
     CREATE_SEQUENCE,
@@ -573,29 +575,54 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME, b.firstOf(ADD, DROP), TABLE_RELATIONAL_PROPERTIES, b.optional(SEMICOLON))
 
-            b.rule(COMPILE_CLAUSE).define(COMPILE, b.optional(DEBUG), b.optional(REUSE, SETTINGS))
+            b.rule(COMPILE_CLAUSE).define(
+                COMPILE, b.optional(DEBUG),
+                b.zeroOrMore(COMPILER_PARAMETERS_CLAUSE),
+                b.optional(REUSE, SETTINGS))
+
+            b.rule(COMPILER_PARAMETERS_CLAUSE).define(
+                    IDENTIFIER_NAME, EQUALS_OPERATOR, CHARACTER_LITERAL)
 
             b.rule(ALTER_TRIGGER).define(
-                    TRIGGER, UNIT_NAME,
+                    ALTER, TRIGGER, b.optional(IF, EXISTS), UNIT_NAME,
                     b.firstOf(
                             ENABLE,
                             DISABLE,
                             b.sequence(RENAME, TO, IDENTIFIER_NAME),
-                            COMPILE_CLAUSE)
-            )
+                            EDITIONABLE,
+                            NONEDITIONABLE,
+                            COMPILE_CLAUSE),
+                    b.optional(SEMICOLON))
 
-            b.rule(ALTER_PROCEDURE_FUNCTION).define(
-                    b.firstOf(PROCEDURE, FUNCTION), UNIT_NAME, COMPILE_CLAUSE
-            )
+            b.rule(ALTER_PROCEDURE).define(
+                ALTER, PROCEDURE, b.optional(IF, EXISTS), UNIT_NAME,
+                b.firstOf(
+                    EDITIONABLE,
+                    NONEDITIONABLE,
+                    COMPILE_CLAUSE),
+                b.optional(SEMICOLON))
+
+            b.rule(ALTER_FUNCTION).define(
+                ALTER, FUNCTION, b.optional(IF, EXISTS), UNIT_NAME,
+                b.firstOf(
+                    EDITIONABLE,
+                    NONEDITIONABLE,
+                    COMPILE_CLAUSE),
+                b.optional(SEMICOLON))
 
             b.rule(ALTER_PACKAGE).define(
-                    PACKAGE, UNIT_NAME, COMPILE,
-                    b.optional(DEBUG),
-                    b.optional(b.firstOf(PACKAGE, SPECIFICATION, BODY)),
-                    b.optional(REUSE, SETTINGS)
-            )
+                    ALTER, PACKAGE, b.optional(IF, EXISTS), UNIT_NAME,
+                    b.firstOf(
+                        EDITIONABLE,
+                        NONEDITIONABLE,
+                        PACKAGE_COMPILE_CLAUSE),
+                    b.optional(SEMICOLON))
 
-            b.rule(ALTER_PLSQL_UNIT).define(ALTER, b.firstOf(ALTER_TRIGGER, ALTER_PROCEDURE_FUNCTION, ALTER_PACKAGE), b.optional(SEMICOLON))
+            b.rule(PACKAGE_COMPILE_CLAUSE).define(
+                    COMPILE, b.optional(DEBUG),
+                    b.optional(b.firstOf(PACKAGE, SPECIFICATION, BODY)),
+                    b.zeroOrMore(COMPILER_PARAMETERS_CLAUSE),
+                    b.optional(REUSE, SETTINGS))
 
             b.rule(DROP_COMMAND).define(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
 
@@ -630,7 +657,10 @@ enum class DdlGrammar : GrammarRuleKey {
                 DDL_COMMENT,
                 CREATE_TABLE,
                 ALTER_TABLE,
-                ALTER_PLSQL_UNIT,
+                ALTER_TRIGGER,
+                ALTER_PROCEDURE,
+                ALTER_FUNCTION,
+                ALTER_PACKAGE,
                 CREATE_SYNONYM,
                 CREATE_SEQUENCE,
                 CREATE_DIRECTORY,
