@@ -1,6 +1,6 @@
 ## SonarQube compatibility
 
-This version is compatible with SonarQube 9.9 LTS and SonarQube 10.4 Community Edition.
+This version is compatible with SonarQube 9.9 LTS and SonarQube 10.5 Community Edition.
 
 It may work with the commercial editions of SonarQube, but you won't be able to use ZPA and the embedded PL/SQL plugin from SonarSource to analyze the code simultaneously. If you need this scenario, please use [zpa-cli](https://github.com/felipebz/zpa-cli) instead.
 
