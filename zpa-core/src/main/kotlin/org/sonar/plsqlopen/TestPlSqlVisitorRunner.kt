@@ -41,7 +41,7 @@ object TestPlSqlVisitorRunner {
 
     private fun createContext(plSqlFile: PlSqlFile, metadata: FormsMetadata?): PlSqlVisitorContext {
         val parser = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8))
-        val rootTree = getSemanticNode(parser.parse(plSqlFile.contents()))
+        val rootTree = parser.parse(plSqlFile.contents())
         return PlSqlVisitorContext(rootTree, plSqlFile, metadata)
     }
 

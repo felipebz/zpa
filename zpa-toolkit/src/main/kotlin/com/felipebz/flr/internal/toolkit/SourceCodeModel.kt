@@ -22,7 +22,6 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
 import com.felipebz.flr.toolkit.ConfigurationModel
-import org.sonar.plsqlopen.getSemanticNode
 import org.sonar.plsqlopen.symbols.DefaultTypeSolver
 import org.sonar.plsqlopen.symbols.SymbolVisitor
 import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
@@ -47,7 +46,7 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
 
     fun setSourceCode(sourceCode: String) {
         parseTime = measureNanoTime {
-            astNode = getSemanticNode(configurationModel.parser.parse(sourceCode))
+            astNode = configurationModel.parser.parse(sourceCode)
         }
         this.sourceCode = sourceCode
         loadSymbolTable()

@@ -24,9 +24,13 @@ import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.lexer.PlSqlLexer
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
 
 object PlSqlParser {
     fun create(conf: PlSqlConfiguration): Parser<Grammar> =
         Parser.builder(PlSqlGrammar.create(conf).build())
-            .withLexer(PlSqlLexer.create(conf)).build()
+            .withLexer(PlSqlLexer.create(conf))
+            .withNonTerminalNodeBuilder(::SemanticAstNode)
+            .withTerminalNodeBuilder(::SemanticAstNode)
+            .build()
 }

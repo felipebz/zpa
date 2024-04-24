@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.sslr
 
 import org.junit.jupiter.api.BeforeEach
-import org.sonar.plsqlopen.getSemanticNode
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 
@@ -32,7 +32,8 @@ abstract class TreeTest<T : Tree>(private val root: PlSqlGrammar) : RuleTest() {
     }
 
     fun parse(content: String): T {
-        return getSemanticNode(p.parse(content)).tree as T
+        @Suppress("UNCHECKED_CAST")
+        return p.parse(content).asSemantic().tree as T
     }
 
 }

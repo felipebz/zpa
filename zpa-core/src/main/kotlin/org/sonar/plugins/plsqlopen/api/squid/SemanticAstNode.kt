@@ -20,6 +20,8 @@
 package org.sonar.plugins.plsqlopen.api.squid
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
+import com.felipebz.flr.api.Token
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plsqlopen.sslr.Tree
 import org.sonar.plsqlopen.sslr.TreeImpl
@@ -29,7 +31,10 @@ import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.PlSqlDatatype
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.UnknownDatatype
 
-class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astNode.name, astNode.token) {
+class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
+    constructor(token: Token) : this(token.type, token.type.name, token)
+
+    private var internalTree: Tree? = null
 
     var symbol: Symbol? = null
         set(symbol) {
@@ -45,23 +50,27 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type
 
-    val tree: Tree by lazy {
-        var type = PlSqlGrammarBuilder.classForType(astNode.type)
-        if (type == TreeImpl::class.java) {
-            var node = astNode
-            while (type == TreeImpl::class.java && node.numberOfChildren == 1) {
-                node = node.firstChild
-                type = PlSqlGrammarBuilder.classForType(node.type)
+    val tree: Tree
+        get() {
+            internalTree?.let { return it }
+
+            var classType = PlSqlGrammarBuilder.classForType(super.type)
+            if (classType == TreeImpl::class.java) {
+                var node = this
+                while (classType == TreeImpl::class.java && node.numberOfChildren == 1) {
+                    node = node.firstChild as SemanticAstNode
+                    classType = PlSqlGrammarBuilder.classForType(node.type)
+                }
             }
+
+            val instance = classType.getDeclaredConstructor(SemanticAstNode::class.java)
+                .newInstance(this)
+            internalTree = instance
+            return instance
         }
 
-        type.getDeclaredConstructor(SemanticAstNode::class.java)
-            .newInstance(this)
-    }
-
-    val allTokensToString: String by lazy {
-        tokens.joinToString(" ") { it.originalValue }
-    }
+    val allTokensToString: String
+        get() = tokens.joinToString(" ") { it.originalValue }
 
     override fun toString(): String {
         return super.toString() + if (plSqlDatatype !is UnknownDatatype) {
@@ -69,10 +78,5 @@ class SemanticAstNode(private val astNode: AstNode) : AstNode(astNode.type, astN
         } else {
             ""
         }
-    }
-
-    init {
-        super.fromIndex = astNode.fromIndex
-        super.toIndex = astNode.toIndex
     }
 }

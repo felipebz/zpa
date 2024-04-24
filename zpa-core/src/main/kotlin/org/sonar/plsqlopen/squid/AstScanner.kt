@@ -23,7 +23,6 @@ import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.impl.Parser
 import org.sonar.plsqlopen.FormsMetadataAwareCheck
-import org.sonar.plsqlopen.getSemanticNode
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.metrics.ComplexityVisitor
 import org.sonar.plsqlopen.metrics.FunctionComplexityVisitor
@@ -117,7 +116,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
     private fun getPlSqlVisitorContext(inputFile: PlSqlFile): PlSqlVisitorContext {
         var visitorContext: PlSqlVisitorContext
         try {
-            val root = getSemanticNode(parser.parse(inputFile.contents()))
+            val root = parser.parse(inputFile.contents())
             visitorContext = PlSqlVisitorContext(root, inputFile, formsMetadata)
         } catch (e: RecognitionException) {
             visitorContext = PlSqlVisitorContext(inputFile, e, formsMetadata)

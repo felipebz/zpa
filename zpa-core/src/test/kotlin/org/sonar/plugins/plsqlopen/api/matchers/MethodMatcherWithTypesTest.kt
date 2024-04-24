@@ -22,7 +22,7 @@ package org.sonar.plugins.plsqlopen.api.matchers
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.sonar.plsqlopen.getSemanticNode
+import org.sonar.plsqlopen.asSemantic
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
 import org.sonar.plugins.plsqlopen.api.squid.SemanticAstNode
@@ -84,7 +84,7 @@ class MethodMatcherWithTypesTest : RuleTest() {
     }
 
     private fun getAstNodeWithArguments(text: String, vararg types: PlSqlDatatype): SemanticAstNode {
-        val node = getSemanticNode(p.parse(text).firstChild)
+        val node = p.parse(text).firstChild
 
         val arguments = node.getDescendants(PlSqlGrammar.ARGUMENT)
 
@@ -93,7 +93,7 @@ class MethodMatcherWithTypesTest : RuleTest() {
             MethodMatcher.semantic(actualArgument).plSqlDatatype = types[i]
         }
 
-        return node
+        return node.asSemantic()
     }
 
 }
