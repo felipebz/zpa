@@ -1,6 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.hierynomus.gradle.license.tasks.LicenseCheck
-import com.hierynomus.gradle.license.tasks.LicenseFormat
 
 plugins {
     id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
@@ -9,7 +7,7 @@ plugins {
 dependencies {
     implementation(Libs.flr_xpath)
     implementation(Libs.flr_toolkit)
-    implementation("com.formdev:flatlaf:2.6")
+    implementation("com.formdev:flatlaf:3.4.1")
     implementation(project(":zpa-core"))
 }
 
