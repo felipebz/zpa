@@ -20,11 +20,8 @@
 package org.sonar.plsqlopen.lexer
 
 import com.felipebz.flr.api.TokenType
-import com.felipebz.flr.test.lexer.LexerMatchers.hasComment
-import com.felipebz.flr.test.lexer.LexerMatchers.hasToken
-import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.not
-import org.hamcrest.MatcherAssert.assertThat
+import com.felipebz.flr.tests.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
@@ -38,14 +35,14 @@ class PlSqlLexerTest {
 
     @Test
     fun multilineComment() {
-        assertThat(lexer.lex("/* multine \n comment */"), hasComment("/* multine \n comment */"))
-        assertThat(lexer.lex("/**/"), hasComment("/**/"))
+        assertThat(lexer.lex("/* multine \n comment */")).hasComment("/* multine \n comment */")
+        assertThat(lexer.lex("/**/")).hasComment("/**/")
     }
 
     @Test
     fun inlineComment() {
-        assertThat(lexer.lex("before -- inline \n new line"), hasComment("-- inline "))
-        assertThat(lexer.lex("--"), hasComment("--"))
+        assertThat(lexer.lex("before -- inline \n new line")).hasComment("-- inline ")
+        assertThat(lexer.lex("--")).hasComment("--")
     }
 
     @Test
@@ -152,11 +149,11 @@ class PlSqlLexerTest {
     }
 
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {
-        assertThat(lexer.lex(sourceCode), hasToken(sourceCode, tokenType))
+        assertThat(lexer.lex(sourceCode)).hasToken(sourceCode, tokenType)
     }
 
     private fun assertThatIsNotToken(sourceCode: String, tokenType: TokenType) {
-        assertThat(lexer.lex(sourceCode), not(hasToken(sourceCode, tokenType)))
+        assertThat(lexer.lex(sourceCode)).doesNotHaveToken(sourceCode, tokenType)
     }
 
     @Test
@@ -169,7 +166,7 @@ class PlSqlLexerTest {
                 "y := 'Another unrelated string!';\n" +
                 "end;")
 
-        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size, `is`(2))
+        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT)).hasSize(2)
     }
 
     @Test
@@ -183,7 +180,7 @@ class PlSqlLexerTest {
                 "]';\n" +
                 "end;")
 
-        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT).size, `is`(1))
+        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT)).hasSize(1)
     }
 
     @Test
@@ -197,7 +194,7 @@ class PlSqlLexerTest {
                 "\$end\n" +
                 "end;")
 
-        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size, `is`(1))
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT)).hasSize(1)
     }
 
     @Test
@@ -213,7 +210,7 @@ class PlSqlLexerTest {
                 "\$end\n" +
                 "end;")
 
-        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size, `is`(1))
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT)).hasSize(1)
     }
 
 
@@ -229,6 +226,6 @@ class PlSqlLexerTest {
                 "null;\n" +
                 "end;")
 
-        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT).size, `is`(1))
+        assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT)).hasSize(1)
     }
 }
