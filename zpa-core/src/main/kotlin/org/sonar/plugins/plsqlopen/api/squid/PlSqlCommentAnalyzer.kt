@@ -21,8 +21,6 @@ package org.sonar.plugins.plsqlopen.api.squid
 
 object PlSqlCommentAnalyzer {
 
-    fun isBlank(line: String) = line.isBlank()
-
     fun getContents(comment: String) =
         when (comment[0]) {
             '-' -> {

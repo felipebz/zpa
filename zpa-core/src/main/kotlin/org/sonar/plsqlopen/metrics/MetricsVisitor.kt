@@ -24,7 +24,6 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
-import org.sonar.plugins.plsqlopen.api.squid.PlSqlCommentAnalyzer
 
 class MetricsVisitor : PlSqlCheck() {
 
@@ -57,16 +56,24 @@ class MetricsVisitor : PlSqlCheck() {
     }
 
     override fun visitComment(trivia: Trivia, content: String) {
-        var line = trivia.token.line
-
-        for (commentLine in content.lineSequence()) {
-            if (commentLine.contains("NOSONAR")) {
-                linesOfComments.remove(line)
-                noSonar.add(line)
-            } else if (!PlSqlCommentAnalyzer.isBlank(commentLine)) {
-                linesOfComments.add(line)
+        val comment = trivia.token.value
+        val line = trivia.token.line
+        val endLine = trivia.token.endLine
+        val firstLineContainsNoSonar = comment.indexOfAny(newlineChars).let {
+            if (it == -1) {
+                comment.contains("NOSONAR")
+            } else {
+                comment.regionMatches(0, "NOSONAR", 0, it)
             }
-            line++
+        }
+
+        for (i in line .. endLine) {
+            linesOfComments.add(i)
+        }
+
+        if (firstLineContainsNoSonar) {
+            linesOfComments.remove(line)
+            noSonar.add(line)
         }
     }
 
@@ -75,5 +82,9 @@ class MetricsVisitor : PlSqlCheck() {
     fun getLinesOfComments(): Set<Int> = linesOfComments
 
     fun getExecutableLines(): Set<Int> = executableLines
+
+    companion object {
+        private val newlineChars = charArrayOf('\n', '\r')
+    }
 
 }

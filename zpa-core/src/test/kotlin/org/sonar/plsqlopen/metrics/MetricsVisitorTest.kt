@@ -43,7 +43,7 @@ class MetricsVisitorTest {
     @Test
     fun comments() {
         TestPlSqlVisitorRunner.scanFile(File("src/test/resources/metrics/comments.sql"), null, visitor)
-        assertThat(visitor.getLinesOfComments()).containsOnly(2, 4)
+        assertThat(visitor.getLinesOfComments()).containsOnly(2, 3, 4, 5)
     }
 
     @Test
