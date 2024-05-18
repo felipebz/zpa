@@ -28,7 +28,7 @@ class IdentifierChannel(private val channel: IdentifierAndKeywordChannel)
     : Channel<LexerOutput> by channel {
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        val nextChar = code.peek().toChar().lowercaseChar()
+        val nextChar = code.peek().toChar()
         if (!nextChar.isLetter() && nextChar != '"') {
             return false
         }
