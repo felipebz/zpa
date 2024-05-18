@@ -21,8 +21,7 @@ package org.sonar.plugins.plsqlopen.api.matchers
 
 import java.util.*
 
-@FunctionalInterface
-interface NameCriteria {
+fun interface NameCriteria {
 
     fun matches(name: String): Boolean
 
@@ -30,28 +29,22 @@ interface NameCriteria {
 
         @JvmStatic
         fun any(): NameCriteria =
-            object : NameCriteria {
-                override fun matches(name: String) = true
-            }
+            NameCriteria { true }
 
         @JvmStatic
         fun `is`(exactName: String): NameCriteria =
-            object : NameCriteria {
-                override fun matches(name: String) = exactName.equals(name, ignoreCase = true)
-            }
+            NameCriteria { name -> exactName.equals(name, ignoreCase = true) }
 
         @JvmStatic
         fun startsWith(prefix: String): NameCriteria =
-            object : NameCriteria {
-                override fun matches(name: String) = name.uppercase(Locale.getDefault())
+            NameCriteria { name ->
+                name.uppercase(Locale.getDefault())
                     .startsWith(prefix.uppercase(Locale.getDefault()))
             }
 
         @JvmStatic
         fun `in`(vararg prefix: String): NameCriteria =
-            object : NameCriteria {
-                override fun matches(name: String) = prefix.any { name.equals(it, ignoreCase = true) }
-            }
+            NameCriteria { name -> prefix.any { name.equals(it, ignoreCase = true) } }
 
     }
 
