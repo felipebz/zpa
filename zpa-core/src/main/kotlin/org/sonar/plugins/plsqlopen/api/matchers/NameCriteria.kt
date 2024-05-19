@@ -23,7 +23,7 @@ import java.util.*
 
 fun interface NameCriteria {
 
-    fun matches(name: String): Boolean
+    fun matches(name: String?): Boolean
 
     companion object {
 
@@ -38,8 +38,9 @@ fun interface NameCriteria {
         @JvmStatic
         fun startsWith(prefix: String): NameCriteria =
             NameCriteria { name ->
-                name.uppercase(Locale.getDefault())
-                    .startsWith(prefix.uppercase(Locale.getDefault()))
+                name != null &&
+                    name.uppercase(Locale.getDefault())
+                        .startsWith(prefix.uppercase(Locale.getDefault()))
             }
 
         @JvmStatic

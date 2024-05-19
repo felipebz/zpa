@@ -101,27 +101,38 @@ class MethodMatcher private constructor()
 
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
-        val nodes = node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME).toMutableList()
 
-        if (nodes.isEmpty()) {
+        var i = -1
+        val nodes = arrayOfNulls<String>(3)
+        for (child in node.children) {
+            if (i < 2 && child.type === PlSqlGrammar.VARIABLE_NAME || child.type === PlSqlGrammar.IDENTIFIER_NAME) {
+                nodes[++i] = child.tokenOriginalValue
+            }
+        }
+
+        fun hasMoreItensToCheck() = i > -1
+        fun nextNode() = nodes[i--]
+
+        if (!hasMoreItensToCheck()) {
             return false
         }
 
-        var matches =  methodNameCriteria?.let { nameAcceptable(nodes.removeAt(nodes.lastIndex), it) } ?: true
+        var matches =  methodNameCriteria?.let { nameAcceptable(nextNode(), it) } ?: true
 
         packageNameCriteria?.let {
-            matches = matches and (nodes.isNotEmpty() && nameAcceptable(nodes.removeAt(nodes.lastIndex), it))
+            matches = matches and (hasMoreItensToCheck() && nameAcceptable(nextNode(), it))
         }
 
         schemaNameCriteria?.let {
-            matches = matches and (schemaIsOptional && nodes.isEmpty() || nodes.isNotEmpty() && nameAcceptable(nodes.removeAt(nodes.lastIndex), it))
+            matches = matches and (schemaIsOptional && !hasMoreItensToCheck() ||
+                hasMoreItensToCheck() && nameAcceptable(nextNode(), it))
         }
 
-        return matches && nodes.isEmpty() && argumentsAcceptable(originalNode)
+        return matches && !hasMoreItensToCheck() && argumentsAcceptable(originalNode)
     }
 
-    private fun nameAcceptable(node: AstNode, criteria: NameCriteria): Boolean {
-        methodName = node.tokenOriginalValue
+    private fun nameAcceptable(name: String?, criteria: NameCriteria): Boolean {
+        methodName = name ?: ""
         return criteria.matches(methodName)
     }
 
