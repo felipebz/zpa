@@ -50,7 +50,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  charset: Charset = StandardCharsets.UTF_8) {
 
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
-    private val globalScope = ScopeImpl()
+    val globalScope = ScopeImpl()
 
     fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor> = emptyList()) : AstScannerResult {
         val newVisitorContext = getPlSqlVisitorContext(inputFile)
@@ -62,7 +62,6 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
 
         val checksToRun = mutableListOf<PlSqlVisitor>()
         checksToRun.add(symbolVisitor)
-
 
         if (inputFile.type() == PlSqlFile.Type.MAIN) {
             checksToRun.addAll(
