@@ -23,6 +23,7 @@ import org.sonar.api.Plugin
 import org.sonar.api.PropertyType
 import org.sonar.api.config.PropertyDefinition
 import org.sonar.api.resources.Qualifiers
+import org.sonar.plsqlopen.symbols.FileLocator
 import org.sonar.plsqlopen.util.log.SonarQubeLoggers
 import org.sonar.plsqlopen.utils.log.Loggers
 
@@ -68,12 +69,31 @@ class PlSqlPlugin : Plugin {
             PlSql::class.java,
             PlSqlProfile::class.java,
             PlSqlSquidSensor::class.java,
-            PlSqlRuleRepository::class.java
+            PlSqlRuleRepository::class.java,
+            FileLocator::class.java,
+        )
+
+        addUtPlSqlExtensions(context)
+    }
+
+    private fun addUtPlSqlExtensions(context: Plugin.Context) {
+        context.addExtensions(
+            PropertyDefinition.builder(UtPlSqlTestSensor.REPORT_PATH_KEY)
+                .name("Path to the utPLSQL test report(s)")
+                .description("Paths (absolute or relative) to report files with utPLSQL test execution data.")
+                .category(TEST_AND_COVERAGE)
+                .onQualifiers(Qualifiers.PROJECT)
+                .defaultValue(UtPlSqlTestSensor.DEFAULT_REPORT_PATH)
+                .multiValues(true)
+                .build(),
+
+            UtPlSqlTestSensor::class.java,
         )
     }
 
     companion object {
         private const val DEFAULT_CATEGORY = "Z PL/SQL Analyzer"
+        private const val TEST_AND_COVERAGE = "Tests and Coverage"
         internal const val FILE_SUFFIXES_KEY = "sonar.plsqlopen.file.suffixes"
         internal const val OLD_FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes"
         internal const val FORMS_METADATA_KEY = "sonar.zpa.forms.metadata"

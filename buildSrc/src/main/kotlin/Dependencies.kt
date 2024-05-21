@@ -9,6 +9,7 @@ object Versions {
     const val min_sonarqube = "9.9.0.65466"
     const val min_sonarqube_api = "9.14.0.375"
     const val sonarqube_orchestrator = "4.9.0.1920"
+    const val simple_xml = "2.7.1"
 
     const val plugin_shadow = "8.1.1"
 }
@@ -22,4 +23,5 @@ object Libs {
     const val flr_toolkit = "com.felipebz.flr:flr-toolkit:${Versions.flr}"
     const val flr_testing_harness = "com.felipebz.flr:flr-testing-harness:${Versions.flr}"
     const val gson = "com.google.code.gson:gson:${Versions.gson}"
+    const val simple_xml = "org.simpleframework:simple-xml:${Versions.simple_xml}"
 }
