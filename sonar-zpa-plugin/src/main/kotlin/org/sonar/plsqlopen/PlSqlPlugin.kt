@@ -23,7 +23,7 @@ import org.sonar.api.Plugin
 import org.sonar.api.PropertyType
 import org.sonar.api.config.PropertyDefinition
 import org.sonar.api.resources.Qualifiers
-import org.sonar.plsqlopen.symbols.FileLocator
+import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.util.log.SonarQubeLoggers
 import org.sonar.plsqlopen.utils.log.Loggers
 
@@ -70,7 +70,7 @@ class PlSqlPlugin : Plugin {
             PlSqlProfile::class.java,
             PlSqlSquidSensor::class.java,
             PlSqlRuleRepository::class.java,
-            FileLocator::class.java,
+            ObjectLocator::class.java,
         )
 
         addUtPlSqlExtensions(context)

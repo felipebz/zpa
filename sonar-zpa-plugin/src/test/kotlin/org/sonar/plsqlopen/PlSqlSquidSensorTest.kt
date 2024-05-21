@@ -36,7 +36,7 @@ import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContext
 import org.sonar.api.measures.FileLinesContextFactory
 import org.sonar.api.rule.RuleKey
-import org.sonar.plsqlopen.symbols.FileLocator
+import org.sonar.plsqlopen.symbols.ObjectLocator
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -60,7 +60,7 @@ class PlSqlSquidSensorTest {
         fileLinesContext = mock(FileLinesContext::class.java)
         `when`(fileLinesContextFactory.createFor(any(InputFile::class.java))).thenReturn(fileLinesContext)
 
-        sensor = PlSqlSquidSensor(activeRules, MapSettings().asConfig(), mock(NoSonarFilter::class.java), fileLinesContextFactory, null, FileLocator())
+        sensor = PlSqlSquidSensor(activeRules, MapSettings().asConfig(), mock(NoSonarFilter::class.java), fileLinesContextFactory, null, ObjectLocator())
     }
 
     @Test

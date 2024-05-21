@@ -32,7 +32,7 @@ import org.sonar.plsqlopen.rules.SonarQubeActiveRulesAdapter
 import org.sonar.plsqlopen.rules.SonarQubeRuleMetadataLoader
 import org.sonar.plsqlopen.squid.PlSqlAstScanner
 import org.sonar.plsqlopen.squid.ProgressReport
-import org.sonar.plsqlopen.symbols.FileLocator
+import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.utils.log.Logger
 import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.ZpaRulesDefinition
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit
 class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, settings: Configuration, private val noSonarFilter: NoSonarFilter,
                                                  private val fileLinesContextFactory: FileLinesContextFactory,
                                                  customRulesDefinition: Array<ZpaRulesDefinition>? = null,
-                                                 private val fileLocator: FileLocator) : Sensor {
+                                                 private val objectLocator: ObjectLocator) : Sensor {
 
     private val logger: Logger = Loggers.getLogger(PlSqlSquidSensor::class.java)
 
@@ -64,7 +64,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         val inputFiles = fs.inputFiles(fs.predicates().hasLanguage(PlSql.KEY)).toList()
 
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
-        val scanner = PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory, fileLocator)
+        val scanner = PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory, objectLocator)
 
         progressReport.start(inputFiles.map { it.toString() })
 

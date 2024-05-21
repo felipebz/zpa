@@ -48,7 +48,7 @@ data class TestCase @JvmOverloads constructor(
     var name: String = "",
 
     @field:Attribute(name = "duration")
-    var duration: Int = 0,
+    var duration: Long = 0,
 
     @field:Element(name = "skipped", required = false)
     var skipped: Skipped? = null,
@@ -58,7 +58,17 @@ data class TestCase @JvmOverloads constructor(
 
     @field:Element(name = "error", required = false)
     var error: Error? = null
-)
+) {
+    val status: TestCaseStatus
+        get() {
+            return when {
+                skipped != null -> TestCaseStatus.SKIPPED
+                failure != null -> TestCaseStatus.FAILED
+                error != null -> TestCaseStatus.ERROR
+                else -> TestCaseStatus.PASSED
+            }
+        }
+}
 
 @Root(name = "skipped", strict = false)
 class Skipped
@@ -68,3 +78,10 @@ class Failure
 
 @Root(name = "error", strict = false)
 class Error
+
+enum class TestCaseStatus {
+    PASSED,
+    FAILED,
+    SKIPPED,
+    ERROR
+}

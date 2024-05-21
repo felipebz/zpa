@@ -29,19 +29,18 @@ import org.sonar.api.config.Configuration
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.api.utils.WildcardPattern
-import org.sonar.plsqlopen.squid.SonarQubePlSqlFile
-import org.sonar.plsqlopen.symbols.FileLocator
+import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.utils.log.Logger
 import org.sonar.plsqlopen.utils.log.Loggers
+import org.sonar.plsqlopen.utplsql.TestCaseStatus
 import org.sonar.plsqlopen.utplsql.TestExecutions
-import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
 
 
 class UtPlSqlTestSensor(private val conf: Configuration,
-                        private val fileLocator: FileLocator,
+                        private val objectLocator: ObjectLocator,
                         private val analysisWarnings: AnalysisWarnings) : Sensor {
 
     private val logger: Logger = Loggers.getLogger(UtPlSqlTestSensor::class.java)
@@ -95,38 +94,23 @@ class UtPlSqlTestSensor(private val conf: Configuration,
 
     private fun processTestExecutions(context: SensorContext, testExecutions: TestExecutions) {
         testExecutions.files?.forEach { file ->
-            val mappedTest = fileLocator.declaredScopes.firstOrNull {
-                it.plSqlFile != null &&
-                it.plSqlFile?.type() === PlSqlFile.Type.TEST &&
-                it.identifier?.equals(file.path, ignoreCase = true) == true &&
-                it.type === PlSqlGrammar.CREATE_PACKAGE_BODY
-            }
+            val mappedTest = objectLocator.findTestObject(file.path, PlSqlGrammar.CREATE_PACKAGE_BODY)
 
             if (mappedTest != null) {
-                var testCount = 0
-                var failureCount = 0
-                var errorCount = 0
-                var skippedCount = 0
-                var duration = 0L
+                file.testCases?.let { testCase ->
+                    val testCount = testCase.count { it.status != TestCaseStatus.SKIPPED }
+                    val failureCount = testCase.count { it.status == TestCaseStatus.FAILED }
+                    val errorCount = testCase.count { it.status == TestCaseStatus.ERROR }
+                    val skippedCount = testCase.count { it.status == TestCaseStatus.SKIPPED }
+                    val duration = testCase.sumOf { it.duration }
 
-                file.testCases?.forEach { testCase ->
-                    testCount++
-                    if (testCase.failure != null) {
-                        failureCount++
-                    } else if (testCase.error != null) {
-                        errorCount++
-                    } else if (testCase.skipped != null) {
-                        skippedCount++
-                    }
-                    duration += testCase.duration
+                    val plSqlFile = mappedTest.inputFile
+                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TESTS, testCount)
+                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_FAILURES, failureCount)
+                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_ERRORS, errorCount)
+                    saveMetricOnFile(context, plSqlFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
+                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
                 }
-
-                val plSqlFile = (mappedTest.plSqlFile as SonarQubePlSqlFile).inputFile
-                saveMetricOnFile(context, plSqlFile, CoreMetrics.TESTS, testCount)
-                saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_FAILURES, failureCount)
-                saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_ERRORS, errorCount)
-                saveMetricOnFile(context, plSqlFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
-                saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
             }
         }
     }

@@ -19,17 +19,32 @@
  */
 package org.sonar.plsqlopen.symbols
 
+import com.felipebz.flr.api.AstNodeType
 import org.sonar.api.scanner.ScannerSide
+import org.sonar.plsqlopen.squid.SonarQubePlSqlFile
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 
 @ScannerSide
-class FileLocator {
+class ObjectLocator {
     private var scope: Scope = ScopeImpl()
+
+    private val mappedObjects
+        get() = scope.innerScopes.map {
+            val plSqlFile = it.plSqlFile as SonarQubePlSqlFile? ?: return@map null
+            val identifier = it.identifier ?: return@map null
+            val type = it.type ?: return@map null
+            MappedObject(identifier, type, plSqlFile.type(), plSqlFile.path(), plSqlFile.inputFile)
+        }.filterNotNull()
 
     fun setScope(scope: Scope) {
         this.scope = scope
     }
 
-    val declaredScopes
-        get() = scope.innerScopes
+    fun findMainObject(identifier: String, vararg types: AstNodeType): MappedObject? {
+        return mappedObjects.find { it.isMain && it.identifier == identifier && it.objectType in types }
+    }
+
+    fun findTestObject(identifier: String, vararg types: AstNodeType): MappedObject? {
+        return mappedObjects.find { it.isTest && it.identifier == identifier && it.objectType in types }
+    }
 }
