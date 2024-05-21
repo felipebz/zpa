@@ -34,6 +34,7 @@ import org.sonar.plsqlopen.highlight.PlSqlHighlighterVisitor
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.metrics.CpdVisitor
 import org.sonar.plsqlopen.rules.SonarQubeRuleKeyAdapter
+import org.sonar.plsqlopen.symbols.FileLocator
 import org.sonar.plsqlopen.symbols.SonarQubeSymbolTable
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlVisitor
@@ -57,8 +58,10 @@ class PlSqlAstScanner(private val context: SensorContext,
                 noSonarFilter: NoSonarFilter,
                 formsMetadata: FormsMetadata?,
                 isErrorRecoveryEnabled: Boolean,
-                fileLinesContextFactory: FileLinesContextFactory) : this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory) {
+                fileLinesContextFactory: FileLinesContextFactory,
+                fileLocator: FileLocator) : this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory) {
         this.plsqlChecks = checks
+        fileLocator.setScope(astScanner.globalScope)
     }
 
     fun scanFile(inputFile: InputFile) {
