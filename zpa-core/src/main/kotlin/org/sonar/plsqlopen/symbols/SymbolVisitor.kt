@@ -85,6 +85,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             isOverridingMember = current.isOverridingMember,
             identifier = current.identifier,
             type = current.type,
+            plSqlFile = context.plSqlFile()
         )
 
         for (symbol in current.symbols.filter { it.isGlobal }) {

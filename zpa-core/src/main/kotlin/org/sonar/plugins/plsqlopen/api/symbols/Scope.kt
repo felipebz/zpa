@@ -21,6 +21,7 @@ package org.sonar.plugins.plsqlopen.api.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
+import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import java.util.*
 
 interface Scope {
@@ -35,6 +36,8 @@ interface Scope {
     val innerScopes: List<Scope>
     val type: AstNodeType?
     val isGlobal: Boolean
+    val plSqlFile: PlSqlFile?
+
     /**
      * @param kind of the symbols to look for
      * @return the symbols corresponding to the given kind

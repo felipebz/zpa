@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
+import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -35,7 +36,8 @@ class ScopeImpl(override val outer: Scope? = null,
                 override val isOverridingMember: Boolean = false,
                 identifier: String? = null,
                 type: AstNodeType? = null,
-                private val globalScope: Scope? = null) : Scope {
+                private val globalScope: Scope? = null,
+                override val plSqlFile: PlSqlFile? = null) : Scope {
 
     private val mutex = ReentrantLock()
 
