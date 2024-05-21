@@ -25,30 +25,30 @@ import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.Root
 
 @Root(name = "testExecutions")
-data class TestExecutions(
+data class TestExecutions @JvmOverloads constructor(
     @field:Attribute(name = "version")
-    var version: Int,
+    var version: Int = 0,
 
     @field:ElementList(name = "file", inline = true, required = false)
     var files: List<TestFile>? = null
 )
 
 @Root(name = "file")
-data class TestFile(
+data class TestFile @JvmOverloads constructor(
     @field:Attribute(name = "path")
-    var path: String,
+    var path: String = "",
 
     @field:ElementList(name = "testCase", inline = true, required = false)
     var testCases: List<TestCase>? = null
 )
 
 @Root(name = "testCase")
-data class TestCase(
+data class TestCase @JvmOverloads constructor(
     @field:Attribute(name = "name")
-    var name: String,
+    var name: String = "",
 
     @field:Attribute(name = "duration")
-    var duration: Int,
+    var duration: Int = 0,
 
     @field:Element(name = "skipped", required = false)
     var skipped: Skipped? = null,
