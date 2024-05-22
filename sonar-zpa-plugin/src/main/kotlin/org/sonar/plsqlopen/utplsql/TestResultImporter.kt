@@ -23,7 +23,6 @@ import org.simpleframework.xml.core.Persister
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.measure.Metric
 import org.sonar.api.batch.sensor.SensorContext
-import org.sonar.api.config.Configuration
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.api.utils.WildcardPattern
@@ -34,15 +33,14 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
 
-class TestResultImporter(private val conf: Configuration,
-                         private val objectLocator: ObjectLocator,
+class TestResultImporter(private val objectLocator: ObjectLocator,
                          private val analysisWarnings: AnalysisWarnings) {
 
     private val logger: Logger = Loggers.getLogger(TestResultImporter::class.java)
 
     fun execute(context: SensorContext) {
-        val reports = conf.getStringArray(UtPlSqlSensor.TEST_REPORT_PATH_KEY).flatMap {
-            getReports(context.fileSystem().baseDir(), it)
+        val reports = context.config().getStringArray(UtPlSqlSensor.TEST_REPORT_PATH_KEY).flatMap {
+            getReports(context, it)
         }
 
         for (report in reports) {
@@ -52,15 +50,16 @@ class TestResultImporter(private val conf: Configuration,
         }
     }
 
-    private fun getReports(baseDir: File, reportPath: String): List<File> {
+    private fun getReports(context: SensorContext, reportPath: String): List<File> {
         val pattern = WildcardPattern.create(reportPath)
+        val baseDir = context.fileSystem().baseDir()
         val matchingFiles = baseDir
                 .walkTopDown()
                 .filter { it.isFile && pattern.match(it.relativeTo(baseDir).invariantSeparatorsPath) }
                 .toMutableList()
 
         if (matchingFiles.isEmpty()) {
-            if (conf.hasKey(UtPlSqlSensor.TEST_REPORT_PATH_KEY)) {
+            if (context.config().hasKey(UtPlSqlSensor.TEST_REPORT_PATH_KEY)) {
                 val file = File(reportPath)
                 if (!file.exists()) {
                     val formattedMessage =

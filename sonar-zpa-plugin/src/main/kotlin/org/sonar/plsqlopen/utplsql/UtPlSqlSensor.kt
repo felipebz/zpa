@@ -22,17 +22,13 @@ package org.sonar.plsqlopen.utplsql
 import org.sonar.api.batch.sensor.Sensor
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.SensorDescriptor
-import org.sonar.api.config.Configuration
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.plsqlopen.PlSql
 import org.sonar.plsqlopen.symbols.ObjectLocator
 
-class UtPlSqlSensor(
-    conf: Configuration,
-    objectLocator: ObjectLocator,
-    analysisWarnings: AnalysisWarnings) : Sensor {
+class UtPlSqlSensor(objectLocator: ObjectLocator, analysisWarnings: AnalysisWarnings) : Sensor {
 
-    private val testResultImporter = TestResultImporter(conf, objectLocator, analysisWarnings)
+    private val testResultImporter = TestResultImporter(objectLocator, analysisWarnings)
 
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("Z PL/SQL Analyzer - utPLSQL Report Importer").onlyOnLanguage(PlSql.KEY)
