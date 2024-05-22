@@ -39,6 +39,7 @@ class PlSqlPlugin : Plugin {
                 .name("File Suffixes")
                 .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
                 .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
                 .onQualifiers(Qualifiers.PROJECT)
                 .defaultValue("sql,pkg,pks,pkb")
                 .multiValues(true)
@@ -47,12 +48,14 @@ class PlSqlPlugin : Plugin {
                 .name("Oracle Forms metadata file")
                 .description("Path to the JSON file with the Oracle Forms metadata.")
                 .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
                 .onQualifiers(Qualifiers.PROJECT)
                 .build(),
             PropertyDefinition.builder(ERROR_RECOVERY_KEY)
                 .name("Parse error recovery")
                 .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
                 .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
                 .onQualifiers(Qualifiers.PROJECT)
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
@@ -61,6 +64,7 @@ class PlSqlPlugin : Plugin {
                 .name("Enable concurrent execution")
                 .description("Enable concurrent analysis of files.")
                 .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
                 .onQualifiers(Qualifiers.PROJECT)
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
@@ -81,7 +85,8 @@ class PlSqlPlugin : Plugin {
             PropertyDefinition.builder(UtPlSqlTestSensor.REPORT_PATH_KEY)
                 .name("Path to the utPLSQL test report(s)")
                 .description("Paths (absolute or relative) to report files with utPLSQL test execution data.")
-                .category(TEST_AND_COVERAGE)
+                .category(DEFAULT_CATEGORY)
+                .subCategory(TEST_AND_COVERAGE)
                 .onQualifiers(Qualifiers.PROJECT)
                 .defaultValue(UtPlSqlTestSensor.DEFAULT_REPORT_PATH)
                 .multiValues(true)
@@ -93,6 +98,7 @@ class PlSqlPlugin : Plugin {
 
     companion object {
         private const val DEFAULT_CATEGORY = "Z PL/SQL Analyzer"
+        private const val GENERAL = "General"
         private const val TEST_AND_COVERAGE = "Tests and Coverage"
         internal const val FILE_SUFFIXES_KEY = "sonar.plsqlopen.file.suffixes"
         internal const val OLD_FILE_SUFFIXES_KEY = "sonar.zpa.file.suffixes"
