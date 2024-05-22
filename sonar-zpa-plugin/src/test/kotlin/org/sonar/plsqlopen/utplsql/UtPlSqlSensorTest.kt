@@ -59,7 +59,7 @@ class UtPlSqlSensorTest {
     fun testDescriptor() {
         val descriptor = DefaultSensorDescriptor()
         sensor.describe(descriptor)
-        assertThat(descriptor.name()).isEqualTo("Z PL/SQL Analyzer - utPLSQL Test Report Importer")
+        assertThat(descriptor.name()).isEqualTo("Z PL/SQL Analyzer - utPLSQL Report Importer")
         assertThat(descriptor.languages()).containsOnly(PlSql.KEY)
     }
 
