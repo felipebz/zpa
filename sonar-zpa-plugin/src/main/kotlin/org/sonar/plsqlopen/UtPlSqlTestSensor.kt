@@ -122,7 +122,7 @@ class UtPlSqlTestSensor(private val conf: Configuration,
     }
 
     companion object {
-        const val REPORT_PATH_KEY = "sonar.zpa.utplsql.reportPaths"
+        const val REPORT_PATH_KEY = "sonar.zpa.tests.reportPaths"
         const val DEFAULT_REPORT_PATH = "utplsql-test.xml"
     }
 

@@ -108,6 +108,6 @@ class UtPlSqlTestSensorTest {
     fun invalidReport() {
         settings.setProperty(UtPlSqlTestSensor.REPORT_PATH_KEY, "doesnotexists.xml")
         sensor.execute(context)
-        verify(analysisWarnings).addUnique("No utPLSQL test report was found for sonar.zpa.utplsql.reportPaths using pattern doesnotexists.xml")
+        verify(analysisWarnings).addUnique("No utPLSQL test report was found for sonar.zpa.tests.reportPaths using pattern doesnotexists.xml")
     }
 }
