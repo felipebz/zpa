@@ -38,7 +38,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
 
-
 class UtPlSqlTestSensor(private val conf: Configuration,
                         private val objectLocator: ObjectLocator,
                         private val analysisWarnings: AnalysisWarnings) : Sensor {
@@ -51,7 +50,7 @@ class UtPlSqlTestSensor(private val conf: Configuration,
 
     override fun execute(context: SensorContext) {
         val reports = conf.getStringArray(REPORT_PATH_KEY).flatMap {
-            getReports(context.fileSystem().baseDir().path, it)
+            getReports(context.fileSystem().baseDir(), it)
         }
 
         for (report in reports) {
@@ -61,12 +60,11 @@ class UtPlSqlTestSensor(private val conf: Configuration,
         }
     }
 
-    private fun getReports(baseDirPath: String, reportPath: String): List<File> {
+    private fun getReports(baseDir: File, reportPath: String): List<File> {
         val pattern = WildcardPattern.create(reportPath)
-        val baseDir = File(baseDirPath).absoluteFile
         val matchingFiles = baseDir
                 .walkTopDown()
-                .filter { it.isFile && pattern.match(baseDir.relativeTo(it).invariantSeparatorsPath) }
+                .filter { it.isFile && pattern.match(it.relativeTo(baseDir).invariantSeparatorsPath) }
                 .toMutableList()
 
         if (matchingFiles.isEmpty()) {
@@ -95,8 +93,10 @@ class UtPlSqlTestSensor(private val conf: Configuration,
     private fun processTestExecutions(context: SensorContext, testExecutions: TestExecutions) {
         testExecutions.files?.forEach { file ->
             val mappedTest = objectLocator.findTestObject(file.path, PlSqlGrammar.CREATE_PACKAGE_BODY)
+            val inputFile = mappedTest?.inputFile ?:
+                context.fileSystem().inputFile(context.fileSystem().predicates().hasPath(file.path))
 
-            if (mappedTest != null) {
+            if (inputFile != null) {
                 file.testCases?.let { testCase ->
                     val testCount = testCase.count { it.status != TestCaseStatus.SKIPPED }
                     val failureCount = testCase.count { it.status == TestCaseStatus.FAILED }
@@ -104,12 +104,11 @@ class UtPlSqlTestSensor(private val conf: Configuration,
                     val skippedCount = testCase.count { it.status == TestCaseStatus.SKIPPED }
                     val duration = testCase.sumOf { it.duration }
 
-                    val plSqlFile = mappedTest.inputFile
-                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TESTS, testCount)
-                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_FAILURES, failureCount)
-                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_ERRORS, errorCount)
-                    saveMetricOnFile(context, plSqlFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
-                    saveMetricOnFile(context, plSqlFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
+                    saveMetricOnFile(context, inputFile, CoreMetrics.TESTS, testCount)
+                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_FAILURES, failureCount)
+                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_ERRORS, errorCount)
+                    saveMetricOnFile(context, inputFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
+                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
                 }
             }
         }

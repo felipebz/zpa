@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testExecutions version="1">
+  <file path="path/to/file.sql">
+    <testCase name="test_1" duration="1">
+    </testCase>
+    <testCase name="test_2" duration="1">
+    </testCase>
+    <testCase name="failure" duration="1">
+      <failure/>
+    </testCase>
+    <testCase name="skipped" duration="1">
+      <skipped/>
+    </testCase>
+    <testCase name="error" duration="1">
+      <error/>
+    </testCase>
+  </file>
+</testExecutions>
