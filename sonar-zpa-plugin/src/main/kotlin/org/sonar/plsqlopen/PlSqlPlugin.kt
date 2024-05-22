@@ -26,6 +26,7 @@ import org.sonar.api.resources.Qualifiers
 import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.util.log.SonarQubeLoggers
 import org.sonar.plsqlopen.utils.log.Loggers
+import org.sonar.plsqlopen.utplsql.UtPlSqlSensor
 
 class PlSqlPlugin : Plugin {
 
@@ -82,17 +83,17 @@ class PlSqlPlugin : Plugin {
 
     private fun addUtPlSqlExtensions(context: Plugin.Context) {
         context.addExtensions(
-            PropertyDefinition.builder(UtPlSqlTestSensor.REPORT_PATH_KEY)
+            PropertyDefinition.builder(UtPlSqlSensor.REPORT_PATH_KEY)
                 .name("Path to the utPLSQL test report(s)")
                 .description("Paths (absolute or relative) to report files with utPLSQL test execution data.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(TEST_AND_COVERAGE)
                 .onQualifiers(Qualifiers.PROJECT)
-                .defaultValue(UtPlSqlTestSensor.DEFAULT_REPORT_PATH)
+                .defaultValue(UtPlSqlSensor.DEFAULT_REPORT_PATH)
                 .multiValues(true)
                 .build(),
 
-            UtPlSqlTestSensor::class.java,
+            UtPlSqlSensor::class.java,
         )
     }
 

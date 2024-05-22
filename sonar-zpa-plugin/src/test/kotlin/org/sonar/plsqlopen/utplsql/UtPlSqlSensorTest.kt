@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen
+package org.sonar.plsqlopen.utplsql
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -31,6 +31,7 @@ import org.sonar.api.config.internal.ConfigurationBridge
 import org.sonar.api.config.internal.MapSettings
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
+import org.sonar.plsqlopen.PlSql
 import org.sonar.plsqlopen.symbols.MappedObject
 import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
@@ -38,10 +39,10 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 
 
-class UtPlSqlTestSensorTest {
+class UtPlSqlSensorTest {
 
     private lateinit var settings: MapSettings
-    private lateinit var sensor: UtPlSqlTestSensor
+    private lateinit var sensor: UtPlSqlSensor
     private lateinit var context: SensorContextTester
     private lateinit var objectLocator: ObjectLocator
     private lateinit var analysisWarnings: AnalysisWarnings
@@ -52,7 +53,7 @@ class UtPlSqlTestSensorTest {
         settings = MapSettings()
         objectLocator = mock()
         analysisWarnings = spy()
-        sensor = UtPlSqlTestSensor(ConfigurationBridge(settings), objectLocator, analysisWarnings)
+        sensor = UtPlSqlSensor(ConfigurationBridge(settings), objectLocator, analysisWarnings)
     }
 
     @Test
@@ -72,7 +73,7 @@ class UtPlSqlTestSensorTest {
 
         whenever(objectLocator.findTestObject(any(), any())).thenReturn(null)
 
-        settings.setProperty(UtPlSqlTestSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
+        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
         sensor.execute(context)
 
         val key = testFile.key()
@@ -93,7 +94,7 @@ class UtPlSqlTestSensorTest {
         whenever(objectLocator.findTestObject(eq("test_package"), any())).thenReturn(
             MappedObject("", PlSqlGrammar.CREATE_PACKAGE_BODY, PlSqlFile.Type.TEST, testFile.path(), testFile))
 
-        settings.setProperty(UtPlSqlTestSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
+        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
         sensor.execute(context)
 
         val key = testFile.key()
@@ -106,7 +107,7 @@ class UtPlSqlTestSensorTest {
 
     @Test
     fun invalidReport() {
-        settings.setProperty(UtPlSqlTestSensor.REPORT_PATH_KEY, "doesnotexists.xml")
+        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "doesnotexists.xml")
         sensor.execute(context)
         verify(analysisWarnings).addUnique("No utPLSQL test report was found for sonar.zpa.tests.reportPaths using pattern doesnotexists.xml")
     }

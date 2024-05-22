@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen
+package org.sonar.plsqlopen.utplsql
 
 import org.simpleframework.xml.core.Persister
 import org.sonar.api.batch.fs.InputFile
@@ -29,20 +29,19 @@ import org.sonar.api.config.Configuration
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.api.utils.WildcardPattern
+import org.sonar.plsqlopen.PlSql
 import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.utils.log.Logger
 import org.sonar.plsqlopen.utils.log.Loggers
-import org.sonar.plsqlopen.utplsql.TestCaseStatus
-import org.sonar.plsqlopen.utplsql.TestExecutions
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
 
-class UtPlSqlTestSensor(private val conf: Configuration,
-                        private val objectLocator: ObjectLocator,
-                        private val analysisWarnings: AnalysisWarnings) : Sensor {
+class UtPlSqlSensor(private val conf: Configuration,
+                    private val objectLocator: ObjectLocator,
+                    private val analysisWarnings: AnalysisWarnings) : Sensor {
 
-    private val logger: Logger = Loggers.getLogger(UtPlSqlTestSensor::class.java)
+    private val logger: Logger = Loggers.getLogger(UtPlSqlSensor::class.java)
 
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("Z PL/SQL Analyzer - utPLSQL Test Report Importer").onlyOnLanguage(PlSql.KEY)
