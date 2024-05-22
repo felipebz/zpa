@@ -62,9 +62,9 @@ class ScopeImpl(override val outer: Scope? = null,
         val path = ArrayList<String>()
         var scope: Scope? = this
         while (scope != null) {
-            val identifier = scope.identifier
-            if (identifier != null) {
-                path.add(identifier)
+            val scopeIdentifier = scope.identifier
+            if (scopeIdentifier != null) {
+                path.add(scopeIdentifier)
             }
             scope = scope.outer
         }

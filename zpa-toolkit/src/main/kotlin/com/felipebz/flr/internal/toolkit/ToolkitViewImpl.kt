@@ -330,11 +330,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         }
     }
 
-    override fun scrollSourceCodeTo(token: Token?) {
-        if (token != null) {
+    override fun scrollSourceCodeTo(astNode: Token?) {
+        if (astNode != null) {
             val visibleLines =
                 sourceCodeEditorPane.visibleRect.height / sourceCodeEditorPane.getFontMetrics(sourceCodeEditorPane.font).height
-            val line = token.line + visibleLines / 2
+            val line = astNode.line + visibleLines / 2
             try {
                 sourceCodeEditorPane.scrollRectToVisible(toRectangle(sourceCodeEditorPane.modelToView2D(0)))
                 sourceCodeEditorPane.scrollRectToVisible(
