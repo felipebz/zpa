@@ -19,110 +19,32 @@
  */
 package org.sonar.plsqlopen.utplsql
 
-import org.simpleframework.xml.core.Persister
-import org.sonar.api.batch.fs.InputFile
-import org.sonar.api.batch.measure.Metric
 import org.sonar.api.batch.sensor.Sensor
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.SensorDescriptor
 import org.sonar.api.config.Configuration
-import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
-import org.sonar.api.utils.WildcardPattern
 import org.sonar.plsqlopen.PlSql
 import org.sonar.plsqlopen.symbols.ObjectLocator
-import org.sonar.plsqlopen.utils.log.Logger
-import org.sonar.plsqlopen.utils.log.Loggers
-import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import java.io.File
-import java.io.Serializable
 
-class UtPlSqlSensor(private val conf: Configuration,
-                    private val objectLocator: ObjectLocator,
-                    private val analysisWarnings: AnalysisWarnings) : Sensor {
+class UtPlSqlSensor(
+    conf: Configuration,
+    objectLocator: ObjectLocator,
+    analysisWarnings: AnalysisWarnings) : Sensor {
 
-    private val logger: Logger = Loggers.getLogger(UtPlSqlSensor::class.java)
+    private val testResultImporter = TestResultImporter(conf, objectLocator, analysisWarnings)
 
     override fun describe(descriptor: SensorDescriptor) {
-        descriptor.name("Z PL/SQL Analyzer - utPLSQL Test Report Importer").onlyOnLanguage(PlSql.KEY)
+        descriptor.name("Z PL/SQL Analyzer - utPLSQL Report Importer").onlyOnLanguage(PlSql.KEY)
     }
 
     override fun execute(context: SensorContext) {
-        val reports = conf.getStringArray(REPORT_PATH_KEY).flatMap {
-            getReports(context.fileSystem().baseDir(), it)
-        }
-
-        for (report in reports) {
-            val testExecutions = readTestExecutionsReport(report)
-            logger.info("Processing test report {}", report)
-            processTestExecutions(context, testExecutions)
-        }
-    }
-
-    private fun getReports(baseDir: File, reportPath: String): List<File> {
-        val pattern = WildcardPattern.create(reportPath)
-        val matchingFiles = baseDir
-                .walkTopDown()
-                .filter { it.isFile && pattern.match(it.relativeTo(baseDir).invariantSeparatorsPath) }
-                .toMutableList()
-
-        if (matchingFiles.isEmpty()) {
-            if (conf.hasKey(REPORT_PATH_KEY)) {
-                val file = File(reportPath)
-                if (!file.exists()) {
-                    val formattedMessage =
-                        String.format("No utPLSQL test report was found for %s using pattern %s", REPORT_PATH_KEY, reportPath)
-                    logger.warn(formattedMessage)
-                    analysisWarnings.addUnique(formattedMessage)
-                } else {
-                    matchingFiles.add(file)
-                }
-            } else {
-                logger.info("No utPLSQL test report was found for {} using default pattern {}", REPORT_PATH_KEY, reportPath)
-            }
-        }
-        return matchingFiles
-    }
-
-    private fun readTestExecutionsReport(file: File): TestExecutions {
-        val serializer = Persister()
-        return serializer.read(TestExecutions::class.java, file)
-    }
-
-    private fun processTestExecutions(context: SensorContext, testExecutions: TestExecutions) {
-        testExecutions.files?.forEach { file ->
-            val mappedTest = objectLocator.findTestObject(file.path, PlSqlGrammar.CREATE_PACKAGE_BODY)
-            val inputFile = mappedTest?.inputFile ?:
-                context.fileSystem().inputFile(context.fileSystem().predicates().hasPath(file.path))
-
-            if (inputFile != null) {
-                file.testCases?.let { testCase ->
-                    val testCount = testCase.count { it.status != TestCaseStatus.SKIPPED }
-                    val failureCount = testCase.count { it.status == TestCaseStatus.FAILED }
-                    val errorCount = testCase.count { it.status == TestCaseStatus.ERROR }
-                    val skippedCount = testCase.count { it.status == TestCaseStatus.SKIPPED }
-                    val duration = testCase.sumOf { it.duration }
-
-                    saveMetricOnFile(context, inputFile, CoreMetrics.TESTS, testCount)
-                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_FAILURES, failureCount)
-                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_ERRORS, errorCount)
-                    saveMetricOnFile(context, inputFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
-                    saveMetricOnFile(context, inputFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
-                }
-            }
-        }
-    }
-    private fun <T : Serializable> saveMetricOnFile(context: SensorContext, inputFile: InputFile, metric: Metric<T>, value: T) {
-        context.newMeasure<T>()
-               .on(inputFile)
-               .forMetric(metric)
-               .withValue(value)
-               .save()
+        testResultImporter.execute(context)
     }
 
     companion object {
-        const val REPORT_PATH_KEY = "sonar.zpa.tests.reportPaths"
-        const val DEFAULT_REPORT_PATH = "utplsql-test.xml"
+        const val TEST_REPORT_PATH_KEY = "sonar.zpa.tests.reportPaths"
+        const val DEFAULT_TEST_REPORT_PATH = "utplsql-test.xml"
     }
 
 }

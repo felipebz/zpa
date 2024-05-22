@@ -38,7 +38,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 
-
 class UtPlSqlSensorTest {
 
     private lateinit var settings: MapSettings
@@ -73,7 +72,7 @@ class UtPlSqlSensorTest {
 
         whenever(objectLocator.findTestObject(any(), any())).thenReturn(null)
 
-        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
+        settings.setProperty(UtPlSqlSensor.TEST_REPORT_PATH_KEY, "test-report-with-paths.xml")
         sensor.execute(context)
 
         val key = testFile.key()
@@ -94,7 +93,7 @@ class UtPlSqlSensorTest {
         whenever(objectLocator.findTestObject(eq("test_package"), any())).thenReturn(
             MappedObject("", PlSqlGrammar.CREATE_PACKAGE_BODY, PlSqlFile.Type.TEST, testFile.path(), testFile))
 
-        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "test-report-with-paths.xml")
+        settings.setProperty(UtPlSqlSensor.TEST_REPORT_PATH_KEY, "test-report-with-paths.xml")
         sensor.execute(context)
 
         val key = testFile.key()
@@ -107,7 +106,7 @@ class UtPlSqlSensorTest {
 
     @Test
     fun invalidReport() {
-        settings.setProperty(UtPlSqlSensor.REPORT_PATH_KEY, "doesnotexists.xml")
+        settings.setProperty(UtPlSqlSensor.TEST_REPORT_PATH_KEY, "doesnotexists.xml")
         sensor.execute(context)
         verify(analysisWarnings).addUnique("No utPLSQL test report was found for sonar.zpa.tests.reportPaths using pattern doesnotexists.xml")
     }
