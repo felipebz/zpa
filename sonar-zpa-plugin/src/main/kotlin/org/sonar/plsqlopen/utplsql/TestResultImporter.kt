@@ -25,67 +25,25 @@ import org.sonar.api.batch.measure.Metric
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
-import org.sonar.api.utils.WildcardPattern
 import org.sonar.plsqlopen.symbols.ObjectLocator
-import org.sonar.plsqlopen.utils.log.Logger
-import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
 
 class TestResultImporter(private val objectLocator: ObjectLocator,
-                         private val analysisWarnings: AnalysisWarnings) {
+                         analysisWarnings: AnalysisWarnings) : AbstractReportImporter(analysisWarnings) {
 
-    private val logger: Logger = Loggers.getLogger(TestResultImporter::class.java)
+    override val reportType = "test"
+    override val reportKey = UtPlSqlSensor.TEST_REPORT_PATH_KEY
 
-    fun execute(context: SensorContext) {
-        val reports = context.config().getStringArray(UtPlSqlSensor.TEST_REPORT_PATH_KEY).flatMap {
-            getReports(context, it)
-        }
-
-        for (report in reports) {
-            val testExecutions = readTestExecutionsReport(report)
-            logger.info("Processing test report {}", report)
-            processTestExecutions(context, testExecutions)
-        }
-    }
-
-    private fun getReports(context: SensorContext, reportPath: String): List<File> {
-        val pattern = WildcardPattern.create(reportPath)
-        val baseDir = context.fileSystem().baseDir()
-        val matchingFiles = baseDir
-                .walkTopDown()
-                .filter { it.isFile && pattern.match(it.relativeTo(baseDir).invariantSeparatorsPath) }
-                .toMutableList()
-
-        if (matchingFiles.isEmpty()) {
-            if (context.config().hasKey(UtPlSqlSensor.TEST_REPORT_PATH_KEY)) {
-                val file = File(reportPath)
-                if (!file.exists()) {
-                    val formattedMessage =
-                        String.format("No utPLSQL test report was found for %s using pattern %s", UtPlSqlSensor.TEST_REPORT_PATH_KEY, reportPath)
-                    logger.warn(formattedMessage)
-                    analysisWarnings.addUnique(formattedMessage)
-                } else {
-                    matchingFiles.add(file)
-                }
-            } else {
-                logger.info("No utPLSQL test report was found for {} using default pattern {}", UtPlSqlSensor.TEST_REPORT_PATH_KEY, reportPath)
-            }
-        }
-        return matchingFiles
-    }
-
-    private fun readTestExecutionsReport(file: File): TestExecutions {
+    override fun processReport(context: SensorContext, report: File) {
         val serializer = Persister()
-        return serializer.read(TestExecutions::class.java, file)
-    }
+        val testExecutions = serializer.read(TestExecutions::class.java, report)
 
-    private fun processTestExecutions(context: SensorContext, testExecutions: TestExecutions) {
         testExecutions.files?.forEach { file ->
             val mappedTest = objectLocator.findTestObject(file.path, PlSqlGrammar.CREATE_PACKAGE_BODY)
-            val inputFile = mappedTest?.inputFile ?:
-                context.fileSystem().inputFile(context.fileSystem().predicates().hasPath(file.path))
+            val inputFile = mappedTest?.inputFile ?: context.fileSystem()
+                .inputFile(context.fileSystem().predicates().hasPath(file.path))
 
             if (inputFile != null) {
                 file.testCases?.let { testCase ->
@@ -104,12 +62,18 @@ class TestResultImporter(private val objectLocator: ObjectLocator,
             }
         }
     }
-    private fun <T : Serializable> saveMetricOnFile(context: SensorContext, inputFile: InputFile, metric: Metric<T>, value: T) {
+
+    private fun <T : Serializable> saveMetricOnFile(
+        context: SensorContext,
+        inputFile: InputFile,
+        metric: Metric<T>,
+        value: T
+    ) {
         context.newMeasure<T>()
-               .on(inputFile)
-               .forMetric(metric)
-               .withValue(value)
-               .save()
+            .on(inputFile)
+            .forMetric(metric)
+            .withValue(value)
+            .save()
     }
 
 }
