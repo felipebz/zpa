@@ -79,7 +79,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     private fun declareGlobalSymbols(current: Scope, outer: Scope) {
         val scope = ScopeImpl(
             outer = outer,
-            node = null,
+            firstToken = current.firstToken,
+            lastToken = current.lastToken,
             isAutonomousTransaction = current.isAutonomousTransaction,
             hasExceptionHandler = current.hasExceptionHandler,
             isOverridingMember = current.isOverridingMember,
@@ -396,7 +397,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             }
         }
 
-        val scope = ScopeImpl(currentScope, node, autonomous, exception, isOverridingMember)
+        val scope = ScopeImpl(currentScope, node, node.token, node.lastToken, autonomous, exception, isOverridingMember)
         symbolTable.addScope(scope)
         currentScope = scope
     }

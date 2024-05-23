@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
+import com.felipebz.flr.api.Token
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
@@ -31,6 +32,8 @@ import kotlin.concurrent.withLock
 
 class ScopeImpl(override val outer: Scope? = null,
                 node: AstNode? = null,
+                override val firstToken: Token? = null,
+                override val lastToken: Token? = null,
                 override val isAutonomousTransaction: Boolean = false,
                 override val hasExceptionHandler: Boolean = false,
                 override val isOverridingMember: Boolean = false,
