@@ -35,6 +35,7 @@ import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 class UtPlSqlSensorTest {
 
@@ -60,7 +61,7 @@ class UtPlSqlSensorTest {
     }
 
     @Test
-    fun shouldImportReportWithPaths() {
+    fun shouldImportTestReportWithPaths() {
         val testFile = TestInputFileBuilder("moduleKey", "path/to/file.sql")
             .setType(InputFile.Type.TEST)
             .build()
@@ -80,14 +81,15 @@ class UtPlSqlSensorTest {
     }
 
     @Test
-    fun shouldImportReportWithoutPaths() {
+    fun shouldImportTestReportWithoutPaths() {
         val testFile = TestInputFileBuilder("moduleKey", "path/to/file.sql")
             .setType(InputFile.Type.TEST)
             .build()
         context.fileSystem().add(testFile)
 
         whenever(objectLocator.findTestObject(eq("test_package"), any())).thenReturn(
-            MappedObject("", PlSqlGrammar.CREATE_PACKAGE_BODY, PlSqlFile.Type.TEST, testFile.path(), testFile))
+            MappedObject("", PlSqlGrammar.CREATE_PACKAGE_BODY, PlSqlFile.Type.TEST, testFile.path(), testFile)
+        )
 
         context.settings().setProperty(UtPlSqlSensor.TEST_REPORT_PATH_KEY, "test-report-with-paths.xml")
         sensor.execute(context)
@@ -101,9 +103,65 @@ class UtPlSqlSensorTest {
     }
 
     @Test
-    fun invalidReport() {
+    fun invalidTestReport() {
         context.settings().setProperty(UtPlSqlSensor.TEST_REPORT_PATH_KEY, "doesnotexists.xml")
         sensor.execute(context)
         verify(analysisWarnings).addUnique("No utPLSQL test report was found for sonar.zpa.tests.reportPaths using pattern doesnotexists.xml")
+    }
+
+    @Test
+    fun shouldImportCoverageReportWithPaths() {
+        val relativePath = "award_bonus.sql"
+        val mainFile = TestInputFileBuilder("moduleKey", relativePath)
+            .setType(InputFile.Type.MAIN)
+            .setCharset(StandardCharsets.UTF_8)
+            .initMetadata(File(context.fileSystem().baseDir(), relativePath).readText())
+            .build()
+        context.fileSystem().add(mainFile)
+
+        whenever(objectLocator.findMainObject(any(), any())).thenReturn(null)
+
+        context.settings().setProperty(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY, "coverage-report-with-paths.xml")
+        sensor.execute(context)
+
+        val key = mainFile.key()
+        assertThat(context.lineHits(key, 5)).isOne()
+        assertThat(context.lineHits(key, 10)).isOne()
+        assertThat(context.lineHits(key, 11)).isOne()
+        assertThat(context.lineHits(key, 13)).isOne()
+
+        assertThat(context.conditions(key, 10)).isEqualTo(2)
+        assertThat(context.coveredConditions(key, 10)).isEqualTo(2)
+    }
+
+    @Test
+    fun shouldImportCoverageReportWithoutPaths() {
+        val relativePath = "betwnstr.sql"
+        val mainFile = TestInputFileBuilder("moduleKey", relativePath)
+            .setType(InputFile.Type.MAIN)
+            .setCharset(StandardCharsets.UTF_8)
+            .initMetadata(File(context.fileSystem().baseDir(), relativePath).readText())
+            .build()
+        context.fileSystem().add(mainFile)
+
+        whenever(objectLocator.findMainObject(any(), any())).thenReturn(
+            MappedObject("", PlSqlGrammar.CREATE_FUNCTION, PlSqlFile.Type.MAIN, mainFile.path(), mainFile)
+        )
+
+        context.settings().setProperty(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY, "coverage-report-without-paths.xml")
+        sensor.execute(context)
+
+        val key = mainFile.key()
+        assertThat(context.lineHits(key, 2)).isOne()
+        assertThat(context.lineHits(key, 4)).isOne()
+        assertThat(context.lineHits(key, 5)).isOne()
+        assertThat(context.lineHits(key, 7)).isOne()
+    }
+
+    @Test
+    fun invalidCoverageReport() {
+        context.settings().setProperty(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY, "doesnotexists.xml")
+        sensor.execute(context)
+        verify(analysisWarnings).addUnique("No utPLSQL coverage report was found for sonar.zpa.coverage.reportPaths using pattern doesnotexists.xml")
     }
 }

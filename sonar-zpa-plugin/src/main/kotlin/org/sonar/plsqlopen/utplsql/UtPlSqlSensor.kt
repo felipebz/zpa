@@ -29,6 +29,7 @@ import org.sonar.plsqlopen.symbols.ObjectLocator
 class UtPlSqlSensor(objectLocator: ObjectLocator, analysisWarnings: AnalysisWarnings) : Sensor {
 
     private val testResultImporter = TestResultImporter(objectLocator, analysisWarnings)
+    private val coverageResultImporter = CoverageResultImporter(objectLocator, analysisWarnings)
 
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("Z PL/SQL Analyzer - utPLSQL Report Importer").onlyOnLanguage(PlSql.KEY)
@@ -36,11 +37,14 @@ class UtPlSqlSensor(objectLocator: ObjectLocator, analysisWarnings: AnalysisWarn
 
     override fun execute(context: SensorContext) {
         testResultImporter.execute(context)
+        coverageResultImporter.execute(context)
     }
 
     companion object {
         const val TEST_REPORT_PATH_KEY = "sonar.zpa.tests.reportPaths"
         const val DEFAULT_TEST_REPORT_PATH = "utplsql-test.xml"
+        const val COVERAGE_REPORT_PATH_KEY = "sonar.zpa.coverage.reportPaths"
+        const val DEFAULT_COVERAGE_REPORT_PATH = "utplsql-coverage.xml"
     }
 
 }

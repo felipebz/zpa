@@ -92,6 +92,15 @@ class PlSqlPlugin : Plugin {
                 .defaultValue(UtPlSqlSensor.DEFAULT_TEST_REPORT_PATH)
                 .multiValues(true)
                 .build(),
+            PropertyDefinition.builder(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY)
+                .name("Path to the utPLSQL coverage report(s)")
+                .description("Paths (absolute or relative) to report files with utPLSQL coverage data.")
+                .category(DEFAULT_CATEGORY)
+                .subCategory(TEST_AND_COVERAGE)
+                .onQualifiers(Qualifiers.PROJECT)
+                .defaultValue(UtPlSqlSensor.DEFAULT_COVERAGE_REPORT_PATH)
+                .multiValues(true)
+                .build(),
 
             UtPlSqlSensor::class.java,
         )
