@@ -105,7 +105,7 @@ class MethodMatcher private constructor()
         var i = -1
         val nodes = arrayOfNulls<String>(3)
         for (child in node.children) {
-            if (i < 2 && child.type === PlSqlGrammar.VARIABLE_NAME || child.type === PlSqlGrammar.IDENTIFIER_NAME) {
+            if (i < 2 && (child.type === PlSqlGrammar.VARIABLE_NAME || child.type === PlSqlGrammar.IDENTIFIER_NAME)) {
                 nodes[++i] = child.tokenOriginalValue
             }
         }
