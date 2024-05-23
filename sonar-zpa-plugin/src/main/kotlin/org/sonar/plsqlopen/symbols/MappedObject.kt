@@ -29,7 +29,9 @@ data class MappedObject(
     val objectType: AstNodeType,
     val fileType: PlSqlFile.Type,
     val path: Path,
-    val inputFile: InputFile
+    val inputFile: InputFile,
+    val firstLine: Int = -1,
+    val lastLine: Int = -1
 ) {
     val isMain: Boolean
         get() = fileType === PlSqlFile.Type.MAIN

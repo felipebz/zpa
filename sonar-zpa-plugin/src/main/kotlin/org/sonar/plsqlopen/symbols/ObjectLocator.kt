@@ -33,7 +33,9 @@ class ObjectLocator {
             val plSqlFile = it.plSqlFile as SonarQubePlSqlFile? ?: return@map null
             val identifier = it.identifier ?: return@map null
             val type = it.type ?: return@map null
-            MappedObject(identifier, type, plSqlFile.type(), plSqlFile.path(), plSqlFile.inputFile)
+            val firstLine = it.tree?.tokenLine ?: return@map null
+            val lastLine = it.tree?.lastTokenOrNull?.endLine ?: return@map null
+            MappedObject(identifier, type, plSqlFile.type(), plSqlFile.path(), plSqlFile.inputFile, firstLine, lastLine)
         }.filterNotNull()
 
     fun setScope(scope: Scope) {

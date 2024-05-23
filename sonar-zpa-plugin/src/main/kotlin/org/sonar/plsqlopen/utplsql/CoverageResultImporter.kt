@@ -42,6 +42,8 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
             var inputFile = context.fileSystem()
                 .inputFile(context.fileSystem().predicates().hasPath(filePath))
 
+            var lineOffset = 0
+
             if (inputFile == null) {
                 val objectType = when (filePath.substringBeforeLast(' ')) {
                     "package body" -> PlSqlGrammar.CREATE_PACKAGE_BODY
@@ -53,16 +55,19 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
                 }
                 val objectName = filePath.substringAfterLast('.')
 
-                val mappedFile = objectLocator.findMainObject(objectName, objectType)
-
-                inputFile = mappedFile?.inputFile
+                val mappedObject = objectLocator.findMainObject(objectName, objectType)
+                if (mappedObject != null) {
+                    inputFile = mappedObject.inputFile
+                    lineOffset = mappedObject.firstLine - 1
+                }
             }
 
             if (inputFile != null) {
                 val newCoverage = context.newCoverage().onFile(inputFile)
 
                 file.linesToCover?.forEach { line ->
-                    newCoverage.lineHits(line.lineNumber, if (line.covered) 1 else 0)
+                    val lineNumber = line.lineNumber + lineOffset
+                    newCoverage.lineHits(lineNumber, if (line.covered) 1 else 0)
 
                     val branchesToCover = line.branchesToCover
                     val coveredBranches = line.coveredBranches ?: 0
@@ -72,7 +77,7 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
                                 "${line.lineNumber} for file \"$filePath\""
                         }
 
-                        newCoverage.conditions(line.lineNumber, branchesToCover, coveredBranches)
+                        newCoverage.conditions(lineNumber, branchesToCover, coveredBranches)
                     }
                 }
 

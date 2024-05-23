@@ -1,3 +1,5 @@
+/* comment before the code
+   so the lines in the coverage report don't match the file */
 create or replace function betwnstr(a_string varchar2, a_start_pos integer, a_end_pos integer) return varchar2 is
   l_start_pos pls_integer := a_start_pos;
 begin

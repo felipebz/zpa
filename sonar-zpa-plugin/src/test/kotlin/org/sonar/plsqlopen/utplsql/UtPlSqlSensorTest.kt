@@ -145,17 +145,25 @@ class UtPlSqlSensorTest {
         context.fileSystem().add(mainFile)
 
         whenever(objectLocator.findMainObject(any(), any())).thenReturn(
-            MappedObject("", PlSqlGrammar.CREATE_FUNCTION, PlSqlFile.Type.MAIN, mainFile.path(), mainFile)
+            MappedObject(
+                identifier = "",
+                objectType = PlSqlGrammar.CREATE_FUNCTION,
+                fileType = PlSqlFile.Type.MAIN,
+                path = mainFile.path(),
+                inputFile = mainFile,
+                firstLine = 3,
+                lastLine = 10
+            )
         )
 
         context.settings().setProperty(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY, "coverage-report-without-paths.xml")
         sensor.execute(context)
 
         val key = mainFile.key()
-        assertThat(context.lineHits(key, 2)).isOne()
         assertThat(context.lineHits(key, 4)).isOne()
-        assertThat(context.lineHits(key, 5)).isOne()
+        assertThat(context.lineHits(key, 6)).isOne()
         assertThat(context.lineHits(key, 7)).isOne()
+        assertThat(context.lineHits(key, 9)).isOne()
     }
 
     @Test
