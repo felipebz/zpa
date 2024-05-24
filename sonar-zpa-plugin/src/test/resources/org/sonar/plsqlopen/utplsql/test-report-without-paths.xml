@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testExecutions version="1">
-  <file path="test_package">
+  <file path="my.suite.test_package">
     <testCase name="test_1" duration="1">
     </testCase>
     <testCase name="test_2" duration="1">

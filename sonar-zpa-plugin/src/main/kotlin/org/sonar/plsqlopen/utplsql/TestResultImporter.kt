@@ -41,7 +41,8 @@ class TestResultImporter(private val objectLocator: ObjectLocator,
         val testExecutions = serializer.read(TestExecutions::class.java, report)
 
         testExecutions.files?.forEach { file ->
-            val mappedTest = objectLocator.findTestObject(file.path, PlSqlGrammar.CREATE_PACKAGE_BODY)
+            val packageName = file.path.substringAfterLast('.')
+            val mappedTest = objectLocator.findTestObject(packageName, PlSqlGrammar.CREATE_PACKAGE)
             val inputFile = mappedTest?.inputFile ?: context.fileSystem()
                 .inputFile(context.fileSystem().predicates().hasPath(file.path))
 
