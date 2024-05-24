@@ -23,6 +23,7 @@ import org.simpleframework.xml.core.Persister
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.plsqlopen.symbols.ObjectLocator
+import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 
@@ -30,6 +31,7 @@ import java.io.File
 class CoverageResultImporter(private val objectLocator: ObjectLocator,
                              analysisWarnings: AnalysisWarnings) : AbstractReportImporter(analysisWarnings) {
 
+    private val logger = Loggers.getLogger(CoverageResultImporter::class.java)
     override val reportType = "coverage"
     override val reportKey = UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY
 
@@ -63,6 +65,7 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
             }
 
             if (inputFile != null) {
+                logger.debug("The path ${file.path} was mapped to ${inputFile}")
                 val newCoverage = context.newCoverage().onFile(inputFile)
 
                 file.linesToCover?.forEach { line ->
@@ -82,6 +85,8 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
                 }
 
                 newCoverage.save()
+            } else {
+                logger.warn("The path ${file.path} was not found in the project")
             }
         }
     }

@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.utils.log.Loggers
 import java.io.File
 
 abstract class AbstractReportImporter(private val analysisWarnings: AnalysisWarnings) {
+
     private val logger: Logger = Loggers.getLogger(AbstractReportImporter::class.java)
 
     abstract val reportType: String

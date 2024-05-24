@@ -26,6 +26,7 @@ import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.plsqlopen.symbols.ObjectLocator
+import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
 import java.io.Serializable
@@ -33,6 +34,7 @@ import java.io.Serializable
 class TestResultImporter(private val objectLocator: ObjectLocator,
                          analysisWarnings: AnalysisWarnings) : AbstractReportImporter(analysisWarnings) {
 
+    private val logger = Loggers.getLogger(TestResultImporter::class.java)
     override val reportType = "test"
     override val reportKey = UtPlSqlSensor.TEST_REPORT_PATH_KEY
 
@@ -47,6 +49,7 @@ class TestResultImporter(private val objectLocator: ObjectLocator,
                 .inputFile(context.fileSystem().predicates().hasPath(file.path))
 
             if (inputFile != null) {
+                logger.debug("The path ${file.path} was mapped to ${inputFile}")
                 file.testCases?.let { testCase ->
                     val testCount = testCase.count { it.status != TestCaseStatus.SKIPPED }
                     val failureCount = testCase.count { it.status == TestCaseStatus.FAILED }
@@ -60,6 +63,8 @@ class TestResultImporter(private val objectLocator: ObjectLocator,
                     saveMetricOnFile(context, inputFile, CoreMetrics.SKIPPED_TESTS, skippedCount)
                     saveMetricOnFile(context, inputFile, CoreMetrics.TEST_EXECUTION_TIME, duration)
                 }
+            } else {
+                logger.warn("The path ${file.path} was not found in the project")
             }
         }
     }
