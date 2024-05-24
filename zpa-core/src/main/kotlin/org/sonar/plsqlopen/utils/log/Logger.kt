@@ -25,6 +25,10 @@ interface Logger {
 
     fun trace(msg: String, vararg args: Any?)
 
+    fun debug(msg: String)
+
+    fun debug(msg: String, vararg args: Any?)
+
     fun info(msg: String)
 
     fun info(msg: String, vararg args: Any?)

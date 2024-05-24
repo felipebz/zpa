@@ -31,6 +31,14 @@ class SonarQubeLogger internal constructor(private val logger: Logger) : org.son
         logger.trace(msg, *args)
     }
 
+    override fun debug(msg: String) {
+        logger.debug(msg)
+    }
+
+    override fun debug(msg: String, vararg args: Any?) {
+        logger.debug(msg, *args)
+    }
+
     override fun info(msg: String) {
         logger.info(msg)
     }

@@ -37,6 +37,14 @@ class ZpaLogger(private val logger: java.util.logging.Logger) : Logger {
         logger.finest(format(msg, args))
     }
 
+    override fun debug(msg: String) {
+        logger.fine(msg)
+    }
+
+    override fun debug(msg: String, vararg args: Any?) {
+        logger.fine(format(msg, args))
+    }
+
     override fun info(msg: String) {
         logger.info(msg)
     }
