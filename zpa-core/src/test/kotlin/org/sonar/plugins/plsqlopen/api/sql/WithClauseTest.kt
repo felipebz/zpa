@@ -57,4 +57,9 @@ class WithClauseTest : RuleTest() {
         assertThat(p).matches("with q(id, parent) as (select 1 from dual) search depth first by a set order1 cycle id set cycle to 1 default 0")
     }
 
+    @Test
+    fun matchesWithValues() {
+        assertThat(p).matches("with q(a, b) as (values (1, 'foo'), (2, 'bar')) as t(a, b)")
+    }
+
 }

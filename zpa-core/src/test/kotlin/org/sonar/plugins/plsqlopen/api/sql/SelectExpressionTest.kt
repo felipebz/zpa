@@ -207,4 +207,9 @@ class SelectExpressionTest : RuleTest() {
     fun matchesSelectWithOrderByAndFetchFirstRows() {
         assertThat(p).matches("select 1 from dual order by 1 fetch first 1 row only")
     }
+
+    @Test
+    fun matchesSelectFromValues() {
+        assertThat(p).matches("select 1 from (values (1, 'foo'), (2, 'bar')) as t(a, b)")
+    }
 }

@@ -31,6 +31,7 @@ enum class DmlGrammar : GrammarRuleKey {
     TABLE_REFERENCE,
     DML_TABLE_EXPRESSION_CLAUSE,
     ALIAS,
+    VALUES_EXPRESSION_CLAUSE,
     PARTITION_BY_CLAUSE,
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
@@ -176,11 +177,30 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(SELECT_COLUMN).define(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME, b.nextNot(COLLECT)))
 
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
-                    b.firstOf(
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(
                             b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
-                            OBJECT_REFERENCE),
-                    b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)), ALIAS))
+                            OBJECT_REFERENCE
+                        ),
+                        b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)),
+                            ALIAS
+                        )
+                    ),
+                    VALUES_EXPRESSION_CLAUSE
+                )
+            )
+
+            b.rule(VALUES_EXPRESSION_CLAUSE).define(
+                LPARENTHESIS,
+                VALUES,
+                b.oneOrMore(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS, b.optional(COMMA)),
+                RPARENTHESIS,
+                b.optional(AS),
+                IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+            )
 
             b.rule(FROM_CLAUSE).define(
                     FROM,
@@ -250,7 +270,9 @@ enum class DmlGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 AS,
-                LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS,
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                    VALUES_EXPRESSION_CLAUSE),
                 b.optional(SEARCH_CLAUSE),
                 b.optional(CYCLE_CLAUSE)
             )
