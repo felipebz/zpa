@@ -57,7 +57,10 @@ enum class DmlGrammar : GrammarRuleKey {
     CONNECT_BY_CLAUSE,
     START_WITH_CLAUSE,
     HIERARCHICAL_QUERY_CLAUSE,
+    WITH_CLAUSE,
     SUBQUERY_FACTORING_CLAUSE,
+    SEARCH_CLAUSE,
+    CYCLE_CLAUSE,
     RETURNING_INTO_CLAUSE,
     QUERY_BLOCK,
     SELECT_EXPRESSION,
@@ -238,9 +241,30 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(CONNECT_BY_CLAUSE, b.optional(START_WITH_CLAUSE)),
                     b.sequence(START_WITH_CLAUSE, CONNECT_BY_CLAUSE)))
 
+            b.rule(WITH_CLAUSE).define(
+                WITH,
+                b.oneOrMore(SUBQUERY_FACTORING_CLAUSE, b.optional(COMMA))
+            )
+
             b.rule(SUBQUERY_FACTORING_CLAUSE).define(
-                    WITH,
-                    b.oneOrMore(IDENTIFIER_NAME, AS, LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS, b.optional(COMMA)))
+                IDENTIFIER_NAME,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                AS,
+                LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS,
+                b.optional(SEARCH_CLAUSE),
+                b.optional(CYCLE_CLAUSE)
+            )
+
+            b.rule(SEARCH_CLAUSE).define(
+                SEARCH, b.firstOf(BREADTH, DEPTH),
+                FIRST, BY, ORDER_BY_ITEM, b.zeroOrMore(COMMA, ORDER_BY_ITEM),
+                SET, IDENTIFIER_NAME
+            )
+
+            b.rule(CYCLE_CLAUSE).define(
+                CYCLE, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                SET, IDENTIFIER_NAME, TO, EXPRESSION, DEFAULT, EXPRESSION
+            )
 
             b.rule(QUERY_BLOCK).define(
                 b.firstOf(
@@ -257,7 +281,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)))
 
             b.rule(SELECT_EXPRESSION).define(
-                b.optional(SUBQUERY_FACTORING_CLAUSE),
+                b.optional(WITH_CLAUSE),
                 QUERY_BLOCK,
                 b.zeroOrMore(b.firstOf(MINUS_KEYWORD, INTERSECT, UNION, EXCEPT), b.optional(ALL), QUERY_BLOCK),
                 b.optional(b.firstOf(

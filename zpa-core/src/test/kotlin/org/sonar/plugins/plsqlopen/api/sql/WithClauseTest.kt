@@ -19,17 +19,17 @@
  */
 package org.sonar.plugins.plsqlopen.api.sql
 
+import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.RuleTest
-import com.felipebz.flr.tests.Assertions.assertThat
 
-class SubqueryFactoringClauseTest : RuleTest() {
+class WithClauseTest : RuleTest() {
 
     @BeforeEach
     fun init() {
-        setRootRule(DmlGrammar.SUBQUERY_FACTORING_CLAUSE)
+        setRootRule(DmlGrammar.WITH_CLAUSE)
     }
 
     @Test
@@ -40,6 +40,21 @@ class SubqueryFactoringClauseTest : RuleTest() {
     @Test
     fun matchesMultipleSubqueries() {
         assertThat(p).matches("with q as (select 1 from dual), q2 as (select 1 from dual)")
+    }
+
+    @Test
+    fun matchesRecursiveSimple() {
+        assertThat(p).matches("with q(id, parent) as (select 1 from dual)")
+    }
+
+    @Test
+    fun matchesRecursiveWithSearch() {
+        assertThat(p).matches("with q(id, parent) as (select 1 from dual) search depth first by a set order1")
+    }
+
+    @Test
+    fun matchesRecursiveWithSearchAndCycle() {
+        assertThat(p).matches("with q(id, parent) as (select 1 from dual) search depth first by a set order1 cycle id set cycle to 1 default 0")
     }
 
 }
