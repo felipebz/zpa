@@ -55,6 +55,8 @@ object PlSqlLexer {
 
     private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\d{4}-\d{2}-\d{2}')"""
 
+    private const val TIMESTAMP_LITERAL = """(?i)TIMESTAMP\s*?'\d{4}-\d{2}-\d{2}\s++\d{1,2}:\d{2}:\d{2}(?:.\d{1,9})?(?:\s++[A-Z0-9_/+-:]++(?:\s++[A-Z0-9_/+-]{1,5})?)?'"""
+
     private val SIMPLE_IDENTIFIER = and("""[\w\p{L}]""", o2n("""[\w\p{L}#$]"""))
 
     private const val QUOTED_IDENTIFIER = """".+?""""
@@ -69,6 +71,7 @@ object PlSqlLexer {
             .withChannel(IntegerChannel())
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL)))
+            .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL)))
             .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
                 PlSqlKeyword.entries.toTypedArray()
             )))

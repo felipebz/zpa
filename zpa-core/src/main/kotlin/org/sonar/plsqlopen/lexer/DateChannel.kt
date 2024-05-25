@@ -29,7 +29,7 @@ class DateChannel(private val regexpChannel: RegexpChannel)
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         val nextChar = code.peek().toChar().lowercaseChar()
-        if (nextChar != 'd') {
+        if (nextChar != 'd' && nextChar != 't') {
             return false
         }
 

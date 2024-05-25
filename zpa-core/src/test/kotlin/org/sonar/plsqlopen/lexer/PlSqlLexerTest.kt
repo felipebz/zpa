@@ -148,6 +148,20 @@ class PlSqlLexerTest {
         assertThatIsToken("date    '2015-01-01'", PlSqlTokenType.DATE_LITERAL)
     }
 
+    @Test
+    fun timestampLiteral() {
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("timestamp '2015-01-01 01:01:01'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("timestamp'2015-01-01 01:01:01'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("timestamp    '2015-01-01 01:01:01'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01.0'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01.123456789'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01 -3:00'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01 -03:00'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01 America/Sao_Paulo'", PlSqlTokenType.TIMESTAMP_LITERAL)
+        assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01 America/Sao_Paulo -03'", PlSqlTokenType.TIMESTAMP_LITERAL)
+    }
+
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {
         assertThat(lexer.lex(sourceCode)).hasToken(sourceCode, tokenType)
     }
