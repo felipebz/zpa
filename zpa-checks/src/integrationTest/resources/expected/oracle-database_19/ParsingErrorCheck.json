@@ -1901,9 +1901,6 @@
   "EXPLAIN-PLAN-3.sql": [
     2
   ],
-  "EXTRACT-datetime-3.sql": [
-    2
-  ],
   "Expression-Lists-0.sql": [
     2
   ],
@@ -1944,9 +1941,6 @@
     2
   ],
   "FLASHBACK-TABLE-9.sql": [
-    2
-  ],
-  "FROM_TZ-0.sql": [
     2
   ],
   "Floating-Point-Conditions-0.sql": [
@@ -2277,9 +2271,6 @@
     2
   ],
   "Literals-26.sql": [
-    2
-  ],
-  "Literals-27.sql": [
     2
   ],
   "Literals-28.sql": [
@@ -2759,9 +2750,6 @@
   "SYS_CONTEXT-3.sql": [
     2
   ],
-  "SYS_EXTRACT_UTC-0.sql": [
-    2
-  ],
   "SYS_GUID-0.sql": [
     2
   ],
@@ -2810,15 +2798,6 @@
   "TO_CHAR-datetime-0.sql": [
     2
   ],
-  "TO_CHAR-datetime-2.sql": [
-    4
-  ],
-  "TO_CHAR-datetime-5.sql": [
-    6
-  ],
-  "TO_CHAR-datetime-6.sql": [
-    6
-  ],
   "TO_CHAR-number-0.sql": [
     2
   ],
@@ -2827,9 +2806,6 @@
   ],
   "TO_DATE-3.sql": [
     3
-  ],
-  "TO_DSINTERVAL-1.sql": [
-    2
   ],
   "TO_DSINTERVAL-2.sql": [
     3
@@ -2851,15 +2827,6 @@
   ],
   "TO_YMINTERVAL-2.sql": [
     3
-  ],
-  "TRUNC-date-1.sql": [
-    6
-  ],
-  "TRUNC-date-2.sql": [
-    6
-  ],
-  "TRUNC-date-4.sql": [
-    6
   ],
   "TRUNCATE-CLUSTER-0.sql": [
     2

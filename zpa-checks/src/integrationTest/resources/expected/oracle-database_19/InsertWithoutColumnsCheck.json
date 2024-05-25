@@ -192,6 +192,10 @@
   "TO_BINARY_DOUBLE-0.sql": [
     5
   ],
+  "TO_CHAR-datetime-2.sql": [
+    3,
+    7
+  ],
   "TRANSLATE-USING-0.sql": [
     4
   ],
