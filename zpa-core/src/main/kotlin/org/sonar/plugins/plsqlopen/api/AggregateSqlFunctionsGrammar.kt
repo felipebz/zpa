@@ -21,6 +21,7 @@ package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.EXPRESSION
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
@@ -28,6 +29,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
     LISTAGG_EXPRESSION,
+    XMLAGG_EXPRESSION,
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
@@ -41,7 +43,13 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                     RPARENTHESIS,
                     WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS)
 
-            b.rule(AGGREGATE_SQL_FUNCTION).define(LISTAGG_EXPRESSION)
+            b.rule(XMLAGG_EXPRESSION).define(
+                XMLAGG, LPARENTHESIS,
+                EXPRESSION, b.optional(ORDER_BY_CLAUSE),
+                RPARENTHESIS
+            )
+
+            b.rule(AGGREGATE_SQL_FUNCTION).define(b.firstOf(LISTAGG_EXPRESSION, XMLAGG_EXPRESSION))
         }
     }
 

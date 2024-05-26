@@ -21,7 +21,6 @@ package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
-import org.sonar.plugins.plsqlopen.api.DmlGrammar.ORDER_BY_CLAUSE
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
@@ -43,7 +42,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     XMLELEMENT_EXPRESSION,
     XMLFOREST_EXPRESSION,
     XMLSERIALIZE_EXPRESSION,
-    XMLAGG_EXPRESSION,
     XMLEXISTS_EXPRESSION,
     XMLQUERY_EXPRESSION,
     XMLROOT_EXPRESSION,
@@ -74,7 +72,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     XMLELEMENT_EXPRESSION,
                     XMLFOREST_EXPRESSION,
                     XMLSERIALIZE_EXPRESSION,
-                    XMLAGG_EXPRESSION,
                     XMLEXISTS_EXPRESSION,
                     XMLQUERY_EXPRESSION,
                     XMLROOT_EXPRESSION,
@@ -159,11 +156,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     ),
                     b.optional(COMMA, XMLATTRIBUTES_EXPRESSION),
                     b.zeroOrMore(COMMA, EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME)),
-                    RPARENTHESIS)
-
-            b.rule(XMLAGG_EXPRESSION).define(
-                    XMLAGG, LPARENTHESIS,
-                    EXPRESSION, b.optional(ORDER_BY_CLAUSE),
                     RPARENTHESIS)
 
             b.rule(XMLFOREST_EXPRESSION).define(
