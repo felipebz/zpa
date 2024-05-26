@@ -99,8 +99,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
     EXPONENTIATION_EXPRESSION,
     ARGUMENT,
     ARGUMENTS,
-    TREAT_AS_EXPRESSION,
-    SET_EXPRESSION,
     METHOD_CALL,
     SEQUENCE_ITERATOR_CHOICE,
     POSITIONAL_CHOICE_OPTION,
@@ -716,10 +714,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ARGUMENTS).define(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS)
 
-            b.rule(TREAT_AS_EXPRESSION).define(b.optional(TREAT), LPARENTHESIS, EXPRESSION, AS, b.optional(REF), OBJECT_REFERENCE, RPARENTHESIS)
-
-            b.rule(SET_EXPRESSION).define(SET, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
-
             b.rule(METHOD_CALL).define(MEMBER_EXPRESSION, b.oneOrMore(ARGUMENTS))
 
             b.rule(SEQUENCE_ITERATOR_CHOICE).define(FOR, ITERATOR, SEQUENCE, ASSOCIATION, EXPRESSION)
@@ -763,8 +757,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 RPARENTHESIS)
 
             b.rule(CALL_EXPRESSION).define(b.firstOf(
-                    TREAT_AS_EXPRESSION,
-                    SET_EXPRESSION,
                     SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
                     AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
                     METHOD_CALL,

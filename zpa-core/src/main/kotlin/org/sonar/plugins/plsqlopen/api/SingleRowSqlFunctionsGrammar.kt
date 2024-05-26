@@ -52,6 +52,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     XMLPARSE_EXPRESSION,
     XMLPI_EXPRESSION,
     XMLTABLE_EXPRESSION,
+
+    TREAT_AS_EXPRESSION,
+    SET_EXPRESSION,
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
@@ -80,6 +83,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     XMLPARSE_EXPRESSION,
                     XMLPI_EXPRESSION,
                     XMLTABLE_EXPRESSION,
+                    TREAT_AS_EXPRESSION,
+                    SET_EXPRESSION,
                     CAST_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
@@ -94,6 +99,18 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createConversionFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(TREAT_AS_EXPRESSION).define(
+                b.optional(TREAT),
+                LPARENTHESIS,
+                EXPRESSION,
+                AS,
+                b.optional(REF),
+                OBJECT_REFERENCE,
+                RPARENTHESIS
+            )
+
+            b.rule(SET_EXPRESSION).define(SET, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
             b.rule(CAST_EXPRESSION).define(
                     CAST, LPARENTHESIS,
                     b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
