@@ -29,6 +29,13 @@ import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
 enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     // internals
+    JSON_PASSING_CLAUSE,
+    JSON_QUERY_RETURNING_CLAUSE,
+    JSON_QUERY_WRAPPER_CLAUSE,
+    JSON_QUERY_QUOTES_CLAUSE,
+    JSON_QUERY_ON_ERROR_CLAUSE,
+    JSON_QUERY_ON_EMPTY_CLAUSE,
+    JSON_QUERY_ON_MISMATCH_CLAUSE,
     XML_COLUMN,
     XML_NAMESPACE,
     XMLNAMESPACES_CLAUSE,
@@ -38,6 +45,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     // functions
     EXTRACT_DATETIME_EXPRESSION,
+    JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
     XMLFOREST_EXPRESSION,
@@ -65,9 +73,12 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             createConversionFunctions(b)
             createDateFunctions(b)
             createXmlFunctions(b)
+            createJsonFunctions(b)
 
-            b.rule(SINGLE_ROW_SQL_FUNCTION).define(b.firstOf(
+            b.rule(SINGLE_ROW_SQL_FUNCTION).define(
+                b.firstOf(
                     EXTRACT_DATETIME_EXPRESSION,
+                    JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
                     XMLFOREST_EXPRESSION,
@@ -85,7 +96,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     CAST_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
-                    CURSOR_EXPRESSION)).skip()
+                    CURSOR_EXPRESSION
+                )
+            ).skip()
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
@@ -240,6 +253,78 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     XMLTABLE, LPARENTHESIS,
                     b.optional(XMLNAMESPACES_CLAUSE, COMMA), STRING_LITERAL, XMLTABLE_OPTIONS,
                     RPARENTHESIS)
+        }
+
+        private fun createJsonFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(JSON_QUERY_EXPRESSION).define(
+                JSON_QUERY,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(FORMAT, JSON),
+                COMMA,
+                STRING_LITERAL,
+                b.optional(JSON_PASSING_CLAUSE),
+                b.optional(JSON_QUERY_RETURNING_CLAUSE),
+                b.optional(JSON_QUERY_WRAPPER_CLAUSE),
+                b.optional(JSON_QUERY_QUOTES_CLAUSE),
+                b.optional(JSON_QUERY_ON_ERROR_CLAUSE),
+                b.optional(JSON_QUERY_ON_EMPTY_CLAUSE),
+                b.optional(JSON_QUERY_ON_MISMATCH_CLAUSE),
+                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_PASSING_CLAUSE).define(
+                PASSING,
+                b.oneOrMore(
+                    EXPRESSION,
+                    b.optional(AS, IDENTIFIER_NAME),
+                    b.optional(COMMA)
+                )
+            )
+
+            b.rule(JSON_QUERY_RETURNING_CLAUSE).define(
+                b.optional(RETURNING, DATATYPE),
+                b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
+                b.optional(PRETTY),
+                b.optional(ASCII)
+            ).skip()
+
+            b.rule(JSON_QUERY_WRAPPER_CLAUSE).define(
+                b.firstOf(
+                    WITHOUT,
+                    b.sequence(WITH, b.optional(b.firstOf(UNCONDITIONAL, CONDITIONAL)))
+                ),
+                b.optional(ARRAY), WRAPPER
+            )
+
+            b.rule(JSON_QUERY_QUOTES_CLAUSE).define(
+                b.firstOf(KEEP, OMIT),
+                QUOTES,
+                b.optional(ON, SCALAR, STRING)
+            )
+
+            b.rule(JSON_QUERY_ON_ERROR_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    NULL,
+                    b.sequence(EMPTY, b.optional(b.firstOf(ARRAY, OBJECT)))
+                ),
+                ON, ERROR
+            )
+
+            b.rule(JSON_QUERY_ON_EMPTY_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    NULL,
+                    b.sequence(EMPTY, b.optional(b.firstOf(ARRAY, OBJECT)))
+                ),
+                ON, EMPTY
+            )
+
+            b.rule(JSON_QUERY_ON_MISMATCH_CLAUSE).define(
+                b.firstOf(ERROR, NULL), ON, MISMATCH
+            )
         }
     }
 

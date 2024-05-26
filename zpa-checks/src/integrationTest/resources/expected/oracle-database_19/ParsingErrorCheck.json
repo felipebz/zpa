@@ -2162,36 +2162,6 @@
   "JSON_OBJECTAGG-0.sql": [
     2
   ],
-  "JSON_QUERY-1.sql": [
-    2
-  ],
-  "JSON_QUERY-10.sql": [
-    3
-  ],
-  "JSON_QUERY-11.sql": [
-    3
-  ],
-  "JSON_QUERY-2.sql": [
-    2
-  ],
-  "JSON_QUERY-4.sql": [
-    2
-  ],
-  "JSON_QUERY-5.sql": [
-    2
-  ],
-  "JSON_QUERY-6.sql": [
-    2
-  ],
-  "JSON_QUERY-7.sql": [
-    2
-  ],
-  "JSON_QUERY-8.sql": [
-    3
-  ],
-  "JSON_QUERY-9.sql": [
-    3
-  ],
   "JSON_TABLE-0.sql": [
     5
   ],
