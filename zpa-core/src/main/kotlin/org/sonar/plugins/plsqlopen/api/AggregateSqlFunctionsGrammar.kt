@@ -30,6 +30,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
     LISTAGG_EXPRESSION,
     XMLAGG_EXPRESSION,
+    COLLECT_EXPRESSION,
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
@@ -49,7 +50,21 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 RPARENTHESIS
             )
 
-            b.rule(AGGREGATE_SQL_FUNCTION).define(b.firstOf(LISTAGG_EXPRESSION, XMLAGG_EXPRESSION))
+            b.rule(COLLECT_EXPRESSION).define(
+                COLLECT, LPARENTHESIS,
+                b.optional(b.firstOf(DISTINCT, UNIQUE)),
+                EXPRESSION,
+                b.optional(ORDER, BY, EXPRESSION),
+                RPARENTHESIS
+            )
+
+            b.rule(AGGREGATE_SQL_FUNCTION).define(
+                b.firstOf(
+                    LISTAGG_EXPRESSION,
+                    XMLAGG_EXPRESSION,
+                    COLLECT_EXPRESSION
+                )
+            )
         }
     }
 

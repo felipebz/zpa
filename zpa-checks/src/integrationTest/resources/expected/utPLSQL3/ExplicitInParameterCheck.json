@@ -332,6 +332,13 @@
   "source/check_object_grants.sql": [
     8
   ],
+  "source/core/annotations/ut_annotation_cache_manager.pkb": [
+    19,
+    56,
+    84,
+    106,
+    106
+  ],
   "source/core/annotations/ut_annotation_cache_manager.pks": [
     27,
     35,

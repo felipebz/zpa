@@ -11,6 +11,9 @@
   "old_tests/ut_reporters/ut_documentation_reporter.reportTestTiming.sql": [
     22
   ],
+  "source/core/annotations/ut_annotation_cache_manager.pkb": [
+    21
+  ],
   "source/core/coverage/ut_coverage_helper_block.pkb": [
     46
   ],

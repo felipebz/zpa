@@ -17,9 +17,6 @@
   "source/core/annotations/ut_annotation_cache_info.sql": [
     22
   ],
-  "source/core/annotations/ut_annotation_cache_manager.pkb": [
-    94
-  ],
   "source/core/coverage/ut_coverage_sources_tmp.sql": [
     24
   ],

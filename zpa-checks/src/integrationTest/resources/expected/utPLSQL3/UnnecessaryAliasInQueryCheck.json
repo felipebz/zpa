@@ -1,4 +1,12 @@
 {
+  "source/core/annotations/ut_annotation_cache_manager.pkb": [
+    24,
+    36,
+    60,
+    63,
+    99,
+    101
+  ],
   "source/core/coverage/ut_coverage_helper.pkb": [
     69,
     80
