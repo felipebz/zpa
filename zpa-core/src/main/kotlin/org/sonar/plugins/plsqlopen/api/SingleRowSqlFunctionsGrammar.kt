@@ -225,7 +225,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(XMLTABLE_OPTIONS).define(
                     b.optional(XML_PASSING_CLAUSE),
                     b.optional(RETURNING, SEQUENCE, BY, REF),
-                    b.optional(COLUMNS, XML_TABLE_COLUMN, b.zeroOrMore(COMMA, XML_TABLE_COLUMN)))
+                    b.optional(COLUMNS, XML_TABLE_COLUMN, b.zeroOrMore(COMMA, XML_TABLE_COLUMN))).skip()
 
             b.rule(XMLTABLE_EXPRESSION).define(
                     XMLTABLE, LPARENTHESIS,
