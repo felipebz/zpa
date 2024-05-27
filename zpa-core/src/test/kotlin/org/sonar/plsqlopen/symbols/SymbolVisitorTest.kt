@@ -458,6 +458,7 @@ end;
         assertThat(variable.references).containsExactly(
             tuple(5, 3))
         assertThat(variable.innerScope).isNull()
+        assertThat(variable.scope.identifier).isEqualTo("baz")
     }
 
     @Test

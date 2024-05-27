@@ -219,7 +219,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         }
 
         val symbol = createSymbol(identifier, symbolKind, type)
-        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember)
+        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember, identifier.tokenOriginalValue)
         symbol.innerScope = currentScope
     }
 
@@ -378,7 +378,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     private fun enterScope(node: AstNode,
                            autonomousTransaction: Boolean? = null,
                            exceptionHandler: Boolean? = null,
-                           overridingMember: Boolean? = null) {
+                           overridingMember: Boolean? = null,
+                           identifier: String? = null) {
         var autonomous = false
         var exception = false
         val isOverridingMember = overridingMember ?: false
@@ -397,7 +398,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             }
         }
 
-        val scope = ScopeImpl(currentScope, node, node.token, node.lastToken, autonomous, exception, isOverridingMember)
+        val scope = ScopeImpl(currentScope, node, node.token, node.lastToken, autonomous, exception, isOverridingMember, identifier)
         symbolTable.addScope(scope)
         currentScope = scope
     }
