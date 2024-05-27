@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.squid
 
 import org.sonar.plsqlopen.utils.log.Logger
 import org.sonar.plsqlopen.utils.log.Loggers
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -37,22 +38,20 @@ class ProgressReport @JvmOverloads constructor(threadName: String,
     private var currentFileNumber = -1
     private var currentFile: String? = null
     private lateinit var iterator: Iterator<String>
-    private val thread: Thread = Thread(this)
+    private val thread: Thread = Thread(this, threadName).apply { isDaemon = true }
     private var success = false
-
-    init {
-        thread.name = threadName
-        thread.isDaemon = true
-    }
+    private val interrupted = AtomicBoolean().apply { set(false) }
 
     override fun run() {
-        while (!Thread.interrupted()) {
+        while (!(interrupted.get() || Thread.currentThread().isInterrupted)) {
             try {
                 Thread.sleep(period)
                 lock.withLock {
                     log("$currentFileNumber/$count files analyzed, current file: $currentFile")
                 }
             } catch (e: InterruptedException) {
+                interrupted.set(true)
+                thread.interrupt()
                 break
             }
 
@@ -86,18 +85,25 @@ class ProgressReport @JvmOverloads constructor(threadName: String,
 
     @Synchronized
     fun stop() {
+        interrupted.set(true)
         success = true
         thread.interrupt()
+        join()
     }
 
     @Synchronized
     fun cancel() {
+        interrupted.set(true)
         thread.interrupt()
+        join()
     }
 
-    @Throws(InterruptedException::class)
     fun join() {
-        thread.join()
+        try {
+            thread.join()
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private fun log(message: String) {
