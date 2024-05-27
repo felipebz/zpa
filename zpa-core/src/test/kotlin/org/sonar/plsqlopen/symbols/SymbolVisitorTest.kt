@@ -24,6 +24,7 @@ import org.assertj.core.groups.Tuple
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
@@ -459,6 +460,7 @@ end;
             tuple(5, 3))
         assertThat(variable.innerScope).isNull()
         assertThat(variable.scope.identifier).isEqualTo("baz")
+        assertThat(variable.scope.type).isEqualTo(PlSqlGrammar.CREATE_TRIGGER)
     }
 
     @Test

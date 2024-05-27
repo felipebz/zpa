@@ -50,7 +50,7 @@ class ScopeImpl(override val outer: Scope? = null,
 
     override val tree: AstNode? = node
 
-    override val type: AstNodeType? = tree?.type ?: type
+    override val type: AstNodeType? = type ?: tree?.type
 
     override val symbols = mutableListOf<Symbol>()
 

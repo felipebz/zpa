@@ -190,9 +190,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             inheritanceClause.firstChild.type !== PlSqlKeyword.NOT &&
             inheritanceClause.hasDirectChildren(PlSqlKeyword.OVERRIDING)
 
+        val nodeType: AstNodeType
         val identifier = if (node.parent.type == PlSqlGrammar.CREATE_TRIGGER) {
+            nodeType = PlSqlGrammar.CREATE_TRIGGER
             node.parent.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
         } else {
+            nodeType = node.type
             node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
         }
 
@@ -219,7 +222,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         }
 
         val symbol = createSymbol(identifier, symbolKind, type)
-        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember, identifier.tokenOriginalValue)
+        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember, identifier.tokenOriginalValue,
+            nodeType)
         symbol.innerScope = currentScope
     }
 
@@ -379,7 +383,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
                            autonomousTransaction: Boolean? = null,
                            exceptionHandler: Boolean? = null,
                            overridingMember: Boolean? = null,
-                           identifier: String? = null) {
+                           identifier: String? = null,
+                           type: AstNodeType? = null) {
         var autonomous = false
         var exception = false
         val isOverridingMember = overridingMember ?: false
@@ -398,7 +403,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             }
         }
 
-        val scope = ScopeImpl(currentScope, node, node.token, node.lastToken, autonomous, exception, isOverridingMember, identifier)
+        val scope = ScopeImpl(currentScope, node, node.token, node.lastToken, autonomous, exception, isOverridingMember, identifier, type)
         symbolTable.addScope(scope)
         currentScope = scope
     }
