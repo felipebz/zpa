@@ -172,4 +172,35 @@ class UtPlSqlSensorTest {
         sensor.execute(context)
         verify(analysisWarnings).addUnique("No utPLSQL coverage report was found for sonar.zpa.coverage.reportPaths using pattern doesnotexists.xml")
     }
+
+    @Test
+    fun shouldNotImportCoverageIfFileDoesNotContainCoveredLined() {
+        val relativePath = "betwnstr.sql"
+        val mainFile = TestInputFileBuilder("moduleKey", relativePath)
+            .setType(InputFile.Type.MAIN)
+            .setCharset(StandardCharsets.UTF_8)
+            .build()
+        context.fileSystem().add(mainFile)
+
+        whenever(objectLocator.findMainObject(any(), any())).thenReturn(
+            MappedObject(
+                identifier = "",
+                objectType = PlSqlGrammar.CREATE_FUNCTION,
+                fileType = PlSqlFile.Type.MAIN,
+                path = mainFile.path(),
+                inputFile = mainFile,
+                firstLine = 3,
+                lastLine = 10
+            )
+        )
+
+        context.settings().setProperty(UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY, "coverage-report-all-uncovered.xml")
+        sensor.execute(context)
+
+        val key = mainFile.key()
+        assertThat(context.lineHits(key, 1)).isNull()
+        assertThat(context.lineHits(key, 2)).isNull()
+        assertThat(context.lineHits(key, 3)).isNull()
+        assertThat(context.lineHits(key, 4)).isNull()
+    }
 }

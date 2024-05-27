@@ -20,6 +20,7 @@
 package org.sonar.plsqlopen.utplsql
 
 import org.simpleframework.xml.core.Persister
+import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.notifications.AnalysisWarnings
 import org.sonar.plsqlopen.symbols.ObjectLocator
@@ -66,28 +67,46 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
 
             if (inputFile != null) {
                 logger.debug("The path ${file.path} was mapped to ${inputFile}")
-                val newCoverage = context.newCoverage().onFile(inputFile)
-
-                file.linesToCover?.forEach { line ->
-                    val lineNumber = line.lineNumber + lineOffset
-                    newCoverage.lineHits(lineNumber, if (line.covered) 1 else 0)
-
-                    val branchesToCover = line.branchesToCover
-                    val coveredBranches = line.coveredBranches ?: 0
-                    if (branchesToCover != null) {
-                        check(coveredBranches <= branchesToCover) {
-                            "\"coveredBranches\" should not be greater than \"branchesToCover\" on line " +
-                                "${line.lineNumber} for file \"$filePath\""
-                        }
-
-                        newCoverage.conditions(lineNumber, branchesToCover, coveredBranches)
-                    }
-                }
-
-                newCoverage.save()
+                saveCoverage(context, inputFile, file, lineOffset, filePath)
             } else {
                 logger.warn("The path ${file.path} was not found in the project")
             }
+        }
+    }
+
+    private fun saveCoverage(
+        context: SensorContext,
+        inputFile: InputFile,
+        file: CoveredFile,
+        lineOffset: Int,
+        filePath: String
+    ) {
+        val linesToCover = file.linesToCover
+        if (linesToCover != null) {
+            if (linesToCover.all { !it.covered }) {
+                // No need to save coverage for files with no covered lines
+                return
+            }
+
+            val newCoverage = context.newCoverage().onFile(inputFile)
+
+            file.linesToCover?.forEach { line ->
+                val lineNumber = line.lineNumber + lineOffset
+                newCoverage.lineHits(lineNumber, if (line.covered) 1 else 0)
+
+                val branchesToCover = line.branchesToCover
+                val coveredBranches = line.coveredBranches ?: 0
+                if (branchesToCover != null) {
+                    check(coveredBranches <= branchesToCover) {
+                        "\"coveredBranches\" should not be greater than \"branchesToCover\" on line " +
+                            "${line.lineNumber} for file \"$filePath\""
+                    }
+
+                    newCoverage.conditions(lineNumber, branchesToCover, coveredBranches)
+                }
+            }
+
+            newCoverage.save()
         }
     }
 
