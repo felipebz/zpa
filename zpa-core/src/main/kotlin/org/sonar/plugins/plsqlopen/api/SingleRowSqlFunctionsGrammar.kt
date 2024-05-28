@@ -45,6 +45,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     // functions
     EXTRACT_DATETIME_EXPRESSION,
+    JSON_CONSTRUCTOR,
     JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -78,6 +79,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(SINGLE_ROW_SQL_FUNCTION).define(
                 b.firstOf(
                     EXTRACT_DATETIME_EXPRESSION,
+                    JSON_CONSTRUCTOR,
                     JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -256,6 +258,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createJsonFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(JSON_CONSTRUCTOR).define(JSON, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
             b.rule(JSON_QUERY_EXPRESSION).define(
                 JSON_QUERY,
                 LPARENTHESIS,
