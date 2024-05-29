@@ -9,10 +9,10 @@ plugins {
     signing
     jacoco
     kotlin("jvm") version "2.0.0"
-    id("org.jetbrains.dokka") version ("1.9.10")
+    id("org.jetbrains.dokka") version ("1.9.20")
     id("com.github.hierynomus.license") version "0.16.1"
-    id("org.sonarqube") version "4.4.1.3373"
-    id("org.jreleaser") version "1.8.0"
+    id("org.sonarqube") version "5.0.0.4638"
+    id("org.jreleaser") version "1.12.0"
 }
 
 allprojects {
