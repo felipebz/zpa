@@ -4,7 +4,7 @@ O retorno de literais boolean envolvidos em um IF-THEN-ELSE devem ser simplifica
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 IF expression THEN
   RETURN TRUE;
 ELSE
@@ -14,6 +14,6 @@ END IF;
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 RETURN expression;
 </pre>

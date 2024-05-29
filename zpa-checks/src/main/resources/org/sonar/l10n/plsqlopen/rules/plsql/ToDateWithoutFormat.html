@@ -4,8 +4,16 @@ Always specify the date format in TO_DATE calls.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 begin
   var := to_date('2015-01-01');
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  var := to_date('2015-01-01', 'YYYY-MM-DD');
 end;
 </pre>

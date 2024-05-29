@@ -4,6 +4,12 @@ Valores duplicados em uma condição IN pode ser um erro ao copiar/colar sendo e
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if value in (a, a, b) then ...
+</pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+if value in (a, b) then ...
 </pre>

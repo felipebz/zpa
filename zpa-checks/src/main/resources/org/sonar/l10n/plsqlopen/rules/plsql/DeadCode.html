@@ -5,9 +5,17 @@ Typically, any statements in a block that come after a jump are simply wasted ke
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 begin
   raise my_error;
   log('finished'); -- this code will never be executed
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  raise my_error;
 end;
 </pre>

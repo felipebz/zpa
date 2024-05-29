@@ -8,7 +8,7 @@ Keep in mind that an empty string is equivalent to a NULL literal.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if var = null then
   -- code
 end if;
@@ -16,16 +16,22 @@ end if;
 
 Or:
 
-<pre>
-if var = '' then
+<pre data-diff-id="2" data-diff-type="noncompliant">
+if other_var = '' then
   -- code
 end if;
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 if var is null then
+  -- code
+end if;
+</pre>
+
+<pre data-diff-id="2" data-diff-type="compliant">
+if other_var is null then
   -- code
 end if;
 </pre>

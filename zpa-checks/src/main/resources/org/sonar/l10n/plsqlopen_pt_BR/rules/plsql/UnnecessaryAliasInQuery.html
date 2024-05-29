@@ -10,7 +10,7 @@ Prefira usar aliases apenas quando a tabela aparece mais de uma vez em uma consu
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 SELECT a.id,
        b.id,
        b.name
@@ -21,7 +21,7 @@ SELECT a.id,
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 SELECT employee.id,
        dept.id,
        dept.name

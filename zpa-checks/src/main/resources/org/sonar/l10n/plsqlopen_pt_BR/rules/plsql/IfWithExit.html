@@ -4,7 +4,7 @@ Para melhorar a legibilidade sempre use EXIT WHEN em vez de um IF para sair de u
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if condition1 then
   exit;
 end if;
@@ -12,6 +12,6 @@ end if;
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 exit when condition1;
 </pre>

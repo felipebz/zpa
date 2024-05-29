@@ -4,14 +4,14 @@ Remova literais booleanos de comparações para melhorar a legibilidade.
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if var = true then ...
 if var = false then ...
 </pre>
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 if var then ...
 if not var then ...
 </pre>

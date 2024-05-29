@@ -4,6 +4,12 @@ Specify the columns in an INSERT statement to guarantee that the code won't stop
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 insert into tab values (1);
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+insert into tab (col) values (1);
 </pre>

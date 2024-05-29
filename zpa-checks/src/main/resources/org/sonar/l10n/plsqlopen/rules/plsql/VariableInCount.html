@@ -2,7 +2,7 @@ Using the COUNT built-in with local variable is misleading and in the most of ti
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 DECLARE
   v_empno emp.empno%TYPE;
   ...
@@ -18,7 +18,7 @@ END;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 BEGIN
   SELECT COUNT(*)
     INTO i
@@ -26,4 +26,3 @@ BEGIN
    WHERE employee.deptno = v_deptno;
 END;
 </pre>
-  

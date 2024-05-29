@@ -4,7 +4,7 @@ Merging collapsible <code>if</code> statements increases the code's readability.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if condition1 then
   if condition2 then
     -- code
@@ -14,7 +14,7 @@ end if;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 if condition1 and condition2 then
   -- code
 end if;

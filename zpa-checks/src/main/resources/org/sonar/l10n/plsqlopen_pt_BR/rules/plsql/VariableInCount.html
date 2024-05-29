@@ -2,7 +2,7 @@ Usar a built-in COUNT com variáveis locais é confuso e na maioria das vezes é
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 DECLARE
   v_empno emp.empno%TYPE;
   ...
@@ -18,7 +18,7 @@ END;
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 BEGIN
   SELECT COUNT(*)
     INTO i
@@ -26,4 +26,3 @@ BEGIN
    WHERE employee.deptno = v_deptno;
 END;
 </pre>
-  

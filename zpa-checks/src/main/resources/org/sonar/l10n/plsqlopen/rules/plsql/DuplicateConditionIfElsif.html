@@ -11,12 +11,24 @@ and obviously it could lead to unexpected behavior.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 IF (param = 1) THEN
   open();
 ELSIF (param = 2) THEN
   close();
 ELSIF (param = 1) THEN // Incorrect
+  move();
+END IF;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+IF (param = 1) THEN
+  open();
+ELSIF (param = 2) THEN
+  close();
+ELSIF (param = 3) THEN
   move();
 END IF;
 </pre>

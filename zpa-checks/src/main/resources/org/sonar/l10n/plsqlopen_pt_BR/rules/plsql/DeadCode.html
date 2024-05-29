@@ -11,3 +11,11 @@ begin
   log('finished'); -- esse código nunca será executado
 end;
 </pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  raise my_error;
+end;
+</pre>

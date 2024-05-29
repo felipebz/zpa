@@ -4,7 +4,7 @@ Se a inicialização falhar você não será capaz de tratar o erro no bloco de 
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 DECLARE
   employee_name emp.name%TYPE := get_employee_name(id => 5);
 BEGIN
@@ -14,7 +14,7 @@ END;
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 DECLARE
   employee_name emp.name%TYPE;
 BEGIN

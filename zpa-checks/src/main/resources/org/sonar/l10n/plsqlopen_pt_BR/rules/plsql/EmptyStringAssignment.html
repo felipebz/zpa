@@ -4,6 +4,12 @@ Para melhorar a legibilidade, evite usar strings vazias para representar NULL.
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 var := '';
+</pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+var := null;
 </pre>

@@ -4,7 +4,7 @@ If your initialization fails you will not be able to handle the error in your ex
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 DECLARE
   employee_name emp.name%TYPE := get_employee_name(id => 5);
 BEGIN
@@ -14,7 +14,7 @@ END;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 DECLARE
   employee_name emp.name%TYPE;
 BEGIN

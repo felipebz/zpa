@@ -10,7 +10,7 @@ Consider using aliases only when the table appears more than once in a query.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 SELECT a.id,
        b.id,
        b.name
@@ -21,7 +21,7 @@ SELECT a.id,
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 SELECT employee.id,
        dept.id,
        dept.name

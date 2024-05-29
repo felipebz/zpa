@@ -4,7 +4,7 @@ To improve the code readability always use EXIT WHEN instead of an IF statement 
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if condition1 then
   exit;
 end if;
@@ -12,6 +12,6 @@ end if;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 exit when condition1;
 </pre>

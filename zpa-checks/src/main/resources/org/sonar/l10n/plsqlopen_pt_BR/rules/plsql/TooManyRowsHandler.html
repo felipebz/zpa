@@ -4,7 +4,7 @@ Quando um comando SELECT INTO causa a exceção pré-definida TOO_MANY_ROWS os v
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 begin
   select empno
     into var
@@ -17,7 +17,7 @@ end;
 
 <h2>Código correto</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 begin
   select empno
     into var

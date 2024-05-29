@@ -2,7 +2,7 @@
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 PROCEDURE do_something(a IN NUMBER, b IN NUMBER) IS -- "b" is unused
 BEGIN
   compute(a);
@@ -11,7 +11,7 @@ END;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 PROCEDURE do_something(a IN NUMBER) IS
 BEGIN
   compute(a);

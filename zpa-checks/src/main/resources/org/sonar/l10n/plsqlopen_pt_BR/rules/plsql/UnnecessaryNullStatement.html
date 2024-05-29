@@ -2,9 +2,17 @@ Uma instrução NULL no mesmo nível de outras instruções é inútil, portanto
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 BEGIN
   var := 1;
   NULL; -- essa instrução NULL pode ser removida
+END
+</pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+BEGIN
+  var := 1;
 END
 </pre>

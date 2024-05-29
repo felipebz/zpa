@@ -4,14 +4,14 @@ Remove literal boolean values from comparisons to improve readability.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 if var = true then ...
 if var = false then ...
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 if var then ...
 if not var then ...
 </pre>

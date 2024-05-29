@@ -2,9 +2,17 @@ A NULL statement at the same level of other statements is useless, so should be 
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 BEGIN
   var := 1;
   NULL; -- this NULL statement can be removed
+END
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+BEGIN
+  var := 1;
 END
 </pre>

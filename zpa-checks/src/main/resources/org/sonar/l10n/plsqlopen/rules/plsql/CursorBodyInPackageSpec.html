@@ -11,7 +11,7 @@ also causes the compilation error "internal error [Unexpected fragile external r
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 create or replace package pkg is
   cursor cur is
     select dummy from dual;
@@ -20,7 +20,7 @@ end;
 
 <h2>Compliant Solution</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="compliant">
 create or replace package pkg is
   type cur_type is record(dummy varchar2(1));
   cursor cur return cur_type;

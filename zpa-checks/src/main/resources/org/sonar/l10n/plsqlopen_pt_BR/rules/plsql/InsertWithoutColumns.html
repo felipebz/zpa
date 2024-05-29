@@ -4,6 +4,12 @@ Especifique as colunas em um comando insert para evitar que o código pare de fu
 
 <h2>Código em desconformidade</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 insert into tab values (1);
+</pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+insert into tab (col) values (1);
 </pre>

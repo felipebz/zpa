@@ -4,6 +4,12 @@ To improve the readability, avoid using empty strings to represent NULL.
 
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
 var := '';
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+var := null;
 </pre>
