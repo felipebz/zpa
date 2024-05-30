@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 plugins {
-    id("com.github.johnrengelman.shadow") version Versions.plugin_shadow
+    id("io.github.goooler.shadow") version Versions.plugin_shadow
 }
 
 dependencies {

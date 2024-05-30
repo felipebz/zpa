@@ -11,7 +11,7 @@ object Versions {
     const val sonarqube_orchestrator = "4.9.0.1920"
     const val simple_xml = "2.7.1"
 
-    const val plugin_shadow = "8.1.1"
+    const val plugin_shadow = "8.1.7"
 }
 
 object Libs {
