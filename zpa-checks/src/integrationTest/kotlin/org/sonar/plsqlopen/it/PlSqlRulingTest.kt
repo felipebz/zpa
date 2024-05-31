@@ -19,7 +19,10 @@
  */
 package org.sonar.plsqlopen.it
 
-import com.google.gson.GsonBuilder
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.CheckList
@@ -35,7 +38,10 @@ import kotlin.io.path.exists
 
 class PlSqlRulingTest {
 
-    private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val mapper = ObjectMapper()
+    private val prettyPrinter = DefaultPrettyPrinter().apply {
+        indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+    }
 
     @Test
     fun alexandria_plsql_utils() {
@@ -160,8 +166,7 @@ class PlSqlRulingTest {
     @Test
     fun oracleDatabase19() {
         val project = "oracle-database_19"
-        if (!File("src/integrationTest/resources/sources/$project").exists())
-        {
+        if (!File("src/integrationTest/resources/sources/$project").exists()) {
             OracleDocsExtractor().extract()
         }
         analyze(project)
@@ -186,22 +191,23 @@ class PlSqlRulingTest {
             .map { scanner.scanFile(InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8)) }
             .flatMap { it.issues }
 
+        val writer = mapper.writer(prettyPrinter)
         var differences = ""
         for (check in checks) {
             val export = issues.filter { it.check == check }
                 .groupBy({ (it.file as InputFile).pathRelativeToBase }, { it.primaryLocation.startLine() })
                 .toSortedMap()
-            val actualContent = if (export.size > 0) gson.toJson(export) else null
+            val actualContent = if (export.size > 0) mapper.valueToTree<JsonNode>(export) else null
 
             val expectedFile = File("src/integrationTest/resources/expected/$project/${check::class.simpleName}.json")
-            val expectedContent = if (expectedFile.exists()) expectedFile.readText() else null
+            val expectedContent = if (expectedFile.exists()) mapper.readTree(expectedFile) else null
 
             if (actualContent == null && expectedFile.exists()) {
                 differences += "\nExpected issues on $expectedFile were not found"
-            } else if (actualContent != null && expectedContent.normalizeLineEndings() != actualContent.normalizeLineEndings()) {
+            } else if (actualContent != null && actualContent != expectedContent) {
                 val actualFile = File("build/integrationTest/$project/${check::class.simpleName}.json")
                 actualFile.parentFile.mkdirs()
-                actualFile.writeText(actualContent)
+                actualFile.writeText(writer.writeValueAsString(actualContent))
 
                 differences += "\nIssues differences on the expected file $expectedFile (actual: $actualFile)"
             }
