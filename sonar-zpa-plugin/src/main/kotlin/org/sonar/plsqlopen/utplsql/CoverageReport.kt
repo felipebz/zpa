@@ -19,39 +19,41 @@
  */
 package org.sonar.plsqlopen.utplsql
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Root
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
-@Root(name = "coverage")
+@JacksonXmlRootElement(localName = "coverage")
 data class Coverage @JvmOverloads constructor(
-    @field:Attribute(name = "version")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "version")
     var version: Int = 0,
 
-    @field:ElementList(name = "file", inline = true, required = false)
+    @field:JacksonXmlElementWrapper(useWrapping = false)
+    @field:JacksonXmlProperty(localName = "file")
     var files: List<CoveredFile>? = null
 )
 
-@Root(name = "file")
+@JacksonXmlRootElement(localName = "file")
 data class CoveredFile @JvmOverloads constructor(
-    @field:Attribute(name = "path")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "path")
     var path: String = "",
 
-    @field:ElementList(name = "lineToCover", inline = true, required = false)
+    @field:JacksonXmlElementWrapper(useWrapping = false)
+    @field:JacksonXmlProperty(localName = "lineToCover")
     var linesToCover: List<LineToCover>? = null
 )
 
-@Root(name = "lineToCover")
+@JacksonXmlRootElement(localName = "lineToCover")
 data class LineToCover @JvmOverloads constructor(
-    @field:Attribute(name = "lineNumber")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "lineNumber")
     var lineNumber: Int = 0,
 
-    @field:Attribute(name = "covered")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "covered")
     var covered: Boolean = false,
 
-    @field:Attribute(name = "branchesToCover", required = false)
+    @field:JacksonXmlProperty(isAttribute = true, localName = "branchesToCover")
     var branchesToCover: Int? = null,
 
-    @field:Attribute(name = "coveredBranches", required = false)
+    @field:JacksonXmlProperty(isAttribute = true, localName = "coveredBranches")
     var coveredBranches: Int? = null
 )

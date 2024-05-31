@@ -19,44 +19,46 @@
  */
 package org.sonar.plsqlopen.utplsql
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Root
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
-@Root(name = "testExecutions")
+@JacksonXmlRootElement(localName = "testExecutions")
 data class TestExecutions @JvmOverloads constructor(
-    @field:Attribute(name = "version")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "version")
     var version: Int = 0,
 
-    @field:ElementList(name = "file", inline = true, required = false)
+    @field:JacksonXmlElementWrapper(useWrapping = false)
+    @field:JacksonXmlProperty(localName = "file")
     var files: List<TestFile>? = null
 )
 
-@Root(name = "file")
+@JacksonXmlRootElement(localName = "file")
 data class TestFile @JvmOverloads constructor(
-    @field:Attribute(name = "path")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "path")
     var path: String = "",
 
-    @field:ElementList(name = "testCase", inline = true, required = false)
+    @field:JacksonXmlElementWrapper(useWrapping = false)
+    @field:JacksonXmlProperty(localName = "testCase")
     var testCases: List<TestCase>? = null
 )
 
-@Root(name = "testCase")
+@JacksonXmlRootElement(localName = "testCase")
 data class TestCase @JvmOverloads constructor(
-    @field:Attribute(name = "name")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "name")
     var name: String = "",
 
-    @field:Attribute(name = "duration")
+    @field:JacksonXmlProperty(isAttribute = true, localName = "duration")
     var duration: Long = 0,
 
-    @field:Element(name = "skipped", required = false)
+    @field:JacksonXmlProperty(localName = "skipped")
     var skipped: Skipped? = null,
 
-    @field:Element(name = "failure", required = false)
+    @field:JacksonXmlProperty(localName = "failure")
     var failure: Failure? = null,
 
-    @field:Element(name = "error", required = false)
+    @field:JacksonXmlProperty(localName = "error")
     var error: Error? = null
 ) {
     val status: TestCaseStatus
@@ -70,13 +72,16 @@ data class TestCase @JvmOverloads constructor(
         }
 }
 
-@Root(name = "skipped", strict = false)
+@JacksonXmlRootElement(localName = "skipped")
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Skipped
 
-@Root(name = "failure", strict = false)
+@JacksonXmlRootElement(localName = "failure")
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Failure
 
-@Root(name = "error", strict = false)
+@JacksonXmlRootElement(localName = "error")
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Error
 
 enum class TestCaseStatus {

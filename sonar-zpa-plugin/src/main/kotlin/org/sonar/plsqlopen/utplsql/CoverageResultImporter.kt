@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.utplsql
 
-import org.simpleframework.xml.core.Persister
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.notifications.AnalysisWarnings
@@ -27,7 +27,6 @@ import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.utils.log.Loggers
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import java.io.File
-
 
 class CoverageResultImporter(private val objectLocator: ObjectLocator,
                              analysisWarnings: AnalysisWarnings) : AbstractReportImporter(analysisWarnings) {
@@ -37,8 +36,8 @@ class CoverageResultImporter(private val objectLocator: ObjectLocator,
     override val reportKey = UtPlSqlSensor.COVERAGE_REPORT_PATH_KEY
 
     override fun processReport(context: SensorContext, report: File) {
-        val serializer = Persister()
-        val coverage = serializer.read(Coverage::class.java, report)
+        val serializer = XmlMapper()
+        val coverage = serializer.readValue(report, Coverage::class.java)
 
         coverage.files?.forEach { file ->
             val filePath = file.path

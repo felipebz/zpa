@@ -13,7 +13,6 @@ testing {
             dependencies {
                 implementation(project())
                 implementation(project(":zpa-core"))
-                implementation(Libs.gson)
                 implementation("org.jsoup:jsoup:${Versions.jsoup}")
             }
         }

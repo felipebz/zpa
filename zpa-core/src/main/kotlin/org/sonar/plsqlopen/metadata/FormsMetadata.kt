@@ -19,14 +19,13 @@
  */
 package org.sonar.plsqlopen.metadata
 
-import com.google.gson.Gson
-import com.google.gson.stream.JsonReader
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.sonar.plsqlopen.utils.log.Loggers
+import java.io.File
 import java.io.FileNotFoundException
-import java.io.FileReader
 import java.io.IOException
 
-class Block(val name: String, val items: Array<String>)
+class Block @JvmOverloads constructor(val name: String = "", val items: Array<String> = emptyArray())
 
 class FormsMetadata {
 
@@ -40,11 +39,10 @@ class FormsMetadata {
         fun loadFromFile(path: String?): FormsMetadata? {
             if (!path.isNullOrEmpty()) {
                 try {
-                    JsonReader(FileReader(path)).use { reader ->
-                        val formsMetadata = Gson().fromJson<FormsMetadata>(reader, FormsMetadata::class.java)
-                        LOG.info("Loaded Oracle Forms metadata from {}.", path)
-                        return formsMetadata
-                    }
+                    val mapper = ObjectMapper()
+                    val formsMetadata: FormsMetadata = mapper.readValue(File(path), FormsMetadata::class.java)
+                    LOG.info("Loaded Oracle Forms metadata from {}.", path)
+                    return formsMetadata
                 } catch (e: FileNotFoundException) {
                     LOG.warn("The metadata file {} was not found.", path, e)
                 } catch (e: IOException) {

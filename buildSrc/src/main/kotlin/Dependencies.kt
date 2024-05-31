@@ -4,12 +4,12 @@ object Versions {
     const val mockito = "5.12.0"
     const val mockito_kotlin = "5.3.1"
     const val flr = "1.4.0-SNAPSHOT"
-    const val gson = "2.10.1"
+    const val jackson = "2.17.1"
     const val jsoup = "1.17.2"
     const val min_sonarqube = "9.9.0.65466"
     const val min_sonarqube_api = "9.14.0.375"
     const val sonarqube_orchestrator = "4.9.0.1920"
-    const val simple_xml = "2.7.1"
+    const val woodstox = "6.6.2"
 
     const val plugin_shadow = "8.1.7"
 }
@@ -22,6 +22,7 @@ object Libs {
     const val flr_xpath = "com.felipebz.flr:flr-xpath:${Versions.flr}"
     const val flr_toolkit = "com.felipebz.flr:flr-toolkit:${Versions.flr}"
     const val flr_testing_harness = "com.felipebz.flr:flr-testing-harness:${Versions.flr}"
-    const val gson = "com.google.code.gson:gson:${Versions.gson}"
-    const val simple_xml = "org.simpleframework:simple-xml:${Versions.simple_xml}"
+    const val jackson = "com.fasterxml.jackson.core:jackson-databind:${Versions.jackson}"
+    const val jackson_xml = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${Versions.jackson}"
+    const val woodstox = "com.fasterxml.woodstox:woodstox-core:${Versions.woodstox}"
 }

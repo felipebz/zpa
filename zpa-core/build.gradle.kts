@@ -1,6 +1,6 @@
 dependencies {
     api(Libs.flr_core)
-    implementation(Libs.gson)
+    implementation(Libs.jackson)
     testImplementation(Libs.flr_testing_harness)
 }
 

@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.utplsql
 
-import org.simpleframework.xml.core.Persister
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.measure.Metric
 import org.sonar.api.batch.sensor.SensorContext
@@ -39,8 +39,8 @@ class TestResultImporter(private val objectLocator: ObjectLocator,
     override val reportKey = UtPlSqlSensor.TEST_REPORT_PATH_KEY
 
     override fun processReport(context: SensorContext, report: File) {
-        val serializer = Persister()
-        val testExecutions = serializer.read(TestExecutions::class.java, report)
+        val serializer = XmlMapper()
+        val testExecutions = serializer.readValue(report, TestExecutions::class.java)
 
         testExecutions.files?.forEach { file ->
             val packageName = file.path.substringAfterLast('.')

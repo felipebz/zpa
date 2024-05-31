@@ -12,7 +12,8 @@ plugins {
 
 dependencies {
     implementation(Libs.flr_core)
-    implementation(Libs.simple_xml)
+    implementation(Libs.jackson_xml)
+    implementation(Libs.woodstox)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
     implementation(project(":zpa-checks-testkit"))
