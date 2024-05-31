@@ -218,8 +218,4 @@ class PlSqlRulingTest {
         }
     }
 
-    private fun String?.normalizeLineEndings(): String? {
-        return this?.replace("\r\n", "\n")
-    }
-
 }
