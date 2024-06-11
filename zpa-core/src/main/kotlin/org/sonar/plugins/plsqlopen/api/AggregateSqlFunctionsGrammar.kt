@@ -31,6 +31,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     LISTAGG_EXPRESSION,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
+    JSON_ARRAYAGG_EXPRESSION,
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
@@ -58,11 +59,22 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 RPARENTHESIS
             )
 
+            b.rule(JSON_ARRAYAGG_EXPRESSION).define(
+                JSON_ARRAYAGG, LPARENTHESIS,
+                EXPRESSION, b.optional(FORMAT, JSON),
+                b.optional(ORDER_BY_CLAUSE),
+                b.optional(SingleRowSqlFunctionsGrammar.JSON_ON_NULL_CLAUSE),
+                b.optional(SingleRowSqlFunctionsGrammar.JSON_RETURNING_CLAUSE),
+                b.optional(STRICT),
+                RPARENTHESIS
+            )
+
             b.rule(AGGREGATE_SQL_FUNCTION).define(
                 b.firstOf(
                     LISTAGG_EXPRESSION,
                     XMLAGG_EXPRESSION,
-                    COLLECT_EXPRESSION
+                    COLLECT_EXPRESSION,
+                    JSON_ARRAYAGG_EXPRESSION
                 )
             )
         }

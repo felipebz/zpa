@@ -294,7 +294,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         VARCHAR2,
-                        b.optional(LPARENTHESIS, PlSqlTokenType.INTEGER_LITERAL, b.firstOf(CHAR, BYTE), RPARENTHESIS),
+                        b.optional(LPARENTHESIS, PlSqlTokenType.INTEGER_LITERAL, b.optional(b.firstOf(CHAR, BYTE)), RPARENTHESIS),
                         b.optional(WITH, TYPENAME)
                     ),
                     b.sequence(
