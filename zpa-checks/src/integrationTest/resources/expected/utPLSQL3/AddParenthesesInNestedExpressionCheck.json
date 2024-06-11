@@ -1,33 +1,33 @@
 {
-  "development/utplsql_style_check.sql": [
+  "development/utplsql_style_check.sql" : [
     43,
     44,
     59,
     60
   ],
-  "source/api/ut_runner.pkb": [
+  "source/api/ut_runner.pkb" : [
     70,
     95
   ],
-  "source/core/ut_utils.pkb": [
+  "source/core/ut_utils.pkb" : [
     313
   ],
-  "source/expectations/data_values/ut_compound_data_diff_tmp.sql": [
+  "source/expectations/data_values/ut_compound_data_diff_tmp.sql" : [
     22,
     23,
     24
   ],
-  "source/install_above_12_1.sql": [
+  "source/install_above_12_1.sql" : [
     6
   ],
-  "test/api/test_ut_runner.pkb": [
+  "test/api/test_ut_runner.pkb" : [
     41,
     42
   ],
-  "test/install_above_12_1.sql": [
+  "test/install_above_12_1.sql" : [
     13
   ],
-  "test/install_below_12_2.sql": [
+  "test/install_below_12_2.sql" : [
     13
   ]
 }

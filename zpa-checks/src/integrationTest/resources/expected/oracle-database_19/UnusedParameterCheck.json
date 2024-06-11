@@ -1,5 +1,5 @@
 {
-  "Using-Extensible-Indexing-1.sql": [
+  "Using-Extensible-Indexing-1.sql" : [
     42,
     42,
     56,
@@ -14,7 +14,7 @@
     176,
     203
   ],
-  "Using-Extensible-Indexing-2.sql": [
+  "Using-Extensible-Indexing-2.sql" : [
     3
   ]
 }

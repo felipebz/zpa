@@ -1,8 +1,8 @@
 {
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     277
   ],
-  "src/json_printer.sql": [
+  "src/json_printer.sql" : [
     229,
     426
   ]

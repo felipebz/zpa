@@ -1,9 +1,9 @@
 {
-  "src/addons/json_helper.sql": [
+  "src/addons/json_helper.sql" : [
     251,
     310
   ],
-  "src/json_ext.sql": [
+  "src/json_ext.sql" : [
     162,
     174,
     181,
@@ -11,7 +11,7 @@
     202,
     225
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     269,
     391,
     406,
@@ -26,7 +26,7 @@
     807,
     824
   ],
-  "src/json_printer.sql": [
+  "src/json_printer.sql" : [
     257,
     300,
     453,

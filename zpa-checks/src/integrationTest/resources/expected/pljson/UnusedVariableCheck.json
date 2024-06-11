@@ -1,21 +1,21 @@
 {
-  "src/addons/json_helper.sql": [
+  "src/addons/json_helper.sql" : [
     292
   ],
-  "src/json_body.typ": [
+  "src/json_body.typ" : [
     102
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     235,
     798
   ],
-  "testsuite/json_list_test.sql": [
+  "testsuite/json_list_test.sql" : [
     91
   ],
-  "testsuite/json_parser_test.sql": [
+  "testsuite/json_parser_test.sql" : [
     6
   ],
-  "testsuite/json_test.sql": [
+  "testsuite/json_test.sql" : [
     81,
     105
   ]

@@ -1,5 +1,5 @@
 {
-  "source/core/annotations/ut_annotation_cache_manager.pkb": [
+  "source/core/annotations/ut_annotation_cache_manager.pkb" : [
     24,
     36,
     60,
@@ -7,27 +7,27 @@
     99,
     101
   ],
-  "source/core/coverage/ut_coverage_helper.pkb": [
+  "source/core/coverage/ut_coverage_helper.pkb" : [
     69,
     80
   ],
-  "source/core/output_buffers/ut_output_table_buffer.tpb": [
+  "source/core/output_buffers/ut_output_table_buffer.tpb" : [
     150,
     152,
     154
   ],
-  "source/core/ut_metadata.pkb": [
+  "source/core/ut_metadata.pkb" : [
     168
   ],
-  "source/core/ut_utils.pkb": [
+  "source/core/ut_utils.pkb" : [
     312
   ],
-  "source/uninstall_synonyms.sql": [
+  "source/uninstall_synonyms.sql" : [
     15,
     13,
     42
   ],
-  "test/core/expectations/test_expectations_cursor.pkb": [
+  "test/core/expectations/test_expectations_cursor.pkb" : [
     358,
     359,
     372,
@@ -80,7 +80,7 @@
     1436,
     1437
   ],
-  "test/core/test_ut_utils.pkb": [
+  "test/core/test_ut_utils.pkb" : [
     10
   ]
 }

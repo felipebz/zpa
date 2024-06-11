@@ -1,13 +1,13 @@
 {
-  "LATENCY_TEST/WHEN-TIMER-EXPIRED.tgg": [
+  "LATENCY_TEST/WHEN-TIMER-EXPIRED.tgg" : [
     18
   ],
-  "P_DOWNLOAD_DOKUMENT_AS.pcd": [
+  "P_DOWNLOAD_DOKUMENT_AS.pcd" : [
     3,
     7,
     9
   ],
-  "WEBUTIL_PREPARE_TESTFILE.pcd": [
+  "WEBUTIL_PREPARE_TESTFILE.pcd" : [
     21,
     22
   ]

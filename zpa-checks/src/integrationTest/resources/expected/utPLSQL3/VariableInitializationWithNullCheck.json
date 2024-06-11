@@ -1,8 +1,8 @@
 {
-  "old_tests/ut_expectations/ut_expectation_processor.nulls_are_equal.raisesExceptionWhenTryingToSetNullValue.sql": [
+  "old_tests/ut_expectations/ut_expectation_processor.nulls_are_equal.raisesExceptionWhenTryingToSetNullValue.sql" : [
     4
   ],
-  "source/core/coverage/ut_coverage.pks": [
+  "source/core/coverage/ut_coverage.pks" : [
     46,
     47,
     48,

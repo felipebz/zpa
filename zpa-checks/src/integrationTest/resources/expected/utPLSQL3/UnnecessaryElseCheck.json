@@ -1,20 +1,20 @@
 {
-  "examples/award_bonus/award_bonus.sql": [
+  "examples/award_bonus/award_bonus.sql" : [
     14
   ],
-  "source/core/ut_suite_manager.pkb": [
+  "source/core/ut_suite_manager.pkb" : [
     137
   ],
-  "source/core/ut_utils.pkb": [
+  "source/core/ut_utils.pkb" : [
     302
   ],
-  "source/install.sql": [
+  "source/install.sql" : [
     324
   ],
-  "source/reporters/ut_ansiconsole_helper.pkb": [
+  "source/reporters/ut_ansiconsole_helper.pkb" : [
     36
   ],
-  "test/install_tests.sql": [
+  "test/install_tests.sql" : [
     138
   ]
 }

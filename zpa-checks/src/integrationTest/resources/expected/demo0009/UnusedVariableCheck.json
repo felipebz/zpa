@@ -1,12 +1,12 @@
 {
-  "BLK_HANDLG/BLK_HANDLG__BT_COMPILE_SINGLE__WHEN-BUTTON-PRESSED.tgg": [
+  "BLK_HANDLG/BLK_HANDLG__BT_COMPILE_SINGLE__WHEN-BUTTON-PRESSED.tgg" : [
     5,
     6
   ],
-  "BLK_HANDLG/BLK_HANDLG__BT_VIEW_COMPILE__WHEN-BUTTON-PRESSED.tgg": [
+  "BLK_HANDLG/BLK_HANDLG__BT_VIEW_COMPILE__WHEN-BUTTON-PRESSED.tgg" : [
     7
   ],
-  "BLK_HANDLG/BLK_HANDLG__CBOX_FAM_ACTION__WHEN-LIST-CHANGED.tgg": [
+  "BLK_HANDLG/BLK_HANDLG__CBOX_FAM_ACTION__WHEN-LIST-CHANGED.tgg" : [
     5,
     6,
     7,
@@ -16,35 +16,35 @@
     11,
     12
   ],
-  "CTL_BASIC/CTL_BASIC__BT_ALL__WHEN-BUTTON-PRESSED.tgg": [
+  "CTL_BASIC/CTL_BASIC__BT_ALL__WHEN-BUTTON-PRESSED.tgg" : [
     9,
     86
   ],
-  "CTL_BASIC/CTL_BASIC__BT_COMPILE__WHEN-BUTTON-PRESSED.tgg": [
+  "CTL_BASIC/CTL_BASIC__BT_COMPILE__WHEN-BUTTON-PRESSED.tgg" : [
     7
   ],
-  "G.pkb": [
+  "G.pkb" : [
     20
   ],
-  "PKG_BLK_DATA.pkb": [
+  "PKG_BLK_DATA.pkb" : [
     129,
     161,
     162,
     166,
     168
   ],
-  "PKG_CONFIG.pkb": [
+  "PKG_CONFIG.pkb" : [
     369,
     371,
     377
   ],
-  "PRC_COMPILATION.pcd": [
+  "PRC_COMPILATION.pcd" : [
     43
   ],
-  "PRC_COPY_FILE_HOST.pcd": [
+  "PRC_COPY_FILE_HOST.pcd" : [
     2
   ],
-  "PRC_MIGRATION.pcd": [
+  "PRC_MIGRATION.pcd" : [
     36
   ]
 }

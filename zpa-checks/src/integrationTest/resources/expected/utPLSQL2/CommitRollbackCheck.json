@@ -1,5 +1,5 @@
 {
-  "examples/test_te_employee.pkb": [
+  "examples/test_te_employee.pkb" : [
     191,
     237,
     276,
@@ -18,7 +18,7 @@
     885,
     905
   ],
-  "examples/ut_te_employee.pkb": [
+  "examples/ut_te_employee.pkb" : [
     191,
     237,
     276,
@@ -37,7 +37,7 @@
     885,
     905
   ],
-  "source/ut_plsql2.pkb": [
+  "source/ut_plsql2.pkb" : [
     333
   ]
 }

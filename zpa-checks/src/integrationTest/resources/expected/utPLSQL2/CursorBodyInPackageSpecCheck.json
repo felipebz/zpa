@@ -1,5 +1,5 @@
 {
-  "examples/te_employee.pks": [
+  "examples/te_employee.pks" : [
     50,
     59,
     68,
@@ -17,11 +17,11 @@
     237,
     260
   ],
-  "source/ut_config.pks": [
+  "source/ut_config.pks" : [
     62,
     67
   ],
-  "source/ut_result2.pks": [
+  "source/ut_result2.pks" : [
     44
   ]
 }

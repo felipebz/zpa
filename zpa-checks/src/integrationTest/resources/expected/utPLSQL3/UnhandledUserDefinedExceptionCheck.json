@@ -1,8 +1,8 @@
 {
-  "examples/award_bonus/award_bonus.sql": [
+  "examples/award_bonus/award_bonus.sql" : [
     13
   ],
-  "source/api/ut.pkb": [
+  "source/api/ut.pkb" : [
     103
   ]
 }

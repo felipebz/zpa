@@ -1,9 +1,9 @@
 {
-  "examples/ex13.sql": [
+  "examples/ex13.sql" : [
     36,
     50
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     85
   ]
 }

@@ -1,8 +1,8 @@
 {
-  "extras/pdfgen_pkg.pkb": [
+  "extras/pdfgen_pkg.pkb" : [
     680
   ],
-  "ora/sylk_util_pkg.pkb": [
+  "ora/sylk_util_pkg.pkb" : [
     96
   ]
 }

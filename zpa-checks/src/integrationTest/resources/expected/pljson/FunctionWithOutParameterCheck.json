@@ -1,19 +1,19 @@
 {
-  "src/addons/pljson_table_impl.typ": [
+  "src/addons/pljson_table_impl.typ" : [
     72,
     74,
     76,
     78,
     78
   ],
-  "src/addons/pljson_table_impl_body.typ": [
+  "src/addons/pljson_table_impl_body.typ" : [
     36,
     64,
     82,
     170,
     170
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     38,
     39,
     43,

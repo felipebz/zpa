@@ -1,8 +1,8 @@
 {
-  "demos/string_util_pkg_demo.sql": [
+  "demos/string_util_pkg_demo.sql" : [
     39
   ],
-  "setup/grants.sql": [
+  "setup/grants.sql" : [
     5
   ]
 }

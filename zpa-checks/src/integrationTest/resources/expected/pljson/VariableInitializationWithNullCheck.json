@@ -1,16 +1,16 @@
 {
-  "examples/ex8.sql": [
+  "examples/ex8.sql" : [
     56,
     99
   ],
-  "src/addons/json_xml.sql": [
+  "src/addons/json_xml.sql" : [
     45,
     143
   ],
-  "src/addons/jsonml.sql": [
+  "src/addons/jsonml.sql" : [
     28
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     114,
     174,
     233,
@@ -18,7 +18,7 @@
     263,
     835
   ],
-  "src/json_printer.sql": [
+  "src/json_printer.sql" : [
     104,
     148,
     336,
@@ -27,10 +27,10 @@
     511,
     522
   ],
-  "testsuite/json_ext_test.sql": [
+  "testsuite/json_ext_test.sql" : [
     145
   ],
-  "testsuite/json_list_test.sql": [
+  "testsuite/json_list_test.sql" : [
     279,
     293,
     294,
@@ -38,7 +38,7 @@
     325,
     339
   ],
-  "testsuite/json_test.sql": [
+  "testsuite/json_test.sql" : [
     195,
     209,
     210,

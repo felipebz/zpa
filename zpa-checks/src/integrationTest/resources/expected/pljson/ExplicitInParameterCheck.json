@@ -1,17 +1,17 @@
 {
-  "examples/ex4.sql": [
+  "examples/ex4.sql" : [
     31
   ],
-  "examples/ex5.sql": [
+  "examples/ex5.sql" : [
     31
   ],
-  "examples/ex6.sql": [
+  "examples/ex6.sql" : [
     34
   ],
-  "examples/ex7.sql": [
+  "examples/ex7.sql" : [
     32
   ],
-  "src/addons/json_dyn.sql": [
+  "src/addons/json_dyn.sql" : [
     30,
     30,
     30,
@@ -27,7 +27,7 @@
     192,
     192
   ],
-  "src/addons/json_helper.sql": [
+  "src/addons/json_helper.sql" : [
     17,
     17,
     21,
@@ -175,7 +175,7 @@
     433,
     433
   ],
-  "src/addons/json_xml.sql": [
+  "src/addons/json_xml.sql" : [
     37,
     37,
     44,
@@ -184,7 +184,7 @@
     141,
     141
   ],
-  "src/addons/pljson_table_impl.typ": [
+  "src/addons/pljson_table_impl.typ" : [
     73,
     73,
     73,
@@ -198,7 +198,7 @@
     80,
     80
   ],
-  "src/addons/pljson_table_impl_body.typ": [
+  "src/addons/pljson_table_impl_body.typ" : [
     37,
     37,
     37,
@@ -209,7 +209,7 @@
     83,
     83
   ],
-  "src/json.typ": [
+  "src/json.typ" : [
     30,
     32,
     36,
@@ -270,7 +270,7 @@
     74,
     74
   ],
-  "src/json_ac.sql": [
+  "src/json_ac.sql" : [
     4,
     5,
     5,
@@ -520,7 +520,7 @@
     280,
     280
   ],
-  "src/json_body.typ": [
+  "src/json_body.typ" : [
     32,
     46,
     69,
@@ -583,7 +583,7 @@
     368,
     368
   ],
-  "src/json_ext.sql": [
+  "src/json_ext.sql" : [
     26,
     26,
     29,
@@ -710,7 +710,7 @@
     713,
     773
   ],
-  "src/json_list.typ": [
+  "src/json_list.typ" : [
     26,
     27,
     28,
@@ -767,7 +767,7 @@
     67,
     67
   ],
-  "src/json_list_body.typ": [
+  "src/json_list_body.typ" : [
     31,
     37,
     43,
@@ -824,7 +824,7 @@
     347,
     347
   ],
-  "src/json_parser.sql": [
+  "src/json_parser.sql" : [
     38,
     39,
     39,
@@ -868,7 +868,7 @@
     795,
     814
   ],
-  "src/json_printer.sql": [
+  "src/json_printer.sql" : [
     27,
     27,
     27,
@@ -958,7 +958,7 @@
     653,
     653
   ],
-  "src/json_value.typ": [
+  "src/json_value.typ" : [
     36,
     37,
     37,
@@ -982,7 +982,7 @@
     64,
     64
   ],
-  "src/json_value_body.typ": [
+  "src/json_value_body.typ" : [
     5,
     18,
     18,
@@ -1006,7 +1006,7 @@
     179,
     179
   ],
-  "testsuite/json_ext_test.sql": [
+  "testsuite/json_ext_test.sql" : [
     12,
     19,
     26,
@@ -1014,7 +1014,7 @@
     40,
     45
   ],
-  "testsuite/json_helper_test.sql": [
+  "testsuite/json_helper_test.sql" : [
     12,
     19,
     26,
@@ -1022,7 +1022,7 @@
     40,
     45
   ],
-  "testsuite/json_list_test.sql": [
+  "testsuite/json_list_test.sql" : [
     12,
     19,
     26,
@@ -1030,7 +1030,7 @@
     40,
     45
   ],
-  "testsuite/json_parser_test.sql": [
+  "testsuite/json_parser_test.sql" : [
     27,
     34,
     41,
@@ -1039,19 +1039,19 @@
     60,
     75
   ],
-  "testsuite/json_path_test.sql": [
+  "testsuite/json_path_test.sql" : [
     11,
     18,
     25,
     30
   ],
-  "testsuite/json_test.sql": [
+  "testsuite/json_test.sql" : [
     11,
     18,
     25,
     30
   ],
-  "testsuite/json_unicode_test.sql": [
+  "testsuite/json_unicode_test.sql" : [
     38,
     45,
     52,
@@ -1059,7 +1059,7 @@
     66,
     71
   ],
-  "testsuite/simple_test.sql": [
+  "testsuite/simple_test.sql" : [
     11,
     18,
     25,

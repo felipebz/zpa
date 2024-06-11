@@ -1,9 +1,9 @@
 {
-  "CURSOR-Expressions-1.sql": [
+  "CURSOR-Expressions-1.sql" : [
     2,
     2
   ],
-  "Using-Extensible-Indexing-1.sql": [
+  "Using-Extensible-Indexing-1.sql" : [
     12,
     12,
     12,
@@ -67,7 +67,7 @@
     176,
     203
   ],
-  "Using-Extensible-Indexing-2.sql": [
+  "Using-Extensible-Indexing-2.sql" : [
     3,
     3,
     3

@@ -1,11 +1,11 @@
 {
-  "source/uninstall_objects.sql": [
+  "source/uninstall_objects.sql" : [
     279
   ],
-  "source/uninstall_synonyms.sql": [
+  "source/uninstall_synonyms.sql" : [
     43
   ],
-  "test/core/expectations/unary/test_expect_to_be_true_false.pkb": [
+  "test/core/expectations/unary/test_expect_to_be_true_false.pkb" : [
     20,
     60,
     93,
