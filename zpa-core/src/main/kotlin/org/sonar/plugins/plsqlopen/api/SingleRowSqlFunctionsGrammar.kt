@@ -30,6 +30,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     // internals
     JSON_PASSING_CLAUSE,
+    JSON_ON_NULL_CLAUSE,
+    JSON_RETURNING_CLAUSE,
+    JSON_ARRAY_ENUMERATION_CONTENT,
+    JSON_ARRAY_QUERY_CONTENT,
+    JSON_ARRAY_ELEMENT,
     JSON_QUERY_RETURNING_CLAUSE,
     JSON_QUERY_WRAPPER_CLAUSE,
     JSON_QUERY_QUOTES_CLAUSE,
@@ -46,6 +51,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     // functions
     EXTRACT_DATETIME_EXPRESSION,
     JSON_CONSTRUCTOR,
+    JSON_ARRAY_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -80,6 +86,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.firstOf(
                     EXTRACT_DATETIME_EXPRESSION,
                     JSON_CONSTRUCTOR,
+                    JSON_ARRAY_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -259,6 +266,51 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
         private fun createJsonFunctions(b: PlSqlGrammarBuilder) {
             b.rule(JSON_CONSTRUCTOR).define(JSON, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
+            b.rule(JSON_ARRAY_EXPRESSION).define(
+                JSON_ARRAY,
+                LPARENTHESIS,
+                b.firstOf(JSON_ARRAY_ENUMERATION_CONTENT, JSON_ARRAY_QUERY_CONTENT),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_ARRAY_ENUMERATION_CONTENT).define(
+                JSON_ARRAY_ELEMENT,
+                b.zeroOrMore(COMMA, JSON_ARRAY_ELEMENT),
+                b.optional(JSON_ON_NULL_CLAUSE),
+                b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(STRICT)
+            )
+
+            b.rule(JSON_ARRAY_ELEMENT).define(
+                EXPRESSION,
+                b.optional(FORMAT, JSON)
+            )
+
+            b.rule(JSON_ON_NULL_CLAUSE).define(b.firstOf(NULL, ABSENT), ON, NULL)
+
+            b.rule(JSON_RETURNING_CLAUSE).define(
+                RETURNING,
+                b.firstOf(
+                    b.sequence(
+                        VARCHAR2,
+                        b.optional(LPARENTHESIS, PlSqlTokenType.INTEGER_LITERAL, b.firstOf(CHAR, BYTE), RPARENTHESIS),
+                        b.optional(WITH, TYPENAME)
+                    ),
+                    b.sequence(
+                        b.firstOf(CLOB, BLOB),
+                        b.optional(b.firstOf(REFERENCE, VALUE))
+                    ),
+                    JSON
+                )
+            )
+
+            b.rule(JSON_ARRAY_QUERY_CONTENT).define(
+                DmlGrammar.SELECT_EXPRESSION,
+                b.optional(JSON_ON_NULL_CLAUSE),
+                b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(STRICT)
+            )
 
             b.rule(JSON_QUERY_EXPRESSION).define(
                 JSON_QUERY,
