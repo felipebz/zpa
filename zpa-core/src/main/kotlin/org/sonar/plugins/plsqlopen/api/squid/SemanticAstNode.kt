@@ -73,10 +73,17 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
         get() = tokens.joinToString(" ") { it.originalValue }
 
     override fun toString(): String {
-        return super.toString() + if (plSqlDatatype !is UnknownDatatype) {
-            " datatype=$plSqlDatatype"
-        } else {
-            ""
+        return buildString {
+            append(name)
+            if (tokenOrNull != null) {
+                append(" value='").append(token.value).append("'")
+                append(" line=").append(token.line)
+                append(" column=").append(token.column)
+            }
+            if (plSqlDatatype !is UnknownDatatype) {
+                append(" datatype=")
+                append(plSqlDatatype)
+            }
         }
     }
 }
