@@ -31,6 +31,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     // internals
     JSON_PASSING_CLAUSE,
     JSON_ON_NULL_CLAUSE,
+    JSON_ON_ERROR_CLAUSE,
     JSON_RETURNING_CLAUSE,
     JSON_ARRAY_ENUMERATION_CONTENT,
     JSON_ARRAY_QUERY_CONTENT,
@@ -52,6 +53,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     EXTRACT_DATETIME_EXPRESSION,
     JSON_CONSTRUCTOR,
     JSON_ARRAY_EXPRESSION,
+    JSON_MERGEPATCH_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -87,6 +89,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     EXTRACT_DATETIME_EXPRESSION,
                     JSON_CONSTRUCTOR,
                     JSON_ARRAY_EXPRESSION,
+                    JSON_MERGEPATCH_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -289,6 +292,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_ON_NULL_CLAUSE).define(b.firstOf(NULL, ABSENT), ON, NULL)
 
+            b.rule(JSON_ON_ERROR_CLAUSE).define(b.firstOf(NULL, ERROR), ON, ERROR)
+
             b.rule(JSON_RETURNING_CLAUSE).define(
                 RETURNING,
                 b.firstOf(
@@ -303,6 +308,20 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     ),
                     JSON
                 )
+            )
+
+            b.rule(JSON_MERGEPATCH_EXPRESSION).define(
+                JSON_MERGEPATCH,
+                LPARENTHESIS,
+                EXPRESSION,
+                COMMA,
+                EXPRESSION,
+                b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
+                b.optional(TRUNCATE),
+                b.optional(JSON_ON_ERROR_CLAUSE),
+                RPARENTHESIS
             )
 
             b.rule(JSON_ARRAY_QUERY_CONTENT).define(
