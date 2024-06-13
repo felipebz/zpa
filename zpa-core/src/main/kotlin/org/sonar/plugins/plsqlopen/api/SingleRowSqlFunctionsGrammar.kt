@@ -56,6 +56,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_ARRAY_EXPRESSION,
     JSON_MERGEPATCH_EXPRESSION,
     JSON_OBJECT_EXPRESSION,
+    JSON_SCALAR_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -93,6 +94,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_ARRAY_EXPRESSION,
                     JSON_MERGEPATCH_EXPRESSION,
                     JSON_OBJECT_EXPRESSION,
+                    JSON_SCALAR_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -352,6 +354,18 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     EXPRESSION
                 ),
                 b.optional(FORMAT, JSON)
+            )
+
+            b.rule(JSON_SCALAR_EXPRESSION).define(
+                JSON_SCALAR,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(b.firstOf(
+                    b.sequence(b.firstOf(JSON, SQL), NULL),
+                    b.sequence(EMPTY, STRING)
+                ), ON, NULL),
+                b.optional(b.firstOf(NULL, ERROR), ON, ERROR),
+                RPARENTHESIS
             )
 
             b.rule(JSON_QUERY_EXPRESSION).define(
