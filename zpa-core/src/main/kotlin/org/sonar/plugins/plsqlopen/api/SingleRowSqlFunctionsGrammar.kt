@@ -36,6 +36,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_ARRAY_ENUMERATION_CONTENT,
     JSON_ARRAY_QUERY_CONTENT,
     JSON_ARRAY_ELEMENT,
+    JSON_OBJECT_ENTRY,
     JSON_QUERY_RETURNING_CLAUSE,
     JSON_QUERY_WRAPPER_CLAUSE,
     JSON_QUERY_QUOTES_CLAUSE,
@@ -54,6 +55,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_CONSTRUCTOR,
     JSON_ARRAY_EXPRESSION,
     JSON_MERGEPATCH_EXPRESSION,
+    JSON_OBJECT_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -90,6 +92,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_CONSTRUCTOR,
                     JSON_ARRAY_EXPRESSION,
                     JSON_MERGEPATCH_EXPRESSION,
+                    JSON_OBJECT_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -329,6 +332,26 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
                 b.optional(STRICT)
+            )
+
+            b.rule(JSON_OBJECT_EXPRESSION).define(
+                JSON_OBJECT,
+                LPARENTHESIS,
+                JSON_OBJECT_ENTRY, b.zeroOrMore(COMMA, JSON_OBJECT_ENTRY),
+                b.optional(JSON_ON_NULL_CLAUSE),
+                b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(STRICT),
+                b.optional(WITH, UNIQUE, KEYS),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_OBJECT_ENTRY).define(
+                b.firstOf(
+                    b.sequence(b.optional(KEY), EXPRESSION, VALUE, EXPRESSION),
+                    b.sequence(STRING_LITERAL, COLON, EXPRESSION),
+                    EXPRESSION
+                ),
+                b.optional(FORMAT, JSON)
             )
 
             b.rule(JSON_QUERY_EXPRESSION).define(
