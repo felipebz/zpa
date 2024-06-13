@@ -2153,9 +2153,6 @@
   "Interval-Expressions-0.sql" : [
     2
   ],
-  "JSON_OBJECTAGG-0.sql" : [
-    2
-  ],
   "JSON_TABLE-0.sql" : [
     5
   ],
