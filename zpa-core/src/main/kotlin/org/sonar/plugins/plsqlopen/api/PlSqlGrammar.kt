@@ -52,6 +52,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     ANCHORED_DATATYPE,
     CUSTOM_DATATYPE,
     REF_DATATYPE,
+    JSON_DATATYPE,
 
     // Literals
     LITERAL,
@@ -432,6 +433,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(REF_DATATYPE).define(REF, MEMBER_EXPRESSION)
 
+            b.rule(JSON_DATATYPE).define(JSON)
+
             b.rule(DATATYPE).define(b.firstOf(
                     NUMERIC_DATATYPE,
                     LOB_DATATYPE,
@@ -440,6 +443,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     DATE_DATATYPE,
                     ANCHORED_DATATYPE,
                     REF_DATATYPE,
+                    JSON_DATATYPE,
                     CUSTOM_DATATYPE),
                     b.optional(b.firstOf(
                             b.sequence(NOT, NULL),

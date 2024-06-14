@@ -55,6 +55,8 @@ open class DefaultTypeSolver {
             if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
                 type = RowtypeDatatype()
             }
+        } else if (node.hasDirectChildren(PlSqlGrammar.JSON_DATATYPE)) {
+            type = JsonDatatype()
         } else {
             val datatype = node.firstChild
             type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype()

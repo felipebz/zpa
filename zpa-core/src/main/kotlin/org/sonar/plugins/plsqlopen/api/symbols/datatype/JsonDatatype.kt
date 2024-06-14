@@ -17,30 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plugins.plsqlopen.api.symbols
+package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
-enum class PlSqlType {
+import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-    UNKNOWN,
-    CHARACTER,
-    NUMERIC,
-    DATE,
-    LOB,
-    BOOLEAN,
-    ROWTYPE,
-    ASSOCIATIVE_ARRAY,
-    NULL,
-    RECORD,
-    JSON,
-    EXCEPTION;
+class JsonDatatype : PlSqlDatatype {
+    override val type = PlSqlType.JSON
 
-    val isCharacter: Boolean
-        get() = this == CHARACTER
+    override val name: String = "JSON"
 
-    val isNumeric: Boolean
-        get() = this == NUMERIC
-
-    val isUnknown: Boolean
-        get() = this == UNKNOWN
-
+    override fun toString(): String {
+        return "Json"
+    }
 }
