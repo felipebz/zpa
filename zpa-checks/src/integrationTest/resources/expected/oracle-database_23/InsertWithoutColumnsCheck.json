@@ -1,0 +1,236 @@
+{
+  "ALTER-SESSION-13.sql" : [
+    5
+  ],
+  "ALTER-TABLE-114.sql" : [
+    2,
+    5
+  ],
+  "ALTER-TABLE-31.sql" : [
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "ALTER-TABLE-91.sql" : [
+    5,
+    6,
+    7
+  ],
+  "COLLATION-0.sql" : [
+    6
+  ],
+  "COMMIT-0.sql" : [
+    2
+  ],
+  "CREATE-TABLE-50.sql" : [
+    2
+  ],
+  "CURRENT_TIMESTAMP-2.sql" : [
+    2
+  ],
+  "CURRENT_TIMESTAMP-3.sql" : [
+    2
+  ],
+  "Comments-46.sql" : [
+    3
+  ],
+  "DEREF-0.sql" : [
+    2,
+    5
+  ],
+  "Data-Types-18.sql" : [
+    2
+  ],
+  "Data-Types-19.sql" : [
+    2
+  ],
+  "Data-Types-21.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "Data-Types-3.sql" : [
+    4,
+    5,
+    6,
+    7
+  ],
+  "HEXTORAW-0.sql" : [
+    4
+  ],
+  "INSERT-0.sql" : [
+    2
+  ],
+  "INSERT-1.sql" : [
+    2
+  ],
+  "INSERT-10.sql" : [
+    2,
+    3,
+    4
+  ],
+  "INSERT-11.sql" : [
+    2,
+    4,
+    6
+  ],
+  "INSERT-14.sql" : [
+    2
+  ],
+  "INSERT-27.sql" : [
+    2
+  ],
+  "INSERT-28.sql" : [
+    2
+  ],
+  "INSERT-3.sql" : [
+    2
+  ],
+  "INSERT-4.sql" : [
+    2
+  ],
+  "INSERT-6.sql" : [
+    2
+  ],
+  "INSERT-7.sql" : [
+    2
+  ],
+  "INSERT-8.sql" : [
+    2
+  ],
+  "JSON_TABLE-1.sql" : [
+    2
+  ],
+  "LOCALTIMESTAMP-2.sql" : [
+    2
+  ],
+  "LOCALTIMESTAMP-3.sql" : [
+    2
+  ],
+  "Literals-15.sql" : [
+    2,
+    3
+  ],
+  "Literals-18.sql" : [
+    2
+  ],
+  "Literals-19.sql" : [
+    2
+  ],
+  "Literals-20.sql" : [
+    2
+  ],
+  "NANVL-0.sql" : [
+    2
+  ],
+  "NLSSORT-1.sql" : [
+    3,
+    4,
+    5
+  ],
+  "Pattern-matching-Conditions-10.sql" : [
+    3
+  ],
+  "SELECT-102.sql" : [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "SELECT-60.sql" : [
+    2
+  ],
+  "SELECT-77.sql" : [
+    6,
+    7,
+    8,
+    9
+  ],
+  "SELECT-86.sql" : [
+    2
+  ],
+  "SQL-JSON-Conditions-15.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "SQL-JSON-Conditions-20.sql" : [
+    2,
+    3,
+    4
+  ],
+  "SQL-JSON-Conditions-29.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "SQL-JSON-Conditions-37.sql" : [
+    2,
+    5,
+    8
+  ],
+  "Sequence-Pseudocolumns-4.sql" : [
+    2
+  ],
+  "Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-0.sql" : [
+    2
+  ],
+  "TO_BINARY_DOUBLE-0.sql" : [
+    5
+  ],
+  "TO_CHAR-datetime-2.sql" : [
+    3,
+    7
+  ],
+  "TRANSLATE-USING-0.sql" : [
+    4
+  ],
+  "Type-Constructor-Expressions-0.sql" : [
+    8
+  ],
+  "Using-XML-in-SQL-Statements-1.sql" : [
+    2
+  ],
+  "domain_name-2.sql" : [
+    2
+  ],
+  "domain_name-6.sql" : [
+    2
+  ],
+  "to_vector-1.sql" : [
+    2
+  ],
+  "vector-0.sql" : [
+    2
+  ]
+}

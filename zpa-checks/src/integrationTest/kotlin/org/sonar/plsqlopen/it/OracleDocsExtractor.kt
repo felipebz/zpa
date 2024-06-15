@@ -30,8 +30,9 @@ fun main() {
 class OracleDocsExtractor {
 
     fun extract() {
-        val zipFile = ZipFile(System.getProperty("oracleDocs")) // example: https://docs.oracle.com/en/database/oracle/oracle-database/19/zip/oracle-database_19.zip
-        val outputDir = File("src/integrationTest/resources/sources/oracle-database_19")
+        // you need to get the file from https://docs.oracle.com/en/database/oracle/oracle-database/23/zip/oracle-database_23.zip
+        val zipFile = ZipFile(System.getProperty("oracleDocs"))
+        val outputDir = File("src/integrationTest/resources/sources/oracle-database_23")
 
         if (outputDir.exists()) {
             outputDir.deleteRecursively()
@@ -58,7 +59,7 @@ class OracleDocsExtractor {
                                 if (text.isNotEmpty()) {
                                     val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
                                     val path = entry.name.substring(entry.name.indexOf("sqlrf"))
-                                    text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/19/$path\n$text"
+                                    text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$text"
                                     File(outputDir.absolutePath, name).writeText(text, Charsets.UTF_8)
                                 }
                             } catch (e: Exception) {

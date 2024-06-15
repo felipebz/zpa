@@ -1,0 +1,59 @@
+{
+  "Comments-48.sql" : [
+    2
+  ],
+  "Comments-49.sql" : [
+    2
+  ],
+  "Expression-Lists-3.sql" : [
+    3,
+    3,
+    3,
+    3
+  ],
+  "JSON_TABLE-5.sql" : [
+    2,
+    2
+  ],
+  "JSON_TABLE-6.sql" : [
+    2
+  ],
+  "ROW_NUMBER-1.sql" : [
+    10,
+    10,
+    23,
+    23
+  ],
+  "SELECT-19.sql" : [
+    4
+  ],
+  "SELECT-43.sql" : [
+    2,
+    2
+  ],
+  "SELECT-51.sql" : [
+    3,
+    4,
+    5
+  ],
+  "SELECT-64.sql" : [
+    2,
+    2,
+    2
+  ],
+  "SELECT-66.sql" : [
+    2,
+    2,
+    2
+  ],
+  "SELECT-95.sql" : [
+    2,
+    2
+  ],
+  "STATS_ONE_WAY_ANOVA-0.sql" : [
+    2
+  ],
+  "XMLTABLE-2.sql" : [
+    2
+  ]
+}

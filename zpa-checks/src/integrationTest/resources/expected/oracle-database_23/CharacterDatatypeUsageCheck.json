@@ -1,0 +1,24 @@
+{
+  "CAST-7.sql" : [
+    12
+  ],
+  "CREATE-TABLE-41.sql" : [
+    6
+  ],
+  "CREATE-TABLE-56.sql" : [
+    6
+  ],
+  "Concatenation-Operator-1.sql" : [
+    2,
+    3
+  ],
+  "Pattern-matching-Conditions-10.sql" : [
+    2
+  ],
+  "constraint-3.sql" : [
+    8
+  ],
+  "constraint-4.sql" : [
+    8
+  ]
+}

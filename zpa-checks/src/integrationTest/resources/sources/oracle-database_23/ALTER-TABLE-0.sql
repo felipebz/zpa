@@ -1,0 +1,5 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-TABLE.html
+ALTER TABLE employee RESULT_CACHE (MODE DEFAULT) 
+    ALTER TABLE employee RESULT_CACHE (STANDBY ENABLE)   
+    ALTER TABLE employee RESULT_CACHE (MODE DEFAULT, STANDBY ENABLE)
+    ALTER TABLE employee RESULT_CACHE (STANDBY ENABLE, MODE FORCE)

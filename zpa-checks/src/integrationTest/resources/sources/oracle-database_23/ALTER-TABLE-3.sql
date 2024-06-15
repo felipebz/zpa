@@ -1,0 +1,2 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-TABLE.html
+ALTER TABLE  [owner.]name ADD (<column_list_def_clause> [, DOMAIN  [domain_owner.]domain_name (<column_name_list>)]+)
