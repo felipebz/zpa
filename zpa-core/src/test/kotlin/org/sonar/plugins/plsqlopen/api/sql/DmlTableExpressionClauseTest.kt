@@ -65,4 +65,24 @@ class DmlTableExpressionClauseTest : RuleTest() {
         assertThat(p).matches("table(xmlsequence(x))")
     }
 
+    @Test
+    fun matchesNestedClause() {
+        assertThat(p).matches("tab nested doc columns (foo path foo) alias")
+    }
+
+    @Test
+    fun matchesNestedClauseWithExplicitPath() {
+        assertThat(p).matches("tab nested path doc columns (foo path foo)")
+    }
+
+    @Test
+    fun matchesNestedClauseWithRelativeObjectAccess() {
+        assertThat(p).matches("tab nested doc.c1[*].c2 columns (foo path foo)")
+    }
+
+    @Test
+    fun matchesNestedClauseWithSimplePathAccess() {
+        assertThat(p).matches("tab nested doc, '$.c1[*].c2' columns (foo path foo)")
+    }
+
 }

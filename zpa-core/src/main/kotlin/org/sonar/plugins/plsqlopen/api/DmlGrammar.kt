@@ -25,6 +25,7 @@ import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.*
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.*
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
+import org.sonar.plugins.plsqlopen.api.SingleRowSqlFunctionsGrammar.*
 
 enum class DmlGrammar : GrammarRuleKey {
 
@@ -42,6 +43,7 @@ enum class DmlGrammar : GrammarRuleKey {
     OUTER_JOIN_TYPE,
     QUERY_PARTITION_CLAUSE,
     OUTER_JOIN_CLAUSE,
+    NESTED_CLAUSE,
     JOIN_CLAUSE,
     SELECT_COLUMN,
     FROM_CLAUSE,
@@ -164,6 +166,17 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.optional(QUERY_PARTITION_CLAUSE),
                             b.optional(ON_OR_USING_EXPRESSION)))
 
+            b.rule(NESTED_CLAUSE).define(
+                NESTED, b.optional(PATH), IDENTIFIER_NAME,
+                b.optional(b.firstOf(
+                    b.sequence(DOT, JSON_RELATIVE_OBJECT_ACCESS),
+                    b.sequence(COMMA, JSON_BASIC_PATH_EXPRESSION)
+                )),
+                b.optional(JSON_TABLE_ON_ERROR_CLAUSE),
+                b.optional(JSON_TABLE_ON_EMPTY_CLAUSE),
+                JSON_COLUMNS_CLAUSE
+            )
+
             b.rule(JOIN_CLAUSE).define(
                 b.firstOf(
                     b.sequence(
@@ -184,6 +197,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                             OBJECT_REFERENCE
                         ),
+                        b.optional(NESTED_CLAUSE),
                         b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)),
                             b.optional(AS),
                             ALIAS
