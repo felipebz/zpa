@@ -51,6 +51,7 @@ class DmlTableExpressionClauseTest : RuleTest() {
     @Test
     fun matchesTableWithAlias() {
         assertThat(p).matches("tab alias")
+        assertThat(p).matches("tab as alias")
     }
 
     @Test

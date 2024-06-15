@@ -185,6 +185,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             OBJECT_REFERENCE
                         ),
                         b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)),
+                            b.optional(AS),
                             ALIAS
                         )
                     ),
