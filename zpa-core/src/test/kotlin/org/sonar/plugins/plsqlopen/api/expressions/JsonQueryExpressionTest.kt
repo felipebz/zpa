@@ -49,7 +49,7 @@ class JsonQueryExpressionTest : RuleTest() {
 
     @Test
     fun matchesJsonQueryWithPassing() {
-        assertThat(p).matches("json_query(foo, '$' passing bar)")
+        assertThat(p).matches("json_query(foo, '$' passing 'x' as bar)")
     }
 
     @Test

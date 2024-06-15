@@ -290,6 +290,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     JSON_SCALAR("json_scalar"),
     JSON_SERIALIZE("json_serialize"),
     JSON_TABLE("json_table"),
+    JSON_VALUE("json_value"),
     KEEP("keep"),
     KEY("key"),
     KEYS("keys"),

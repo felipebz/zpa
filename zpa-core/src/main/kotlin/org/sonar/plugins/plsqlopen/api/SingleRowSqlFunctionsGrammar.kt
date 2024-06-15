@@ -63,6 +63,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_VALUE_RETURN_OBJECT_INSTANCE,
     JSON_EXISTS_ON_ERROR_CLAUSE,
     JSON_EXISTS_ON_EMPTY_CLAUSE,
+    JSON_VALUE_RETURNING_CLAUSE,
     XML_COLUMN,
     XML_NAMESPACE,
     XMLNAMESPACES_CLAUSE,
@@ -80,6 +81,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_SERIALIZE_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     JSON_TABLE_EXPRESSION,
+    JSON_VALUE_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
     XMLFOREST_EXPRESSION,
@@ -120,6 +122,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_SERIALIZE_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     JSON_TABLE_EXPRESSION,
+                    JSON_VALUE_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
                     XMLFOREST_EXPRESSION,
@@ -431,12 +434,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(JSON_PASSING_CLAUSE).define(
-                PASSING,
-                b.oneOrMore(
-                    EXPRESSION,
-                    b.optional(AS, IDENTIFIER_NAME),
-                    b.optional(COMMA)
-                )
+                PASSING, EXPRESSION, AS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, EXPRESSION, AS, IDENTIFIER_NAME)
             )
 
             b.rule(JSON_QUERY_RETURNING_CLAUSE).define(
@@ -667,6 +665,24 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     FALSE
                 ), ON, EMPTY
             )
+
+            b.rule(JSON_VALUE_EXPRESSION).define(
+                JSON_VALUE,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(FORMAT, JSON),
+                COMMA,
+                STRING_LITERAL,
+                b.optional(JSON_PASSING_CLAUSE),
+                b.optional(JSON_VALUE_RETURNING_CLAUSE),
+                b.optional(JSON_VALUE_ON_ERROR_CLAUSE),
+                b.optional(JSON_VALUE_ON_EMPTY_CLAUSE),
+                b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE),
+                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_VALUE_RETURNING_CLAUSE).define(RETURNING, JSON_VALUE_RETURN_TYPE, b.optional(ASCII))
         }
     }
 

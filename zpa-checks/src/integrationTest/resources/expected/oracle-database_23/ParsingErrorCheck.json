@@ -2384,12 +2384,6 @@
   "JSON_TRANSFORM-1.sql" : [
     2
   ],
-  "JSON_VALUE-1.sql" : [
-    2
-  ],
-  "JSON_VALUE-9.sql" : [
-    3
-  ],
   "LOCK-TABLE-0.sql" : [
     2
   ],
