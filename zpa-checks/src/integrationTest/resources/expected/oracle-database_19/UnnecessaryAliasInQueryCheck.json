@@ -182,6 +182,12 @@
   "JSON-Object-Access-Expressions-2.sql" : [
     3
   ],
+  "JSON_TABLE-11.sql" : [
+    3
+  ],
+  "JSON_TABLE-12.sql" : [
+    3
+  ],
   "MERGE-0.sql" : [
     5,
     5

@@ -50,7 +50,9 @@ enum class PlSqlPunctuator(override val value: String) : TokenType {
     ASSOCIATION("=>"),
     EXCLAMATION("!"),
     TILDE("~"),
-    CARET("^");
+    CARET("^"),
+    LBRACKET("["),
+    RBRACKET("]"),;
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 }

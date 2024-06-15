@@ -43,6 +43,26 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_QUERY_ON_ERROR_CLAUSE,
     JSON_QUERY_ON_EMPTY_CLAUSE,
     JSON_QUERY_ON_MISMATCH_CLAUSE,
+    JSON_BASIC_PATH_EXPRESSION,
+    JSON_RELATIVE_OBJECT_ACCESS,
+    JSON_TABLE_ON_ERROR_CLAUSE,
+    JSON_TABLE_ON_EMPTY_CLAUSE,
+    JSON_COLUMNS_CLAUSE,
+    JSON_COLUMN_DEFINITION,
+    JSON_EXISTS_COLUMN,
+    JSON_QUERY_COLUMN,
+    JSON_VALUE_COLUMN,
+    JSON_NESTED_PATH,
+    JSON_ORDINALITY_COLUMN,
+    JSON_PATH,
+    JSON_ARRAY_STEP,
+    JSON_VALUE_RETURN_TYPE,
+    JSON_VALUE_ON_ERROR_CLAUSE,
+    JSON_VALUE_ON_EMPTY_CLAUSE,
+    JSON_VALUE_ON_MISMATCH_CLAUSE,
+    JSON_VALUE_RETURN_OBJECT_INSTANCE,
+    JSON_EXISTS_ON_ERROR_CLAUSE,
+    JSON_EXISTS_ON_EMPTY_CLAUSE,
     XML_COLUMN,
     XML_NAMESPACE,
     XMLNAMESPACES_CLAUSE,
@@ -59,6 +79,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_SCALAR_EXPRESSION,
     JSON_SERIALIZE_EXPRESSION,
     JSON_QUERY_EXPRESSION,
+    JSON_TABLE_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
     XMLFOREST_EXPRESSION,
@@ -98,6 +119,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_SCALAR_EXPRESSION,
                     JSON_SERIALIZE_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
+                    JSON_TABLE_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
                     XMLFOREST_EXPRESSION,
@@ -458,6 +480,192 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_QUERY_ON_MISMATCH_CLAUSE).define(
                 b.firstOf(ERROR, NULL), ON, MISMATCH
+            )
+
+            b.rule(JSON_TABLE_EXPRESSION).define(
+                JSON_TABLE,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(FORMAT, JSON),
+                b.optional(COMMA, JSON_BASIC_PATH_EXPRESSION),
+                b.optional(JSON_TABLE_ON_ERROR_CLAUSE),
+                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                b.optional(JSON_TABLE_ON_EMPTY_CLAUSE),
+                JSON_COLUMNS_CLAUSE,
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_TABLE_ON_ERROR_CLAUSE).define(
+                b.firstOf(ERROR, NULL),
+                ON, ERROR
+            )
+
+            b.rule(JSON_TABLE_ON_EMPTY_CLAUSE).define(
+                b.firstOf(ERROR, NULL),
+                ON, EMPTY
+            )
+
+            b.rule(JSON_COLUMNS_CLAUSE).define(
+                COLUMNS,
+                LPARENTHESIS,
+                JSON_COLUMN_DEFINITION,
+                b.zeroOrMore(COMMA, JSON_COLUMN_DEFINITION),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_COLUMN_DEFINITION).define(
+                b.firstOf(
+                    JSON_NESTED_PATH,
+                    JSON_EXISTS_COLUMN,
+                    JSON_ORDINALITY_COLUMN,
+                    JSON_VALUE_COLUMN,
+                    JSON_QUERY_COLUMN
+                )
+            )
+
+            b.rule(JSON_EXISTS_COLUMN).define(
+                IDENTIFIER_NAME,
+                b.optional(JSON_VALUE_RETURN_TYPE),
+                EXISTS,
+                b.optional(PATH, JSON_PATH),
+                b.optional(JSON_EXISTS_ON_ERROR_CLAUSE),
+                b.optional(JSON_EXISTS_ON_EMPTY_CLAUSE)
+            )
+
+            b.rule(JSON_QUERY_COLUMN).define(
+                IDENTIFIER_NAME,
+                b.optional(JSON_VALUE_RETURN_TYPE),
+                b.optional(FORMAT, JSON),
+                b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
+                b.optional(JSON_QUERY_WRAPPER_CLAUSE),
+                b.optional(PATH, JSON_PATH),
+                b.optional(JSON_QUERY_ON_ERROR_CLAUSE)
+            )
+
+            b.rule(JSON_VALUE_COLUMN).define(
+                IDENTIFIER_NAME,
+                b.optional(JSON_VALUE_RETURN_TYPE),
+                b.nextNot(FORMAT),
+                b.optional(TRUNCATE),
+                b.optional(PATH, JSON_PATH),
+                b.optional(JSON_VALUE_ON_ERROR_CLAUSE),
+                b.optional(JSON_VALUE_ON_EMPTY_CLAUSE),
+                b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE)
+            )
+
+            b.rule(JSON_NESTED_PATH).define(
+                NESTED, b.optional(PATH),
+                JSON_PATH,
+                JSON_COLUMNS_CLAUSE
+            )
+
+            b.rule(JSON_ORDINALITY_COLUMN).define(IDENTIFIER_NAME, FOR, ORDINALITY)
+
+            b.rule(JSON_PATH).define(
+                b.firstOf(
+                    JSON_BASIC_PATH_EXPRESSION,
+                    JSON_RELATIVE_OBJECT_ACCESS
+                )
+            )
+
+            b.rule(JSON_BASIC_PATH_EXPRESSION).define(STRING_LITERAL).skip()
+
+            b.rule(JSON_RELATIVE_OBJECT_ACCESS).define(
+                IDENTIFIER_NAME, b.optional(JSON_ARRAY_STEP),
+                b.zeroOrMore(DOT, IDENTIFIER_NAME, b.optional(JSON_ARRAY_STEP))
+            )
+
+            b.rule(JSON_ARRAY_STEP).define(
+                LBRACKET,
+                b.firstOf(
+                    b.oneOrMore(PlSqlTokenType.INTEGER_LITERAL, b.optional(TO, PlSqlTokenType.INTEGER_LITERAL), b.optional(COMMA)),
+                    MULTIPLICATION
+                ),
+                RBRACKET
+            )
+
+            b.rule(JSON_VALUE_RETURN_TYPE).define(
+                b.firstOf(
+                    b.sequence(
+                        VARCHAR2,
+                        b.optional(
+                            LPARENTHESIS,
+                            PlSqlTokenType.INTEGER_LITERAL,
+                            b.optional(b.firstOf(CHAR, BYTE)),
+                            RPARENTHESIS
+                        ),
+                        b.optional(TRUNCATE)
+                    ),
+                    CLOB,
+                    b.sequence(
+                        NUMBER,
+                        b.optional(
+                            LPARENTHESIS,
+                            PlSqlTokenType.INTEGER_LITERAL,
+                            b.optional(COMMA, PlSqlTokenType.INTEGER_LITERAL),
+                            RPARENTHESIS
+                        )
+                    ),
+                    b.sequence(b.firstOf(ALLOW, DISALLOW), b.optional(BOOLEAN), TO, NUMBER, b.optional(CONVERSION)),
+                    b.sequence(DATE, b.optional(b.firstOf(TRUNCATE, PRESERVE), TIME)),
+                    b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
+                    BOOLEAN,
+                    SDO_GEOMETRY,
+                    JSON_VALUE_RETURN_OBJECT_INSTANCE,
+                    VECTOR
+                )
+            )
+
+            b.rule(JSON_VALUE_RETURN_OBJECT_INSTANCE).define(
+                b.nextNot(NON_RESERVED_KEYWORD),
+                CUSTOM_DATATYPE, b.optional(USING, CASE_SENSITIVE, MAPPING))
+
+            b.rule(JSON_VALUE_ON_ERROR_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    NULL,
+                    b.sequence(DEFAULT, LITERAL)
+                ), ON, ERROR
+            )
+
+            b.rule(JSON_VALUE_ON_EMPTY_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    NULL,
+                    b.sequence(DEFAULT, LITERAL)
+                ), ON, EMPTY
+            )
+
+            b.rule(JSON_VALUE_ON_MISMATCH_CLAUSE).define(
+                b.firstOf(IGNORE, ERROR, NULL),
+                ON, MISMATCH,
+                b.optional(
+                    LPARENTHESIS,
+                    b.oneOrMore(
+                        b.firstOf(
+                            b.sequence(MISSING, DATA),
+                            b.sequence(EXTRA, DATA),
+                            b.sequence(TYPE, ERROR)
+                        ), b.optional(COMMA)
+                    ),
+                    RPARENTHESIS
+                )
+            )
+
+            b.rule(JSON_EXISTS_ON_ERROR_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    TRUE,
+                    FALSE
+                ), ON, ERROR
+            )
+
+            b.rule(JSON_EXISTS_ON_EMPTY_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    TRUE,
+                    FALSE
+                ), ON, EMPTY
             )
         }
     }
