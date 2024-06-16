@@ -20,6 +20,7 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.api.Trivia
 import com.felipebz.flr.toolkit.ConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
@@ -48,7 +49,11 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         Thread.currentThread().uncaughtExceptionHandler = UncaughtExceptionHandler { _, e ->
             val result: Writer = StringWriter()
             val printWriter = PrintWriter(result)
-            e.printStackTrace(printWriter)
+            if (e is RecognitionException) {
+                printWriter.append(e.message)
+            } else {
+                e.printStackTrace(printWriter)
+            }
             view.appendToConsole(result.toString())
             view.setFocusOnConsoleView()
         }
