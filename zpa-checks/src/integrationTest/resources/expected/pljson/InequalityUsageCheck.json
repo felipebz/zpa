@@ -1,36 +1,48 @@
 {
-  "src/addons/json_helper.sql" : [
-    251,
-    310
+  "src/addons/pljson_helper.package.sql" : [
+    282,
+    341
   ],
-  "src/json_ext.sql" : [
-    162,
-    174,
-    181,
-    185,
-    202,
-    225
+  "src/addons/pljson_table_impl.type.impl.sql" : [
+    272,
+    275,
+    388,
+    518
   ],
-  "src/json_parser.sql" : [
-    269,
-    391,
-    406,
-    421,
-    543,
-    575,
-    688,
-    721,
-    743,
-    765,
-    788,
-    807,
-    824
+  "src/pljson_ext.impl.sql" : [
+    166,
+    263,
+    268,
+    291,
+    299,
+    303,
+    320,
+    347
   ],
-  "src/json_printer.sql" : [
-    257,
-    300,
-    453,
-    495,
-    556
+  "src/pljson_number.type.sql" : [
+    130,
+    133
+  ],
+  "src/pljson_parser.impl.sql" : [
+    312,
+    436,
+    451,
+    466,
+    590,
+    627,
+    746,
+    779,
+    801,
+    823,
+    846,
+    865,
+    883
+  ],
+  "src/pljson_printer.package.sql" : [
+    276,
+    320,
+    491,
+    535,
+    604
   ]
 }

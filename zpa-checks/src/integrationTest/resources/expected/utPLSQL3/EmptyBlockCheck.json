@@ -11,9 +11,6 @@
     7,
     13
   ],
-  "old_tests/ut_reporters/ut_documentation_reporter.reportMultipleWarnings.sql" : [
-    24
-  ],
   "source/core/types/ut_reporter_base.tpb" : [
     44,
     50,
@@ -36,7 +33,7 @@
     130,
     136
   ],
-  "test/core/test_ut_executable.pkb" : [
-    91
+  "test/ut3_tester/core/test_ut_executable.pkb" : [
+    64
   ]
 }

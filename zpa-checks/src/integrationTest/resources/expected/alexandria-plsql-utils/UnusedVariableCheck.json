@@ -13,6 +13,13 @@
     3012,
     3255
   ],
+  "extras/hash_util_pkg.pkb" : [
+    23,
+    28,
+    191,
+    471,
+    859
+  ],
   "extras/pdfgen_pkg.pkb" : [
     1420,
     1845,
@@ -37,6 +44,9 @@
   ],
   "ora/google_maps_js_pkg.pkb" : [
     133
+  ],
+  "ora/icalendar_util_pkg.pkb" : [
+    188
   ],
   "ora/image_util_pkg.pkb" : [
     146,
@@ -81,7 +91,7 @@
     766
   ],
   "ora/ooxml_util_pkg.pkb" : [
-    224
+    226
   ],
   "ora/pdf_builder_pkg.pkb" : [
     644
@@ -93,7 +103,7 @@
     19
   ],
   "ora/xlsx_builder_pkg.pkb" : [
-    1075
+    1106
   ],
   "ora/xml_dataset_pkg.pkb" : [
     279

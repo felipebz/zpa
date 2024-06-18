@@ -1,5 +1,8 @@
 {
-  "source/core/coverage/ut_coverage_helper.pkb" : [
-    46
+  "source/expectations/json_objects_specs.sql" : [
+    2
+  ],
+  "source/uninstall_objects.sql" : [
+    257
   ]
 }

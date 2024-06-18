@@ -1,0 +1,11 @@
+{
+  "examples/ex_pljson_table.sql" : [
+    200
+  ],
+  "src/addons/pljson_object_cache.decl.sql" : [
+    28
+  ],
+  "src/addons/pljson_object_cache.impl.sql" : [
+    82
+  ]
+}

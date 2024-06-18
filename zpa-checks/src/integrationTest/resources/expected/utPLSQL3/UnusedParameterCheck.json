@@ -1,6 +1,12 @@
 {
-  "source/core/coverage/ut_coverage.pkb" : [
-    154
+  "source/core/output_buffers/ut_output_buffer_base.tpb" : [
+    38
+  ],
+  "source/core/session_context/ut_session_info.tpb" : [
+    35,
+    83,
+    100,
+    107
   ],
   "source/core/types/ut_reporter_base.tpb" : [
     42,
@@ -24,14 +30,20 @@
     128,
     134
   ],
-  "source/expectations/data_values/ut_compound_data_value.tpb" : [
-    197
+  "source/core/ut_suite_manager.pkb" : [
+    518
   ],
   "source/expectations/data_values/ut_data_value.tpb" : [
     33,
-    33,
-    33,
-    33,
     33
+  ],
+  "source/expectations/data_values/ut_data_value_json.tpb" : [
+    138
+  ],
+  "source/expectations/data_values/ut_json_tree_details.tpb" : [
+    186
+  ],
+  "source/reporters/ut_tfs_junit_reporter.tpb" : [
+    156
   ]
 }

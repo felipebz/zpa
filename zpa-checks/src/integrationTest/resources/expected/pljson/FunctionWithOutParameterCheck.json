@@ -1,37 +1,57 @@
 {
-  "src/addons/pljson_table_impl.typ" : [
-    72,
-    74,
+  "src/addons/pljson_table_impl.type.decl.sql" : [
+    130,
+    136,
+    143,
+    149,
+    149
+  ],
+  "src/addons/pljson_table_impl.type.impl.sql" : [
+    44,
     76,
-    78,
-    78
+    109,
+    344,
+    344
   ],
-  "src/addons/pljson_table_impl_body.typ" : [
-    36,
-    64,
+  "src/pljson.type.decl.sql" : [
+    102
+  ],
+  "src/pljson.type.impl.sql" : [
+    503
+  ],
+  "src/pljson_element.type.decl.sql" : [
+    64
+  ],
+  "src/pljson_element.type.impl.sql" : [
+    163
+  ],
+  "src/pljson_list.type.decl.sql" : [
+    101
+  ],
+  "src/pljson_list.type.impl.sql" : [
+    519
+  ],
+  "src/pljson_parser.decl.sql" : [
+    48,
+    49,
+    50,
+    54
+  ],
+  "src/pljson_parser.impl.sql" : [
     82,
-    170,
-    170
-  ],
-  "src/json_parser.sql" : [
-    38,
-    39,
-    43,
-    94,
-    113,
-    173,
-    173,
-    173,
-    232,
-    232,
-    232,
-    261,
-    261,
-    261,
-    370,
-    532,
-    534,
-    584,
-    626
+    145,
+    216,
+    216,
+    216,
+    275,
+    275,
+    275,
+    303,
+    303,
+    303,
+    415,
+    580,
+    636,
+    684
   ]
 }

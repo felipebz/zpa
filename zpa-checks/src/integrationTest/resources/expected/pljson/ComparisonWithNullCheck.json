@@ -1,5 +1,5 @@
 {
-  "src/addons/json_xml.sql" : [
-    122
+  "src/addons/pljson_xml.package.sql" : [
+    129
   ]
 }

@@ -1,5 +1,8 @@
 {
+  "source/core/ut_expectation_processor.pkb" : [
+    89
+  ],
   "source/reporters/ut_coverage_report_html_helper.pkb" : [
-    334
+    335
   ]
 }
