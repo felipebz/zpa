@@ -367,7 +367,7 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(INSERT_INTO_CLAUSE).define(INTO,
                 b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), b.firstOf(
-                    SingleRowSqlFunctionsGrammar.TABLE_EXPRESSION, TABLE_REFERENCE)),
+                    TABLE_EXPRESSION, THE_EXPRESSION, TABLE_REFERENCE)),
                 b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
 
             b.rule(VALUES_CLAUSE).define(

@@ -100,6 +100,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     CAST_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
+    THE_EXPRESSION,
     CURSOR_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
 
@@ -140,6 +141,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     CAST_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
+                    THE_EXPRESSION,
                     CURSOR_EXPRESSION
                 )
             ).skip()
@@ -174,7 +176,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(TABLE_EXPRESSION).define(
                 TABLE, LPARENTHESIS,
                 b.firstOf(DmlGrammar.SELECT_EXPRESSION, EXPRESSION),
-                RPARENTHESIS)
+                RPARENTHESIS
+            )
+
+            b.rule(THE_EXPRESSION).define(
+                THE, LPARENTHESIS,
+                b.firstOf(DmlGrammar.SELECT_EXPRESSION, EXPRESSION),
+                RPARENTHESIS
+            )
 
             b.rule(CURSOR_EXPRESSION).define(CURSOR, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS)
         }

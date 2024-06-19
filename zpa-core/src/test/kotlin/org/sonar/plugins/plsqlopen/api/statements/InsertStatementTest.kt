@@ -111,4 +111,9 @@ class InsertStatementTest : RuleTest() {
         assertThat(p).matches("insert into tab select 1, 2 from dual log errors into errlog ('oops');")
     }
 
+    @Test
+    fun matchesInsertThe() {
+        assertThat(p).matches("insert into the(select x from tab) values (1);")
+    }
+
 }
