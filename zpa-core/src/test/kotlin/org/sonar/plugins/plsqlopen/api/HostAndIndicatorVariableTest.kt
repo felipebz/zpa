@@ -50,4 +50,9 @@ class HostAndIndicatorVariableTest : RuleTest() {
         assertThat(p).matches(":var indicator :ind")
     }
 
+    @Test
+    fun matchesQuestionMarkBinding() {
+        assertThat(p).matches("?")
+    }
+
 }

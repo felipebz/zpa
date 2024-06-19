@@ -451,9 +451,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
         }
 
         private fun createStatements(b: PlSqlGrammarBuilder) {
-            b.rule(HOST_AND_INDICATOR_VARIABLE).define(COLON, b.firstOf(
-                b.sequence(IDENTIFIER_NAME, b.optional(INDICATOR), b.optional(COLON, IDENTIFIER_NAME)),
-                INTEGER_LITERAL))
+            b.rule(HOST_AND_INDICATOR_VARIABLE).define(
+                b.firstOf(
+                    b.sequence(
+                        COLON, b.firstOf(
+                            b.sequence(IDENTIFIER_NAME, b.optional(INDICATOR), b.optional(COLON, IDENTIFIER_NAME)),
+                            INTEGER_LITERAL
+                        )
+                    ),
+                    QUESTION_MARK
+                )
+            )
 
             b.rule(NULL_STATEMENT, NullStatement::class).define(NULL, SEMICOLON)
 

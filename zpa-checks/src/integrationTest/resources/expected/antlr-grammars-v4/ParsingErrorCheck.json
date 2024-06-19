@@ -452,9 +452,6 @@
   "examples/unified.sql" : [
     1
   ],
-  "examples/union07.sql" : [
-    24
-  ],
   "examples/validate_conversion.sql" : [
     3
   ],

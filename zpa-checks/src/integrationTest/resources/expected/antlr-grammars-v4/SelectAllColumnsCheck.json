@@ -194,6 +194,12 @@
     24,
     28
   ],
+  "examples/union07.sql" : [
+    5,
+    6,
+    8,
+    11
+  ],
   "examples/union08.sql" : [
     1
   ],

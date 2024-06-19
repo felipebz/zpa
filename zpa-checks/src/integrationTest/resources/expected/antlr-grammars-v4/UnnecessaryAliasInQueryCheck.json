@@ -98,6 +98,10 @@
   "examples/select_all_some_any.sql" : [
     6
   ],
+  "examples/union07.sql" : [
+    36,
+    21
+  ],
   "examples/xmltable03.sql" : [
     6
   ],
