@@ -1,0 +1,23 @@
+{
+  "examples-sql-script/anonymous_block.sql" : [
+    2
+  ],
+  "examples-sql-script/cursor-attributes-with-spaces.sql" : [
+    15
+  ],
+  "examples-sql-script/declare_procedure_no_args.sql" : [
+    3
+  ],
+  "examples-sql-script/proc_over_dblink_as_nvl_param.pkb" : [
+    6
+  ],
+  "examples/bulk_collect_fetch_clause01.sql" : [
+    4
+  ],
+  "examples/create_procedure01.sql" : [
+    4
+  ],
+  "examples/package_body.sql" : [
+    3
+  ]
+}

@@ -54,6 +54,11 @@ class PlSqlRulingTest {
     }
 
     @Test
+    fun antlr() {
+        analyze("antlr-grammars-v4")
+    }
+
+    @Test
     fun utPLSQL2() {
         analyze("utPLSQL2")
     }

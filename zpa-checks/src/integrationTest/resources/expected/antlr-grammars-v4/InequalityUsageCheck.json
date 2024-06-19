@@ -1,0 +1,22 @@
+{
+  "examples/bindvar03.sql" : [
+    15
+  ],
+  "examples/connect_by03.sql" : [
+    4
+  ],
+  "examples/groupby01.sql" : [
+    7
+  ],
+  "examples/groupby02.sql" : [
+    7
+  ],
+  "examples/lexer01.sql" : [
+    1,
+    1
+  ],
+  "hw-examples/lexer01.sql" : [
+    1,
+    1
+  ]
+}

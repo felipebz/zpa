@@ -1,0 +1,36 @@
+{
+  "examples-sql-script/delete_as_regular_id.pkb" : [
+    3
+  ],
+  "examples-sql-script/in_out_parameters.pks" : [
+    4
+  ],
+  "examples-sql-script/pipe_row.pkb" : [
+    16
+  ],
+  "examples-sql-script/proc_over_dblink_as_nvl_param.pkb" : [
+    3
+  ],
+  "examples-sql-script/procedure_with_cursor_and_limit.sql" : [
+    1,
+    1
+  ],
+  "examples-sql-script/with_clause_in_exists_block_in_procedure.sql" : [
+    1
+  ],
+  "examples/create_function04.sql" : [
+    3
+  ],
+  "examples/create_function06.sql" : [
+    5
+  ],
+  "examples/create_package01.sql" : [
+    4
+  ],
+  "examples/create_procedure01.sql" : [
+    1
+  ],
+  "examples/package_body.sql" : [
+    4
+  ]
+}

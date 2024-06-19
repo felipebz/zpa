@@ -1,0 +1,13 @@
+{
+  "examples-sql-script/procedure_with_cursor_and_limit.sql" : [
+    34,
+    41
+  ],
+  "examples-sql-script/with_clause_in_exists_block_in_procedure.sql" : [
+    17
+  ],
+  "examples/forall_statement_and_exception_handling.sql" : [
+    33,
+    53
+  ]
+}

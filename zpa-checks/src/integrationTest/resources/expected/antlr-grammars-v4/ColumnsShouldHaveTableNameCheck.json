@@ -1,0 +1,40 @@
+{
+  "examples/bindvar05.sql" : [
+    1,
+    1,
+    4
+  ],
+  "examples/condition11.sql" : [
+    1
+  ],
+  "examples/dblink01.sql" : [
+    1,
+    1
+  ],
+  "examples/groupby06.sql" : [
+    2,
+    2,
+    2,
+    2
+  ],
+  "examples/query_factoring01.sql" : [
+    12,
+    12,
+    12,
+    12
+  ],
+  "examples/query_factoring06.sql" : [
+    3
+  ],
+  "examples/query_factoring09.sql" : [
+    5
+  ],
+  "examples/xmltable01.sql" : [
+    3
+  ],
+  "examples/xmltable03.sql" : [
+    3,
+    4,
+    5
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "examples/condition02.sql" : [
+    4
+  ],
+  "examples/condition03.sql" : [
+    4
+  ],
+  "examples/condition09.sql" : [
+    9
+  ],
+  "examples/condition10.sql" : [
+    4
+  ],
+  "examples/quntitative_expression.sql" : [
+    2,
+    3
+  ],
+  "examples/union09.sql" : [
+    13,
+    19
+  ]
+}

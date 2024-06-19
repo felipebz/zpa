@@ -1,0 +1,107 @@
+{
+  "examples-sql-script/procedure_with_cursor_and_limit.sql" : [
+    16,
+    17
+  ],
+  "examples/bindvar03.sql" : [
+    5,
+    13
+  ],
+  "examples/bindvar05.sql" : [
+    5,
+    5
+  ],
+  "examples/case_when07.sql" : [
+    6
+  ],
+  "examples/cast_multiset01.sql" : [
+    4,
+    2
+  ],
+  "examples/condition02.sql" : [
+    2
+  ],
+  "examples/condition03.sql" : [
+    2
+  ],
+  "examples/condition09.sql" : [
+    6,
+    5,
+    4
+  ],
+  "examples/condition10.sql" : [
+    2
+  ],
+  "examples/condition16.sql" : [
+    1
+  ],
+  "examples/for_update08.sql" : [
+    2
+  ],
+  "examples/join01.sql" : [
+    2,
+    2
+  ],
+  "examples/join02.sql" : [
+    2,
+    2
+  ],
+  "examples/join03.sql" : [
+    2,
+    2
+  ],
+  "examples/join04.sql" : [
+    2,
+    2
+  ],
+  "examples/join22.sql" : [
+    2,
+    3
+  ],
+  "examples/keywordasidentifier03.sql" : [
+    14,
+    14,
+    22
+  ],
+  "examples/keywordasidentifier04.sql" : [
+    2,
+    5
+  ],
+  "examples/multiset_operators.sql" : [
+    3
+  ],
+  "examples/object_access_expressions.sql" : [
+    9
+  ],
+  "examples/query_factoring01.sql" : [
+    9,
+    9,
+    13,
+    13
+  ],
+  "examples/query_factoring02.sql" : [
+    12,
+    12
+  ],
+  "examples/query_factoring03.sql" : [
+    9,
+    9
+  ],
+  "examples/query_factoring04.sql" : [
+    10,
+    10
+  ],
+  "examples/query_factoring06.sql" : [
+    4,
+    4
+  ],
+  "examples/select_all_some_any.sql" : [
+    6
+  ],
+  "examples/xmltable03.sql" : [
+    6
+  ],
+  "long-running/aggregate01.sql" : [
+    34
+  ]
+}

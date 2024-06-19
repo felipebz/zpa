@@ -1,0 +1,62 @@
+{
+  "examples-sql-script/anonymous_block.sql" : [
+    4,
+    7
+  ],
+  "examples-sql-script/green_tools.pkb" : [
+    7,
+    23,
+    25
+  ],
+  "examples-sql-script/package_with_cursor.sql" : [
+    19,
+    23
+  ],
+  "examples/block01.sql" : [
+    21,
+    26,
+    30
+  ],
+  "examples/block02.sql" : [
+    5
+  ],
+  "examples/collection_method_invocation.sql" : [
+    7,
+    8,
+    9,
+    13
+  ],
+  "examples/concatenation-double_asterisk.sql" : [
+    21
+  ],
+  "examples/concatenation-mod.sql" : [
+    21
+  ],
+  "examples/create_package04.sql" : [
+    10,
+    13
+  ],
+  "examples/create_procedure03.sql" : [
+    4,
+    13
+  ],
+  "examples/fetch_statement.sql" : [
+    40,
+    50
+  ],
+  "examples/forall_bulk_rowcount.sql" : [
+    9,
+    12
+  ],
+  "examples/forall_statement_and_exception_handling.sql" : [
+    46,
+    49,
+    56
+  ],
+  "examples/general_element_part.sql" : [
+    33
+  ],
+  "examples/varray_type_def.sql" : [
+    30
+  ]
+}

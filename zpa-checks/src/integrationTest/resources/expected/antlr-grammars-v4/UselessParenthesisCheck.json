@@ -1,0 +1,14 @@
+{
+  "examples/condition06.sql" : [
+    13
+  ],
+  "examples/condition08.sql" : [
+    5
+  ],
+  "examples/condition15.sql" : [
+    10
+  ],
+  "long-running/cast_multiset07.sql" : [
+    10
+  ]
+}
