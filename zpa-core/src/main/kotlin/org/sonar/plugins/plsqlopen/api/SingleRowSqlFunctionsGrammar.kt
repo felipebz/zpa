@@ -44,6 +44,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_QUERY_ON_EMPTY_CLAUSE,
     JSON_QUERY_ON_MISMATCH_CLAUSE,
     JSON_BASIC_PATH_EXPRESSION,
+    JSON_PATH_EXPRESSION,
     JSON_RELATIVE_OBJECT_ACCESS,
     JSON_TABLE_ON_ERROR_CLAUSE,
     JSON_TABLE_ON_EMPTY_CLAUSE,
@@ -63,6 +64,25 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_VALUE_RETURN_OBJECT_INSTANCE,
     JSON_EXISTS_ON_ERROR_CLAUSE,
     JSON_EXISTS_ON_EMPTY_CLAUSE,
+    JSON_TRANSFORM_OPERATION,
+    JSON_TRANSFORM_RETURNING_CLAUSE,
+    JSON_RHS_EXPRESSION,
+    JSON_APPEND_OPERATION,
+    JSON_CASE_OPERATION,
+    JSON_COPY_OPERATION,
+    JSON_INSERT_OPERATION,
+    JSON_INTERSECT_OPERATION,
+    JSON_KEEP_OPERATION,
+    JSON_MERGE_OPERATION,
+    JSON_MINUS_OPERATION,
+    JSON_NESTED_PATH_OPERATION,
+    JSON_PREPEND_OPERATION,
+    JSON_REMOVE_OPERATION,
+    JSON_RENAME_OPERATION,
+    JSON_REPLACE_OPERATION,
+    JSON_SET_OPERATION,
+    JSON_SORT_OPERATION,
+    JSON_UNION_OPERATION,
     JSON_VALUE_RETURNING_CLAUSE,
     XML_COLUMN,
     XML_NAMESPACE,
@@ -81,6 +101,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_SERIALIZE_EXPRESSION,
     JSON_QUERY_EXPRESSION,
     JSON_TABLE_EXPRESSION,
+    JSON_TRANSFORM_EXPRESSION,
     JSON_VALUE_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
     XMLELEMENT_EXPRESSION,
@@ -123,6 +144,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_SERIALIZE_EXPRESSION,
                     JSON_QUERY_EXPRESSION,
                     JSON_TABLE_EXPRESSION,
+                    JSON_TRANSFORM_EXPRESSION,
                     JSON_VALUE_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
@@ -577,6 +599,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_BASIC_PATH_EXPRESSION).define(STRING_LITERAL).skip()
 
+            b.rule(JSON_PATH_EXPRESSION).define(STRING_LITERAL).skip()
+
             b.rule(JSON_RELATIVE_OBJECT_ACCESS).define(
                 IDENTIFIER_NAME, b.optional(JSON_ARRAY_STEP),
                 b.zeroOrMore(DOT, IDENTIFIER_NAME, b.optional(JSON_ARRAY_STEP))
@@ -692,6 +716,206 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(JSON_VALUE_RETURNING_CLAUSE).define(RETURNING, JSON_VALUE_RETURN_TYPE, b.optional(ASCII))
+
+            b.rule(JSON_TRANSFORM_EXPRESSION).define(
+                JSON_TRANSFORM,
+                LPARENTHESIS,
+                EXPRESSION,
+                COMMA,
+                JSON_TRANSFORM_OPERATION,
+                b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
+                b.optional(JSON_TRANSFORM_RETURNING_CLAUSE),
+                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                b.optional(JSON_PASSING_CLAUSE),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_TRANSFORM_RETURNING_CLAUSE).define(
+                RETURNING,
+                b.firstOf(
+                    b.sequence(
+                        VARCHAR2,
+                        b.optional(
+                            LPARENTHESIS,
+                            PlSqlTokenType.INTEGER_LITERAL,
+                            b.optional(b.firstOf(CHAR, BYTE)),
+                            RPARENTHESIS
+                        )
+                    ),
+                    b.sequence(
+                        b.firstOf(CLOB, BLOB),
+                        b.optional(b.firstOf(REFERENCE, VALUE))
+                    ),
+                    JSON,
+                    BOOLEAN,
+                    VECTOR
+                )
+            )
+
+            b.rule(JSON_RHS_EXPRESSION).define(
+                b.firstOf(
+                    b.sequence(PATH, JSON_BASIC_PATH_EXPRESSION),
+                    b.sequence(EXPRESSION, b.optional(FORMAT, JSON))
+                )
+            )
+
+            b.rule(JSON_TRANSFORM_OPERATION).define(
+                b.firstOf(
+                    JSON_APPEND_OPERATION,
+                    JSON_CASE_OPERATION,
+                    JSON_COPY_OPERATION,
+                    JSON_INSERT_OPERATION,
+                    JSON_INTERSECT_OPERATION,
+                    JSON_KEEP_OPERATION,
+                    JSON_MERGE_OPERATION,
+                    JSON_MINUS_OPERATION,
+                    JSON_NESTED_PATH_OPERATION,
+                    JSON_PREPEND_OPERATION,
+                    JSON_REMOVE_OPERATION,
+                    JSON_RENAME_OPERATION,
+                    JSON_REPLACE_OPERATION,
+                    JSON_SET_OPERATION,
+                    JSON_SORT_OPERATION,
+                    JSON_UNION_OPERATION
+                )
+            )
+
+            b.rule(JSON_APPEND_OPERATION).define(
+                APPEND, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, NULL), ON, MISMATCH),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY),
+            )
+
+            b.rule(JSON_CASE_OPERATION).define(
+                CASE,
+                WHEN, JSON_PATH_EXPRESSION, THEN,
+                LPARENTHESIS,
+                JSON_TRANSFORM_OPERATION, b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
+                RPARENTHESIS,
+                b.optional(
+                    ELSE,
+                    LPARENTHESIS,
+                    JSON_TRANSFORM_OPERATION, b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
+                    RPARENTHESIS
+                ),
+                END
+            )
+
+            b.rule(JSON_COPY_OPERATION).define(
+                COPY, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+            )
+
+            b.rule(JSON_INSERT_OPERATION).define(
+                INSERT, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, NULL), ON, EXISTING),
+                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+            )
+
+            b.rule(JSON_INTERSECT_OPERATION).define(
+                INTERSECT, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+            )
+
+            b.rule(JSON_KEEP_OPERATION).define(
+                KEEP, JSON_PATH_EXPRESSION, b.zeroOrMore(COMMA, JSON_PATH_EXPRESSION),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+            )
+
+            b.rule(JSON_MERGE_OPERATION).define(
+                MERGE, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, MISMATCH),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+            )
+
+            b.rule(JSON_MINUS_OPERATION).define(
+                MINUS_KEYWORD, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+            )
+
+            b.rule(JSON_NESTED_PATH_OPERATION).define(
+                NESTED, PATH, JSON_PATH_EXPRESSION, LPARENTHESIS,
+                JSON_TRANSFORM_OPERATION, b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
+                RPARENTHESIS
+            )
+
+            b.rule(JSON_PREPEND_OPERATION).define(
+                PREPEND, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, CREATE), ON, MISMATCH),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+            )
+
+            b.rule(JSON_REMOVE_OPERATION).define(
+                REMOVE, JSON_PATH_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+            )
+
+            b.rule(JSON_RENAME_OPERATION).define(
+                RENAME, JSON_PATH_EXPRESSION, WITH, STRING_LITERAL,
+                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+            )
+
+            b.rule(JSON_REPLACE_OPERATION).define(
+                REPLACE, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+            )
+
+            b.rule(JSON_SET_OPERATION).define(
+                SET, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, REPLACE), ON, EXISTING),
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+            )
+
+            b.rule(JSON_SORT_OPERATION).define(
+                SORT, JSON_PATH_EXPRESSION,
+                b.optional(
+                    b.firstOf(
+                        REVERSE,
+                        b.sequence(
+                            b.optional(REMOVE, NULLS),
+                            ORDER, BY,
+                            JSON_PATH_EXPRESSION, b.optional(b.firstOf(ASC, DESC)),
+                            b.zeroOrMore(
+                                COMMA,
+                                JSON_PATH_EXPRESSION, b.optional(b.firstOf(ASC, DESC))
+                            )
+                        ),
+                        b.sequence(
+                            b.optional(b.firstOf(ASC, DESC)),
+                            b.optional(UNIQUE),
+                            b.optional(REMOVE, NULLS)
+                        )
+                    )
+                ),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, MISMATCH),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY),
+                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+            )
+
+            b.rule(JSON_UNION_OPERATION).define(
+                UNION, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
+                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+            )
         }
     }
 
