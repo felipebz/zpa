@@ -1,9 +1,18 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-INSERT INTO empl_h (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, Part_name)  
-VALUES (1, 'Jane', 'Doe', 'example.com', '415.555.0100', '10-Feb-2014', '1001', 5001,'HIRE_Q1');
-INSERT INTO empl_h (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, Part_name)  
-VALUES (2, 'John', 'Doe', 'example.net', '415.555.0101', '10-Apr-2014', '1002', 7001,'HIRE_Q2');
-INSERT INTO empl_h (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, Part_name)  
-VALUES (3, 'Isabelle', 'Owl', 'example.org', '415.555.0102', '10-Sep-2014', '1003', 10001,'HIRE_Q3');
-INSERT INTO empl_h (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, Part_name)  
-VALUES (4, 'Smith', 'Jones', 'example.in', '415.555.0103', '10-Dec-2014', '1004', 12001,'HIRE_Q4');
+CREATE TABLE empl_h  
+  (  
+     employee_id  NUMBER(6) PRIMARY KEY,  
+     first_name   VARCHAR2(20),  
+     last_name    VARCHAR2(25),  
+     email        VARCHAR2(25),  
+     phone_number VARCHAR2(20),  
+     hire_date    DATE DEFAULT SYSDATE,  
+     job_id       VARCHAR2(10),  
+     salary       NUMBER(8, 2),  
+     part_name    VARCHAR2(25)  
+  ) PARTITION BY RANGE (hire_date) (  
+PARTITION hire_q1 VALUES less than(to_date('01-APR-2014', 'DD-MON-YYYY')),   
+PARTITION hire_q2 VALUES less than(to_date('01-JUL-2014', 'DD-MON-YYYY')),   
+PARTITION hire_q3 VALUES less than(to_date('01-OCT-2014', 'DD-MON-YYYY')),   
+PARTITION hire_q4 VALUES less than(to_date('01-JAN-2015', 'DD-MON-YYYY'))  
+);

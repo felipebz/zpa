@@ -1,4 +1,8 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE tm1 (c1 NUMBER, c2 NUMBER, c3 VARCHAR2(15),c4 NUMBER, c5 NUMBER, 
-                  c6 NUMBER, c7 NUMBER, DOMAIN dm1 (c1, c2, c3, c4),
-                  DOMAIN dn2(c5, c6), DOMAIN dn1(c7));
+CREATE DOMAIN dm1 AS
+ (ann AS NUMBER NOT NULL ,
+  bnnpos AS NUMBER NOT NULL CONSTRAINT CHECK (bnnpos > 0),
+  c AS VARCHAR2(10) DEFAULT 'abc',
+  ddon AS NUMBER DEFAULT ON NULL 10)  
+  CONSTRAINT CHECK (ann+ddon < = 100)     
+  CONSTRAINT CHECK (length(c) > bnnpos);

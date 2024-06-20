@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ FULL(e) */ employee_id, last_name
-  FROM hr.employees e 
-  WHERE last_name LIKE :b1;
+SELECT /*+ FIRST_ROWS(10) */ employee_id, last_name, salary, job_id
+  FROM employees
+  WHERE department_id = 20;

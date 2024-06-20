@@ -1,3 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ NO_INDEX_FFS(items item_order_ix) */ order_id
-  FROM order_items items;
+SELECT /*+ NO_EXPAND */ *
+  FROM employees e, departments d
+  WHERE e.manager_id = 108
+     OR d.department_id = 110;

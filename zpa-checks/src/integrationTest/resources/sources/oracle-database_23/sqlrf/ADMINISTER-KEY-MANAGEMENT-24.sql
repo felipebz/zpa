@@ -1,5 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ADMINISTER-KEY-MANAGEMENT.html
 ADMINISTER KEY MANAGEMENT
-  EXPORT KEYS WITH SECRET "my_secret"
-  TO '/etc/TDE/export.exp'
-  IDENTIFIED BY password;
+  SET TAG 'mykey2' FOR 'ARgEtzPxpE/Nv8WdPu8LJJUAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  FORCE KEYSTORE
+  IDENTIFIED BY password
+  WITH BACKUP;

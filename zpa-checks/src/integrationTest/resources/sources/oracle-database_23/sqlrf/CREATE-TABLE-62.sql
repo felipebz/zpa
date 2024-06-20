@@ -1,8 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE departments_t 
-   (d_no    NUMBER,
-    mgr_ref REF employees_typ SCOPE IS employees_obj_t);
-CREATE TABLE departments_t (
-    d_no NUMBER,
-    mgr_ref REF employees_typ 
-       CONSTRAINT mgr_in_emp REFERENCES employees_obj_t);
+CREATE TYPE employees_typ AS OBJECT 
+   (e_no NUMBER, e_address CHAR(30));
+/
+CREATE TABLE employees_obj_t OF employees_typ (e_no PRIMARY KEY)
+   OBJECT IDENTIFIER IS PRIMARY KEY;

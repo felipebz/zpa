@@ -1,3 +1,3 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-TABLE.html
-ALTER TABLE product_information
-   MODIFY (min_price DEFAULT NULL);
+ALTER TABLE customers
+   MODIFY (online_acct_pw DECRYPT);

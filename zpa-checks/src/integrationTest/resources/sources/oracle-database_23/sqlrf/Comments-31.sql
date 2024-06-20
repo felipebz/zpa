@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ NO_STATEMENT_QUEUING */ emp.last_name, dpt.department_name
-  FROM employees emp, departments dpt
-  WHERE emp.department_id = dpt.department_id;
+SELECT /*+ NO_QUERY_TRANSFORMATION */ employee_id, last_name
+  FROM (SELECT * FROM employees e) v
+  WHERE v.last_name = 'Smith';

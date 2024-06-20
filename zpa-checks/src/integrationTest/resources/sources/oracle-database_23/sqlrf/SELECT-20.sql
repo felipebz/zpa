@@ -1,15 +1,13 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-WITH
-  reports_to_101 (eid, emp_last, mgr_id, reportLevel) AS
-  (
-     SELECT employee_id, last_name, manager_id, 0 reportLevel
-     FROM employees
-     WHERE employee_id = 101
-   UNION ALL
-     SELECT e.employee_id, e.last_name, e.manager_id, reportLevel+1
-     FROM reports_to_101 r, employees e
-     WHERE r.eid = e.manager_id
-  )
-SELECT eid, emp_last, mgr_id, reportLevel
-FROM reports_to_101
-ORDER BY reportLevel, eid;
+create or replace function split_part(string    varchar2, 
+                                      delimiter varchar2,
+                                      position  pls_integer)
+          return varchar2 SQL_MACRO(Scalar) is
+begin
+  return q'{
+    regexp_substr(replace(string, delimiter||delimiter, delimiter||' '||delimiter), 
+                  '[^'||delimiter||']+', 1, position, 'imx')
+  }';
+end;
+/
+SELECT split_part( sysdate, '-', 2) month from dual;

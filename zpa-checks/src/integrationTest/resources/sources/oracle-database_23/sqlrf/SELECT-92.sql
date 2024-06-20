@@ -1,6 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT LPAD(' ',2*(LEVEL-1)) || last_name org_chart, 
-        employee_id, manager_id, job_id
-    FROM employees
-    START WITH job_id = 'AD_VP' 
-    CONNECT BY PRIOR employee_id = manager_id;
+SELECT * FROM employees 
+   WHERE department_id NOT IN 
+   (SELECT department_id FROM departments 
+       WHERE location_id = 1700)
+   ORDER BY last_name;

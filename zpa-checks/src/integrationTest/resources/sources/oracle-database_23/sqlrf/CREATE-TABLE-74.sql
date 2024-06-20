@@ -1,3 +1,3 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-ALTER TABLE t3 ADD (doc XMLTYPE)
+CREATE TABLE t2 (id NUMBER, doc XMLTYPE)
   XMLTYPE doc STORE AS TRANSPORTABLE BINARY XML;

@@ -1,5 +1,2 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE dept_80
-   PARALLEL
-   AS SELECT * FROM employees
-   WHERE department_id = 80;
+CREATE TABLE books (title VARCHAR2(100), author person_t);

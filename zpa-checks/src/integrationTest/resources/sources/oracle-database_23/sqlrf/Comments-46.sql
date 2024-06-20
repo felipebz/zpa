@@ -1,4 +1,3 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-INSERT /*+ APPEND PARALLEL(target_table, 16) PQ_DISTRIBUTE(target_table, NONE) */
-  INTO target_table
-  SELECT * FROM source_table;
+SELECT /*+ FULL(hr_emp) PARALLEL(hr_emp, DEFAULT) */ last_name
+  FROM employees hr_emp;

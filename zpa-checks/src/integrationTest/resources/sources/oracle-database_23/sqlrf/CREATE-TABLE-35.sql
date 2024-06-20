@@ -1,26 +1,18 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE dept_external (
-   deptno     NUMBER(6),
-   dname      VARCHAR2(20),
-   loc        VARCHAR2(25) 
-)
-ORGANIZATION EXTERNAL
-(TYPE oracle_loader
- DEFAULT DIRECTORY admin
- ACCESS PARAMETERS
- (
-  RECORDS DELIMITED BY newline
-  BADFILE 'ulcase1.bad'
-  DISCARDFILE 'ulcase1.dis'
-  LOGFILE 'ulcase1.log'
-  SKIP 20
-  FIELDS TERMINATED BY ","  OPTIONALLY ENCLOSED BY '"'
-  (
-   deptno     INTEGER EXTERNAL(6),
-   dname      CHAR(20),
-   loc        CHAR(25)
-  )
- )
- LOCATION ('ulcase1.ctl')
-)
-REJECT LIMIT UNLIMITED;
+CREATE TABLE countries_demo
+    ( country_id      CHAR(2)
+      CONSTRAINT country_id_nn_demo NOT NULL
+    , country_name    VARCHAR2(40)
+    , currency_name   VARCHAR2(25)
+    , currency_symbol VARCHAR2(3)
+    , region          VARCHAR2(15)
+    , CONSTRAINT    country_c_id_pk_demo
+                    PRIMARY KEY (country_id ) )
+    ORGANIZATION INDEX 
+    INCLUDING   country_name 
+    PCTTHRESHOLD 2 
+    STORAGE 
+     ( INITIAL  4K ) 
+   OVERFLOW 
+    STORAGE 
+      ( INITIAL  4K );

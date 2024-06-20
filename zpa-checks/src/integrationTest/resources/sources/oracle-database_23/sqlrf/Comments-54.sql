@@ -1,7 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ USE_BAND(e1 e2) */
-  e1.last_name
-  || ' has salary between 100 less and 100 more than '
-  || e2.last_name AS "SALARY COMPARISON"
-FROM employees e1, employees e2
-WHERE e1.salary BETWEEN e2.salary - 100 AND e2.salary + 100;
+SELECT /*+ STAR_TRANSFORMATION */ s.time_id, s.prod_id, s.channel_id
+  FROM sales s, times t, products p, channels c
+  WHERE s.time_id = t.time_id
+    AND s.prod_id = p.prod_id
+    AND s.channel_id = c.channel_id
+    AND c.channel_desc = 'Tele Sales';

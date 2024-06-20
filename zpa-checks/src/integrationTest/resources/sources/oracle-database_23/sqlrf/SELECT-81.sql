@@ -1,6 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT d.department_name, v.employee_id, v.last_name
-  FROM departments d CROSS APPLY (SELECT * FROM employees e
-                                  WHERE e.department_id = d.department_id) v
-  WHERE d.department_name IN ('Marketing', 'Operations', 'Public Relations')
-  ORDER BY d.department_name, v.employee_id;
+UPDATE employees 
+    SET salary = salary * 1.1
+    WHERE employee_id IN (SELECT employee_id FROM job_history);

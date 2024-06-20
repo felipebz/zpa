@@ -1,7 +1,3 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT department_id, last_name, salary 
-   FROM employees x 
-   WHERE salary > (SELECT AVG(salary) 
-      FROM employees 
-      WHERE x.department_id = department_id) 
-   ORDER BY department_id;
+SELECT * FROM employees e, LATERAL(SELECT * FROM departments d
+                                   WHERE e.department_id = d.department_id);

@@ -3,6 +3,10 @@
     3,
     3
   ],
+  "sqlrf/ANY_VALUE-0.sql" : [
+    3,
+    3
+  ],
   "sqlrf/APPROX_COUNT_DISTINCT_DETAIL-0.sql" : [
     7,
     7
@@ -38,7 +42,7 @@
     4,
     4
   ],
-  "sqlrf/CREATE-TABLE-47.sql" : [
+  "sqlrf/CREATE-TABLE-48.sql" : [
     2,
     2
   ],
@@ -62,13 +66,10 @@
   "sqlrf/Comments-0.sql" : [
     6
   ],
-  "sqlrf/Comments-12.sql" : [
+  "sqlrf/Comments-10.sql" : [
     3
   ],
-  "sqlrf/Comments-14.sql" : [
-    3
-  ],
-  "sqlrf/Comments-15.sql" : [
+  "sqlrf/Comments-13.sql" : [
     3
   ],
   "sqlrf/Comments-16.sql" : [
@@ -84,29 +85,27 @@
     3
   ],
   "sqlrf/Comments-20.sql" : [
+    3
+  ],
+  "sqlrf/Comments-21.sql" : [
+    3
+  ],
+  "sqlrf/Comments-22.sql" : [
     3,
     3,
     3
   ],
-  "sqlrf/Comments-23.sql" : [
+  "sqlrf/Comments-25.sql" : [
     3,
     3
   ],
-  "sqlrf/Comments-26.sql" : [
+  "sqlrf/Comments-28.sql" : [
     3
   ],
-  "sqlrf/Comments-29.sql" : [
+  "sqlrf/Comments-31.sql" : [
     3
   ],
-  "sqlrf/Comments-30.sql" : [
-    3,
-    3
-  ],
-  "sqlrf/Comments-33.sql" : [
-    3,
-    3
-  ],
-  "sqlrf/Comments-34.sql" : [
+  "sqlrf/Comments-32.sql" : [
     3,
     3
   ],
@@ -114,25 +113,29 @@
     3,
     3
   ],
-  "sqlrf/Comments-39.sql" : [
+  "sqlrf/Comments-36.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-37.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-41.sql" : [
     3,
     3,
     3
   ],
-  "sqlrf/Comments-51.sql" : [
+  "sqlrf/Comments-53.sql" : [
     3
   ],
-  "sqlrf/Comments-52.sql" : [
+  "sqlrf/Comments-54.sql" : [
     3,
     3,
     3,
     3
   ],
-  "sqlrf/Comments-55.sql" : [
-    3
-  ],
-  "sqlrf/Comments-56.sql" : [
-    3,
+  "sqlrf/Comments-57.sql" : [
     3
   ],
   "sqlrf/Comments-58.sql" : [
@@ -143,7 +146,8 @@
     3,
     3
   ],
-  "sqlrf/Comments-9.sql" : [
+  "sqlrf/Comments-62.sql" : [
+    3,
     3
   ],
   "sqlrf/DEREF-0.sql" : [
@@ -186,10 +190,20 @@
   "sqlrf/JSON-Object-Access-Expressions-2.sql" : [
     3
   ],
-  "sqlrf/JSON_TABLE-11.sql" : [
+  "sqlrf/JSON_OBJECT-3.sql" : [
+    3,
     3
   ],
-  "sqlrf/JSON_TABLE-12.sql" : [
+  "sqlrf/JSON_OBJECT-9.sql" : [
+    6
+  ],
+  "sqlrf/JSON_TABLE-0.sql" : [
+    4
+  ],
+  "sqlrf/JSON_TABLE-15.sql" : [
+    3
+  ],
+  "sqlrf/JSON_TABLE-16.sql" : [
     3
   ],
   "sqlrf/MERGE-0.sql" : [
@@ -207,46 +221,55 @@
   "sqlrf/Object-Access-Expressions-0.sql" : [
     5
   ],
-  "sqlrf/SELECT-19.sql" : [
+  "sqlrf/SELECT-100.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-101.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-102.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-103.sql" : [
     5,
-    5
-  ],
-  "sqlrf/SELECT-20.sql" : [
-    10,
-    10
-  ],
-  "sqlrf/SELECT-21.sql" : [
-    12,
-    12
-  ],
-  "sqlrf/SELECT-22.sql" : [
-    10,
-    10
-  ],
-  "sqlrf/SELECT-23.sql" : [
-    11,
-    11
+    3
   ],
   "sqlrf/SELECT-24.sql" : [
-    11,
-    11
+    5,
+    5
   ],
   "sqlrf/SELECT-25.sql" : [
     10,
     10
   ],
-  "sqlrf/SELECT-42.sql" : [
+  "sqlrf/SELECT-26.sql" : [
+    12,
+    12
+  ],
+  "sqlrf/SELECT-27.sql" : [
+    10,
+    10
+  ],
+  "sqlrf/SELECT-28.sql" : [
+    11,
+    11
+  ],
+  "sqlrf/SELECT-29.sql" : [
+    11,
+    11
+  ],
+  "sqlrf/SELECT-30.sql" : [
+    10,
+    10
+  ],
+  "sqlrf/SELECT-55.sql" : [
     6,
     6
   ],
-  "sqlrf/SELECT-43.sql" : [
+  "sqlrf/SELECT-56.sql" : [
     4
   ],
-  "sqlrf/SELECT-58.sql" : [
-    3,
-    3
-  ],
-  "sqlrf/SELECT-59.sql" : [
+  "sqlrf/SELECT-71.sql" : [
     3,
     3
   ],
@@ -254,45 +277,36 @@
     3,
     3
   ],
-  "sqlrf/SELECT-73.sql" : [
+  "sqlrf/SELECT-85.sql" : [
     3,
     3
   ],
-  "sqlrf/SELECT-74.sql" : [
+  "sqlrf/SELECT-86.sql" : [
     3,
     3
   ],
-  "sqlrf/SELECT-75.sql" : [
+  "sqlrf/SELECT-87.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-88.sql" : [
     4,
     4
   ],
-  "sqlrf/SELECT-76.sql" : [
+  "sqlrf/SELECT-89.sql" : [
     3,
     3
   ],
-  "sqlrf/SELECT-83.sql" : [
+  "sqlrf/SELECT-96.sql" : [
     2,
     2
   ],
-  "sqlrf/SELECT-84.sql" : [
+  "sqlrf/SELECT-97.sql" : [
     2,
     2
   ],
-  "sqlrf/SELECT-86.sql" : [
+  "sqlrf/SELECT-99.sql" : [
     2
-  ],
-  "sqlrf/SELECT-87.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-88.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-89.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-90.sql" : [
-    5,
-    3
   ],
   "sqlrf/SYS_TYPEID-0.sql" : [
     2
@@ -311,6 +325,19 @@
   ],
   "sqlrf/UPDATE-4.sql" : [
     9
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-0.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-1.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-2.sql" : [
+    3,
+    5,
+    5
   ],
   "sqlrf/Using-XML-in-SQL-Statements-2.sql" : [
     2

@@ -1,7 +1,14 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT t1.department_id, t2.* 
-   FROM hr_info t1, TABLE(CAST(MULTISET(
-      SELECT t3.last_name, t3.department_id, t3.salary 
-         FROM people t3
-      WHERE t3.department_id = t1.department_id)
-      AS people_tab_typ)) t2;
+CREATE TABLE inventory (time_id    DATE,
+                        product    VARCHAR2(10),
+                        quantity   NUMBER);
+INSERT INTO inventory VALUES (TO_DATE('01/04/01', 'DD/MM/YY'), 'bottle', 10);
+INSERT INTO inventory VALUES (TO_DATE('06/04/01', 'DD/MM/YY'), 'bottle', 10);
+INSERT INTO inventory VALUES (TO_DATE('01/04/01', 'DD/MM/YY'), 'can', 10);
+INSERT INTO inventory VALUES (TO_DATE('04/04/01', 'DD/MM/YY'), 'can', 10);
+SELECT times.time_id, product, quantity FROM inventory 
+   PARTITION BY  (product) 
+   RIGHT OUTER JOIN times ON (times.time_id = inventory.time_id) 
+   WHERE times.time_id BETWEEN TO_DATE('01/04/01', 'DD/MM/YY') 
+      AND TO_DATE('06/04/01', 'DD/MM/YY') 
+   ORDER BY  2,1;

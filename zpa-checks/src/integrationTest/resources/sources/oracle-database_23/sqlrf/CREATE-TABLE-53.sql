@@ -1,26 +1,14 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE print_media_demo
-   ( product_id NUMBER(6)
-   , ad_id NUMBER(6)
-   , ad_composite BLOB
-   , ad_sourcetext CLOB
-   , ad_finaltext CLOB
-   , ad_fltextn NCLOB
-   , ad_textdocs_ntab textdoc_tab
-   , ad_photo BLOB
-   , ad_graphic BFILE
-   , ad_header adheader_typ
-   ) NESTED TABLE ad_textdocs_ntab STORE AS textdocs_nestedtab_demo
-      LOB (ad_composite, ad_photo, ad_finaltext)
-      STORE AS(STORAGE (INITIAL 20M))
-   PARTITION BY RANGE (product_id)
-      (PARTITION p1 VALUES LESS THAN (3000) TABLESPACE tbs_01
-         LOB (ad_composite, ad_photo)
-         STORE AS (TABLESPACE tbs_02 STORAGE (INITIAL 10M))
-         NESTED TABLE ad_textdocs_ntab STORE AS nt_p1 (TABLESPACE example),
-       PARTITION P2 VALUES LESS THAN (MAXVALUE)
-         LOB (ad_composite, ad_finaltext)
-         STORE AS SECUREFILE (TABLESPACE auto_seg_ts)
-         NESTED TABLE ad_textdocs_ntab STORE AS nt_p2
-       )
-   TABLESPACE tbs_03;
+CREATE TABLE list_customers 
+   ( customer_id             NUMBER(6)
+   , cust_first_name         VARCHAR2(20) 
+   , cust_last_name          VARCHAR2(20)
+   , cust_address            CUST_ADDRESS_TYP
+   , nls_territory           VARCHAR2(30)
+   , cust_email              VARCHAR2(40))
+   PARTITION BY LIST (nls_territory) (
+   PARTITION asia VALUES ('CHINA', 'THAILAND'),
+   PARTITION europe VALUES ('GERMANY', 'ITALY', 'SWITZERLAND'),
+   PARTITION west VALUES ('AMERICA'),
+   PARTITION east VALUES ('INDIA'),
+   PARTITION rest VALUES (DEFAULT));

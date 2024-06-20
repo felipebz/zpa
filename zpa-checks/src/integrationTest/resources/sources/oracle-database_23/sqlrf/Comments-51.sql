@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ QB_NAME(qb) FULL(@qb e) */ employee_id, last_name
-  FROM employees e
-  WHERE last_name = 'Smith';
+SELECT /*+ORDERED PQ_DISTRIBUTE(s BROADCAST, NONE) USE_HASH (s) */ column_list
+  FROM r,s
+  WHERE r.c=s.c;

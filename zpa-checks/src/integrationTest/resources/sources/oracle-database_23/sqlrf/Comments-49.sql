@@ -1,4 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ORDERED PQ_DISTRIBUTE(s BROADCAST, NONE) USE_HASH (s) */ column_list
-  FROM r,s
-  WHERE r.c=s.c;
+CREATE /*+ PQ_DISTRIBUTE(target_table, PARTITION) */ TABLE target_table
+  NOLOGGING PARALLEL 16
+  PARTITION BY HASH (l_orderkey) PARTITIONS 512
+  AS SELECT * FROM source_table;

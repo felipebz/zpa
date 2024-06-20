@@ -55,7 +55,7 @@ class OracleDocsExtractor {
                 if (parent in booksToExtract) {
                     zipFile.getInputStream(entry).use { stream ->
                         Jsoup.parse(stream, Charsets.UTF_8.name(), "").run {
-                            select("pre.oac_no_warn").forEachIndexed { index, element ->
+                            select("pre.oac_no_warn, pre.codeblock code").forEachIndexed { index, element ->
                                 var text = element.text()
                                     .replace('’', '\'')
 

@@ -4,5 +4,8 @@
   ],
   "sqlrf/INSERT-37.sql" : [
     4
+  ],
+  "sqlrf/JSON_TABLE-1.sql" : [
+    4
   ]
 }

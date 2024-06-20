@@ -1,18 +1,8 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/JSON_TABLE.html
-SELECT c.*
-FROM customer t,
-JSON_TABLE(t.json, '$' COLUMNS(
-id PATH '$.id',
-name PATH '$.name',
-phone PATH '$.phone',
-address PATH '$.address',
-NESTED PATH '$.orders[*]' COLUMNS(
-updated PATH '$.updated',
-status PATH '$.status',
-NESTED PATH '$.lineitems[*]' COLUMNS(
-description PATH '$.description',
-quantity NUMBER PATH '$.quantity',
-price NUMBER PATH '$.price'
-)
-)
-)) c;
+SELECT *
+FROM JSON_TABLE('[1,2,["a","b"]]', '$'
+COLUMNS (outer_value_0 NUMBER PATH '$[0]',
+         outer_value_1 NUMBER PATH '$[1]',
+         NESTED PATH '$[2]'
+         COLUMNS (nested_value_0 VARCHAR2(1) PATH '$[0]',
+                  nested_value_1 VARCHAR2(1) PATH '$[1]')));

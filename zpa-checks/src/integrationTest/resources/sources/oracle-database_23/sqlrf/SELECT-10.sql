@@ -1,4 +1,9 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT avgsal
-   FROM (SELECT AVG(salary) AS avgsal FROM employees GROUP BY job_id)
-   FOR UPDATE;
+SELECT
+      ename, mgr,
+      FIRST_VALUE(sal) OVER w AS "first",
+      LAST_VALUE(sal) OVER w AS "last",
+      NTH_VALUE(sal, 2) OVER w AS "second",
+      NTH_VALUE(sal, 4) OVER w AS "fourth"
+   FROM emp
+   WINDOW w AS (PARTITION BY deptno ORDER BY sal ROWS UNBOUNDED PRECEDING);

@@ -1,4 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ADMINISTER-KEY-MANAGEMENT.html
-SELECT TAG, KEY_ID
-  FROM V$ENCRYPTION_KEYS
-  WHERE TAG = 'mykey1';
+ADMINISTER KEY MANAGEMENT
+  MERGE KEYSTORE '/etc/ORACLE/KEYSTORE/DB1'
+  INTO EXISTING KEYSTORE '/etc/ORACLE/KEYSTORE/DB2'
+    IDENTIFIED BY existing_keystore_password
+  WITH BACKUP;

@@ -1,8 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/JSON_TABLE.html
-SELECT jt.*
-FROM j_purchaseorder,
-JSON_TABLE(po_document, '$.ShippingInstructions.Phone[*]'
-COLUMNS (row_number FOR ORDINALITY,
-         phone_type VARCHAR2(10) PATH '$.type',
-         phone_num VARCHAR2(20) PATH '$.number'))
-AS jt;
+CREATE TABLE j_purchaseorder
+  (id RAW (16) NOT NULL,
+   date_loaded TIMESTAMP(6) WITH TIME ZONE,
+   po_document CLOB CONSTRAINT ensure_json CHECK (po_document IS JSON));

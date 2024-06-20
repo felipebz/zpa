@@ -1,3 +1,2 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-INSERT INTO customers_demo
-  VALUES (699, 'Fred', 'Flintstone', 5500);
+SELECT partition_name, high_value FROM user_tab_partitions  WHERE table_name = 'CUSTOMERS_DEMO';

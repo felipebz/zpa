@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT employee_id, last_name
-  FROM employees
-  ORDER BY employee_id
-  FETCH FIRST 5 ROWS ONLY;
+SELECT TRUNC(hire_date, 'YYYY') hire_date, COUNT(*)
+FROM employees
+GROUP BY hire_date
+ORDER BY hire_date;

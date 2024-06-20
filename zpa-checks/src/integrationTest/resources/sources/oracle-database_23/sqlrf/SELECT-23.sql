@@ -1,17 +1,13 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
 WITH
-  org_chart (eid, emp_last, mgr_id, reportLevel, salary, job_id) AS
-  (
-    SELECT employee_id, last_name, manager_id, 0 reportLevel, salary, job_id
-    FROM employees
-    WHERE manager_id is null
-  UNION ALL
-    SELECT e.employee_id, e.last_name, e.manager_id,
-           r.reportLevel+1 reportLevel, e.salary, e.job_id
-    FROM org_chart r, employees e
-    WHERE r.eid = e.manager_id
-  )
-  SEARCH DEPTH FIRST BY emp_last SET order1
-SELECT lpad(' ',2*reportLevel)||emp_last emp_name, eid, mgr_id, salary, job_id
-FROM org_chart
-ORDER BY order1;
+ FUNCTION get_domain(url VARCHAR2) RETURN VARCHAR2 IS
+   pos BINARY_INTEGER;
+   len BINARY_INTEGER;
+ BEGIN
+   pos := INSTR(url, 'www.');
+   len := INSTR(SUBSTR(url, pos + 4), '.') - 1;
+   RETURN SUBSTR(url, pos + 4, len);
+ END;
+SELECT DISTINCT get_domain(catalog_url)
+  FROM product_information;
+/

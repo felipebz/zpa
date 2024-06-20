@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-SESSION.html
-ALTER SESSION
-   SET NLS_ISO_CURRENCY = America;
-SELECT TO_CHAR( SUM(salary), 'C999G999D99') Total
-   FROM employees;
+ALTER SESSION 
+   SET NLS_DATE_LANGUAGE = French;
+SELECT TO_CHAR(SYSDATE, 'Day DD Month YYYY') Today
+   FROM DUAL;

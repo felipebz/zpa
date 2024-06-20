@@ -1,2 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-TABLE.html
-CREATE TABLE later (col1 NUMBER, col2 VARCHAR2(20))    SEGMENT CREATION DEFERRED;
+CREATE GLOBAL TEMPORARY TABLE today_sales
+   ON COMMIT PRESERVE ROWS 
+   AS SELECT * FROM orders WHERE order_date = SYSDATE;

@@ -1,5 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT * 
-   FROM employees
-   WHERE job_id = 'PU_CLERK' 
-   ORDER BY salary DESC;
+SELECT salary FROM employees
+   AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' MINUTE)
+   WHERE last_name = 'Chung';

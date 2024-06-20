@@ -1,8 +1,8 @@
 {
-  "sqlrf/ALTER-SESSION-13.sql" : [
+  "sqlrf/ALTER-SESSION-14.sql" : [
     4
   ],
-  "sqlrf/ALTER-TABLE-114.sql" : [
+  "sqlrf/ALTER-TABLE-118.sql" : [
     2,
     4
   ],
@@ -13,7 +13,7 @@
     6,
     7
   ],
-  "sqlrf/ALTER-TABLE-91.sql" : [
+  "sqlrf/ALTER-TABLE-95.sql" : [
     4,
     5,
     6
@@ -24,7 +24,7 @@
   "sqlrf/COMMIT-0.sql" : [
     2
   ],
-  "sqlrf/CREATE-TABLE-50.sql" : [
+  "sqlrf/CREATE-TABLE-51.sql" : [
     2
   ],
   "sqlrf/CREATE-VIEW-7.sql" : [
@@ -36,20 +36,20 @@
   "sqlrf/CURRENT_TIMESTAMP-3.sql" : [
     2
   ],
-  "sqlrf/Comments-46.sql" : [
+  "sqlrf/Comments-48.sql" : [
     3
   ],
   "sqlrf/DEREF-0.sql" : [
     2,
     4
   ],
-  "sqlrf/Data-Types-18.sql" : [
-    2
-  ],
   "sqlrf/Data-Types-19.sql" : [
     2
   ],
-  "sqlrf/Data-Types-21.sql" : [
+  "sqlrf/Data-Types-20.sql" : [
+    2
+  ],
+  "sqlrf/Data-Types-22.sql" : [
     2,
     3,
     4,
@@ -108,7 +108,13 @@
   "sqlrf/INSERT-8.sql" : [
     2
   ],
-  "sqlrf/JSON_TABLE-1.sql" : [
+  "sqlrf/JSON_ARRAYAGG-0.sql" : [
+    3,
+    4,
+    5,
+    6
+  ],
+  "sqlrf/JSON_TABLE-5.sql" : [
     2
   ],
   "sqlrf/LOCALTIMESTAMP-2.sql" : [
@@ -130,6 +136,13 @@
   "sqlrf/Literals-20.sql" : [
     2
   ],
+  "sqlrf/MERGE-1.sql" : [
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
   "sqlrf/NANVL-0.sql" : [
     2
   ],
@@ -141,7 +154,7 @@
   "sqlrf/Pattern-matching-Conditions-10.sql" : [
     3
   ],
-  "sqlrf/SELECT-102.sql" : [
+  "sqlrf/SELECT-115.sql" : [
     3,
     4,
     5,
@@ -163,16 +176,16 @@
     21,
     22
   ],
-  "sqlrf/SELECT-60.sql" : [
+  "sqlrf/SELECT-73.sql" : [
     2
   ],
-  "sqlrf/SELECT-77.sql" : [
+  "sqlrf/SELECT-90.sql" : [
     5,
     6,
     7,
     8
   ],
-  "sqlrf/SELECT-86.sql" : [
+  "sqlrf/SELECT-99.sql" : [
     2
   ],
   "sqlrf/SQL-JSON-Conditions-15.sql" : [
@@ -211,9 +224,27 @@
   "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
     4
   ],
+  "sqlrf/TO_CHAR-character-2.sql" : [
+    12,
+    14,
+    16,
+    18
+  ],
+  "sqlrf/TO_CHAR-datetime-10.sql" : [
+    12,
+    14,
+    16,
+    18
+  ],
   "sqlrf/TO_CHAR-datetime-2.sql" : [
     3,
     7
+  ],
+  "sqlrf/TO_CHAR-number-5.sql" : [
+    12,
+    14,
+    16,
+    18
   ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [
     8
@@ -247,5 +278,8 @@
   ],
   "sqlrf/vector-0.sql" : [
     2
+  ],
+  "sqlrf/vector_chunks-1.sql" : [
+    5
   ]
 }

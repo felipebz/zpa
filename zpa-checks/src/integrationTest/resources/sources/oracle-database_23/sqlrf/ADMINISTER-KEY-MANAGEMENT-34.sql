@@ -1,4 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ADMINISTER-KEY-MANAGEMENT.html
 ADMINISTER KEY MANAGEMENT
-  DELETE SECRET FOR CLIENT 'client2'
-  IDENTIFIED BY "user_id:password";
+  UPDATE SECRET 'secret1' FOR CLIENT 'client1'
+  USING TAG 'New Tag 1'
+  IDENTIFIED BY password
+  WITH BACKUP;

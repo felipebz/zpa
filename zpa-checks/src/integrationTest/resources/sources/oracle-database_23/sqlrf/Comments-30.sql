@@ -1,5 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ NO_REWRITE */ sum(s.amount_sold) AS dollars
-  FROM sales s, times t
-  WHERE s.time_id = t.time_id
-  GROUP BY t.calendar_month_desc;
+SELECT /*+ NO_MERGE(v) NO_PUSH_PRED(v) */ *
+  FROM employees e,
+       (SELECT manager_id
+          FROM employees) v
+  WHERE e.manager_id = v.manager_id(+)
+    AND e.employee_id = 100;

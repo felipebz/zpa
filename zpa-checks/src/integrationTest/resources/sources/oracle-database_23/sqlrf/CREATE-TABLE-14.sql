@@ -21,6 +21,4 @@ CREATE TABLE employees_demo
                      CHECK (salary > 0) 
     , CONSTRAINT     emp_email_uk_demo
                      UNIQUE (email)
-    ) 
-   TABLESPACE example 
-   STORAGE (INITIAL 8M);
+    ) ;

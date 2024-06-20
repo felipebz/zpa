@@ -1,4 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-DELETE TABLE(SELECT h.people FROM hr_info h
-   WHERE h.department_id = 280) p
-   WHERE p.salary > 1700;
+SELECT d.department_id as d_dept_id, e.department_id as e_dept_id,
+      e.last_name
+   FROM departments d FULL OUTER JOIN employees e
+   ON d.department_id = e.department_id
+   ORDER BY d.department_id, e.last_name;

@@ -1,6 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT * FROM employees 
-   WHERE department_id NOT IN 
-   (SELECT department_id FROM departments 
-       WHERE location_id = 1700)
+SELECT last_name, job_id, departments.department_id, department_name
+   FROM employees, departments
+   WHERE employees.department_id = departments.department_id
+   AND job_id = 'SA_MAN'
    ORDER BY last_name;

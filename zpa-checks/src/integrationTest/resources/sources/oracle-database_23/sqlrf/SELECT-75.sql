@@ -1,6 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT d.department_id as d_dept_id, e.department_id as e_dept_id,
-      e.last_name
-   FROM departments d FULL OUTER JOIN employees e
-   ON d.department_id = e.department_id
-   ORDER BY d.department_id, e.last_name;
+CREATE TABLE pivot_table AS
+SELECT * FROM
+(SELECT EXTRACT(YEAR FROM order_date) year, order_mode, order_total FROM orders)
+PIVOT
+(SUM(order_total) FOR order_mode IN ('direct' AS Store, 'online' AS Internet));
+SELECT * FROM pivot_table ORDER BY year;

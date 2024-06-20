@@ -1,4 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-SESSION.html
 ALTER SESSION
-   SET NLS_LANGUAGE = FRENCH;
-SELECT * FROM DMP;
+   SET NLS_CURRENCY = 'DM';
+SELECT TO_CHAR( SUM(salary), 'L999G999D99') Total
+   FROM employees;

@@ -4,10 +4,10 @@
     2,
     3
   ],
-  "sqlrf/Comments-48.sql" : [
+  "sqlrf/Comments-50.sql" : [
     2
   ],
-  "sqlrf/Comments-49.sql" : [
+  "sqlrf/Comments-51.sql" : [
     2
   ],
   "sqlrf/Expression-Lists-3.sql" : [
@@ -16,11 +16,11 @@
     3,
     3
   ],
-  "sqlrf/JSON_TABLE-5.sql" : [
-    2,
+  "sqlrf/JSON_TABLE-10.sql" : [
     2
   ],
-  "sqlrf/JSON_TABLE-6.sql" : [
+  "sqlrf/JSON_TABLE-9.sql" : [
+    2,
     2
   ],
   "sqlrf/ROW_NUMBER-1.sql" : [
@@ -29,29 +29,29 @@
     23,
     23
   ],
-  "sqlrf/SELECT-19.sql" : [
-    4
-  ],
-  "sqlrf/SELECT-43.sql" : [
+  "sqlrf/SELECT-108.sql" : [
     2,
     2
   ],
-  "sqlrf/SELECT-51.sql" : [
+  "sqlrf/SELECT-24.sql" : [
+    4
+  ],
+  "sqlrf/SELECT-56.sql" : [
+    2,
+    2
+  ],
+  "sqlrf/SELECT-64.sql" : [
     3,
     4,
     5
   ],
-  "sqlrf/SELECT-64.sql" : [
+  "sqlrf/SELECT-77.sql" : [
     2,
     2,
     2
   ],
-  "sqlrf/SELECT-66.sql" : [
+  "sqlrf/SELECT-79.sql" : [
     2,
-    2,
-    2
-  ],
-  "sqlrf/SELECT-95.sql" : [
     2,
     2
   ],

@@ -1,8 +1,11 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-UPDATE employees SET salary =      
-   (SELECT salary FROM employees
-   AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '2' MINUTE)
-   WHERE last_name = 'Chung')
-   WHERE last_name = 'Chung';
-SELECT salary FROM employees
-   WHERE last_name = 'Chung';
+SELECT time_hier.member_name time, sales, lag_sales
+FROM
+  ANALYTIC VIEW (
+    USING sales_av HIERARCHIES (time_hier)
+    ADD MEASURES (
+      lag_sales AS (LAG(sales) OVER (HIERARCHY time_hier OFFSET 1))
+    )
+  )
+WHERE time_hier.level_name = 'YEAR'
+ORDER BY time_hier.hier_order;

@@ -1,0 +1,2 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/FEATURE_COMPARE.html
+SELECT 1-FEATURE_COMPARE(esa_wiki_mod USING 'There are several PGA tour golfers from South Africa' text AND USING 'John Elway played quarterback for the Denver Broncos' text) similarity FROM DUAL;

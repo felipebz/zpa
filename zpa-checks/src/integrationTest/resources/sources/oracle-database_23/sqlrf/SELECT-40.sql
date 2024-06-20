@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
-SELECT TRUNC(hire_date, 'YYYY') year_hired, COUNT(*)
-FROM employees
-GROUP BY year_hired
-ORDER BY year_hired;
+SELECT last_name, job_id, salary, department_id 
+   FROM employees 
+   WHERE NOT (job_id = 'PU_CLERK' AND department_id = 30)
+   ORDER BY last_name;

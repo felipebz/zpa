@@ -1,8 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/JSON_TABLE.html
-SELECT requestor
+SELECT jt.phones
 FROM j_purchaseorder,
-JSON_TABLE(po_document, '$'
+JSON_TABLE(po_document, '$.ShippingInstructions'
 COLUMNS
-  (requestor VARCHAR2(32) PATH '$.Requestor',
-   has_zip VARCHAR2(5) EXISTS PATH '$.ShippingInstructions.Address.zipCode'))
-WHERE (has_zip = 'true');
+  (phones VARCHAR2(100) FORMAT JSON PATH '$.Phone')) AS jt;

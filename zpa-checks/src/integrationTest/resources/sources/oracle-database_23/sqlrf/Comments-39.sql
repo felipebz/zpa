@@ -1,6 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT  /*+ ORDERED */ o.order_id, c.customer_id, l.unit_price * l.quantity
-  FROM customers c, order_items l, orders o
-  WHERE c.cust_last_name = 'Taylor'
-    AND o.customer_id = c.customer_id
-    AND o.order_id = l.order_id;
+SELECT /*+NO_XMLINDEX_REWRITE*/ count(*) 
+  FROM warehouses
+  WHERE existsNode(warehouse_spec, '/Warehouse/Building') = 1;

@@ -1,3 +1,3 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-TABLE.html
-ALTER TABLE t1 ADD (id NUMBER DEFAULT ON NULL s1.NEXTVAL NOT NULL);
-SELECT id, name FROM t1 ORDER BY id;
+ALTER TABLE product_information
+  MODIFY (min_price DEFAULT 10);

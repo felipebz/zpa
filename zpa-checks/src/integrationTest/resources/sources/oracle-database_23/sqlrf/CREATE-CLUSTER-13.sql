@@ -1,0 +1,2 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CLUSTER.html
+SELECT INDEX_NAME, INDEX_TYPE, PCT_INCREASE, MIN_EXTENTS, MAX_EXTENTS FROM USER_INDEXES WHERE TABLE_NAME='EMP_DEPT';

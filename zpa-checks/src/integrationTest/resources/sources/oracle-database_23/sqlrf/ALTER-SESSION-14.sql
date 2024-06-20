@@ -1,6 +1,12 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-SESSION.html
-UPDATE jobs@local SET min_salary = 3000
-   WHERE job_id = 'SH_CLERK';
-COMMIT;
 ALTER SESSION
-   CLOSE DATABASE LINK local;
+   ADVISE COMMIT;
+INSERT INTO employees@remote
+   VALUES (8002, 'Juan', 'Fernandez', 'juanf@example.com', NULL, 
+   TO_DATE('04-OCT-1992', 'DD-MON-YYYY'), 'SA_CLERK', 3000, 
+   NULL, 121, 20);
+ALTER SESSION
+   ADVISE ROLLBACK;
+DELETE FROM employees@local
+   WHERE employee_id = 8002;
+COMMIT;
