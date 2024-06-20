@@ -1,4 +1,0 @@
--- https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CURRENT_DATE.html
-ALTER SESSION SET TIME_ZONE = '-5:0';
-ALTER SESSION SET NLS_DATE_FORMAT = 'DD-MON-YYYY HH24:MI:SS';
-SELECT SESSIONTIMEZONE, CURRENT_DATE FROM DUAL;
