@@ -20,15 +20,13 @@ CREATE TABLE hash_products
  ) )
  PARTITION BY HASH (product_id)
  PARTITIONS 5
- STORE IN (example); 
- 
+ STORE IN (example);
 CREATE TABLE sales_quota
     ( product_id          NUMBER(6)
     , customer_name       VARCHAR2(50)  
     , order_qty           NUMBER(6)
   ,CONSTRAINT u_product_id UNIQUE(product_id)
- ); 
- 
+ );
 CREATE BITMAP INDEX product_bm_ix
    ON hash_products(list_price)
    FROM hash_products h, sales_quota s

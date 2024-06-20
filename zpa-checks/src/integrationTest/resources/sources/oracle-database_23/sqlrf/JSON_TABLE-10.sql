@@ -8,4 +8,3 @@ COLUMNS
      COLUMNS (phone_type VARCHAR2(32) PATH '$.type',
               phone_num VARCHAR2(20) PATH '$.number')))
 AS jt;
- 

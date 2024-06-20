@@ -6,14 +6,12 @@ CREATE TYPE address_t AS OBJECT
     zip    VARCHAR2(5),
     phone  VARCHAR2(10) );
 /
-
 CREATE TYPE person AS OBJECT
   ( name        VARCHAR2(40),
     dateofbirth DATE,
     homeaddress address_t,
     manager     REF person );
 /
-
 CREATE TABLE persons OF person
   ( homeaddress NOT NULL,
       UNIQUE (homeaddress.phone),

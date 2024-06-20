@@ -12,7 +12,6 @@ CREATE TABLE product_price_history (
     PARTITION p1 VALUES less than (DATE'2015-01-03'), 
     PARTITION p2 VALUES less than (DATE'2015-01-04') 
 );
-
 INSERT INTO product_price_history 
   WITH prices AS ( 
     SELECT 1, 100, 'USD', DATE'2015-01-01', DATE'2015-01-02' 

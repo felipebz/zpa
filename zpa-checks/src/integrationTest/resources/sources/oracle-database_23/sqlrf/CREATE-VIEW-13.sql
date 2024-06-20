@@ -10,10 +10,8 @@ CREATE TABLE warehouse_table
   Parking           VARCHAR2(20),
   VClearance        NUMBER
 );
-
 INSERT INTO warehouse_table 
    VALUES(5, 103000,3,'Side Load','false','true','Lot',15);
-
 CREATE VIEW warehouse_view OF XMLTYPE
  XMLSCHEMA "http://www.example.com/xwarehouses.xsd" 
     ELEMENT "Warehouse"

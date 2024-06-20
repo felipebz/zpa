@@ -6,4 +6,4 @@ SELECT time_id, product, LAST_VALUE(quantity IGNORE NULLS)
                 RIGHT OUTER JOIN times ON (times.time_id = inventory.time_id) 
    WHERE times.time_id BETWEEN TO_DATE('01/04/01', 'DD/MM/YY') 
       AND TO_DATE('06/04/01', 'DD/MM/YY')) 
-   ORDER BY  2,1; 
+   ORDER BY  2,1;

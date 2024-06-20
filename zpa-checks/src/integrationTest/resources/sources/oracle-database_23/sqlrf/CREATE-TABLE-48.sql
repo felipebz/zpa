@@ -7,7 +7,6 @@ CREATE TABLE customers_demo (
 PARTITION BY RANGE (credit_limit)
 INTERVAL (1000)
 (PARTITION p1 VALUES LESS THAN (5001));
- 
 INSERT INTO customers_demo
   (customer_id, cust_first_name, cust_last_name, credit_limit)
   (select customer_id, cust_first_name, cust_last_name, credit_limit

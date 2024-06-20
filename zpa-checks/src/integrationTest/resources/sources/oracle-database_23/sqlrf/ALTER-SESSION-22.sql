@@ -1,9 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/ALTER-SESSION.html
 ALTER SESSION
-   SET NLS_LANGUAGE = FRENCH; 
-
-Session modifiee.
-
+   SET NLS_LANGUAGE = FRENCH;
 SELECT * FROM DMP;
-
-ORA-00942: Table ou vue inexistante

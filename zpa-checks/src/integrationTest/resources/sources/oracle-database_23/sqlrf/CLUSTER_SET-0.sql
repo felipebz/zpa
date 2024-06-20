@@ -6,4 +6,4 @@ FROM
     FROM mining_data_apply_v v
    WHERE cust_id = 100955) T,
   TABLE(T.pset) S
-ORDER BY 2 DESC;  
+ORDER BY 2 DESC;

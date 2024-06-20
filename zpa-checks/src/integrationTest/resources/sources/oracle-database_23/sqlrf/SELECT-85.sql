@@ -12,5 +12,4 @@ CREATE TABLE hr_info (
    manager_id      NUMBER(6),
    people          people_tab_typ)
    NESTED TABLE people STORE AS people_stor_tab;
-
 INSERT INTO hr_info VALUES (280, 1800, 999, people_tab_typ());

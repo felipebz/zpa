@@ -59,6 +59,9 @@
     5,
     3
   ],
+  "sqlrf/Comments-0.sql" : [
+    6
+  ],
   "sqlrf/Comments-12.sql" : [
     3
   ],
@@ -144,7 +147,7 @@
     3
   ],
   "sqlrf/DEREF-0.sql" : [
-    6
+    5
   ],
   "sqlrf/EXISTS-Condition-1.sql" : [
     3,
@@ -171,7 +174,8 @@
     16
   ],
   "sqlrf/IS-OF-type-Condition-0.sql" : [
-    2
+    2,
+    4
   ],
   "sqlrf/JSON-Object-Access-Expressions-0.sql" : [
     3
@@ -194,14 +198,14 @@
   ],
   "sqlrf/Multiset-Operators-3.sql" : [
     5,
-    12
+    11
   ],
   "sqlrf/NULLIF-1.sql" : [
     3,
     3
   ],
   "sqlrf/Object-Access-Expressions-0.sql" : [
-    7
+    5
   ],
   "sqlrf/SELECT-19.sql" : [
     5,
@@ -266,6 +270,10 @@
     3,
     3
   ],
+  "sqlrf/SELECT-83.sql" : [
+    2,
+    2
+  ],
   "sqlrf/SELECT-84.sql" : [
     2,
     2
@@ -309,7 +317,7 @@
   ],
   "sqlrf/Using-XML-in-SQL-Statements-7.sql" : [
     2,
-    6
+    5
   ],
   "sqlrf/VALUE-0.sql" : [
     2
@@ -341,6 +349,9 @@
     8
   ],
   "sqlrf/XMLFOREST-0.sql" : [
+    5
+  ],
+  "sqlrf/XMLSEQUENCE-0.sql" : [
     5
   ],
   "sqlrf/XMLTRANSFORM-1.sql" : [

@@ -1,4 +1,7 @@
 {
+  "sqlrf/ALTER-SESSION-22.sql" : [
+    4
+  ],
   "sqlrf/ALTER-TABLE-115.sql" : [
     2
   ],
@@ -22,7 +25,7 @@
   ],
   "sqlrf/Arithmetic-Operators-0.sql" : [
     2,
-    8
+    7
   ],
   "sqlrf/BETWEEN-Condition-5.sql" : [
     2
@@ -137,6 +140,9 @@
   "sqlrf/DELETE-3.sql" : [
     2
   ],
+  "sqlrf/Data-Types-22.sql" : [
+    2
+  ],
   "sqlrf/Data-Types-23.sql" : [
     2
   ],
@@ -162,7 +168,7 @@
     5
   ],
   "sqlrf/Data-Types-3.sql" : [
-    9
+    7
   ],
   "sqlrf/Data-Types-30.sql" : [
     2
@@ -177,10 +183,12 @@
     5
   ],
   "sqlrf/FIRST_VALUE-2.sql" : [
-    5
+    5,
+    11
   ],
   "sqlrf/FIRST_VALUE-3.sql" : [
-    5
+    5,
+    11
   ],
   "sqlrf/FLASHBACK-TABLE-0.sql" : [
     2,
@@ -213,7 +221,8 @@
     29
   ],
   "sqlrf/IS-OF-type-Condition-0.sql" : [
-    2
+    2,
+    4
   ],
   "sqlrf/JSON_TABLE-10.sql" : [
     2
@@ -246,13 +255,17 @@
     6
   ],
   "sqlrf/LAST_VALUE-2.sql" : [
-    6
+    6,
+    13
   ],
   "sqlrf/LAST_VALUE-3.sql" : [
-    6
+    6,
+    13
   ],
   "sqlrf/Literals-15.sql" : [
-    5
+    4,
+    6,
+    9
   ],
   "sqlrf/Literals-16.sql" : [
     2
@@ -274,16 +287,22 @@
     2
   ],
   "sqlrf/MERGE-0.sql" : [
-    8
+    7,
+    17
   ],
   "sqlrf/NANVL-0.sql" : [
-    5
+    4
   ],
   "sqlrf/NLSSORT-1.sql" : [
-    7
+    6,
+    9
+  ],
+  "sqlrf/NLSSORT-2.sql" : [
+    2,
+    6
   ],
   "sqlrf/NLSSORT-3.sql" : [
-    5
+    4
   ],
   "sqlrf/NOAUDIT-Unified-Auditing-1.sql" : [
     2
@@ -308,6 +327,9 @@
   "sqlrf/ROWNUM-Pseudocolumn-3.sql" : [
     2
   ],
+  "sqlrf/SELECT-17.sql" : [
+    2
+  ],
   "sqlrf/SELECT-19.sql" : [
     11
   ],
@@ -329,6 +351,10 @@
   "sqlrf/SELECT-80.sql" : [
     2
   ],
+  "sqlrf/SELECT-83.sql" : [
+    2,
+    2
+  ],
   "sqlrf/SELECT-84.sql" : [
     2,
     2
@@ -340,14 +366,11 @@
     2
   ],
   "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
-    8
-  ],
-  "sqlrf/TRANSLATE-USING-0.sql" : [
-    9
+    6
   ],
   "sqlrf/Using-XML-in-SQL-Statements-7.sql" : [
     2,
-    6
+    5
   ],
   "sqlrf/create-domain-24.sql" : [
     2

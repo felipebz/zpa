@@ -4,4 +4,4 @@ SELECT department_id "Department",
          WITHIN GROUP (ORDER BY salary ASC) "Confidence"
 FROM employees
 GROUP BY department_id
-ORDER BY department_id; 
+ORDER BY department_id;

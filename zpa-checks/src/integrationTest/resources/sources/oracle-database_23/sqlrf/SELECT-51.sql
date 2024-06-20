@@ -15,7 +15,6 @@ CREATE OR REPLACE VIEW sales_view_ref AS
       AND ( prod_name = 'Standard Mouse'
             OR prod_name = 'Mouse Pad' )
     GROUP BY country_name,prod_name,calendar_year;
-
 SELECT country, prod, year, sale
   FROM sales_view_ref
   ORDER BY country, prod, year;

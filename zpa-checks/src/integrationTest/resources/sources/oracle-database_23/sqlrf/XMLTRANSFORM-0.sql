@@ -1,6 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/XMLTRANSFORM.html
 CREATE TABLE xsl_tab (col1 XMLTYPE);
-
 INSERT INTO xsl_tab VALUES (
    XMLTYPE.createxml(
    '<?xml version="1.0"?> 
@@ -18,5 +17,3 @@ INSERT INTO xsl_tab VALUES (
         <xsl:value-of select="normalize-space(.)"/>
       </xsl:template>
     </xsl:stylesheet>  '));
-
-1 row created.

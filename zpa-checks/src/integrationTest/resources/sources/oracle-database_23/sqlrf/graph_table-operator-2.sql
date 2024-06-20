@@ -9,8 +9,6 @@ CREATE TABLE students (
       CONSTRAINT stud_fk_person FOREIGN KEY (s_person_id) REFERENCES persons(person_id),
       CONSTRAINT stud_fk_univ FOREIGN KEY (s_univ_id) REFERENCES university(id)
     );
-
-
 INSERT INTO students(s_univ_id, s_person_id,subject, height) VALUES (1,1,'Arts');
 INSERT INTO students(s_univ_id, s_person_id,subject, height) VALUES (1,3,'Music');
 INSERT INTO students(s_univ_id, s_person_id,subject, height) VALUES (2,2,'Math');

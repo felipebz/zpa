@@ -6,7 +6,6 @@ CREATE TABLE exchange_table (
    cust_address    CUST_ADDRESS_TYP,
    nls_territory   VARCHAR2(30),
    cust_email      VARCHAR2(40));
-
 ALTER TABLE list_customers 
    EXCHANGE PARTITION rest WITH TABLE exchange_table 
    WITHOUT VALIDATION;

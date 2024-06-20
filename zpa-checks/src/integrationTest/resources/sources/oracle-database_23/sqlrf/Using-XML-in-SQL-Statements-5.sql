@@ -15,4 +15,3 @@ INSERT INTO xwarehouses VALUES(   xmltype.createxml('<?xml version="1.0"?>
       <Parking>Street</Parking>
       <VClearance>10</VClearance>
       </who:Warehouse>'));
-...

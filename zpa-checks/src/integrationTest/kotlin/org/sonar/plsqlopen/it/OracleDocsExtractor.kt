@@ -19,6 +19,10 @@
  */
 package org.sonar.plsqlopen.it
 
+import oracle.dbtools.parser.Lexer
+import oracle.dbtools.parser.plsql.SyntaxError
+import oracle.dbtools.raptor.newscriptrunner.ISQLCommand
+import oracle.dbtools.raptor.newscriptrunner.ScriptParser
 import org.jsoup.Jsoup
 import java.io.File
 import java.nio.file.Paths
@@ -53,30 +57,49 @@ class OracleDocsExtractor {
                         Jsoup.parse(stream, Charsets.UTF_8.name(), "").run {
                             select("pre.oac_no_warn").forEachIndexed { index, element ->
                                 var text = element.text()
+                                    .replace('’', '\'')
 
-                                val lines = text.lines()
-                                val line = lines.indexOfFirst { it.contains("---") }
-                                try {
-                                    if (line != -1) {
-                                        text = text.lines().take(line - 2).joinToString(separator = "\n")
-                                    }
+                                val fileContent = extractValidStatementsFrom(text)
 
-                                    if (text.isNotEmpty()) {
-                                        val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
-                                        val path = entry.name.substring(entry.name.indexOf(parent))
-                                        text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$text"
+                                if (fileContent.isNotEmpty()) {
+                                    val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
+                                    val path = entry.name.substring(entry.name.indexOf(parent))
+                                    text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$fileContent"
 
-                                        val pathOutput = Paths.get(outputDir.absolutePath, parent, name).toFile()
-                                        pathOutput.parentFile.mkdirs()
-                                        pathOutput.writeText(text, Charsets.UTF_8)
-                                    }
-                                } catch (e: Exception) {
+                                    val pathOutput = Paths.get(outputDir.absolutePath, parent, name).toFile()
+                                    pathOutput.parentFile.mkdirs()
+                                    pathOutput.writeText(text, Charsets.UTF_8)
                                 }
                             }
                         }
                     }
                 }
             }
+    }
+
+    private fun extractValidStatementsFrom(text: String): String {
+        val parser = ScriptParser(text)
+        var cmd: ISQLCommand
+        var validText = ""
+        while ((parser.next().also { cmd = it }) != null) {
+            val sql = cmd.sqlOrigWithTerminator
+            val syntaxError = SyntaxError.checkSyntax(
+                sql,
+                arrayOf("select", "sql_statement", "sql_statements")
+            )
+            if (syntaxError == null) {
+                val tokens = Lexer.parse(sql)
+
+                // ignore the command if it doesn't have any token (e.g. comment line)
+                if (tokens.isNotEmpty()) {
+                    if (validText.isNotEmpty()) {
+                        validText += "\n"
+                    }
+                    validText += sql
+                }
+            }
+        }
+        return validText
     }
 
 }

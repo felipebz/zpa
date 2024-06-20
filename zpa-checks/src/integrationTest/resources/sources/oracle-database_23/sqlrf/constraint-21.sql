@@ -5,7 +5,6 @@ CREATE TABLE products
     , description VARCHAR2(1000) COLLATE BINARY_CI
            CONSTRAINT product_description_unq UNIQUE
     );
-
 CREATE TABLE product_components
     ( component_id VARCHAR2(40) COLLATE BINARY_CI
            CONSTRAINT product_component_pk PRIMARY KEY

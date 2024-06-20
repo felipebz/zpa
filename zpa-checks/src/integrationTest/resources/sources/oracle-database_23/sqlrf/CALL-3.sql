@@ -3,7 +3,6 @@ ALTER TYPE warehouse_typ
       ADD MEMBER FUNCTION ret_name
       RETURN VARCHAR2
       CASCADE;
-
 CREATE OR REPLACE TYPE BODY warehouse_typ
       AS MEMBER FUNCTION ret_name
       RETURN VARCHAR2
@@ -14,6 +13,6 @@ CREATE OR REPLACE TYPE BODY warehouse_typ
       END;
 /
 VARIABLE x VARCHAR2(25);
-
 CALL warehouse_typ(456, 'Warehouse 456', 2236).ret_name()
    INTO :x;
+PRINT x;

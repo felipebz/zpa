@@ -10,4 +10,3 @@ CREATE TABLE Product(
   CONSTRAINT TC1 CHECK (Color > 0 AND Price > 10) PRECHECK,
   CONSTRAINT TC2 CHECK (CATEGORY IN ('Home', 'Apparel') AND Price > 10)
 );
-Table PRODUCT created.

@@ -31,3 +31,4 @@ FROM
 WHERE sales_2000.channel_desc = top_5_prods_1999_year.channel_desc
   AND sales_2000.prod_name = top_5_prods_1999_year.prod_name
 ORDER BY sales_2000.channel_desc, sales_2000.prod_name
+;

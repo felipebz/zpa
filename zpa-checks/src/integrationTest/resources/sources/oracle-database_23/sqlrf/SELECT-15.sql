@@ -9,3 +9,5 @@ begin
                   '[^'||delimiter||']+', 1, position, 'imx')
   }';
 end;
+/
+SELECT split_part( sysdate, '-', 2) month from dual;

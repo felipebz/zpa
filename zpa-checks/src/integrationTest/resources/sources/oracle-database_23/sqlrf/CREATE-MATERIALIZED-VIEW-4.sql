@@ -1,7 +1,6 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-MATERIALIZED-VIEW.html
 CREATE TABLE sales_sum_table
    (month VARCHAR2(8), state VARCHAR2(40), sales NUMBER(10,2));
-
 CREATE MATERIALIZED VIEW sales_sum_table
    ON PREBUILT TABLE WITH REDUCED PRECISION
    ENABLE QUERY REWRITE

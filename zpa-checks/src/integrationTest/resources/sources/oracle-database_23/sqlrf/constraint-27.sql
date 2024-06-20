@@ -8,7 +8,6 @@ CREATE TYPE cust_address_typ_new AS OBJECT
     );
 /
 CREATE TABLE address_table OF cust_address_typ_new;
-
 CREATE TABLE customer_addresses (
    add_id NUMBER, 
    address REF cust_address_typ_new

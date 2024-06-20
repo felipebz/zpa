@@ -30,7 +30,6 @@ index-based functional implementation */
   MEMBER FUNCTION ODCIINDEXCLOSE(env SYS.ODCIEnv) RETURN NUMBER
 );
 /
-
 CREATE OR REPLACE TYPE BODY position_im
 IS
    STATIC FUNCTION ODCIGETINTERFACES(ifclist OUT SYS.ODCIOBJECTLIST)
@@ -68,7 +67,7 @@ IS
   BEGIN
 /* Construct the SQL statement */
    stmt := 'TRUNCATE TABLE ' || ia.INDEXSCHEMA || '.' || ia.INDEXNAME || '_STORAGE_TAB';
-   
+
    EXECUTE IMMEDIATE stmt;
    RETURN ODCICONST.SUCCESS;
   END;
@@ -83,7 +82,7 @@ IS
    EXECUTE IMMEDIATE stmt;
    RETURN ODCICONST.SUCCESS;
   END;
-  
+
   STATIC FUNCTION ODCIINDEXDELETE(ia SYS.ODCIINDEXINFO, rid ROWID, oldval NUMBER,
                                   env SYS.ODCIEnv)
      RETURN NUMBER IS
@@ -120,7 +119,7 @@ IS
     upper_bound      NUMBER;
     cnum             INTEGER;
     nrows            INTEGER;
-    
+
   BEGIN
 /* Take care of some error cases.
     The only predicates in which position operator can appear are

@@ -1,6 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/SELECT.html
 CREATE TABLE Ticker (SYMBOL VARCHAR2(10), tstamp DATE, price NUMBER);
-
 INSERT INTO Ticker VALUES('ACME', '01-Apr-11', 12);
 INSERT INTO Ticker VALUES('ACME', '02-Apr-11', 17);
 INSERT INTO Ticker VALUES('ACME', '03-Apr-11', 19);

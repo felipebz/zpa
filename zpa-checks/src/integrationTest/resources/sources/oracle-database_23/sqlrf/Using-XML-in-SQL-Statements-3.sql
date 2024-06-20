@@ -6,21 +6,21 @@ begin
        targetNamespace="http://www.example.com/xwarehouses.xsd" 
        xmlns:who="http://www.example.com/xwarehouses.xsd"
        version="1.0">
- 
+
   <simpleType name="RentalType">
    <restriction base="string">
     <enumeration value="Rented"/>
     <enumeration value="Owned"/>
    </restriction>
   </simpleType>
- 
+
   <simpleType name="ParkingType">
    <restriction base="string">
     <enumeration value="Street"/>
     <enumeration value="Lot"/>
    </restriction>
   </simpleType>
-  
+
   <element name = "Warehouse">
     <complexType>
      <sequence>

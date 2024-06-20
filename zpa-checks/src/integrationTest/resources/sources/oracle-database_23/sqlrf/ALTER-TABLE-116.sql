@@ -9,7 +9,6 @@ CREATE FUNCTION get_xmltype (ad IN ANYDATA) RETURN VARCHAR2 AS
       return (string_val);
    END;
 /
-
 CREATE FUNCTION get_clob_typ (ad IN ANYDATA) RETURN VARCHAR2 AS
       rtn_val PLS_INTEGER;
       my_clob_typ clob_typ;
