@@ -36,7 +36,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: '**/build/'
+          path: |
+            **/build/
+            zpa-checks/tools/
           retention-days: 1
 
   integration-tests:
