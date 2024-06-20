@@ -1,11 +1,11 @@
 {
-  "ROUND-date-0.sql" : [
+  "sqlrf/ROUND-date-0.sql" : [
     2
   ],
-  "Sequence-Pseudocolumns-4.sql" : [
+  "sqlrf/Sequence-Pseudocolumns-4.sql" : [
     4
   ],
-  "Sequence-Pseudocolumns-5.sql" : [
+  "sqlrf/Sequence-Pseudocolumns-5.sql" : [
     3
   ]
 }

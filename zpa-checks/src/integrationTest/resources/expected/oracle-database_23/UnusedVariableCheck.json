@@ -1,13 +1,13 @@
 {
-  "Type-Constructor-Expressions-0.sql" : [
+  "sqlrf/Type-Constructor-Expressions-0.sql" : [
     6
   ],
-  "Using-Extensible-Indexing-1.sql" : [
+  "sqlrf/Using-Extensible-Indexing-1.sql" : [
     114,
     122,
     181
   ],
-  "Using-Extensible-Indexing-2.sql" : [
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [
     8
   ]
 }

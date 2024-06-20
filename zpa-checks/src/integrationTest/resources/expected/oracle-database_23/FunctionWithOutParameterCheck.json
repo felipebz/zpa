@@ -1,5 +1,5 @@
 {
-  "Using-Extensible-Indexing-1.sql" : [
+  "sqlrf/Using-Extensible-Indexing-1.sql" : [
     10,
     23,
     27,
@@ -9,7 +9,7 @@
     175,
     176
   ],
-  "Using-Extensible-Indexing-2.sql" : [
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [
     5
   ]
 }

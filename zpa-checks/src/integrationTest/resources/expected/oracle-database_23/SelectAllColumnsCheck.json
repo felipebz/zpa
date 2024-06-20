@@ -1,361 +1,361 @@
 {
-  "ALTER-TABLE-115.sql" : [
+  "sqlrf/ALTER-TABLE-115.sql" : [
     2
   ],
-  "ALTER-TABLE-117.sql" : [
+  "sqlrf/ALTER-TABLE-117.sql" : [
     2
   ],
-  "ALTER-TABLE-14.sql" : [
+  "sqlrf/ALTER-TABLE-14.sql" : [
     2
   ],
-  "ALTER-TABLE-23.sql" : [
+  "sqlrf/ALTER-TABLE-23.sql" : [
     2
   ],
-  "ALTER-TABLE-44.sql" : [
+  "sqlrf/ALTER-TABLE-44.sql" : [
     2
   ],
-  "ALTER-TABLE-46.sql" : [
+  "sqlrf/ALTER-TABLE-46.sql" : [
     2
   ],
-  "APPROX_PERCENTILE_DETAIL-8.sql" : [
+  "sqlrf/APPROX_PERCENTILE_DETAIL-8.sql" : [
     6
   ],
-  "Arithmetic-Operators-0.sql" : [
+  "sqlrf/Arithmetic-Operators-0.sql" : [
     2,
     8
   ],
-  "BETWEEN-Condition-5.sql" : [
+  "sqlrf/BETWEEN-Condition-5.sql" : [
     2
   ],
-  "COLUMN_VALUE-Pseudocolumn-0.sql" : [
+  "sqlrf/COLUMN_VALUE-Pseudocolumn-0.sql" : [
     2
   ],
-  "CONVERT-1.sql" : [
+  "sqlrf/CONVERT-1.sql" : [
     2
   ],
-  "CREATE-AUDIT-POLICY-Unified-Auditing-15.sql" : [
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-15.sql" : [
     2
   ],
-  "CREATE-CONTEXT-1.sql" : [
+  "sqlrf/CREATE-CONTEXT-1.sql" : [
     3
   ],
-  "CREATE-DATABASE-LINK-3.sql" : [
+  "sqlrf/CREATE-DATABASE-LINK-3.sql" : [
     2
   ],
-  "CREATE-DATABASE-LINK-5.sql" : [
+  "sqlrf/CREATE-DATABASE-LINK-5.sql" : [
     2
   ],
-  "CREATE-INDEX-18.sql" : [
+  "sqlrf/CREATE-INDEX-18.sql" : [
     2
   ],
-  "CREATE-MATERIALIZED-VIEW-0.sql" : [
+  "sqlrf/CREATE-MATERIALIZED-VIEW-0.sql" : [
     2
   ],
-  "CREATE-MATERIALIZED-VIEW-1.sql" : [
+  "sqlrf/CREATE-MATERIALIZED-VIEW-1.sql" : [
     3
   ],
-  "CREATE-TABLE-46.sql" : [
+  "sqlrf/CREATE-TABLE-46.sql" : [
     2
   ],
-  "Comments-14.sql" : [
+  "sqlrf/Comments-14.sql" : [
     2
   ],
-  "Comments-15.sql" : [
+  "sqlrf/Comments-15.sql" : [
     2
   ],
-  "Comments-20.sql" : [
+  "sqlrf/Comments-20.sql" : [
     2
   ],
-  "Comments-23.sql" : [
+  "sqlrf/Comments-23.sql" : [
     2
   ],
-  "Comments-28.sql" : [
+  "sqlrf/Comments-28.sql" : [
     2
   ],
-  "Comments-29.sql" : [
+  "sqlrf/Comments-29.sql" : [
     3
   ],
-  "Comments-33.sql" : [
+  "sqlrf/Comments-33.sql" : [
     2
   ],
-  "Comments-34.sql" : [
+  "sqlrf/Comments-34.sql" : [
     2
   ],
-  "Comments-35.sql" : [
+  "sqlrf/Comments-35.sql" : [
     2
   ],
-  "Comments-46.sql" : [
+  "sqlrf/Comments-46.sql" : [
     4
   ],
-  "Comments-50.sql" : [
+  "sqlrf/Comments-50.sql" : [
     2
   ],
-  "Comments-55.sql" : [
+  "sqlrf/Comments-55.sql" : [
     2
   ],
-  "Comments-56.sql" : [
+  "sqlrf/Comments-56.sql" : [
     2
   ],
-  "Comments-57.sql" : [
+  "sqlrf/Comments-57.sql" : [
     2
   ],
-  "Comments-59.sql" : [
+  "sqlrf/Comments-59.sql" : [
     5
   ],
-  "Comments-60.sql" : [
+  "sqlrf/Comments-60.sql" : [
     2
   ],
-  "Comments-8.sql" : [
+  "sqlrf/Comments-8.sql" : [
     2
   ],
-  "Comparison-Conditions-0.sql" : [
+  "sqlrf/Comparison-Conditions-0.sql" : [
     2
   ],
-  "Comparison-Conditions-1.sql" : [
+  "sqlrf/Comparison-Conditions-1.sql" : [
     2
   ],
-  "Comparison-Conditions-2.sql" : [
+  "sqlrf/Comparison-Conditions-2.sql" : [
     2,
     5
   ],
-  "Comparison-Conditions-3.sql" : [
+  "sqlrf/Comparison-Conditions-3.sql" : [
     2,
     5
   ],
-  "Comparison-Conditions-4.sql" : [
+  "sqlrf/Comparison-Conditions-4.sql" : [
     2
   ],
-  "Comparison-Conditions-5.sql" : [
+  "sqlrf/Comparison-Conditions-5.sql" : [
     2
   ],
-  "DELETE-10.sql" : [
+  "sqlrf/DELETE-10.sql" : [
     2
   ],
-  "DELETE-13.sql" : [
+  "sqlrf/DELETE-13.sql" : [
     2
   ],
-  "DELETE-3.sql" : [
+  "sqlrf/DELETE-3.sql" : [
     2
   ],
-  "Data-Types-23.sql" : [
+  "sqlrf/Data-Types-23.sql" : [
     2
   ],
-  "Data-Types-24.sql" : [
+  "sqlrf/Data-Types-24.sql" : [
     2
   ],
-  "Data-Types-25.sql" : [
+  "sqlrf/Data-Types-25.sql" : [
     2
   ],
-  "Data-Types-26.sql" : [
+  "sqlrf/Data-Types-26.sql" : [
     2
   ],
-  "Data-Types-27.sql" : [
+  "sqlrf/Data-Types-27.sql" : [
     2
   ],
-  "Data-Types-28.sql" : [
+  "sqlrf/Data-Types-28.sql" : [
     2
   ],
-  "Data-Types-29.sql" : [
+  "sqlrf/Data-Types-29.sql" : [
     2,
     3,
     4,
     5
   ],
-  "Data-Types-3.sql" : [
+  "sqlrf/Data-Types-3.sql" : [
     9
   ],
-  "Data-Types-30.sql" : [
+  "sqlrf/Data-Types-30.sql" : [
     2
   ],
-  "Expression-Lists-1.sql" : [
+  "sqlrf/Expression-Lists-1.sql" : [
     2
   ],
-  "FIRST_VALUE-0.sql" : [
+  "sqlrf/FIRST_VALUE-0.sql" : [
     5
   ],
-  "FIRST_VALUE-1.sql" : [
+  "sqlrf/FIRST_VALUE-1.sql" : [
     5
   ],
-  "FIRST_VALUE-2.sql" : [
+  "sqlrf/FIRST_VALUE-2.sql" : [
     5
   ],
-  "FIRST_VALUE-3.sql" : [
+  "sqlrf/FIRST_VALUE-3.sql" : [
     5
   ],
-  "FLASHBACK-TABLE-0.sql" : [
+  "sqlrf/FLASHBACK-TABLE-0.sql" : [
     2,
     3
   ],
-  "IN-Condition-1.sql" : [
+  "sqlrf/IN-Condition-1.sql" : [
     2,
     6
   ],
-  "IN-Condition-3.sql" : [
+  "sqlrf/IN-Condition-3.sql" : [
     2,
     8
   ],
-  "INSERT-16.sql" : [
+  "sqlrf/INSERT-16.sql" : [
     2
   ],
-  "INSERT-20.sql" : [
+  "sqlrf/INSERT-20.sql" : [
     2
   ],
-  "INSERT-31.sql" : [
+  "sqlrf/INSERT-31.sql" : [
     9
   ],
-  "INSERT-33.sql" : [
+  "sqlrf/INSERT-33.sql" : [
     9
   ],
-  "INSERT-35.sql" : [
+  "sqlrf/INSERT-35.sql" : [
     24
   ],
-  "INSERT-37.sql" : [
+  "sqlrf/INSERT-37.sql" : [
     29
   ],
-  "IS-OF-type-Condition-0.sql" : [
+  "sqlrf/IS-OF-type-Condition-0.sql" : [
     2
   ],
-  "JSON_TABLE-10.sql" : [
+  "sqlrf/JSON_TABLE-10.sql" : [
     2
   ],
-  "JSON_TABLE-11.sql" : [
+  "sqlrf/JSON_TABLE-11.sql" : [
     2
   ],
-  "JSON_TABLE-12.sql" : [
+  "sqlrf/JSON_TABLE-12.sql" : [
     2
   ],
-  "JSON_TABLE-4.sql" : [
+  "sqlrf/JSON_TABLE-4.sql" : [
     2
   ],
-  "JSON_TABLE-7.sql" : [
+  "sqlrf/JSON_TABLE-7.sql" : [
     2
   ],
-  "JSON_TABLE-8.sql" : [
+  "sqlrf/JSON_TABLE-8.sql" : [
     2
   ],
-  "JSON_TABLE-9.sql" : [
+  "sqlrf/JSON_TABLE-9.sql" : [
     2
   ],
-  "Joins-3.sql" : [
+  "sqlrf/Joins-3.sql" : [
     2
   ],
-  "LAST_VALUE-0.sql" : [
+  "sqlrf/LAST_VALUE-0.sql" : [
     6
   ],
-  "LAST_VALUE-1.sql" : [
+  "sqlrf/LAST_VALUE-1.sql" : [
     6
   ],
-  "LAST_VALUE-2.sql" : [
+  "sqlrf/LAST_VALUE-2.sql" : [
     6
   ],
-  "LAST_VALUE-3.sql" : [
+  "sqlrf/LAST_VALUE-3.sql" : [
     6
   ],
-  "Literals-15.sql" : [
+  "sqlrf/Literals-15.sql" : [
     5
   ],
-  "Literals-16.sql" : [
+  "sqlrf/Literals-16.sql" : [
     2
   ],
-  "Literals-17.sql" : [
+  "sqlrf/Literals-17.sql" : [
     2
   ],
-  "Logical-Conditions-1.sql" : [
+  "sqlrf/Logical-Conditions-1.sql" : [
     2,
     6
   ],
-  "Logical-Conditions-3.sql" : [
+  "sqlrf/Logical-Conditions-3.sql" : [
     2
   ],
-  "Logical-Conditions-5.sql" : [
+  "sqlrf/Logical-Conditions-5.sql" : [
     2
   ],
-  "Logical-Conditions-6.sql" : [
+  "sqlrf/Logical-Conditions-6.sql" : [
     2
   ],
-  "MERGE-0.sql" : [
+  "sqlrf/MERGE-0.sql" : [
     8
   ],
-  "NANVL-0.sql" : [
+  "sqlrf/NANVL-0.sql" : [
     5
   ],
-  "NLSSORT-1.sql" : [
+  "sqlrf/NLSSORT-1.sql" : [
     7
   ],
-  "NLSSORT-3.sql" : [
+  "sqlrf/NLSSORT-3.sql" : [
     5
   ],
-  "NOAUDIT-Unified-Auditing-1.sql" : [
+  "sqlrf/NOAUDIT-Unified-Auditing-1.sql" : [
     2
   ],
-  "NOAUDIT-Unified-Auditing-6.sql" : [
+  "sqlrf/NOAUDIT-Unified-Auditing-6.sql" : [
     2
   ],
-  "PURGE-0.sql" : [
+  "sqlrf/PURGE-0.sql" : [
     2,
     3
   ],
-  "ROWNUM-Pseudocolumn-0.sql" : [
+  "sqlrf/ROWNUM-Pseudocolumn-0.sql" : [
     2
   ],
-  "ROWNUM-Pseudocolumn-1.sql" : [
+  "sqlrf/ROWNUM-Pseudocolumn-1.sql" : [
     2
   ],
-  "ROWNUM-Pseudocolumn-2.sql" : [
+  "sqlrf/ROWNUM-Pseudocolumn-2.sql" : [
     2,
     3
   ],
-  "ROWNUM-Pseudocolumn-3.sql" : [
+  "sqlrf/ROWNUM-Pseudocolumn-3.sql" : [
     2
   ],
-  "SELECT-19.sql" : [
+  "sqlrf/SELECT-19.sql" : [
     11
   ],
-  "SELECT-26.sql" : [
+  "sqlrf/SELECT-26.sql" : [
     2
   ],
-  "SELECT-30.sql" : [
+  "sqlrf/SELECT-30.sql" : [
     2
   ],
-  "SELECT-48.sql" : [
+  "sqlrf/SELECT-48.sql" : [
     2
   ],
-  "SELECT-7.sql" : [
+  "sqlrf/SELECT-7.sql" : [
     2
   ],
-  "SELECT-79.sql" : [
+  "sqlrf/SELECT-79.sql" : [
     2
   ],
-  "SELECT-80.sql" : [
+  "sqlrf/SELECT-80.sql" : [
     2
   ],
-  "SELECT-84.sql" : [
+  "sqlrf/SELECT-84.sql" : [
     2,
     2
   ],
-  "SELECT-89.sql" : [
+  "sqlrf/SELECT-89.sql" : [
     2
   ],
-  "SELECT-90.sql" : [
+  "sqlrf/SELECT-90.sql" : [
     2
   ],
-  "TO_BINARY_DOUBLE-0.sql" : [
+  "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
     8
   ],
-  "TRANSLATE-USING-0.sql" : [
+  "sqlrf/TRANSLATE-USING-0.sql" : [
     9
   ],
-  "Using-XML-in-SQL-Statements-7.sql" : [
+  "sqlrf/Using-XML-in-SQL-Statements-7.sql" : [
     2,
     6
   ],
-  "create-domain-24.sql" : [
+  "sqlrf/create-domain-24.sql" : [
     2
   ],
-  "create-domain-27.sql" : [
+  "sqlrf/create-domain-27.sql" : [
     2
   ],
-  "create-domain-30.sql" : [
+  "sqlrf/create-domain-30.sql" : [
     2
   ]
 }

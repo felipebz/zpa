@@ -21,6 +21,7 @@ package org.sonar.plsqlopen.it
 
 import org.jsoup.Jsoup
 import java.io.File
+import java.nio.file.Paths
 import java.util.zip.ZipFile
 
 fun main() {
@@ -41,34 +42,41 @@ class OracleDocsExtractor {
 
         val entries = zipFile.entries()
 
-        while (entries.hasMoreElements()) {
-            val entry = entries.nextElement()
-            if (!entry.isDirectory && File(entry.name).parent.endsWith("sqlrf")) {
-                zipFile.getInputStream(entry).use { stream ->
-                    Jsoup.parse(stream, Charsets.UTF_8.name(), "").run {
-                        select("pre.oac_no_warn").forEachIndexed { index, element ->
-                            var text = element.text()
+        val booksToExtract = listOf("sqlrf")
 
-                            val lines = text.lines()
-                            val line = lines.indexOfFirst { it.contains("---") }
-                            try {
-                                if (line != -1) {
-                                    text = text.lines().take(line - 2).joinToString(separator = "\n")
-                                }
+        entries.asSequence()
+            .filter { !it.isDirectory }
+            .map { Pair(it, File(it.name).parentFile.name) }
+            .forEach { (entry, parent) ->
+                if (parent in booksToExtract) {
+                    zipFile.getInputStream(entry).use { stream ->
+                        Jsoup.parse(stream, Charsets.UTF_8.name(), "").run {
+                            select("pre.oac_no_warn").forEachIndexed { index, element ->
+                                var text = element.text()
 
-                                if (text.isNotEmpty()) {
-                                    val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
-                                    val path = entry.name.substring(entry.name.indexOf("sqlrf"))
-                                    text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$text"
-                                    File(outputDir.absolutePath, name).writeText(text, Charsets.UTF_8)
+                                val lines = text.lines()
+                                val line = lines.indexOfFirst { it.contains("---") }
+                                try {
+                                    if (line != -1) {
+                                        text = text.lines().take(line - 2).joinToString(separator = "\n")
+                                    }
+
+                                    if (text.isNotEmpty()) {
+                                        val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
+                                        val path = entry.name.substring(entry.name.indexOf(parent))
+                                        text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$text"
+
+                                        val pathOutput = Paths.get(outputDir.absolutePath, parent, name).toFile()
+                                        pathOutput.parentFile.mkdirs()
+                                        pathOutput.writeText(text, Charsets.UTF_8)
+                                    }
+                                } catch (e: Exception) {
                                 }
-                            } catch (e: Exception) {
                             }
                         }
                     }
                 }
             }
-        }
     }
 
 }

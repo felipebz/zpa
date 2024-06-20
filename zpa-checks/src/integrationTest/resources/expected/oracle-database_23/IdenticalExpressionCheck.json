@@ -1,8 +1,8 @@
 {
-  "CREATE-MATERIALIZED-VIEW-10.sql" : [
+  "sqlrf/CREATE-MATERIALIZED-VIEW-10.sql" : [
     5
   ],
-  "INSERT-37.sql" : [
+  "sqlrf/INSERT-37.sql" : [
     4
   ]
 }
