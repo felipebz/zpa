@@ -1,4 +1,119 @@
 {
+  "adjsn/condition-JSON_EXISTS-2.sql" : [
+    2
+  ],
+  "adjsn/condition-JSON_EXISTS-3.sql" : [
+    2,
+    5,
+    8
+  ],
+  "adjsn/condition-JSON_EXISTS-4.sql" : [
+    2
+  ],
+  "adjsn/condition-JSON_EXISTS-5.sql" : [
+    2
+  ],
+  "adjsn/condition-JSON_EXISTS-6.sql" : [
+    2
+  ],
+  "adjsn/full-text-search-queries-1.sql" : [
+    3
+  ],
+  "adjsn/function-JSON_TABLE-2.sql" : [
+    3
+  ],
+  "adjsn/function-JSON_TABLE-21.sql" : [
+    3
+  ],
+  "adjsn/function-JSON_TABLE-22.sql" : [
+    4
+  ],
+  "adjsn/generation-36.sql" : [
+    9,
+    7
+  ],
+  "adjsn/indexes-for-json-data-10.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-11.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-12.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-19.sql" : [
+    2,
+    4
+  ],
+  "adjsn/json-in-oracle-database-12.sql" : [
+    3
+  ],
+  "adjsn/json-in-oracle-database-14.sql" : [
+    3
+  ],
+  "adjsn/json-in-oracle-database-15.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-16.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-2.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-3.sql" : [
+    3
+  ],
+  "adjsn/json-in-oracle-database-4.sql" : [
+    3
+  ],
+  "adjsn/json-in-oracle-database-5.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-7.sql" : [
+    11
+  ],
+  "adjsn/json-in-oracle-database-8.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-9.sql" : [
+    2
+  ],
+  "adjsn/json-path-expressions-12.sql" : [
+    3
+  ],
+  "adjsn/json-schema-18.sql" : [
+    2
+  ],
+  "adjsn/performing-migration-check-1.sql" : [
+    4
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-0.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-1.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-2.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-3.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-4.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-5.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-6.sql" : [
+    3
+  ],
+  "adjsn/simple-dot-notation-access-to-json-data-7.sql" : [
+    3
+  ],
+  "adjsn/using-PLSQL-object-types-for-JSON-2.sql" : [
+    26
+  ],
   "lnpls/CREATE-TYPE-statement-13.sql" : [
     8,
     13

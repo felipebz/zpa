@@ -1,4 +1,211 @@
 {
+  "adjsn/clauses-used-in-functions-and-conditions-for-json-0.sql" : [
+    4
+  ],
+  "adjsn/clauses-used-in-functions-and-conditions-for-json-1.sql" : [
+    4
+  ],
+  "adjsn/clauses-used-in-functions-and-conditions-for-json-14.sql" : [
+    9
+  ],
+  "adjsn/clauses-used-in-functions-and-conditions-for-json-7.sql" : [
+    2
+  ],
+  "adjsn/condition-JSON_EXISTS-1.sql" : [
+    5
+  ],
+  "adjsn/conditions-is-json-and-is-not-json-6.sql" : [
+    6
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-0.sql" : [
+    2
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-1.sql" : [
+    2
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-4.sql" : [
+    2
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-5.sql" : [
+    2
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-6.sql" : [
+    2
+  ],
+  "adjsn/considerations-when-using-lob-storage-json-data-7.sql" : [
+    2
+  ],
+  "adjsn/creating-a-table-with-a-json-column-2.sql" : [
+    6
+  ],
+  "adjsn/function-JSON_TABLE-23.sql" : [
+    3
+  ],
+  "adjsn/function-JSON_TABLE-3.sql" : [
+    12
+  ],
+  "adjsn/function-JSON_VALUE-3.sql" : [
+    4
+  ],
+  "adjsn/generation-14.sql" : [
+    2
+  ],
+  "adjsn/generation-17.sql" : [
+    2
+  ],
+  "adjsn/generation-20.sql" : [
+    2
+  ],
+  "adjsn/generation-21.sql" : [
+    3
+  ],
+  "adjsn/generation-25.sql" : [
+    2
+  ],
+  "adjsn/generation-28.sql" : [
+    2
+  ],
+  "adjsn/generation-31.sql" : [
+    2
+  ],
+  "adjsn/generation-33.sql" : [
+    2
+  ],
+  "adjsn/generation-39.sql" : [
+    4
+  ],
+  "adjsn/in-memory-json-data-1.sql" : [
+    6
+  ],
+  "adjsn/in-memory-json-data-2.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-0.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-1.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-14.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-15.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-2.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-25.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-26.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-27.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-3.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-4.sql" : [
+    2
+  ],
+  "adjsn/indexes-for-json-data-5.sql" : [
+    5
+  ],
+  "adjsn/indexes-for-json-data-7.sql" : [
+    4
+  ],
+  "adjsn/indexes-for-json-data-8.sql" : [
+    4
+  ],
+  "adjsn/json-dataguide-0.sql" : [
+    2
+  ],
+  "adjsn/json-dataguide-1.sql" : [
+    2
+  ],
+  "adjsn/json-dataguide-15.sql" : [
+    3
+  ],
+  "adjsn/json-dataguide-16.sql" : [
+    25
+  ],
+  "adjsn/json-dataguide-2.sql" : [
+    2
+  ],
+  "adjsn/json-dataguide-20.sql" : [
+    8
+  ],
+  "adjsn/json-dataguide-21.sql" : [
+    12
+  ],
+  "adjsn/json-path-expressions-4.sql" : [
+    5
+  ],
+  "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
+    3
+  ],
+  "adjsn/json-query-rewrite-use-materialized-view-json_table-2.sql" : [
+    2
+  ],
+  "adjsn/json-schema-11.sql" : [
+    3
+  ],
+  "adjsn/json-schema-13.sql" : [
+    4
+  ],
+  "adjsn/json-schema-2.sql" : [
+    3
+  ],
+  "adjsn/json-schema-22.sql" : [
+    3
+  ],
+  "adjsn/json-schema-25.sql" : [
+    2
+  ],
+  "adjsn/json-schema-3.sql" : [
+    2
+  ],
+  "adjsn/json-schema-5.sql" : [
+    2
+  ],
+  "adjsn/json-schema-6.sql" : [
+    2
+  ],
+  "adjsn/json-schema-7.sql" : [
+    5
+  ],
+  "adjsn/json-schema-8.sql" : [
+    2
+  ],
+  "adjsn/loading-external-json-data-1.sql" : [
+    3
+  ],
+  "adjsn/oracle-sql-function-json_transform-13.sql" : [
+    4
+  ],
+  "adjsn/partitioning-json-data-0.sql" : [
+    6
+  ],
+  "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
+    2
+  ],
+  "adjsn/populate-json-type-column-querying-textual-json-2.sql" : [
+    3
+  ],
+  "adjsn/using-GeoJSON-geographic-data-0.sql" : [
+    4
+  ],
+  "adjsn/using-GeoJSON-geographic-data-5.sql" : [
+    2
+  ],
+  "adjsn/using-GeoJSON-geographic-data-9.sql" : [
+    2
+  ],
+  "adjsn/using-online-redefinition-migrate-json-data-type-2.sql" : [
+    2
+  ],
   "lnpls/ALTER-LIBRARY-statement-0.sql" : [
     2
   ],

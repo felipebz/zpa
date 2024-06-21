@@ -1,4 +1,33 @@
 {
+  "adjsn/creating-a-table-with-a-json-column-3.sql" : [
+    2,
+    33
+  ],
+  "adjsn/generation-26.sql" : [
+    10
+  ],
+  "adjsn/indexes-for-json-data-13.sql" : [
+    3,
+    6
+  ],
+  "adjsn/json-dataguide-17.sql" : [
+    2
+  ],
+  "adjsn/json-dataguide-18.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-1.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-11.sql" : [
+    3
+  ],
+  "adjsn/json-schema-14.sql" : [
+    6
+  ],
+  "adjsn/json-schema-16.sql" : [
+    2
+  ],
   "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
     14,
     29

@@ -1,4 +1,13 @@
 {
+  "adjsn/using-PLSQL-object-types-for-JSON-0.sql" : [
+    11
+  ],
+  "adjsn/using-PLSQL-object-types-for-JSON-1.sql" : [
+    17
+  ],
+  "adjsn/using-online-redefinition-migrate-json-data-type-4.sql" : [
+    10
+  ],
   "lnpls/ALTER-TYPE-statement-6.sql" : [
     13
   ],

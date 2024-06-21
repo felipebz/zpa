@@ -47,6 +47,7 @@ class OracleDocsExtractor {
         val entries = zipFile.entries()
 
         val booksToExtract = listOf(
+            "adjsn", // JSON Developer's Guide
             "lnpls", // PL/SQL Language Reference
             "sqlrf", // SQL Language Reference
             )
