@@ -29,6 +29,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
     // internal
     RELATIONAL_OPERATOR,
+    IS_JSON_ARGS,
+    JSON_MODIFIER_LIST,
+    JSON_COLUMN_MODIFIER,
+    JSON_SCALAR_MODIFIER,
 
     // conditions
     RELATIONAL_CONDITION,
@@ -40,60 +44,148 @@ enum class ConditionsGrammar : GrammarRuleKey {
     MEMBER_CONDITION,
     SUBMULTISET_CONDITION,
     IS_OF_CONDITION,
+    IS_JSON_CONDITION,
     CONDITION;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
-            b.rule(RELATIONAL_OPERATOR).define(b.firstOf(
+            b.rule(RELATIONAL_OPERATOR).define(
+                b.firstOf(
                     PlSqlGrammar.EQUALS_OPERATOR,
                     PlSqlGrammar.NOTEQUALS_OPERATOR,
                     PlSqlGrammar.LESSTHANOREQUALS_OPERATOR,
                     PlSqlGrammar.LESSTHAN_OPERATOR,
                     PlSqlGrammar.GREATERTHANOREQUALS_OPERATOR,
-                    PlSqlGrammar.GREATERTHAN_OPERATOR),
-                    b.optional(b.firstOf(ANY, SOME, ALL)))
+                    PlSqlGrammar.GREATERTHAN_OPERATOR
+                ),
+                b.optional(b.firstOf(ANY, SOME, ALL))
+            )
 
             b.rule(RELATIONAL_CONDITION).define(
-                    CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR, CONCATENATION_EXPRESSION).skip()
+                CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR, CONCATENATION_EXPRESSION
+            ).skip()
 
             b.rule(LIKE_CONDITION).define(
-                    CONCATENATION_EXPRESSION,
-                    b.optional(NOT), LIKE,
-                    CONCATENATION_EXPRESSION,
-                    b.optional(ESCAPE, CONCATENATION_EXPRESSION))
+                CONCATENATION_EXPRESSION,
+                b.optional(NOT), LIKE,
+                CONCATENATION_EXPRESSION,
+                b.optional(ESCAPE, CONCATENATION_EXPRESSION)
+            )
 
             b.rule(BETWEEN_CONDITION).define(
-                    CONCATENATION_EXPRESSION,
-                    b.optional(NOT), BETWEEN,
-                    CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION).skip()
+                CONCATENATION_EXPRESSION,
+                b.optional(NOT), BETWEEN,
+                CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION
+            ).skip()
 
             b.rule(IS_A_SET_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), A, SET)
 
             b.rule(IS_EMPTY_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), EMPTY)
 
-            b.rule(MEMBER_CONDITION).define(CONCATENATION_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), CONCATENATION_EXPRESSION).skip()
+            b.rule(MEMBER_CONDITION)
+                .define(CONCATENATION_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), CONCATENATION_EXPRESSION)
+                .skip()
 
-            b.rule(SUBMULTISET_CONDITION).define(CONCATENATION_EXPRESSION, b.optional(NOT), SUBMULTISET, b.optional(OF), CONCATENATION_EXPRESSION)
+            b.rule(SUBMULTISET_CONDITION).define(
+                CONCATENATION_EXPRESSION,
+                b.optional(NOT),
+                SUBMULTISET,
+                b.optional(OF),
+                CONCATENATION_EXPRESSION
+            )
 
             //https://docs.oracle.com/cloud/latest/db112/SQLRF/conditions006.htm#SQLRF52128
-            b.rule(MULTISET_CONDITION).define(b.firstOf(
+            b.rule(MULTISET_CONDITION).define(
+                b.firstOf(
                     IS_A_SET_CONDITION,
                     IS_EMPTY_CONDITION,
                     MEMBER_CONDITION,
-                    SUBMULTISET_CONDITION))
-
-            b.rule(IS_OF_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), OF, b.optional(TYPE),
-                    PlSqlPunctuator.LPARENTHESIS,
-                    b.optional(ONLY), OBJECT_REFERENCE, b.zeroOrMore(PlSqlPunctuator.COMMA, b.optional(ONLY), OBJECT_REFERENCE),
-                    PlSqlPunctuator.RPARENTHESIS
+                    SUBMULTISET_CONDITION
+                )
             )
 
-            b.rule(CONDITION).define(b.firstOf(
+            b.rule(IS_OF_CONDITION).define(
+                CONCATENATION_EXPRESSION,
+                IS,
+                b.optional(NOT),
+                OF,
+                b.optional(TYPE),
+                PlSqlPunctuator.LPARENTHESIS,
+                b.optional(ONLY),
+                OBJECT_REFERENCE,
+                b.zeroOrMore(PlSqlPunctuator.COMMA, b.optional(ONLY), OBJECT_REFERENCE),
+                PlSqlPunctuator.RPARENTHESIS
+            )
+
+            b.rule(IS_JSON_CONDITION).define(
+                CONCATENATION_EXPRESSION,
+                IS,
+                b.optional(NOT),
+                JSON,
+                b.optional(JSON_MODIFIER_LIST),
+                IS_JSON_ARGS
+            )
+
+            b.rule(IS_JSON_ARGS).define(
+                b.firstOf(
+                    b.sequence(
+                        VALIDATE, b.optional(CAST), b.optional(USING), PlSqlTokenType.STRING_LITERAL
+                    ),
+                    b.sequence(
+                        b.optional(FORMAT, JSON),
+                        b.optional(b.firstOf(STRICT, LAX)),
+                        b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
+                        b.optional(b.firstOf(WITH, WITHOUT), UNIQUE, KEYS)
+                    )
+                )
+            ).skip()
+
+            b.rule(JSON_MODIFIER_LIST).define(
+                b.firstOf(
+                    b.sequence(
+                        PlSqlPunctuator.LPARENTHESIS,
+                        JSON_COLUMN_MODIFIER,
+                        b.zeroOrMore(PlSqlPunctuator.COMMA, JSON_COLUMN_MODIFIER),
+                        PlSqlPunctuator.RPARENTHESIS
+                    ),
+                    JSON_COLUMN_MODIFIER
+                )
+            )
+
+            b.rule(JSON_COLUMN_MODIFIER).define(
+                b.firstOf(
+                    VALUE,
+                    ARRAY,
+                    OBJECT,
+                    b.sequence(SCALAR, b.optional(JSON_SCALAR_MODIFIER))
+                )
+            )
+
+            b.rule(JSON_SCALAR_MODIFIER).define(
+                b.firstOf(
+                    NUMBER,
+                    STRING,
+                    BINARY_DOUBLE,
+                    BINARY_FLOAT,
+                    DATE,
+                    b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
+                    NULL,
+                    BOOLEAN,
+                    BINARY,
+                    b.sequence(INTERVAL, b.firstOf(b.sequence(YEAR, TO, MONTH), b.sequence(DAY, TO, SECOND)))
+                )
+            )
+
+            b.rule(CONDITION).define(
+                b.firstOf(
                     RELATIONAL_CONDITION,
                     LIKE_CONDITION,
                     BETWEEN_CONDITION,
                     MULTISET_CONDITION,
-                    IS_OF_CONDITION)).skip()
+                    IS_JSON_CONDITION,
+                    IS_OF_CONDITION
+                )
+            ).skip()
         }
     }
 

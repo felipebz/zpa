@@ -125,9 +125,6 @@
   "examples/call.sql" : [
     1
   ],
-  "examples/case_when08.sql" : [
-    2
-  ],
   "examples/cast.sql" : [
     3
   ],

@@ -35,9 +35,6 @@
   "adjsn/considerations-when-using-lob-storage-json-data-7.sql" : [
     2
   ],
-  "adjsn/creating-a-table-with-a-json-column-2.sql" : [
-    6
-  ],
   "adjsn/function-JSON_TABLE-23.sql" : [
     3
   ],
@@ -150,13 +147,7 @@
     2
   ],
   "adjsn/json-schema-11.sql" : [
-    3
-  ],
-  "adjsn/json-schema-13.sql" : [
-    4
-  ],
-  "adjsn/json-schema-2.sql" : [
-    3
+    5
   ],
   "adjsn/json-schema-22.sql" : [
     3
@@ -193,9 +184,6 @@
   ],
   "adjsn/populate-json-type-column-querying-textual-json-2.sql" : [
     3
-  ],
-  "adjsn/using-GeoJSON-geographic-data-0.sql" : [
-    4
   ],
   "adjsn/using-GeoJSON-geographic-data-5.sql" : [
     2
@@ -2627,9 +2615,6 @@
   "sqlrf/JSON_SERIALIZE-0.sql" : [
     2
   ],
-  "sqlrf/JSON_TABLE-4.sql" : [
-    5
-  ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [
     2
   ],
@@ -2897,33 +2882,6 @@
   "sqlrf/SET-CONSTRAINTS-1.sql" : [
     3
   ],
-  "sqlrf/SQL-JSON-Conditions-1.sql" : [
-    3
-  ],
-  "sqlrf/SQL-JSON-Conditions-11.sql" : [
-    4
-  ],
-  "sqlrf/SQL-JSON-Conditions-13.sql" : [
-    2
-  ],
-  "sqlrf/SQL-JSON-Conditions-16.sql" : [
-    4
-  ],
-  "sqlrf/SQL-JSON-Conditions-17.sql" : [
-    4
-  ],
-  "sqlrf/SQL-JSON-Conditions-18.sql" : [
-    4
-  ],
-  "sqlrf/SQL-JSON-Conditions-21.sql" : [
-    3
-  ],
-  "sqlrf/SQL-JSON-Conditions-22.sql" : [
-    3
-  ],
-  "sqlrf/SQL-JSON-Conditions-23.sql" : [
-    5
-  ],
   "sqlrf/SQL-JSON-Conditions-32.sql" : [
     3
   ],
@@ -2935,9 +2893,6 @@
   ],
   "sqlrf/SQL-JSON-Conditions-4.sql" : [
     2
-  ],
-  "sqlrf/SQL-JSON-Conditions-7.sql" : [
-    4
   ],
   "sqlrf/SYS_GUID-0.sql" : [
     2

@@ -28,6 +28,9 @@
   "adjsn/json-schema-16.sql" : [
     2
   ],
+  "adjsn/using-GeoJSON-geographic-data-0.sql" : [
+    5
+  ],
   "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
     14,
     29
