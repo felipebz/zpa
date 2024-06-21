@@ -93,6 +93,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     EXTRACT_DATETIME_EXPRESSION,
     JSON_CONSTRUCTOR,
     JSON_ARRAY_EXPRESSION,
+    JSON_DATAGUIDE_EXPRESSION,
     JSON_MERGEPATCH_EXPRESSION,
     JSON_OBJECT_EXPRESSION,
     JSON_SCALAR_EXPRESSION,
@@ -136,6 +137,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     EXTRACT_DATETIME_EXPRESSION,
                     JSON_CONSTRUCTOR,
                     JSON_ARRAY_EXPRESSION,
+                    JSON_DATAGUIDE_EXPRESSION,
                     JSON_MERGEPATCH_EXPRESSION,
                     JSON_OBJECT_EXPRESSION,
                     JSON_SCALAR_EXPRESSION,
@@ -369,6 +371,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     ),
                     JSON
                 )
+            )
+
+            b.rule(JSON_DATAGUIDE_EXPRESSION).define(
+                JSON_DATAGUIDE,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS
             )
 
             b.rule(JSON_MERGEPATCH_EXPRESSION).define(
