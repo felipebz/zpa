@@ -62,8 +62,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_VALUE_ON_EMPTY_CLAUSE,
     JSON_VALUE_ON_MISMATCH_CLAUSE,
     JSON_VALUE_RETURN_OBJECT_INSTANCE,
-    JSON_EXISTS_ON_ERROR_CLAUSE,
-    JSON_EXISTS_ON_EMPTY_CLAUSE,
     JSON_TRANSFORM_OPERATION,
     JSON_TRANSFORM_RETURNING_CLAUSE,
     JSON_RHS_EXPRESSION,
@@ -557,8 +555,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_VALUE_RETURN_TYPE),
                 EXISTS,
                 b.optional(PATH, JSON_PATH),
-                b.optional(JSON_EXISTS_ON_ERROR_CLAUSE),
-                b.optional(JSON_EXISTS_ON_EMPTY_CLAUSE)
+                b.optional(ConditionsGrammar.JSON_EXISTS_ON_ERROR_CLAUSE),
+                b.optional(ConditionsGrammar.JSON_EXISTS_ON_EMPTY_CLAUSE)
             )
 
             b.rule(JSON_QUERY_COLUMN).define(
@@ -681,22 +679,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     ),
                     RPARENTHESIS
                 )
-            )
-
-            b.rule(JSON_EXISTS_ON_ERROR_CLAUSE).define(
-                b.firstOf(
-                    ERROR,
-                    TRUE,
-                    FALSE
-                ), ON, ERROR
-            )
-
-            b.rule(JSON_EXISTS_ON_EMPTY_CLAUSE).define(
-                b.firstOf(
-                    ERROR,
-                    TRUE,
-                    FALSE
-                ), ON, EMPTY
             )
 
             b.rule(JSON_VALUE_EXPRESSION).define(

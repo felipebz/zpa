@@ -1,7 +1,4 @@
 {
-  "adjsn/clauses-used-in-functions-and-conditions-for-json-0.sql" : [
-    4
-  ],
   "adjsn/clauses-used-in-functions-and-conditions-for-json-1.sql" : [
     4
   ],
@@ -10,9 +7,6 @@
   ],
   "adjsn/clauses-used-in-functions-and-conditions-for-json-7.sql" : [
     2
-  ],
-  "adjsn/condition-JSON_EXISTS-1.sql" : [
-    5
   ],
   "adjsn/conditions-is-json-and-is-not-json-6.sql" : [
     6
@@ -110,12 +104,6 @@
   "adjsn/indexes-for-json-data-5.sql" : [
     5
   ],
-  "adjsn/indexes-for-json-data-7.sql" : [
-    4
-  ],
-  "adjsn/indexes-for-json-data-8.sql" : [
-    4
-  ],
   "adjsn/json-dataguide-0.sql" : [
     2
   ],
@@ -136,9 +124,6 @@
   ],
   "adjsn/json-dataguide-21.sql" : [
     12
-  ],
-  "adjsn/json-path-expressions-4.sql" : [
-    5
   ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     3
@@ -2881,12 +2866,6 @@
   ],
   "sqlrf/SET-CONSTRAINTS-1.sql" : [
     3
-  ],
-  "sqlrf/SQL-JSON-Conditions-32.sql" : [
-    3
-  ],
-  "sqlrf/SQL-JSON-Conditions-34.sql" : [
-    4
   ],
   "sqlrf/SQL-JSON-Conditions-36.sql" : [
     2

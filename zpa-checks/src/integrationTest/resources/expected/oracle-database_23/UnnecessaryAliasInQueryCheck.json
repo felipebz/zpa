@@ -1,4 +1,7 @@
 {
+  "adjsn/condition-JSON_EXISTS-1.sql" : [
+    2
+  ],
   "adjsn/condition-JSON_EXISTS-2.sql" : [
     2
   ],
@@ -80,6 +83,9 @@
   ],
   "adjsn/json-path-expressions-12.sql" : [
     3
+  ],
+  "adjsn/json-path-expressions-4.sql" : [
+    2
   ],
   "adjsn/json-schema-18.sql" : [
     2

@@ -288,6 +288,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     JSON_ARRAY("json_array"),
     JSON_ARRAYAGG("json_arrayagg"),
     JSON_EQUAL("json_equal"),
+    JSON_EXISTS("json_exists"),
     JSON_MERGEPATCH("json_mergepatch"),
     JSON_OBJECT("json_object"),
     JSON_OBJECTAGG("json_objectagg"),

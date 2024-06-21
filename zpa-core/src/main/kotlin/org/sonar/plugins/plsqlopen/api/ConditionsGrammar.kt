@@ -34,6 +34,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
     JSON_COLUMN_MODIFIER,
     JSON_SCALAR_MODIFIER,
     JSON_EQUAL_ON_ERROR_CLAUSE,
+    JSON_EXISTS_ON_EMPTY_CLAUSE,
+    JSON_EXISTS_ON_ERROR_CLAUSE,
 
     // conditions
     RELATIONAL_CONDITION,
@@ -47,6 +49,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     IS_OF_CONDITION,
     IS_JSON_CONDITION,
     JSON_EQUAL_CONDITION,
+    JSON_EXISTS_CONDITION,
     CONDITION;
 
     companion object {
@@ -196,6 +199,36 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 ), ON, ERROR
             )
 
+            b.rule(JSON_EXISTS_CONDITION).define(
+                JSON_EXISTS,
+                PlSqlPunctuator.LPARENTHESIS,
+                PlSqlGrammar.EXPRESSION,
+                b.optional(FORMAT, JSON),
+                PlSqlPunctuator.COMMA,
+                SingleRowSqlFunctionsGrammar.JSON_BASIC_PATH_EXPRESSION,
+                b.optional(SingleRowSqlFunctionsGrammar.JSON_PASSING_CLAUSE),
+                b.optional(JSON_EXISTS_ON_ERROR_CLAUSE),
+                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                b.optional(JSON_EXISTS_ON_EMPTY_CLAUSE),
+                PlSqlPunctuator.RPARENTHESIS
+            )
+
+            b.rule(JSON_EXISTS_ON_ERROR_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    TRUE,
+                    FALSE
+                ), ON, ERROR
+            )
+
+            b.rule(JSON_EXISTS_ON_EMPTY_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    TRUE,
+                    FALSE
+                ), ON, EMPTY
+            )
+
             b.rule(CONDITION).define(
                 b.firstOf(
                     RELATIONAL_CONDITION,
@@ -204,7 +237,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     MULTISET_CONDITION,
                     IS_JSON_CONDITION,
                     IS_OF_CONDITION,
-                    JSON_EQUAL_CONDITION
+                    JSON_EQUAL_CONDITION,
+                    JSON_EXISTS_CONDITION
                 )
             ).skip()
         }
