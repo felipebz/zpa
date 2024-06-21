@@ -33,6 +33,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     JSON_MODIFIER_LIST,
     JSON_COLUMN_MODIFIER,
     JSON_SCALAR_MODIFIER,
+    JSON_EQUAL_ON_ERROR_CLAUSE,
 
     // conditions
     RELATIONAL_CONDITION,
@@ -45,6 +46,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     SUBMULTISET_CONDITION,
     IS_OF_CONDITION,
     IS_JSON_CONDITION,
+    JSON_EQUAL_CONDITION,
     CONDITION;
 
     companion object {
@@ -176,6 +178,24 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 )
             )
 
+            b.rule(JSON_EQUAL_CONDITION).define(
+                JSON_EQUAL,
+                PlSqlPunctuator.LPARENTHESIS,
+                PlSqlGrammar.EXPRESSION,
+                PlSqlPunctuator.COMMA,
+                PlSqlGrammar.EXPRESSION,
+                b.optional(JSON_EQUAL_ON_ERROR_CLAUSE),
+                PlSqlPunctuator.RPARENTHESIS
+            )
+
+            b.rule(JSON_EQUAL_ON_ERROR_CLAUSE).define(
+                b.firstOf(
+                    ERROR,
+                    TRUE,
+                    FALSE
+                ), ON, ERROR
+            )
+
             b.rule(CONDITION).define(
                 b.firstOf(
                     RELATIONAL_CONDITION,
@@ -183,7 +203,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     BETWEEN_CONDITION,
                     MULTISET_CONDITION,
                     IS_JSON_CONDITION,
-                    IS_OF_CONDITION
+                    IS_OF_CONDITION,
+                    JSON_EQUAL_CONDITION
                 )
             ).skip()
         }
