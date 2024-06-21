@@ -1,0 +1,71 @@
+{
+  "lnpls/plsql-collections-and-records-82.sql" : [
+    11
+  ],
+  "lnpls/plsql-control-statements-70.sql" : [
+    7
+  ],
+  "lnpls/plsql-data-types-60.sql" : [
+    27
+  ],
+  "lnpls/plsql-error-handling-54.sql" : [
+    5
+  ],
+  "lnpls/plsql-error-handling-56.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-152.sql" : [
+    6
+  ],
+  "lnpls/plsql-language-fundamentals-26.sql" : [
+    8
+  ],
+  "lnpls/plsql-language-fundamentals-27.sql" : [
+    9
+  ],
+  "lnpls/plsql-language-fundamentals-28.sql" : [
+    9
+  ],
+  "lnpls/plsql-language-fundamentals-29.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-30.sql" : [
+    10
+  ],
+  "lnpls/plsql-language-fundamentals-43.sql" : [
+    14,
+    22
+  ],
+  "lnpls/plsql-optimization-and-tuning-9.sql" : [
+    16,
+    21
+  ],
+  "lnpls/plsql-subprograms-16.sql" : [
+    19
+  ],
+  "lnpls/plsql-subprograms-27.sql" : [
+    6
+  ],
+  "lnpls/plsql-subprograms-55.sql" : [
+    22,
+    30,
+    39,
+    43
+  ],
+  "lnpls/plsql-subprograms-69.sql" : [
+    8,
+    9
+  ],
+  "lnpls/plsql-triggers-91.sql" : [
+    5
+  ],
+  "lnpls/static-sql-47.sql" : [
+    13
+  ],
+  "lnpls/static-sql-48.sql" : [
+    11
+  ],
+  "lnpls/static-sql-9.sql" : [
+    19
+  ]
+}

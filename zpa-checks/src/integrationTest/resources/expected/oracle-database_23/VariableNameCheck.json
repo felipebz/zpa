@@ -1,0 +1,30 @@
+{
+  "lnpls/plsql-language-fundamentals-12.sql" : [
+    3,
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-4.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-6.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-8.sql" : [
+    3,
+    4,
+    5
+  ],
+  "lnpls/plsql-subprograms-93.sql" : [
+    10
+  ],
+  "lnpls/static-sql-21.sql" : [
+    11,
+    12,
+    13
+  ],
+  "lnpls/static-sql-25.sql" : [
+    13,
+    14,
+    15
+  ]
+}

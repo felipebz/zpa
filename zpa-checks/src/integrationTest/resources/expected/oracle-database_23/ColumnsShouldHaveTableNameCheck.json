@@ -1,4 +1,18 @@
 {
+  "lnpls/dynamic-sql-25.sql" : [
+    14,
+    14,
+    14
+  ],
+  "lnpls/plsql-collections-and-records-82.sql" : [
+    4,
+    4,
+    4
+  ],
+  "lnpls/static-sql-42.sql" : [
+    4,
+    4
+  ],
   "sqlrf/Comments-0.sql" : [
     2,
     2,

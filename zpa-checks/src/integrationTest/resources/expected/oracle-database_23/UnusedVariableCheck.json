@@ -1,4 +1,132 @@
 {
+  "lnpls/dynamic-sql-12.sql" : [
+    7
+  ],
+  "lnpls/dynamic-sql-27.sql" : [
+    19
+  ],
+  "lnpls/plsql-collections-and-records-112.sql" : [
+    15
+  ],
+  "lnpls/plsql-collections-and-records-16.sql" : [
+    10
+  ],
+  "lnpls/plsql-collections-and-records-18.sql" : [
+    11
+  ],
+  "lnpls/plsql-collections-and-records-19.sql" : [
+    11
+  ],
+  "lnpls/plsql-collections-and-records-82.sql" : [
+    8
+  ],
+  "lnpls/plsql-control-statements-34.sql" : [
+    4
+  ],
+  "lnpls/plsql-control-statements-38.sql" : [
+    3
+  ],
+  "lnpls/plsql-data-types-60.sql" : [
+    5,
+    6,
+    7,
+    8,
+    12,
+    14,
+    15
+  ],
+  "lnpls/plsql-error-handling-36.sql" : [
+    4
+  ],
+  "lnpls/plsql-error-handling-38.sql" : [
+    4,
+    5
+  ],
+  "lnpls/plsql-error-handling-54.sql" : [
+    3
+  ],
+  "lnpls/plsql-error-handling-56.sql" : [
+    5
+  ],
+  "lnpls/plsql-language-fundamentals-12.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-26.sql" : [
+    3,
+    4,
+    5,
+    6
+  ],
+  "lnpls/plsql-language-fundamentals-27.sql" : [
+    3,
+    5,
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-28.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-29.sql" : [
+    3,
+    4,
+    5
+  ],
+  "lnpls/plsql-language-fundamentals-30.sql" : [
+    3,
+    4,
+    8
+  ],
+  "lnpls/plsql-language-fundamentals-4.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-43.sql" : [
+    3,
+    4,
+    10,
+    11,
+    19
+  ],
+  "lnpls/plsql-language-fundamentals-44.sql" : [
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-48.sql" : [
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-52.sql" : [
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-8.sql" : [
+    4,
+    5
+  ],
+  "lnpls/plsql-optimization-and-tuning-106.sql" : [
+    20,
+    21
+  ],
+  "lnpls/plsql-subprograms-21.sql" : [
+    4
+  ],
+  "lnpls/plsql-triggers-41.sql" : [
+    5
+  ],
+  "lnpls/plsql-triggers-50.sql" : [
+    8
+  ],
+  "lnpls/static-sql-47.sql" : [
+    6,
+    7,
+    8,
+    11
+  ],
+  "lnpls/static-sql-48.sql" : [
+    9
+  ],
+  "lnpls/static-sql-91.sql" : [
+    21
+  ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [
     6
   ],

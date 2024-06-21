@@ -1,0 +1,8 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/plsql-triggers.html
+DECLARE
+  n  INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO n FROM employees;
+  DBMS_OUTPUT.PUT_LINE('There are now ' || n || '
+employees.');
+END;

@@ -1,4 +1,34 @@
 {
+  "lnpls/plsql-collections-and-records-22.sql" : [
+    19
+  ],
+  "lnpls/plsql-language-fundamentals-27.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-63.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-83.sql" : [
+    6
+  ],
+  "lnpls/plsql-language-fundamentals-85.sql" : [
+    8
+  ],
+  "lnpls/plsql-language-fundamentals-92.sql" : [
+    6,
+    7,
+    8
+  ],
+  "lnpls/plsql-optimization-and-tuning-106.sql" : [
+    25,
+    56
+  ],
+  "lnpls/plsql-optimization-and-tuning-133.sql" : [
+    38
+  ],
+  "lnpls/plsql-triggers-36.sql" : [
+    10
+  ],
   "sqlrf/Comparison-Conditions-1.sql" : [
     4
   ],

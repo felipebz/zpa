@@ -1,4 +1,72 @@
 {
+  "lnpls/CREATE-FUNCTION-statement-2.sql" : [
+    2
+  ],
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
+    6,
+    6,
+    7,
+    7,
+    8,
+    8,
+    22,
+    22
+  ],
+  "lnpls/CREATE-PROCEDURE-statement-1.sql" : [
+    3
+  ],
+  "lnpls/Supresses-warning-pragma-6009-6.sql" : [
+    3
+  ],
+  "lnpls/plsql-control-statements-70.sql" : [
+    3,
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-121.sql" : [
+    9
+  ],
+  "lnpls/plsql-language-fundamentals-152.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-61.sql" : [
+    6
+  ],
+  "lnpls/plsql-optimization-and-tuning-9.sql" : [
+    14,
+    19
+  ],
+  "lnpls/plsql-subprograms-104.sql" : [
+    3,
+    4
+  ],
+  "lnpls/plsql-subprograms-105.sql" : [
+    3
+  ],
+  "lnpls/plsql-subprograms-27.sql" : [
+    3
+  ],
+  "lnpls/plsql-subprograms-55.sql" : [
+    4,
+    5,
+    12,
+    18,
+    19,
+    26,
+    27
+  ],
+  "lnpls/plsql-subprograms-69.sql" : [
+    8,
+    8,
+    9,
+    9
+  ],
+  "lnpls/plsql-subprograms-70.sql" : [
+    9,
+    13
+  ],
+  "lnpls/plsql-subprograms-91.sql" : [
+    4
+  ],
   "sqlrf/Using-Extensible-Indexing-1.sql" : [
     41,
     41,

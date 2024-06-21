@@ -1,4 +1,466 @@
 {
+  "lnpls/ALTER-LIBRARY-statement-0.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-1.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-11.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-12.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-14.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-2.sql" : [
+    5
+  ],
+  "lnpls/ALTER-TYPE-statement-3.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-4.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-5.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-7.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-8.sql" : [
+    2
+  ],
+  "lnpls/ALTER-TYPE-statement-9.sql" : [
+    2
+  ],
+  "lnpls/COVERAGE-pragma-0.sql" : [
+    2
+  ],
+  "lnpls/COVERAGE-pragma-1.sql" : [
+    2
+  ],
+  "lnpls/COVERAGE-pragma-3.sql" : [
+    3
+  ],
+  "lnpls/CREATE-FUNCTION-statement-0.sql" : [
+    2
+  ],
+  "lnpls/CREATE-PACKAGE-statement-0.sql" : [
+    2
+  ],
+  "lnpls/CREATE-PROCEDURE-statement-0.sql" : [
+    2
+  ],
+  "lnpls/CREATE-TYPE-statement-17.sql" : [
+    2
+  ],
+  "lnpls/CREATE-TYPE-statement-6.sql" : [
+    2
+  ],
+  "lnpls/CREATE-TYPE-statement-7.sql" : [
+    2
+  ],
+  "lnpls/DEPRECATE-pragma-30.sql" : [
+    3
+  ],
+  "lnpls/GOTO-statement-8.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-1.sql" : [
+    3
+  ],
+  "lnpls/SQL_MACRO-clause-13.sql" : [
+    10
+  ],
+  "lnpls/SQL_MACRO-clause-16.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-19.sql" : [
+    3
+  ],
+  "lnpls/SQL_MACRO-clause-2.sql" : [
+    4
+  ],
+  "lnpls/SQL_MACRO-clause-24.sql" : [
+    4
+  ],
+  "lnpls/SQL_MACRO-clause-3.sql" : [
+    5
+  ],
+  "lnpls/SQL_MACRO-clause-4.sql" : [
+    6
+  ],
+  "lnpls/SQL_MACRO-clause-5.sql" : [
+    6
+  ],
+  "lnpls/SQL_MACRO-clause-6.sql" : [
+    7
+  ],
+  "lnpls/Supresses-warning-pragma-6009-1.sql" : [
+    5
+  ],
+  "lnpls/Supresses-warning-pragma-6009-10.sql" : [
+    7
+  ],
+  "lnpls/Supresses-warning-pragma-6009-3.sql" : [
+    5
+  ],
+  "lnpls/Supresses-warning-pragma-6009-5.sql" : [
+    5
+  ],
+  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
+    4
+  ],
+  "lnpls/dynamic-sql-11.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-14.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-37.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-42.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-105.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-58.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-60.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-73.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-83.sql" : [
+    7
+  ],
+  "lnpls/plsql-collections-and-records-87.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-88.sql" : [
+    2
+  ],
+  "lnpls/plsql-collections-and-records-89.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-1.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-13.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-2.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-21.sql" : [
+    8
+  ],
+  "lnpls/plsql-control-statements-3.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-31.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-4.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-51.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-59.sql" : [
+    2
+  ],
+  "lnpls/plsql-control-statements-63.sql" : [
+    2
+  ],
+  "lnpls/plsql-data-types-28.sql" : [
+    5
+  ],
+  "lnpls/plsql-data-types-31.sql" : [
+    2
+  ],
+  "lnpls/plsql-data-types-32.sql" : [
+    3
+  ],
+  "lnpls/plsql-data-types-36.sql" : [
+    4
+  ],
+  "lnpls/plsql-error-handling-15.sql" : [
+    2
+  ],
+  "lnpls/plsql-error-handling-21.sql" : [
+    22
+  ],
+  "lnpls/plsql-error-handling-69.sql" : [
+    3
+  ],
+  "lnpls/plsql-error-handling-73.sql" : [
+    7
+  ],
+  "lnpls/plsql-error-handling-8.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-10.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-11.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-111.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-116.sql" : [
+    8
+  ],
+  "lnpls/plsql-language-fundamentals-13.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-145.sql" : [
+    46
+  ],
+  "lnpls/plsql-language-fundamentals-147.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-148.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-150.sql" : [
+    4
+  ],
+  "lnpls/plsql-language-fundamentals-49.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-54.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-56.sql" : [
+    2
+  ],
+  "lnpls/plsql-language-fundamentals-7.sql" : [
+    2
+  ],
+  "lnpls/plsql-name-resolution-11.sql" : [
+    3
+  ],
+  "lnpls/plsql-name-resolution-17.sql" : [
+    2
+  ],
+  "lnpls/plsql-name-resolution-20.sql" : [
+    2
+  ],
+  "lnpls/plsql-name-resolution-26.sql" : [
+    5
+  ],
+  "lnpls/plsql-name-resolution-7.sql" : [
+    3
+  ],
+  "lnpls/plsql-name-resolution-9.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-105.sql" : [
+    5
+  ],
+  "lnpls/plsql-optimization-and-tuning-107.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-108.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-12.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-121.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-13.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-132.sql" : [
+    12
+  ],
+  "lnpls/plsql-optimization-and-tuning-136.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-140.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-141.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-16.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-17.sql" : [
+    8
+  ],
+  "lnpls/plsql-optimization-and-tuning-2.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-3.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-39.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-41.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-5.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-6.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-63.sql" : [
+    10
+  ],
+  "lnpls/plsql-optimization-and-tuning-70.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-72.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-74.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-76.sql" : [
+    3
+  ],
+  "lnpls/plsql-optimization-and-tuning-99.sql" : [
+    2
+  ],
+  "lnpls/plsql-packages-20.sql" : [
+    4
+  ],
+  "lnpls/plsql-packages-24.sql" : [
+    2
+  ],
+  "lnpls/plsql-packages-28.sql" : [
+    2
+  ],
+  "lnpls/plsql-packages-29.sql" : [
+    2
+  ],
+  "lnpls/plsql-source-text-wrapping-7.sql" : [
+    4
+  ],
+  "lnpls/plsql-subprograms-1.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-103.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-107.sql" : [
+    6
+  ],
+  "lnpls/plsql-subprograms-2.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-22.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-56.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-80.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-81.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-86.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-110.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-132.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-136.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-142.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-150.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-154.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-156.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-38.sql" : [
+    3
+  ],
+  "lnpls/plsql-triggers-42.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-59.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-75.sql" : [
+    4
+  ],
+  "lnpls/plsql-triggers-86.sql" : [
+    8
+  ],
+  "lnpls/release-changes-2.sql" : [
+    2
+  ],
+  "lnpls/release-changes-3.sql" : [
+    2
+  ],
+  "lnpls/release-changes-4.sql" : [
+    3
+  ],
+  "lnpls/static-sql-0.sql" : [
+    3
+  ],
+  "lnpls/static-sql-10.sql" : [
+    2
+  ],
+  "lnpls/static-sql-2.sql" : [
+    3
+  ],
+  "lnpls/static-sql-3.sql" : [
+    3
+  ],
+  "lnpls/static-sql-5.sql" : [
+    3
+  ],
+  "lnpls/static-sql-53.sql" : [
+    2
+  ],
+  "lnpls/static-sql-75.sql" : [
+    3
+  ],
+  "lnpls/static-sql-76.sql" : [
+    3
+  ],
+  "lnpls/static-sql-77.sql" : [
+    3
+  ],
+  "lnpls/static-sql-79.sql" : [
+    3
+  ],
+  "lnpls/static-sql-81.sql" : [
+    3
+  ],
+  "lnpls/static-sql-85.sql" : [
+    3
+  ],
+  "lnpls/static-sql-86.sql" : [
+    3
+  ],
   "sqlrf/ADMINISTER-KEY-MANAGEMENT-10.sql" : [
     2
   ],

@@ -1,4 +1,35 @@
 {
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
+    54,
+    69
+  ],
+  "lnpls/plsql-error-handling-42.sql" : [
+    9
+  ],
+  "lnpls/plsql-error-handling-64.sql" : [
+    11
+  ],
+  "lnpls/plsql-error-handling-66.sql" : [
+    13
+  ],
+  "lnpls/plsql-subprograms-74.sql" : [
+    10
+  ],
+  "lnpls/plsql-subprograms-85.sql" : [
+    10
+  ],
+  "lnpls/plsql-triggers-34.sql" : [
+    37
+  ],
+  "lnpls/plsql-triggers-35.sql" : [
+    31
+  ],
+  "lnpls/release-changes-0.sql" : [
+    5
+  ],
+  "lnpls/static-sql-30.sql" : [
+    16
+  ],
   "sqlrf/CURSOR-Expressions-1.sql" : [
     20
   ],

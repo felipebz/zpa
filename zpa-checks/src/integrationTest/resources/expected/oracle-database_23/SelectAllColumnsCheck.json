@@ -1,4 +1,215 @@
 {
+  "lnpls/PIPELINED-clause-1.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-11.sql" : [
+    6
+  ],
+  "lnpls/SQL_MACRO-clause-17.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-20.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-22.sql" : [
+    6
+  ],
+  "lnpls/SQL_MACRO-clause-25.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-27.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-29.sql" : [
+    2
+  ],
+  "lnpls/SQL_MACRO-clause-31.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-39.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-43.sql" : [
+    2
+  ],
+  "lnpls/dynamic-sql-45.sql" : [
+    2
+  ],
+  "lnpls/overview-1.sql" : [
+    4
+  ],
+  "lnpls/plsql-collections-and-records-112.sql" : [
+    48
+  ],
+  "lnpls/plsql-collections-and-records-114.sql" : [
+    22
+  ],
+  "lnpls/plsql-data-types-34.sql" : [
+    5
+  ],
+  "lnpls/plsql-error-handling-29.sql" : [
+    18,
+    21
+  ],
+  "lnpls/plsql-name-resolution-16.sql" : [
+    4
+  ],
+  "lnpls/plsql-name-resolution-18.sql" : [
+    10
+  ],
+  "lnpls/plsql-name-resolution-21.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-103.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-104.sql" : [
+    3,
+    4
+  ],
+  "lnpls/plsql-optimization-and-tuning-109.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-111.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-113.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-115.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-117.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-122.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-126.sql" : [
+    6
+  ],
+  "lnpls/plsql-optimization-and-tuning-128.sql" : [
+    10
+  ],
+  "lnpls/plsql-optimization-and-tuning-30.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-37.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-79.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-80.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-83.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-85.sql" : [
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-87.sql" : [
+    36,
+    38
+  ],
+  "lnpls/plsql-optimization-and-tuning-89.sql" : [
+    2,
+    2
+  ],
+  "lnpls/plsql-optimization-and-tuning-9.sql" : [
+    25
+  ],
+  "lnpls/plsql-optimization-and-tuning-93.sql" : [
+    2,
+    4,
+    5
+  ],
+  "lnpls/plsql-packages-19.sql" : [
+    8
+  ],
+  "lnpls/plsql-program-limits-2.sql" : [
+    2
+  ],
+  "lnpls/plsql-subprograms-41.sql" : [
+    14
+  ],
+  "lnpls/plsql-subprograms-94.sql" : [
+    17
+  ],
+  "lnpls/plsql-triggers-101.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-104.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-106.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-45.sql" : [
+    22
+  ],
+  "lnpls/plsql-triggers-47.sql" : [
+    8
+  ],
+  "lnpls/plsql-triggers-52.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-54.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-56.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-64.sql" : [
+    2
+  ],
+  "lnpls/plsql-triggers-73.sql" : [
+    19
+  ],
+  "lnpls/plsql-triggers-99.sql" : [
+    2
+  ],
+  "lnpls/static-sql-38.sql" : [
+    4
+  ],
+  "lnpls/static-sql-58.sql" : [
+    14
+  ],
+  "lnpls/static-sql-60.sql" : [
+    10
+  ],
+  "lnpls/static-sql-61.sql" : [
+    11,
+    15,
+    19
+  ],
+  "lnpls/static-sql-62.sql" : [
+    11,
+    13,
+    15
+  ],
+  "lnpls/static-sql-63.sql" : [
+    3,
+    4,
+    5
+  ],
+  "lnpls/static-sql-71.sql" : [
+    2
+  ],
+  "lnpls/static-sql-73.sql" : [
+    2
+  ],
+  "lnpls/static-sql-88.sql" : [
+    16
+  ],
+  "lnpls/static-sql-89.sql" : [
+    4
+  ],
+  "lnpls/static-sql-9.sql" : [
+    10,
+    16
+  ],
   "sqlrf/ALTER-SESSION-23.sql" : [
     4
   ],

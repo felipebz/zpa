@@ -1,4 +1,75 @@
 {
+  "lnpls/CREATE-TYPE-statement-15.sql" : [
+    4,
+    8
+  ],
+  "lnpls/CREATE-TYPE-statement-9.sql" : [
+    7
+  ],
+  "lnpls/plsql-control-statements-16.sql" : [
+    3
+  ],
+  "lnpls/plsql-control-statements-19.sql" : [
+    3
+  ],
+  "lnpls/plsql-control-statements-24.sql" : [
+    3
+  ],
+  "lnpls/plsql-control-statements-26.sql" : [
+    3
+  ],
+  "lnpls/plsql-control-statements-71.sql" : [
+    3
+  ],
+  "lnpls/plsql-data-types-44.sql" : [
+    3
+  ],
+  "lnpls/plsql-data-types-48.sql" : [
+    3
+  ],
+  "lnpls/plsql-data-types-67.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-112.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-114.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-121.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-123.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-37.sql" : [
+    3
+  ],
+  "lnpls/plsql-language-fundamentals-43.sql" : [
+    3
+  ],
+  "lnpls/plsql-subprograms-102.sql" : [
+    4
+  ],
+  "lnpls/plsql-subprograms-87.sql" : [
+    2,
+    3
+  ],
+  "lnpls/plsql-subprograms-88.sql" : [
+    3
+  ],
+  "lnpls/plsql-subprograms-91.sql" : [
+    3,
+    4,
+    5,
+    9
+  ],
+  "lnpls/plsql-triggers-44.sql" : [
+    6
+  ],
+  "lnpls/plsql-triggers-45.sql" : [
+    8
+  ],
   "sqlrf/CAST-7.sql" : [
     12
   ],

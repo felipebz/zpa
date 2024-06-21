@@ -1,4 +1,68 @@
 {
+  "lnpls/CREATE-TYPE-statement-13.sql" : [
+    8,
+    13
+  ],
+  "lnpls/SQL_MACRO-clause-7.sql" : [
+    4
+  ],
+  "lnpls/dynamic-sql-25.sql" : [
+    15,
+    15
+  ],
+  "lnpls/plsql-name-resolution-18.sql" : [
+    10
+  ],
+  "lnpls/plsql-name-resolution-25.sql" : [
+    6
+  ],
+  "lnpls/plsql-name-resolution-28.sql" : [
+    6,
+    12,
+    18
+  ],
+  "lnpls/plsql-optimization-and-tuning-137.sql" : [
+    5,
+    5
+  ],
+  "lnpls/plsql-subprograms-82.sql" : [
+    31,
+    31
+  ],
+  "lnpls/plsql-triggers-1.sql" : [
+    5,
+    5
+  ],
+  "lnpls/plsql-triggers-12.sql" : [
+    23,
+    18
+  ],
+  "lnpls/plsql-triggers-17.sql" : [
+    4
+  ],
+  "lnpls/plsql-triggers-32.sql" : [
+    21
+  ],
+  "lnpls/plsql-triggers-49.sql" : [
+    6,
+    10
+  ],
+  "lnpls/static-sql-13.sql" : [
+    5,
+    5
+  ],
+  "lnpls/static-sql-23.sql" : [
+    7,
+    7,
+    7
+  ],
+  "lnpls/static-sql-42.sql" : [
+    5
+  ],
+  "lnpls/static-sql-68.sql" : [
+    16,
+    12
+  ],
   "sqlrf/ALTER-TABLE-23.sql" : [
     3,
     3

@@ -1,0 +1,27 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/SQL_MACRO-clause.html
+CREATE PACKAGE env AS
+   FUNCTION current_user RETURN VARCHAR2 SQL_MACRO(SCALAR);
+   FUNCTION current_edition_name RETURN VARCHAR2 SQL_MACRO(SCALAR);
+   FUNCTION module RETURN VARCHAR2 SQL_MACRO(SCALAR);
+   FUNCTION action RETURN VARCHAR2 SQL_MACRO(SCALAR);
+END;
+/
+CREATE PACKAGE BODY env AS
+   FUNCTION current_user RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+     BEGIN
+        RETURN q'{SYS_CONTEXT('userenv','SESSION_USER')}';
+     END;
+   FUNCTION current_edition_name RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+     BEGIN
+        RETURN q'{SYS_CONTEXT('userenv','CURRENT_EDITION_NAME')}';
+     END;
+   FUNCTION module RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+     BEGIN
+        RETURN q'{SYS_CONTEXT('userenv','MODULE')}';
+     END;
+   FUNCTION action RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+     BEGIN
+        RETURN q'{SYS_CONTEXT('userenv','ACTION')}';
+     END;
+END;
+/

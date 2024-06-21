@@ -46,7 +46,10 @@ class OracleDocsExtractor {
 
         val entries = zipFile.entries()
 
-        val booksToExtract = listOf("sqlrf")
+        val booksToExtract = listOf(
+            "lnpls", // PL/SQL Language Reference
+            "sqlrf", // SQL Language Reference
+            )
 
         entries.asSequence()
             .filter { !it.isDirectory }
@@ -59,10 +62,11 @@ class OracleDocsExtractor {
                                 var text = element.text()
                                     .replace('’', '\'')
 
+                                val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
+
                                 val fileContent = extractValidStatementsFrom(text)
 
                                 if (fileContent.isNotEmpty()) {
-                                    val name = "${File(entry.name).nameWithoutExtension}-$index.sql"
                                     val path = entry.name.substring(entry.name.indexOf(parent))
                                     text = "-- https://docs.oracle.com/en/database/oracle/oracle-database/23/$path\n$fileContent"
 
@@ -78,7 +82,14 @@ class OracleDocsExtractor {
     }
 
     private fun extractValidStatementsFrom(text: String): String {
-        val parser = ScriptParser(text)
+        val alteredText =
+            if (text.startsWith("PACKAGE")) {
+                "CREATE $text"
+            } else {
+                text
+            }
+
+        val parser = ScriptParser(alteredText)
         var cmd: ISQLCommand
         var validText = ""
         while ((parser.next().also { cmd = it }) != null) {

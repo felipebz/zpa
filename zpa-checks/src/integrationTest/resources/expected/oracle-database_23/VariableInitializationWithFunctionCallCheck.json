@@ -1,0 +1,26 @@
+{
+  "lnpls/plsql-data-types-38.sql" : [
+    3,
+    4
+  ],
+  "lnpls/plsql-error-handling-51.sql" : [
+    9
+  ],
+  "lnpls/plsql-error-handling-52.sql" : [
+    7
+  ],
+  "lnpls/plsql-language-fundamentals-27.sql" : [
+    3,
+    5
+  ],
+  "lnpls/plsql-language-fundamentals-44.sql" : [
+    4,
+    7
+  ],
+  "lnpls/plsql-optimization-and-tuning-106.sql" : [
+    51
+  ],
+  "lnpls/plsql-triggers-24.sql" : [
+    24
+  ]
+}

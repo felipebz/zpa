@@ -1,4 +1,16 @@
 {
+  "lnpls/static-sql-28.sql" : [
+    5
+  ],
+  "lnpls/static-sql-30.sql" : [
+    5
+  ],
+  "lnpls/static-sql-32.sql" : [
+    5
+  ],
+  "lnpls/static-sql-40.sql" : [
+    7
+  ],
   "sqlrf/ROWNUM-Pseudocolumn-1.sql" : [
     4
   ]

@@ -1,0 +1,16 @@
+{
+  "lnpls/plsql-error-handling-51.sql" : [
+    18
+  ],
+  "lnpls/plsql-optimization-and-tuning-26.sql" : [
+    19,
+    32
+  ],
+  "lnpls/plsql-optimization-and-tuning-33.sql" : [
+    19,
+    44
+  ],
+  "lnpls/static-sql-70.sql" : [
+    25
+  ]
+}
