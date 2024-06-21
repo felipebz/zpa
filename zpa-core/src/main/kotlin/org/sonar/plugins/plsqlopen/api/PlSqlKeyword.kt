@@ -296,6 +296,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     JSON_SCALAR("json_scalar"),
     JSON_SERIALIZE("json_serialize"),
     JSON_TABLE("json_table"),
+    JSON_TEXTCONTAINS("json_textcontains"),
     JSON_TRANSFORM("json_transform"),
     JSON_VALUE("json_value"),
     KEEP("keep"),

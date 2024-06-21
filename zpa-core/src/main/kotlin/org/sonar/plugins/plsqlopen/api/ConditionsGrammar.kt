@@ -50,6 +50,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     IS_JSON_CONDITION,
     JSON_EQUAL_CONDITION,
     JSON_EXISTS_CONDITION,
+    JSON_TEXTCONTAINS_CONDITION,
     CONDITION;
 
     companion object {
@@ -229,6 +230,17 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 ), ON, EMPTY
             )
 
+            b.rule(JSON_TEXTCONTAINS_CONDITION).define(
+                JSON_TEXTCONTAINS,
+                PlSqlPunctuator.LPARENTHESIS,
+                PlSqlGrammar.EXPRESSION,
+                PlSqlPunctuator.COMMA,
+                SingleRowSqlFunctionsGrammar.JSON_BASIC_PATH_EXPRESSION,
+                PlSqlPunctuator.COMMA,
+                PlSqlGrammar.EXPRESSION,
+                PlSqlPunctuator.RPARENTHESIS
+            )
+
             b.rule(CONDITION).define(
                 b.firstOf(
                     RELATIONAL_CONDITION,
@@ -238,7 +250,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     IS_JSON_CONDITION,
                     IS_OF_CONDITION,
                     JSON_EQUAL_CONDITION,
-                    JSON_EXISTS_CONDITION
+                    JSON_EXISTS_CONDITION,
+                    JSON_TEXTCONTAINS_CONDITION
                 )
             ).skip()
         }
