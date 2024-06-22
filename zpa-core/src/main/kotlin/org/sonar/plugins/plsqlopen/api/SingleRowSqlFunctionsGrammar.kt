@@ -104,17 +104,25 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_TRANSFORM_EXPRESSION,
     JSON_VALUE_EXPRESSION,
     XMLATTRIBUTES_EXPRESSION,
+    XMLCAST_EXPRESSION,
+    XMLCDATA_EXPRESSION,
+    XMLCOLATTVAL_EXPRESSION,
+    XMLCOMMENT_EXPRESSION,
+    XMLCONCAT_EXPRESSION,
+    XMLDIFF_EXPRESSION,
     XMLELEMENT_EXPRESSION,
-    XMLFOREST_EXPRESSION,
-    XMLSERIALIZE_EXPRESSION,
     XMLEXISTS_EXPRESSION,
+    XMLFOREST_EXPRESSION,
+    XMLISVALID_EXPRESSION,
+    XMLPARSE_EXPRESSION,
+    XMLPATCH_EXPRESSION,
+    XMLPI_EXPRESSION,
     XMLQUERY_EXPRESSION,
     XMLROOT_EXPRESSION,
-    XMLCAST_EXPRESSION,
-    XMLCOLATTVAL_EXPRESSION,
-    XMLPARSE_EXPRESSION,
-    XMLPI_EXPRESSION,
+    XMLSEQUENCE_EXPRESSION,
+    XMLSERIALIZE_EXPRESSION,
     XMLTABLE_EXPRESSION,
+    XMLTRANSFORM_EXPRESSION,
 
     TREAT_AS_EXPRESSION,
     SET_EXPRESSION,
@@ -148,17 +156,25 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_TRANSFORM_EXPRESSION,
                     JSON_VALUE_EXPRESSION,
                     XMLATTRIBUTES_EXPRESSION,
+                    XMLCAST_EXPRESSION,
+                    XMLCDATA_EXPRESSION,
+                    XMLCOLATTVAL_EXPRESSION,
+                    XMLCOMMENT_EXPRESSION,
+                    XMLCONCAT_EXPRESSION,
+                    XMLDIFF_EXPRESSION,
                     XMLELEMENT_EXPRESSION,
-                    XMLFOREST_EXPRESSION,
-                    XMLSERIALIZE_EXPRESSION,
                     XMLEXISTS_EXPRESSION,
+                    XMLFOREST_EXPRESSION,
+                    XMLISVALID_EXPRESSION,
+                    XMLPARSE_EXPRESSION,
+                    XMLPATCH_EXPRESSION,
+                    XMLPI_EXPRESSION,
                     XMLQUERY_EXPRESSION,
                     XMLROOT_EXPRESSION,
-                    XMLCAST_EXPRESSION,
-                    XMLCOLATTVAL_EXPRESSION,
-                    XMLPARSE_EXPRESSION,
-                    XMLPI_EXPRESSION,
+                    XMLSEQUENCE_EXPRESSION,
+                    XMLSERIALIZE_EXPRESSION,
                     XMLTABLE_EXPRESSION,
+                    XMLTRANSFORM_EXPRESSION,
                     TREAT_AS_EXPRESSION,
                     SET_EXPRESSION,
                     CAST_EXPRESSION,
@@ -216,6 +232,52 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createXmlFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(XMLCDATA_EXPRESSION).define(XMLCDATA, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
+            b.rule(XMLCOMMENT_EXPRESSION).define(XMLCOMMENT, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
+            b.rule(XMLCONCAT_EXPRESSION).define(XMLCONCAT, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+
+            b.rule(XMLDIFF_EXPRESSION).define(
+                XMLDIFF,
+                LPARENTHESIS,
+                EXPRESSION, COMMA, EXPRESSION,
+                b.optional(COMMA, EXPRESSION, COMMA, EXPRESSION),
+                RPARENTHESIS)
+
+            b.rule(XMLISVALID_EXPRESSION).define(
+                XMLISVALID,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS)
+
+            b.rule(XMLPATCH_EXPRESSION).define(
+                XMLPATCH,
+                LPARENTHESIS,
+                EXPRESSION,
+                COMMA,
+                EXPRESSION,
+                RPARENTHESIS
+            )
+
+            b.rule(XMLSEQUENCE_EXPRESSION).define(
+                XMLSEQUENCE,
+                LPARENTHESIS,
+                EXPRESSION,
+                b.zeroOrMore(COMMA, EXPRESSION),
+                RPARENTHESIS
+            )
+
+            b.rule(XMLTRANSFORM_EXPRESSION).define(
+                XMLTRANSFORM,
+                LPARENTHESIS,
+                EXPRESSION,
+                COMMA,
+                EXPRESSION,
+                RPARENTHESIS
+            )
+
             b.rule(XMLSERIALIZE_EXPRESSION).define(
                     XMLSERIALIZE, LPARENTHESIS,
                     b.firstOf(DOCUMENT, CONTENT), EXPRESSION,
