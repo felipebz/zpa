@@ -58,6 +58,11 @@ class JsonTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonWithColumnWithoutParenthesis() {
+        assertThat(p).matches("json_table(doc, '$' columns c1 for ordinality)")
+    }
+
+    @Test
     fun matchesLongJsonTable() {
         assertThat(p).matches("""
             json_table(doc, '$'

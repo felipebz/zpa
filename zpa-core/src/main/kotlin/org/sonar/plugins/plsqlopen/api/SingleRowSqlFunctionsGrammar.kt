@@ -48,6 +48,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_RELATIVE_OBJECT_ACCESS,
     JSON_TABLE_ON_ERROR_CLAUSE,
     JSON_TABLE_ON_EMPTY_CLAUSE,
+    JSON_TABLE_COLUMNS_CLAUSE,
     JSON_COLUMNS_CLAUSE,
     JSON_COLUMN_DEFINITION,
     JSON_EXISTS_COLUMN,
@@ -528,7 +529,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_TABLE_ON_ERROR_CLAUSE),
                 b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 b.optional(JSON_TABLE_ON_EMPTY_CLAUSE),
-                JSON_COLUMNS_CLAUSE,
+                JSON_TABLE_COLUMNS_CLAUSE,
                 RPARENTHESIS
             )
 
@@ -542,12 +543,20 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 ON, EMPTY
             )
 
-            b.rule(JSON_COLUMNS_CLAUSE).define(
+            b.rule(JSON_TABLE_COLUMNS_CLAUSE).define(
                 COLUMNS,
-                LPARENTHESIS,
-                JSON_COLUMN_DEFINITION,
-                b.zeroOrMore(COMMA, JSON_COLUMN_DEFINITION),
-                RPARENTHESIS
+                b.firstOf(
+                    b.sequence(
+                        LPARENTHESIS,
+                        JSON_COLUMN_DEFINITION,
+                        b.zeroOrMore(COMMA, JSON_COLUMN_DEFINITION),
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        JSON_COLUMN_DEFINITION,
+                        b.zeroOrMore(COMMA, JSON_COLUMN_DEFINITION),
+                    ),
+                )
             )
 
             b.rule(JSON_COLUMN_DEFINITION).define(
@@ -594,6 +603,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 NESTED, b.optional(PATH),
                 JSON_PATH,
                 JSON_COLUMNS_CLAUSE
+            )
+
+            b.rule(JSON_COLUMNS_CLAUSE).define(
+                COLUMNS,
+                LPARENTHESIS,
+                JSON_COLUMN_DEFINITION,
+                b.zeroOrMore(COMMA, JSON_COLUMN_DEFINITION),
+                RPARENTHESIS
             )
 
             b.rule(JSON_ORDINALITY_COLUMN).define(IDENTIFIER_NAME, FOR, ORDINALITY)

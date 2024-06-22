@@ -20,6 +20,15 @@
   "adjsn/function-JSON_TABLE-8.sql" : [
     2
   ],
+  "adjsn/indexes-for-json-data-5.sql" : [
+    2
+  ],
+  "adjsn/json-dataguide-20.sql" : [
+    4
+  ],
+  "adjsn/json-dataguide-21.sql" : [
+    8
+  ],
   "adjsn/json-in-oracle-database-14.sql" : [
     2
   ],

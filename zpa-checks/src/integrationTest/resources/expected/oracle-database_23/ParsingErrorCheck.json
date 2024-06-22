@@ -101,9 +101,6 @@
   "adjsn/indexes-for-json-data-4.sql" : [
     2
   ],
-  "adjsn/indexes-for-json-data-5.sql" : [
-    5
-  ],
   "adjsn/json-dataguide-0.sql" : [
     2
   ],
@@ -118,12 +115,6 @@
   ],
   "adjsn/json-dataguide-2.sql" : [
     2
-  ],
-  "adjsn/json-dataguide-20.sql" : [
-    8
-  ],
-  "adjsn/json-dataguide-21.sql" : [
-    12
   ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     3
