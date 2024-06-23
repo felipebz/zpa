@@ -164,6 +164,24 @@
     464,
     464
   ],
+  "src/addons/pljson_object_cache.decl.sql" : [
+    19,
+    20,
+    26,
+    26,
+    27,
+    28,
+    28
+  ],
+  "src/addons/pljson_object_cache.impl.sql" : [
+    7,
+    17,
+    55,
+    55,
+    66,
+    82,
+    82
+  ],
   "src/addons/pljson_table_impl.type.decl.sql" : [
     131,
     131,

@@ -198,7 +198,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),
-                        b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT)),
+                        b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT, SET)),
                             b.optional(AS),
                             ALIAS
                         )

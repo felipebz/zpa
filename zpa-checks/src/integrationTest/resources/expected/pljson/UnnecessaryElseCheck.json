@@ -2,6 +2,10 @@
   "src/addons/pljson_helper.package.sql" : [
     243
   ],
+  "src/addons/pljson_object_cache.impl.sql" : [
+    21,
+    77
+  ],
   "src/addons/pljson_table_impl.type.impl.sql" : [
     380,
     656
