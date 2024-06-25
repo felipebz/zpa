@@ -1,5 +1,7 @@
 {
   "examples/ex_pljson_table.sql" : [
-    200
+    41,
+    53,
+    65
   ]
 }

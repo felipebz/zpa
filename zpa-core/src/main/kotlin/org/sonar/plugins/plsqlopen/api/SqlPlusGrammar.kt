@@ -19,8 +19,9 @@
  */
 package org.sonar.plugins.plsqlopen.api
 
-import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
+import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 
 enum class SqlPlusGrammar : GrammarRuleKey {
 
@@ -82,7 +83,7 @@ enum class SqlPlusGrammar : GrammarRuleKey {
                             "VAR", "VARIABLE",
                             "WHENEVER",
                             "XQUERY"),
-                    b.tillNewLine())
+                    b.firstOf(b.tillNewLine(), b.till(GenericTokenType.EOF)))
         }
     }
 

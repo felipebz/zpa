@@ -830,7 +830,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(EXPONENTIATION_EXPRESSION).define(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild()
 
-            b.rule(MULTIPLICATIVE_EXPRESSION).define(EXPONENTIATION_EXPRESSION, b.zeroOrMore(b.firstOf(MULTIPLICATION, DIVISION, MOD_KEYWORD), EXPONENTIATION_EXPRESSION)).skipIfOneChild()
+            b.rule(MULTIPLICATIVE_EXPRESSION).define(
+                EXPONENTIATION_EXPRESSION, b.zeroOrMore(
+                    b.firstOf(
+                        MULTIPLICATION,
+                        b.sequence(
+                            DIVISION,
+                            b.nextNot(FILE_INPUT)
+                        ),
+                        MOD_KEYWORD
+                    ), EXPONENTIATION_EXPRESSION
+                )
+            ).skipIfOneChild()
 
             b.rule(ADDITIVE_EXPRESSION).define(MULTIPLICATIVE_EXPRESSION, b.zeroOrMore(b.firstOf(PLUS, MINUS), MULTIPLICATIVE_EXPRESSION)).skipIfOneChild()
 
