@@ -23,6 +23,7 @@ import com.felipebz.flr.api.GenericTokenType.EOF
 import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
+import org.sonar.plsqlopen.grammar.ExecuteBufferExpression
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.sslr.*
 import org.sonar.plugins.plsqlopen.api.DclGrammar.DCL_COMMAND
@@ -834,10 +835,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 EXPONENTIATION_EXPRESSION, b.zeroOrMore(
                     b.firstOf(
                         MULTIPLICATION,
-                        b.sequence(
-                            DIVISION,
-                            b.nextNot(FILE_INPUT)
-                        ),
+                        b.sequence(b.nextNot(EXECUTE_PLSQL_BUFFER), DIVISION),
                         MOD_KEYWORD
                     ), EXPONENTIATION_EXPRESSION
                 )
@@ -1169,7 +1167,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
         }
 
         private fun createProgramUnits(b: PlSqlGrammarBuilder) {
-            b.rule(EXECUTE_PLSQL_BUFFER).define(DIVISION)
+            b.rule(EXECUTE_PLSQL_BUFFER).define(ExecuteBufferExpression, b.next(b.firstOf(VALID_INPUT, EOF)))
 
             b.rule(UNIT_NAME).define(b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME)
 
