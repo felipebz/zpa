@@ -71,6 +71,6 @@ Then run the tests:
 
     ./gradlew integrationTest
 
-By default, the tests will be executed using SonarQube 9.9 LTS. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing one of `LATEST_RELEASE[9.9]` (for SonarQube 9.9.x LTS), `LATEST_RELEASE[10.4]` (latest official release) or `a.b.c.d` for an exact release including build number: 
+By default, the tests will be executed using SonarQube 9.9 LTA. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing one of `LATEST_RELEASE[9.9]` (for SonarQube 9.9.x LTA), `LATEST_RELEASE[10.6]` (latest official release) or `a.b.c.d` for an exact release including build number: 
 
     ./gradlew integrationTest -Dsonar.runtimeVersion=LATEST_RELEASE[9.9]
