@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.CheckList
+import org.sonar.plsqlopen.checks.ParsingErrorCheck
 import org.sonar.plsqlopen.metadata.FormsMetadata
 import org.sonar.plsqlopen.squid.AstScanner
 import org.sonar.plugins.plsqlopen.api.PlSqlFile
@@ -189,10 +190,12 @@ class PlSqlRulingTest {
         val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
         val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8)
 
-        val issues = baseDir
+        val files = baseDir
             .walkTopDown()
             .filter { it.isFile && it.extension.isNotEmpty() && extensions.contains(it.extension.lowercase(Locale.getDefault())) }
             .toList()
+
+        val issues = files
             .map { scanner.scanFile(InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8)) }
             .flatMap { it.issues }
 
@@ -220,6 +223,25 @@ class PlSqlRulingTest {
 
         if (differences.isNotEmpty()) {
             fail(differences)
+        }
+
+        if (issues.none { it.check is ParsingErrorCheck }) {
+            // if there are no parsing errors, rerun the scanner with the error recovery enabled to check if it is working
+            val newScanner = AstScanner(listOf(ParsingErrorCheck()), metadata, true, StandardCharsets.UTF_8)
+            val parsingIssues = files
+                .map { newScanner.scanFile(InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8)) }
+                .flatMap { it.issues }
+            if (parsingIssues.isNotEmpty()) {
+                val export = issues
+                    .groupBy({ (it.file as InputFile).pathRelativeToBase }, { it.primaryLocation.startLine() })
+                    .toSortedMap()
+                val actualContent = if (export.size > 0) mapper.valueToTree<JsonNode>(export) else null
+
+                fail("The project was parsed correctly with error recovery disabled, but there are parsing " +
+                    "issues with error recovery enabled:\n" +
+                    writer.writeValueAsString(actualContent)
+                )
+            }
         }
     }
 
