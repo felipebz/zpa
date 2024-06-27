@@ -25,9 +25,9 @@ val minSonarQubeApiVersion = "9.14.0.375"
 
 dependencies {
     compileOnly("org.sonarsource.api.plugin:sonar-plugin-api:$minSonarQubeApiVersion")
-    compileOnly("com.felipebz.zpa:sonar-zpa-plugin:3.5.0-SNAPSHOT")
+    compileOnly("com.felipebz.zpa:sonar-zpa-plugin:3.5.0")
     testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:$minSonarQubeVersion")
-    testImplementation("com.felipebz.zpa:zpa-checks-testkit:3.5.0-SNAPSHOT")
+    testImplementation("com.felipebz.zpa:zpa-checks-testkit:3.5.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.0")
 }
 

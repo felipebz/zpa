@@ -19,14 +19,13 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "Z PL/SQL Analyzer" on the tab "Installed Plugins";
 - Run an analysis with [SonarScanner](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/overview/).
 
-If you like to live on the bleeding edge, you can use the [latest development version](https://github.com/felipebz/zpa/releases/early-access).
+If you like to live on the bleeding edge, you can use the [latest development version][early-access].
 
 ## Compatibility matrix
 
-| ZPA version                                                                                       | SonarQube version (min/max) |
-|---------------------------------------------------------------------------------------------------|-----------------------------|
-| 3.4.0                                                                                             | 9.9 / 10.5                  |
-| 3.5.0 ([early-access](https://github.com/felipebz/zpa/releases/tag/early-access), in development) | 9.9 / 10.6                  |
+| ZPA version                                          | SonarQube version (min/max) |
+|------------------------------------------------------|-----------------------------|
+| 3.5.0                                                | 9.9 / 10.6                  |
 
 ## ZPA Toolkit
 
@@ -34,7 +33,7 @@ The ZPA Toolkit is visual tool to review the AST (abstract syntax tree) and the 
 
 ![](https://raw.githubusercontent.com/wiki/felipebz/zpa/img/zpa-toolkit.png)
 
-The latest ZPA Toolkit can be downloaded from the [releases page](https://github.com/felipebz/zpa/releases/latest) and it requires JDK 11 or newer. You can also download the [latest development version](https://github.com/felipebz/zpa/releases/early-access). 
+The latest ZPA Toolkit can be downloaded from the [releases page](https://github.com/felipebz/zpa/releases/latest) and it requires JDK 11 or newer. You can also download the [latest development version][early-access]. 
 
 ## Contribute
 
@@ -74,3 +73,5 @@ Then run the tests:
 By default, the tests will be executed using SonarQube 9.9 LTA. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing one of `LATEST_RELEASE[9.9]` (for SonarQube 9.9.x LTA), `LATEST_RELEASE[10.6]` (latest official release) or `a.b.c.d` for an exact release including build number: 
 
     ./gradlew integrationTest -Dsonar.runtimeVersion=LATEST_RELEASE[9.9]
+
+[early-access]: https://github.com/felipebz/zpa/releases/tag/early-access
