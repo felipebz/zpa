@@ -26,6 +26,7 @@ If you like to live on the bleeding edge, you can use the [latest development ve
 | ZPA version                                          | SonarQube version (min/max) |
 |------------------------------------------------------|-----------------------------|
 | 3.5.0                                                | 9.9 / 10.6                  |
+| 3.6.0 ([early-access][early-access], in development) | 9.9 / 10.7                  |
 
 ## ZPA Toolkit
 
