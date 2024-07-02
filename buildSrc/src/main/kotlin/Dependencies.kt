@@ -8,7 +8,7 @@ object Versions {
     const val jsoup = "1.17.2"
     const val min_sonarqube = "9.9.0.65466"
     const val min_sonarqube_api = "9.14.0.375"
-    const val sonarqube_orchestrator = "4.9.0.1920"
+    const val sonarqube_orchestrator = "5.0.0.2065"
     const val woodstox = "6.6.2"
 
     const val plugin_shadow = "8.1.7"
