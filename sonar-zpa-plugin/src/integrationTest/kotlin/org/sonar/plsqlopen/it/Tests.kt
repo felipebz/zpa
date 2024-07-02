@@ -57,7 +57,7 @@ object Tests {
 
     fun createSonarScanner(): SonarScanner =
         SonarScanner.create()
-            .setScannerVersion("6.0.0.4432")
+            .setScannerVersion("6.1.0.4477")
 
     fun newWsClient(orchestrator: Orchestrator): WsClient =
         WsClientFactories.getDefault()
