@@ -16,7 +16,6 @@ dependencies {
     implementation(Libs.woodstox)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
-    implementation(project(":zpa-checks-testkit"))
     compileOnly("org.sonarsource.api.plugin:sonar-plugin-api:${Versions.min_sonarqube_api}")
     testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:${Versions.min_sonarqube}")
 }
