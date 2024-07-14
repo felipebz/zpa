@@ -22,22 +22,27 @@ package org.sonar.plsqlopen.rules
 class ActiveRules : ZpaActiveRules {
 
     private val repositories = mutableListOf<Repository>()
-    private val activeRulesConfiguration = mutableListOf<ActiveRuleConfiguration>()
+    private val activeRuleConfigurers = mutableListOf<ActiveRuleConfigurer>()
 
     fun addRepository(repository: Repository): ActiveRules = apply {
         repositories.add(repository)
     }
 
-    fun configureRules(ruleConfigurations: List<ActiveRuleConfiguration>): ActiveRules = apply {
-        activeRulesConfiguration.addAll(ruleConfigurations)
+    fun addRuleConfigurer(filter: ActiveRuleConfigurer): ActiveRules = apply {
+        activeRuleConfigurers.add(filter)
     }
 
     override fun findByRepository(repository: String): Collection<ZpaActiveRule> {
         val repo = this.repositories.first { it.key == repository }
         return repo.availableRules
-            .map { it to activeRulesConfiguration.firstOrNull { r -> r.keyIs(repo.key, it.key) } }
-            .filter { activeRulesConfiguration.isEmpty() || it.second != null }
-            .map { ActiveRule(repo, it.first, it.second) }
+            .mapNotNull { rule ->
+                val activeRuleConfiguration = ActiveRuleConfiguration(repo.key, rule.key)
+                if (activeRuleConfigurers.all { it.apply(repo, rule, activeRuleConfiguration) }) {
+                    ActiveRule(repo, rule, activeRuleConfiguration)
+                } else {
+                    null
+                }
+            }
     }
 
 }

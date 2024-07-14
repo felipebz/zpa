@@ -19,13 +19,6 @@
  */
 package org.sonar.plsqlopen.rules
 
-class ActiveRuleConfiguration(
-    val repositoryKey: String,
-    val key: String,
-    var severity: String? = null,
-    var parameters: MutableMap<String, String> = mutableMapOf()
-) {
-    fun keyIs(repositoryKey: String, key: String): Boolean {
-        return this.repositoryKey == repositoryKey && this.key == key
-    }
+fun interface ActiveRuleConfigurer {
+    fun apply(repo: Repository, rule: ZpaRule, configuration: ActiveRuleConfiguration): Boolean
 }
