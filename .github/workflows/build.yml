@@ -29,10 +29,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build with Gradle
-        run: ./gradlew build publishToMavenLocal --build-cache
+        run: ./gradlew build publishToMavenLocal
 
       - name: Run zpa-checks integration tests
-        run: ./gradlew :zpa-checks:integrationTest --build-cache
+        run: ./gradlew :zpa-checks:integrationTest
 
       - name: Build custom rules example
         run: ./gradlew build -p plsql-custom-rules
