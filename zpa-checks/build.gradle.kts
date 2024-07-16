@@ -1,12 +1,12 @@
 import de.undercouch.gradle.tasks.download.Download
 
 plugins {
-    id("de.undercouch.download") version "5.6.0"
+    alias(libs.plugins.download)
 }
 
 dependencies {
-    implementation(Libs.flr_core)
-    implementation(Libs.flr_xpath)
+    implementation(libs.flr.core)
+    implementation(libs.flr.xpath)
     implementation(project(":zpa-core"))
     testImplementation(project(":zpa-checks-testkit"))
 }
@@ -36,9 +36,9 @@ testing {
             dependencies {
                 implementation(layout.projectDirectory.dir("tools/sqlcl/lib").asFileTree)
                 implementation(project())
-                implementation(Libs.jackson)
+                implementation(libs.jackson)
                 implementation(project(":zpa-core"))
-                implementation("org.jsoup:jsoup:${Versions.jsoup}")
+                implementation(libs.jsoup)
             }
         }
     }

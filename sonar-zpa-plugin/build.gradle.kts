@@ -7,18 +7,18 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 plugins {
-    id("io.github.goooler.shadow") version Versions.plugin_shadow
+    alias(libs.plugins.shadow)
 }
 
 dependencies {
-    implementation(Libs.flr_core)
-    implementation(Libs.jackson_xml)
-    implementation(Libs.woodstox)
+    implementation(libs.flr.core)
+    implementation(libs.jackson.xml)
+    implementation(libs.woodstox)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
     implementation(project(":zpa-checks-testkit"))
-    compileOnly("org.sonarsource.api.plugin:sonar-plugin-api:${Versions.min_sonarqube_api}")
-    testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:${Versions.min_sonarqube}")
+    compileOnly(libs.sonar.plugin.api)
+    compileOnly(libs.sonar.plugin.api.impl)
 }
 
 testing {
@@ -27,9 +27,9 @@ testing {
             testType.set(TestSuiteType.INTEGRATION_TEST)
 
             dependencies {
-                implementation(Libs.assertj)
-                implementation("org.sonarsource.sonarqube:sonar-ws:${Versions.min_sonarqube}")
-                implementation("org.sonarsource.orchestrator:sonar-orchestrator-junit5:${Versions.sonarqube_orchestrator}")
+                implementation(libs.assertj)
+                implementation(libs.sonar.ws)
+                implementation(libs.sonar.orchestrator)
             }
 
             targets {
@@ -78,7 +78,7 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
             "Plugin-OrganizationUrl" to "https://felipezorzo.com.br",
             "Plugin-SourcesUrl" to "https://github.com/felipebz/zpa",
             "Plugin-Version" to project.version,
-            "Sonar-Version" to Versions.min_sonarqube,
+            "Sonar-Version" to libs.versions.min.sonarqube,
             "SonarLint-Supported" to "false",
             "Plugin-RequiredForLanguages" to "plsqlopen"
         ))

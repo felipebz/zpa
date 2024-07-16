@@ -1,7 +1,7 @@
 dependencies {
-    api(Libs.flr_core)
-    implementation(Libs.jackson)
-    testImplementation(Libs.flr_testing_harness)
+    api(libs.flr.core)
+    implementation(libs.jackson)
+    testImplementation(libs.flr.testing.harness)
 }
 
 description = "Z PL/SQL Analyzer :: Core"

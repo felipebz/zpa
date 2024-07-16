@@ -8,11 +8,11 @@ plugins {
     `maven-publish`
     signing
     jacoco
-    kotlin("jvm") version "2.0.0"
-    id("org.jetbrains.dokka") version ("1.9.20")
-    id("com.github.hierynomus.license") version "0.16.1"
-    id("org.sonarqube") version "5.0.0.4638"
-    id("org.jreleaser") version "1.13.1"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.license)
+    alias(libs.plugins.sonarqube)
+    alias(libs.plugins.jreleaser)
 }
 
 allprojects {
@@ -44,9 +44,9 @@ subprojects {
 
     dependencies {
         implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-        testImplementation(Libs.assertj)
-        testImplementation(Libs.mockito)
-        testImplementation(Libs.mockito_kotlin)
+        testImplementation(rootProject.libs.assertj)
+        testImplementation(rootProject.libs.mockito)
+        testImplementation(rootProject.libs.mockito.kotlin)
     }
 
     configurations {
@@ -67,7 +67,7 @@ subprojects {
         suites {
             configureEach {
                 if (this is JvmTestSuite) {
-                    useJUnitJupiter(Versions.junit)
+                    useJUnitJupiter(rootProject.libs.versions.junit)
                 }
             }
         }

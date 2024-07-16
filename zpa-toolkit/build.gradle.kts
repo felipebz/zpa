@@ -1,13 +1,13 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("io.github.goooler.shadow") version Versions.plugin_shadow
+    alias(libs.plugins.shadow)
 }
 
 dependencies {
-    implementation(Libs.flr_xpath)
-    implementation(Libs.flr_toolkit)
-    implementation("com.formdev:flatlaf:3.4.1")
+    implementation(libs.flr.xpath)
+    implementation(libs.flr.toolkit)
+    implementation(libs.flatlaf)
     implementation(project(":zpa-core"))
 }
 
