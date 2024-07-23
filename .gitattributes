@@ -1,2 +1,2 @@
 *.sql linguist-language=PLSQL
-zpa-checks/src/integrationTest/resources/sources/* linguist-vendored
+zpa-checks/src/integrationTest/resources/sources/** linguist-vendored
