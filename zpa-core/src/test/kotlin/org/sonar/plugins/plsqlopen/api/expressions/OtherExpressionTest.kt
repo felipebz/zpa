@@ -88,4 +88,10 @@ class OtherExpressionTest : RuleTest() {
         assertThat(p).matches("foo(1)(1)")
     }
 
+    @Test
+    fun InExpressionShouldNotMatchAdditionalExpressions() {
+        setRootRule(PlSqlGrammar.IN_EXPRESSION)
+        assertThat(p).notMatches("var in (select 1 from dual) and x = y")
+    }
+
 }

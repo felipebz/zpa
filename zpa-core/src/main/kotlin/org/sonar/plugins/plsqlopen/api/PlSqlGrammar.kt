@@ -792,7 +792,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(b.sequence(
                             b.optional(NOT), IN,
                             b.firstOf(
-                                    b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                                    b.sequence(
+                                        LPARENTHESIS,
+                                        b.firstOf(
+                                            SELECT_EXPRESSION,
+                                            b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
+                                        ),
+                                        RPARENTHESIS),
                                     EXPRESSION)))).skipIfOneChild()
 
             b.rule(EXISTS_EXPRESSION).define(EXISTS, LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS).skipIfOneChild()
