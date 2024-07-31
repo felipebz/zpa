@@ -138,7 +138,7 @@ subprojects {
                 pom {
                     name.set(provider { project.description })
                     description.set(provider { project.description })
-                    url.set("https://felipezorzo.com.br/zpa")
+                    url.set("https://zpa.felipebz.com")
                     organization {
                         name.set("Felipe Zorzo")
                         url.set("https://felipezorzo.com.br")
@@ -175,7 +175,7 @@ jreleaser {
         authors.set(listOf("felipebz"))
         license.set("LGPL-3.0")
         links {
-            homepage.set("https://felipezorzo.com.br/zpa/")
+            homepage.set("https://zpa.felipebz.com")
         }
         inceptionYear.set("2015")
         snapshot {

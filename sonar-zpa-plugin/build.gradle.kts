@@ -69,7 +69,7 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
             "Plugin-Description" to "Enables analysis and reporting on PL/SQL projects.",
             "Plugin-Developers" to "Felipe Zorzo",
             "Plugin-Display-Version" to project.version,
-            "Plugin-Homepage" to "https://felipezorzo.com.br/zpa",
+            "Plugin-Homepage" to "https://zpa.felipebz.com",
             "Plugin-IssueTrackerUrl" to "https://github.com/felipebz/zpa/issues",
             "Plugin-Key" to "plsqlopen",
             "Plugin-License" to "GNU LGPL 3",
