@@ -1,5 +1,5 @@
 create package pkg is
-  cursor cur is -- Noncompliant {{Move the body of the cursor "cur" to the package body.}}
+  cursor cur is -- Noncompliant {{Move the body of the cursor "CUR" to the package body.}}
     select dummy from dual;
 end;
 /

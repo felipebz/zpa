@@ -45,7 +45,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
         val identifier = statement.exception
                 ?: return
 
-        val identifierName = identifier.tokenOriginalValue
+        val identifierName = identifier.tokenValue
         val symbols = context.currentScope?.getSymbolsAcessibleInScope(identifierName) ?: ArrayDeque()
 
         if (symbols.isNotEmpty()) {
@@ -75,7 +75,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
                     }
 
                     for (exceptionName in handler.getChildren(PlSqlGrammar.VARIABLE_NAME)) {
-                        if (exceptionName.tokenOriginalValue.equals(identifierName, ignoreCase = true)) {
+                        if (exceptionName.tokenValue == identifierName) {
                             return true
                         }
                     }

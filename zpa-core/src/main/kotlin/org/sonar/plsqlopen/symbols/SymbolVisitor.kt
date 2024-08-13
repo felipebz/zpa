@@ -222,17 +222,17 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         }
 
         val symbol = createSymbol(identifier, symbolKind, type)
-        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember, identifier.tokenOriginalValue,
+        enterScope(node, autonomousTransaction, exceptionHandler, isOverridingMember, identifier.tokenValue,
             nodeType)
         symbol.innerScope = currentScope
     }
 
     private fun visitPackage(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
-        val packageScope = symbolTable.scopes.lastOrNull { it.identifier == identifier.tokenOriginalValue && it.type == PlSqlGrammar.CREATE_PACKAGE }
+        val packageScope = symbolTable.scopes.lastOrNull { it.identifier == identifier.tokenValue && it.type == PlSqlGrammar.CREATE_PACKAGE }
         if (packageScope != null) {
             currentScope = packageScope
-            val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
+            val symbol = currentScope?.getSymbol(identifier.tokenValue)
             if (symbol != null) {
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol
@@ -342,7 +342,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     private fun visitVariableName(node: AstNode) {
         val identifier = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
         if (identifier != null && currentScope != null) {
-            val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue)
+            val symbol = currentScope?.getSymbol(identifier.tokenValue)
             if (symbol != null) {
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol
@@ -352,11 +352,11 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitMemberExpression(node: AstNode) {
         val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
-        val path = parts.dropLast(1).map { it.tokenOriginalValue }.reversed()
+        val path = parts.dropLast(1).map { it.tokenValue }.reversed()
         val identifier = parts.last()
 
         if (currentScope != null) {
-            val symbol = currentScope?.getSymbol(identifier.tokenOriginalValue, path)
+            val symbol = currentScope?.getSymbol(identifier.tokenValue, path)
             if (symbol != null) {
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol

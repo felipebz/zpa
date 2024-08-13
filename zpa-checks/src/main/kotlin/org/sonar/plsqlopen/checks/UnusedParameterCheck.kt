@@ -38,7 +38,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
 
     private val ignoreRegex: Pattern? by lazy {
         if ("" != ignoreMethods) {
-            Pattern.compile(ignoreMethods)
+            Pattern.compile(ignoreMethods, Pattern.CASE_INSENSITIVE)
         } else null
     }
 

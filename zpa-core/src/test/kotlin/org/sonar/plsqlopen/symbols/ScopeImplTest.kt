@@ -22,8 +22,8 @@ package org.sonar.plsqlopen.symbols
 import com.felipebz.flr.api.AstNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.sonar.plugins.plsqlopen.api.symbols.Scope
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol.Kind
@@ -132,7 +132,7 @@ class ScopeImplTest {
 
     private fun createSymbol(scope: Scope, name: String, kind: Kind): Symbol {
         val node = mockAstNode()
-        `when`(node.tokenOriginalValue).thenReturn(name)
+        `when`(node.tokenValue).thenReturn(name)
         return Symbol(node, kind, scope, null)
     }
 

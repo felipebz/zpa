@@ -1,4 +1,4 @@
-create procedure foo(a number, b number) is -- Noncompliant {{Remove this unused "b" parameter.}}
+create procedure foo(a number, b number) is -- Noncompliant {{Remove this unused "B" parameter.}}
 --                             ^^^^^^^^
 begin
   print(a);
@@ -18,7 +18,7 @@ create package test is
 
    procedure foo(a number, b number) is -- Noncompliant
 --                         ^^^^^^^^
-     cursor cur(x number) is -- Noncompliant {{Remove this unused "x" parameter.}}
+     cursor cur(x number) is -- Noncompliant {{Remove this unused "X" parameter.}}
 --              ^^^^^^^^
        select 1 from dual;
    begin

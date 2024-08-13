@@ -59,7 +59,7 @@ open class DefaultTypeSolver {
             type = JsonDatatype()
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenOriginalValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype()
+            type = scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype()
         }
         return type
     }

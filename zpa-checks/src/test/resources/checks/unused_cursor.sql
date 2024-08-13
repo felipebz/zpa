@@ -1,5 +1,5 @@
 declare
-  cursor cur is -- Noncompliant {{Remove this unused "cur" cursor.}}
+  cursor cur is -- Noncompliant {{Remove this unused "CUR" cursor.}}
     select 1 from dual;
     
   cursor cur2 is

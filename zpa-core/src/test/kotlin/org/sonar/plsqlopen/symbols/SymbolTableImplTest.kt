@@ -122,7 +122,7 @@ class SymbolTableImplTest {
 
     private fun newAstNodeForTest(value: String): AstNode {
         val node = mock(AstNode::class.java)
-        `when`(node.tokenOriginalValue).thenReturn(value)
+        `when`(node.tokenValue).thenReturn(value)
         return node
     }
 

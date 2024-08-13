@@ -56,7 +56,7 @@ class ScopeImpl(override val outer: Scope? = null,
 
     override val identifier: String? =
         try {
-            identifier ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenOriginalValue
+            identifier ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenValue
         } catch (e: Exception) {
             ""
         }

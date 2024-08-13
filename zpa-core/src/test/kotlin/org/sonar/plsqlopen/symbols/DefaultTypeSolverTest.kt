@@ -173,7 +173,7 @@ class DefaultTypeSolverTest {
 
     private fun createSymbol(name: String, kind: Symbol.Kind, type: PlSqlDatatype): Symbol {
         val node = mockAstNode()
-        whenever(node.tokenOriginalValue).thenReturn(name)
+        whenever(node.tokenValue).thenReturn(name)
         return Symbol(node, kind, scope, type)
     }
 

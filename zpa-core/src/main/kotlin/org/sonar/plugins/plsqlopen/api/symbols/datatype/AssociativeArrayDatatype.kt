@@ -31,7 +31,7 @@ class AssociativeArrayDatatype(node: AstNode? = null, currentScope: Scope?, val 
         if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
             it.identifier + "."
         else "" } +
-        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue
+        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenValue
 
     override fun toString(): String {
         return "AssociativeArray{nestedType=$nestedType}"

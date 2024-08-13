@@ -46,7 +46,7 @@ open class Symbol(val node: AstNode?,
 
     val declaration by lazy { node ?: throw IllegalStateException("Symbol must have a declaration") }
 
-    val name: String = node?.tokenOriginalValue ?: name
+    val name: String = node?.tokenValue ?: name
 
     val type: PlSqlType = datatype?.type ?: PlSqlType.UNKNOWN
 
@@ -68,7 +68,7 @@ open class Symbol(val node: AstNode?,
 
     fun hasModifier(modifier: String): Boolean {
         for (syntaxToken in modifiers) {
-            if (syntaxToken.tokenOriginalValue.equals(modifier, ignoreCase = true)) {
+            if (syntaxToken.tokenValue.equals(modifier, ignoreCase = true)) {
                 return true
             }
         }

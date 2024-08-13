@@ -58,7 +58,7 @@ class SymbolTest {
         val symbol = createSymbol(scope, "foo", Kind.VARIABLE)
 
         val node = mock(AstNode::class.java)
-        `when`(node.tokenOriginalValue).thenReturn("foo")
+        `when`(node.tokenValue).thenReturn("foo")
         val modifiers = ArrayList<AstNode>()
         modifiers.add(node)
         symbol.addModifiers(modifiers)
@@ -70,7 +70,7 @@ class SymbolTest {
 
     private fun createSymbol(scope: Scope, name: String, kind: Kind): Symbol {
         val node = mock(AstNode::class.java)
-        `when`(node.tokenOriginalValue).thenReturn(name)
+        `when`(node.tokenValue).thenReturn(name)
         return Symbol(node, kind, scope, null)
     }
 

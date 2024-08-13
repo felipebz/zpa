@@ -32,7 +32,7 @@ class RecordDatatype(node: AstNode? = null, currentScope: Scope?, val fields: Li
         if (it.identifier != null && it.type == PlSqlGrammar.CREATE_PACKAGE)
             it.identifier + "."
         else "" } +
-        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue
+        node?.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)?.tokenValue
 
     override fun toString(): String {
         return "Record"

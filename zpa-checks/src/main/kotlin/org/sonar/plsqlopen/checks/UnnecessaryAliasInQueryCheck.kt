@@ -24,7 +24,6 @@ import com.felipebz.flr.api.AstNodeType
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
-import java.util.*
 
 @Rule(priority = Priority.MINOR)
 @ConstantRemediation("1min")
@@ -57,7 +56,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
 
 
             if (table != null) {
-                tableReferences.getOrPut(table.tokenOriginalValue.lowercase(Locale.getDefault())) { mutableListOf() }
+                tableReferences.getOrPut(table.tokenValue) { mutableListOf() }
                     .add(TableReference(table, alias))
             }
         }
@@ -73,7 +72,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
 
             var alias: String? = null
             if (reference.alias != null) {
-                alias = reference.alias.tokenOriginalValue
+                alias = reference.alias.tokenValue
             }
 
             if (alias != null && reference.alias != null && alias.length < acceptedLength) {

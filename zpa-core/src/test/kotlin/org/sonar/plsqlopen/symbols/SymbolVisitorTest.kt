@@ -119,7 +119,7 @@ end;
         assertThat(type.innerScope).isNull()
 
         val datatype = type.datatype as RecordDatatype
-        assertThat(datatype.name).isEqualTo("my_record");
+        assertThat(datatype.name).isEqualTo("MY_RECORD");
 
         val variable = symbols.find("variable", 3, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.RECORD)
@@ -142,7 +142,7 @@ end;
         assertThat(type.innerScope).isNull()
 
         val datatype = type.datatype as RecordDatatype
-        assertThat(datatype.name).isEqualTo("my_record");
+        assertThat(datatype.name).isEqualTo("MY_RECORD");
     }
 
     @Test
@@ -159,7 +159,7 @@ end;
         assertThat(type.innerScope).isNull()
 
         val datatype = type.datatype as RecordDatatype
-        assertThat(datatype.name).isEqualTo("my_pack.my_record");
+        assertThat(datatype.name).isEqualTo("MY_PACK.MY_RECORD");
     }
 
     @Test
@@ -459,7 +459,7 @@ end;
         assertThat(variable.references).containsExactly(
             tuple(5, 3))
         assertThat(variable.innerScope).isNull()
-        assertThat(variable.scope.identifier).isEqualTo("baz")
+        assertThat(variable.scope.identifier).isEqualTo("BAZ")
         assertThat(variable.scope.type).isEqualTo(PlSqlGrammar.CREATE_TRIGGER)
     }
 
@@ -559,7 +559,7 @@ end;
 
     private fun List<Symbol>.find(name: String, line: Int, column: Int): Symbol {
         val symbol = this.firstOrNull {
-            it.name == name &&
+            it.name.equals(name, ignoreCase = true) &&
                 it.declaration.token.line == line &&
                 it.declaration.token.column == offset(column)
         }
