@@ -1,7 +1,8 @@
-create procedure foo(a number, b number) is -- Noncompliant {{Remove this unused "B" parameter.}}
+create procedure foo(a number, b number, "c" number) is -- Noncompliant {{Remove this unused "B" parameter.}}
 --                             ^^^^^^^^
 begin
   print(a);
+  print("c");
 end;
 /
 

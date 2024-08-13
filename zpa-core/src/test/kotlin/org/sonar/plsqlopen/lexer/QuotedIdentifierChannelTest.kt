@@ -19,21 +19,29 @@
  */
 package org.sonar.plsqlopen.lexer
 
-import com.felipebz.flr.channel.Channel
-import com.felipebz.flr.channel.CodeReader
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.impl.LexerOutput
-import com.felipebz.flr.impl.channel.IdentifierAndKeywordChannel
+import com.felipebz.flr.tests.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
-class IdentifierChannel(private val channel: IdentifierAndKeywordChannel)
-    : Channel<LexerOutput> by channel {
+class QuotedIdentifierChannelTest {
+    private val channel = QuotedIdentifierChannel("\".*?\"", "[A-Z]+")
+    private val output = LexerOutput()
 
-    override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        val nextChar = code.peek().toChar()
-        if (!nextChar.isLetter()) {
-            return false
-        }
-
-        return channel.consume(code, output)
+    @Test
+    fun doesNotConsumeUnquotedWord() {
+        assertThat(channel).doesNotConsume("word", output)
     }
 
+    @Test
+    fun consumeQuotedWord() {
+        assertThat(channel).consume("\"some word\"", output)
+        assertThat(output.tokens).hasToken("\"some word\"", GenericTokenType.IDENTIFIER)
+    }
+
+    @Test
+    fun consumeQuotedWordWithSimpleIdentifier() {
+        assertThat(channel).consume("\"WORD\"", output)
+        assertThat(output.tokens).hasToken("WORD", GenericTokenType.IDENTIFIER)
+    }
 }

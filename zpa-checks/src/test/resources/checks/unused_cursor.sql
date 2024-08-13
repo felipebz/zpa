@@ -2,10 +2,10 @@ declare
   cursor cur is -- Noncompliant {{Remove this unused "CUR" cursor.}}
     select 1 from dual;
     
-  cursor cur2 is
+  cursor "cur2" is
     select 1 from dual;
 begin
-  open cur2;
+  open "cur2";
 end;
 
 create package pkg is

@@ -31,11 +31,16 @@ end;
 create or replace package body test is
   package_body_var number;  -- Noncompliant {{Remove this unused "PACKAGE_BODY_VAR" local variable.}}
   hidden_var number;  -- Noncompliant {{Remove this unused "HIDDEN_VAR" local variable.}}
+  "VAR" number; -- Noncompliant {{Remove this unused "VAR" local variable.}}
+  "var" number;
   
   procedure proc is
     hidden_var number; -- this declaration hides the previous one
+    var number; -- this declaration hides the previous "VAR"
   begin
     hidden_var := 0;
+    var := 0;
+    "var" := 0;
   end;
 end;
 /

@@ -549,6 +549,47 @@ end;
         assertThat(x.innerScope).isNull()
     }
 
+    @Test
+    fun symbolsWithQuotedIdentifiers() {
+        val symbols = scan(
+            """
+declare
+  "VAR" number;
+  "Var" number;
+  "var" number;
+begin
+  var := 1;
+  "VAR" := 1;
+  "Var" := 1;
+  "var" := 1;
+end;
+"""
+        )
+        assertThat(symbols).hasSize(3)
+
+        val var1 = symbols.find("var", 2, 3)
+        assertThat(var1.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(var1.references).containsExactly(
+            tuple(6, 3),
+            tuple(7, 3),
+        )
+        assertThat(var1.innerScope).isNull()
+
+        val var2 = symbols.find("\"Var\"", 3, 3)
+        assertThat(var2.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(var2.references).containsExactly(
+            tuple(8, 3),
+        )
+        assertThat(var2.innerScope).isNull()
+
+        val var3 = symbols.find("\"var\"", 4, 3)
+        assertThat(var3.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(var3.references).containsExactly(
+            tuple(9, 3),
+        )
+        assertThat(var3.innerScope).isNull()
+    }
+
     private fun scan(contents: String): List<Symbol> {
         val file = tempFolder.resolve("test.sql")
         file.writeText(contents.trim())

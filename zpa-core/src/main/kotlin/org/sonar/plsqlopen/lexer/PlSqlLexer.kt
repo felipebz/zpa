@@ -72,9 +72,10 @@ object PlSqlLexer {
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL)))
-            .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(or(SIMPLE_IDENTIFIER, QUOTED_IDENTIFIER), false,
+            .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(SIMPLE_IDENTIFIER, false,
                 PlSqlKeyword.entries.toTypedArray()
             )))
+            .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
             .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",

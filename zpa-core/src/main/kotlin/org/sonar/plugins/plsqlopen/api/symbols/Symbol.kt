@@ -85,7 +85,11 @@ open class Symbol(val node: AstNode?,
 
     fun `is`(kind: Kind) = kind == this.kind
 
-    fun called(name: String) = name.equals(this.name, ignoreCase = true)
+    fun called(name: String) = if (name.startsWith('"')) {
+        name == this.name
+    } else {
+        name.equals(this.name, ignoreCase = true)
+    }
 
     override fun toString() = "Symbol name=$name kind=$kind datatype=$datatype"
 }

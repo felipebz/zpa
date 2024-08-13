@@ -52,7 +52,7 @@
     5
   ],
   "lnpls/plsql-language-fundamentals-12.sql" : [
-    3
+    4
   ],
   "lnpls/plsql-language-fundamentals-26.sql" : [
     3,
@@ -82,9 +82,6 @@
     4,
     8
   ],
-  "lnpls/plsql-language-fundamentals-4.sql" : [
-    3
-  ],
   "lnpls/plsql-language-fundamentals-43.sql" : [
     3,
     4,
@@ -101,9 +98,8 @@
   "lnpls/plsql-language-fundamentals-52.sql" : [
     4
   ],
-  "lnpls/plsql-language-fundamentals-8.sql" : [
-    4,
-    5
+  "lnpls/plsql-language-fundamentals-6.sql" : [
+    3
   ],
   "lnpls/plsql-optimization-and-tuning-106.sql" : [
     20,
