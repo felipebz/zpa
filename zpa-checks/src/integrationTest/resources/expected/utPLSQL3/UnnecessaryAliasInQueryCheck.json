@@ -1,8 +1,8 @@
 {
   "source/check_sys_grants.sql" : [
+    29,
     30,
-    34,
-    29
+    34
   ],
   "source/core/annotations/ut_annotation_cache_manager.pkb" : [
     24,
@@ -23,8 +23,8 @@
     78
   ],
   "source/core/coverage/ut_coverage_helper_profiler.pkb" : [
-    66,
     65,
+    66,
     69
   ],
   "source/core/output_buffers/ut_output_buffer_base.tpb" : [
@@ -44,8 +44,8 @@
   ],
   "source/core/ut_suite_cache_manager.pkb" : [
     31,
-    43,
     42,
+    43,
     52,
     54,
     65,
@@ -94,8 +94,8 @@
     203
   ],
   "source/uninstall_synonyms.sql" : [
-    15,
     13,
+    15,
     42
   ],
   "test/install_ut3_tester_helper.sql" : [

@@ -203,6 +203,7 @@ class PlSqlRulingTest {
         var differences = ""
         for (check in checks) {
             val export = issues.filter { it.check == check }
+                .sortedBy { it.primaryLocation.startLine() }
                 .groupBy({ (it.file as InputFile).pathRelativeToBase }, { it.primaryLocation.startLine() })
                 .toSortedMap()
             val actualContent = if (export.size > 0) mapper.valueToTree<JsonNode>(export) else null

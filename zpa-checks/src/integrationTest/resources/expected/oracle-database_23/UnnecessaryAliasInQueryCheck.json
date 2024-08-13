@@ -32,8 +32,8 @@
     4
   ],
   "adjsn/generation-36.sql" : [
-    9,
-    7
+    7,
+    9
   ],
   "adjsn/indexes-for-json-data-10.sql" : [
     2
@@ -158,8 +158,8 @@
     5
   ],
   "lnpls/plsql-triggers-12.sql" : [
-    23,
-    18
+    18,
+    23
   ],
   "lnpls/plsql-triggers-17.sql" : [
     4
@@ -184,8 +184,8 @@
     5
   ],
   "lnpls/static-sql-68.sql" : [
-    16,
-    12
+    12,
+    16
   ],
   "sqlrf/ALTER-TABLE-23.sql" : [
     3,
@@ -248,8 +248,8 @@
     4
   ],
   "sqlrf/CURSOR-Expressions-0.sql" : [
-    5,
-    3
+    3,
+    5
   ],
   "sqlrf/Comments-0.sql" : [
     6
@@ -419,8 +419,8 @@
     2
   ],
   "sqlrf/SELECT-103.sql" : [
-    5,
-    3
+    3,
+    5
   ],
   "sqlrf/SELECT-24.sql" : [
     5,
