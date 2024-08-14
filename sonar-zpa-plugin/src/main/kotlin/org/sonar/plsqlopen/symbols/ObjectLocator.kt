@@ -56,10 +56,10 @@ class ObjectLocator {
     }
 
     fun findMainObject(identifier: String, vararg types: AstNodeType): MappedObject? {
-        return mappedObjects.find { it.isMain && it.identifier == identifier && it.objectType in types }
+        return mappedObjects.find { it.isMain && it.identifier.equals(identifier, ignoreCase = true) && it.objectType in types }
     }
 
     fun findTestObject(identifier: String, vararg types: AstNodeType): MappedObject? {
-        return mappedObjects.find { it.isTest && it.identifier == identifier && it.objectType in types }
+        return mappedObjects.find { it.isTest && it.identifier.equals(identifier, ignoreCase = true) && it.objectType in types }
     }
 }
