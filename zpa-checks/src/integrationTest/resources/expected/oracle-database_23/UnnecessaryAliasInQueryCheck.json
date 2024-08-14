@@ -44,45 +44,36 @@
   "adjsn/indexes-for-json-data-12.sql" : [
     2
   ],
-  "adjsn/indexes-for-json-data-19.sql" : [
+  "adjsn/indexes-for-json-data-18.sql" : [
     2,
     4
   ],
   "adjsn/indexes-for-json-data-5.sql" : [
     3
   ],
-  "adjsn/json-in-oracle-database-12.sql" : [
-    3
-  ],
-  "adjsn/json-in-oracle-database-14.sql" : [
-    3
-  ],
-  "adjsn/json-in-oracle-database-15.sql" : [
+  "adjsn/json-in-oracle-database-0.sql" : [
     2
   ],
-  "adjsn/json-in-oracle-database-16.sql" : [
+  "adjsn/json-in-oracle-database-10.sql" : [
+    2
+  ],
+  "adjsn/json-in-oracle-database-11.sql" : [
     2
   ],
   "adjsn/json-in-oracle-database-2.sql" : [
-    2
+    11
   ],
   "adjsn/json-in-oracle-database-3.sql" : [
-    3
+    2
   ],
   "adjsn/json-in-oracle-database-4.sql" : [
-    3
-  ],
-  "adjsn/json-in-oracle-database-5.sql" : [
     2
   ],
   "adjsn/json-in-oracle-database-7.sql" : [
-    11
-  ],
-  "adjsn/json-in-oracle-database-8.sql" : [
-    2
+    3
   ],
   "adjsn/json-in-oracle-database-9.sql" : [
-    2
+    3
   ],
   "adjsn/json-path-expressions-12.sql" : [
     3
@@ -91,6 +82,9 @@
     2
   ],
   "adjsn/json-schema-18.sql" : [
+    2
+  ],
+  "adjsn/partitioning-json-data-1.sql" : [
     2
   ],
   "adjsn/performing-migration-check-1.sql" : [
@@ -317,17 +311,13 @@
   "sqlrf/Comments-53.sql" : [
     3
   ],
-  "sqlrf/Comments-54.sql" : [
+  "sqlrf/Comments-56.sql" : [
     3,
     3,
     3,
     3
   ],
-  "sqlrf/Comments-57.sql" : [
-    3
-  ],
-  "sqlrf/Comments-58.sql" : [
-    3,
+  "sqlrf/Comments-59.sql" : [
     3
   ],
   "sqlrf/Comments-60.sql" : [
@@ -335,6 +325,10 @@
     3
   ],
   "sqlrf/Comments-62.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-64.sql" : [
     3,
     3
   ],

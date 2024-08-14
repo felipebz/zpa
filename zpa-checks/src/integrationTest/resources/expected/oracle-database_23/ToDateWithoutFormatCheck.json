@@ -1,16 +1,13 @@
 {
-  "adjsn/creating-a-table-with-a-json-column-3.sql" : [
+  "adjsn/json-dataguide-19.sql" : [
+    5
+  ],
+  "adjsn/json-dataguide-20.sql" : [
+    5
+  ],
+  "adjsn/tables-json-columns-3.sql" : [
     5,
     36
-  ],
-  "adjsn/json-dataguide-17.sql" : [
-    5
-  ],
-  "adjsn/json-dataguide-18.sql" : [
-    5
-  ],
-  "adjsn/json-in-oracle-database-1.sql" : [
-    4
   ],
   "sqlrf/ROUND-date-0.sql" : [
     2

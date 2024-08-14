@@ -8,11 +8,12 @@ CREATE VIEW department_view AS
                                             'city'    : loc.city,
                                             'state'   : loc.state_province,
                                             'country' : loc.country_id},
-                'employees'         : [ SELECT JSON {'id'    : emp.employee_id,
-                                                     'name'  : emp.first_name || ' ' || emp.last_name,
-                                                     'title' : (SELECT job_title 
-                                                                  FROM jobs job 
-                                                                  WHERE job.job_id = emp.job_id)}
+                'employees'         : [ SELECT
+                                          JSON {'id'    : emp.employee_id,
+                                                'name'  : emp.first_name || ' ' || emp.last_name,
+                                                'title' : (SELECT job_title 
+                                                             FROM jobs job 
+                                                             WHERE job.job_id = emp.job_id)}
                                           FROM employees emp 
                                           WHERE emp.department_id = dep.department_id ]} data
     FROM departments dep, locations loc

@@ -1,8 +1,4 @@
 {
-  "adjsn/creating-a-table-with-a-json-column-3.sql" : [
-    2,
-    33
-  ],
   "adjsn/generation-26.sql" : [
     10
   ],
@@ -10,23 +6,24 @@
     3,
     6
   ],
-  "adjsn/json-dataguide-17.sql" : [
+  "adjsn/json-dataguide-19.sql" : [
     2
   ],
-  "adjsn/json-dataguide-18.sql" : [
+  "adjsn/json-dataguide-20.sql" : [
     2
   ],
-  "adjsn/json-in-oracle-database-1.sql" : [
-    2
-  ],
-  "adjsn/json-in-oracle-database-11.sql" : [
+  "adjsn/json-in-oracle-database-6.sql" : [
     3
   ],
   "adjsn/json-schema-14.sql" : [
     6
   ],
-  "adjsn/json-schema-16.sql" : [
+  "adjsn/loading-external-json-data-4.sql" : [
     2
+  ],
+  "adjsn/tables-json-columns-3.sql" : [
+    2,
+    33
   ],
   "adjsn/using-GeoJSON-geographic-data-0.sql" : [
     5
@@ -410,10 +407,10 @@
   "sqlrf/to_vector-1.sql" : [
     2
   ],
-  "sqlrf/vector-0.sql" : [
+  "sqlrf/to_vector-2.sql" : [
     2
   ],
-  "sqlrf/vector_chunks-1.sql" : [
-    5
+  "sqlrf/vector-0.sql" : [
+    2
   ]
 }

@@ -86,13 +86,13 @@
   "adjsn/indexes-for-json-data-2.sql" : [
     2
   ],
+  "adjsn/indexes-for-json-data-24.sql" : [
+    2
+  ],
   "adjsn/indexes-for-json-data-25.sql" : [
     2
   ],
   "adjsn/indexes-for-json-data-26.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-27.sql" : [
     2
   ],
   "adjsn/indexes-for-json-data-3.sql" : [
@@ -107,10 +107,10 @@
   "adjsn/json-dataguide-1.sql" : [
     2
   ],
-  "adjsn/json-dataguide-15.sql" : [
+  "adjsn/json-dataguide-17.sql" : [
     3
   ],
-  "adjsn/json-dataguide-16.sql" : [
+  "adjsn/json-dataguide-18.sql" : [
     25
   ],
   "adjsn/json-dataguide-2.sql" : [
@@ -124,6 +124,9 @@
   ],
   "adjsn/json-schema-11.sql" : [
     5
+  ],
+  "adjsn/json-schema-16.sql" : [
+    4
   ],
   "adjsn/json-schema-22.sql" : [
     3
@@ -151,9 +154,6 @@
   ],
   "adjsn/oracle-sql-function-json_transform-13.sql" : [
     4
-  ],
-  "adjsn/partitioning-json-data-0.sql" : [
-    6
   ],
   "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
     2
@@ -518,6 +518,9 @@
   "lnpls/plsql-packages-29.sql" : [
     2
   ],
+  "lnpls/plsql-predefined-data-types-3.sql" : [
+    2
+  ],
   "lnpls/plsql-source-text-wrapping-7.sql" : [
     4
   ],
@@ -728,6 +731,9 @@
   "sqlrf/ADMINISTER-KEY-MANAGEMENT-9.sql" : [
     2
   ],
+  "sqlrf/ALTER-ANALYTIC-VIEW-0.sql" : [
+    2
+  ],
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-0.sql" : [
     2
   ],
@@ -744,6 +750,9 @@
     2
   ],
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-13.sql" : [
+    2
+  ],
+  "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-14.sql" : [
     2
   ],
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-2.sql" : [
@@ -1334,6 +1343,9 @@
   "sqlrf/ALTER-TABLE-114.sql" : [
     3
   ],
+  "sqlrf/ALTER-TABLE-117.sql" : [
+    2
+  ],
   "sqlrf/ALTER-TABLE-122.sql" : [
     2
   ],
@@ -1865,6 +1877,9 @@
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql" : [
     2
   ],
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-22.sql" : [
+    4
+  ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-23.sql" : [
     2
   ],
@@ -1884,6 +1899,9 @@
     2
   ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-29.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-31.sql" : [
     2
   ],
   "sqlrf/CREATE-CLUSTER-0.sql" : [
@@ -2777,6 +2795,9 @@
   "sqlrf/SELECT-116.sql" : [
     4
   ],
+  "sqlrf/SELECT-117.sql" : [
+    4
+  ],
   "sqlrf/SELECT-17.sql" : [
     3
   ],
@@ -3155,6 +3176,9 @@
   "sqlrf/create-domain-26.sql" : [
     2
   ],
+  "sqlrf/create-domain-29.sql" : [
+    2
+  ],
   "sqlrf/create-domain-35.sql" : [
     3
   ],
@@ -3162,6 +3186,9 @@
     2
   ],
   "sqlrf/create-domain-41.sql" : [
+    2
+  ],
+  "sqlrf/create-domain-43.sql" : [
     2
   ],
   "sqlrf/create-domain-5.sql" : [
@@ -3225,6 +3252,18 @@
     2
   ],
   "sqlrf/create-property-graph-9.sql" : [
+    2
+  ],
+  "sqlrf/create-vector-index-0.sql" : [
+    2
+  ],
+  "sqlrf/create-vector-index-1.sql" : [
+    2
+  ],
+  "sqlrf/create-vector-index-2.sql" : [
+    2
+  ],
+  "sqlrf/create-vector-index-3.sql" : [
     2
   ],
   "sqlrf/domain_check-0.sql" : [
@@ -3515,31 +3554,34 @@
   "sqlrf/value-expressions-graph_table-8.sql" : [
     4
   ],
+  "sqlrf/vector_chunks-1.sql" : [
+    14
+  ],
   "sqlrf/vector_dimension_count-0.sql" : [
     2
   ],
   "sqlrf/vector_dimension_format-0.sql" : [
     2
   ],
-  "sqlrf/vector_distance-0.sql" : [
+  "sqlrf/vector_distance-11.sql" : [
     2
   ],
-  "sqlrf/vector_distance-1.sql" : [
+  "sqlrf/vector_distance-12.sql" : [
     2
   ],
-  "sqlrf/vector_distance-2.sql" : [
-    2
-  ],
-  "sqlrf/vector_distance-3.sql" : [
-    2
-  ],
-  "sqlrf/vector_distance-4.sql" : [
+  "sqlrf/vector_distance-5.sql" : [
     2
   ],
   "sqlrf/vector_distance-6.sql" : [
     2
   ],
   "sqlrf/vector_distance-7.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-8.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-9.sql" : [
     2
   ],
   "sqlrf/vector_norm-0.sql" : [

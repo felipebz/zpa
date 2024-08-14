@@ -1,11 +1,9 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-dataguide.html
-WITH dg_t AS (SELECT json_dataguide(po_document) dg_doc
-                FROM j_purchaseorder)
-  SELECT jt.*
-    FROM dg_t,
-         json_table(dg_doc, '$[*]'
-           COLUMNS
-             jpath   VARCHAR2(40) PATH '$."o:path"',
-             type    VARCHAR2(10) PATH '$."type"',
-             tlength NUMBER       PATH '$."o:length"') jt
-   ORDER BY jt.jpath;
+INSERT INTO j_purchaseorder
+  VALUES (
+    SYS_GUID(),
+    to_date('30-MAR-2016'),
+    '{"PO_ID"     : 4230,
+      "PO_Ref"  : "JDEER-20140421",
+      "PO_Items"  : [ {"Part_No"       : 98981327234,
+                      "Item_Quantity" : 13} ]}');

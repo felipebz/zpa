@@ -1,4 +1,4 @@
--- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/creating-a-table-with-a-json-column.html
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/tables-json-columns.html
 INSERT INTO j_purchaseorder
   VALUES (
     SYS_GUID(),

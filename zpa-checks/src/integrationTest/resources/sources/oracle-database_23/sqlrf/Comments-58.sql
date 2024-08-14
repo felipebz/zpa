@@ -1,5 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Comments.html
-SELECT /*+ USE_HASH(l h) */ *
-  FROM orders h, order_items l
-  WHERE l.order_id = h.order_id
-    AND l.order_id > 2400;
+SELECT /*+ USE_BAND(e1 e2) */
+  e1.last_name
+  || ' has salary between 100 less and 100 more than '
+  || e2.last_name AS "SALARY COMPARISON"
+FROM employees e1, employees e2
+WHERE e1.salary BETWEEN e2.salary - 100 AND e2.salary + 100;

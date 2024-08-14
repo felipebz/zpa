@@ -23,16 +23,19 @@
   "adjsn/indexes-for-json-data-5.sql" : [
     2
   ],
-  "adjsn/json-dataguide-20.sql" : [
+  "adjsn/json-dataguide-22.sql" : [
     4
   ],
-  "adjsn/json-dataguide-21.sql" : [
+  "adjsn/json-dataguide-23.sql" : [
     8
   ],
-  "adjsn/json-in-oracle-database-14.sql" : [
+  "adjsn/json-in-oracle-database-9.sql" : [
     2
   ],
   "adjsn/json-path-expressions-12.sql" : [
+    2
+  ],
+  "adjsn/loading-external-json-data-4.sql" : [
     2
   ],
   "adjsn/using-GeoJSON-geographic-data-3.sql" : [
@@ -346,19 +349,19 @@
   "sqlrf/Comments-52.sql" : [
     2
   ],
-  "sqlrf/Comments-57.sql" : [
-    2
-  ],
-  "sqlrf/Comments-58.sql" : [
-    2
-  ],
   "sqlrf/Comments-59.sql" : [
     2
   ],
+  "sqlrf/Comments-60.sql" : [
+    2
+  ],
   "sqlrf/Comments-61.sql" : [
+    2
+  ],
+  "sqlrf/Comments-63.sql" : [
     5
   ],
-  "sqlrf/Comments-62.sql" : [
+  "sqlrf/Comments-64.sql" : [
     2
   ],
   "sqlrf/Comments-9.sql" : [
