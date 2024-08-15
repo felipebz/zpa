@@ -4,7 +4,7 @@ dokka = "1.9.20"
 download = "5.6.0"
 jreleaser = "1.13.1"
 license = "0.16.1"
-shadow = "8.1.7"
+shadow = "8.3.0"
 sonarscanner = "5.1.0.4882"
 
 # libs
@@ -47,5 +47,5 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 download = { id = "de.undercouch.download", version.ref = "download" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
 license = { id = "com.github.hierynomus.license", version.ref = "license" }
-shadow = { id = "io.github.goooler.shadow", version.ref = "shadow" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarscanner" }
