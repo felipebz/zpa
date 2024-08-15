@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.it
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.Measures
 import org.sonarqube.ws.client.measures.ComponentRequest
@@ -32,46 +33,54 @@ class MetricsTest {
     @Test
     fun project_level() {
         // Size
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(22)
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(23)
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(3)
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(4)
-        // Documentation
-        assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1)
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(4.3)
-        assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull()
-        // Duplication
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_blocks")).isZero
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_files")).isZero
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero
-        // Rules
-        assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero
+        assertAll(
+            // Size
+            { assertThat(getMeasureAsInteger(PROJECT_KEY, "ncloc")).isEqualTo(22) },
+            { assertThat(getMeasureAsInteger(PROJECT_KEY, "lines")).isEqualTo(23) },
+            { assertThat(getMeasureAsInteger(PROJECT_KEY, "files")).isEqualTo(3) },
+            { assertThat(getMeasureAsInteger(PROJECT_KEY, "statements")).isEqualTo(4) },
+            // Documentation
+            { assertThat(getMeasureAsInteger(PROJECT_KEY, "comment_lines")).isEqualTo(1) },
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "comment_lines_density")).isEqualTo(4.3) },
+            { assertThat(getMeasureAsString(PROJECT_KEY, "public_documented_api_density")).isNull() },
+            // Duplication
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines")).isZero },
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_blocks")).isZero },
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_files")).isZero },
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "duplicated_lines_density")).isZero },
+            // Rules
+            { assertThat(getMeasureAsDouble(PROJECT_KEY, "violations")).isZero }
+        )
     }
 
     @Test
     fun file_level() {
-        // Size
-        assertThat(getMeasureAsInteger(FILE_NAME, "ncloc")).isEqualTo(7)
-        assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(7)
-        assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(2)
-        // Documentation
-        assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero
-        assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero
-        // Duplication
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_blocks")).isZero
-        assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_files")).isZero
-        assertThat(getMeasureAsDouble(FILE_NAME, "duplicated_lines_density")).isZero
-        // Rules
-        assertThat(getMeasureAsInteger(FILE_NAME, "violations")).isZero
+        assertAll(
+            // Size
+            { assertThat(getMeasureAsInteger(FILE_NAME, "ncloc")).isEqualTo(7) },
+            { assertThat(getMeasureAsInteger(FILE_NAME, "lines")).isEqualTo(7) },
+            { assertThat(getMeasureAsInteger(FILE_NAME, "statements")).isEqualTo(2) },
+            // Documentation
+            { assertThat(getMeasureAsInteger(FILE_NAME, "comment_lines")).isZero },
+            { assertThat(getMeasureAsDouble(FILE_NAME, "comment_lines_density")).isZero },
+            // Duplication
+            { assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_lines")).isZero },
+            { assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_blocks")).isZero },
+            { assertThat(getMeasureAsInteger(FILE_NAME, "duplicated_files")).isZero },
+            { assertThat(getMeasureAsDouble(FILE_NAME, "duplicated_lines_density")).isZero },
+            // Rules
+            { assertThat(getMeasureAsInteger(FILE_NAME, "violations")).isZero }
+        )
     }
 
     /* Helper methods */
     private fun getMeasure(componentKey: String, metricKey: String): Measures.Measure? {
         val response = Tests.newWsClient(orchestrator).measures()
-            .component(ComponentRequest().setComponent(componentKey)
-                .setMetricKeys(listOf(metricKey)))
+            .component(
+                ComponentRequest()
+                    .setComponent(componentKey)
+                    .setMetricKeys(listOf(metricKey))
+            )
         val measures = response.component.measuresList
         return if (measures.size == 1) measures[0] else null
     }
@@ -106,9 +115,13 @@ class MetricsTest {
             orchestrator.server.provisionProject(PROJECT_KEY, PROJECT_KEY)
             orchestrator.server.associateProjectToQualityProfile(PROJECT_KEY, "plsqlopen", "empty-profile")
 
-            val build = Tests.createSonarScanner().setProjectDir(File("src/integrationTest/resources/projects/metrics/"))
-                    .setProjectKey(PROJECT_KEY).setProjectName(PROJECT_KEY).setProjectVersion("1.0").setSourceDirs("src")
-                    .setProperty("sonar.sourceEncoding", "UTF-8")
+            val build = Tests.createSonarScanner()
+                .setProjectDir(File("src/integrationTest/resources/projects/metrics/"))
+                .setProjectKey(PROJECT_KEY)
+                .setProjectName(PROJECT_KEY)
+                .setProjectVersion("1.0")
+                .setSourceDirs("src")
+                .setProperty("sonar.sourceEncoding", "UTF-8")
             orchestrator.executeBuild(build)
         }
 
