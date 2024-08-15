@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testExecutions version="1">
+  <file path="test_betwnstr">
+    <testCase name="normal_case" duration="2">
+    </testCase>
+    <testCase name="zero_start_position" duration="2">
+    </testCase>
+    <testCase name="big_end_position" duration="2">
+    </testCase>
+    <testCase name="null_string" duration="2">
+    </testCase>
+    <testCase name="bad_params" duration="2">
+      <error message="encountered errors">
+        <![CDATA[
+ORA-06502: PL/SQL: erro: erro de conversão de caractere em número numérico ou de valor
+ORA-06512: em "UT3_DEMO.TEST_BETWNSTR", line 25
+ORA-06512: em "UT3_DEMO.TEST_BETWNSTR", line 25
+ORA-06512: em line 6
+]]>
+      </error>
+    </testCase>
+    <testCase name="bad_test" duration="5">
+      <failure message="some expectations have failed">
+        <![CDATA[
+Actual: '1234567' (varchar2) was expected to equal: '1' (varchar2)
+at "UT3_DEMO.TEST_BETWNSTR.BAD_TEST", line 31 ut.expect( betwnstr( '1234567', 0, 500 ) ).to_( equal('1') );
+]]>
+      </failure>
+    </testCase>
+    <testCase name="disabled_test" duration="0">
+      <skipped message="skipped"/>
+    </testCase>
+  </file>
+</testExecutions>
