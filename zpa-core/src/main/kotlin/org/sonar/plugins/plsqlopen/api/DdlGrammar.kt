@@ -77,7 +77,8 @@ enum class DdlGrammar : GrammarRuleKey {
     SUBPARTITION_BY_HASH,
     SUBPARTITION_TEMPLATE,
     CREATE_DIRECTORY,
-    DROP_DIRECTORY;
+    DROP_DIRECTORY,
+    TRUNCATE_TABLE;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
@@ -653,6 +654,27 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(DROP_DIRECTORY).define(
                     DROP, DIRECTORY, b.optional(IF, EXISTS), IDENTIFIER_NAME, b.optional(SEMICOLON))
 
+            b.rule(TRUNCATE_TABLE).define(
+                TRUNCATE, TABLE, UNIT_NAME,
+                b.optional(
+                    b.firstOf(
+                        PRESERVE, PURGE
+                    ),
+                    MATERIALIZED, VIEW, LOG
+                ),
+                b.optional(
+                    b.firstOf(
+                        b.sequence(
+                            DROP, b.optional(ALL)
+                        ),
+                        REUSE
+                    ),
+                    STORAGE
+                ),
+                b.optional(CASCADE),
+                b.optional(SEMICOLON)
+            )
+
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
@@ -665,7 +687,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_SEQUENCE,
                 CREATE_DIRECTORY,
                 DROP_DIRECTORY,
-                DROP_COMMAND))
+                DROP_COMMAND,
+                TRUNCATE_TABLE))
         }
     }
 

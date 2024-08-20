@@ -416,6 +416,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PRESERVE("preserve"),
     PRETTY("pretty"),
     PRIMARY("primary"),
+    PURGE("purge"),
     QUOTES("quotes"),
     RAISE("raise"),
     RANGE_KEYWORD("range"),

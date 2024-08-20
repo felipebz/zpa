@@ -2936,12 +2936,6 @@
   "sqlrf/TRUNCATE-CLUSTER-0.sql" : [
     2
   ],
-  "sqlrf/TRUNCATE-TABLE-0.sql" : [
-    2
-  ],
-  "sqlrf/TRUNCATE-TABLE-1.sql" : [
-    2
-  ],
   "sqlrf/Type-Constructor-Expressions-1.sql" : [
     2
   ],

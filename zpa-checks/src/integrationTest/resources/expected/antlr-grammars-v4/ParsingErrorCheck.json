@@ -443,9 +443,6 @@
   "examples/truncate_cluster.sql" : [
     1
   ],
-  "examples/truncate_table.sql" : [
-    1
-  ],
   "examples/unified.sql" : [
     1
   ],
@@ -459,9 +456,6 @@
     1
   ],
   "hw-examples/alter_outline.sql" : [
-    1
-  ],
-  "hw-examples/truncate_table.sql" : [
     1
   ],
   "long-running/order_by07.sql" : [

@@ -1,4 +1,9 @@
 {
+  "examples/mybooks_setup.sql" : [
+    55,
+    61,
+    67
+  ],
   "examples/test_te_employee.pkb" : [
     191,
     237,
