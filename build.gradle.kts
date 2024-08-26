@@ -43,7 +43,6 @@ subprojects {
     apply(plugin = "signing")
 
     dependencies {
-        implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
         testImplementation(rootProject.libs.assertj)
         testImplementation(rootProject.libs.mockito)
         testImplementation(rootProject.libs.mockito.kotlin)
