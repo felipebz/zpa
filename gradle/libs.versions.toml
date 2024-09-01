@@ -2,24 +2,24 @@
 kotlin = "2.0.20"
 dokka = "1.9.20"
 download = "5.6.0"
-jreleaser = "1.13.1"
+jreleaser = "1.14.0"
 license = "0.16.1"
 shadow = "8.3.0"
 sonarscanner = "5.1.0.4882"
 
 # libs
-flatlaf = "3.4.1"
+flatlaf = "3.5.1"
 flr = "1.5.0-SNAPSHOT"
 jackson = "2.17.1"
-jsoup = "1.17.2"
+jsoup = "1.18.1"
 min-sonarqube = "9.9.0.65466"
 min-sonarqubeapi = "9.14.0.375"
-woodstox = "6.6.2"
+woodstox = "7.0.0"
 
 # testing
 assertj = "3.26.3"
-junit = "5.10.3"
-mockito = "5.12.0"
+junit = "5.11.0"
+mockito = "5.13.0"
 mockito-kotlin = "5.4.0"
 sonarqube-orchestrator = "5.0.0.2065"
 
