@@ -2,13 +2,13 @@
 
 [![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) ](https://github.com/felipebz/zpa/releases/latest)
 [![Build](https://github.com/felipebz/zpa/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/felipebz/zpa/actions/workflows/build.yml)
-[![Quality Gate Status](https://sonarqube.felipezorzo.com.br/api/project_badges/measure?project=com.felipebz.zpa%3Azpa&metric=alert_status)](https://sonarqube.felipezorzo.com.br/dashboard?id=com.felipebz.zpa%3Azpa)
+[![Quality Gate Status](https://sonarqube.felipebz.com/api/project_badges/measure?project=com.felipebz.zpa%3Azpa&metric=alert_status)](https://sonarqube.felipebz.com/dashboard?id=com.felipebz.zpa%3Azpa)
 
 The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle SQL code.
 
 You can use it in a [SonarQube](https://www.sonarqube.org) on-premise instance. SonarQube is an open platform to manage code quality.
 
-See some examples in our [SonarQube instance](https://sonarqube.felipezorzo.com.br/projects?languages=plsqlopen)!
+See some examples in our [SonarQube instance](https://sonarqube.felipebz.com/projects?languages=plsqlopen)!
 
 Do you want to use this analyzer in a project hosted on [SonarCloud](https://sonarcloud.io)? Try the [zpa-cli](https://github.com/felipebz/zpa-cli)!
 
