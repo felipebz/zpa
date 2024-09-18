@@ -198,6 +198,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     UDF_PRAGMA,
     DEPRECATE_PRAGMA,
     SUPPRESSES_WARNING_6009_PRAGMA,
+    COVERAGE_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     JAVA_DECLARATION,
@@ -682,7 +683,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     CASE_STATEMENT,
                     SET_TRANSACTION_STATEMENT,
                     MERGE_STATEMENT,
-                    INLINE_PRAGMA_STATEMENT))
+                    INLINE_PRAGMA_STATEMENT,
+                    COVERAGE_PRAGMA))
 
             b.rule(STATEMENTS, Statements::class).define(b.oneOrMore(STATEMENT))
         }
@@ -1014,6 +1016,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(SUPPRESSES_WARNING_6009_PRAGMA)
                 .define(PRAGMA, SUPPRESSES_WARNING_6009, LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS)
 
+            b.rule(COVERAGE_PRAGMA)
+                .define(PRAGMA, COVERAGE, LPARENTHESIS, STRING_LITERAL, RPARENTHESIS, SEMICOLON)
+
             b.rule(PRAGMA_DECLARATION).define(
                 b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
@@ -1023,7 +1028,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     RESTRICT_REFERENCES_PRAGMA,
                     UDF_PRAGMA,
                     b.sequence(DEPRECATE_PRAGMA, SEMICOLON),
-                    b.sequence(SUPPRESSES_WARNING_6009_PRAGMA, SEMICOLON)
+                    b.sequence(SUPPRESSES_WARNING_6009_PRAGMA, SEMICOLON),
+                    COVERAGE_PRAGMA
                 )
             )
 

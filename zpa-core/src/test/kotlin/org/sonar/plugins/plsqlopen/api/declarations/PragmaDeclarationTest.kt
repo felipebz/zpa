@@ -69,8 +69,8 @@ class PragmaDeclarationTest : RuleTest() {
     }
 
     @Test
-    fun matchesSuppressWarning6009Pragma() {
-        assertThat(p).matches("pragma suppresses_warning_6009(pcd);")
+    fun matchesCoveragePragma() {
+        assertThat(p).matches("pragma coverage('NOT_FEASIBLE_START');")
     }
 
 }

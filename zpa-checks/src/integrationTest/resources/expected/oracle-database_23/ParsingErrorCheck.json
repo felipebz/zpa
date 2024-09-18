@@ -212,9 +212,6 @@
   "lnpls/COVERAGE-pragma-1.sql" : [
     2
   ],
-  "lnpls/COVERAGE-pragma-3.sql" : [
-    10
-  ],
   "lnpls/CREATE-FUNCTION-statement-0.sql" : [
     2
   ],

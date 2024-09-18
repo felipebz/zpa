@@ -178,6 +178,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     CONVERSION("conversion"),
     COPY("copy"),
     COUNT("count"),
+    COVERAGE("coverage"),
     CRASH("crash"),
     CROSS("cross"),
     CROSSEDITION("crossedition"),

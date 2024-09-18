@@ -21,6 +21,10 @@
     9,
     13
   ],
+  "lnpls/COVERAGE-pragma-3.sql" : [
+    15,
+    17
+  ],
   "lnpls/DEPRECATE-pragma-27.sql" : [
     12
   ],
