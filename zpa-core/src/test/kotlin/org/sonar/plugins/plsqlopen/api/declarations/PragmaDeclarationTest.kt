@@ -63,9 +63,14 @@ class PragmaDeclarationTest : RuleTest() {
     }
 
     @Test
-    fun matchesPragmaDeprecate() {
+    fun matchesDeprecatePragma() {
         assertThat(p).matches("pragma deprecate(object);")
         assertThat(p).matches("pragma deprecate(object, 'object is deprecated');")
+    }
+
+    @Test
+    fun matchesSuppressWarning6009Pragma() {
+        assertThat(p).matches("pragma suppresses_warning_6009(pcd);")
     }
 
 }

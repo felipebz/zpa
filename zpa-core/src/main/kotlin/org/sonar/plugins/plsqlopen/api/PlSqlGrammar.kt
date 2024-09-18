@@ -197,6 +197,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     RESTRICT_REFERENCES_PRAGMA,
     UDF_PRAGMA,
     DEPRECATE_PRAGMA,
+    SUPPRESSES_WARNING_6009_PRAGMA,
     PRAGMA_DECLARATION,
     HOST_AND_INDICATOR_VARIABLE,
     JAVA_DECLARATION,
@@ -1010,14 +1011,21 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(DEPRECATE_PRAGMA).define(PRAGMA, DEPRECATE, LPARENTHESIS, EXPRESSION, b.optional(COMMA, STRING_LITERAL), RPARENTHESIS)
 
-            b.rule(PRAGMA_DECLARATION).define(b.firstOf(
+            b.rule(SUPPRESSES_WARNING_6009_PRAGMA)
+                .define(PRAGMA, SUPPRESSES_WARNING_6009, LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS)
+
+            b.rule(PRAGMA_DECLARATION).define(
+                b.firstOf(
                     EXCEPTION_INIT_PRAGMA,
                     AUTONOMOUS_TRANSACTION_PRAGMA,
                     SERIALLY_REUSABLE_PRAGMA,
                     INTERFACE_PRAGMA,
                     RESTRICT_REFERENCES_PRAGMA,
                     UDF_PRAGMA,
-                    b.sequence(DEPRECATE_PRAGMA, SEMICOLON)))
+                    b.sequence(DEPRECATE_PRAGMA, SEMICOLON),
+                    b.sequence(SUPPRESSES_WARNING_6009_PRAGMA, SEMICOLON)
+                )
+            )
 
             b.rule(DECLARE_SECTION).define(b.oneOrMore(b.firstOf(
                     PRAGMA_DECLARATION,
@@ -1316,11 +1324,20 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION))
 
             b.rule(OBJECT_TYPE_DEFINITION).define(
-                    b.firstOf(
-                            b.sequence(b.firstOf(IS, AS), OBJECT),
-                            b.sequence(UNDER, UNIT_NAME)),
-                    LPARENTHESIS, b.optional(DEPRECATE_PRAGMA, COMMA), b.oneOrMore(b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE), b.optional(COMMA), b.optional(DEPRECATE_PRAGMA, b.optional(COMMA))), RPARENTHESIS,
-                    b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)))
+                b.firstOf(
+                    b.sequence(b.firstOf(IS, AS), OBJECT),
+                    b.sequence(UNDER, UNIT_NAME)
+                ),
+                LPARENTHESIS,
+                b.optional(b.firstOf(DEPRECATE_PRAGMA, SUPPRESSES_WARNING_6009_PRAGMA), COMMA),
+                b.oneOrMore(
+                    b.firstOf(TYPE_ELEMENT_SPEC, TYPE_ATTRIBUTE),
+                    b.optional(COMMA),
+                    b.optional(b.firstOf(DEPRECATE_PRAGMA, SUPPRESSES_WARNING_6009_PRAGMA), b.optional(COMMA))
+                ),
+                RPARENTHESIS,
+                b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE))
+            )
 
             b.rule(CREATE_TYPE).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),

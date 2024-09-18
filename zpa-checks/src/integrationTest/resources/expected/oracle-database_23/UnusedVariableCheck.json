@@ -2,15 +2,6 @@
   "adjsn/using-PLSQL-object-types-for-JSON-2.sql" : [
     5
   ],
-  "lnpls/Supresses-warning-pragma-6009-1.sql" : [
-    5
-  ],
-  "lnpls/Supresses-warning-pragma-6009-3.sql" : [
-    5
-  ],
-  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
-    4
-  ],
   "lnpls/dynamic-sql-12.sql" : [
     7
   ],

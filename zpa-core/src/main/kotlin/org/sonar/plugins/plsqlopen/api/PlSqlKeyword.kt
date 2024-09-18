@@ -499,6 +499,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     SUBPARTITIONS("subpartitions"),
     SUBSTITUTABLE("substitutable"),
     SUBTYPE("subtype"),
+    SUPPRESSES_WARNING_6009("suppresses_warning_6009"),
     SUSPEND("suspend"),
     SYSDATE("sysdate"),
     TABAUTH("tabauth"),
