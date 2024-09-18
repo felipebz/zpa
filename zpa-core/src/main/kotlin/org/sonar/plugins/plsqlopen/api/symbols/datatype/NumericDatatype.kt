@@ -21,7 +21,6 @@ package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
 import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class NumericDatatype : PlSqlDatatype {
@@ -31,42 +30,48 @@ class NumericDatatype : PlSqlDatatype {
     override val name: String
         get() = if (this.length == null)
             "NUMBER()"
-        else if (this.precision == null)
+        else if (this.scale == null)
             "NUMBER(${this.length})"
         else
-            "NUMBER(${this.length}, ${this.precision})"
+            "NUMBER(${this.length}, ${this.scale})"
 
     val length: Int?
-    val precision: Int?
+    val scale: Int?
 
     constructor() {
         length = null
-        precision = null
+        scale = null
     }
 
-    constructor(length: Int?, precision: Int?) {
+    constructor(length: Int?, scale: Int?) {
         this.length = if (length != null && length > 0) length else null
-        this.precision = if (precision != null && precision > 0) precision else null
+        this.scale = if (scale != null && scale > 0) scale else null
     }
 
     constructor(node: AstNode? = null) {
         val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
+        if (constraint != null) {
+            val precisionNode = constraint.getFirstChildOrNull(PlSqlGrammar.NUMERIC_PRECISION)
+            length = if (precisionNode != null && precisionNode.hasDirectChildren(PlSqlGrammar.LITERAL)) {
+                precisionNode.tokenValue.toInt()
+            } else {
+                null
+            }
 
-        val numericConstraints = constraint?.getChildren(PlSqlTokenType.INTEGER_LITERAL)
-
-        if (numericConstraints != null) {
-            length = numericConstraints.first().tokenValue.toInt()
-            precision = if (numericConstraints.size > 1) {
-                numericConstraints.last().tokenValue.toInt()
-            } else null
+            val scaleNode = constraint.getFirstChildOrNull(PlSqlGrammar.NUMERIC_SCALE)
+            scale = if (scaleNode != null && scaleNode.hasDirectChildren(PlSqlGrammar.LITERAL)) {
+                scaleNode.tokenValue.toInt()
+            } else {
+                null
+            }
         } else {
             length = null
-            precision = null
+            scale = null
         }
     }
 
     override fun toString(): String {
-        return "Numeric{length=$length, precision=$precision}"
+        return "Numeric{length=$length, scale=$scale}"
     }
 
 }

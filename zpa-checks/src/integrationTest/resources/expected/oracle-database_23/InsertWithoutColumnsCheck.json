@@ -44,6 +44,15 @@
   "lnpls/dynamic-sql-18.sql" : [
     2
   ],
+  "lnpls/plsql-data-types-32.sql" : [
+    4,
+    5,
+    6
+  ],
+  "lnpls/plsql-data-types-36.sql" : [
+    11,
+    13
+  ],
   "lnpls/plsql-error-handling-34.sql" : [
     5,
     9

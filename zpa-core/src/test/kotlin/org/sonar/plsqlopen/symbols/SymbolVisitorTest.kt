@@ -27,6 +27,7 @@ import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import org.sonar.plugins.plsqlopen.api.symbols.datatype.CharacterDatatype
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.NumericDatatype
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.RecordDatatype
 import java.io.File
@@ -42,18 +43,28 @@ class SymbolVisitorTest {
     fun variableDeclaration() {
         val symbols = scan("""
 declare
-  variable number;
+  variable number(5, 2);
+  text varchar2(5);
 begin
   variable := 1;
 end;
 """)
-        assertThat(symbols).hasSize(1)
+        assertThat(symbols).hasSize(2)
 
         val variable = symbols.find("variable", 2, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat((variable.datatype as NumericDatatype).length).isEqualTo(5)
+        assertThat(variable.datatype.scale).isEqualTo(2)
         assertThat(variable.references).containsExactly(
-            tuple(4, 3))
+            tuple(5, 3)
+        )
         assertThat(variable.innerScope).isNull()
+
+        val text = symbols.find("text", 3, 3)
+        assertThat(text.type).isEqualTo(PlSqlType.CHARACTER)
+        assertThat((text.datatype as CharacterDatatype).length).isEqualTo(5)
+        assertThat(text.references).isEmpty()
+        assertThat(text.innerScope).isNull()
     }
 
     @Test
@@ -588,6 +599,38 @@ end;
             tuple(9, 3),
         )
         assertThat(var3.innerScope).isNull()
+    }
+
+    @Test
+    fun variableDeclarationWithConstantVariableForLength() {
+        val symbols = scan(
+            """
+declare
+  const_length constant number := 20;
+  const_scale constant number := 5;
+  variable number(const_length, const_scale);
+  text varchar2(const_length);
+begin
+  variable := 1;
+end;
+"""
+        )
+        assertThat(symbols).hasSize(4)
+
+        val variable = symbols.find("variable", 4, 3)
+        assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat((variable.datatype as NumericDatatype).length).isNull()
+        assertThat(variable.datatype.scale).isNull()
+        assertThat(variable.references).containsExactly(
+            tuple(7, 3)
+        )
+        assertThat(variable.innerScope).isNull()
+
+        val text = symbols.find("text", 5, 3)
+        assertThat(text.type).isEqualTo(PlSqlType.CHARACTER)
+        assertThat((text.datatype as CharacterDatatype).length).isNull()
+        assertThat(text.references).isEmpty()
+        assertThat(text.innerScope).isNull()
     }
 
     private fun scan(contents: String): List<Symbol> {

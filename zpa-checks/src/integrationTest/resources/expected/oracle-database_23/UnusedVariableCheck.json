@@ -2,6 +2,15 @@
   "adjsn/using-PLSQL-object-types-for-JSON-2.sql" : [
     5
   ],
+  "lnpls/Supresses-warning-pragma-6009-1.sql" : [
+    5
+  ],
+  "lnpls/Supresses-warning-pragma-6009-3.sql" : [
+    5
+  ],
+  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
+    4
+  ],
   "lnpls/dynamic-sql-12.sql" : [
     7
   ],
@@ -28,6 +37,13 @@
   ],
   "lnpls/plsql-control-statements-38.sql" : [
     3
+  ],
+  "lnpls/plsql-data-types-28.sql" : [
+    15,
+    16,
+    17,
+    18,
+    19
   ],
   "lnpls/plsql-data-types-60.sql" : [
     5,

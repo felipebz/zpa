@@ -21,7 +21,6 @@ package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
 import com.felipebz.flr.api.AstNode
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
 class CharacterDatatype : PlSqlDatatype {
@@ -47,7 +46,7 @@ class CharacterDatatype : PlSqlDatatype {
     constructor(node: AstNode? = null) {
         val constraint = node?.firstChildOrNull?.getFirstChildOrNull(PlSqlGrammar.CHARACTER_DATATYPE_CONSTRAINT)
         length = constraint
-            ?.getFirstChildOrNull(PlSqlTokenType.INTEGER_LITERAL)
+            ?.getFirstChildOrNull(PlSqlGrammar.LITERAL)
             ?.tokenValue?.toInt()
     }
 

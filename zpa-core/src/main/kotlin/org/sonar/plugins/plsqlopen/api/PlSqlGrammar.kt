@@ -42,6 +42,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
     DATATYPE,
     DATATYPE_LENGTH,
     CHARACTER_SET_CLAUSE,
+    NUMERIC_PRECISION,
+    NUMERIC_SCALE,
     NUMERIC_DATATYPE_CONSTRAINT,
     NUMERIC_DATATYPE,
     LOB_DATATYPE,
@@ -364,10 +366,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
         }
 
         private fun createDatatypes(b: PlSqlGrammarBuilder) {
-            b.rule(DATATYPE_LENGTH).define(b.firstOf(INTEGER_LITERAL, INQUIRY_DIRECTIVE)).skip()
+            b.rule(DATATYPE_LENGTH).define(b.firstOf(EXPRESSION, INQUIRY_DIRECTIVE)).skip()
+
+            b.rule(NUMERIC_PRECISION).define(b.firstOf(MULTIPLICATION, DATATYPE_LENGTH))
+
+            b.rule(NUMERIC_SCALE).define(DATATYPE_LENGTH)
 
             b.rule(NUMERIC_DATATYPE_CONSTRAINT).define(
-                LPARENTHESIS, b.firstOf(DATATYPE_LENGTH, MULTIPLICATION), b.optional(COMMA, b.optional(MINUS), DATATYPE_LENGTH), RPARENTHESIS
+                LPARENTHESIS, NUMERIC_PRECISION, b.optional(COMMA, NUMERIC_SCALE), RPARENTHESIS
             )
 
             b.rule(NUMERIC_DATATYPE).define(

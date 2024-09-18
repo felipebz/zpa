@@ -94,5 +94,14 @@
   ],
   "sqlrf/constraint-4.sql" : [
     8
+  ],
+  "sqlrf/domain_display-5.sql" : [
+    6
+  ],
+  "sqlrf/domain_name-5.sql" : [
+    6
+  ],
+  "sqlrf/domain_order-5.sql" : [
+    6
   ]
 }

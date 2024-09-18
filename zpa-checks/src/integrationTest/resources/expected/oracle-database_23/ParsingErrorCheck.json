@@ -213,7 +213,7 @@
     2
   ],
   "lnpls/COVERAGE-pragma-3.sql" : [
-    3
+    10
   ],
   "lnpls/CREATE-FUNCTION-statement-0.sql" : [
     2
@@ -268,21 +268,6 @@
   ],
   "lnpls/SQL_MACRO-clause-6.sql" : [
     7
-  ],
-  "lnpls/Supresses-warning-pragma-6009-1.sql" : [
-    5
-  ],
-  "lnpls/Supresses-warning-pragma-6009-10.sql" : [
-    7
-  ],
-  "lnpls/Supresses-warning-pragma-6009-3.sql" : [
-    5
-  ],
-  "lnpls/Supresses-warning-pragma-6009-5.sql" : [
-    5
-  ],
-  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
-    4
   ],
   "lnpls/dynamic-sql-11.sql" : [
     2
@@ -350,17 +335,8 @@
   "lnpls/plsql-control-statements-63.sql" : [
     2
   ],
-  "lnpls/plsql-data-types-28.sql" : [
-    5
-  ],
   "lnpls/plsql-data-types-31.sql" : [
     2
-  ],
-  "lnpls/plsql-data-types-32.sql" : [
-    3
-  ],
-  "lnpls/plsql-data-types-36.sql" : [
-    4
   ],
   "lnpls/plsql-error-handling-15.sql" : [
     2
@@ -1533,7 +1509,7 @@
     2
   ],
   "sqlrf/ALTER-TABLE-8.sql" : [
-    3
+    4
   ],
   "sqlrf/ALTER-TABLE-81.sql" : [
     2
@@ -2528,15 +2504,6 @@
   "sqlrf/Data-Types-16.sql" : [
     2
   ],
-  "sqlrf/Data-Types-32.sql" : [
-    3
-  ],
-  "sqlrf/Data-Types-33.sql" : [
-    3
-  ],
-  "sqlrf/Data-Types-35.sql" : [
-    2
-  ],
   "sqlrf/Data-Types-36.sql" : [
     4
   ],
@@ -3288,7 +3255,7 @@
     2
   ],
   "sqlrf/domain_check-9.sql" : [
-    7
+    10
   ],
   "sqlrf/domain_check_type-0.sql" : [
     2
@@ -3315,7 +3282,7 @@
     2
   ],
   "sqlrf/domain_check_type-8.sql" : [
-    7
+    10
   ],
   "sqlrf/domain_display-0.sql" : [
     2
@@ -3323,26 +3290,17 @@
   "sqlrf/domain_display-2.sql" : [
     3
   ],
-  "sqlrf/domain_display-5.sql" : [
-    7
-  ],
   "sqlrf/domain_display-6.sql" : [
     3
   ],
   "sqlrf/domain_name-0.sql" : [
     2
   ],
-  "sqlrf/domain_name-5.sql" : [
-    7
-  ],
   "sqlrf/domain_order-0.sql" : [
     2
   ],
   "sqlrf/domain_order-2.sql" : [
     3
-  ],
-  "sqlrf/domain_order-5.sql" : [
-    7
   ],
   "sqlrf/domain_order-6.sql" : [
     3

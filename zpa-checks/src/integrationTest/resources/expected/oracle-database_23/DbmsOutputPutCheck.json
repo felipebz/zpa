@@ -58,6 +58,9 @@
     5,
     10
   ],
+  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
+    8
+  ],
   "lnpls/WHILE-LOOP-statement-0.sql" : [
     6,
     11
@@ -434,6 +437,9 @@
   ],
   "lnpls/plsql-data-types-3.sql" : [
     8
+  ],
+  "lnpls/plsql-data-types-32.sql" : [
+    12
   ],
   "lnpls/plsql-data-types-34.sql" : [
     13

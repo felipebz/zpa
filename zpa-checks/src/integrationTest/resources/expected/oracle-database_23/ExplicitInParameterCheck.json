@@ -47,8 +47,14 @@
     5,
     5
   ],
+  "lnpls/Supresses-warning-pragma-6009-3.sql" : [
+    2
+  ],
   "lnpls/Supresses-warning-pragma-6009-4.sql" : [
     2
+  ],
+  "lnpls/Supresses-warning-pragma-6009-5.sql" : [
+    3
   ],
   "lnpls/Supresses-warning-pragma-6009-6.sql" : [
     3
