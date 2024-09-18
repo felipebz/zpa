@@ -59,6 +59,7 @@ subprojects {
         jvmToolchain(11)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs = listOf("-Xconsistent-data-class-copy-visibility")
         }
     }
 
