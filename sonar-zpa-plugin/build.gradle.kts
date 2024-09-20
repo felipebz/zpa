@@ -1,4 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.ShadowExtension
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import groovy.util.Node
 import groovy.util.NodeList
@@ -99,19 +98,16 @@ tasks.withType<GenerateModuleMetadata> {
 }
 
 publishing {
-    publications.withType<MavenPublication>().configureEach {
-        project.extensions.configure<ShadowExtension> {
-            val publication = this@configureEach
-            publication.pom.withXml {
-                val pomNode = asNode()
+    publications.withType<MavenPublication> {
+        this.pom.withXml {
+            val pomNode = asNode()
 
-                val dependencyNodes = pomNode.get("dependencies") as NodeList
-                dependencyNodes.forEach {
-                    (it as Node).parent().remove(it)
-                }
+            val dependencyNodes = pomNode.get("dependencies") as NodeList
+            dependencyNodes.forEach {
+                (it as Node).parent().remove(it)
             }
-            component(this@configureEach)
         }
+        artifact(shadowJar)
     }
 }
 
