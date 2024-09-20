@@ -28,7 +28,7 @@ dependencies {
     compileOnly("com.felipebz.zpa:sonar-zpa-plugin:3.6.0-SNAPSHOT")
     testImplementation("org.sonarsource.sonarqube:sonar-plugin-api-impl:$minSonarQubeVersion")
     testImplementation("com.felipebz.zpa:zpa-checks-testkit:3.6.0-SNAPSHOT")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
 }
 
 configurations {
