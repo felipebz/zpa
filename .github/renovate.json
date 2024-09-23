@@ -6,6 +6,7 @@
         ":automergeAll",
         "schedule:weekly"
     ],
+    "mode": "full",
     "ignoreDeps": [
         "org.sonarsource.sonarqube:sonar-plugin-api-impl",
         "org.sonarsource.api.plugin:sonar-plugin-api",
