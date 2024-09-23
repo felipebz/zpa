@@ -208,6 +208,11 @@ jreleaser {
                 }
             }
         }
+        create("plsql-custom-rules") {
+            artifact {
+                path.set(file("build/{{distributionName}}.zip"))
+            }
+        }
     }
 }
 

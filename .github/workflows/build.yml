@@ -109,6 +109,9 @@ jobs:
         with:
           name: build-artifacts
 
+      - name: Generate plsql-custom-rules archive
+        run: git archive --format=zip -o build/plsql-custom-rules.zip HEAD:plsql-custom-rules
+
       - if: github.ref == 'refs/heads/main'
         name: Run SonarQube Scanner
         run: ./gradlew sonar --info
