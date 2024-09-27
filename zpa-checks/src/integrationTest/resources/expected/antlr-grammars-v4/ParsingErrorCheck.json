@@ -125,9 +125,6 @@
   "examples/call.sql" : [
     1
   ],
-  "examples/cast.sql" : [
-    3
-  ],
   "examples/cluster.sql" : [
     1
   ],

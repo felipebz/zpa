@@ -124,6 +124,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     XMLTABLE_EXPRESSION,
     XMLTRANSFORM_EXPRESSION,
 
+    DEFAULT_ON_ERROR_CLAUSE,
     TREAT_AS_EXPRESSION,
     SET_EXPRESSION,
     CAST_EXPRESSION,
@@ -194,6 +195,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createConversionFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(DEFAULT_ON_ERROR_CLAUSE).define(DEFAULT, EXPRESSION, ON, CONVERSION, ERROR)
+
             b.rule(TREAT_AS_EXPRESSION).define(
                 b.optional(TREAT),
                 LPARENTHESIS,
@@ -207,10 +210,13 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(SET_EXPRESSION).define(SET, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
 
             b.rule(CAST_EXPRESSION).define(
-                    CAST, LPARENTHESIS,
-                    b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
-                    AS, DATATYPE,
-                    RPARENTHESIS)
+                CAST, LPARENTHESIS,
+                b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
+                AS, b.optional(DOMAIN), DATATYPE, b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                b.optional(DEFAULT_ON_ERROR_CLAUSE),
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS
+            )
 
             b.rule(TABLE_EXPRESSION).define(
                 TABLE, LPARENTHESIS,
