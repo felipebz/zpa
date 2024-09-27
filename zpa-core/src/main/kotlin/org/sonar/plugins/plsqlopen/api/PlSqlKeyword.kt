@@ -520,6 +520,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     TO_BOOLEAN("to_boolean"),
     TO_DATE("to_date"),
     TO_DSINTERVAL("to_dsinterval"),
+    TO_NUMBER("to_number"),
     TRAILING("trailing"),
     TRANSACTION("transaction"),
     TREAT("treat"),
