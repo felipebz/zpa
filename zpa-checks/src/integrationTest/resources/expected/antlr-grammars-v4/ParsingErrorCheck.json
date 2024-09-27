@@ -413,9 +413,6 @@
   "examples/single_statement.sql" : [
     1
   ],
-  "examples/to_binary_double.sql" : [
-    6
-  ],
   "examples/to_binary_float.sql" : [
     6
   ],

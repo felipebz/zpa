@@ -515,6 +515,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     TIES("ties"),
     TIME("time"),
     TIMESTAMP("timestamp"),
+    TO_BINARY_DOUBLE("to_binary_double"),
     TRAILING("trailing"),
     TRANSACTION("transaction"),
     TREAT("treat"),

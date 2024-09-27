@@ -128,6 +128,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TREAT_AS_EXPRESSION,
     SET_EXPRESSION,
     CAST_EXPRESSION,
+    TO_BINARY_DOUBLE_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
     THE_EXPRESSION,
@@ -179,6 +180,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     TREAT_AS_EXPRESSION,
                     SET_EXPRESSION,
                     CAST_EXPRESSION,
+                    TO_BINARY_DOUBLE_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
                     THE_EXPRESSION,
@@ -213,6 +215,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 CAST, LPARENTHESIS,
                 b.firstOf(b.sequence(MULTISET, EXPRESSION), EXPRESSION),
                 AS, b.optional(DOMAIN), DATATYPE, b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                b.optional(DEFAULT_ON_ERROR_CLAUSE),
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS
+            )
+
+            b.rule(TO_BINARY_DOUBLE_EXPRESSION).define(
+                TO_BINARY_DOUBLE, LPARENTHESIS,
+                EXPRESSION,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
                 RPARENTHESIS
