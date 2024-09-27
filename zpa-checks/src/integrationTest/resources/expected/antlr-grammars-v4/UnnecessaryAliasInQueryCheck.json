@@ -101,6 +101,9 @@
   "examples/select_all_some_any.sql" : [
     6
   ],
+  "examples/to_date.sql" : [
+    9
+  ],
   "examples/union07.sql" : [
     21,
     36

@@ -17,28 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.checks
+package org.sonar.plugins.plsqlopen.api.expressions
 
-import com.felipebz.flr.api.AstNode
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
-import org.sonar.plugins.plsqlopen.api.SingleRowSqlFunctionsGrammar
-import org.sonar.plugins.plsqlopen.api.annotations.*
+import com.felipebz.flr.tests.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.RuleTest
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
-@ConstantRemediation("5min")
-@RuleInfo(scope = RuleInfo.Scope.ALL)
-@ActivatedByDefault
-class ToDateWithoutFormatCheck : AbstractBaseCheck() {
+class ToDateExpressionTest : RuleTest() {
 
-    override fun init() {
-        subscribeTo(SingleRowSqlFunctionsGrammar.TO_DATE_EXPRESSION)
+    @BeforeEach
+    fun init() {
+        setRootRule(PlSqlGrammar.EXPRESSION)
     }
 
-    override fun visitNode(node: AstNode) {
-        val firstArgument = node.getFirstChild(PlSqlPunctuator.LPARENTHESIS).nextSibling
-        if (!node.hasDirectChildren(PlSqlPunctuator.COMMA) && !CheckUtils.isNullLiteralOrEmptyString(firstArgument)) {
-            addIssue(node, getLocalizedMessage())
-        }
+    @Test
+    fun matchesSimple() {
+        assertThat(p).matches("to_date(foo)")
+    }
+
+    @Test
+    fun matchesDefaultClause() {
+        assertThat(p).matches("to_date(foo default sysdate on conversion error)")
+    }
+
+    @Test
+    fun matchesMultipleArguments() {
+        assertThat(p).matches("to_date(foo, 'dd/mm/rrrr', 'NLS_DATE_LANGUAGE = American')")
     }
 
 }

@@ -413,9 +413,6 @@
   "examples/single_statement.sql" : [
     1
   ],
-  "examples/to_date.sql" : [
-    10
-  ],
   "examples/to_dsinterval.sql" : [
     3
   ],

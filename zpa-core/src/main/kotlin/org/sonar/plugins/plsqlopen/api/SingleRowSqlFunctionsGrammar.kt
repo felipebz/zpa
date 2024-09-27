@@ -131,6 +131,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TO_BINARY_DOUBLE_EXPRESSION,
     TO_BINARY_FLOAT_EXPRESSION,
     TO_BOOLEAN_EXPRESSION,
+    TO_DATE_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
     THE_EXPRESSION,
@@ -185,12 +186,13 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     TO_BINARY_DOUBLE_EXPRESSION,
                     TO_BINARY_FLOAT_EXPRESSION,
                     TO_BOOLEAN_EXPRESSION,
+                    TO_DATE_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
                     THE_EXPRESSION,
                     CURSOR_EXPRESSION
                 )
-            ).skip()
+            )
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
@@ -244,6 +246,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 TO_BOOLEAN, LPARENTHESIS,
                 EXPRESSION,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
+                RPARENTHESIS
+            )
+
+            b.rule(TO_DATE_EXPRESSION).define(
+                TO_DATE, LPARENTHESIS,
+                EXPRESSION,
+                b.optional(DEFAULT_ON_ERROR_CLAUSE),
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
                 RPARENTHESIS
             )
 
