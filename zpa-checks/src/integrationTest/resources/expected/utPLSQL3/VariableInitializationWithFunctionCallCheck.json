@@ -116,7 +116,6 @@
   "test/ut3_tester/core/test_ut_utils.pkb" : [
     5,
     147,
-    182,
     219,
     289,
     438,
@@ -140,18 +139,7 @@
     3,
     4,
     6,
-    8,
-    9,
-    10,
     12
-  ],
-  "test/ut3_user/expectations/test_matchers.pkb" : [
-    253,
-    254,
-    255,
-    262,
-    263,
-    264
   ],
   "test/ut3_user/reporters/test_coverage/test_coverage_standalone.pkb" : [
     42,

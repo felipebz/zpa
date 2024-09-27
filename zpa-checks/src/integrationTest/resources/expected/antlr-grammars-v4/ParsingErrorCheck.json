@@ -413,9 +413,6 @@
   "examples/single_statement.sql" : [
     1
   ],
-  "examples/to_timestamp_tz.sql" : [
-    6
-  ],
   "examples/truncate_cluster.sql" : [
     1
   ],
