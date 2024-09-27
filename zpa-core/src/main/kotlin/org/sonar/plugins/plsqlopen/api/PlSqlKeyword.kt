@@ -521,6 +521,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     TO_DATE("to_date"),
     TO_DSINTERVAL("to_dsinterval"),
     TO_NUMBER("to_number"),
+    TO_TIMESTAMP("to_timestamp"),
     TRAILING("trailing"),
     TRANSACTION("transaction"),
     TREAT("treat"),

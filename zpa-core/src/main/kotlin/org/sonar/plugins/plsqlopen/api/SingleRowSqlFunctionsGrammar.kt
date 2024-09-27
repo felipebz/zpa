@@ -134,6 +134,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TO_DATE_EXPRESSION,
     TO_DSINTERVAL_EXPRESSION,
     TO_NUMBER_EXPRESSION,
+    TO_TIMESTAMP_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
     THE_EXPRESSION,
@@ -191,6 +192,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     TO_DATE_EXPRESSION,
                     TO_DSINTERVAL_EXPRESSION,
                     TO_NUMBER_EXPRESSION,
+                    TO_TIMESTAMP_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
                     THE_EXPRESSION,
@@ -270,6 +272,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(TO_NUMBER_EXPRESSION).define(
                 TO_NUMBER, LPARENTHESIS,
+                EXPRESSION,
+                b.optional(DEFAULT_ON_ERROR_CLAUSE),
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS
+            )
+
+            b.rule(TO_TIMESTAMP_EXPRESSION).define(
+                TO_TIMESTAMP, LPARENTHESIS,
                 EXPRESSION,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
