@@ -413,9 +413,6 @@
   "examples/single_statement.sql" : [
     1
   ],
-  "examples/to_dsinterval.sql" : [
-    3
-  ],
   "examples/to_number.sql" : [
     6
   ],
@@ -424,9 +421,6 @@
   ],
   "examples/to_timestamp_tz.sql" : [
     6
-  ],
-  "examples/to_yminterval.sql" : [
-    3
   ],
   "examples/truncate_cluster.sql" : [
     1

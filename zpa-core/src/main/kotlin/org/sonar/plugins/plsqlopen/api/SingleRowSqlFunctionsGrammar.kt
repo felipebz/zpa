@@ -132,6 +132,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TO_BINARY_FLOAT_EXPRESSION,
     TO_BOOLEAN_EXPRESSION,
     TO_DATE_EXPRESSION,
+    TO_DSINTERVAL_EXPRESSION,
     TRIM_EXPRESSION,
     TABLE_EXPRESSION,
     THE_EXPRESSION,
@@ -187,6 +188,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     TO_BINARY_FLOAT_EXPRESSION,
                     TO_BOOLEAN_EXPRESSION,
                     TO_DATE_EXPRESSION,
+                    TO_DSINTERVAL_EXPRESSION,
                     TRIM_EXPRESSION,
                     TABLE_EXPRESSION,
                     THE_EXPRESSION,
@@ -254,6 +256,13 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 EXPRESSION,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                RPARENTHESIS
+            )
+
+            b.rule(TO_DSINTERVAL_EXPRESSION).define(
+                TO_DSINTERVAL, LPARENTHESIS,
+                EXPRESSION,
+                b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 RPARENTHESIS
             )
 
