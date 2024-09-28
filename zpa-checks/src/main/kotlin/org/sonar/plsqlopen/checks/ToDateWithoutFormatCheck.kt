@@ -20,7 +20,7 @@
 package org.sonar.plsqlopen.checks
 
 import com.felipebz.flr.api.AstNode
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.SingleRowSqlFunctionsGrammar
 import org.sonar.plugins.plsqlopen.api.annotations.*
 
@@ -35,8 +35,8 @@ class ToDateWithoutFormatCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val firstArgument = node.getFirstChild(PlSqlPunctuator.LPARENTHESIS).nextSibling
-        if (!node.hasDirectChildren(PlSqlPunctuator.COMMA) && !CheckUtils.isNullLiteralOrEmptyString(firstArgument)) {
+        val arguments = node.getChildren(PlSqlGrammar.ARGUMENT)
+        if (arguments.size == 1 && !CheckUtils.isNullLiteralOrEmptyString(arguments.first().lastChild)) {
             addIssue(node, getLocalizedMessage())
         }
     }

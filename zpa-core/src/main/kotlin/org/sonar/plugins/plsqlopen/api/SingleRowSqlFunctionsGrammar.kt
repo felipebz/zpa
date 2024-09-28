@@ -238,69 +238,69 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(TO_BINARY_DOUBLE_EXPRESSION).define(
                 TO_BINARY_DOUBLE, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_BINARY_FLOAT_EXPRESSION).define(
                 TO_BINARY_FLOAT, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_BOOLEAN_EXPRESSION).define(
                 TO_BOOLEAN, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 RPARENTHESIS
             )
 
             b.rule(TO_DATE_EXPRESSION).define(
                 TO_DATE, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_DSINTERVAL_EXPRESSION).define(
                 TO_DSINTERVAL, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 RPARENTHESIS
             )
 
             b.rule(TO_NUMBER_EXPRESSION).define(
                 TO_NUMBER, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_TIMESTAMP_EXPRESSION).define(
                 TO_TIMESTAMP, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_TIMESTAMP_TZ_EXPRESSION).define(
                 TO_TIMESTAMP_TZ, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                b.optional(COMMA, ARGUMENT, b.optional(COMMA, ARGUMENT)),
                 RPARENTHESIS
             )
 
             b.rule(TO_YMINTERVAL_EXPRESSION).define(
                 TO_YMINTERVAL, LPARENTHESIS,
-                EXPRESSION,
+                ARGUMENT,
                 b.optional(DEFAULT_ON_ERROR_CLAUSE),
                 RPARENTHESIS
             )
