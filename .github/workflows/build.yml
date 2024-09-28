@@ -56,7 +56,8 @@ jobs:
         sqVersion:
           - LATEST_RELEASE[9.9]
           - LATEST_RELEASE[10.6]
-          - 10.7-SNAPSHOT
+          - LATEST_RELEASE[10.7]
+          - 10.8-SNAPSHOT
     steps:
       - uses: actions/checkout@v4
 
