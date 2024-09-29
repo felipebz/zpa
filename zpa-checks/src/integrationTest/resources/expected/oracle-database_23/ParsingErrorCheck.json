@@ -2939,36 +2939,6 @@
   "sqlrf/annotations_clause-5.sql" : [
     3
   ],
-  "sqlrf/boolean_and_agg-2.sql" : [
-    4
-  ],
-  "sqlrf/boolean_and_agg-3.sql" : [
-    4
-  ],
-  "sqlrf/boolean_and_agg-4.sql" : [
-    4
-  ],
-  "sqlrf/boolean_and_agg-5.sql" : [
-    4
-  ],
-  "sqlrf/boolean_and_agg-6.sql" : [
-    4
-  ],
-  "sqlrf/boolean_or_agg-2.sql" : [
-    4
-  ],
-  "sqlrf/boolean_or_agg-3.sql" : [
-    4
-  ],
-  "sqlrf/boolean_or_agg-4.sql" : [
-    4
-  ],
-  "sqlrf/boolean_or_agg-5.sql" : [
-    4
-  ],
-  "sqlrf/boolean_or_agg-6.sql" : [
-    4
-  ],
   "sqlrf/constraint-1.sql" : [
     10
   ],

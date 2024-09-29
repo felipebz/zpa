@@ -22,6 +22,7 @@ package org.sonar.plugins.plsqlopen.api
 import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.CONCATENATION_EXPRESSION
+import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.NULL_LITERAL
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.OBJECT_REFERENCE
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
 
@@ -39,6 +40,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
     // conditions
     RELATIONAL_CONDITION,
+    BOOLEAN_TEST_CONDITION,
     LIKE_CONDITION,
     BETWEEN_CONDITION,
     MULTISET_CONDITION,
@@ -70,6 +72,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
             b.rule(RELATIONAL_CONDITION).define(
                 CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR, CONCATENATION_EXPRESSION
             ).skip()
+
+            b.rule(BOOLEAN_TEST_CONDITION).define(
+                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, TRUE, FALSE)
+            )
 
             b.rule(LIKE_CONDITION).define(
                 CONCATENATION_EXPRESSION,
@@ -244,6 +250,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
             b.rule(CONDITION).define(
                 b.firstOf(
                     RELATIONAL_CONDITION,
+                    BOOLEAN_TEST_CONDITION,
                     LIKE_CONDITION,
                     BETWEEN_CONDITION,
                     MULTISET_CONDITION,

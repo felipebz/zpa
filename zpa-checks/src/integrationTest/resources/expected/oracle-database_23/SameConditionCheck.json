@@ -1,0 +1,9 @@
+{
+  "sqlrf/boolean_and_agg-6.sql" : [
+    2,
+    2
+  ],
+  "sqlrf/boolean_or_agg-6.sql" : [
+    2
+  ]
+}

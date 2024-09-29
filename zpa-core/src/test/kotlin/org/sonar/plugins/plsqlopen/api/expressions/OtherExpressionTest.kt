@@ -69,6 +69,26 @@ class OtherExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesIsTrue() {
+        assertThat(p).matches("var is true")
+    }
+
+    @Test
+    fun matchesIsNotTrue() {
+        assertThat(p).matches("var is not true")
+    }
+
+    @Test
+    fun matchesIsFalse() {
+        assertThat(p).matches("var is false")
+    }
+
+    @Test
+    fun matchesIsNotFalse() {
+        assertThat(p).matches("var is not false")
+    }
+
+    @Test
     fun matchesBasicIn() {
         assertThat(p).matches("var in (1)")
     }

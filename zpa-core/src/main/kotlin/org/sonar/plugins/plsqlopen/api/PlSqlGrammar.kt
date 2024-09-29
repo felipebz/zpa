@@ -793,7 +793,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(POSTFIX_EXPRESSION).define(OBJECT_REFERENCE,
                     b.optional(b.firstOf(
-                            b.sequence(IS, b.optional(NOT), NULL_LITERAL),
                             ANALYTIC_CLAUSE,
                             b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))))).skipIfOneChild()
 
