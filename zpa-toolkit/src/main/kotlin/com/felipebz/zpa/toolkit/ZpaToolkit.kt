@@ -17,11 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.toolkit
+package com.felipebz.zpa.toolkit
 
 import com.felipebz.flr.toolkit.Toolkit
 
 fun main() {
-    val toolkit = Toolkit("ZPA Toolkit", PlSqlConfigurationModel())
+    val toolkit = Toolkit("ZPA Toolkit", ZpaConfigurationModel())
     toolkit.run()
 }

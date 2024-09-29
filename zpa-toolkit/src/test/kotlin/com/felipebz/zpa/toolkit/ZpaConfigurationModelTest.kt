@@ -17,17 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.toolkit
+package com.felipebz.zpa.toolkit
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 
-class PlSqlConfigurationModelTest {
+class ZpaConfigurationModelTest {
 
     @Test
     fun getConfiguration_charset() {
-        val model = PlSqlConfigurationModel()
+        val model = ZpaConfigurationModel()
         model.charsetProperty.value = "UTF-8"
         assertThat(model.charset).isEqualTo(StandardCharsets.UTF_8)
         assertThat(model.configuration.charset).isEqualTo(StandardCharsets.UTF_8)
@@ -42,7 +42,7 @@ class PlSqlConfigurationModelTest {
 
         try {
             System.setProperty("foo", "bar")
-            assertThat(PlSqlConfigurationModel.getPropertyOrDefaultValue("foo", "baz")).isEqualTo("bar")
+            assertThat(ZpaConfigurationModel.getPropertyOrDefaultValue("foo", "baz")).isEqualTo("bar")
         } finally {
             if (oldValue == null) {
                 System.clearProperty("foo")
@@ -58,7 +58,7 @@ class PlSqlConfigurationModelTest {
 
         try {
             System.clearProperty("foo")
-            assertThat(PlSqlConfigurationModel.getPropertyOrDefaultValue("foo", "baz")).isEqualTo("baz")
+            assertThat(ZpaConfigurationModel.getPropertyOrDefaultValue("foo", "baz")).isEqualTo("baz")
         } finally {
             if (oldValue == null) {
                 System.clearProperty("foo")

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.plsqlopen.toolkit
+package com.felipebz.zpa.toolkit
 
 import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.impl.Parser
@@ -27,9 +27,10 @@ import com.felipebz.flr.toolkit.Validators
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.utils.log.Loggers
+import java.lang.Boolean
 import java.nio.charset.Charset
 
-class PlSqlConfigurationModel : AbstractConfigurationModel() {
+class ZpaConfigurationModel : AbstractConfigurationModel() {
 
     internal var charsetProperty = ConfigurationProperty("Charset",
         CHARSET_PROPERTY_KEY,
@@ -42,7 +43,7 @@ class PlSqlConfigurationModel : AbstractConfigurationModel() {
         Validators.booleanValidator())
 
     internal val configuration: PlSqlConfiguration
-        get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), java.lang.Boolean.valueOf(errorRecoveryProperty.value))
+        get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), Boolean.valueOf(errorRecoveryProperty.value))
 
     override val charset: Charset
         get() = Charset.forName(charsetProperty.value)
@@ -53,7 +54,7 @@ class PlSqlConfigurationModel : AbstractConfigurationModel() {
     override fun doGetParser(): Parser<Grammar> = PlSqlParser.create(configuration)
 
     companion object {
-        private val LOG = Loggers.getLogger(PlSqlConfigurationModel::class.java)
+        private val LOG = Loggers.getLogger(ZpaConfigurationModel::class.java)
         private const val CHARSET_PROPERTY_KEY = "sonar.sourceEncoding"
         private const val ERROR_RECOVERY_PROPERTY_KEY = "sonar.zpa.errorRecoveryEnabled"
 
