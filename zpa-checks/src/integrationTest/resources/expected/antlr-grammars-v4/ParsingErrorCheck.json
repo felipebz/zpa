@@ -398,9 +398,6 @@
   "examples/select_time.sql" : [
     1
   ],
-  "examples/select_without_from.sql" : [
-    1
-  ],
   "examples/simple04.sql" : [
     7
   ],

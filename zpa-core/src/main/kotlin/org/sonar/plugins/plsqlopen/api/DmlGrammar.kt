@@ -308,7 +308,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(
                         SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                         b.optional(INTO_CLAUSE),
-                        FROM_CLAUSE,
+                        b.optional(FROM_CLAUSE),
                         b.optional(WHERE_CLAUSE),
                         b.optional(b.firstOf(
                             b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),

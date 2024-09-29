@@ -212,4 +212,16 @@ class SelectExpressionTest : RuleTest() {
     fun matchesSelectFromValues() {
         assertThat(p).matches("select 1 from (values (1, 'foo'), (2, 'bar')) as t(a, b)")
     }
+
+    @Test
+    fun matchesShortSelect() {
+        assertThat(p).matches("select 1")
+        assertThat(p).matches("select 1 into var")
+    }
+
+    @Test
+    fun matchesShortSelectWithWhere() {
+        assertThat(p).matches("select 1 where 1 = 1")
+        assertThat(p).matches("select 1 into var where 1 = 1")
+    }
 }

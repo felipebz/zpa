@@ -5,9 +5,6 @@
   "adjsn/clauses-used-in-functions-and-conditions-for-json-14.sql" : [
     9
   ],
-  "adjsn/clauses-used-in-functions-and-conditions-for-json-7.sql" : [
-    2
-  ],
   "adjsn/conditions-is-json-and-is-not-json-6.sql" : [
     6
   ],
@@ -131,9 +128,6 @@
   "adjsn/json-schema-22.sql" : [
     3
   ],
-  "adjsn/json-schema-25.sql" : [
-    2
-  ],
   "adjsn/json-schema-3.sql" : [
     2
   ],
@@ -142,9 +136,6 @@
   ],
   "adjsn/json-schema-6.sql" : [
     2
-  ],
-  "adjsn/json-schema-7.sql" : [
-    5
   ],
   "adjsn/json-schema-8.sql" : [
     2
@@ -1748,29 +1739,11 @@
   "sqlrf/CALL-4.sql" : [
     9
   ],
-  "sqlrf/CAST-12.sql" : [
-    5
-  ],
   "sqlrf/CAST-13.sql" : [
-    2
-  ],
-  "sqlrf/CAST-14.sql" : [
-    2
-  ],
-  "sqlrf/CAST-15.sql" : [
     2
   ],
   "sqlrf/CAST-16.sql" : [
     2
-  ],
-  "sqlrf/CAST-17.sql" : [
-    2
-  ],
-  "sqlrf/CAST-18.sql" : [
-    2
-  ],
-  "sqlrf/CAST-6.sql" : [
-    5
   ],
   "sqlrf/CHR-5.sql" : [
     2
@@ -2442,7 +2415,7 @@
     2
   ],
   "sqlrf/CUME_DIST-0.sql" : [
-    2
+    3
   ],
   "sqlrf/CV-0.sql" : [
     6
@@ -2478,7 +2451,7 @@
     11
   ],
   "sqlrf/DENSE_RANK-0.sql" : [
-    2
+    3
   ],
   "sqlrf/DISASSOCIATE-STATISTICS-0.sql" : [
     2
@@ -2631,7 +2604,7 @@
     3
   ],
   "sqlrf/PERCENT_RANK-0.sql" : [
-    2
+    3
   ],
   "sqlrf/PREDICTION-0.sql" : [
     4
@@ -2679,10 +2652,10 @@
     2
   ],
   "sqlrf/RANK-0.sql" : [
-    2
+    3
   ],
   "sqlrf/RANK-1.sql" : [
-    2
+    3
   ],
   "sqlrf/REF-1.sql" : [
     2
@@ -2740,9 +2713,6 @@
   ],
   "sqlrf/SELECT-11.sql" : [
     4
-  ],
-  "sqlrf/SELECT-112.sql" : [
-    2
   ],
   "sqlrf/SELECT-116.sql" : [
     4
@@ -2999,24 +2969,6 @@
   "sqlrf/boolean_or_agg-6.sql" : [
     4
   ],
-  "sqlrf/ceil-datetime-1.sql" : [
-    2
-  ],
-  "sqlrf/ceil-datetime-2.sql" : [
-    2
-  ],
-  "sqlrf/ceil-interval-0.sql" : [
-    2
-  ],
-  "sqlrf/ceil-interval-1.sql" : [
-    2
-  ],
-  "sqlrf/ceil-interval-2.sql" : [
-    2
-  ],
-  "sqlrf/ceil-interval-3.sql" : [
-    2
-  ],
   "sqlrf/constraint-1.sql" : [
     10
   ],
@@ -3107,9 +3059,6 @@
   "sqlrf/create-domain-4.sql" : [
     2
   ],
-  "sqlrf/create-domain-41.sql" : [
-    2
-  ],
   "sqlrf/create-domain-43.sql" : [
     2
   ],
@@ -3194,20 +3143,8 @@
   "sqlrf/domain_check-1.sql" : [
     2
   ],
-  "sqlrf/domain_check-11.sql" : [
-    2
-  ],
-  "sqlrf/domain_check-2.sql" : [
-    4
-  ],
   "sqlrf/domain_check-3.sql" : [
     2
-  ],
-  "sqlrf/domain_check-4.sql" : [
-    2
-  ],
-  "sqlrf/domain_check-5.sql" : [
-    4
   ],
   "sqlrf/domain_check-6.sql" : [
     2
@@ -3221,20 +3158,8 @@
   "sqlrf/domain_check_type-0.sql" : [
     2
   ],
-  "sqlrf/domain_check_type-1.sql" : [
-    4
-  ],
-  "sqlrf/domain_check_type-10.sql" : [
-    2
-  ],
   "sqlrf/domain_check_type-2.sql" : [
     2
-  ],
-  "sqlrf/domain_check_type-3.sql" : [
-    2
-  ],
-  "sqlrf/domain_check_type-4.sql" : [
-    4
   ],
   "sqlrf/domain_check_type-5.sql" : [
     2
@@ -3282,27 +3207,6 @@
     2
   ],
   "sqlrf/file_specification-5.sql" : [
-    2
-  ],
-  "sqlrf/floor-datetime-1.sql" : [
-    2
-  ],
-  "sqlrf/floor-datetime-2.sql" : [
-    2
-  ],
-  "sqlrf/floor-interval-0.sql" : [
-    2
-  ],
-  "sqlrf/floor-interval-1.sql" : [
-    2
-  ],
-  "sqlrf/floor-interval-2.sql" : [
-    2
-  ],
-  "sqlrf/from_vector-0.sql" : [
-    2
-  ],
-  "sqlrf/from_vector-1.sql" : [
     2
   ],
   "sqlrf/from_vector-2.sql" : [
@@ -3410,35 +3314,8 @@
   "sqlrf/graph_table-operator-5.sql" : [
     4
   ],
-  "sqlrf/round-interval-0.sql" : [
-    2
-  ],
-  "sqlrf/round-interval-1.sql" : [
-    2
-  ],
-  "sqlrf/round-interval-2.sql" : [
-    2
-  ],
-  "sqlrf/round-interval-3.sql" : [
-    2
-  ],
   "sqlrf/storage_clause-0.sql" : [
     6
-  ],
-  "sqlrf/to_boolean-0.sql" : [
-    2
-  ],
-  "sqlrf/to_vector-0.sql" : [
-    2
-  ],
-  "sqlrf/trunc-interval-0.sql" : [
-    2
-  ],
-  "sqlrf/trunc-interval-1.sql" : [
-    2
-  ],
-  "sqlrf/trunc-interval-2.sql" : [
-    2
   ],
   "sqlrf/value-expressions-graph_table-0.sql" : [
     4
@@ -3470,12 +3347,6 @@
   "sqlrf/vector_chunks-1.sql" : [
     14
   ],
-  "sqlrf/vector_dimension_count-0.sql" : [
-    2
-  ],
-  "sqlrf/vector_dimension_format-0.sql" : [
-    2
-  ],
   "sqlrf/vector_distance-11.sql" : [
     2
   ],
@@ -3495,12 +3366,6 @@
     2
   ],
   "sqlrf/vector_distance-9.sql" : [
-    2
-  ],
-  "sqlrf/vector_norm-0.sql" : [
-    2
-  ],
-  "sqlrf/vector_serialize-0.sql" : [
     2
   ],
   "sqlrf/vector_serialize-1.sql" : [

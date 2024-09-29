@@ -25,6 +25,8 @@ begin
             my_var, -- compliant
             other.baz 
        from other, other2);
+
+  select my_var; -- do not report error in queries without tables
 end;
 
 -- DML in scripts should be checked too
