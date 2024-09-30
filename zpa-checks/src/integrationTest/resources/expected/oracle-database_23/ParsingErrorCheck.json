@@ -29,32 +29,11 @@
   "adjsn/function-JSON_VALUE-3.sql" : [
     4
   ],
-  "adjsn/generation-14.sql" : [
-    2
-  ],
-  "adjsn/generation-17.sql" : [
-    2
-  ],
-  "adjsn/generation-20.sql" : [
-    2
-  ],
   "adjsn/generation-21.sql" : [
     3
   ],
-  "adjsn/generation-25.sql" : [
-    2
-  ],
   "adjsn/generation-28.sql" : [
     2
-  ],
-  "adjsn/generation-31.sql" : [
-    2
-  ],
-  "adjsn/generation-33.sql" : [
-    2
-  ],
-  "adjsn/generation-39.sql" : [
-    4
   ],
   "adjsn/in-memory-json-data-1.sql" : [
     6
@@ -3306,7 +3285,7 @@
     4
   ],
   "sqlrf/value-expressions-graph_table-8.sql" : [
-    4
+    5
   ],
   "sqlrf/vector_chunks-1.sql" : [
     14

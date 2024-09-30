@@ -74,17 +74,14 @@ class JsonArrayTest : RuleTest() {
 
     @Test
     fun matchesJsonArrayFromQuery() {
-        /*
-         * This syntax is listed on the JSON_ARRAY docs for Oracle 23ai:
-         * https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/JSON_ARRAY.html
-         *
-         * However, according to the table "Table C-2 Oracle Support for Optional Features of SQL/Foundation"
-         * it isn't supported yet:
-         *   T811, Basic SQL/JSON constructor functions
-         *   Oracle fully supports this feature, except for the JSON_ARRAY constructor by query.
-         * https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Oracle-Support-for-Optional-Features-of-SQLFoundation2011.html.
-         */
         assertThat(p).matches("json_array(select * from tab null on null returning json strict)")
+    }
+
+    @Test
+    fun matchesAlternativeSyntaxOfJsonArray() {
+        assertThat(p).matches("json[1]  ")
+        assertThat(p).matches("json[json[1,2,3], 100, 'test', null null on null returning json strict]")
+        assertThat(p).matches("json[select * from tab]")
     }
 
 }

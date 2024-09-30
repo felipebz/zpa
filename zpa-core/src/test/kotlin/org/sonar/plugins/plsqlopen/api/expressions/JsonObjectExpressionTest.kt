@@ -76,4 +76,17 @@ class JsonObjectExpressionTest : RuleTest() {
             strict with unique keys)""")
     }
 
+    @Test
+    fun matchesAlternativeSyntaxOfJsonObject() {
+        assertThat(p).matches("json { foo }")
+        assertThat(p).matches("json { 'k': 'v' }")
+        assertThat(p).matches(
+            """json { 'k' value 'v',
+            'a': '{}' format json
+            null on null
+            returning varchar2(200)
+            strict with unique keys }"""
+        )
+    }
+
 }

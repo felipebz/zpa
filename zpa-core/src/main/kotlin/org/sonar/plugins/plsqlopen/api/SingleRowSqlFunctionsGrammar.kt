@@ -36,6 +36,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_ARRAY_ENUMERATION_CONTENT,
     JSON_ARRAY_QUERY_CONTENT,
     JSON_ARRAY_ELEMENT,
+    JSON_ARRAY_OPTIONS,
     JSON_OBJECT_ENTRY,
     JSON_QUERY_RETURNING_CLAUSE,
     JSON_QUERY_WRAPPER_CLAUSE,
@@ -75,6 +76,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_MERGE_OPERATION,
     JSON_MINUS_OPERATION,
     JSON_NESTED_PATH_OPERATION,
+    JSON_OBJECT_OPTIONS,
     JSON_PREPEND_OPERATION,
     JSON_REMOVE_OPERATION,
     JSON_RENAME_OPERATION,
@@ -489,11 +491,15 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         private fun createJsonFunctions(b: PlSqlGrammarBuilder) {
             b.rule(JSON_CONSTRUCTOR).define(JSON, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
 
+            b.rule(JSON_ARRAY_OPTIONS).define(
+                b.firstOf(JSON_ARRAY_ENUMERATION_CONTENT, JSON_ARRAY_QUERY_CONTENT)
+            ).skip()
+
             b.rule(JSON_ARRAY_EXPRESSION).define(
-                JSON_ARRAY,
-                LPARENTHESIS,
-                b.firstOf(JSON_ARRAY_ENUMERATION_CONTENT, JSON_ARRAY_QUERY_CONTENT),
-                RPARENTHESIS
+                b.firstOf(
+                    b.sequence(JSON_ARRAY, LPARENTHESIS, JSON_ARRAY_OPTIONS, RPARENTHESIS),
+                    b.sequence(b.optional(JSON), LBRACKET, JSON_ARRAY_OPTIONS, RBRACKET)
+                )
             )
 
             b.rule(JSON_ARRAY_ENUMERATION_CONTENT).define(
@@ -557,15 +563,19 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(STRICT)
             )
 
-            b.rule(JSON_OBJECT_EXPRESSION).define(
-                JSON_OBJECT,
-                LPARENTHESIS,
+            b.rule(JSON_OBJECT_OPTIONS).define(
                 JSON_OBJECT_ENTRY, b.zeroOrMore(COMMA, JSON_OBJECT_ENTRY),
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
                 b.optional(STRICT),
-                b.optional(WITH, UNIQUE, KEYS),
-                RPARENTHESIS
+                b.optional(WITH, UNIQUE, KEYS)
+            ).skip()
+
+            b.rule(JSON_OBJECT_EXPRESSION).define(
+                b.firstOf(
+                    b.sequence(JSON_OBJECT, LPARENTHESIS, JSON_OBJECT_OPTIONS, RPARENTHESIS),
+                    b.sequence(b.optional(JSON), LBRACE, JSON_OBJECT_OPTIONS, RBRACE)
+                )
             )
 
             b.rule(JSON_OBJECT_ENTRY).define(
