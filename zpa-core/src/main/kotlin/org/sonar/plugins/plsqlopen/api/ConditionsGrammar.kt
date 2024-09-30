@@ -74,7 +74,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
             ).skip()
 
             b.rule(BOOLEAN_TEST_CONDITION).define(
-                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, TRUE, FALSE)
+                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)
             )
 
             b.rule(LIKE_CONDITION).define(
