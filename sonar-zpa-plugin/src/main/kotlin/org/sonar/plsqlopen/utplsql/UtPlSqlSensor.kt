@@ -32,7 +32,7 @@ class UtPlSqlSensor(objectLocator: ObjectLocator, analysisWarnings: AnalysisWarn
     private val coverageResultImporter = CoverageResultImporter(objectLocator, analysisWarnings)
 
     override fun describe(descriptor: SensorDescriptor) {
-        descriptor.name("Z PL/SQL Analyzer - utPLSQL Report Importer").onlyOnLanguage(PlSql.KEY)
+        descriptor.name("ZPA - utPLSQL Report Importer").onlyOnLanguage(PlSql.KEY)
     }
 
     override fun execute(context: SensorContext) {

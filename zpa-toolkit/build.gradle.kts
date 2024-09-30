@@ -39,4 +39,4 @@ publishing {
     }
 }
 
-description = "Z PL/SQL Analyzer :: SSLR Toolkit"
+description = "ZPA Toolkit"

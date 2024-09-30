@@ -107,7 +107,7 @@ class PlSqlPlugin : Plugin {
     }
 
     companion object {
-        private const val DEFAULT_CATEGORY = "Z PL/SQL Analyzer"
+        private const val DEFAULT_CATEGORY = "ZPA"
         private const val GENERAL = "General"
         private const val TEST_AND_COVERAGE = "Tests and Coverage"
         internal const val FILE_SUFFIXES_KEY = "sonar.plsqlopen.file.suffixes"

@@ -44,4 +44,4 @@ testing {
     }
 }
 
-description = "Z PL/SQL Analyzer :: Checks"
+description = "ZPA Checks"

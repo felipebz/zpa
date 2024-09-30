@@ -67,7 +67,7 @@ class PlSqlSquidSensorTest {
     fun testDescriptor() {
         val descriptor = DefaultSensorDescriptor()
         sensor.describe(descriptor)
-        assertThat(descriptor.name()).isEqualTo("Z PL/SQL Analyzer")
+        assertThat(descriptor.name()).isEqualTo("ZPA")
         assertThat(descriptor.languages()).containsOnly(PlSql.KEY)
     }
 

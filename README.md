@@ -1,10 +1,10 @@
-# Z PL/SQL Analyzer - ZPA
+# ZPA
 
 [![Latest release](https://img.shields.io/github/release/felipebz/zpa.svg) ](https://github.com/felipebz/zpa/releases/latest)
 [![Build](https://github.com/felipebz/zpa/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/felipebz/zpa/actions/workflows/build.yml)
 [![Quality Gate Status](https://sonarqube.felipebz.com/api/project_badges/measure?project=com.felipebz.zpa%3Azpa&metric=alert_status)](https://sonarqube.felipebz.com/dashboard?id=com.felipebz.zpa%3Azpa)
 
-The Z PL/SQL Analyzer (or simply ZPA) is a code analyzer for PL/SQL and Oracle SQL code.
+ZPA is parser and static code analysis tool for PL/SQL and Oracle SQL.
 
 You can use it in a [SonarQube](https://www.sonarqube.org) on-premise instance. SonarQube is an open platform to manage code quality.
 
@@ -16,7 +16,7 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 
 - Download the [latest sonar-zpa-plugin release](https://github.com/felipebz/zpa/releases/latest) and copy to the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
-- Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "Z PL/SQL Analyzer" on the tab "Installed Plugins";
+- Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "ZPA" on the tab "Installed Plugins";
 - Run an analysis with [SonarScanner](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/overview/).
 
 ## Compatibility matrix

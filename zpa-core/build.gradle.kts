@@ -4,4 +4,4 @@ dependencies {
     testImplementation(libs.flr.testing.harness)
 }
 
-description = "Z PL/SQL Analyzer :: Core"
+description = "ZPA Core"

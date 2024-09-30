@@ -29,7 +29,7 @@ class PlSqlRuleRepository : RulesDefinition {
     override fun define(context: RulesDefinition.Context) {
         val repository = context
                 .createRepository(KEY, PlSql.KEY)
-                .setName("Z PL/SQL Analyzer")
+                .setName("ZPA")
         CustomAnnotationBasedRulesDefinition.load(SonarQubeRepositoryAdapter(repository), PlSql.KEY, CheckList.checks, SonarQubeRuleMetadataLoader())
         repository.done()
     }

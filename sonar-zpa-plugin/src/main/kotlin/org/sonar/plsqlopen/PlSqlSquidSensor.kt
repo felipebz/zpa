@@ -56,7 +56,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         .orElse(null))
 
     override fun describe(descriptor: SensorDescriptor) {
-        descriptor.name("Z PL/SQL Analyzer").onlyOnLanguage(PlSql.KEY)
+        descriptor.name("ZPA").onlyOnLanguage(PlSql.KEY)
     }
 
     override fun execute(context: SensorContext) {

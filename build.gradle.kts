@@ -171,7 +171,7 @@ subprojects {
 
 jreleaser {
     project {
-        description.set("Z PL/SQL Analyzer")
+        description.set("ZPA - Parser and static code analysis tool for PL/SQL and Oracle SQL")
         authors.set(listOf("felipebz"))
         license.set("LGPL-3.0")
         links {
@@ -218,6 +218,6 @@ jreleaser {
 
 sonarqube {
     properties {
-        property("sonar.projectName", "Z PL/SQL Analyzer")
+        property("sonar.projectName", "ZPA")
     }
 }

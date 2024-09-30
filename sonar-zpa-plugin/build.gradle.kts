@@ -72,7 +72,7 @@ val shadowJar = tasks.named<ShadowJar>("shadowJar") {
             "Plugin-IssueTrackerUrl" to "https://github.com/felipebz/zpa/issues",
             "Plugin-Key" to "plsqlopen",
             "Plugin-License" to "GNU LGPL 3",
-            "Plugin-Name" to "Z PL/SQL Analyzer",
+            "Plugin-Name" to "ZPA Plugin for SonarQube",
             "Plugin-Organization" to "Felipe Zorzo",
             "Plugin-OrganizationUrl" to "https://felipezorzo.com.br",
             "Plugin-SourcesUrl" to "https://github.com/felipebz/zpa",
@@ -111,4 +111,4 @@ publishing {
     }
 }
 
-description = "Z PL/SQL Analyzer for SonarQube"
+description = "ZPA Plugin for SonarQube"
