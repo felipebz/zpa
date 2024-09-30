@@ -517,8 +517,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 RETURNING,
                 b.firstOf(
                     b.sequence(
-                        VARCHAR2,
-                        b.optional(LPARENTHESIS, PlSqlTokenType.INTEGER_LITERAL, b.optional(b.firstOf(CHAR, BYTE)), RPARENTHESIS),
+                        CHARACTER_DATAYPE,
                         b.optional(WITH, TYPENAME)
                     ),
                     b.sequence(
@@ -798,25 +797,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(JSON_VALUE_RETURN_TYPE).define(
                 b.firstOf(
                     b.sequence(
-                        VARCHAR2,
-                        b.optional(
-                            LPARENTHESIS,
-                            PlSqlTokenType.INTEGER_LITERAL,
-                            b.optional(b.firstOf(CHAR, BYTE)),
-                            RPARENTHESIS
-                        ),
+                        CHARACTER_DATAYPE,
                         b.optional(TRUNCATE)
                     ),
                     CLOB,
-                    b.sequence(
-                        NUMBER,
-                        b.optional(
-                            LPARENTHESIS,
-                            PlSqlTokenType.INTEGER_LITERAL,
-                            b.optional(COMMA, PlSqlTokenType.INTEGER_LITERAL),
-                            RPARENTHESIS
-                        )
-                    ),
+                    NUMERIC_DATATYPE,
                     b.sequence(b.firstOf(ALLOW, DISALLOW), b.optional(BOOLEAN), TO, NUMBER, b.optional(CONVERSION)),
                     b.sequence(DATE, b.optional(b.firstOf(TRUNCATE, PRESERVE), TIME)),
                     b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
@@ -897,15 +882,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(JSON_TRANSFORM_RETURNING_CLAUSE).define(
                 RETURNING,
                 b.firstOf(
-                    b.sequence(
-                        VARCHAR2,
-                        b.optional(
-                            LPARENTHESIS,
-                            PlSqlTokenType.INTEGER_LITERAL,
-                            b.optional(b.firstOf(CHAR, BYTE)),
-                            RPARENTHESIS
-                        )
-                    ),
+                    CHARACTER_DATAYPE,
                     b.sequence(
                         b.firstOf(CLOB, BLOB),
                         b.optional(b.firstOf(REFERENCE, VALUE))
