@@ -874,7 +874,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_VALUE_RETURNING_CLAUSE),
                 b.optional(JSON_VALUE_ON_ERROR_CLAUSE),
                 b.optional(JSON_VALUE_ON_EMPTY_CLAUSE),
-                b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE),
+                b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
                 b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 RPARENTHESIS
             )

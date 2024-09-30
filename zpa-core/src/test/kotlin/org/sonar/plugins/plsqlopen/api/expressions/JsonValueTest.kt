@@ -65,7 +65,8 @@ class JsonValueTest : RuleTest() {
             returning varchar2(10) truncate
             error on error
             error on empty
-            error on mismatch
+            error on mismatch (missing data)
+            ignore on mismatch (extra data)
             type strict)""")
     }
 
