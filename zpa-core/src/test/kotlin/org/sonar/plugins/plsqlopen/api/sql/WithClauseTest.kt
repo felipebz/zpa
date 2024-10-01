@@ -62,4 +62,26 @@ class WithClauseTest : RuleTest() {
         assertThat(p).matches("with q(a, b) as (values (1, 'foo'), (2, 'bar')) as t(a, b)")
     }
 
+    @Test
+    fun matchesFunctionDeclaration() {
+        assertThat(p).matches("with function func return number is begin return 1; end;")
+    }
+
+    @Test
+    fun matchesProcedureDeclaration() {
+        assertThat(p).matches("with procedure proc is begin null; end;")
+    }
+
+    @Test
+    fun matchesFunctionAndProcedureDeclaration() {
+        assertThat(p).matches("with function func return number is begin return 1; end; " +
+            "procedure proc is begin null; end;")
+    }
+
+    @Test
+    fun matchesFunctionDeclarationAndQuery() {
+        assertThat(p).matches("with function func return number is begin return 1; end; " +
+            "q as (select 1 from dual)")
+    }
+
 }

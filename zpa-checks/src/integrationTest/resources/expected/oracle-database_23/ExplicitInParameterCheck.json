@@ -504,6 +504,9 @@
     2,
     2
   ],
+  "sqlrf/SELECT-23.sql" : [
+    3
+  ],
   "sqlrf/Using-Extensible-Indexing-1.sql" : [
     12,
     12,

@@ -278,7 +278,13 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(WITH_CLAUSE).define(
                 WITH,
-                b.oneOrMore(SUBQUERY_FACTORING_CLAUSE, b.optional(COMMA))
+                b.firstOf(
+                    b.sequence(
+                        b.oneOrMore(b.firstOf(FUNCTION_DECLARATION, PROCEDURE_DECLARATION)),
+                        b.zeroOrMore(SUBQUERY_FACTORING_CLAUSE, b.zeroOrMore(COMMA, SUBQUERY_FACTORING_CLAUSE))
+                    ),
+                    b.oneOrMore(SUBQUERY_FACTORING_CLAUSE, b.zeroOrMore(COMMA, SUBQUERY_FACTORING_CLAUSE))
+                )
             )
 
             b.rule(SUBQUERY_FACTORING_CLAUSE).define(
