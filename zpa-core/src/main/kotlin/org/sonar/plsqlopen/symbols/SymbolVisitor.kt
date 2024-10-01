@@ -22,6 +22,7 @@ package org.sonar.plsqlopen.symbols
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import org.sonar.plsqlopen.typeIs
+import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
 import org.sonar.plugins.plsqlopen.api.checks.PlSqlCheck
@@ -49,7 +50,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         PlSqlGrammar.BLOCK_STATEMENT,
         PlSqlGrammar.FOR_STATEMENT,
         PlSqlGrammar.CURSOR_DECLARATION,
-        PlSqlGrammar.FORALL_STATEMENT)
+        PlSqlGrammar.FORALL_STATEMENT,
+        DmlGrammar.SELECT_EXPRESSION)
 
     val symbolTable = SymbolTableImpl()
     private lateinit var fileScope: Scope
@@ -171,6 +173,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             visitPackage(node)
         } else if (node.type === PlSqlGrammar.LITERAL) {
             visitLiteral(node)
+        } else if (node.type === DmlGrammar.SELECT_EXPRESSION) {
+            visitSelectExpression(node)
         }
     }
 
@@ -366,6 +370,10 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitLiteral(node: AstNode) {
         (node as SemanticAstNode).plSqlDatatype = solveType(node)
+    }
+
+    private fun visitSelectExpression(node: AstNode) {
+        enterScope(node)
     }
 
     private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, plSqlDatatype: PlSqlDatatype): Symbol {

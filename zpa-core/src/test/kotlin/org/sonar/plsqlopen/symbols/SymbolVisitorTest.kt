@@ -24,6 +24,7 @@ import org.assertj.core.groups.Tuple
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
+import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
@@ -631,6 +632,29 @@ end;
         assertThat((text.datatype as CharacterDatatype).length).isNull()
         assertThat(text.references).isEmpty()
         assertThat(text.innerScope).isNull()
+    }
+
+    @Test
+    fun selectWithFunctionDeclaration() {
+        val symbols = scan(
+            """
+with 
+  function func return number is 
+  begin
+    return 1; 
+  end;
+select func
+"""
+        )
+        assertThat(symbols).hasSize(1)
+
+        val func = symbols.find("func", 2, 12)
+        assertThat(func.type).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(func.references).containsExactly(
+            tuple(6, 8)
+        )
+        assertThat(func.scope.type).isEqualTo(DmlGrammar.SELECT_EXPRESSION)
+        assertThat(func.innerScope).isNotNull()
     }
 
     private fun scan(contents: String): List<Symbol> {
