@@ -23,8 +23,8 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 
 | ZPA version            | SonarQube version (min/max) |
 |------------------------|-----------------------------|
-| 3.5.1                  | 9.9 / 10.6                  |
-| 3.6.0 (in development) | 9.9 / 10.7                  |
+| 3.6.0                  | 9.9 / 10.7                  |
+| 3.7.0 (in development) | 9.9 / 10.7                  |
 
 ## ZPA Toolkit
 
@@ -69,6 +69,6 @@ Then run the tests:
 
     ./gradlew integrationTest
 
-By default, the tests will be executed using SonarQube 9.9 LTA. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing one of `LATEST_RELEASE[9.9]` (for SonarQube 9.9.x LTA), `LATEST_RELEASE[10.6]` (latest official release) or `a.b.c.d` for an exact release including build number: 
+By default, the tests will be executed using SonarQube 9.9 LTA. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing one of `LATEST_RELEASE[9.9]` (for SonarQube 9.9.x LTA), `LATEST_RELEASE[10.7]` (latest official release) or `a.b.c.d` for an exact release including build number: 
 
     ./gradlew integrationTest -Dsonar.runtimeVersion=LATEST_RELEASE[9.9]
