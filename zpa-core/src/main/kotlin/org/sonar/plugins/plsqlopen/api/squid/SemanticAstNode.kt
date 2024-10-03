@@ -44,7 +44,7 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
             (child as SemanticAstNode).symbol = symbol
         }
 
-    var plSqlDatatype: PlSqlDatatype = UnknownDatatype()
+    var plSqlDatatype: PlSqlDatatype = UnknownDatatype
         get() = this.symbol?.datatype ?: field
 
     val plSqlType: PlSqlType

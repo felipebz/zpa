@@ -71,7 +71,7 @@ class SymbolTableImplTest {
         val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
-        val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
+        val symbol = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype)
 
         assertThat(symbolTable.symbols.find { it.declaration == node }).isEqualTo(symbol)
         assertThat(symbolTable.symbols.find { it.declaration == node2 }).isNull()
@@ -84,7 +84,7 @@ class SymbolTableImplTest {
         val scope = ScopeImpl(null, newAstNodeForTest("scope"), isAutonomousTransaction = false, hasExceptionHandler = false)
 
         val symbolTable = SymbolTableImpl()
-        symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
+        symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype)
 
         assertThat(symbolTable.symbols.find { it.declaration == node }?.scope).isEqualTo(scope)
         assertThat(symbolTable.symbols.find { it.declaration == node2 }?.scope).isNull()
@@ -97,8 +97,8 @@ class SymbolTableImplTest {
         val node = newAstNodeForTest("foo")
 
         val symbolTable = SymbolTableImpl()
-        val symbol1 = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype())
-        val symbol2 = symbolTable.declareSymbol(node, Kind.VARIABLE, scope, UnknownDatatype())
+        val symbol1 = symbolTable.declareSymbol(node, Kind.CURSOR, scope, UnknownDatatype)
+        val symbol2 = symbolTable.declareSymbol(node, Kind.VARIABLE, scope, UnknownDatatype)
 
         assertThat(symbolTable.symbols.filter { it.kind == Kind.CURSOR }).containsExactly(symbol1)
         assertThat(symbolTable.symbols.filter { it.kind == Kind.VARIABLE }).containsExactly(symbol2)
@@ -113,8 +113,8 @@ class SymbolTableImplTest {
         val node2 = newAstNodeForTest("FOO")
 
         val symbolTable = SymbolTableImpl()
-        val symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, UnknownDatatype())
-        val symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, UnknownDatatype())
+        val symbol1 = symbolTable.declareSymbol(node1, Kind.CURSOR, scope, UnknownDatatype)
+        val symbol2 = symbolTable.declareSymbol(node2, Kind.VARIABLE, scope, UnknownDatatype)
 
         assertThat(symbolTable.symbols.filter { it.name.equals("foo", ignoreCase = true) }).containsExactly(symbol1, symbol2)
         assertThat(symbolTable.symbols.filter { it.name.equals("bar", ignoreCase = true) }).isEmpty()

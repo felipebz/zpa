@@ -21,7 +21,7 @@ package org.sonar.plugins.plsqlopen.api.symbols.datatype
 
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 
-class UnknownDatatype : PlSqlDatatype {
+object UnknownDatatype : PlSqlDatatype {
     override val type = PlSqlType.UNKNOWN
 
     override val name: String? = null

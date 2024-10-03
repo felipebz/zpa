@@ -204,7 +204,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         }
 
         val datatype = node.getFirstChildOrNull(PlSqlKeyword.RETURN)?.nextSibling
-        val type = if (datatype != null) solveType(datatype) else UnknownDatatype()
+        val type = if (datatype != null) solveType(datatype) else UnknownDatatype
         val symbolKind = when(node.type) {
             PlSqlGrammar.CREATE_PROCEDURE -> Symbol.Kind.PROCEDURE
             PlSqlGrammar.PROCEDURE_DECLARATION -> Symbol.Kind.PROCEDURE
@@ -243,7 +243,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             }
             enterScope(node, autonomousTransaction = false, exceptionHandler = false)
         } else {
-            val symbol = createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype())
+            val symbol = createSymbol(identifier, Symbol.Kind.PACKAGE, UnknownDatatype)
             enterScope(node, autonomousTransaction = false, exceptionHandler = false)
             symbol.innerScope = currentScope
         }
@@ -251,7 +251,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     private fun visitCursor(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        val symbol = createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype())
+        val symbol = createSymbol(identifier, Symbol.Kind.CURSOR, UnknownDatatype)
         enterScope(node)
         symbol.innerScope = currentScope
     }
@@ -275,7 +275,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
                    control.hasDirectChildren(PlSqlGrammar.DYNAMIC_SQL)) {
             RowtypeDatatype()
         } else {
-            UnknownDatatype()
+            UnknownDatatype
         }
 
         for (declaration in declarations) {

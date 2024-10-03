@@ -50,7 +50,7 @@ open class Symbol(val node: AstNode?,
 
     val type: PlSqlType = datatype?.type ?: PlSqlType.UNKNOWN
 
-    val datatype: PlSqlDatatype = datatype ?: UnknownDatatype()
+    val datatype: PlSqlDatatype = datatype ?: UnknownDatatype
 
     val modifiers: List<AstNode>
         get() = Collections.unmodifiableList(internalModifiers)

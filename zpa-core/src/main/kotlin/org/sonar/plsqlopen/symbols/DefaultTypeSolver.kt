@@ -35,11 +35,11 @@ open class DefaultTypeSolver {
         } else if (node.type === PlSqlGrammar.LITERAL) {
             return solveLiteral(node)
         }
-        return UnknownDatatype()
+        return UnknownDatatype
     }
 
     open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype()
+        var type: PlSqlDatatype = UnknownDatatype
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
             type = CharacterDatatype(node)
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
@@ -59,13 +59,13 @@ open class DefaultTypeSolver {
             type = JsonDatatype()
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype()
+            type = scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
         }
         return type
     }
 
     open fun solveLiteral(node: AstNode): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype()
+        var type: PlSqlDatatype = UnknownDatatype
         if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
             type = NullDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
