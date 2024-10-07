@@ -18,7 +18,7 @@ woodstox = "7.0.0"
 
 # testing
 assertj = "3.26.3"
-junit = "5.11.1"
+junit = "5.11.2"
 mockito = "5.14.1"
 mockito-kotlin = "5.4.0"
 sonarqube-orchestrator = "5.0.0.2065"
@@ -33,6 +33,7 @@ flr-xpath = { module = "com.felipebz.flr:flr-xpath", version.ref = "flr" }
 jackson = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
 woodstox = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "woodstox" }

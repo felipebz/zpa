@@ -65,10 +65,8 @@ subprojects {
 
     testing {
         suites {
-            configureEach {
-                if (this is JvmTestSuite) {
-                    useJUnitJupiter(rootProject.libs.versions.junit)
-                }
+            val test by getting(JvmTestSuite::class) {
+                useJUnitJupiter(rootProject.libs.versions.junit)
             }
         }
     }

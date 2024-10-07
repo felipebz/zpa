@@ -22,7 +22,7 @@ dependencies {
 
 testing {
     suites {
-        val integrationTest by registering(JvmTestSuite::class) {
+        register<JvmTestSuite>("integrationTest") {
             testType.set(TestSuiteType.INTEGRATION_TEST)
 
             dependencies {
