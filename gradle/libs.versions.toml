@@ -4,7 +4,7 @@ dokka = "1.9.20"
 download = "5.6.0"
 jreleaser = "1.14.0"
 license = "0.16.1"
-shadow = "8.3.2"
+shadow = "8.3.3"
 sonarscanner = "5.1.0.4882"
 
 # libs
@@ -19,7 +19,7 @@ woodstox = "7.0.0"
 # testing
 assertj = "3.26.3"
 junit = "5.11.1"
-mockito = "5.14.0"
+mockito = "5.14.1"
 mockito-kotlin = "5.4.0"
 sonarqube-orchestrator = "5.0.0.2065"
 

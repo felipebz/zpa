@@ -46,7 +46,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.11.1</version>
+      <version>5.11.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -77,7 +77,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>3.5.1</version>
       </plugin>
     </plugins>
   </build>
