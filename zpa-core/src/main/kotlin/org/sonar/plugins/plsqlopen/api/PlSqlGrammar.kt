@@ -56,6 +56,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CUSTOM_DATATYPE,
     REF_DATATYPE,
     JSON_DATATYPE,
+    DATATYPE_NULL_CONSTRAINT,
 
     // Literals
     LITERAL,
@@ -453,10 +454,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ANCHORED_DATATYPE,
                     REF_DATATYPE,
                     JSON_DATATYPE,
-                    CUSTOM_DATATYPE),
-                    b.optional(b.firstOf(
-                            b.sequence(NOT, NULL),
-                            NULL)))
+                    CUSTOM_DATATYPE))
+
+            b.rule(DATATYPE_NULL_CONSTRAINT).define(
+                b.firstOf(
+                    b.sequence(NOT, NULL),
+                    NULL
+                )
+            )
         }
 
         private fun createStatements(b: PlSqlGrammarBuilder) {
@@ -525,7 +530,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(ITERAND_DECLARATION).define(
                 IDENTIFIER_NAME,
                 b.optional(b.firstOf(MUTABLE, IMMUTABLE)),
-                b.optional(DATATYPE))
+                b.optional(DATATYPE),
+                b.optional(DATATYPE_NULL_CONSTRAINT))
 
             b.rule(ITERATION_CTL_SEQ).define(QUAL_ITERATION_CTL, b.zeroOrMore(COMMA, QUAL_ITERATION_CTL)).skip()
 
@@ -944,6 +950,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         DATATYPE,
+                        b.optional(DATATYPE_NULL_CONSTRAINT),
                         b.optional(DEFAULT_VALUE_ASSIGNMENT)),
                     EXCEPTION),
                 SEMICOLON)
@@ -951,9 +958,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(EXCEPTION_DECLARATION).define(IDENTIFIER_NAME, EXCEPTION, SEMICOLON)
 
             b.rule(CUSTOM_SUBTYPE).define(
-                    SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
-                    b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
-                    SEMICOLON)
+                SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
+                b.optional(DATATYPE_NULL_CONSTRAINT),
+                b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
+                SEMICOLON
+            )
 
             b.rule(CURSOR_PARAMETER_DECLARATION).define(
                     IDENTIFIER_NAME,
@@ -970,25 +979,28 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(IS, SELECT_EXPRESSION), SEMICOLON)
 
             b.rule(RECORD_FIELD_DECLARATION).define(
-                    IDENTIFIER_NAME, DATATYPE,
-                    b.optional(DEFAULT_VALUE_ASSIGNMENT))
+                IDENTIFIER_NAME, DATATYPE,
+                b.optional(DATATYPE_NULL_CONSTRAINT),
+                b.optional(DEFAULT_VALUE_ASSIGNMENT)
+            )
 
             b.rule(RECORD_DECLARATION).define(
                     TYPE, IDENTIFIER_NAME, IS, RECORD,
                     LPARENTHESIS, RECORD_FIELD_DECLARATION, b.zeroOrMore(COMMA, RECORD_FIELD_DECLARATION), RPARENTHESIS,
                     SEMICOLON)
 
-            b.rule(NESTED_TABLE_DEFINITION).define(TABLE, OF, DATATYPE)
+            b.rule(NESTED_TABLE_DEFINITION).define(TABLE, OF, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT))
 
             b.rule(TABLE_OF_DECLARATION).define(
                     TYPE, IDENTIFIER_NAME, IS, NESTED_TABLE_DEFINITION,
-                    b.optional(INDEX, BY, DATATYPE),
+                    b.optional(INDEX, BY, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT)),
                     SEMICOLON)
 
             b.rule(VARRAY_TYPE_DEFINITION).define(
-                    b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)),
-                    LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS,
-                    OF, DATATYPE)
+                b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)),
+                LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS,
+                OF, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT)
+            )
 
             b.rule(VARRAY_DECLARATION).define(
                     TYPE, IDENTIFIER_NAME, IS, VARRAY_TYPE_DEFINITION, SEMICOLON)
@@ -1299,7 +1311,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(ORDER_BY_CLAUSE),
                     b.optional(SEMICOLON))
 
-            b.rule(TYPE_ATTRIBUTE).define(IDENTIFIER_NAME, DATATYPE)
+            b.rule(TYPE_ATTRIBUTE).define(IDENTIFIER_NAME, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT))
 
             b.rule(INHERITANCE_CLAUSE).define(b.oneOrMore(b.optional(NOT), b.firstOf(OVERRIDING, FINAL, INSTANTIABLE)))
 
