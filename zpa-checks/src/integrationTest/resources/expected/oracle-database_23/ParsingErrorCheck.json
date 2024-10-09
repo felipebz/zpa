@@ -98,9 +98,6 @@
   "adjsn/json-schema-16.sql" : [
     4
   ],
-  "adjsn/json-schema-22.sql" : [
-    3
-  ],
   "adjsn/json-schema-3.sql" : [
     2
   ],
@@ -1304,9 +1301,6 @@
   "sqlrf/ALTER-TABLE-129.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-16.sql" : [
-    5
-  ],
   "sqlrf/ALTER-TABLE-17.sql" : [
     2
   ],
@@ -1333,9 +1327,6 @@
   ],
   "sqlrf/ALTER-TABLE-27.sql" : [
     3
-  ],
-  "sqlrf/ALTER-TABLE-28.sql" : [
-    4
   ],
   "sqlrf/ALTER-TABLE-29.sql" : [
     3
@@ -2189,9 +2180,6 @@
   "sqlrf/CREATE-TABLE-28.sql" : [
     3
   ],
-  "sqlrf/CREATE-TABLE-30.sql" : [
-    4
-  ],
   "sqlrf/CREATE-TABLE-31.sql" : [
     13
   ],
@@ -2912,15 +2900,6 @@
   "sqlrf/constraint-1.sql" : [
     10
   ],
-  "sqlrf/constraint-10.sql" : [
-    6
-  ],
-  "sqlrf/constraint-11.sql" : [
-    5
-  ],
-  "sqlrf/constraint-14.sql" : [
-    5
-  ],
   "sqlrf/constraint-15.sql" : [
     2
   ],
@@ -2942,13 +2921,7 @@
   "sqlrf/constraint-31.sql" : [
     10
   ],
-  "sqlrf/constraint-33.sql" : [
-    4
-  ],
   "sqlrf/constraint-5.sql" : [
-    3
-  ],
-  "sqlrf/constraint-6.sql" : [
     3
   ],
   "sqlrf/constraint-8.sql" : [

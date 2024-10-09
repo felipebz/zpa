@@ -5,9 +5,6 @@
   "examples-sql-script/grants.sql" : [
     5
   ],
-  "examples-sql-script/green_table.sql" : [
-    6
-  ],
   "examples-sql-script/logical_expressions.sql" : [
     13
   ],

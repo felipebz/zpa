@@ -1,4 +1,7 @@
 {
+  "examples-sql-script/green_table.sql" : [
+    26
+  ],
   "examples-sql-script/package_with_cursor.sql" : [
     4
   ],

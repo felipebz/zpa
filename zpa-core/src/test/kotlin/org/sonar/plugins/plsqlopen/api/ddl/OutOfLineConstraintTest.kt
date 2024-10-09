@@ -65,11 +65,34 @@ class OutOfLineConstraintTest : RuleTest() {
     @Test
     fun matchesCheck() {
         assertThat(p).matches("check (x > 1)")
+        assertThat(p).matches("check (x > 1) disable precheck")
+        assertThat(p).matches("check (x > 1) precheck")
     }
 
     @Test
     fun matchesConstraintWithName() {
         assertThat(p).matches("constraint pk primary key (foo)")
+    }
+
+    @Test
+
+    fun matchesUniqueWithMultipleStates() {
+        assertThat(p).matches("unique (foo) initially deferred")
+        assertThat(p).matches("unique (foo) initially immediate")
+        assertThat(p).matches("unique (foo) initially deferred deferrable")
+        assertThat(p).matches("unique (foo) initially deferred not deferrable")
+        assertThat(p).matches("unique (foo) deferrable")
+        assertThat(p).matches("unique (foo) not deferrable")
+        assertThat(p).matches("unique (foo) deferrable initially deferred")
+        assertThat(p).matches("unique (foo) not deferrable initially deferred")
+        assertThat(p).matches("unique (foo) rely")
+        assertThat(p).matches("unique (foo) norely")
+        assertThat(p).matches("unique (foo) enable")
+        assertThat(p).matches("unique (foo) disable")
+        assertThat(p).matches("unique (foo) validate")
+        assertThat(p).matches("unique (foo) novalidate")
+        assertThat(p).matches("unique (foo) exceptions into sch.tab")
+        assertThat(p).matches("unique (foo) not deferrable initially deferred rely disable validate exceptions into sch.tab")
     }
 
 }

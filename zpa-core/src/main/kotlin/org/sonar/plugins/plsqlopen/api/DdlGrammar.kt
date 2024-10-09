@@ -78,7 +78,10 @@ enum class DdlGrammar : GrammarRuleKey {
     SUBPARTITION_TEMPLATE,
     CREATE_DIRECTORY,
     DROP_DIRECTORY,
-    TRUNCATE_TABLE;
+    TRUNCATE_TABLE,
+    CONSTRAINT_STATE,
+    PRECHECK_STATE,
+    EXCEPTIONS_CLAUSE;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
@@ -115,13 +118,39 @@ enum class DdlGrammar : GrammarRuleKey {
             )
 
             b.rule(INLINE_CONSTRAINT).define(
-                    b.optional(CONSTRAINT, IDENTIFIER_NAME),
-                    b.firstOf(
+                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(
                             b.sequence(b.optional(NOT), NULL),
                             UNIQUE,
                             b.sequence(PRIMARY, KEY),
-                            REFERENCES_CLAUSE,
-                            b.sequence(CHECK, EXPRESSION)))
+                            REFERENCES_CLAUSE
+                        ), b.optional(CONSTRAINT_STATE)
+                    ),
+                    b.sequence(
+                        CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                        b.optional(CONSTRAINT_STATE),
+                        b.optional(PRECHECK_STATE)
+                    )
+                )
+            )
+
+            b.rule(CONSTRAINT_STATE).define(
+                b.optional(b.firstOf(
+                    b.sequence(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE), b.optional(b.optional(NOT), DEFERRABLE)),
+                    b.sequence(b.optional(NOT), DEFERRABLE, b.optional(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE))),
+                )),
+                b.optional(b.firstOf(RELY, NORELY)),
+                // TODO b.optional(USING_INDEX_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                b.optional(EXCEPTIONS_CLAUSE)
+            )
+
+            b.rule(PRECHECK_STATE).define(b.firstOf(PRECHECK, NOPRECHECK))
+
+            b.rule(EXCEPTIONS_CLAUSE).define(EXCEPTIONS, INTO, UNIT_NAME)
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME, DATATYPE,
@@ -131,12 +160,22 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.zeroOrMore(INLINE_CONSTRAINT))
 
             b.rule(OUT_OF_LINE_CONSTRAINT).define(
-                    b.optional(CONSTRAINT, IDENTIFIER_NAME),
-                    b.firstOf(
+                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(
                             b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
                             b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS, b.optional(b.sequence(USING, INDEX))),
-                            b.sequence(FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE),
-                            b.sequence(CHECK, EXPRESSION)))
+                            b.sequence(FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE)
+                        ), b.optional(CONSTRAINT_STATE)
+                    ),
+                    b.sequence(
+                        CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                        b.optional(CONSTRAINT_STATE),
+                        b.optional(PRECHECK_STATE)
+                    )
+                )
+            )
 
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
                     b.oneOrMore(b.firstOf(OUT_OF_LINE_CONSTRAINT, TABLE_COLUMN_DEFINITION), b.optional(COMMA)))

@@ -80,11 +80,33 @@ class InlineConstraintTest : RuleTest() {
     @Test
     fun matchesCheck() {
         assertThat(p).matches("check (x > 1)")
+        assertThat(p).matches("check (x > 1) disable precheck")
+        assertThat(p).matches("check (x > 1) precheck")
     }
 
     @Test
     fun matchesConstraintWithName() {
         assertThat(p).matches("constraint pk primary key")
+    }
+
+    @Test
+    fun matchesUniqueWithMultipleStates() {
+        assertThat(p).matches("unique initially deferred")
+        assertThat(p).matches("unique initially immediate")
+        assertThat(p).matches("unique initially deferred deferrable")
+        assertThat(p).matches("unique initially deferred not deferrable")
+        assertThat(p).matches("unique deferrable")
+        assertThat(p).matches("unique not deferrable")
+        assertThat(p).matches("unique deferrable initially deferred")
+        assertThat(p).matches("unique not deferrable initially deferred")
+        assertThat(p).matches("unique rely")
+        assertThat(p).matches("unique norely")
+        assertThat(p).matches("unique enable")
+        assertThat(p).matches("unique disable")
+        assertThat(p).matches("unique validate")
+        assertThat(p).matches("unique novalidate")
+        assertThat(p).matches("unique exceptions into sch.tab")
+        assertThat(p).matches("unique not deferrable initially deferred rely disable validate exceptions into sch.tab")
     }
 
 }
