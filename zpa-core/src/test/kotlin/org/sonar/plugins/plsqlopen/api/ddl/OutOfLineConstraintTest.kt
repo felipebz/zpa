@@ -72,6 +72,7 @@ class OutOfLineConstraintTest : RuleTest() {
     @Test
     fun matchesConstraintWithName() {
         assertThat(p).matches("constraint pk primary key (foo)")
+        assertThat(p).matches("constraints pk primary key (foo)")
     }
 
     @Test

@@ -118,7 +118,7 @@ enum class DdlGrammar : GrammarRuleKey {
             )
 
             b.rule(INLINE_CONSTRAINT).define(
-                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.optional(b.firstOf(CONSTRAINT, CONSTRAINTS), IDENTIFIER_NAME),
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
@@ -160,7 +160,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.zeroOrMore(INLINE_CONSTRAINT))
 
             b.rule(OUT_OF_LINE_CONSTRAINT).define(
-                b.optional(CONSTRAINT, IDENTIFIER_NAME),
+                b.optional(b.firstOf(CONSTRAINT, CONSTRAINTS), IDENTIFIER_NAME),
                 b.firstOf(
                     b.sequence(
                         b.firstOf(

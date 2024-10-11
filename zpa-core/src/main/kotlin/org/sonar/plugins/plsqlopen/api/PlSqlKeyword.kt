@@ -170,6 +170,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     CONNECT_BY_ROOT("connect_by_root"),
     CONSTANT("constant"),
     CONSTRAINT("constraint"),
+    CONSTRAINTS("constraints"),
     CONSTRUCTOR("constructor"),
     CONTAINER("container"),
     CONTENT("content"),

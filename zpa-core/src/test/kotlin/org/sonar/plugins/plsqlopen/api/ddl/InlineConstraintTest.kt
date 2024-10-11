@@ -87,6 +87,7 @@ class InlineConstraintTest : RuleTest() {
     @Test
     fun matchesConstraintWithName() {
         assertThat(p).matches("constraint pk primary key")
+        assertThat(p).matches("constraints pk primary key")
     }
 
     @Test
