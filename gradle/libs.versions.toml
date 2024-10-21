@@ -8,7 +8,7 @@ shadow = "8.3.3"
 sonarscanner = "5.1.0.4882"
 
 # libs
-flatlaf = "3.5.1"
+flatlaf = "3.5.2"
 flr = "1.5.0"
 jackson = "2.18.0"
 jsoup = "1.18.1"
@@ -19,7 +19,7 @@ woodstox = "7.0.0"
 # testing
 assertj = "3.26.3"
 junit = "5.11.2"
-mockito = "5.14.1"
+mockito = "5.14.2"
 mockito-kotlin = "5.4.0"
 sonarqube-orchestrator = "5.0.0.2065"
 
