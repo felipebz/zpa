@@ -1,90 +1,44 @@
 {
-  "adjsn/condition-JSON_EXISTS-1.sql" : [
-    2
-  ],
-  "adjsn/condition-JSON_EXISTS-2.sql" : [
-    2
-  ],
-  "adjsn/condition-JSON_EXISTS-3.sql" : [
-    2,
-    5,
-    8
-  ],
-  "adjsn/condition-JSON_EXISTS-4.sql" : [
-    2
-  ],
-  "adjsn/condition-JSON_EXISTS-5.sql" : [
-    2
-  ],
-  "adjsn/condition-JSON_EXISTS-6.sql" : [
-    2
-  ],
-  "adjsn/full-text-search-queries-1.sql" : [
-    3
-  ],
-  "adjsn/function-JSON_TABLE-2.sql" : [
-    3
-  ],
-  "adjsn/function-JSON_TABLE-21.sql" : [
-    3
-  ],
-  "adjsn/function-JSON_TABLE-22.sql" : [
+  "adjsn/creating-view-json-data-using-json_table-0.sql" : [
     4
   ],
-  "adjsn/function-JSON_TABLE-3.sql" : [
-    3
-  ],
-  "adjsn/generation-36.sql" : [
-    7,
-    9
-  ],
-  "adjsn/indexes-for-json-data-10.sql" : [
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-0.sql" : [
     2
   ],
-  "adjsn/indexes-for-json-data-11.sql" : [
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-1.sql" : [
     2
   ],
-  "adjsn/indexes-for-json-data-12.sql" : [
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-2.sql" : [
     2
   ],
-  "adjsn/indexes-for-json-data-18.sql" : [
-    2,
-    4
-  ],
-  "adjsn/indexes-for-json-data-5.sql" : [
-    3
-  ],
-  "adjsn/json-in-oracle-database-0.sql" : [
-    2
-  ],
-  "adjsn/json-in-oracle-database-10.sql" : [
-    2
-  ],
-  "adjsn/json-in-oracle-database-11.sql" : [
-    2
-  ],
-  "adjsn/json-in-oracle-database-2.sql" : [
+  "adjsn/json-data-type-1.sql" : [
     11
   ],
-  "adjsn/json-in-oracle-database-3.sql" : [
+  "adjsn/json-data-type-10.sql" : [
     2
   ],
-  "adjsn/json-in-oracle-database-4.sql" : [
+  "adjsn/json-data-type-2.sql" : [
     2
   ],
-  "adjsn/json-in-oracle-database-7.sql" : [
+  "adjsn/json-data-type-3.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-6.sql" : [
     3
   ],
-  "adjsn/json-in-oracle-database-9.sql" : [
+  "adjsn/json-data-type-8.sql" : [
     3
   ],
-  "adjsn/json-path-expressions-12.sql" : [
-    3
-  ],
-  "adjsn/json-path-expressions-4.sql" : [
+  "adjsn/json-data-type-9.sql" : [
     2
   ],
   "adjsn/json-schema-18.sql" : [
+    2
+  ],
+  "adjsn/oracle-sql-condition-json_textcontains-1.sql" : [
+    3
+  ],
+  "adjsn/overview-json-oracle-database-0.sql" : [
     2
   ],
   "adjsn/partitioning-json-data-1.sql" : [
@@ -93,31 +47,77 @@
   "adjsn/performing-migration-check-1.sql" : [
     4
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-0.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-0.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-1.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-1.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-2.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-2.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-3.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-3.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-4.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-4.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-5.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-5.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-6.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-6.sql" : [
     3
   ],
-  "adjsn/simple-dot-notation-access-to-json-data-7.sql" : [
+  "adjsn/simple-dot-notation-access-json-data-7.sql" : [
     3
   ],
-  "adjsn/using-PLSQL-object-types-for-JSON-2.sql" : [
+  "adjsn/sql-json-condition-json_exists-1.sql" : [
+    2
+  ],
+  "adjsn/sql-json-function-json_arrayagg-1.sql" : [
+    7,
+    9
+  ],
+  "adjsn/sql-json-function-json_table-2.sql" : [
+    3
+  ],
+  "adjsn/sql-json-function-json_table-3.sql" : [
+    3
+  ],
+  "adjsn/sql-json-path-expression-syntax-4.sql" : [
+    2
+  ],
+  "adjsn/types-filter-condition-comparisons-0.sql" : [
+    3
+  ],
+  "adjsn/using-filters-json_exists-0.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-1.sql" : [
+    2,
+    5,
+    8
+  ],
+  "adjsn/using-filters-json_exists-2.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-3.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-4.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-4.sql" : [
+    3
+  ],
+  "adjsn/using-json_value-function-based-index-json_table-queries-0.sql" : [
+    3
+  ],
+  "adjsn/using-multivalue-function-based-index-1.sql" : [
+    2,
+    4
+  ],
+  "adjsn/using-pl-sql-object-types-json-2.sql" : [
     26
   ],
   "lnpls/CREATE-TYPE-statement-13.sql" : [
@@ -569,5 +569,8 @@
   "sqlrf/XMLTRANSFORM-1.sql" : [
     3,
     3
+  ],
+  "sqlrf/create-domain-22.sql" : [
+    2
   ]
 }

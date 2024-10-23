@@ -1,9 +1,9 @@
 {
-  "adjsn/function-JSON_TABLE-3.sql" : [
-    12
-  ],
-  "adjsn/generation-26.sql" : [
+  "adjsn/sql-json-function-json_object-19.sql" : [
     5
+  ],
+  "adjsn/sql-json-function-json_table-3.sql" : [
+    12
   ],
   "lnpls/CREATE-TYPE-statement-15.sql" : [
     4,

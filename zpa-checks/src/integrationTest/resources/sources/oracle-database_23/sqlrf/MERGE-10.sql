@@ -7,16 +7,12 @@ exec :person_id := 3;
 exec :first_name := 'Gerald';
 exec :last_name := 'Walker';
 exec :title := 'Mr';
-MERGE INTO people_target pt 
-   USING (SELECT :person_id  AS person_id,
-                 :first_name AS first_name,
-                 :last_name  AS last_name,
-                 :title      AS title FROM DUAL) ps
-   ON (pt.person_id = ps.person_id)
+MERGE INTO people_target 
+  ON (person_id = :person_id)
 WHEN MATCHED THEN UPDATE
-SET pt.first_name = ps.first_name, 
-    pt.last_name = ps.last_name, 
-    pt.title = ps.title 
+SET first_name = :first_name,
+    last_name = :last_name,
+    title = :title
 WHEN NOT MATCHED THEN INSERT
-    (pt.person_id, pt.first_name, pt.last_name, pt.title) 
-    VALUES (ps.person_id, ps.first_name, ps.last_name, ps.title);
+    (person_id, first_name, last_name, title)
+    VALUES (:person_id, :first_name, :last_name, :title);

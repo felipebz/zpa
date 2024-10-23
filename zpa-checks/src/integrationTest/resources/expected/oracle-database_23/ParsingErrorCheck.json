@@ -1,9 +1,9 @@
 {
-  "adjsn/clauses-used-in-functions-and-conditions-for-json-1.sql" : [
-    4
+  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
+    3
   ],
-  "adjsn/conditions-is-json-and-is-not-json-6.sql" : [
-    6
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
+    25
   ],
   "adjsn/considerations-when-using-lob-storage-json-data-0.sql" : [
     2
@@ -11,7 +11,7 @@
   "adjsn/considerations-when-using-lob-storage-json-data-1.sql" : [
     2
   ],
-  "adjsn/considerations-when-using-lob-storage-json-data-4.sql" : [
+  "adjsn/considerations-when-using-lob-storage-json-data-2.sql" : [
     2
   ],
   "adjsn/considerations-when-using-lob-storage-json-data-5.sql" : [
@@ -23,56 +23,32 @@
   "adjsn/considerations-when-using-lob-storage-json-data-7.sql" : [
     2
   ],
-  "adjsn/function-JSON_TABLE-23.sql" : [
+  "adjsn/considerations-when-using-lob-storage-json-data-8.sql" : [
+    2
+  ],
+  "adjsn/creating-b-tree-indexes-json_value-0.sql" : [
+    2
+  ],
+  "adjsn/creating-b-tree-indexes-json_value-1.sql" : [
+    2
+  ],
+  "adjsn/creating-b-tree-indexes-json_value-2.sql" : [
+    2
+  ],
+  "adjsn/creating-b-tree-indexes-json_value-3.sql" : [
+    2
+  ],
+  "adjsn/creating-bitmap-indexes-json_value-0.sql" : [
+    2
+  ],
+  "adjsn/creating-multivalue-function-based-indexes-json_exists-1.sql" : [
+    2
+  ],
+  "adjsn/creating-multivalue-function-based-indexes-json_exists-2.sql" : [
+    2
+  ],
+  "adjsn/creating-view-json-data-using-json_table-1.sql" : [
     3
-  ],
-  "adjsn/function-JSON_VALUE-3.sql" : [
-    4
-  ],
-  "adjsn/generation-21.sql" : [
-    3
-  ],
-  "adjsn/generation-28.sql" : [
-    2
-  ],
-  "adjsn/in-memory-json-data-1.sql" : [
-    6
-  ],
-  "adjsn/in-memory-json-data-2.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-0.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-1.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-14.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-15.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-2.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-24.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-25.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-26.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-3.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-4.sql" : [
-    2
-  ],
-  "adjsn/json-collections-0.sql" : [
-    2
   ],
   "adjsn/json-collections-1.sql" : [
     2
@@ -80,19 +56,7 @@
   "adjsn/json-collections-2.sql" : [
     2
   ],
-  "adjsn/json-dataguide-0.sql" : [
-    2
-  ],
-  "adjsn/json-dataguide-1.sql" : [
-    2
-  ],
-  "adjsn/json-dataguide-17.sql" : [
-    3
-  ],
-  "adjsn/json-dataguide-18.sql" : [
-    25
-  ],
-  "adjsn/json-dataguide-2.sql" : [
+  "adjsn/json-collections-3.sql" : [
     2
   ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
@@ -119,6 +83,24 @@
   "adjsn/json-schema-8.sql" : [
     2
   ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-1.sql" : [
+    2
+  ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-2.sql" : [
+    2
+  ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-3.sql" : [
+    2
+  ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-5.sql" : [
+    2
+  ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-6.sql" : [
+    2
+  ],
+  "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-7.sql" : [
+    14
+  ],
   "adjsn/loading-external-json-data-1.sql" : [
     3
   ],
@@ -131,20 +113,53 @@
   "adjsn/partitioning-json-data-0.sql" : [
     2
   ],
+  "adjsn/passing-clause-sql-functions-and-conditions-1.sql" : [
+    4
+  ],
+  "adjsn/persistent-data-guide-information-part-json-search-index-0.sql" : [
+    2
+  ],
+  "adjsn/persistent-data-guide-information-part-json-search-index-1.sql" : [
+    2
+  ],
+  "adjsn/persistent-data-guide-information-part-json-search-index-2.sql" : [
+    2
+  ],
   "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
     2
   ],
   "adjsn/populate-json-type-column-querying-textual-json-2.sql" : [
     3
   ],
-  "adjsn/using-GeoJSON-geographic-data-5.sql" : [
+  "adjsn/populating-json-data-memory-column-store-0.sql" : [
+    6
+  ],
+  "adjsn/populating-json-data-memory-column-store-1.sql" : [
     2
   ],
-  "adjsn/using-GeoJSON-geographic-data-9.sql" : [
+  "adjsn/sql-json-conditions-is-json-and-is-not-json-6.sql" : [
+    6
+  ],
+  "adjsn/sql-json-function-json_object-14.sql" : [
+    3
+  ],
+  "adjsn/sql-json-function-json_object-21.sql" : [
+    2
+  ],
+  "adjsn/sql-json-path-expression-item-methods-4.sql" : [
+    4
+  ],
+  "adjsn/using-geojson-geographic-data-5.sql" : [
+    2
+  ],
+  "adjsn/using-geojson-geographic-data-9.sql" : [
     2
   ],
   "adjsn/using-online-redefinition-migrate-json-data-type-2.sql" : [
     2
+  ],
+  "adjsn/using-sql-json-function-json_value-boolean-json-value-3.sql" : [
+    4
   ],
   "lnpls/ALTER-LIBRARY-statement-0.sql" : [
     2
@@ -191,10 +206,22 @@
   "lnpls/CREATE-FUNCTION-statement-0.sql" : [
     2
   ],
+  "lnpls/CREATE-FUNCTION-statement-5.sql" : [
+    5
+  ],
+  "lnpls/CREATE-FUNCTION-statement-7.sql" : [
+    2
+  ],
   "lnpls/CREATE-PACKAGE-statement-0.sql" : [
     2
   ],
   "lnpls/CREATE-PROCEDURE-statement-0.sql" : [
+    2
+  ],
+  "lnpls/CREATE-PROCEDURE-statement-2.sql" : [
+    5
+  ],
+  "lnpls/CREATE-PROCEDURE-statement-5.sql" : [
     2
   ],
   "lnpls/CREATE-TYPE-statement-17.sql" : [
@@ -1788,10 +1815,10 @@
     2
   ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql" : [
-    2
+    4
   ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-22.sql" : [
-    4
+    2
   ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-23.sql" : [
     2
@@ -1811,10 +1838,7 @@
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-28.sql" : [
     2
   ],
-  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-29.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-31.sql" : [
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-30.sql" : [
     2
   ],
   "sqlrf/CREATE-CLUSTER-0.sql" : [
@@ -2522,6 +2546,12 @@
   "sqlrf/LOCK-TABLE-2.sql" : [
     2
   ],
+  "sqlrf/MERGE-10.sql" : [
+    11
+  ],
+  "sqlrf/MERGE-12.sql" : [
+    11
+  ],
   "sqlrf/Model-Conditions-0.sql" : [
     6
   ],
@@ -2963,19 +2993,16 @@
   "sqlrf/create-domain-16.sql" : [
     2
   ],
-  "sqlrf/create-domain-17.sql" : [
+  "sqlrf/create-domain-20.sql" : [
     2
   ],
-  "sqlrf/create-domain-18.sql" : [
+  "sqlrf/create-domain-21.sql" : [
     2
   ],
-  "sqlrf/create-domain-22.sql" : [
+  "sqlrf/create-domain-24.sql" : [
     2
   ],
-  "sqlrf/create-domain-23.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-26.sql" : [
+  "sqlrf/create-domain-27.sql" : [
     2
   ],
   "sqlrf/create-domain-29.sql" : [
@@ -2991,6 +3018,9 @@
     2
   ],
   "sqlrf/create-domain-5.sql" : [
+    2
+  ],
+  "sqlrf/create-domain-6.sql" : [
     2
   ],
   "sqlrf/create-domain-7.sql" : [
@@ -3285,12 +3315,24 @@
     5
   ],
   "sqlrf/vector_chunks-1.sql" : [
-    14
+    15
   ],
   "sqlrf/vector_distance-11.sql" : [
     2
   ],
   "sqlrf/vector_distance-12.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-13.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-14.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-15.sql" : [
+    2
+  ],
+  "sqlrf/vector_distance-16.sql" : [
     2
   ],
   "sqlrf/vector_distance-5.sql" : [

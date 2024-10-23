@@ -11,7 +11,8 @@ COLUMN pos FORMAT 999;
 COLUMN siz FORMAT 999;
 COLUMN txt FORMAT a60;
 SELECT D.id id, C.chunk_offset pos, C.chunk_length siz, C.chunk_text txt
-FROM documentation_tab D, VECTOR_CHUNKS(D.text BY words
+FROM documentation_tab D, VECTOR_CHUNKS(D.text 
+                                  BY words
                                   MAX 200
                                   OVERLAP 10
                                   SPLIT BY recursively

@@ -1,28 +1,28 @@
 {
-  "adjsn/generation-26.sql" : [
-    10
-  ],
-  "adjsn/indexes-for-json-data-13.sql" : [
+  "adjsn/creating-multivalue-function-based-indexes-json_exists-0.sql" : [
     3,
     6
   ],
-  "adjsn/json-dataguide-19.sql" : [
-    2
-  ],
-  "adjsn/json-dataguide-20.sql" : [
-    2
-  ],
-  "adjsn/json-in-oracle-database-6.sql" : [
+  "adjsn/json-data-type-5.sql" : [
     3
   ],
   "adjsn/json-schema-14.sql" : [
     6
   ],
+  "adjsn/multiple-data-guides-document-set-0.sql" : [
+    2
+  ],
+  "adjsn/multiple-data-guides-document-set-1.sql" : [
+    2
+  ],
+  "adjsn/sql-json-function-json_object-19.sql" : [
+    10
+  ],
   "adjsn/tables-json-columns-3.sql" : [
     2,
     33
   ],
-  "adjsn/using-GeoJSON-geographic-data-0.sql" : [
+  "adjsn/using-geojson-geographic-data-0.sql" : [
     5
   ],
   "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
@@ -395,10 +395,10 @@
   "sqlrf/XMLTRANSFORM-0.sql" : [
     3
   ],
-  "sqlrf/create-domain-20.sql" : [
+  "sqlrf/create-domain-18.sql" : [
     2
   ],
-  "sqlrf/create-domain-21.sql" : [
+  "sqlrf/create-domain-19.sql" : [
     2
   ],
   "sqlrf/domain_name-2.sql" : [

@@ -1,11 +1,15 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/create-domain.html
-CREATE DOMAIN US_city AS
-  (
-    name  AS VARCHAR2(30) ANNOTATIONS (Address),
-    state AS VARCHAR2(2) ANNOTATIONS (Address),
-    zip AS NUMBER ANNOTATIONS (Address)
-  )
-  CONSTRAINT City_CK CHECK(state in ('CA','AZ','TX') and zip < 100000)
-  DISPLAY name||', '|| state ||', '||TO_CHAR(zip)
-  ORDER state||', '||TO_CHAR(zip)||', '||name
-  ANNOTATIONS (Title 'Domain Annotation');
+CREATE DOMAIN meals_details AS
+    (
+       restaurant AS VARCHAR2(100) NOT NULL,
+       meal_type AS VARCHAR2(200),
+       diner_count AS NUMBER
+    )
+    CONSTRAINT meals_c
+      CHECK
+       (
+         restaurant IS NOT NULL AND
+         meal_type IN ('Breakfast', 'Lunch', 'Dinner') AND
+         diner_count IS NOT NULL
+       )
+    DISPLAY meal_type||', '||restaurant||', '||diner_count;

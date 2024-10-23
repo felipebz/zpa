@@ -1,44 +1,44 @@
 {
-  "adjsn/function-JSON_TABLE-17.sql" : [
-    2
-  ],
-  "adjsn/function-JSON_TABLE-18.sql" : [
-    2
-  ],
-  "adjsn/function-JSON_TABLE-19.sql" : [
-    2
-  ],
-  "adjsn/function-JSON_TABLE-2.sql" : [
-    2
-  ],
-  "adjsn/function-JSON_TABLE-21.sql" : [
-    2
-  ],
-  "adjsn/function-JSON_TABLE-22.sql" : [
+  "adjsn/creating-view-json-data-using-json_table-0.sql" : [
     3
   ],
-  "adjsn/function-JSON_TABLE-3.sql" : [
+  "adjsn/json-data-type-8.sql" : [
     2
   ],
-  "adjsn/function-JSON_TABLE-8.sql" : [
-    2
-  ],
-  "adjsn/indexes-for-json-data-5.sql" : [
-    2
-  ],
-  "adjsn/json-dataguide-22.sql" : [
+  "adjsn/querying-data-guide-0.sql" : [
     4
   ],
-  "adjsn/json-dataguide-23.sql" : [
+  "adjsn/querying-data-guide-1.sql" : [
     8
   ],
-  "adjsn/json-in-oracle-database-9.sql" : [
+  "adjsn/sql-json-function-json_table-2.sql" : [
     2
   ],
-  "adjsn/json-path-expressions-12.sql" : [
+  "adjsn/sql-json-function-json_table-3.sql" : [
     2
   ],
-  "adjsn/using-GeoJSON-geographic-data-3.sql" : [
+  "adjsn/sql-nested-clause-instead-json_table-4.sql" : [
+    2
+  ],
+  "adjsn/types-filter-condition-comparisons-0.sql" : [
+    2
+  ],
+  "adjsn/using-geojson-geographic-data-3.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-0.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-1.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-2.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-4.sql" : [
+    2
+  ],
+  "adjsn/using-json_value-function-based-index-json_table-queries-0.sql" : [
     2
   ],
   "lnpls/PIPELINED-clause-1.sql" : [
@@ -661,10 +661,10 @@
     2,
     5
   ],
-  "sqlrf/create-domain-24.sql" : [
+  "sqlrf/create-domain-22.sql" : [
     2
   ],
-  "sqlrf/create-domain-27.sql" : [
+  "sqlrf/create-domain-25.sql" : [
     2
   ],
   "sqlrf/create-domain-30.sql" : [

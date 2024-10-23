@@ -1,12 +1,12 @@
 {
-  "adjsn/using-PLSQL-object-types-for-JSON-0.sql" : [
-    11
-  ],
-  "adjsn/using-PLSQL-object-types-for-JSON-1.sql" : [
-    17
-  ],
   "adjsn/using-online-redefinition-migrate-json-data-type-4.sql" : [
     10
+  ],
+  "adjsn/using-pl-sql-object-types-json-0.sql" : [
+    11
+  ],
+  "adjsn/using-pl-sql-object-types-json-1.sql" : [
+    17
   ],
   "lnpls/ALTER-TYPE-statement-6.sql" : [
     13
@@ -24,6 +24,12 @@
   "lnpls/COVERAGE-pragma-3.sql" : [
     15,
     17
+  ],
+  "lnpls/CREATE-FUNCTION-statement-6.sql" : [
+    3
+  ],
+  "lnpls/CREATE-FUNCTION-statement-8.sql" : [
+    3
   ],
   "lnpls/DEPRECATE-pragma-27.sql" : [
     12
