@@ -71,6 +71,15 @@
   "adjsn/indexes-for-json-data-4.sql" : [
     2
   ],
+  "adjsn/json-collections-0.sql" : [
+    2
+  ],
+  "adjsn/json-collections-1.sql" : [
+    2
+  ],
+  "adjsn/json-collections-2.sql" : [
+    2
+  ],
   "adjsn/json-dataguide-0.sql" : [
     2
   ],
@@ -113,8 +122,14 @@
   "adjsn/loading-external-json-data-1.sql" : [
     3
   ],
+  "adjsn/loading-external-json-data-4.sql" : [
+    2
+  ],
   "adjsn/oracle-sql-function-json_transform-13.sql" : [
     4
+  ],
+  "adjsn/partitioning-json-data-0.sql" : [
+    2
   ],
   "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
     2
@@ -3209,6 +3224,12 @@
   "sqlrf/graph-table-shape-0.sql" : [
     4
   ],
+  "sqlrf/graph-table-shape-2.sql" : [
+    4
+  ],
+  "sqlrf/graph-table-shape-4.sql" : [
+    5
+  ],
   "sqlrf/graph_table-operator-0.sql" : [
     3
   ],
@@ -3234,6 +3255,12 @@
     4
   ],
   "sqlrf/value-expressions-graph_table-10.sql" : [
+    4
+  ],
+  "sqlrf/value-expressions-graph_table-12.sql" : [
+    4
+  ],
+  "sqlrf/value-expressions-graph_table-13.sql" : [
     4
   ],
   "sqlrf/value-expressions-graph_table-14.sql" : [
@@ -3279,6 +3306,9 @@
     2
   ],
   "sqlrf/vector_distance-9.sql" : [
+    2
+  ],
+  "sqlrf/vector_embedding-0.sql" : [
     2
   ],
   "sqlrf/vector_serialize-1.sql" : [

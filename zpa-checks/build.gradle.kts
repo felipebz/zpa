@@ -17,7 +17,7 @@ testing {
             testType.set(TestSuiteType.INTEGRATION_TEST)
 
             val downloadZipFile by tasks.creating(Download::class) {
-                val sqlclVersion = "24.2.0.180.1721"
+                val sqlclVersion = "24.3.0.285.0530"
                 src("https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-$sqlclVersion.zip")
                 overwrite(false)
                 dest(layout.projectDirectory.dir("tools").file("sqlcl-$sqlclVersion.zip"))

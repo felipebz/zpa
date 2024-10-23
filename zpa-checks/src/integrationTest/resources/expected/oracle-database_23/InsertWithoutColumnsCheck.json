@@ -18,9 +18,6 @@
   "adjsn/json-schema-14.sql" : [
     6
   ],
-  "adjsn/loading-external-json-data-4.sql" : [
-    2
-  ],
   "adjsn/tables-json-columns-3.sql" : [
     2,
     33
