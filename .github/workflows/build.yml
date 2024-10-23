@@ -32,7 +32,9 @@ jobs:
         run: ./gradlew build publishToMavenLocal
 
       - name: Run zpa-checks integration tests
-        run: ./gradlew :zpa-checks:integrationTest
+        run: |
+          ./gradlew :zpa-checks:integrationTest
+          cat zpa-checks/build/integrationTest/progress-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Build custom rules example
         run: ./gradlew build -p plsql-custom-rules

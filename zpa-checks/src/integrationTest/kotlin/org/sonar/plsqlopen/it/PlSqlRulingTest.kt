@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.util.DefaultIndenter
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.sonar.plsqlopen.checks.CheckList
@@ -244,6 +245,39 @@ class PlSqlRulingTest {
                 )
             }
         }
+
+        summary.add(SummaryItem(project, files.size, issues.filter { it.check is ParsingErrorCheck }.size))
     }
+
+    companion object {
+        private val summary = mutableListOf<SummaryItem>()
+
+        @AfterAll
+        @JvmStatic
+        fun writeSummary() {
+            val output = File("build/integrationTest/progress-summary.md")
+            output.parentFile.mkdirs()
+            output.writeText("| Project | Files | Parsing Errors | % Success | Status |\n| --- | --- | --- | --- | --- |\n")
+
+            for (item in summary.sortedWith(compareByDescending<SummaryItem> { it.parsingErrors }.thenBy { it.name })) {
+                val successPercentage = ((item.files - item.parsingErrors).toDouble() / item.files) * 100
+                val status = if (item.parsingErrors > 0) "❌" else "✅"
+                output.appendText(
+                    "| ${item.name} | ${item.files} | ${item.parsingErrors} | ${
+                        String.format(
+                            "%.2f",
+                            successPercentage
+                        )
+                    }% | $status |\n"
+                )
+            }
+        }
+    }
+
+    data class SummaryItem(
+        val name: String,
+        val files: Int,
+        val parsingErrors: Int,
+    )
 
 }
