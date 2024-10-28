@@ -33,7 +33,7 @@ jobs:
 
       - name: Run zpa-checks integration tests
         run: |
-          ./gradlew :zpa-checks:integrationTest
+          ./gradlew :zpa-checks:integrationTest --rerun
           cat zpa-checks/build/integrationTest/progress-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Build custom rules example
@@ -78,7 +78,7 @@ jobs:
 
       - if: ${{ !contains(matrix.sqVersion, 'SNAPSHOT') }}
         name: Run plugin integration test
-        run: ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.runtimeVersion=${{ matrix.sqVersion }} --info
+        run: ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.runtimeVersion=${{ matrix.sqVersion }} --rerun --info
 
       - if: ${{ contains(matrix.sqVersion, 'SNAPSHOT') }}
         name: Run plugin integration test
@@ -86,7 +86,7 @@ jobs:
           curl -s -L "https://nexus.felipezorzo.com.br/service/rest/v1/search/assets/download?repository=maven-snapshots&maven.groupId=org.sonarsource.sonarqube&maven.artifactId=sonar-application&maven.extension=zip&sort=version&maven.baseVersion=${{ matrix.sqVersion }}" \
             -u "$AUTH_REPOSITORY" \
             -o sonar-zpa-plugin/sonar-application-${{ matrix.sqVersion }}.zip
-          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=sonar-application-${{ matrix.sqVersion }}.zip --info
+          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=sonar-application-${{ matrix.sqVersion }}.zip --rerun --info
         env:
           AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
 
