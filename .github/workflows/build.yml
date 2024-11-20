@@ -59,7 +59,7 @@ jobs:
           - LATEST_RELEASE[9.9]
           - LATEST_RELEASE[10.6]
           - LATEST_RELEASE[10.7]
-          - 10.8-SNAPSHOT
+          - 24.11-SNAPSHOT
     steps:
       - uses: actions/checkout@v4
 
