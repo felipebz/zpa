@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.1.0"
-dokka = "1.9.20"
+dokka = "2.0.0"
 download = "5.6.0"
 jreleaser = "1.15.0"
 license = "0.16.1"
@@ -44,7 +44,7 @@ sonar-orchestrator = { module = "org.sonarsource.orchestrator:sonar-orchestrator
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+dokka-javadoc = { id = "org.jetbrains.dokka-javadoc", version.ref = "dokka" }
 download = { id = "de.undercouch.download", version.ref = "download" }
 jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
 license = { id = "com.github.hierynomus.license", version.ref = "license" }
