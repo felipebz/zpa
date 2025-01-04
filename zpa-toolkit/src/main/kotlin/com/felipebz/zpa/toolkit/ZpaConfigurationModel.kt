@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2024 Felipe Zorzo
+ * Copyright (C) 2015-2025 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import com.felipebz.flr.toolkit.Validators
 import org.sonar.plsqlopen.parser.PlSqlParser
 import org.sonar.plsqlopen.squid.PlSqlConfiguration
 import org.sonar.plsqlopen.utils.log.Loggers
-import java.lang.Boolean
 import java.nio.charset.Charset
 
 class ZpaConfigurationModel : AbstractConfigurationModel() {
@@ -43,7 +42,7 @@ class ZpaConfigurationModel : AbstractConfigurationModel() {
         Validators.booleanValidator())
 
     internal val configuration: PlSqlConfiguration
-        get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), Boolean.valueOf(errorRecoveryProperty.value))
+        get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), errorRecoveryProperty.value.toBoolean())
 
     override val charset: Charset
         get() = Charset.forName(charsetProperty.value)

@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2024 Felipe Zorzo
+ * Copyright (C) 2015-2025 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
+import com.felipebz.flr.grammar.GrammarRuleKey
 import org.sonar.plsqlopen.sslr.PlSqlGrammarBuilder
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar.IDENTIFIER_NAME
 import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.*
@@ -27,7 +28,6 @@ import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.COMMA
 import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator.SEMICOLON
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.INTEGER_LITERAL
 import org.sonar.plugins.plsqlopen.api.PlSqlTokenType.STRING_LITERAL
-import com.felipebz.flr.grammar.GrammarRuleKey
 
 enum class TclGrammar : GrammarRuleKey {
 

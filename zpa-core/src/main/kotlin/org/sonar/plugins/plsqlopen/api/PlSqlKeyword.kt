@@ -1,6 +1,6 @@
 /**
  * Z PL/SQL Analyzer
- * Copyright (C) 2015-2024 Felipe Zorzo
+ * Copyright (C) 2015-2025 Felipe Zorzo
  * mailto:felipe AT felipezorzo DOT com DOT br
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@ package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.TokenType
+import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.entries
 
 enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = false) : TokenType {
     ALL("all", true),
