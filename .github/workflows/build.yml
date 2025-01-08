@@ -57,9 +57,9 @@ jobs:
       matrix:
         sqVersion:
           - LATEST_RELEASE[9.9]
-          - LATEST_RELEASE[10.7]
           - LATEST_RELEASE[24.12]
-          - 25.1-SNAPSHOT
+          - LATEST_RELEASE[25.1]
+          - 25.2-SNAPSHOT
     steps:
       - uses: actions/checkout@v4
 
