@@ -24,7 +24,7 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 | ZPA version            | SonarQube version (min/max) |
 |------------------------|-----------------------------|
 | 3.6.0                  | 9.9 / 10.7                  |
-| 3.7.0 (in development) | 9.9 / 24.12                 |
+| 3.7.0 (in development) | 9.9 / 25.2                  |
 
 ## ZPA Toolkit
 
