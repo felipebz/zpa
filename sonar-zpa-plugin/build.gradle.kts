@@ -23,8 +23,6 @@ dependencies {
 testing {
     suites {
         register<JvmTestSuite>("integrationTest") {
-            testType.set(TestSuiteType.INTEGRATION_TEST)
-
             dependencies {
                 implementation(libs.assertj)
                 implementation(libs.sonar.ws)
