@@ -1,5 +1,4 @@
 import de.undercouch.gradle.tasks.download.Download
-import org.gradle.kotlin.dsl.registering
 
 plugins {
     alias(libs.plugins.download)
@@ -16,7 +15,7 @@ testing {
     suites {
         register<JvmTestSuite>("integrationTest") {
             val downloadZipFile by tasks.registering(Download::class, fun Download.() {
-                val sqlclVersion = "24.3.0.285.0530"
+                val sqlclVersion = "24.4.1.042.1221"
                 src("https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-$sqlclVersion.zip")
                 overwrite(false)
                 dest(layout.projectDirectory.dir("tools").file("sqlcl-$sqlclVersion.zip"))
