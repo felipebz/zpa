@@ -2,41 +2,130 @@
   "adjsn/using-pl-sql-object-types-json-2.sql" : [
     5
   ],
-  "lnpls/dynamic-sql-12.sql" : [
+  "lnpls/autonomous-transactions-9.sql" : [
+    21
+  ],
+  "lnpls/cursor-variables-1.sql" : [
+    6,
+    7,
+    8,
+    11
+  ],
+  "lnpls/cursor-variables-2.sql" : [
+    9
+  ],
+  "lnpls/dbms_sql-package-6.sql" : [
+    19
+  ],
+  "lnpls/declarations-0.sql" : [
+    3,
+    4,
+    5,
+    6
+  ],
+  "lnpls/declarations-1.sql" : [
+    3,
+    5,
     7
   ],
-  "lnpls/dynamic-sql-27.sql" : [
-    19
+  "lnpls/declarations-2.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7
   ],
-  "lnpls/plsql-collections-and-records-112.sql" : [
-    15
+  "lnpls/declarations-3.sql" : [
+    3,
+    4,
+    5
   ],
-  "lnpls/plsql-collections-and-records-16.sql" : [
-    10
-  ],
-  "lnpls/plsql-collections-and-records-18.sql" : [
-    11
-  ],
-  "lnpls/plsql-collections-and-records-19.sql" : [
-    11
-  ],
-  "lnpls/plsql-collections-and-records-82.sql" : [
+  "lnpls/declarations-4.sql" : [
+    3,
+    4,
     8
   ],
-  "lnpls/plsql-control-statements-34.sql" : [
-    4
+  "lnpls/dml-triggers-41.sql" : [
+    5
   ],
-  "lnpls/plsql-control-statements-38.sql" : [
+  "lnpls/dml-triggers-50.sql" : [
+    8
+  ],
+  "lnpls/exception-propagation-3.sql" : [
     3
   ],
-  "lnpls/plsql-data-types-28.sql" : [
-    15,
-    16,
-    17,
-    18,
+  "lnpls/exception-propagation-5.sql" : [
+    5
+  ],
+  "lnpls/inserting-records-tables-0.sql" : [
+    15
+  ],
+  "lnpls/lexical-units-12.sql" : [
+    4
+  ],
+  "lnpls/lexical-units-6.sql" : [
+    3
+  ],
+  "lnpls/loop-statements-10.sql" : [
+    3
+  ],
+  "lnpls/loop-statements-6.sql" : [
+    4
+  ],
+  "lnpls/multidimensional-collections-0.sql" : [
+    10
+  ],
+  "lnpls/multidimensional-collections-2.sql" : [
+    11
+  ],
+  "lnpls/multidimensional-collections-3.sql" : [
+    11
+  ],
+  "lnpls/native-dynamic-sql-12.sql" : [
+    7
+  ],
+  "lnpls/overview-polymorphic-table-functions-3.sql" : [
+    20,
+    21
+  ],
+  "lnpls/record-variables-21.sql" : [
+    8
+  ],
+  "lnpls/redeclared-predefined-exceptions-3.sql" : [
+    4
+  ],
+  "lnpls/redeclared-predefined-exceptions-5.sql" : [
+    4,
+    5
+  ],
+  "lnpls/scope-and-visibility-identifiers-0.sql" : [
+    3,
+    4,
+    10,
+    11,
     19
   ],
-  "lnpls/plsql-data-types-60.sql" : [
+  "lnpls/scope-and-visibility-identifiers-1.sql" : [
+    4
+  ],
+  "lnpls/scope-and-visibility-identifiers-5.sql" : [
+    4
+  ],
+  "lnpls/scope-and-visibility-identifiers-9.sql" : [
+    4
+  ],
+  "lnpls/sql-data-types-28.sql" : [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "lnpls/subprogram-parameters-4.sql" : [
+    4
+  ],
+  "lnpls/user-defined-pl-sql-subtypes-2.sql" : [
     5,
     6,
     7,
@@ -44,94 +133,6 @@
     12,
     14,
     15
-  ],
-  "lnpls/plsql-error-handling-36.sql" : [
-    4
-  ],
-  "lnpls/plsql-error-handling-38.sql" : [
-    4,
-    5
-  ],
-  "lnpls/plsql-error-handling-54.sql" : [
-    3
-  ],
-  "lnpls/plsql-error-handling-56.sql" : [
-    5
-  ],
-  "lnpls/plsql-language-fundamentals-12.sql" : [
-    4
-  ],
-  "lnpls/plsql-language-fundamentals-26.sql" : [
-    3,
-    4,
-    5,
-    6
-  ],
-  "lnpls/plsql-language-fundamentals-27.sql" : [
-    3,
-    5,
-    7
-  ],
-  "lnpls/plsql-language-fundamentals-28.sql" : [
-    3,
-    4,
-    5,
-    6,
-    7
-  ],
-  "lnpls/plsql-language-fundamentals-29.sql" : [
-    3,
-    4,
-    5
-  ],
-  "lnpls/plsql-language-fundamentals-30.sql" : [
-    3,
-    4,
-    8
-  ],
-  "lnpls/plsql-language-fundamentals-43.sql" : [
-    3,
-    4,
-    10,
-    11,
-    19
-  ],
-  "lnpls/plsql-language-fundamentals-44.sql" : [
-    4
-  ],
-  "lnpls/plsql-language-fundamentals-48.sql" : [
-    4
-  ],
-  "lnpls/plsql-language-fundamentals-52.sql" : [
-    4
-  ],
-  "lnpls/plsql-language-fundamentals-6.sql" : [
-    3
-  ],
-  "lnpls/plsql-optimization-and-tuning-106.sql" : [
-    20,
-    21
-  ],
-  "lnpls/plsql-subprograms-21.sql" : [
-    4
-  ],
-  "lnpls/plsql-triggers-41.sql" : [
-    5
-  ],
-  "lnpls/plsql-triggers-50.sql" : [
-    8
-  ],
-  "lnpls/static-sql-47.sql" : [
-    6,
-    7,
-    8,
-    11
-  ],
-  "lnpls/static-sql-48.sql" : [
-    9
-  ],
-  "lnpls/static-sql-91.sql" : [
-    21
   ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [
     6

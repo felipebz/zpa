@@ -1,14 +1,14 @@
 {
-  "lnpls/static-sql-28.sql" : [
+  "lnpls/cursors-overview-25.sql" : [
     5
   ],
-  "lnpls/static-sql-30.sql" : [
+  "lnpls/cursors-overview-27.sql" : [
     5
   ],
-  "lnpls/static-sql-32.sql" : [
+  "lnpls/cursors-overview-29.sql" : [
     5
   ],
-  "lnpls/static-sql-40.sql" : [
+  "lnpls/processing-query-result-sets-6.sql" : [
     7
   ],
   "sqlrf/ROWNUM-Pseudocolumn-1.sql" : [

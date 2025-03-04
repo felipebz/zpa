@@ -1,15 +1,15 @@
 {
-  "lnpls/dynamic-sql-25.sql" : [
+  "lnpls/dbms_sql-package-4.sql" : [
     14,
     14,
     14
   ],
-  "lnpls/plsql-collections-and-records-82.sql" : [
-    4,
+  "lnpls/processing-query-result-sets-8.sql" : [
     4,
     4
   ],
-  "lnpls/static-sql-42.sql" : [
+  "lnpls/record-variables-21.sql" : [
+    4,
     4,
     4
   ],

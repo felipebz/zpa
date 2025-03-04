@@ -1,33 +1,33 @@
 {
-  "lnpls/plsql-collections-and-records-22.sql" : [
+  "lnpls/assigning-values-variables-7.sql" : [
+    7
+  ],
+  "lnpls/collection-comparisons-2.sql" : [
     19
   ],
-  "lnpls/plsql-language-fundamentals-27.sql" : [
+  "lnpls/declarations-1.sql" : [
     7
   ],
-  "lnpls/plsql-language-fundamentals-63.sql" : [
-    7
+  "lnpls/dml-triggers-36.sql" : [
+    10
   ],
-  "lnpls/plsql-language-fundamentals-83.sql" : [
+  "lnpls/expressions-19.sql" : [
     6
   ],
-  "lnpls/plsql-language-fundamentals-85.sql" : [
+  "lnpls/expressions-21.sql" : [
     8
   ],
-  "lnpls/plsql-language-fundamentals-92.sql" : [
+  "lnpls/expressions-28.sql" : [
     6,
     7,
     8
   ],
-  "lnpls/plsql-optimization-and-tuning-106.sql" : [
+  "lnpls/overview-polymorphic-table-functions-3.sql" : [
     25,
     56
   ],
-  "lnpls/plsql-optimization-and-tuning-133.sql" : [
+  "lnpls/overview-polymorphic-table-functions-30.sql" : [
     38
-  ],
-  "lnpls/plsql-triggers-36.sql" : [
-    10
   ],
   "sqlrf/Comparison-Conditions-1.sql" : [
     4

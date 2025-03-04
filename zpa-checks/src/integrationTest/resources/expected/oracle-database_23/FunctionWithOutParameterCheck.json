@@ -1,15 +1,15 @@
 {
-  "lnpls/plsql-optimization-and-tuning-106.sql" : [
+  "lnpls/overview-polymorphic-table-functions-16.sql" : [
+    3
+  ],
+  "lnpls/overview-polymorphic-table-functions-17.sql" : [
+    4
+  ],
+  "lnpls/overview-polymorphic-table-functions-3.sql" : [
     16,
     46
   ],
-  "lnpls/plsql-optimization-and-tuning-119.sql" : [
-    3
-  ],
-  "lnpls/plsql-optimization-and-tuning-120.sql" : [
-    4
-  ],
-  "lnpls/plsql-optimization-and-tuning-133.sql" : [
+  "lnpls/overview-polymorphic-table-functions-30.sql" : [
     4
   ],
   "sqlrf/Using-Extensible-Indexing-1.sql" : [

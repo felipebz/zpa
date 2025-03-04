@@ -1,3 +1,2 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/simple-dot-notation-access-json-data.html
-SELECT po.po_document.PONumber FROM j_purchaseorder po;
-SELECT json_value(po_document, '$.PONumber') FROM j_purchaseorder;
+ALTER SESSION SET JSON_BEHAVIOR="ON_ERROR:ERROR";

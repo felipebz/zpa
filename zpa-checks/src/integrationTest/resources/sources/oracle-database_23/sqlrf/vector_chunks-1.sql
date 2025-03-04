@@ -1,20 +1,12 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/vector_chunks.html
-CREATE TABLE documentation_tab (
-  id   NUMBER,
-  text VARCHAR2(2000));
-INSERT INTO documentation_tab 
-   VALUES(1, 'sample');
-COMMIT;
-SET LINESIZE 100;
-SET PAGESIZE 20;
-COLUMN pos FORMAT 999;
-COLUMN siz FORMAT 999;
-COLUMN txt FORMAT a60;
-SELECT D.id id, C.chunk_offset pos, C.chunk_length siz, C.chunk_text txt
-FROM documentation_tab D, VECTOR_CHUNKS(D.text 
-                                  BY words
-                                  MAX 200
-                                  OVERLAP 10
-                                  SPLIT BY recursively
-                                  LANGUAGE american
-                                  NORMALIZE all) C;
+COLUMN chunk_offset HEADING Offset FORMAT 999
+
+COLUMN chunk_length HEADING Len    FORMAT 999
+
+COLUMN chunk_text   HEADING Text   FORMAT a60
+
+VARIABLE txt VARCHAR2(4000)
+
+EXECUTE :txt := 'An example text value to split with VECTOR_CHUNKS, having over 10 words because the minimum MAX value is 10';
+SELECT * FROM VECTOR_CHUNKS(:txt BY WORDS MAX 10);
+SELECT * FROM VECTOR_CHUNKS('Another example text value to split with VECTOR_CHUNKS, having over 10 words because the minimum MAX value is 10' BY WORDS MAX 10);

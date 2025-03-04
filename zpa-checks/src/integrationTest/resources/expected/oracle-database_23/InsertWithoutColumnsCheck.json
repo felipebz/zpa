@@ -35,106 +35,106 @@
   "lnpls/CREATE-TYPE-statement-12.sql" : [
     3
   ],
-  "lnpls/dynamic-sql-16.sql" : [
-    2
-  ],
-  "lnpls/dynamic-sql-18.sql" : [
-    2
-  ],
-  "lnpls/plsql-data-types-32.sql" : [
-    4,
-    5,
-    6
-  ],
-  "lnpls/plsql-data-types-36.sql" : [
-    11,
-    13
-  ],
-  "lnpls/plsql-error-handling-34.sql" : [
-    5,
-    9
-  ],
-  "lnpls/plsql-error-handling-36.sql" : [
-    7,
-    11
-  ],
-  "lnpls/plsql-error-handling-38.sql" : [
-    7,
-    11
-  ],
-  "lnpls/plsql-error-handling-42.sql" : [
-    10,
-    15
-  ],
-  "lnpls/plsql-error-handling-71.sql" : [
-    18
-  ],
-  "lnpls/plsql-name-resolution-23.sql" : [
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-5.sql" : [
     3,
     4,
     5
   ],
-  "lnpls/plsql-triggers-116.sql" : [
-    2
+  "lnpls/continuing-execution-handling-exceptions-2.sql" : [
+    18
   ],
-  "lnpls/plsql-triggers-118.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-122.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-126.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-130.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-134.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-138.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-148.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-152.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-158.sql" : [
-    14
-  ],
-  "lnpls/plsql-triggers-160.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-162.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-17.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-23.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-4.sql" : [
-    2
-  ],
-  "lnpls/plsql-triggers-50.sql" : [
-    10
-  ],
-  "lnpls/plsql-triggers-73.sql" : [
+  "lnpls/correlation-names-and-pseudorecords-15.sql" : [
     4
   ],
-  "lnpls/plsql-triggers-92.sql" : [
+  "lnpls/dml-triggers-17.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-23.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-4.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-50.sql" : [
+    10
+  ],
+  "lnpls/native-dynamic-sql-16.sql" : [
+    2
+  ],
+  "lnpls/native-dynamic-sql-18.sql" : [
+    2
+  ],
+  "lnpls/raising-exceptions-explicitly-2.sql" : [
+    10,
+    15
+  ],
+  "lnpls/redeclared-predefined-exceptions-1.sql" : [
+    5,
+    9
+  ],
+  "lnpls/redeclared-predefined-exceptions-3.sql" : [
+    7,
+    11
+  ],
+  "lnpls/redeclared-predefined-exceptions-5.sql" : [
+    7,
+    11
+  ],
+  "lnpls/sql-data-types-31.sql" : [
+    4,
+    5,
+    6
+  ],
+  "lnpls/sql-data-types-35.sql" : [
+    11,
+    13
+  ],
+  "lnpls/trigger-restrictions-0.sql" : [
     14
   ],
-  "lnpls/plsql-triggers-98.sql" : [
+  "lnpls/trigger-restrictions-6.sql" : [
     4,
     5,
     6,
     9,
     10,
     11
+  ],
+  "lnpls/triggers-publishing-events-12.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-16.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-20.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-24.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-28.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-38.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-42.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-48.sql" : [
+    14
+  ],
+  "lnpls/triggers-publishing-events-50.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-52.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-6.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-8.sql" : [
+    2
   ],
   "sqlrf/ALTER-SESSION-14.sql" : [
     4

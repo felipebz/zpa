@@ -6,8 +6,7 @@ CREATE TABLE persons (
      birthdate DATE,
      height FLOAT DEFAULT ON NULL 0,
      person_data JSON,
-     CONSTRAINT person_pk PRIMARY KEY (person_id)
-   );
+     CONSTRAINT person_pk PRIMARY KEY (person_id));
 INSERT INTO persons (name, height, birthdate, person_data)
        VALUES ('John', 1.80, to_date('13/06/1963', 'DD/MM/YYYY'), '{"department":"IT","role":"Software Developer"}');
 INSERT INTO persons (name, height, birthdate, person_data)

@@ -1,16 +1,16 @@
 {
-  "lnpls/plsql-error-handling-51.sql" : [
-    18
-  ],
-  "lnpls/plsql-optimization-and-tuning-26.sql" : [
+  "lnpls/bulk-sql-and-bulk-binding-15.sql" : [
     19,
     32
   ],
-  "lnpls/plsql-optimization-and-tuning-33.sql" : [
+  "lnpls/bulk-sql-and-bulk-binding-22.sql" : [
     19,
     44
   ],
-  "lnpls/static-sql-70.sql" : [
+  "lnpls/exception-propagation-0.sql" : [
+    18
+  ],
+  "lnpls/transaction-processing-and-control-0.sql" : [
     25
   ]
 }

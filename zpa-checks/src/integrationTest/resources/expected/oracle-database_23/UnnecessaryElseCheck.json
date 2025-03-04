@@ -3,32 +3,32 @@
     54,
     69
   ],
-  "lnpls/plsql-error-handling-42.sql" : [
-    9
+  "lnpls/cursors-overview-27.sql" : [
+    16
   ],
-  "lnpls/plsql-error-handling-64.sql" : [
-    11
-  ],
-  "lnpls/plsql-error-handling-66.sql" : [
-    13
-  ],
-  "lnpls/plsql-subprograms-74.sql" : [
-    10
-  ],
-  "lnpls/plsql-subprograms-85.sql" : [
-    10
-  ],
-  "lnpls/plsql-triggers-34.sql" : [
+  "lnpls/dml-triggers-34.sql" : [
     37
   ],
-  "lnpls/plsql-triggers-35.sql" : [
+  "lnpls/dml-triggers-35.sql" : [
     31
+  ],
+  "lnpls/exception-propagation-13.sql" : [
+    11
+  ],
+  "lnpls/exception-propagation-15.sql" : [
+    13
+  ],
+  "lnpls/pl-sql-function-result-cache-7.sql" : [
+    10
+  ],
+  "lnpls/raising-exceptions-explicitly-2.sql" : [
+    9
+  ],
+  "lnpls/recursive-subprograms-1.sql" : [
+    10
   ],
   "lnpls/release-changes-0.sql" : [
     5
-  ],
-  "lnpls/static-sql-30.sql" : [
-    16
   ],
   "sqlrf/CURSOR-Expressions-1.sql" : [
     20

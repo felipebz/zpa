@@ -1,0 +1,6 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/compiling-pl-sql-units-native-execution.html
+SELECT TYPE, PLSQL_CODE_TYPE, COUNT(*)
+FROM DBA_PLSQL_OBJECT_SETTINGS
+WHERE PLSQL_CODE_TYPE IS NOT NULL AND ORIGIN_CON_ID=SYS_CONTEXT('USERENV', 'CON_ID')
+GROUP BY TYPE, PLSQL_CODE_TYPE
+ORDER BY TYPE, PLSQL_CODE_TYPE;

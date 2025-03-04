@@ -18,34 +18,44 @@
   "lnpls/Supresses-warning-pragma-6009-6.sql" : [
     3
   ],
-  "lnpls/plsql-control-statements-70.sql" : [
+  "lnpls/assigning-values-variables-5.sql" : [
+    6
+  ],
+  "lnpls/conditional-compilation1-25.sql" : [
+    3
+  ],
+  "lnpls/expressions-57.sql" : [
+    9
+  ],
+  "lnpls/external-subprograms-1.sql" : [
     3,
     4
   ],
-  "lnpls/plsql-language-fundamentals-121.sql" : [
-    9
-  ],
-  "lnpls/plsql-language-fundamentals-152.sql" : [
+  "lnpls/external-subprograms-2.sql" : [
     3
   ],
-  "lnpls/plsql-language-fundamentals-61.sql" : [
-    6
-  ],
-  "lnpls/plsql-optimization-and-tuning-9.sql" : [
+  "lnpls/minimizing-cpu-overhead-2.sql" : [
     14,
     19
   ],
-  "lnpls/plsql-subprograms-104.sql" : [
+  "lnpls/overloaded-subprograms-12.sql" : [
+    8,
+    8,
+    9,
+    9
+  ],
+  "lnpls/overloaded-subprograms-13.sql" : [
+    9,
+    13
+  ],
+  "lnpls/pl-sql-function-result-cache-13.sql" : [
+    4
+  ],
+  "lnpls/sequential-control-statements-1.sql" : [
     3,
     4
   ],
-  "lnpls/plsql-subprograms-105.sql" : [
-    3
-  ],
-  "lnpls/plsql-subprograms-27.sql" : [
-    3
-  ],
-  "lnpls/plsql-subprograms-55.sql" : [
+  "lnpls/subprogram-invocation-resolution-0.sql" : [
     4,
     5,
     12,
@@ -54,18 +64,8 @@
     26,
     27
   ],
-  "lnpls/plsql-subprograms-69.sql" : [
-    8,
-    8,
-    9,
-    9
-  ],
-  "lnpls/plsql-subprograms-70.sql" : [
-    9,
-    13
-  ],
-  "lnpls/plsql-subprograms-91.sql" : [
-    4
+  "lnpls/subprogram-parameters-10.sql" : [
+    3
   ],
   "sqlrf/Using-Extensible-Indexing-1.sql" : [
     41,

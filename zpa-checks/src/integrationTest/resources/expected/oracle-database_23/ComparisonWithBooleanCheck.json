@@ -1,18 +1,18 @@
 {
-  "adjsn/json_table-generalizes-other-sql-json-functions-0.sql" : [
+  "adjsn/json_table-generalizes-sql-json-query-functions-and-conditions-0.sql" : [
     7
   ],
-  "lnpls/plsql-language-fundamentals-110.sql" : [
+  "lnpls/assigning-values-variables-7.sql" : [
+    7
+  ],
+  "lnpls/expressions-12.sql" : [
+    9
+  ],
+  "lnpls/expressions-46.sql" : [
     8,
     14
   ],
-  "lnpls/plsql-language-fundamentals-121.sql" : [
+  "lnpls/expressions-57.sql" : [
     17
-  ],
-  "lnpls/plsql-language-fundamentals-63.sql" : [
-    7
-  ],
-  "lnpls/plsql-language-fundamentals-76.sql" : [
-    9
   ]
 }

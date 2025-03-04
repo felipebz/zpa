@@ -59,16 +59,16 @@
   "adjsn/simple-dot-notation-access-json-data-3.sql" : [
     2
   ],
-  "adjsn/simple-dot-notation-access-json-data-4.sql" : [
-    2
-  ],
   "adjsn/simple-dot-notation-access-json-data-5.sql" : [
     2
   ],
   "adjsn/simple-dot-notation-access-json-data-6.sql" : [
-    3
+    2
   ],
   "adjsn/simple-dot-notation-access-json-data-7.sql" : [
+    3
+  ],
+  "adjsn/simple-dot-notation-access-json-data-8.sql" : [
     3
   ],
   "adjsn/sql-json-condition-json_exists-1.sql" : [
@@ -127,62 +127,62 @@
   "lnpls/SQL_MACRO-clause-7.sql" : [
     4
   ],
-  "lnpls/dynamic-sql-25.sql" : [
-    15,
-    15
-  ],
-  "lnpls/plsql-name-resolution-18.sql" : [
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-0.sql" : [
     10
   ],
-  "lnpls/plsql-name-resolution-25.sql" : [
-    6
-  ],
-  "lnpls/plsql-name-resolution-28.sql" : [
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-10.sql" : [
     6,
     12,
     18
   ],
-  "lnpls/plsql-optimization-and-tuning-137.sql" : [
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-7.sql" : [
+    6
+  ],
+  "lnpls/compiling-pl-sql-units-native-execution-1.sql" : [
     5,
     5
   ],
-  "lnpls/plsql-subprograms-82.sql" : [
-    31,
-    31
+  "lnpls/cursor-expressions-1.sql" : [
+    12,
+    16
   ],
-  "lnpls/plsql-triggers-1.sql" : [
+  "lnpls/cursors-overview-10.sql" : [
     5,
     5
   ],
-  "lnpls/plsql-triggers-12.sql" : [
-    18,
-    23
-  ],
-  "lnpls/plsql-triggers-17.sql" : [
-    4
-  ],
-  "lnpls/plsql-triggers-32.sql" : [
-    21
-  ],
-  "lnpls/plsql-triggers-49.sql" : [
-    6,
-    10
-  ],
-  "lnpls/static-sql-13.sql" : [
-    5,
-    5
-  ],
-  "lnpls/static-sql-23.sql" : [
+  "lnpls/cursors-overview-20.sql" : [
     7,
     7,
     7
   ],
-  "lnpls/static-sql-42.sql" : [
+  "lnpls/dbms_sql-package-4.sql" : [
+    15,
+    15
+  ],
+  "lnpls/dml-triggers-1.sql" : [
+    5,
     5
   ],
-  "lnpls/static-sql-68.sql" : [
-    12,
-    16
+  "lnpls/dml-triggers-12.sql" : [
+    18,
+    23
+  ],
+  "lnpls/dml-triggers-17.sql" : [
+    4
+  ],
+  "lnpls/dml-triggers-32.sql" : [
+    21
+  ],
+  "lnpls/dml-triggers-49.sql" : [
+    6,
+    10
+  ],
+  "lnpls/pl-sql-function-result-cache-4.sql" : [
+    31,
+    31
+  ],
+  "lnpls/processing-query-result-sets-8.sql" : [
+    5
   ],
   "sqlrf/ALTER-TABLE-23.sql" : [
     3,

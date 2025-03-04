@@ -1,30 +1,30 @@
 {
-  "lnpls/plsql-language-fundamentals-12.sql" : [
-    3,
-    4
-  ],
-  "lnpls/plsql-language-fundamentals-4.sql" : [
-    3
-  ],
-  "lnpls/plsql-language-fundamentals-6.sql" : [
-    3
-  ],
-  "lnpls/plsql-language-fundamentals-8.sql" : [
-    3,
-    4,
-    5
-  ],
-  "lnpls/plsql-subprograms-93.sql" : [
-    10
-  ],
-  "lnpls/static-sql-21.sql" : [
+  "lnpls/cursors-overview-18.sql" : [
     11,
     12,
     13
   ],
-  "lnpls/static-sql-25.sql" : [
+  "lnpls/cursors-overview-22.sql" : [
     13,
     14,
     15
+  ],
+  "lnpls/lexical-units-12.sql" : [
+    3,
+    4
+  ],
+  "lnpls/lexical-units-4.sql" : [
+    3
+  ],
+  "lnpls/lexical-units-6.sql" : [
+    3
+  ],
+  "lnpls/lexical-units-8.sql" : [
+    3,
+    4,
+    5
+  ],
+  "lnpls/pl-sql-function-result-cache-15.sql" : [
+    10
   ]
 }

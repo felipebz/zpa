@@ -1,20 +1,20 @@
 {
-  "lnpls/plsql-collections-and-records-94.sql" : [
+  "lnpls/assigning-values-record-variables-1.sql" : [
     14
   ],
-  "lnpls/plsql-language-fundamentals-43.sql" : [
+  "lnpls/scope-and-visibility-identifiers-0.sql" : [
     10
   ],
-  "lnpls/plsql-language-fundamentals-44.sql" : [
+  "lnpls/scope-and-visibility-identifiers-1.sql" : [
     7
   ],
-  "lnpls/plsql-language-fundamentals-46.sql" : [
+  "lnpls/scope-and-visibility-identifiers-3.sql" : [
     6
   ],
-  "lnpls/plsql-language-fundamentals-48.sql" : [
+  "lnpls/scope-and-visibility-identifiers-5.sql" : [
     3
   ],
-  "lnpls/plsql-language-fundamentals-52.sql" : [
+  "lnpls/scope-and-visibility-identifiers-9.sql" : [
     7
   ]
 }
