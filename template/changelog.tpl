@@ -1,8 +1,11 @@
 ## SonarQube compatibility
 
-This release is compatible with SonarQube 9.9 Community Build and newer. However, comprehensive testing and validation have been conducted only on SonarQube 9.9, 25.1, and 25.2. While compatibility is expected for other versions within this range, the full extent of functionality has been assured only for the tested versions.
+This release is compatible with SonarQube 9.9 Community Build and newer. However, comprehensive testing and validation have been conducted only on SonarQube 9.9, 25.1, 25.2 and 25.3. While compatibility is expected for other versions within this range, the full extent of functionality has been assured only for the tested versions.
 
 Additionally, please note that while this version may work with SonarQube’s commercial builds, the compatibility was not tested and simultaneous analysis using ZPA and SonarSource’s embedded PL/SQL plugin is not supported. If you require this scenario, consider using [zpa-cli](https://github.com/felipebz/zpa-cli) instead.
+
+> [!WARNING]
+> This is the final release supporting SonarQube 9.9 LTA. Read the [blog post](https://zpa.felipebz.com/blog/sonarqube-support-update/) for more details.
 
 ## Install/update instructions
 
