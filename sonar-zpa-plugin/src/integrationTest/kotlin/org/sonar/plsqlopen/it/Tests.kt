@@ -41,7 +41,7 @@ object Tests {
                 if (zipFile != null) {
                     setZipFile(File(zipFile))
                 } else {
-                    setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]"))
+                    setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[25.1]"))
                 }
             }
             .setOrchestratorProperty("orchestrator.artifactory.url", "https://repo1.maven.org/maven2")
