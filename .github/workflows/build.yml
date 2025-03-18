@@ -56,10 +56,10 @@ jobs:
       fail-fast: false
       matrix:
         sqVersion:
-          - LATEST_RELEASE[9.9]
           - LATEST_RELEASE[25.1]
           - LATEST_RELEASE[25.2]
-          - 25.3-SNAPSHOT
+          - LATEST_RELEASE[25.3]
+          - 25.4-SNAPSHOT
     steps:
       - uses: actions/checkout@v4
 

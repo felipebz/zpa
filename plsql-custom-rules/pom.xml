@@ -11,8 +11,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <zpa.version>3.8.0-SNAPSHOT</zpa.version>
-    <sonarqube.api.min.version>9.14.0.375</sonarqube.api.min.version>
-    <sonarqube.min.version>9.9.0.65466</sonarqube.min.version>
+    <sonarqube.api.min.version>11.0.0.2664</sonarqube.api.min.version>
+    <sonarqube.min.version>25.1.0.102122</sonarqube.min.version>
   </properties>
 
   <dependencies>
