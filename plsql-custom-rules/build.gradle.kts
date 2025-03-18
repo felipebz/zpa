@@ -23,7 +23,7 @@ java {
 val minSonarQubeVersion = "9.9.0.65466"
 val minSonarQubeApiVersion = "9.14.0.375"
 val junitVersion = "5.12.1"
-val zpaVersion = "3.7.0"
+val zpaVersion = "3.8.0-SNAPSHOT"
 
 dependencies {
     compileOnly("org.sonarsource.api.plugin:sonar-plugin-api:$minSonarQubeApiVersion")
