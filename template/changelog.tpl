@@ -17,7 +17,7 @@ Additionally, please note that while this version may work with SonarQube’s co
 
 Binary compatibility is not guaranteed either in between any version number change. Custom plugins should be recompiled against the same version of `sonar-zpa-plugin`.
 
-Download the {{#f_release_download_url}}zpa-toolkit-{{projectVersion}}.jar{{/f_release_download_url}} (requires Java 11+) to test the parser and view the AST.
+Download the {{#f_release_download_url}}zpa-toolkit-{{projectVersion}}.jar{{/f_release_download_url}} (requires Java 17+) to test the parser and view the AST.
 
 ## Full changelog
 

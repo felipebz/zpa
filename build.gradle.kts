@@ -56,9 +56,9 @@ subprojects {
     }
 
     kotlin {
-        jvmToolchain(11)
+        jvmToolchain(17)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
             freeCompilerArgs = listOf("-Xconsistent-data-class-copy-visibility")
         }
     }
