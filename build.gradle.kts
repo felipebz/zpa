@@ -80,7 +80,7 @@ subprojects {
     }
 
     jacoco {
-        toolVersion = "0.8.12"
+        toolVersion = "0.8.13"
     }
 
     tasks.jacocoTestReport {
