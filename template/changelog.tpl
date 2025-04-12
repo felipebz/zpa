@@ -1,6 +1,6 @@
 ## SonarQube compatibility
 
-This release is compatible with SonarQube Community Build 25.1 and newer and it has been tested on versions 25.1 to 25.4.
+This release is compatible with SonarQube Community Build 25.2 and newer and it has been tested on versions 25.2 to 25.5.
 
 SonarQube commercial builds are not supported. For that, consider using [zpa-cli](https://github.com/felipebz/zpa-cli) instead.
 

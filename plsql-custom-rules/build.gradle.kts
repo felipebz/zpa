@@ -20,8 +20,8 @@ java {
     }
 }
 
-val minSonarQubeVersion = "25.1.0.102122"
-val minSonarQubeApiVersion = "11.0.0.2664"
+val minSonarQubeVersion = "25.2.0.102705"
+val minSonarQubeApiVersion = "11.1.0.2693"
 val junitVersion = "5.12.1"
 val zpaVersion = "3.8.0-SNAPSHOT"
 
