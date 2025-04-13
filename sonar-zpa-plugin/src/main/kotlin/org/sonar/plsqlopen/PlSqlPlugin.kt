@@ -22,7 +22,6 @@ package org.sonar.plsqlopen
 import org.sonar.api.Plugin
 import org.sonar.api.PropertyType
 import org.sonar.api.config.PropertyDefinition
-import org.sonar.api.resources.Qualifiers
 import org.sonar.plsqlopen.symbols.ObjectLocator
 import org.sonar.plsqlopen.util.log.SonarQubeLoggers
 import org.sonar.plsqlopen.utils.log.Loggers
@@ -40,7 +39,7 @@ class PlSqlPlugin : Plugin {
                 .description("Comma-separated list of suffixes of PL/SQL files to analyze.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(GENERAL)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .defaultValue("sql,pkg,pks,pkb")
                 .multiValues(true)
                 .build(),
@@ -49,14 +48,14 @@ class PlSqlPlugin : Plugin {
                 .description("Path to the JSON file with the Oracle Forms metadata.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(GENERAL)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .build(),
             PropertyDefinition.builder(ERROR_RECOVERY_KEY)
                 .name("Parse error recovery")
                 .description("Defines mode for error handling of parsing errors. 'False' (strict) breaks after an error or 'True' (tolerant, default) continues.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(GENERAL)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
                 .build(),
@@ -65,7 +64,7 @@ class PlSqlPlugin : Plugin {
                 .description("Enable concurrent analysis of files.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(GENERAL)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
                 .build(),
@@ -87,7 +86,7 @@ class PlSqlPlugin : Plugin {
                 .description("Paths (absolute or relative) to report files with utPLSQL test execution data.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(TEST_AND_COVERAGE)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .defaultValue(UtPlSqlSensor.DEFAULT_TEST_REPORT_PATH)
                 .multiValues(true)
                 .build(),
@@ -96,7 +95,7 @@ class PlSqlPlugin : Plugin {
                 .description("Paths (absolute or relative) to report files with utPLSQL coverage data.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(TEST_AND_COVERAGE)
-                .onQualifiers(Qualifiers.PROJECT)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .defaultValue(UtPlSqlSensor.DEFAULT_COVERAGE_REPORT_PATH)
                 .multiValues(true)
                 .build(),
