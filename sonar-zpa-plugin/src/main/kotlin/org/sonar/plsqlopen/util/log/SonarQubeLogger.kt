@@ -19,7 +19,7 @@
  */
 package org.sonar.plsqlopen.util.log
 
-import org.sonar.api.utils.log.Logger
+import org.slf4j.Logger
 
 class SonarQubeLogger internal constructor(private val logger: Logger) : org.sonar.plsqlopen.utils.log.Logger {
 

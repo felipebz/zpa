@@ -19,13 +19,14 @@
  */
 package org.sonar.plsqlopen.util.log
 
+import org.slf4j.LoggerFactory
 import org.sonar.plsqlopen.utils.log.Logger
 import org.sonar.plsqlopen.utils.log.Loggers
 
 class SonarQubeLoggers : Loggers() {
 
     override fun getLogger(name: String): Logger {
-        return SonarQubeLogger(org.sonar.api.utils.log.Loggers.get(name))
+        return SonarQubeLogger(LoggerFactory.getLogger(name))
     }
 
 }
