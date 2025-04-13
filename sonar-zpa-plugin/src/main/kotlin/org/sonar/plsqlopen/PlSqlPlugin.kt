@@ -31,7 +31,6 @@ import org.sonar.plsqlopen.utplsql.UtPlSqlSensor
 class PlSqlPlugin : Plugin {
 
     override fun define(context: Plugin.Context) {
-        SonarQubeUtils.setSonarQubeVersion(context.sonarQubeVersion)
         Loggers.factory = SonarQubeLoggers()
 
         context.addExtensions(

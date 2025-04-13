@@ -21,7 +21,6 @@ package org.sonar.plsqlopen.rules
 
 import org.sonar.api.rule.RuleScope
 import org.sonar.api.server.rule.RulesDefinition
-import org.sonar.plsqlopen.SonarQubeUtils
 import org.sonar.plugins.plsqlopen.api.annotations.RuleInfo
 import org.sonar.api.rule.RuleStatus as SonarQubeRuleStatus
 
@@ -47,9 +46,7 @@ class SonarQubeRuleAdapter(private val newRule: RulesDefinition.NewRule) : ZpaRu
     override var scope: RuleInfo.Scope
         get() = throw IllegalAccessException("Getter is not available")
         set(value) {
-            if (SonarQubeUtils.isIsSQ71OrGreater) {
-                newRule.setScope(RuleScope.valueOf(value.name))
-            }
+            newRule.setScope(RuleScope.valueOf(value.name))
         }
 
     override var template: Boolean

@@ -19,8 +19,6 @@
  */
 package org.sonar.plsqlopen
 
-import org.sonar.api.utils.Version
-
 object SonarQubeUtils {
 
     val isCommercialEdition by lazy {
@@ -33,13 +31,6 @@ object SonarQubeUtils {
             // ignore
         }
         value
-    }
-
-    var isIsSQ71OrGreater: Boolean = false
-        private set
-
-    fun setSonarQubeVersion(sonarQubeVersion: Version) {
-        isIsSQ71OrGreater = sonarQubeVersion.isGreaterThanOrEqual(Version.create(7, 1))
     }
 
 }
