@@ -56,9 +56,9 @@ jobs:
       fail-fast: false
       matrix:
         sqVersion:
-          - LATEST_RELEASE[25.2]
-          - LATEST_RELEASE[25.3]
-          - LATEST_RELEASE[25.4]
+          - 25.2.0.102705
+          - 25.3.0.104237
+          - 25.4.0.105899
           - 25.5-SNAPSHOT
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,13 @@ jobs:
 
       - if: ${{ !contains(matrix.sqVersion, 'SNAPSHOT') }}
         name: Run plugin integration test
-        run: ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.runtimeVersion=${{ matrix.sqVersion }} --rerun --info
+        run: |
+          curl -s -L "https://nexus.felipezorzo.com.br/service/rest/v1/search/assets/download?repository=maven-releases&maven.groupId=org.sonarsource.sonarqube&maven.artifactId=sonar-application&maven.extension=zip&sort=version&maven.baseVersion=${{ matrix.sqVersion }}" \
+            -u "$AUTH_REPOSITORY" \
+            -o sonar-zpa-plugin/sonar-application-${{ matrix.sqVersion }}.zip
+          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=sonar-application-${{ matrix.sqVersion }}.zip --rerun --info
+        env:
+          AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
 
       - if: ${{ contains(matrix.sqVersion, 'SNAPSHOT') }}
         name: Run plugin integration test
