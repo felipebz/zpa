@@ -21,7 +21,7 @@ assertj = "3.27.3"
 junit = "5.12.2"
 mockito = "5.17.0"
 mockito-kotlin = "5.4.0"
-sonarqube-orchestrator = "5.4.0.2489"
+sonarqube-orchestrator = "5.5.0.2535"
 
 [libraries]
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
