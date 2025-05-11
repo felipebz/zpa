@@ -1,7 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/using-json_value-function-based-index-json_table-queries.html
 SELECT jt.*
   FROM j_purchaseorder po,
-       json_table(po.po_document, '$'
+       json_table(po.data, '$'
          COLUMNS po_number  NUMBER(5) PATH '$.PONumber',
                  reference  VARCHAR2(30 CHAR) PATH '$.Reference',
                  requestor  VARCHAR2(32 CHAR) PATH '$.Requestor',

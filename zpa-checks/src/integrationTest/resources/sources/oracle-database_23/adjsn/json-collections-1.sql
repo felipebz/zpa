@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-collections.html
-CREATE JSON COLLECTION TABLE employee
-  (salary AS (json_value(DATA, '$.salary.number()')),
-   CONSTRAINT sal_chk CHECK (salary > 0));
+ocstmt.registerReturnParameter(1, OracleTypes.JSON);
+ocstmt.executeUpdate();
+System.out.println("Retrieved _id : " + rs.getObject(1, OracleJsonBinary.class));

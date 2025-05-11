@@ -20,6 +20,9 @@
   "adjsn/sql-nested-clause-instead-json_table-4.sql" : [
     2
   ],
+  "adjsn/type-clause-sql-functions-and-conditions-2.sql" : [
+    2
+  ],
   "adjsn/types-filter-condition-comparisons-0.sql" : [
     2
   ],
@@ -213,10 +216,10 @@
   "lnpls/processing-query-result-sets-4.sql" : [
     4
   ],
-  "lnpls/sql-data-types-33.sql" : [
+  "lnpls/sql-data-types-34.sql" : [
     5
   ],
-  "lnpls/sql-data-types-35.sql" : [
+  "lnpls/sql-data-types-36.sql" : [
     18
   ],
   "lnpls/sql-injection-10.sql" : [
@@ -640,18 +643,7 @@
   "sqlrf/SELECT-61.sql" : [
     2
   ],
-  "sqlrf/SELECT-92.sql" : [
-    2
-  ],
   "sqlrf/SELECT-93.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-96.sql" : [
-    2,
-    2
-  ],
-  "sqlrf/SELECT-97.sql" : [
-    2,
     2
   ],
   "sqlrf/TO_BINARY_DOUBLE-0.sql" : [

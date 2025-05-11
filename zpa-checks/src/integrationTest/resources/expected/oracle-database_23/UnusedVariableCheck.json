@@ -114,13 +114,15 @@
   "lnpls/scope-and-visibility-identifiers-9.sql" : [
     4
   ],
-  "lnpls/sql-data-types-28.sql" : [
-    10,
-    11,
+  "lnpls/sql-data-types-29.sql" : [
     12,
     13,
     14,
-    15
+    15,
+    16,
+    17,
+    18,
+    19
   ],
   "lnpls/subprogram-parameters-4.sql" : [
     4

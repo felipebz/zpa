@@ -59,6 +59,9 @@
   "adjsn/json-collections-3.sql" : [
     2
   ],
+  "adjsn/json-collections-4.sql" : [
+    2
+  ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     3
   ],
@@ -104,17 +107,23 @@
   "adjsn/json-search-index-ad-hoc-queries-and-full-text-search-7.sql" : [
     14
   ],
+  "adjsn/json_transform-operation-handlers-3.sql" : [
+    4
+  ],
+  "adjsn/json_transform-operation-handlers-5.sql" : [
+    4
+  ],
+  "adjsn/json_transform-operator-rename-0.sql" : [
+    3
+  ],
   "adjsn/loading-external-json-data-1.sql" : [
     3
   ],
   "adjsn/loading-external-json-data-4.sql" : [
     2
   ],
-  "adjsn/oracle-sql-function-json_transform-13.sql" : [
+  "adjsn/oracle-sql-function-json_transform-4.sql" : [
     4
-  ],
-  "adjsn/partitioning-json-data-0.sql" : [
-    2
   ],
   "adjsn/persistent-data-guide-information-part-json-search-index-0.sql" : [
     2
@@ -151,6 +160,12 @@
   ],
   "adjsn/tables-json-columns-1.sql" : [
     5
+  ],
+  "adjsn/type-clause-sql-functions-and-conditions-6.sql" : [
+    4
+  ],
+  "adjsn/use-bind-variables-json_transform-0.sql" : [
+    2
   ],
   "adjsn/using-geojson-geographic-data-5.sql" : [
     2
@@ -551,8 +566,11 @@
   "lnpls/scope-and-visibility-identifiers-6.sql" : [
     2
   ],
-  "lnpls/sql-data-types-30.sql" : [
+  "lnpls/sql-data-types-31.sql" : [
     2
+  ],
+  "lnpls/sql-data-types-44.sql" : [
+    3
   ],
   "lnpls/sql-injection-13.sql" : [
     2
@@ -2408,16 +2426,16 @@
   "sqlrf/CREATE-USER-9.sql" : [
     2
   ],
-  "sqlrf/CREATE-VIEW-1.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-VIEW-10.sql" : [
+  "sqlrf/CREATE-VIEW-11.sql" : [
     3
   ],
-  "sqlrf/CREATE-VIEW-13.sql" : [
+  "sqlrf/CREATE-VIEW-14.sql" : [
     15
   ],
   "sqlrf/CREATE-VIEW-2.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-VIEW-3.sql" : [
     2
   ],
   "sqlrf/CUME_DIST-0.sql" : [
@@ -2806,6 +2824,9 @@
   ],
   "sqlrf/SELECT-95.sql" : [
     3
+  ],
+  "sqlrf/SELECT-97.sql" : [
+    8
   ],
   "sqlrf/SELECT-98.sql" : [
     14
@@ -3328,6 +3349,9 @@
   ],
   "sqlrf/value-expressions-graph_table-20.sql" : [
     5
+  ],
+  "sqlrf/value-expressions-graph_table-21.sql" : [
+    4
   ],
   "sqlrf/value-expressions-graph_table-4.sql" : [
     4

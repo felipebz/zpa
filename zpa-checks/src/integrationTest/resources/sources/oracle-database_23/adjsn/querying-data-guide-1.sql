@@ -1,7 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/querying-data-guide.html
 WITH dg_t AS
   (SELECT DBMS_JSON.get_index_dataguide('J_PURCHASEORDER',
-                                        'PO_DOCUMENT',
+                                        'DATA',
                                         DBMS_JSON.FORMAT_FLAT) dg_doc
 
     FROM DUAL)

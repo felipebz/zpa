@@ -11,5 +11,5 @@ BEGIN
   CTX_DDL.add_path('json_pl', 'VARCHAR2', '$.ShippingInstructions.Address.zipCode');
 END;
 /
-CREATE SEARCH INDEX po_search_idx ON j_purchaseorder (po_document)
+CREATE SEARCH INDEX po_search_idx ON j_purchaseorder (data)
   FOR JSON PARAMETERS ('PATHLIST json_pl');

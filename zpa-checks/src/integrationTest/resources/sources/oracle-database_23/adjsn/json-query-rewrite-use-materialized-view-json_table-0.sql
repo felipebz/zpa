@@ -4,7 +4,7 @@ CREATE MATERIALIZED VIEW mv_for_query_rewrite
   REFRESH FAST ON STATEMENT WITH PRIMARY KEY
   AS SELECT po.id, jt.*
        FROM j_purchaseorder po,
-            json_table(po.po_document, '$' ERROR ON ERROR NULL ON EMPTY
+            json_table(po.data, '$' ERROR ON ERROR NULL ON EMPTY
               COLUMNS (
                 po_number       NUMBER         PATH '$.PONumber',
                 userid          VARCHAR2(10)   PATH '$.User',

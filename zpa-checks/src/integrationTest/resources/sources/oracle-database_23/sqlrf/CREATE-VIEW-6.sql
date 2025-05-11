@@ -1,9 +1,8 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-VIEW.html
-CREATE VIEW locations_view AS
-   SELECT d.department_id, d.department_name, l.location_id, l.city
-   FROM departments d, locations l
-   WHERE d.location_id = l.location_id;
-SELECT column_name, updatable 
-   FROM user_updatable_columns
-   WHERE table_name = 'LOCATIONS_VIEW'
-   ORDER BY column_name, updatable;
+CREATE VIEW clerk AS
+   SELECT employee_id, last_name, department_id, job_id 
+   FROM employees
+   WHERE job_id = 'PU_CLERK' 
+      or job_id = 'SH_CLERK' 
+      or job_id = 'ST_CLERK'
+   WITH CHECK OPTION;

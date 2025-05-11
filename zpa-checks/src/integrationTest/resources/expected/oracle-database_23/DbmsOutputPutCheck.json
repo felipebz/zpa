@@ -926,13 +926,13 @@
   "lnpls/sql-data-types-3.sql" : [
     8
   ],
-  "lnpls/sql-data-types-31.sql" : [
+  "lnpls/sql-data-types-32.sql" : [
     12
   ],
-  "lnpls/sql-data-types-33.sql" : [
+  "lnpls/sql-data-types-34.sql" : [
     13
   ],
-  "lnpls/sql-data-types-37.sql" : [
+  "lnpls/sql-data-types-38.sql" : [
     29,
     30,
     31,
@@ -941,12 +941,12 @@
     34,
     35
   ],
-  "lnpls/sql-data-types-41.sql" : [
+  "lnpls/sql-data-types-42.sql" : [
     6,
     7,
     8
   ],
-  "lnpls/sql-data-types-49.sql" : [
+  "lnpls/sql-data-types-52.sql" : [
     9,
     10
   ],

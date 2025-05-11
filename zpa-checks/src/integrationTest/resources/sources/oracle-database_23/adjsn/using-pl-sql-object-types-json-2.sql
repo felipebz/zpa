@@ -23,5 +23,5 @@ BEGIN
   RETURN po_obj.to_string;
 END;
 /
-SELECT po_document FROM j_purchaseorder po
-  WHERE po.po_document.PONumber = 1600;
+SELECT data FROM j_purchaseorder po
+  WHERE po.data.PONumber = 1600;

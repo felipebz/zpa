@@ -1,5 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-VIEW.html
-CREATE VIEW emp_sal (emp_id, last_name, 
-      email UNIQUE RELY DISABLE NOVALIDATE,
-   CONSTRAINT id_pk PRIMARY KEY (emp_id) RELY DISABLE NOVALIDATE)
-   AS SELECT employee_id, last_name, email FROM employees;
+CREATE EDITIONING VIEW ed_orders_view (o_id, o_date, o_status)
+  AS SELECT order_id, order_date, order_status FROM orders
+  WITH READ ONLY;

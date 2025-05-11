@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/querying-data-guide.html
-WITH dg_t AS (SELECT json_dataguide(po_document) dg_doc
+WITH dg_t AS (SELECT json_dataguide(data) dg_doc
                 FROM j_purchaseorder)
   SELECT jt.*
     FROM dg_t,

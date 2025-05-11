@@ -12,7 +12,7 @@ BEGIN
                                "o:length" : 16,
                                "o:preferred_column_name" : "PO_Reference",
                                "o:hidden" : true}}}';
-  DBMS_JSON.add_virtual_columns('J_PURCHASEORDER', 'PO_DOCUMENT', dg);
+  DBMS_JSON.add_virtual_columns('J_PURCHASEORDER', 'DATA', dg);
 END;
 /
 DESCRIBE j_purchaseorder;

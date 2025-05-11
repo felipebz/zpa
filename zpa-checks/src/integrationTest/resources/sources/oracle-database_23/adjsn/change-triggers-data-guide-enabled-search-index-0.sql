@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/change-triggers-data-guide-enabled-search-index.html
-EXEC DBMS_JSON.drop_virtual_columns('J_PURCHASEORDER', 'PO_DOCUMENT');
+EXEC DBMS_JSON.drop_virtual_columns('J_PURCHASEORDER', 'DATA');
 ALTER INDEX po_search_idx REBUILD
   PARAMETERS ('DATAGUIDE ON CHANGE add_vc');
 INSERT INTO j_purchaseorder

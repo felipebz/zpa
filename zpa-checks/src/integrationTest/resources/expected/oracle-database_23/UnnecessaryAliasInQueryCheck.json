@@ -231,16 +231,16 @@
     2,
     2
   ],
-  "sqlrf/CREATE-VIEW-11.sql" : [
+  "sqlrf/CREATE-VIEW-12.sql" : [
     4
   ],
-  "sqlrf/CREATE-VIEW-12.sql" : [
+  "sqlrf/CREATE-VIEW-13.sql" : [
     3
   ],
-  "sqlrf/CREATE-VIEW-14.sql" : [
+  "sqlrf/CREATE-VIEW-15.sql" : [
     2
   ],
-  "sqlrf/CREATE-VIEW-6.sql" : [
+  "sqlrf/CREATE-VIEW-7.sql" : [
     4,
     4
   ],
@@ -481,14 +481,6 @@
   "sqlrf/SELECT-89.sql" : [
     3,
     3
-  ],
-  "sqlrf/SELECT-96.sql" : [
-    2,
-    2
-  ],
-  "sqlrf/SELECT-97.sql" : [
-    2,
-    2
   ],
   "sqlrf/SELECT-99.sql" : [
     2

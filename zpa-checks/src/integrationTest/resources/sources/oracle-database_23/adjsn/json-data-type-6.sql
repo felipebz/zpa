@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-data-type.html
-SELECT json_serialize(po_document PRETTY ORDERED)
+SELECT json_serialize(data PRETTY ORDERED)
   FROM j_purchaseorder po
-  WHERE po.po_document.PONumber = 1600;
+  WHERE po.data.PONumber = 1600;

@@ -37,7 +37,7 @@ class OracleDocsExtractor {
     fun extract() {
         // you need to get the file from https://docs.oracle.com/en/database/oracle/oracle-database/23/zip/oracle-database_23.zip
         val zipFile = ZipFile(System.getProperty("oracleDocs"))
-        val outputDir = File("src/integrationTest/resources/sources/oracle-database_23")
+        val outputDir = File("zpa-checks/src/integrationTest/resources/sources/oracle-database_23")
 
         if (outputDir.exists()) {
             outputDir.deleteRecursively()
@@ -91,9 +91,9 @@ class OracleDocsExtractor {
             }
 
         val parser = ScriptParser(alteredText)
-        var cmd: ISQLCommand
         var validText = ""
-        while ((parser.next().also { cmd = it }) != null) {
+        while (true) {
+            val cmd = parser.next() ?: break
             val sql = cmd.sqlOrigWithTerminator
             val syntaxError = SyntaxError.checkSyntax(
                 sql,

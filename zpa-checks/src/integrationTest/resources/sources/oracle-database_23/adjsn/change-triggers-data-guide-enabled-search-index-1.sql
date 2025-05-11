@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/change-triggers-data-guide-enabled-search-index.html
-EXEC DBMS_JSON.drop_virtual_columns('J_PURCHASEORDER', 'PO_DOCUMENT');
+EXEC DBMS_JSON.drop_virtual_columns('J_PURCHASEORDER', 'DATA');
 CREATE OR REPLACE PROCEDURE my_dataguide_trace(tableName VARCHAR2,
                                                jcolName  VARCHAR2,
                                                path      VARCHAR2,

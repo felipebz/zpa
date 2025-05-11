@@ -2,7 +2,7 @@
 CREATE VIEW j_purchaseorder_detail_view
   AS SELECT po.id, jt.*
        FROM j_purchaseorder po,
-            json_table(po.po_document, '$'
+            json_table(po.data, '$'
               COLUMNS (
                 po_number        NUMBER(10)         PATH '$.PONumber',
                 reference        VARCHAR2(30 CHAR)  PATH '$.Reference',

@@ -2,13 +2,13 @@
 DECLARE
   dg CLOB;
 BEGIN
-  SELECT json_dataguide(po_document, DBMS_JSON.FORMAT_HIERARCHICAL) INTO dg
+  SELECT json_dataguide(data, DBMS_JSON.FORMAT_HIERARCHICAL) INTO dg
     FROM j_purchaseorder;
   DBMS_JSON.add_virtual_columns('J_PURCHASEORDER',
-                                'PO_DOCUMENT',
+                                'DATA',
                                 dg,
                                 resolveNameConflicts=>TRUE,
-                                colNamePrefix=>'PO_DOCUMENT$',
+                                colNamePrefix=>'DATA$',
                                 mixedCaseColumns=>TRUE);
 END;
 /

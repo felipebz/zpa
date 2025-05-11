@@ -80,12 +80,12 @@
     7,
     11
   ],
-  "lnpls/sql-data-types-31.sql" : [
+  "lnpls/sql-data-types-32.sql" : [
     4,
     5,
     6
   ],
-  "lnpls/sql-data-types-35.sql" : [
+  "lnpls/sql-data-types-36.sql" : [
     11,
     13
   ],
@@ -164,7 +164,7 @@
   "sqlrf/CREATE-TABLE-51.sql" : [
     2
   ],
-  "sqlrf/CREATE-VIEW-7.sql" : [
+  "sqlrf/CREATE-VIEW-8.sql" : [
     2
   ],
   "sqlrf/CURRENT_TIMESTAMP-2.sql" : [

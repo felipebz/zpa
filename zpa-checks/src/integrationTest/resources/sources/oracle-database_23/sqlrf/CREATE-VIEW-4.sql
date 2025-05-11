@@ -1,2 +1,7 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-VIEW.html
-UPDATE clerk SET job_id = 'PU_MAN' WHERE employee_id = 118;
+CREATE VIEW clerk AS
+   SELECT employee_id, last_name, department_id, job_id 
+   FROM employees
+   WHERE job_id = 'PU_CLERK' 
+      or job_id = 'SH_CLERK' 
+      or job_id = 'ST_CLERK';

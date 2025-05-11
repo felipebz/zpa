@@ -4,7 +4,7 @@ CREATE MATERIALIZED VIEW j_purchaseorder_materialized_view
   REFRESH FAST ON STATEMENT WITH PRIMARY KEY
   AS SELECT po.id, jt.*
        FROM j_purchaseorder po,
-            json_table(po.po_document, '$'
+            json_table(po.data, '$'
               COLUMNS (
                 po_number        NUMBER(10)         PATH '$.PONumber',
                 reference        VARCHAR2(30 CHAR)  PATH '$.Reference',
