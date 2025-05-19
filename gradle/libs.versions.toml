@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.1.20"
+kotlin = "2.1.21"
 dokka = "2.0.0"
 download = "5.6.0"
 jreleaser = "1.18.0"
