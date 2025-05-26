@@ -329,45 +329,6 @@
   "examples/partitioned_tables.sql" : [
     32
   ],
-  "examples/pivot01.sql" : [
-    2
-  ],
-  "examples/pivot02.sql" : [
-    5
-  ],
-  "examples/pivot03.sql" : [
-    5
-  ],
-  "examples/pivot04.sql" : [
-    14
-  ],
-  "examples/pivot05.sql" : [
-    4
-  ],
-  "examples/pivot06.sql" : [
-    4
-  ],
-  "examples/pivot07.sql" : [
-    4
-  ],
-  "examples/pivot08.sql" : [
-    4
-  ],
-  "examples/pivot09.sql" : [
-    3
-  ],
-  "examples/pivot10.sql" : [
-    3
-  ],
-  "examples/pivot11.sql" : [
-    5
-  ],
-  "examples/pivot12.sql" : [
-    12
-  ],
-  "examples/pivot13.sql" : [
-    11
-  ],
   "examples/purge_statement.sql" : [
     1
   ],
@@ -395,12 +356,6 @@
   "examples/select_time.sql" : [
     1
   ],
-  "examples/simple04.sql" : [
-    7
-  ],
-  "examples/simple05.sql" : [
-    5
-  ],
   "examples/simple13.sql" : [
     1
   ],
@@ -425,10 +380,40 @@
   "hw-examples/alter_outline.sql" : [
     1
   ],
-  "long-running/order_by07.sql" : [
-    2
-  ],
   "long-running/query_factoring07.sql" : [
     61
-  ]
+  ],
+    "examples/pivot02.sql" : [
+        5
+    ],
+    "examples/pivot03.sql" : [
+        5
+    ],
+    "examples/pivot04.sql" : [
+        19
+    ],
+    "examples/pivot05.sql" : [
+        4
+    ],
+    "examples/pivot06.sql" : [
+        4
+    ],
+    "examples/pivot09.sql" : [
+        3
+    ],
+    "examples/pivot10.sql" : [
+        3
+    ],
+    "examples/pivot11.sql" : [
+        19
+    ],
+    "examples/pivot12.sql" : [
+        18
+    ],
+    "examples/simple04.sql" : [
+        10
+    ],
+    "long-running/order_by07.sql" : [
+        2
+    ]
 }

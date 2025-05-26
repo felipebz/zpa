@@ -1,224 +1,240 @@
 {
-  "examples-sql-script/green_table.sql" : [
-    26
-  ],
-  "examples-sql-script/package_with_cursor.sql" : [
-    4
-  ],
-  "examples-sql-script/with_clause_in_exists_block_in_procedure.sql" : [
-    6
-  ],
-  "examples/bindvar02.sql" : [
-    1
-  ],
-  "examples/cast_multiset01.sql" : [
-    1
-  ],
-  "examples/cast_multiset05.sql" : [
-    1
-  ],
-  "examples/cast_multiset08.sql" : [
-    1
-  ],
-  "examples/comments.sql" : [
-    2
-  ],
-  "examples/condition02.sql" : [
-    1
-  ],
-  "examples/condition03.sql" : [
-    1
-  ],
-  "examples/condition04.sql" : [
-    1
-  ],
-  "examples/condition05.sql" : [
-    1
-  ],
-  "examples/condition06.sql" : [
-    1
-  ],
-  "examples/condition07.sql" : [
-    1
-  ],
-  "examples/condition08.sql" : [
-    1
-  ],
-  "examples/condition12.sql" : [
-    1
-  ],
-  "examples/condition14.sql" : [
-    1
-  ],
-  "examples/condition16.sql" : [
-    1
-  ],
-  "examples/dblink01.sql" : [
-    5,
-    7
-  ],
-  "examples/for_update01.sql" : [
-    1
-  ],
-  "examples/groupby03.sql" : [
-    1
-  ],
-  "examples/groupby04.sql" : [
-    1
-  ],
-  "examples/groupby05.sql" : [
-    1
-  ],
-  "examples/join06.sql" : [
-    1
-  ],
-  "examples/join07.sql" : [
-    1
-  ],
-  "examples/join08.sql" : [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7
-  ],
-  "examples/join09.sql" : [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7
-  ],
-  "examples/join10.sql" : [
-    1,
-    3
-  ],
-  "examples/join11.sql" : [
-    1
-  ],
-  "examples/join12.sql" : [
-    1
-  ],
-  "examples/join13.sql" : [
-    1
-  ],
-  "examples/join14.sql" : [
-    1
-  ],
-  "examples/join15.sql" : [
-    1
-  ],
-  "examples/join16.sql" : [
-    1
-  ],
-  "examples/join19.sql" : [
-    1,
-    1
-  ],
-  "examples/join20.sql" : [
-    1,
-    1
-  ],
-  "examples/join21.sql" : [
-    1
-  ],
-  "examples/join22.sql" : [
-    1,
-    3
-  ],
-  "examples/keywordasidentifier06.sql" : [
-    1
-  ],
-  "examples/lexer01.sql" : [
-    1
-  ],
-  "examples/merge01.sql" : [
-    2
-  ],
-  "examples/merge02.sql" : [
-    2
-  ],
-  "examples/order_by01.sql" : [
-    1
-  ],
-  "examples/order_by02.sql" : [
-    1
-  ],
-  "examples/order_by03.sql" : [
-    1
-  ],
-  "examples/order_by05.sql" : [
-    1
-  ],
-  "examples/order_by06.sql" : [
-    1,
-    1
-  ],
-  "examples/query_factoring05.sql" : [
-    15
-  ],
-  "examples/query_factoring06.sql" : [
-    10
-  ],
-  "examples/query_factoring08.sql" : [
-    2,
-    3,
-    5
-  ],
-  "examples/select_all_some_any.sql" : [
-    2,
-    3,
-    4
-  ],
-  "examples/simple06.sql" : [
-    1,
-    1
-  ],
-  "examples/simple07.sql" : [
-    1
-  ],
-  "examples/simple11.sql" : [
-    1
-  ],
-  "examples/simple12.sql" : [
-    4
-  ],
-  "examples/union05.sql" : [
-    1,
-    4,
-    8,
-    12,
-    16,
-    20,
-    24,
-    28
-  ],
-  "examples/union07.sql" : [
-    5,
-    6,
-    8,
-    11
-  ],
-  "examples/union08.sql" : [
-    1
-  ],
-  "examples/union09.sql" : [
-    1,
-    2,
-    4,
-    7
-  ],
-  "hw-examples/lexer01.sql" : [
-    1
-  ],
-  "hw-examples/simple11.sql" : [
-    1
-  ],
-  "long-running/aggregate01.sql" : [
-    11
-  ]
+    "examples-sql-script/green_table.sql": [
+        26
+    ],
+    "examples-sql-script/package_with_cursor.sql": [
+        4
+    ],
+    "examples-sql-script/with_clause_in_exists_block_in_procedure.sql": [
+        6
+    ],
+    "examples/bindvar02.sql": [
+        1
+    ],
+    "examples/cast_multiset01.sql": [
+        1
+    ],
+    "examples/cast_multiset05.sql": [
+        1
+    ],
+    "examples/cast_multiset08.sql": [
+        1
+    ],
+    "examples/comments.sql": [
+        2
+    ],
+    "examples/condition02.sql": [
+        1
+    ],
+    "examples/condition03.sql": [
+        1
+    ],
+    "examples/condition04.sql": [
+        1
+    ],
+    "examples/condition05.sql": [
+        1
+    ],
+    "examples/condition06.sql": [
+        1
+    ],
+    "examples/condition07.sql": [
+        1
+    ],
+    "examples/condition08.sql": [
+        1
+    ],
+    "examples/condition12.sql": [
+        1
+    ],
+    "examples/condition14.sql": [
+        1
+    ],
+    "examples/condition16.sql": [
+        1
+    ],
+    "examples/dblink01.sql": [
+        5,
+        7
+    ],
+    "examples/for_update01.sql": [
+        1
+    ],
+    "examples/groupby03.sql": [
+        1
+    ],
+    "examples/groupby04.sql": [
+        1
+    ],
+    "examples/groupby05.sql": [
+        1
+    ],
+    "examples/join06.sql": [
+        1
+    ],
+    "examples/join07.sql": [
+        1
+    ],
+    "examples/join08.sql": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+    ],
+    "examples/join09.sql": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+    ],
+    "examples/join10.sql": [
+        1,
+        3
+    ],
+    "examples/join11.sql": [
+        1
+    ],
+    "examples/join12.sql": [
+        1
+    ],
+    "examples/join13.sql": [
+        1
+    ],
+    "examples/join14.sql": [
+        1
+    ],
+    "examples/join15.sql": [
+        1
+    ],
+    "examples/join16.sql": [
+        1
+    ],
+    "examples/join19.sql": [
+        1,
+        1
+    ],
+    "examples/join20.sql": [
+        1,
+        1
+    ],
+    "examples/join21.sql": [
+        1
+    ],
+    "examples/join22.sql": [
+        1,
+        3
+    ],
+    "examples/keywordasidentifier06.sql": [
+        1
+    ],
+    "examples/lexer01.sql": [
+        1
+    ],
+    "examples/merge01.sql": [
+        2
+    ],
+    "examples/merge02.sql": [
+        2
+    ],
+    "examples/order_by01.sql": [
+        1
+    ],
+    "examples/order_by02.sql": [
+        1
+    ],
+    "examples/order_by03.sql": [
+        1
+    ],
+    "examples/order_by05.sql": [
+        1
+    ],
+    "examples/order_by06.sql": [
+        1,
+        1
+    ],
+    "examples/pivot01.sql": [
+        1
+    ],
+    "examples/pivot07.sql": [
+        1
+    ],
+    "examples/pivot08.sql": [
+        1
+    ],
+    "examples/pivot13.sql": [
+        8
+    ],
+    "examples/simple05.sql": [
+        1,
+        3
+    ],
+    "examples/query_factoring05.sql": [
+        15
+    ],
+    "examples/query_factoring06.sql": [
+        10
+    ],
+    "examples/query_factoring08.sql": [
+        2,
+        3,
+        5
+    ],
+    "examples/select_all_some_any.sql": [
+        2,
+        3,
+        4
+    ],
+    "examples/simple06.sql": [
+        1,
+        1
+    ],
+    "examples/simple07.sql": [
+        1
+    ],
+    "examples/simple11.sql": [
+        1
+    ],
+    "examples/simple12.sql": [
+        4
+    ],
+    "examples/union05.sql": [
+        1,
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28
+    ],
+    "examples/union07.sql": [
+        5,
+        6,
+        8,
+        11
+    ],
+    "examples/union08.sql": [
+        1
+    ],
+    "examples/union09.sql": [
+        1,
+        2,
+        4,
+        7
+    ],
+    "hw-examples/lexer01.sql": [
+        1
+    ],
+    "hw-examples/simple11.sql": [
+        1
+    ],
+    "long-running/aggregate01.sql": [
+        11
+    ]
 }

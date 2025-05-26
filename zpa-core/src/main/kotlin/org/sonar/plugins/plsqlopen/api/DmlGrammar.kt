@@ -84,7 +84,14 @@ enum class DmlGrammar : GrammarRuleKey {
     DML_COMMAND,
     GROUPING_EXPRESSION_LIST,
     ROLLUP_CUBE_CLAUSE,
-    GROUPING_SETS_CLAUSE;
+    GROUPING_SETS_CLAUSE,
+
+    BACKED_LIST,
+    PIVOT_CLAUSE,
+    UNPIVOT_CLAUSE,
+    PIVOT_FOR_CLAUSE,
+    PIVOT_IN_CLAUSE,
+    UNPIVOT_IN_CLAUSE;
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
@@ -198,12 +205,45 @@ enum class DmlGrammar : GrammarRuleKey {
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),
-                        b.optional(b.nextNot(b.firstOf(PARTITION, CROSS, USING, FULL, NATURAL, INNER, LEFT, RIGHT, OUTER, JOIN, RETURN, RETURNING, LOG, EXCEPT, SET)),
+                        b.optional(
+                            b.nextNot(
+                                b.firstOf(
+                                    PARTITION,
+                                    CROSS,
+                                    USING,
+                                    FULL,
+                                    NATURAL,
+                                    INNER,
+                                    LEFT,
+                                    RIGHT,
+                                    OUTER,
+                                    JOIN,
+                                    RETURN,
+                                    RETURNING,
+                                    LOG,
+                                    EXCEPT,
+                                    SET
+                                )
+                            ), b.optional(
+                                b.oneOrMore(
+                                    b.firstOf(
+                                        PIVOT_CLAUSE,
+                                        UNPIVOT_CLAUSE
+                                    )
+                                )
+                            ),
                             b.optional(AS),
                             ALIAS
                         )
                     ),
                     VALUES_EXPRESSION_CLAUSE
+                ), b.optional(
+                    b.oneOrMore(
+                        b.firstOf(
+                            PIVOT_CLAUSE,
+                            UNPIVOT_CLAUSE
+                        )
+                    )
                 )
             )
 
@@ -249,6 +289,95 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.zeroOrMore(COMMA, b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_SETS_CLAUSE, GROUPING_EXPRESSION_LIST)))
 
             b.rule(HAVING_CLAUSE).define(HAVING, EXPRESSION)
+
+
+            b.rule(BACKED_LIST).define(
+                b.firstOf(
+                    b.oneOrMore(EXPRESSION, b.optional(b.optional(AS), b.firstOf(ALIAS,LITERAL)), b.optional(COMMA)),
+                    b.oneOrMore(
+                        LPARENTHESIS,
+                        b.oneOrMore(b.firstOf(LITERAL, IDENTIFIER_NAME), b.optional(COMMA)),
+                        RPARENTHESIS,
+                        b.optional(AS, b.oneOrMore(b.firstOf(LITERAL, IDENTIFIER_NAME), b.optional(COMMA))),
+                        b.optional(COMMA)
+                    ))
+            )
+
+            b.rule(PIVOT_FOR_CLAUSE).define(
+                FOR,
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
+                    VARIABLE_NAME
+                )
+            )
+            b.rule(PIVOT_IN_CLAUSE).define(
+                IN,
+                LPARENTHESIS,
+                b.firstOf(
+                    b.oneOrMore(
+                        b.firstOf(
+                            EXPRESSION,
+                            b.sequence(LPARENTHESIS, b.oneOrMore(EXPRESSION, b.optional(COMMA)), RPARENTHESIS)
+                        ),
+                        b.optional(b.optional(AS), b.firstOf(ALIAS,LITERAL)),
+                        b.optional(COMMA)),
+                    SELECT_EXPRESSION,
+                    b.oneOrMore(ANY, b.optional(COMMA))),
+                RPARENTHESIS
+            )
+
+            b.rule(UNPIVOT_IN_CLAUSE).define(
+                IN,
+                LPARENTHESIS,
+                b.oneOrMore(
+                    b.firstOf(
+                        b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
+                        VARIABLE_NAME
+                    ),
+                    b.optional(
+                        b.optional(AS),
+                        b.firstOf(
+                            b.sequence(LPARENTHESIS, b.oneOrMore(b.firstOf(ALIAS, LITERAL), b.optional(COMMA)), RPARENTHESIS),
+                            b.firstOf(ALIAS, LITERAL)
+                        )
+                    ),
+                    b.optional(COMMA)
+                ),
+                RPARENTHESIS
+            )
+
+            b.rule(PIVOT_CLAUSE).define(
+                b.sequence(
+                    PIVOT,
+                    LPARENTHESIS,
+                    b.oneOrMore(
+                        b.firstOf(
+                            b.sequence(LPARENTHESIS, b.optional(EXPRESSION), RPARENTHESIS),
+                            EXPRESSION
+                        ),
+                        b.optional(b.optional(AS), b.firstOf(ALIAS,LITERAL)),
+                        b.optional(COMMA)
+                    ),
+                    PIVOT_FOR_CLAUSE,
+                    PIVOT_IN_CLAUSE,
+                    RPARENTHESIS
+                )
+            )
+
+            b.rule(UNPIVOT_CLAUSE).define(
+                b.sequence(
+                    UNPIVOT,
+                    b.optional(b.firstOf(INCLUDE, EXCLUDE), NULLS),
+                    LPARENTHESIS,
+                    b.firstOf(
+                        b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
+                        VARIABLE_NAME
+                    ),
+                    PIVOT_FOR_CLAUSE,
+                    UNPIVOT_IN_CLAUSE,
+                    RPARENTHESIS
+                )
+            )
 
             b.rule(ORDER_BY_ITEM).define(EXPRESSION, b.optional(b.firstOf(ASC, DESC)), b.optional(NULLS, b.firstOf(FIRST, LAST)))
 
