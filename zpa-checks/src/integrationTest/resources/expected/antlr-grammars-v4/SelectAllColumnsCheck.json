@@ -1,81 +1,81 @@
 {
-    "examples-sql-script/green_table.sql": [
+    "examples-sql-script/green_table.sql" : [
         26
     ],
-    "examples-sql-script/package_with_cursor.sql": [
+    "examples-sql-script/package_with_cursor.sql" : [
         4
     ],
-    "examples-sql-script/with_clause_in_exists_block_in_procedure.sql": [
+    "examples-sql-script/with_clause_in_exists_block_in_procedure.sql" : [
         6
     ],
-    "examples/bindvar02.sql": [
+    "examples/bindvar02.sql" : [
         1
     ],
-    "examples/cast_multiset01.sql": [
+    "examples/cast_multiset01.sql" : [
         1
     ],
-    "examples/cast_multiset05.sql": [
+    "examples/cast_multiset05.sql" : [
         1
     ],
-    "examples/cast_multiset08.sql": [
+    "examples/cast_multiset08.sql" : [
         1
     ],
-    "examples/comments.sql": [
+    "examples/comments.sql" : [
         2
     ],
-    "examples/condition02.sql": [
+    "examples/condition02.sql" : [
         1
     ],
-    "examples/condition03.sql": [
+    "examples/condition03.sql" : [
         1
     ],
-    "examples/condition04.sql": [
+    "examples/condition04.sql" : [
         1
     ],
-    "examples/condition05.sql": [
+    "examples/condition05.sql" : [
         1
     ],
-    "examples/condition06.sql": [
+    "examples/condition06.sql" : [
         1
     ],
-    "examples/condition07.sql": [
+    "examples/condition07.sql" : [
         1
     ],
-    "examples/condition08.sql": [
+    "examples/condition08.sql" : [
         1
     ],
-    "examples/condition12.sql": [
+    "examples/condition12.sql" : [
         1
     ],
-    "examples/condition14.sql": [
+    "examples/condition14.sql" : [
         1
     ],
-    "examples/condition16.sql": [
+    "examples/condition16.sql" : [
         1
     ],
-    "examples/dblink01.sql": [
+    "examples/dblink01.sql" : [
         5,
         7
     ],
-    "examples/for_update01.sql": [
+    "examples/for_update01.sql" : [
         1
     ],
-    "examples/groupby03.sql": [
+    "examples/groupby03.sql" : [
         1
     ],
-    "examples/groupby04.sql": [
+    "examples/groupby04.sql" : [
         1
     ],
-    "examples/groupby05.sql": [
+    "examples/groupby05.sql" : [
         1
     ],
-    "examples/join06.sql": [
+    "examples/join06.sql" : [
         1
     ],
-    "examples/join07.sql": [
+    "examples/join07.sql" : [
         1
     ],
-    "examples/join08.sql": [
+    "examples/join08.sql" : [
         1,
         2,
         3,
@@ -84,7 +84,7 @@
         6,
         7
     ],
-    "examples/join09.sql": [
+    "examples/join09.sql" : [
         1,
         2,
         3,
@@ -93,117 +93,117 @@
         6,
         7
     ],
-    "examples/join10.sql": [
+    "examples/join10.sql" : [
         1,
         3
     ],
-    "examples/join11.sql": [
+    "examples/join11.sql" : [
         1
     ],
-    "examples/join12.sql": [
+    "examples/join12.sql" : [
         1
     ],
-    "examples/join13.sql": [
+    "examples/join13.sql" : [
         1
     ],
-    "examples/join14.sql": [
+    "examples/join14.sql" : [
         1
     ],
-    "examples/join15.sql": [
+    "examples/join15.sql" : [
         1
     ],
-    "examples/join16.sql": [
+    "examples/join16.sql" : [
         1
     ],
-    "examples/join19.sql": [
+    "examples/join19.sql" : [
         1,
         1
     ],
-    "examples/join20.sql": [
+    "examples/join20.sql" : [
         1,
         1
     ],
-    "examples/join21.sql": [
+    "examples/join21.sql" : [
         1
     ],
-    "examples/join22.sql": [
+    "examples/join22.sql" : [
         1,
         3
     ],
-    "examples/keywordasidentifier06.sql": [
+    "examples/keywordasidentifier06.sql" : [
         1
     ],
-    "examples/lexer01.sql": [
+    "examples/lexer01.sql" : [
         1
     ],
-    "examples/merge01.sql": [
+    "examples/merge01.sql" : [
         2
     ],
-    "examples/merge02.sql": [
+    "examples/merge02.sql" : [
         2
     ],
-    "examples/order_by01.sql": [
+    "examples/order_by01.sql" : [
         1
     ],
-    "examples/order_by02.sql": [
+    "examples/order_by02.sql" : [
         1
     ],
-    "examples/order_by03.sql": [
+    "examples/order_by03.sql" : [
         1
     ],
-    "examples/order_by05.sql": [
+    "examples/order_by05.sql" : [
         1
     ],
-    "examples/order_by06.sql": [
+    "examples/order_by06.sql" : [
         1,
         1
     ],
-    "examples/pivot01.sql": [
+    "examples/pivot01.sql" : [
         1
     ],
-    "examples/pivot07.sql": [
+    "examples/pivot07.sql" : [
         1
     ],
-    "examples/pivot08.sql": [
+    "examples/pivot08.sql" : [
         1
     ],
-    "examples/pivot13.sql": [
+    "examples/pivot13.sql" : [
         8
     ],
-    "examples/simple05.sql": [
-        1,
-        3
-    ],
-    "examples/query_factoring05.sql": [
+    "examples/query_factoring05.sql" : [
         15
     ],
-    "examples/query_factoring06.sql": [
+    "examples/query_factoring06.sql" : [
         10
     ],
-    "examples/query_factoring08.sql": [
+    "examples/query_factoring08.sql" : [
         2,
         3,
         5
     ],
-    "examples/select_all_some_any.sql": [
+    "examples/select_all_some_any.sql" : [
         2,
         3,
         4
     ],
-    "examples/simple06.sql": [
+    "examples/simple05.sql" : [
+        1,
+        3
+    ],
+    "examples/simple06.sql" : [
         1,
         1
     ],
-    "examples/simple07.sql": [
+    "examples/simple07.sql" : [
         1
     ],
-    "examples/simple11.sql": [
+    "examples/simple11.sql" : [
         1
     ],
-    "examples/simple12.sql": [
+    "examples/simple12.sql" : [
         4
     ],
-    "examples/union05.sql": [
+    "examples/union05.sql" : [
         1,
         4,
         8,
@@ -213,28 +213,28 @@
         24,
         28
     ],
-    "examples/union07.sql": [
+    "examples/union07.sql" : [
         5,
         6,
         8,
         11
     ],
-    "examples/union08.sql": [
+    "examples/union08.sql" : [
         1
     ],
-    "examples/union09.sql": [
+    "examples/union09.sql" : [
         1,
         2,
         4,
         7
     ],
-    "hw-examples/lexer01.sql": [
+    "hw-examples/lexer01.sql" : [
         1
     ],
-    "hw-examples/simple11.sql": [
+    "hw-examples/simple11.sql" : [
         1
     ],
-    "long-running/aggregate01.sql": [
+    "long-running/aggregate01.sql" : [
         11
     ]
 }
