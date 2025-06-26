@@ -643,6 +643,10 @@
   "sqlrf/SELECT-61.sql" : [
     2
   ],
+  "sqlrf/SELECT-76.sql" : [
+    2,
+    6
+  ],
   "sqlrf/SELECT-93.sql" : [
     2
   ],

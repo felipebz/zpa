@@ -21,7 +21,6 @@ package org.sonar.plugins.plsqlopen.api
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.TokenType
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword.entries
 
 enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = false) : TokenType {
     ALL("all", true),
@@ -233,6 +232,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     EXCEPTION("exception"),
     EXCEPTIONS("exceptions"),
     EXCEPTION_INIT("exception_init"),
+    EXCLUDE("exclude"),
     EXECUTE("execute"),
     EXISTING("existing"),
     EXISTS("exists"),
@@ -276,6 +276,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     INDEXTYPE("indextype"),
     INDICATOR("indicator"),
     INDICES("indices"),
+    INCLUDE("include"),
     INITIAL("initial"),
     INITIALLY("initially"),
     INITRANS("initrans"),
@@ -414,6 +415,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PERCENT("percent"),
     PIPE("pipe"),
     PIPELINED("pipelined"),
+    PIVOT("pivot"),
     PLS_INTEGER("pls_integer"),
     PLUGGABLE("pluggable"),
     POSITIVE("positive"),
@@ -546,6 +548,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     UNCONDITIONAL("unconditional"),
     UNDER("under"),
     UNLIMITED("unlimited"),
+    UNPIVOT("unpivot"),
     UNPLUG("unplug"),
     UROWID("urowid"),
     USE("use"),
