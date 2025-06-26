@@ -20,3 +20,10 @@ charset=latin1
 
 [*.sql]
 indent_size=2
+
+[*.json]
+indent_size=2
+
+[zpa-checks/src/integrationTest/resources/expected/**/*.json]
+insert_final_newline = false
+ij_any_space_before_colon = true
