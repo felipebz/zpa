@@ -121,6 +121,9 @@ jobs:
       - name: Generate plsql-custom-rules archive
         run: git archive --format=zip -o build/plsql-custom-rules.zip HEAD:plsql-custom-rules
 
+      - name: Create local Maven repository
+        run: ./gradlew publish
+
       - if: github.ref == 'refs/heads/main'
         name: Run SonarQube Scanner
         run: ./gradlew sonar --info
@@ -130,7 +133,7 @@ jobs:
 
       - if: github.ref == 'refs/heads/main'
         name: Release artifacts
-        run: ./gradlew publish jreleaserFullRelease
+        run: ./gradlew jreleaserFullRelease
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
