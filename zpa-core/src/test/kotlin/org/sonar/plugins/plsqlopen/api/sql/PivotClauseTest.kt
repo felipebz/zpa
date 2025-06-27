@@ -34,25 +34,35 @@ class PivotClauseTest: RuleTest() {
 
     @Test
     fun matchesSimplePivot() {
-        assertThat(p).matches("PIVOT (SUM(amount) FOR quarter IN ('Q1', 'Q2'))")
+        assertThat(p).matches("pivot (sum(amount) for quarter in ('q1', 'q2'))")
+    }
+
+    @Test
+    fun matchesSimplePivotXml() {
+        assertThat(p).matches("pivot xml (sum(amount) for quarter in ('q1', 'q2'))")
     }
 
     @Test
     fun matchesSimplePivotWithAliases() {
-        assertThat(p).matches("PIVOT (SUM(quantity_sold) AS qty FOR region IN ('North' north, 'South' south))")
+        assertThat(p).matches("pivot (sum(quantity_sold) as qty for region in ('north' north, 'south' south))")
     }
 
     @Test
     fun matchesSimplePivotWithAs() {
-        assertThat(p).matches("PIVOT (SUM(quantity_sold) AS qty FOR region IN ('North' AS north, 'South' AS south))")
+        assertThat(p).matches("pivot (sum(quantity_sold) as qty for region in ('north' as north, 'south' as south))")
     }
 
     @Test
     fun matchesSimplePivotWithSeveralAggregateExpressions() {
-        assertThat(p).matches("PIVOT (\n" +
-            "    SUM(amount) AS total,\n" +
-            "    COUNT(*) AS count\n" +
-            "    FOR quarter IN ('Q1' AS Q1, 'Q2' AS Q2, 'Q3' AS Q3, 'Q4' AS Q4)\n" +
-            ")")
+        assertThat(p).matches(
+            """
+            pivot (
+              sum(amount ) as total,
+              count(*) as count
+              for quarter
+              in ('q1' as q1, 'q2' as q2, 'q3' as q3, 'q4' as q4)
+            )
+            """
+        )
     }
 }

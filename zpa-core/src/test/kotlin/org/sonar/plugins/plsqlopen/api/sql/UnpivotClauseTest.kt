@@ -34,32 +34,37 @@ class UnpivotClauseTest : RuleTest() {
 
     @Test
     fun matchesSimpleUnpivot() {
-        assertThat(p).matches("UNPIVOT (amount FOR quarter IN (Q1,Q2,Q3))")
+        assertThat(p).matches("unpivot (amount for quarter in (q1,q2,q3))")
     }
 
     @Test
     fun matchesSimpleUnpivotWithAliases() {
-        assertThat(p).matches("UNPIVOT (amount FOR quarter IN (Q1 'Q1', Q2 as q2, Q3 as q3))")
+        assertThat(p).matches("unpivot (amount for quarter in (q1 'q1', q2 as q2, q3 as q3))")
     }
 
     @Test
     fun matchesSimpleUnpivotIncludeNulls() {
-        assertThat(p).matches("UNPIVOT INCLUDE NULLS (amount FOR quarter IN (Q1,Q2,Q3))")
+        assertThat(p).matches("unpivot include nulls (amount for quarter in (q1,q2,q3))")
     }
 
     @Test
     fun matchesSimpleUnpivotExcludeNulls() {
-        assertThat(p).matches("UNPIVOT EXCLUDE NULLS (amount FOR quarter IN (Q1,Q2,Q3))")
+        assertThat(p).matches("unpivot exclude nulls (amount for quarter in (q1,q2,q3))")
     }
 
     @Test
     fun matchesSimpleUnpivotWithMultipleColumns() {
-        assertThat(p).matches("UNPIVOT (\n" +
-            "    (amount, units)\n" +
-            "    FOR quarter IN (\n" +
-            "    (q1_amount, q1_units) AS 'Q1',\n" +
-            "    (q2_amount, q2_units) AS 'Q2'\n" +
-            "    )\n" +
-            "    )")
+        assertThat(p).matches(
+            """
+            unpivot (
+              (amount, units)
+              for quarter
+              in (
+                (q1_amount, q1_units) as 'q1',
+                (q2_amount, q2_units) as 'q2'
+              )
+            )
+            """
+        )
     }
 }

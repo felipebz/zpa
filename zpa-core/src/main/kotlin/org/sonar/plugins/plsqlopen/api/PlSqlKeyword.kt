@@ -571,6 +571,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     WORK("work"),
     WRAPPER("wrapper"),
     WRITE("write"),
+    XML("xml"),
     XMLAGG("xmlagg"),
     XMLATTRIBUTES("xmlattributes"),
     XMLCAST("xmlcast"),

@@ -349,6 +349,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(PIVOT_CLAUSE).define(
                 b.sequence(
                     PIVOT,
+                    b.optional(XML),
                     LPARENTHESIS,
                     b.oneOrMore(
                         b.firstOf(
