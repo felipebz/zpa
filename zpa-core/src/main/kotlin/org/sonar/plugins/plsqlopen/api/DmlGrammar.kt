@@ -200,11 +200,24 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
-                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, b.optional(
+                                b.firstOf(
+                                    PIVOT_CLAUSE,
+                                    UNPIVOT_CLAUSE
+                                )
+                            ), RPARENTHESIS),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),
+                        b.optional(
+                            b.oneOrMore(
+                                b.firstOf(
+                                    PIVOT_CLAUSE,
+                                    UNPIVOT_CLAUSE
+                                )
+                            )
+                        ),
                         b.optional(
                             b.nextNot(
                                 b.firstOf(
@@ -224,26 +237,12 @@ enum class DmlGrammar : GrammarRuleKey {
                                     EXCEPT,
                                     SET
                                 )
-                            ), b.optional(
-                                b.oneOrMore(
-                                    b.firstOf(
-                                        PIVOT_CLAUSE,
-                                        UNPIVOT_CLAUSE
-                                    )
-                                )
                             ),
                             b.optional(AS),
                             ALIAS
                         )
                     ),
                     VALUES_EXPRESSION_CLAUSE
-                ), b.optional(
-                    b.oneOrMore(
-                        b.firstOf(
-                            PIVOT_CLAUSE,
-                            UNPIVOT_CLAUSE
-                        )
-                    )
                 )
             )
 
@@ -260,7 +259,22 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(FROM_CLAUSE).define(
                     FROM,
                     b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
-                    b.zeroOrMore(COMMA, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE)))
+                    b.optional(
+                        b.firstOf(
+                            PIVOT_CLAUSE,
+                            UNPIVOT_CLAUSE
+                        )
+                    ),
+                    b.zeroOrMore(COMMA,
+                        b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                        b.optional(
+                            b.firstOf(
+                                PIVOT_CLAUSE,
+                                UNPIVOT_CLAUSE
+                            )
+                        )
+                    )
+            )
 
             b.rule(WHERE_CLAUSE).define(WHERE, EXPRESSION)
 

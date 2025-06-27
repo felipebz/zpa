@@ -76,6 +76,12 @@
   "examples/object_access_expressions.sql" : [
     9
   ],
+  "examples/pivot02.sql" : [
+    3
+  ],
+  "examples/pivot03.sql" : [
+    3
+  ],
   "examples/query_factoring01.sql" : [
     9,
     9,

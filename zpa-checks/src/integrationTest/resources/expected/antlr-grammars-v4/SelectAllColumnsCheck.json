@@ -161,10 +161,31 @@
   "examples/pivot01.sql" : [
     1
   ],
+  "examples/pivot02.sql" : [
+    1
+  ],
+  "examples/pivot03.sql" : [
+    1
+  ],
+  "examples/pivot05.sql" : [
+    1
+  ],
+  "examples/pivot06.sql" : [
+    1
+  ],
   "examples/pivot07.sql" : [
     1
   ],
   "examples/pivot08.sql" : [
+    1
+  ],
+  "examples/pivot09.sql" : [
+    1
+  ],
+  "examples/pivot10.sql" : [
+    1
+  ],
+  "examples/pivot11.sql" : [
     1
   ],
   "examples/pivot13.sql" : [
@@ -184,6 +205,10 @@
   "examples/select_all_some_any.sql" : [
     2,
     3,
+    4
+  ],
+  "examples/simple04.sql" : [
+    1,
     4
   ],
   "examples/simple05.sql" : [
