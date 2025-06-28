@@ -26,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.sonar.plsqlopen.TestPlSqlVisitorRunner
 import org.sonar.plugins.plsqlopen.api.DmlGrammar
 import org.sonar.plugins.plsqlopen.api.PlSqlGrammar
+import org.sonar.plugins.plsqlopen.api.matchers.MethodMatcher.Companion.semantic
 import org.sonar.plugins.plsqlopen.api.symbols.PlSqlType
 import org.sonar.plugins.plsqlopen.api.symbols.Symbol
 import org.sonar.plugins.plsqlopen.api.symbols.datatype.CharacterDatatype
@@ -97,11 +98,13 @@ end;
 declare
   type my_array is table of number;
   variable my_array;
+  n number;
 begin
   variable := my_array();
+  n := variable(1);
 end;
 """)
-        assertThat(symbols).hasSize(2)
+        assertThat(symbols).hasSize(3)
 
         val type = symbols.find("my_array", 2, 8)
         assertThat(type.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
@@ -110,8 +113,13 @@ end;
         val variable = symbols.find("variable", 3, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
         assertThat(variable.references).containsExactly(
-            tuple(5, 3))
+            tuple(6, 3),
+            tuple(7, 8))
         assertThat(variable.innerScope).isNull()
+
+        val methodCall = variable.usages[1].getFirstAncestor(PlSqlGrammar.METHOD_CALL)
+        assertThat(semantic(methodCall).plSqlType).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(semantic(methodCall.firstChild).plSqlType).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
     }
 
     @Test

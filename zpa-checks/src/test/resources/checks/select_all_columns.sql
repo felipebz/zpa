@@ -29,7 +29,7 @@ begin
     into pkg.var
     from emp;
 
-  select * -- Noncompliant TODO: fix this false positive
+  select *
     into row_table(1)
     from emp;
 

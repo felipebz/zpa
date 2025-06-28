@@ -22,6 +22,8 @@ begin
   forall idx in v_tab.first .. v_tab.last
   insert into tab values v_tab(idx);
 
+  insert into tab values v_tab(idx);
+
   insert into tab values v_my_type;
 
 end;

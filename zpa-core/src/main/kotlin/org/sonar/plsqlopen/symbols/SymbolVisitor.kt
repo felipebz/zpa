@@ -350,6 +350,15 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             if (symbol != null) {
                 symbol.addUsage(identifier)
                 semantic(node).symbol = symbol
+
+                val parent = node.parent
+                if (parent.type == PlSqlGrammar.METHOD_CALL) {
+                    val isArrayAccess = symbol.datatype is AssociativeArrayDatatype && symbol.kind != Symbol.Kind.FUNCTION
+                    semantic(parent).plSqlDatatype = if (isArrayAccess)
+                        symbol.datatype.nestedType
+                    else
+                        symbol.datatype
+                }
             }
         }
     }
