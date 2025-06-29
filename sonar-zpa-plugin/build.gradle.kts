@@ -32,7 +32,7 @@ testing {
             targets {
                 all {
                     testTask.configure {
-                        val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[9.9]")
+                        val runtimeVersion = System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[25.2]")
                         val zipFile = System.getProperty("sonar.zipFile")
 
                         val launcher = javaToolchains.launcherFor {
