@@ -10,7 +10,7 @@
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <zpa.version>3.8.0-SNAPSHOT</zpa.version>
+    <zpa.version>3.8.0</zpa.version>
     <sonarqube.api.min.version>11.1.0.2693</sonarqube.api.min.version>
     <sonarqube.min.version>25.2.0.102705</sonarqube.min.version>
   </properties>
