@@ -1,6 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
+    id("com.felipebz.zpa.build-conventions")
     alias(libs.plugins.shadow)
 }
 

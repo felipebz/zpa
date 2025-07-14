@@ -41,12 +41,12 @@ sonar-plugin-api = { module = "org.sonarsource.api.plugin:sonar-plugin-api", ver
 sonar-plugin-api-impl = { module = "org.sonarsource.sonarqube:sonar-plugin-api-impl", version.ref = "min-sonarqube" }
 sonar-ws = { module = "org.sonarsource.sonarqube:sonar-ws", version.ref = "min-sonarqube" }
 sonar-orchestrator = { module = "org.sonarsource.orchestrator:sonar-orchestrator-junit5", version.ref = "sonarqube-orchestrator" }
+dokka-javadoc-plugin = { module = "org.jetbrains.dokka-javadoc:org.jetbrains.dokka-javadoc.gradle.plugin", version.ref = "dokka" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+license-gradle-plugin = { module = "com.github.hierynomus.license:com.github.hierynomus.license.gradle.plugin", version.ref = "license" }
+jreleaser-gradle-plugin = { module = "org.jreleaser:org.jreleaser.gradle.plugin", version.ref = "jreleaser" }
+sonarqube-gradle-plugin = { module = "org.sonarqube:org.sonarqube.gradle.plugin", version.ref = "sonarscanner" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-dokka-javadoc = { id = "org.jetbrains.dokka-javadoc", version.ref = "dokka" }
 download = { id = "de.undercouch.download", version.ref = "download" }
-jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
-license = { id = "com.github.hierynomus.license", version.ref = "license" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
-sonarqube = { id = "org.sonarqube", version.ref = "sonarscanner" }

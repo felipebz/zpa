@@ -1,3 +1,7 @@
+pluginManagement {
+    includeBuild("build-logic")
+}
+
 rootProject.name = "zpa"
 include(":sonar-zpa-plugin")
 include(":zpa-checks")

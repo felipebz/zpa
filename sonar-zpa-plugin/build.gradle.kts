@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 plugins {
+    id("com.felipebz.zpa.build-conventions")
     alias(libs.plugins.shadow)
 }
 

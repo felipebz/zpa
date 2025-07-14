@@ -1,6 +1,7 @@
 import de.undercouch.gradle.tasks.download.Download
 
 plugins {
+    id("com.felipebz.zpa.build-conventions")
     alias(libs.plugins.download)
 }
 
