@@ -20,9 +20,9 @@
 package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.Token
-import org.sonar.plugins.plsqlopen.api.PlSqlKeyword
-import org.sonar.plugins.plsqlopen.api.PlSqlPunctuator
-import org.sonar.plugins.plsqlopen.api.PlSqlTokenType
+import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import java.awt.Color
 import javax.swing.text.*
 

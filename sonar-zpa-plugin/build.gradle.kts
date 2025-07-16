@@ -57,13 +57,14 @@ testing {
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {
     relocate("com.felipebz.flr.api", "org.sonar.plugins.plsqlopen.api.sslr")
+    relocate("com.felipebz.zpa.api", "org.sonar.plugins.plsqlopen.api")
     archiveClassifier.set("")
     manifest {
         val buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.systemDefault()).format(Date().toInstant())
         attributes(mapOf(
             "Plugin-BuildDate" to buildDate,
             "Plugin-ChildFirstClassLoader" to "false",
-            "Plugin-Class" to "org.sonar.plsqlopen.PlSqlPlugin",
+            "Plugin-Class" to "com.felipebz.zpa.PlSqlPlugin",
             "Plugin-Description" to "Enables analysis and reporting on PL/SQL projects.",
             "Plugin-Developers" to "Felipe Zorzo",
             "Plugin-Display-Version" to project.version,

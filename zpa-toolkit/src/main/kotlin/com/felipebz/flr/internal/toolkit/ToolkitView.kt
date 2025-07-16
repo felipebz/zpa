@@ -22,7 +22,7 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
-import org.sonar.plugins.plsqlopen.api.symbols.Scope
+import com.felipebz.zpa.api.symbols.Scope
 import java.awt.Point
 import java.io.File
 

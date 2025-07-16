@@ -22,8 +22,8 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
-import org.sonar.plugins.plsqlopen.api.symbols.Scope
-import org.sonar.plugins.plsqlopen.api.symbols.Symbol
+import com.felipebz.zpa.api.symbols.Scope
+import com.felipebz.zpa.api.symbols.Symbol
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent

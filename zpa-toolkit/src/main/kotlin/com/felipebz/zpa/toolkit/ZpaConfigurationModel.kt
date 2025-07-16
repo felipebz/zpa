@@ -24,9 +24,9 @@ import com.felipebz.flr.impl.Parser
 import com.felipebz.flr.toolkit.AbstractConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
 import com.felipebz.flr.toolkit.Validators
-import org.sonar.plsqlopen.parser.PlSqlParser
-import org.sonar.plsqlopen.squid.PlSqlConfiguration
-import org.sonar.plsqlopen.utils.log.Loggers
+import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.squid.PlSqlConfiguration
+import com.felipebz.zpa.utils.log.Loggers
 import java.nio.charset.Charset
 
 class ZpaConfigurationModel : AbstractConfigurationModel() {

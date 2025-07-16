@@ -22,10 +22,10 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
 import com.felipebz.flr.toolkit.ConfigurationModel
-import org.sonar.plsqlopen.symbols.DefaultTypeSolver
-import org.sonar.plsqlopen.symbols.SymbolVisitor
-import org.sonar.plugins.plsqlopen.api.PlSqlVisitorContext
-import org.sonar.plugins.plsqlopen.api.symbols.SymbolTable
+import com.felipebz.zpa.symbols.DefaultTypeSolver
+import com.felipebz.zpa.symbols.SymbolVisitor
+import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.symbols.SymbolTable
 import java.io.File
 import java.nio.charset.Charset
 import kotlin.system.measureNanoTime

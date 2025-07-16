@@ -30,7 +30,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
-import org.sonar.plsqlopen.symbols.SymbolTableImpl
+import com.felipebz.zpa.symbols.SymbolTableImpl
 import java.awt.Point
 import java.io.File
 import java.io.PrintWriter

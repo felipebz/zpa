@@ -1,7 +1,7 @@
 package com.company.plsql;
 
 import org.junit.jupiter.api.Test;
-import org.sonar.plsqlopen.checks.verifier.PlSqlCheckVerifier;
+import com.felipebz.zpa.checks.verifier.PlSqlCheckVerifier;
 
 public class ForbiddenDmlCheckTest {
 
