@@ -299,8 +299,8 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(GROUP_BY_CLAUSE).define(
                 GROUP, BY,
-                b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_SETS_CLAUSE, GROUPING_EXPRESSION_LIST),
-                b.zeroOrMore(COMMA, b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_SETS_CLAUSE, GROUPING_EXPRESSION_LIST)))
+                b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_SETS_CLAUSE, EXPRESSION),
+                b.zeroOrMore(COMMA, b.firstOf(ROLLUP_CUBE_CLAUSE, GROUPING_SETS_CLAUSE, EXPRESSION)))
 
             b.rule(HAVING_CLAUSE).define(HAVING, EXPRESSION)
 

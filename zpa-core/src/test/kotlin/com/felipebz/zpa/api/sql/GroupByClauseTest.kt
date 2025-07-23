@@ -43,6 +43,11 @@ class GroupByClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesSimpleGroupByExpression() {
+        assertThat(p).matches("group by (col) + col2")
+    }
+
+    @Test
     fun matchesSimpleGroupByMultipleColumn() {
         assertThat(p).matches("group by col, col2")
     }
