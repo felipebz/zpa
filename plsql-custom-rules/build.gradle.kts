@@ -22,7 +22,7 @@ java {
 
 val minSonarQubeVersion = "25.4.0.105899"
 val minSonarQubeApiVersion = "11.3.0.2824"
-val junitVersion = "5.12.2"
+val junitVersion = "5.13.4"
 val zpaVersion = "4.0.0-SNAPSHOT"
 
 dependencies {
