@@ -57,9 +57,9 @@ jobs:
       matrix:
         sqVersion:
           - 25.4.0.105899
-          - 25.5.0.107428
           - 25.6.0.109173
           - 25.7.0.110598
+          - 25.8.0.111929
     steps:
       - uses: actions/checkout@v4
 
