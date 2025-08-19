@@ -9,7 +9,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        setUrl("https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/")
+        setUrl("https://central.sonatype.com/repository/maven-snapshots/")
     }
 }
 

@@ -10,7 +10,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        url = uri("https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/")
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
     }
 }
 
