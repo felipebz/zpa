@@ -24,7 +24,7 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 | ZPA version            | SonarQube version (min/max) |
 |------------------------|-----------------------------|
 | 4.0.0                  | 25.2 / 25.10                |
-| 4.1.0 (in development) | 25.2 / 25.10                |
+| 4.1.0 (in development) | 25.7 / 25.10                |
 
 ## ZPA Toolkit
 
@@ -69,6 +69,6 @@ Then run the tests:
 
     ./gradlew integrationTest
 
-By default, the tests will be executed using SonarQube Community Build 25.4. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing a value in the format `LATEST_RELEASE[number]`, like `LATEST_RELEASE[25.3]`, or `a.b.c.d` for an exact release including build number: 
+By default, the tests will be executed using SonarQube Community Build 25.7. You can change the SonarQube version using the property `sonar.runtimeVersion`, passing a value in the format `LATEST_RELEASE[number]`, like `LATEST_RELEASE[25.3]`, or `a.b.c.d` for an exact release including build number: 
 
-    ./gradlew integrationTest -Dsonar.runtimeVersion=LATEST_RELEASE[25.4]
+    ./gradlew integrationTest -Dsonar.runtimeVersion=LATEST_RELEASE[25.7]

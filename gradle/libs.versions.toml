@@ -12,8 +12,8 @@ flatlaf = "3.6.1"
 flr = "1.5.0"
 jackson = "2.20.0"
 jsoup = "1.21.2"
-min-sonarqube = "25.4.0.105899"
-min-sonarqubeapi = "11.3.0.2824"
+min-sonarqube = "25.7.0.110598"
+min-sonarqubeapi = "13.0.0.3026"
 woodstox = "7.1.1"
 
 # testing
