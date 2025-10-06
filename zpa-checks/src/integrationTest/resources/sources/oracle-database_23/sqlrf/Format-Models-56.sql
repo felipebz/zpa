@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Format-Models.html
-SELECT last_name employee, TO_CHAR(hire_date,'fmMonth DD, YYYY') hiredate
+SELECT last_name employee, TO_CHAR(salary, '$99,990.99')
   FROM employees
-  WHERE department_id = 20;
+  WHERE department_id = 80;

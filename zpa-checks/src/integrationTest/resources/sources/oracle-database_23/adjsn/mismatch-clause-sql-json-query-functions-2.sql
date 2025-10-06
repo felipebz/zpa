@@ -5,5 +5,4 @@ SELECT json_value('{"first":     "Grace",
                     "birthyear": "1906"}',
                   '$'
                   RETURNING person_t
-                  ERROR ON MISMATCH (EXTRA DATA))
-FROM DUAL;
+                  ERROR ON MISMATCH (EXTRA DATA));

@@ -3,8 +3,7 @@ WITH dg_t AS
   (SELECT DBMS_JSON.get_index_dataguide('J_PURCHASEORDER',
                                         'DATA',
                                         DBMS_JSON.FORMAT_FLAT) dg_doc
-
-    FROM DUAL)
+)
  SELECT jt.*
    FROM dg_t,
         json_table(dg_doc, '$[*]'

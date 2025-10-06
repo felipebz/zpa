@@ -11,23 +11,23 @@
   "adjsn/data-type-considerations-json_value-indexing-and-querying-2.sql" : [
     2
   ],
-  "adjsn/json-data-type-1.sql" : [
+  "adjsn/json-data-type-2.sql" : [
     11
   ],
-  "adjsn/json-data-type-10.sql" : [
-    2
-  ],
-  "adjsn/json-data-type-2.sql" : [
-    2
-  ],
   "adjsn/json-data-type-3.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-4.sql" : [
     2
   ],
   "adjsn/json-data-type-6.sql" : [
     3
   ],
-  "adjsn/json-data-type-8.sql" : [
+  "adjsn/json-data-type-7.sql" : [
     3
+  ],
+  "adjsn/json-data-type-8.sql" : [
+    2
   ],
   "adjsn/json-data-type-9.sql" : [
     2
@@ -354,11 +354,11 @@
     4,
     4
   ],
-  "sqlrf/INSERT-24.sql" : [
+  "sqlrf/INSERT-29.sql" : [
     16,
     16
   ],
-  "sqlrf/INSERT-25.sql" : [
+  "sqlrf/INSERT-30.sql" : [
     16,
     16
   ],

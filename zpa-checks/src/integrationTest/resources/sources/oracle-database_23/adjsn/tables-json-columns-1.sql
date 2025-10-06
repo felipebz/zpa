@@ -2,4 +2,5 @@
 CREATE TABLE j_purchaseorder
   (id          VARCHAR2 (32) NOT NULL PRIMARY KEY,
    date_loaded TIMESTAMP (6) WITH TIME ZONE,
-   data        JSON (OBJECT));
+   data        VARCHAR2 (23767)
+   CONSTRAINT ensure_json CHECK (data is json));

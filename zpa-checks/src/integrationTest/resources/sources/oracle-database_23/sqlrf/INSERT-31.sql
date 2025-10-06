@@ -1,9 +1,16 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/INSERT.html
-INSERT INTO people (person_id, given_name, family_name, title) 
-  WITH names AS ( 
-    SELECT 4, 'Ruth',     'Fox',      'Mrs'    FROM dual UNION ALL 
-    SELECT 5, 'Isabelle', 'Squirrel', 'Miss'   FROM dual UNION ALL 
-    SELECT 6, 'Justin',   'Frog',     'Master' FROM dual UNION ALL 
-    SELECT 7, 'Lisa',     'Owl',      'Dr'     FROM dual 
-  ) 
-  SELECT * FROM names;
+CREATE TABLE people ( 
+  person_id   INTEGER NOT NULL PRIMARY KEY, 
+  given_name  VARCHAR2(100) NOT NULL, 
+  family_name VARCHAR2(100) NOT NULL, 
+  title       VARCHAR2(20), 
+  birth_date  DATE 
+);
+CREATE TABLE patients ( 
+  patient_id          INTEGER NOT NULL PRIMARY KEY REFERENCES people (person_id), 
+  last_admission_date DATE 
+);
+CREATE TABLE staff ( 
+  staff_id   INTEGER NOT NULL PRIMARY KEY REFERENCES people (person_id), 
+  hired_date DATE 
+);

@@ -3,9 +3,6 @@
     3,
     6
   ],
-  "adjsn/json-data-type-5.sql" : [
-    3
-  ],
   "adjsn/json-schema-14.sql" : [
     6
   ],
@@ -18,7 +15,7 @@
   "adjsn/sql-json-function-json_object-19.sql" : [
     10
   ],
-  "adjsn/tables-json-columns-3.sql" : [
+  "adjsn/tables-json-columns-2.sql" : [
     2,
     33
   ],
@@ -205,44 +202,44 @@
   "sqlrf/HEXTORAW-0.sql" : [
     3
   ],
-  "sqlrf/INSERT-0.sql" : [
+  "sqlrf/INSERT-11.sql" : [
     2
   ],
-  "sqlrf/INSERT-1.sql" : [
+  "sqlrf/INSERT-12.sql" : [
     2
   ],
-  "sqlrf/INSERT-10.sql" : [
+  "sqlrf/INSERT-13.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-15.sql" : [
     2,
     3,
     4
   ],
-  "sqlrf/INSERT-11.sql" : [
+  "sqlrf/INSERT-16.sql" : [
     2,
     4,
     6
   ],
-  "sqlrf/INSERT-14.sql" : [
+  "sqlrf/INSERT-19.sql" : [
     2
   ],
-  "sqlrf/INSERT-27.sql" : [
+  "sqlrf/INSERT-32.sql" : [
     2
   ],
-  "sqlrf/INSERT-28.sql" : [
+  "sqlrf/INSERT-33.sql" : [
     2
   ],
-  "sqlrf/INSERT-3.sql" : [
-    2
-  ],
-  "sqlrf/INSERT-4.sql" : [
+  "sqlrf/INSERT-5.sql" : [
     2
   ],
   "sqlrf/INSERT-6.sql" : [
     2
   ],
-  "sqlrf/INSERT-7.sql" : [
+  "sqlrf/INSERT-8.sql" : [
     2
   ],
-  "sqlrf/INSERT-8.sql" : [
+  "sqlrf/INSERT-9.sql" : [
     2
   ],
   "sqlrf/JSON_ARRAYAGG-0.sql" : [

@@ -2,14 +2,14 @@
   "adjsn/creating-view-json-data-using-json_table-0.sql" : [
     3
   ],
-  "adjsn/json-data-type-8.sql" : [
+  "adjsn/json-data-type-7.sql" : [
     2
   ],
   "adjsn/querying-data-guide-0.sql" : [
     4
   ],
   "adjsn/querying-data-guide-1.sql" : [
-    8
+    7
   ],
   "adjsn/sql-json-function-json_table-2.sql" : [
     2
@@ -461,22 +461,22 @@
     2,
     8
   ],
-  "sqlrf/INSERT-16.sql" : [
+  "sqlrf/INSERT-21.sql" : [
     2
   ],
-  "sqlrf/INSERT-20.sql" : [
+  "sqlrf/INSERT-25.sql" : [
     2
   ],
-  "sqlrf/INSERT-31.sql" : [
+  "sqlrf/INSERT-36.sql" : [
     9
   ],
-  "sqlrf/INSERT-33.sql" : [
+  "sqlrf/INSERT-38.sql" : [
     9
   ],
-  "sqlrf/INSERT-35.sql" : [
+  "sqlrf/INSERT-40.sql" : [
     24
   ],
-  "sqlrf/INSERT-37.sql" : [
+  "sqlrf/INSERT-42.sql" : [
     29
   ],
   "sqlrf/IS-OF-type-Condition-0.sql" : [

@@ -158,7 +158,7 @@
   "adjsn/sql-json-path-expression-item-methods-4.sql" : [
     4
   ],
-  "adjsn/tables-json-columns-1.sql" : [
+  "adjsn/tables-json-columns-3.sql" : [
     5
   ],
   "adjsn/type-clause-sql-functions-and-conditions-6.sql" : [
@@ -1823,6 +1823,12 @@
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-1.sql" : [
     2
   ],
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-10.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-11.sql" : [
+    2
+  ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-14.sql" : [
     2
   ],
@@ -1863,6 +1869,9 @@
     2
   ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-30.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-9.sql" : [
     2
   ],
   "sqlrf/CREATE-CLUSTER-0.sql" : [
@@ -2549,7 +2558,7 @@
   "sqlrf/Graphic-Syntax-Diagrams-2.sql" : [
     2
   ],
-  "sqlrf/INSERT-21.sql" : [
+  "sqlrf/INSERT-26.sql" : [
     8
   ],
   "sqlrf/ITERATION_NUMBER-0.sql" : [

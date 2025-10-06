@@ -1,4 +1,4 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/Format-Models.html
-UPDATE employees 
-  SET hire_date = TO_DATE('2008 05 20','YYYY MM DD') 
-  WHERE last_name = 'Hunold';
+SELECT last_name employee, TO_CHAR(hire_date,'fmMonth DD, YYYY') hiredate
+  FROM employees
+  WHERE department_id = 20;

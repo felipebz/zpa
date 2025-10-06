@@ -7,5 +7,4 @@ SELECT json_value('{"first":     "Grace",
                   RETURNING person_t
                   ERROR ON MISMATCH (EXTRA DATA)
                   ERROR ON MISMATCH (MISSING DATA)
-                  IGNORE ON MISMATCH (TYPE ERROR))
-FROM DUAL;
+                  IGNORE ON MISMATCH (TYPE ERROR));

@@ -1,5 +1,5 @@
 -- https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/INSERT.html
-INSERT INTO employees@remote
-   VALUES (8002, 'Juan', 'Fernandez', 'juanf@example.com', NULL, 
-   TO_DATE('04-OCT-1992', 'DD-MON-YYYY'), 'SH_CLERK', 3000, 
-   NULL, 121, 20);
+INSERT INTO employees (employee_id, last_name, email, 
+      hire_date, job_id, salary, commission_pct) 
+   VALUES (207, 'Gregory', 'pgregory@example.com', 
+      sysdate, 'PU_CLERK', 1.2E3, NULL);

@@ -4,5 +4,4 @@ SELECT json_value('{"first":     "Grace",
                     "last":      "Hopper",
                     "birthyear": "1906"}',
                   '$'
-                  RETURNING person_t)
-FROM DUAL;
+                  RETURNING person_t);
