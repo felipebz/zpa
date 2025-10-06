@@ -28,6 +28,10 @@ testing {
                 into(layout.projectDirectory.dir("tools"))
             }
 
+            tasks.named("compileIntegrationTestKotlin") {
+                dependsOn(downloadAndUnzipFile)
+            }
+
             tasks.named("integrationTest") {
                 dependsOn(downloadAndUnzipFile)
             }
