@@ -7,7 +7,7 @@ CREATE OR REPLACE PROCEDURE p (
 ) AUTHID DEFINER IS
 BEGIN
   -- Print values of parameters:
-
+ 
   DBMS_OUTPUT.PUT_LINE('Inside procedure p:');
 
   DBMS_OUTPUT.PUT('IN a = ');

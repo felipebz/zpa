@@ -208,17 +208,6 @@
     7,
     13
   ],
-  "lnpls/how-standard-package-defines-pl-sql-environment-0.sql" : [
-    2
-  ],
-  "lnpls/how-standard-package-defines-pl-sql-environment-3.sql" : [
-    2,
-    3,
-    4,
-    4,
-    5,
-    5
-  ],
   "lnpls/native-dynamic-sql-1.sql" : [
     2
   ],
@@ -287,11 +276,6 @@
     3,
     4
   ],
-  "lnpls/overview-polymorphic-table-functions-3.sql" : [
-    17,
-    47,
-    48
-  ],
   "lnpls/package-body-0.sql" : [
     3,
     8
@@ -330,9 +314,6 @@
     124,
     125,
     148
-  ],
-  "lnpls/package-specification-0.sql" : [
-    2
   ],
   "lnpls/package-specification-2.sql" : [
     7

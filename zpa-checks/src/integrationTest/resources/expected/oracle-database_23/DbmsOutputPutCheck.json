@@ -31,13 +31,6 @@
   "lnpls/CREATE-FUNCTION-statement-8.sql" : [
     3
   ],
-  "lnpls/DEPRECATE-pragma-27.sql" : [
-    12
-  ],
-  "lnpls/DEPRECATE-pragma-28.sql" : [
-    3,
-    6
-  ],
   "lnpls/EXIT-statement-0.sql" : [
     6,
     13

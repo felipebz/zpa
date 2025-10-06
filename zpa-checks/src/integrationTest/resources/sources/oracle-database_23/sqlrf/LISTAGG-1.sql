@@ -4,4 +4,3 @@ SELECT department_id "Dept.",
   FROM employees
   GROUP BY department_id
   ORDER BY department_id;
-       el; Walsh; Feeney; Dellinger; McCain; Vargas; Gates; Rogers;

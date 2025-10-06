@@ -92,7 +92,12 @@ class OracleDocsExtractor {
         val parser = ScriptParser(alteredText)
         var validText = ""
         while (true) {
-            val cmd = parser.next() ?: break
+            val cmd = try {
+                parser.next() ?: break
+            } catch (_: NullPointerException) {
+                // the dbtools-common from SQLcl 25.x throws a NullPointerException when parsing invalid code
+                break
+            }
             val sql = cmd.sqlOrigWithTerminator
             val syntaxError = SyntaxError.checkSyntax(
                 sql,

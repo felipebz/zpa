@@ -10,4 +10,3 @@ WITH
  END;
 SELECT DISTINCT get_domain(catalog_url)
   FROM product_information;
-/

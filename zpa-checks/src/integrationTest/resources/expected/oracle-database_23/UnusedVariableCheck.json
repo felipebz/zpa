@@ -84,10 +84,6 @@
   "lnpls/native-dynamic-sql-12.sql" : [
     7
   ],
-  "lnpls/overview-polymorphic-table-functions-3.sql" : [
-    20,
-    21
-  ],
   "lnpls/record-variables-21.sql" : [
     8
   ],
@@ -113,16 +109,6 @@
   ],
   "lnpls/scope-and-visibility-identifiers-9.sql" : [
     4
-  ],
-  "lnpls/sql-data-types-29.sql" : [
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19
   ],
   "lnpls/subprogram-parameters-4.sql" : [
     4
