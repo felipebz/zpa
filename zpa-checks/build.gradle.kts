@@ -28,7 +28,7 @@ testing {
                 into(layout.projectDirectory.dir("tools"))
             }
 
-            tasks.build {
+            tasks.named("integrationTest") {
                 dependsOn(downloadAndUnzipFile)
             }
 
