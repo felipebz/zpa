@@ -36,7 +36,7 @@ testing {
                         val zipFile = System.getProperty("sonar.zipFile")
 
                         val launcher = javaToolchains.launcherFor {
-                            languageVersion.set(JavaLanguageVersion.of(17))
+                            languageVersion.set(JavaLanguageVersion.of(21))
                         }
                         javaLauncher.set(launcher)
 
