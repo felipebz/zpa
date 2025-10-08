@@ -56,10 +56,10 @@ jobs:
       fail-fast: false
       matrix:
         sqVersion:
-          - 25.7.0.110598
           - 25.8.0.111929
           - 25.9.0.112764
           - 25.10.0.114319
+          - 25.11-SNAPSHOT
     steps:
       - uses: actions/checkout@v5
 
