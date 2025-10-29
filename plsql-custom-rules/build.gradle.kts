@@ -41,10 +41,8 @@ configurations {
     }
 }
 
-tasks.test {
-    useJUnitPlatform {
-        version = junitVersion
-    }
+tasks.named<Test>("test") {
+    useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
     }
