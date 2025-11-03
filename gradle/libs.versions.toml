@@ -18,7 +18,7 @@ woodstox = "7.1.1"
 
 # testing
 assertj = "3.27.6"
-junit = "6.0.0"
+junit = "6.0.1"
 mockito = "5.20.0"
 mockito-kotlin = "6.1.0"
 sonarqube-orchestrator = "6.0.0.3852"
