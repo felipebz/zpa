@@ -75,7 +75,6 @@ class PlSqlAstScanner(private val context: SensorContext,
     }
 
     private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
-        println("Scanning file ${plSqlFile.fileName()}")
         val inputFile = plSqlFile.inputFile
         val result = try {
             astScanner.scanFile(
@@ -83,11 +82,9 @@ class PlSqlAstScanner(private val context: SensorContext,
                 listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile))
             )
         } catch (e: Exception) {
-            println("Error scanning file ${plSqlFile.fileName()}: ${e.message}")
             e.printStackTrace()
             throw e
         }
-        println("File ${plSqlFile.fileName()} scanned")
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
@@ -99,7 +96,6 @@ class PlSqlAstScanner(private val context: SensorContext,
 
             saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, result.numberOfStatements)
             saveMetricOnFile(inputFile, CoreMetrics.NCLOC, result.linesOfCode)
-            println("NCLOC: ${result.linesOfCode}")
             saveMetricOnFile(inputFile, CoreMetrics.COMMENT_LINES, result.linesOfComments)
             saveMetricOnFile(inputFile, CoreMetrics.COMPLEXITY, result.complexity)
             saveMetricOnFile(inputFile, CoreMetrics.FUNCTIONS, result.numberOfFunctions)
