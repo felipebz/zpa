@@ -10,7 +10,7 @@ sonarscanner = "7.0.1.6134"
 # libs
 flatlaf = "3.6.2"
 flr = "1.5.0"
-jackson = "2.20.0"
+jackson = "2.20.1"
 jsoup = "1.21.2"
 min-sonarqube = "25.8.0.111929"
 min-sonarqubeapi = "13.0.0.3026"
