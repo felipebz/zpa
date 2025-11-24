@@ -16,7 +16,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -61,7 +61,7 @@ jobs:
           - 25.10.0.114319
           - 25.11.0.114957
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-java@v5
         with:
@@ -101,7 +101,7 @@ jobs:
     needs: integration-tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -149,7 +149,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v5
