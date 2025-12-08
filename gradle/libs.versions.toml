@@ -4,7 +4,7 @@ dokka = "2.1.0"
 download = "5.6.0"
 jreleaser = "1.20.0"
 license = "0.16.1"
-shadow = "9.2.2"
+shadow = "9.3.0"
 sonarscanner = "7.1.0.6387"
 
 # libs
