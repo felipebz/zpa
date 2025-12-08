@@ -8,7 +8,7 @@ shadow = "9.2.2"
 sonarscanner = "7.1.0.6387"
 
 # libs
-flatlaf = "3.6.2"
+flatlaf = "3.7"
 flr = "1.5.0"
 jackson = "2.20.1"
 jsoup = "1.21.2"
