@@ -56,7 +56,7 @@ jobs:
       fail-fast: false
       matrix:
         sqVersion:
-          - 25.8.0.111929
+          - 25.8.0.112029
           - 25.9.0.112764
           - 25.10.0.114319
           - 25.11.0.114957
@@ -76,25 +76,24 @@ jobs:
         with:
           name: build-artifacts
 
-      - if: ${{ !contains(matrix.sqVersion, 'SNAPSHOT') }}
-        name: Run plugin integration test
+      - name: Run plugin integration test
         run: |
-          curl -s -L "https://nexus.felipezorzo.com.br/service/rest/v1/search/assets/download?repository=maven-releases&maven.groupId=org.sonarsource.sonarqube&maven.artifactId=sonar-application&maven.extension=zip&sort=version&maven.baseVersion=${{ matrix.sqVersion }}" \
-            -u "$AUTH_REPOSITORY" \
-            -o sonar-zpa-plugin/sonar-application-${{ matrix.sqVersion }}.zip
-          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=sonar-application-${{ matrix.sqVersion }}.zip --rerun --info
+          if [[ "$SQ_VERSION" == *"SNAPSHOT"* ]]; then
+            FOLDER="snapshots"
+          else
+            FOLDER="releases"
+          fi
+          
+          FILE_NAME="sonar-application-${SQ_VERSION}.zip"
+          DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/${FOLDER}/${FILE_NAME}"
+          
+          curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
+          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=$FILE_NAME --rerun --info
         env:
           AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
-
-      - if: ${{ contains(matrix.sqVersion, 'SNAPSHOT') }}
-        name: Run plugin integration test
-        run: |
-          curl -s -L "https://nexus.felipezorzo.com.br/service/rest/v1/search/assets/download?repository=maven-snapshots&maven.groupId=org.sonarsource.sonarqube&maven.artifactId=sonar-application&maven.extension=zip&sort=version&maven.baseVersion=${{ matrix.sqVersion }}" \
-            -u "$AUTH_REPOSITORY" \
-            -o sonar-zpa-plugin/sonar-application-${{ matrix.sqVersion }}.zip
-          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=sonar-application-${{ matrix.sqVersion }}.zip --rerun --info
-        env:
-          AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
+          SQ_VERSION: ${{ matrix.sqVersion }}
+          OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
+          OCI_PAR: ${{ secrets.OCI_PAR }}
 
   release:
     name: Release
