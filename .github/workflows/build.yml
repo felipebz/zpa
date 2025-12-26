@@ -90,7 +90,6 @@ jobs:
           curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
           ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=$FILE_NAME --rerun --info
         env:
-          AUTH_REPOSITORY: ${{ secrets.AUTH_REPOSITORY }}
           SQ_VERSION: ${{ matrix.sqVersion }}
           OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
           OCI_PAR: ${{ secrets.OCI_PAR }}
