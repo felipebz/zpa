@@ -40,7 +40,7 @@ jobs:
         run: ./gradlew build -p plsql-custom-rules
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: |
@@ -72,7 +72,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
 
@@ -112,7 +112,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
 
