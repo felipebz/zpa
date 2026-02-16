@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.3.10"
 dokka = "2.1.0"
-download = "5.6.0"
+download = "5.7.0"
 jreleaser = "1.22.0"
 license = "0.16.1"
 shadow = "9.3.1"
