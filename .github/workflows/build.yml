@@ -58,8 +58,8 @@ jobs:
         sqVersion:
           - 25.8.0.112029
           - 25.11.0.114957
-          - 25.12.0.117093
-          - 26.1-SNAPSHOT
+          - 26.3.0.120487
+          - 26.4-SNAPSHOT
     steps:
       - uses: actions/checkout@v6
 
