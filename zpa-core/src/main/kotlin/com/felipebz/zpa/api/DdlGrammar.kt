@@ -154,8 +154,12 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME, DATATYPE,
+                    
                     b.optional(SORT),
-                    b.optional(DEFAULT, EXPRESSION),
+                    b.optional(DEFAULT, b.optional(
+                        b.sequence(ON, NULL,
+                            b.optional(FOR, INSERT,
+                                b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
                     b.optional(ENCRYPT),
                     b.zeroOrMore(INLINE_CONSTRAINT))
 
