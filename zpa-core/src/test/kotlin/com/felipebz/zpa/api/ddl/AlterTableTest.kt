@@ -41,4 +41,24 @@ class AlterTableTest : RuleTest() {
     fun matchesAlterTableWithOutOfLineConstraintUsingAndTablespace() {
         assertThat(p).matches("alter table tab add constraint c_name primary key (col1, col2) using index;")
     }
+
+    @Test
+    fun matchesAlterTableAddColumnWithDefaultOnNull() {
+        assertThat(p).matches("alter table tab add col varchar2(100) default on null 'Default String';")
+    }
+
+    @Test
+    fun matchesAlterTableAddColumnWithDefaultWithoutOnNull() {
+        assertThat(p).matches("alter table tab add col varchar2(100) default 'Default String';")
+    }
+
+    @Test
+    fun matchesAlterTableAddColumnWithDefaultOnNullForInsertOnly() {
+        assertThat(p).matches("alter table tab add col varchar2(100) default on null for insert only 'Default String';")
+    }
+
+    @Test
+    fun matchesAlterTableAddColumnWithDefaultOnNullForInsertAndUpdate() {
+        assertThat(p).matches("alter table tab add col varchar2(100) default on null for insert and update 'Default String';")
+    }
 }

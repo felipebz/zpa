@@ -522,4 +522,38 @@ class CreateTableTest : RuleTest() {
         assertThat(p).matches("create table table_id (id number) partition by range (column_id) subpartition by hash (column_id) (partition values less than (maxvalue) compress);")
     }
 
+    @Test
+    fun matchesColumnDefaultOnNull() {
+        assertThat(p).matches("create table table_id (id number, name varchar2(100) default on null 'Default String');")
+    }
+
+    @Test
+    fun matchesColumnDefaultOnNullWithExpression() {
+        assertThat(p).matches("create table table_id (id number, created_date date default on null sysdate);")
+    }
+
+    @Test
+    fun matchesColumnDefault() {
+        assertThat(p).matches("create table table_id (id number, name varchar2(100) default 'Default String');")
+    }
+
+    @Test
+    fun matchesColumnDefaultOnNullForInsertOnly() {
+        assertThat(p).matches("create table table_id (id number, name varchar2(100) default on null for insert only 'Default String');")
+    }
+
+    @Test
+    fun matchesColumnDefaultOnNullForInsertOnlyWithExpression() {
+        assertThat(p).matches("create table table_id (id number, created_date date default on null for insert only sysdate);")
+    }
+
+    @Test
+    fun matchesColumnDefaultOnNullForInsertAndUpdate() {
+        assertThat(p).matches("create table table_id (id number, name varchar2(100) default on null for insert and update 'Default String');")
+    }
+
+    @Test
+    fun matchesColumnDefaultOnNullForInsertAndUpdateWithExpression() {
+        assertThat(p).matches("create table table_id (id number, created_date date default on null for insert and update sysdate);")
+    }
 }
