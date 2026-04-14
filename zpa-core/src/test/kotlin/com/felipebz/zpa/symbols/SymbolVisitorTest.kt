@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("RedundantSemicolon")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.zpa.TestPlSqlVisitorRunner
@@ -97,6 +99,36 @@ end;
         val symbols = scan("""
 declare
   type my_array is table of number;
+  variable my_array;
+  n number;
+begin
+  variable := my_array();
+  n := variable(1);
+end;
+""")
+        assertThat(symbols).hasSize(3)
+
+        val type = symbols.find("my_array", 2, 8)
+        assertThat(type.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+        assertThat(type.innerScope).isNull()
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat(variable.type).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+        assertThat(variable.references).containsExactly(
+            tuple(6, 3),
+            tuple(7, 8))
+        assertThat(variable.innerScope).isNull()
+
+        val methodCall = variable.usages[1].getFirstAncestor(PlSqlGrammar.METHOD_CALL)
+        assertThat(semantic(methodCall).plSqlType).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(semantic(methodCall.firstChild).plSqlType).isEqualTo(PlSqlType.ASSOCIATIVE_ARRAY)
+    }
+
+    @Test
+    fun varray() {
+        val symbols = scan("""
+declare
+  type my_array is varray(5) of number;
   variable my_array;
   n number;
 begin

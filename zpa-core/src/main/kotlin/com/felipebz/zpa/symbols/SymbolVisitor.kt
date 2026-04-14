@@ -141,6 +141,8 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             visitCustomSubtypeDeclaration(node)
         } else if (node.type === PlSqlGrammar.TABLE_OF_DECLARATION) {
             visitAssociativeArrayDeclaration(node)
+        } else if (node.type === PlSqlGrammar.VARRAY_DECLARATION) {
+            visitVarrayDeclaration(node)
         } else if (node.type === PlSqlGrammar.RECORD_DECLARATION) {
             visitRecordDeclaration(node)
         } else if (node.type === PlSqlGrammar.VARIABLE_NAME) {
@@ -317,6 +319,12 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     private fun visitAssociativeArrayDeclaration(node: AstNode) {
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
         val datatype = node.getFirstChild(PlSqlGrammar.NESTED_TABLE_DEFINITION).getFirstChild(PlSqlGrammar.DATATYPE)
+        createSymbol(identifier, Symbol.Kind.TYPE, AssociativeArrayDatatype(node, currentScope, solveType(datatype)))
+    }
+
+    private fun visitVarrayDeclaration(node: AstNode) {
+        val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+        val datatype = node.getFirstChild(PlSqlGrammar.VARRAY_TYPE_DEFINITION).getFirstChild(PlSqlGrammar.DATATYPE)
         createSymbol(identifier, Symbol.Kind.TYPE, AssociativeArrayDatatype(node, currentScope, solveType(datatype)))
     }
 
