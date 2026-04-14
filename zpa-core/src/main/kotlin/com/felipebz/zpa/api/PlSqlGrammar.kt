@@ -808,7 +808,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             ANALYTIC_CLAUSE,
                             b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))))).skipIfOneChild()
 
-            b.rule(IN_EXPRESSION).define(POSTFIX_EXPRESSION,
+            b.rule(IN_EXPRESSION).define(CONCATENATION_EXPRESSION,
                     b.optional(b.sequence(
                             b.optional(NOT), IN,
                             b.firstOf(
@@ -851,7 +851,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     MULTISET_EXPRESSION,
                     NEW_OBJECT_EXPRESSION,
                     CASE_EXPRESSION,
-                    IN_EXPRESSION,
+                    POSTFIX_EXPRESSION,
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
                     b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild()
 
@@ -873,7 +873,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(COMPARISON_EXPRESSION).define(b.firstOf(
                     ConditionsGrammar.CONDITION,
-                    CONCATENATION_EXPRESSION)).skipIfOneChild()
+                    IN_EXPRESSION)).skipIfOneChild()
 
             b.rule(NOT_EXPRESSION).define(b.optional(NOT), COMPARISON_EXPRESSION).skipIfOneChild()
             b.rule(AND_EXPRESSION).define(NOT_EXPRESSION, b.zeroOrMore(AND, NOT_EXPRESSION)).skipIfOneChild()

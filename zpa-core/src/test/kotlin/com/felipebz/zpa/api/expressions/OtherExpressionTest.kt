@@ -99,6 +99,12 @@ class OtherExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesExpressionWithInWithMultipleValues() {
+        setRootRule(PlSqlGrammar.IN_EXPRESSION)
+        assertThat(p).matches("v1||v2 in ('ab', 'bc', 'ac')")
+    }
+
+    @Test
     fun matchesBasicInWithoutParenthesis() {
         assertThat(p).matches("var in 1")
     }
