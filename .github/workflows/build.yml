@@ -11,6 +11,9 @@ on:
 env:
   JAVA_VERSION: 21
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
@@ -97,6 +100,8 @@ jobs:
 
   release:
     name: Release
+    permissions:
+      contents: write
     needs: integration-tests
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
