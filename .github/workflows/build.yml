@@ -97,6 +97,7 @@ jobs:
   release:
     name: Release
     needs: integration-tests
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -122,15 +123,13 @@ jobs:
       - name: Create local Maven repository
         run: ./gradlew publish
 
-      - if: github.ref == 'refs/heads/main'
-        name: Run SonarQube Scanner
+      - name: Run SonarQube Scanner
         run: ./gradlew sonar --info
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - if: github.ref == 'refs/heads/main'
-        name: Release artifacts
+      - name: Release artifacts
         run: ./gradlew jreleaserFullRelease
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
