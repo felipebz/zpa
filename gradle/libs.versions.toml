@@ -14,7 +14,7 @@ jackson = "2.21.3"
 jsoup = "1.22.2"
 min-sonarqube = "25.8.0.111929"
 min-sonarqubeapi = "13.0.0.3026"
-woodstox = "7.1.1"
+woodstox = "7.2.0"
 
 # testing
 assertj = "3.27.7"
