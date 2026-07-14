@@ -2,7 +2,7 @@
 kotlin = "2.4.0"
 dokka = "2.2.0"
 download = "5.7.0"
-jreleaser = "1.24.0"
+jreleaser = "1.25.0"
 license = "0.16.1"
 shadow = "9.4.3"
 sonarscanner = "7.2.3.7755"
