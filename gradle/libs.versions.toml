@@ -5,7 +5,7 @@ download = "5.7.0"
 jreleaser = "1.25.0"
 license = "0.16.1"
 shadow = "9.6.1"
-sonarscanner = "7.2.3.7755"
+sonarscanner = "7.4.0.8496"
 
 # libs
 flatlaf = "3.7.2"
