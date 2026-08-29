@@ -17,9 +17,6 @@
   "source/core/output_buffers/ut_output_buffer_tmp.sql" : [
     30
   ],
-  "source/core/ut_savepoint_seq.sql" : [
-    15
-  ],
   "source/core/ut_suite_cache.sql" : [
     15
   ],

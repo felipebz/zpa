@@ -676,15 +676,33 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                     FOR, DmlGrammar.TABLE_REFERENCE, b.optional(SEMICOLON))
 
+            val sequenceInteger = b.sequence(
+                    b.optional(b.firstOf(PLUS, MINUS)),
+                    b.next(INTEGER_LITERAL),
+                    NUMERIC_LITERAL)
+
             b.rule(CREATE_SEQUENCE).define(
                     CREATE, SEQUENCE, UNIT_NAME,
-                    b.optional(START, WITH, NUMERIC_LITERAL),
-                    b.optional(MAXVALUE, NUMERIC_LITERAL),
-                    b.optional(MINVALUE, NUMERIC_LITERAL),
-                    b.optional(INCREMENT, BY, NUMERIC_LITERAL),
-                    b.optional(b.firstOf(CYCLE, NOCYCLE)),
-                    b.optional(b.firstOf(NOCACHE, b.sequence(CACHE, NUMERIC_LITERAL)),
-                            b.optional(b.firstOf(ORDER, NOORDER))),
+                    b.optional(SHARING, EQUALS, b.firstOf(METADATA, DATA, NONE)),
+                    b.zeroOrMore(b.firstOf(
+                            b.sequence(INCREMENT, BY, sequenceInteger),
+                            b.sequence(START, WITH, sequenceInteger),
+                            b.sequence(MAXVALUE, sequenceInteger),
+                            NOMAXVALUE,
+                            b.sequence(MINVALUE, sequenceInteger),
+                            NOMINVALUE,
+                            CYCLE,
+                            NOCYCLE,
+                            b.sequence(CACHE, sequenceInteger),
+                            NOCACHE,
+                            ORDER,
+                            NOORDER,
+                            KEEP,
+                            NOKEEP,
+                            b.sequence(SCALE, b.firstOf(EXTEND, NOEXTEND)),
+                            NOSCALE,
+                            SESSION,
+                            GLOBAL)),
                     b.optional(SEMICOLON))
 
             b.rule(CREATE_DIRECTORY).define(

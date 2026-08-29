@@ -371,9 +371,6 @@
   "lnpls/description-static-sql-2.sql" : [
     3
   ],
-  "lnpls/dml-triggers-38.sql" : [
-    3
-  ],
   "lnpls/dml-triggers-42.sql" : [
     2
   ],
@@ -2059,9 +2056,6 @@
   ],
   "sqlrf/CREATE-SCHEMA-0.sql" : [
     2
-  ],
-  "sqlrf/CREATE-SEQUENCE-4.sql" : [
-    6
   ],
   "sqlrf/CREATE-SPFILE-0.sql" : [
     2
