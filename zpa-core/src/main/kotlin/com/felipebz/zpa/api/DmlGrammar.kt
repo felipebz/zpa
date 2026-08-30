@@ -329,65 +329,91 @@ enum class DmlGrammar : GrammarRuleKey {
                     ))
             )
 
-            b.rule(PIVOT_FOR_CLAUSE).define(
-                FOR,
-                b.firstOf(
-                    b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
-                    VARIABLE_NAME
-                )
+            val pivotForColumns = b.firstOf(
+                b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                IDENTIFIER_NAME
             )
+
+            val pivotInValue = b.firstOf(
+                b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS),
+                EXPRESSION
+            )
+            val pivotInItem = b.sequence(
+                pivotInValue,
+                b.optional(b.optional(AS), ALIAS)
+            )
+            val dynamicPivotInClauseStart = b.sequence(
+                IN,
+                LPARENTHESIS,
+                b.firstOf(SELECT_EXPRESSION, ANY)
+            )
+
+            b.rule(PIVOT_FOR_CLAUSE).define(FOR, pivotForColumns)
+
             b.rule(PIVOT_IN_CLAUSE).define(
                 IN,
                 LPARENTHESIS,
                 b.firstOf(
-                    b.oneOrMore(
-                        b.firstOf(
-                            EXPRESSION,
-                            b.sequence(LPARENTHESIS, b.oneOrMore(EXPRESSION, b.optional(COMMA)), RPARENTHESIS)
-                        ),
-                        b.optional(b.optional(AS), b.firstOf(ALIAS,LITERAL)),
-                        b.optional(COMMA)),
+                    b.sequence(pivotInItem, b.zeroOrMore(COMMA, pivotInItem)),
                     SELECT_EXPRESSION,
-                    b.oneOrMore(ANY, b.optional(COMMA))),
+                    b.sequence(ANY, b.zeroOrMore(COMMA, ANY))),
                 RPARENTHESIS
+            )
+
+            val unpivotInputColumns = b.firstOf(
+                b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                IDENTIFIER_NAME
+            )
+            val unpivotDescriptor = b.firstOf(
+                b.sequence(LPARENTHESIS, LITERAL, b.zeroOrMore(COMMA, LITERAL), RPARENTHESIS),
+                LITERAL
+            )
+            val unpivotInItem = b.sequence(
+                unpivotInputColumns,
+                b.optional(b.optional(AS), unpivotDescriptor)
             )
 
             b.rule(UNPIVOT_IN_CLAUSE).define(
                 IN,
                 LPARENTHESIS,
-                b.oneOrMore(
-                    b.firstOf(
-                        b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
-                        VARIABLE_NAME
-                    ),
-                    b.optional(
-                        b.optional(AS),
-                        b.firstOf(
-                            b.sequence(LPARENTHESIS, b.oneOrMore(b.firstOf(ALIAS, LITERAL), b.optional(COMMA)), RPARENTHESIS),
-                            b.firstOf(ALIAS, LITERAL)
-                        )
-                    ),
-                    b.optional(COMMA)
-                ),
+                b.sequence(unpivotInItem, b.zeroOrMore(COMMA, unpivotInItem)),
                 RPARENTHESIS
             )
 
+            val pivotAggregate = b.sequence(
+                b.nextNot(
+                    b.sequence(
+                        IDENTIFIER_NAME,
+                        b.zeroOrMore(DOT, IDENTIFIER_NAME),
+                        LPARENTHESIS,
+                        RPARENTHESIS
+                    )
+                ),
+                CALL_EXPRESSION,
+                b.optional(b.optional(AS), ALIAS)
+            )
+
             b.rule(PIVOT_CLAUSE).define(
-                b.sequence(
-                    PIVOT,
-                    b.optional(XML),
-                    LPARENTHESIS,
-                    b.oneOrMore(
-                        b.firstOf(
-                            b.sequence(LPARENTHESIS, b.optional(EXPRESSION), RPARENTHESIS),
-                            EXPRESSION
-                        ),
-                        b.optional(b.optional(AS), b.firstOf(ALIAS,LITERAL)),
-                        b.optional(COMMA)
+                b.firstOf(
+                    b.sequence(
+                        PIVOT,
+                        XML,
+                        LPARENTHESIS,
+                        b.sequence(pivotAggregate, b.zeroOrMore(COMMA, pivotAggregate)),
+                        PIVOT_FOR_CLAUSE,
+                        b.next(dynamicPivotInClauseStart),
+                        PIVOT_IN_CLAUSE,
+                        RPARENTHESIS
                     ),
-                    PIVOT_FOR_CLAUSE,
-                    PIVOT_IN_CLAUSE,
-                    RPARENTHESIS
+                    b.sequence(
+                        PIVOT,
+                        LPARENTHESIS,
+                        b.sequence(pivotAggregate, b.zeroOrMore(COMMA, pivotAggregate)),
+                        PIVOT_FOR_CLAUSE,
+                        b.nextNot(dynamicPivotInClauseStart),
+                        PIVOT_IN_CLAUSE,
+                        RPARENTHESIS
+                    )
                 )
             )
 
@@ -396,10 +422,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     UNPIVOT,
                     b.optional(b.firstOf(INCLUDE, EXCLUDE), NULLS),
                     LPARENTHESIS,
-                    b.firstOf(
-                        b.sequence(LPARENTHESIS, b.oneOrMore(VARIABLE_NAME, b.optional(COMMA)), RPARENTHESIS),
-                        VARIABLE_NAME
-                    ),
+                    pivotForColumns,
                     PIVOT_FOR_CLAUSE,
                     UNPIVOT_IN_CLAUSE,
                     RPARENTHESIS

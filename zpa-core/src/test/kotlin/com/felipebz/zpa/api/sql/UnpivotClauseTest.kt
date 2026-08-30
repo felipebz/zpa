@@ -39,7 +39,7 @@ class UnpivotClauseTest : RuleTest() {
 
     @Test
     fun matchesSimpleUnpivotWithAliases() {
-        assertThat(p).matches("unpivot (amount for quarter in (q1 'q1', q2 as q2, q3 as q3))")
+        assertThat(p).matches("unpivot (amount for quarter in (q1 'q1', q2 as 'q2', q3 as 'q3'))")
     }
 
     @Test
@@ -66,5 +66,37 @@ class UnpivotClauseTest : RuleTest() {
             )
             """
         )
+    }
+
+    @Test
+    fun matchesUnpivotWithMultipleDescriptorColumns() {
+        assertThat(p).matches(
+            "unpivot ((amount, units) for (year, quarter) in ((q1_amount, q1_units) as (2025, 'q1'), (q2_amount, q2_units) as (2025, 'q2')))"
+        )
+    }
+
+    @Test
+    fun rejectsIdentifierUnpivotDescriptor() {
+        assertThat(p).notMatches("unpivot (amount for quarter in (q1 as q1))")
+    }
+
+    @Test
+    fun rejectsTrailingCommaInUnpivotMeasureColumns() {
+        assertThat(p).notMatches("unpivot ((amount,) for quarter in (q1))")
+    }
+
+    @Test
+    fun rejectsTrailingCommaInUnpivotForColumns() {
+        assertThat(p).notMatches("unpivot (amount for (quarter,) in (q1))")
+    }
+
+    @Test
+    fun rejectsTrailingCommaInUnpivotInValues() {
+        assertThat(p).notMatches("unpivot (amount for quarter in (q1,))")
+    }
+
+    @Test
+    fun rejectsTrailingCommaInUnpivotDescriptorValues() {
+        assertThat(p).notMatches("unpivot (amount for quarter in ((q1) as ('q1',)))")
     }
 }
