@@ -29,6 +29,7 @@ import com.felipebz.zpa.api.PlSqlPunctuator.*
 enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
     LISTAGG_EXPRESSION,
+    FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
     JSON_ARRAYAGG_EXPRESSION,
@@ -37,14 +38,20 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
     companion object {
         fun buildOn(b: PlSqlGrammarBuilder) {
+            b.rule(FILTER_CLAUSE).define(
+                FILTER, LPARENTHESIS, WHERE, ConditionsGrammar.CONDITION, RPARENTHESIS)
+
             b.rule(LISTAGG_EXPRESSION).define(
                     LISTAGG,
                     LPARENTHESIS, b.optional(b.firstOf(ALL, DISTINCT)), EXPRESSION, b.optional(COMMA, EXPRESSION),
                     b.optional(ON, OVERFLOW, b.firstOf(
                             ERROR,
-                            b.sequence(TRUNCATE, b.optional(EXPRESSION), b.optional(b.firstOf(WITH, WITHOUT), COUNT)))),
+                            b.sequence(
+                                TRUNCATE,
+                                b.optional(b.nextNot(b.firstOf(WITH, WITHOUT)), EXPRESSION),
+                                b.optional(b.firstOf(WITH, WITHOUT), COUNT)))),
                     RPARENTHESIS,
-                    WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS)
+                    b.optional(WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS))
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,

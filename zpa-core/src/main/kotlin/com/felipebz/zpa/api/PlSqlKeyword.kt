@@ -243,6 +243,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     EXTRACT("extract"),
     FALSE("false"),
     FINAL("final"),
+    FILTER("filter"),
     FIRST("first"),
     FOLLOWING("following"),
     FOLLOWS("follows"),

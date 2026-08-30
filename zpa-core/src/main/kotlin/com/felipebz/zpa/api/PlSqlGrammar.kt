@@ -802,10 +802,41 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
                     b.optional(OUTER_JOIN_PLUS_SIGN)).skipIfOneChild()
 
-            b.rule(POSTFIX_EXPRESSION).define(OBJECT_REFERENCE,
-                    b.optional(b.firstOf(
-                            ANALYTIC_CLAUSE,
-                            b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))))).skipIfOneChild()
+            b.rule(POSTFIX_EXPRESSION).define(
+                    b.firstOf(
+                        b.sequence(
+                            b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),
+                            OBJECT_REFERENCE,
+                            b.optional(
+                                b.sequence(
+                                    b.next(
+                                        b.firstOf(
+                                            b.sequence(OVER, IDENTIFIER_NAME),
+                                            b.sequence(
+                                                OVER,
+                                                LPARENTHESIS,
+                                                b.firstOf(
+                                                    PARTITION_BY_CLAUSE,
+                                                    b.sequence(IDENTIFIER_NAME, PARTITION_BY_CLAUSE)
+                                                ),
+                                                RPARENTHESIS
+                                            )
+                                        )
+                                    ),
+                                    ANALYTIC_CLAUSE
+                                )
+                            ),
+                            b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE)
+                        ),
+                        b.sequence(
+                            OBJECT_REFERENCE,
+                            b.optional(b.firstOf(
+                                ANALYTIC_CLAUSE,
+                                b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
+                            ))
+                        )
+                    )
+                ).skipIfOneChild()
 
             b.rule(IN_EXPRESSION).define(CONCATENATION_EXPRESSION,
                     b.optional(b.sequence(

@@ -139,9 +139,21 @@ enum class DmlGrammar : GrammarRuleKey {
                     RPARENTHESIS)
 
             b.rule(ANALYTIC_CLAUSE).define(
-                    OVER, LPARENTHESIS,
-                    b.optional(PARTITION_BY_CLAUSE), b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
-                    RPARENTHESIS)
+                    OVER,
+                    b.firstOf(
+                            IDENTIFIER_NAME,
+                            b.sequence(
+                                    LPARENTHESIS,
+                                    b.optional(
+                                            b.firstOf(
+                                                    PARTITION_BY_CLAUSE,
+                                                    b.sequence(IDENTIFIER_NAME, b.optional(PARTITION_BY_CLAUSE))
+                                            )
+                                    ),
+                                    b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
+                                    RPARENTHESIS
+                            )
+                    ))
 
             b.rule(ON_OR_USING_EXPRESSION).define(
                     b.firstOf(

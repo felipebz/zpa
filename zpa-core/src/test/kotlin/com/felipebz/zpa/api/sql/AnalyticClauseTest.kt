@@ -38,6 +38,16 @@ class AnalyticClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesOverWindowName() {
+        assertThat(p).matches("over window_name")
+    }
+
+    @Test
+    fun matchesOverWindowNameWithPartitionBy() {
+        assertThat(p).matches("over (window_name partition by foo)")
+    }
+
+    @Test
     fun matchesOverPartitionBy() {
         assertThat(p).matches("over (partition by foo)")
     }
