@@ -86,6 +86,30 @@ enum class DmlGrammar : GrammarRuleKey {
     ROLLUP_CUBE_CLAUSE,
     GROUPING_SETS_CLAUSE,
 
+    MODEL_CLAUSE,
+    CELL_REFERENCE_OPTIONS,
+    RETURN_ROWS_CLAUSE,
+    REFERENCE_MODEL,
+    MAIN_MODEL,
+    MODEL_COLUMN_CLAUSES,
+    REFERENCE_MODEL_COLUMN_CLAUSES,
+    MODEL_PARTITION_BY_CLAUSE,
+    MODEL_DIMENSION_BY_CLAUSE,
+    MODEL_MEASURES_CLAUSE,
+    MODEL_COLUMN,
+    MODEL_RULES_CLAUSE,
+    MODEL_RULE,
+    MODEL_ITERATE_CLAUSE,
+    CELL_ASSIGNMENT,
+    MODEL_CELL_REFERENCE,
+    MODEL_CELL_REFERENCE_SUFFIX,
+    MODEL_CELL_REFERENCE_ITEM,
+    MODEL_ORDER_BY_CLAUSE,
+    MODEL_ORDER_BY_ITEM,
+    MODEL_PRESENT_CONDITION,
+    SINGLE_COLUMN_FOR_LOOP,
+    MULTI_COLUMN_FOR_LOOP,
+
     BACKED_LIST,
     PIVOT_CLAUSE,
     UNPIVOT_CLAUSE,
@@ -247,7 +271,8 @@ enum class DmlGrammar : GrammarRuleKey {
                                     RETURNING,
                                     LOG,
                                     EXCEPT,
-                                    SET
+                                    SET,
+                                    MODEL
                                 )
                             ),
                             b.optional(AS),
@@ -488,6 +513,198 @@ enum class DmlGrammar : GrammarRuleKey {
                 SET, IDENTIFIER_NAME, TO, EXPRESSION, DEFAULT, EXPRESSION
             )
 
+            b.rule(CELL_REFERENCE_OPTIONS).define(
+                b.optional(b.firstOf(IGNORE, KEEP), NAV),
+                b.optional(UNIQUE, b.firstOf(DIMENSION, b.sequence(SINGLE, REFERENCE)))
+            )
+
+            b.rule(RETURN_ROWS_CLAUSE).define(
+                RETURN, b.firstOf(UPDATED, ALL), ROWS
+            )
+
+            b.rule(MODEL_COLUMN).define(
+                EXPRESSION,
+                b.optional(IDENTIFIER_NAME)
+            )
+
+            b.rule(MODEL_PARTITION_BY_CLAUSE).define(
+                PARTITION, BY,
+                LPARENTHESIS,
+                MODEL_COLUMN, b.zeroOrMore(COMMA, MODEL_COLUMN),
+                RPARENTHESIS
+            )
+
+            b.rule(MODEL_DIMENSION_BY_CLAUSE).define(
+                DIMENSION, BY,
+                LPARENTHESIS,
+                MODEL_COLUMN, b.zeroOrMore(COMMA, MODEL_COLUMN),
+                RPARENTHESIS
+            )
+
+            b.rule(MODEL_MEASURES_CLAUSE).define(
+                MEASURES,
+                LPARENTHESIS,
+                MODEL_COLUMN, b.zeroOrMore(COMMA, MODEL_COLUMN),
+                RPARENTHESIS
+            )
+
+            b.rule(MODEL_COLUMN_CLAUSES).define(
+                b.optional(MODEL_PARTITION_BY_CLAUSE),
+                MODEL_DIMENSION_BY_CLAUSE,
+                MODEL_MEASURES_CLAUSE
+            )
+
+            b.rule(REFERENCE_MODEL_COLUMN_CLAUSES).define(
+                MODEL_DIMENSION_BY_CLAUSE,
+                MODEL_MEASURES_CLAUSE
+            )
+
+            b.rule(REFERENCE_MODEL).define(
+                REFERENCE, IDENTIFIER_NAME,
+                ON, LPARENTHESIS,
+                b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                RPARENTHESIS,
+                REFERENCE_MODEL_COLUMN_CLAUSES,
+                CELL_REFERENCE_OPTIONS
+            )
+
+            b.rule(MAIN_MODEL).define(
+                b.optional(MAIN, IDENTIFIER_NAME),
+                MODEL_COLUMN_CLAUSES,
+                CELL_REFERENCE_OPTIONS,
+                MODEL_RULES_CLAUSE
+            )
+
+            b.rule(MODEL_CLAUSE).define(
+                MODEL,
+                CELL_REFERENCE_OPTIONS,
+                b.optional(RETURN_ROWS_CLAUSE),
+                b.zeroOrMore(REFERENCE_MODEL),
+                MAIN_MODEL
+            )
+
+            b.rule(MODEL_ITERATE_CLAUSE).define(
+                b.withContext(
+                    MODEL_EXPRESSION_CONTEXT, true,
+                    ITERATE, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                    b.optional(UNTIL, b.optional(LPARENTHESIS, EXPRESSION, RPARENTHESIS))
+                )
+            )
+
+            b.rule(MODEL_ORDER_BY_ITEM).define(
+                CONCATENATION_EXPRESSION,
+                b.optional(b.firstOf(ASC, DESC)),
+                b.optional(NULLS, b.firstOf(FIRST, LAST))
+            )
+
+            b.rule(MODEL_ORDER_BY_CLAUSE).define(
+                ORDER, BY,
+                MODEL_ORDER_BY_ITEM,
+                b.zeroOrMore(COMMA, MODEL_ORDER_BY_ITEM)
+            )
+
+            b.rule(SINGLE_COLUMN_FOR_LOOP).define(
+                FOR, IDENTIFIER_NAME,
+                b.firstOf(
+                    b.sequence(
+                        IN, LPARENTHESIS,
+                        b.firstOf(
+                            b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                            b.sequence(LITERAL, b.zeroOrMore(COMMA, LITERAL))
+                        ),
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        b.optional(LIKE, CHARACTER_LITERAL),
+                        FROM, LITERAL,
+                        TO, LITERAL,
+                        b.firstOf(INCREMENT, DECREMENT), LITERAL
+                    )
+                )
+            )
+
+            val modelLiteralTuple = b.sequence(
+                LPARENTHESIS,
+                LITERAL, b.zeroOrMore(COMMA, LITERAL),
+                RPARENTHESIS
+            )
+
+            b.rule(MULTI_COLUMN_FOR_LOOP).define(
+                FOR, LPARENTHESIS,
+                IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                RPARENTHESIS,
+                IN, LPARENTHESIS,
+                b.firstOf(
+                    b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                    b.sequence(
+                        modelLiteralTuple,
+                        b.zeroOrMore(COMMA, modelLiteralTuple)
+                    )
+                ),
+                RPARENTHESIS
+            )
+
+            b.rule(MODEL_CELL_REFERENCE_ITEM).define(
+                b.firstOf(SINGLE_COLUMN_FOR_LOOP, ANY, EXPRESSION)
+            )
+
+            b.rule(MODEL_CELL_REFERENCE_SUFFIX).define(
+                // Also used by shared expressions on the right-hand side;
+                // the context predicate keeps that use inside an explicit
+                // MODEL expression scope.
+                b.requireContext(MODEL_EXPRESSION_CONTEXT, true),
+                LBRACKET,
+                b.firstOf(
+                    MULTI_COLUMN_FOR_LOOP,
+                    b.sequence(
+                        MODEL_CELL_REFERENCE_ITEM,
+                        b.zeroOrMore(COMMA, MODEL_CELL_REFERENCE_ITEM)
+                    )
+                ),
+                RBRACKET
+            )
+
+            b.rule(MODEL_CELL_REFERENCE).define(
+                IDENTIFIER_NAME, MODEL_CELL_REFERENCE_SUFFIX
+            )
+
+            b.rule(CELL_ASSIGNMENT).define(MODEL_CELL_REFERENCE)
+
+            b.rule(MODEL_RULE).define(
+                b.withContext(
+                    MODEL_EXPRESSION_CONTEXT, true,
+                    b.optional(b.firstOf(UPDATE, b.sequence(UPSERT, b.optional(ALL)))),
+                    CELL_ASSIGNMENT,
+                    b.optional(MODEL_ORDER_BY_CLAUSE),
+                    EQUALS,
+                    EXPRESSION
+                )
+            )
+
+            b.rule(MODEL_RULES_CLAUSE).define(
+                b.optional(
+                    RULES,
+                    b.optional(b.firstOf(UPDATE, b.sequence(UPSERT, b.optional(ALL)))),
+                    b.optional(b.firstOf(
+                        b.sequence(AUTOMATIC, ORDER),
+                        b.sequence(SEQUENTIAL, ORDER)
+                    )),
+                    b.optional(MODEL_ITERATE_CLAUSE)
+                ),
+                LPARENTHESIS,
+                MODEL_RULE,
+                b.zeroOrMore(COMMA, MODEL_RULE),
+                RPARENTHESIS
+            )
+
+            b.rule(MODEL_PRESENT_CONDITION).define(
+                // This rule is referenced by the shared comparison precedence,
+                // but Oracle permits it only while parsing a MODEL expression.
+                b.requireContext(MODEL_EXPRESSION_CONTEXT, true),
+                CONCATENATION_EXPRESSION,
+                IS, b.optional(NOT), PRESENT
+            )
+
             b.rule(QUERY_BLOCK).define(
                 b.firstOf(
                     b.sequence(
@@ -499,7 +716,8 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
                             b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
                         b.optional(HAVING_CLAUSE),
-                        b.optional(HIERARCHICAL_QUERY_CLAUSE)),
+                        b.optional(HIERARCHICAL_QUERY_CLAUSE),
+                        b.optional(MODEL_CLAUSE)),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)))
 
             b.rule(SELECT_EXPRESSION).define(

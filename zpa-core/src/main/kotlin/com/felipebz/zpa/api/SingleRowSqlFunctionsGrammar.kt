@@ -46,6 +46,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_QUERY_ON_MISMATCH_CLAUSE,
     JSON_BASIC_PATH_EXPRESSION,
     JSON_PATH_EXPRESSION,
+    JSON_OBJECT_ACCESS_EXPRESSION,
     JSON_RELATIVE_OBJECT_ACCESS,
     JSON_TABLE_ON_ERROR_CLAUSE,
     JSON_TABLE_ON_EMPTY_CLAUSE,
@@ -309,17 +310,28 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(TABLE_EXPRESSION).define(
                 TABLE, LPARENTHESIS,
-                b.firstOf(DmlGrammar.SELECT_EXPRESSION, EXPRESSION),
+                b.firstOf(
+                    b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
+                    EXPRESSION
+                ),
                 RPARENTHESIS
             )
 
             b.rule(THE_EXPRESSION).define(
                 THE, LPARENTHESIS,
-                b.firstOf(DmlGrammar.SELECT_EXPRESSION, EXPRESSION),
+                b.firstOf(
+                    b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
+                    EXPRESSION
+                ),
                 RPARENTHESIS
             )
 
-            b.rule(CURSOR_EXPRESSION).define(CURSOR, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS)
+            b.rule(CURSOR_EXPRESSION).define(
+                CURSOR,
+                LPARENTHESIS,
+                b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
+                RPARENTHESIS
+            )
         }
 
         private fun createDateFunctions(b: PlSqlGrammarBuilder) {
@@ -557,7 +569,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(JSON_ARRAY_QUERY_CONTENT).define(
-                DmlGrammar.SELECT_EXPRESSION,
+                b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
                 b.optional(STRICT)
@@ -783,6 +795,32 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.firstOf(
                     JSON_BASIC_PATH_EXPRESSION,
                     JSON_RELATIVE_OBJECT_ACCESS
+                )
+            )
+
+            b.rule(JSON_OBJECT_ACCESS_EXPRESSION).define(
+                b.firstOf(
+                    // The two-part form is ambiguous with reference_model.measure[...].
+                    // CALL_EXPRESSION gives the shared MODEL member path priority
+                    // for that form; masking the context keeps JSON access
+                    // available for the unambiguous forms and ordinary SQL scopes.
+                    b.withoutContext(
+                        MODEL_EXPRESSION_CONTEXT,
+                        IDENTIFIER_NAME, DOT, IDENTIFIER_NAME,
+                        JSON_ARRAY_STEP,
+                        b.nextNot(LPARENTHESIS)
+                    ),
+                    b.sequence(
+                        IDENTIFIER_NAME, DOT, IDENTIFIER_NAME,
+                        DOT, IDENTIFIER_NAME,
+                        JSON_ARRAY_STEP,
+                        b.nextNot(LPARENTHESIS)
+                    )
+                ),
+                b.zeroOrMore(
+                    DOT, IDENTIFIER_NAME,
+                    b.optional(JSON_ARRAY_STEP),
+                    b.nextNot(LPARENTHESIS)
                 )
             )
 

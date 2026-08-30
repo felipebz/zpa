@@ -302,21 +302,6 @@
   "examples/max_001.sql" : [
     4
   ],
-  "examples/model_clause01.sql" : [
-    5
-  ],
-  "examples/model_clause02.sql" : [
-    7
-  ],
-  "examples/model_clause03.sql" : [
-    5
-  ],
-  "examples/model_clause04.sql" : [
-    7
-  ],
-  "examples/model_clause05.sql" : [
-    7
-  ],
   "examples/noaudit_statement.sql" : [
     1
   ],

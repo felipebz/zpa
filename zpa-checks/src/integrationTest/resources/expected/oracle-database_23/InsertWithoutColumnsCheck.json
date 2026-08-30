@@ -15,6 +15,9 @@
   "adjsn/sql-json-function-json_object-19.sql" : [
     10
   ],
+  "adjsn/sql-json-path-expression-item-methods-4.sql" : [
+    3
+  ],
   "adjsn/tables-json-columns-2.sql" : [
     2,
     33

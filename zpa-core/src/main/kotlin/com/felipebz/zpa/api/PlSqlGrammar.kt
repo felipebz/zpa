@@ -719,28 +719,35 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(MEMBER_EXPRESSION).define(
                     MULTIPLE_VALUE_EXPRESSION,
                     b.zeroOrMore(
-                            b.firstOf(DOT,
-                                    REMOTE,
-                                    b.sequence(MOD, b.nextNot(ROWTYPE), b.nextNot(TYPE))),
                             b.firstOf(
-                                    IDENTIFIER_NAME,
-                                    COUNT,
-                                    ROWCOUNT,
-                                    BULK_ROWCOUNT,
-                                    FIRST,
-                                    LAST,
-                                    LIMIT,
-                                    NEXT,
-                                    PRIOR,
-                                    EXISTS,
-                                    FOUND,
-                                    NOTFOUND,
-                                    ISOPEN,
-                                    DELETE,
-                                    TRIM,
-                                    EXTEND,
-                                    NEXTVAL,
-                                    CURRVAL)
+                                b.sequence(
+                                    b.firstOf(DOT,
+                                            REMOTE,
+                                            b.sequence(MOD, b.nextNot(ROWTYPE), b.nextNot(TYPE))),
+                                    b.firstOf(
+                                            IDENTIFIER_NAME,
+                                            COUNT,
+                                            ROWCOUNT,
+                                            BULK_ROWCOUNT,
+                                            FIRST,
+                                            LAST,
+                                            LIMIT,
+                                            NEXT,
+                                            PRIOR,
+                                            EXISTS,
+                                            FOUND,
+                                            NOTFOUND,
+                                            ISOPEN,
+                                            DELETE,
+                                            TRIM,
+                                            EXTEND,
+                                            NEXTVAL,
+                                            CURRVAL)
+                                ),
+                                // MODEL cell references are an expression-level
+                                // extension guarded by the active MODEL context.
+                                MODEL_CELL_REFERENCE_SUFFIX
+                            )
                     )).skipIfOneChild()
 
             b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION)
@@ -792,13 +799,30 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(CALL_EXPRESSION).define(b.firstOf(
                     SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
                     AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
+                    // Keep the ambiguous two-part reference_model.measure[...]
+                    // form on the shared MEMBER_EXPRESSION path while MODEL
+                    // syntax is active. JSON access is still available for
+                    // the unambiguous forms and ordinary SQL scopes.
+                    b.sequence(
+                        b.requireContext(MODEL_EXPRESSION_CONTEXT, true),
+                        b.next(IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, LBRACKET),
+                        MEMBER_EXPRESSION
+                    ),
+                    SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION,
                     METHOD_CALL,
                     QUALIFIED_EXPRESSION)).skipIfOneChild()
 
             b.rule(OUTER_JOIN_PLUS_SIGN).define(LPARENTHESIS, PLUS, RPARENTHESIS)
 
             b.rule(OBJECT_REFERENCE).define(
-                    b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION),
+                    // Aggregate model expressions may apply a cell reference
+                    // suffix after the function call, for example
+                    // SUM(measure)[dimension_value]. The suffix itself is
+                    // guarded, so this does not broaden ordinary SQL calls.
+                    b.firstOf(
+                        b.sequence(CALL_EXPRESSION, b.optional(MODEL_CELL_REFERENCE_SUFFIX)),
+                        MEMBER_EXPRESSION
+                    ),
                     b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
                     b.optional(OUTER_JOIN_PLUS_SIGN)).skipIfOneChild()
 
@@ -845,13 +869,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
                                     b.sequence(
                                         LPARENTHESIS,
                                         b.firstOf(
-                                            SELECT_EXPRESSION,
+                                            b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
                                             b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
                                         ),
                                         RPARENTHESIS),
                                     EXPRESSION)))).skipIfOneChild()
 
-            b.rule(EXISTS_EXPRESSION).define(EXISTS, LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS).skipIfOneChild()
+            b.rule(EXISTS_EXPRESSION).define(
+                EXISTS,
+                LPARENTHESIS,
+                b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                RPARENTHESIS
+            ).skipIfOneChild()
 
             b.rule(CASE_EXPRESSION).define(
                     CASE, b.optional(EXPRESSION),
@@ -882,7 +911,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     NEW_OBJECT_EXPRESSION,
                     CASE_EXPRESSION,
                     POSTFIX_EXPRESSION,
-                    b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)),
+                    b.sequence(
+                        LPARENTHESIS,
+                        b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                        RPARENTHESIS)),
                     b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild()
 
             b.rule(EXPONENTIATION_EXPRESSION).define(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild()
@@ -903,6 +935,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(COMPARISON_EXPRESSION).define(b.firstOf(
                     ConditionsGrammar.CONDITION,
+                    // IS PRESENT is defined by Oracle only for MODEL expressions.
+                    MODEL_PRESENT_CONDITION,
                     IN_EXPRESSION)).skipIfOneChild()
 
             b.rule(NOT_EXPRESSION).define(b.optional(NOT), COMPARISON_EXPRESSION).skipIfOneChild()

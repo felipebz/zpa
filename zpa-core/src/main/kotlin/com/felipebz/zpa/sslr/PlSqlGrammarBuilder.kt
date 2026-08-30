@@ -22,6 +22,7 @@ package com.felipebz.zpa.sslr
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.TokenType
+import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleBuilder
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
@@ -49,6 +50,20 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
     fun firstOf(e1: Any, e2: Any): Any = builder.firstOf(e1, e2)
 
     fun firstOf(e1: Any, e2: Any, vararg rest: Any): Any = builder.firstOf(e1, e2, *rest)
+
+    fun <T> withContext(key: ContextKey<T>, value: T, e: Any): Any = builder.withContext(key, value, e)
+
+    fun <T> withContext(key: ContextKey<T>, value: T, e1: Any, vararg rest: Any): Any =
+        builder.withContext(key, value, e1, *rest)
+
+    fun <T> withoutContext(key: ContextKey<T>, e: Any): Any = builder.withoutContext(key, e)
+
+    fun <T> withoutContext(key: ContextKey<T>, e1: Any, vararg rest: Any): Any =
+        builder.withoutContext(key, e1, *rest)
+
+    fun <T> requireContext(key: ContextKey<T>, value: T): Any = builder.requireContext(key, value)
+
+    fun <T> requireContext(key: ContextKey<T>): Any = builder.requireContext(key)
 
     fun optional(e: Any): Any = builder.optional(e)
 

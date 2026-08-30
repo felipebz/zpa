@@ -131,9 +131,6 @@
   "adjsn/sql-json-function-json_object-21.sql" : [
     2
   ],
-  "adjsn/sql-json-path-expression-item-methods-4.sql" : [
-    4
-  ],
   "adjsn/tables-json-columns-3.sql" : [
     5
   ],
@@ -2303,9 +2300,6 @@
   "sqlrf/CUME_DIST-0.sql" : [
     3
   ],
-  "sqlrf/CV-0.sql" : [
-    6
-  ],
   "sqlrf/Comments-1.sql" : [
     6
   ],
@@ -2414,9 +2408,6 @@
   "sqlrf/INSERT-26.sql" : [
     8
   ],
-  "sqlrf/ITERATION_NUMBER-0.sql" : [
-    6
-  ],
   "sqlrf/Interval-Expressions-0.sql" : [
     2
   ],
@@ -2437,15 +2428,6 @@
   ],
   "sqlrf/MERGE-12.sql" : [
     11
-  ],
-  "sqlrf/Model-Conditions-0.sql" : [
-    6
-  ],
-  "sqlrf/Model-Conditions-1.sql" : [
-    6
-  ],
-  "sqlrf/Model-Expressions-0.sql" : [
-    6
   ],
   "sqlrf/Multiset-Operators-0.sql" : [
     2
@@ -2524,15 +2506,6 @@
   ],
   "sqlrf/PREDICTION_SET-0.sql" : [
     4
-  ],
-  "sqlrf/PRESENTNNV-0.sql" : [
-    6
-  ],
-  "sqlrf/PRESENTV-0.sql" : [
-    6
-  ],
-  "sqlrf/PREVIOUS-0.sql" : [
-    5
   ],
   "sqlrf/PURGE-1.sql" : [
     2
@@ -2656,12 +2629,6 @@
   ],
   "sqlrf/SELECT-50.sql" : [
     4
-  ],
-  "sqlrf/SELECT-65.sql" : [
-    6
-  ],
-  "sqlrf/SELECT-66.sql" : [
-    8
   ],
   "sqlrf/SELECT-74.sql" : [
     3
