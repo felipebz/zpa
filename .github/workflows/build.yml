@@ -32,7 +32,7 @@ jobs:
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
 
       - name: Build with Gradle
-        run: ./gradlew build jreleaserAssemble publishToMavenLocal
+        run: ./gradlew build jreleaserAssemble publishToMavenLocal --refresh-dependencies
 
       - name: Run zpa-checks integration tests
         run: |
@@ -40,7 +40,7 @@ jobs:
           cat zpa-checks/build/integrationTest/progress-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Build custom rules example
-        run: ./gradlew build -p plsql-custom-rules
+        run: ./gradlew build -p plsql-custom-rules --refresh-dependencies
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
