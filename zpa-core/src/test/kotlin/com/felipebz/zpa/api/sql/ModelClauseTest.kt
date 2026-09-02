@@ -315,8 +315,9 @@ class ModelClauseTest : RuleTest() {
         assertThat(p).matches("select t.data.a[*].sum() from tab t")
         assertThat(p).matches("select t.data[0] from tab t")
 
-        val node = p.parse("select t.data.a[*].sum() from tab t")
+        val node = p.parse("select t.data.a[*].sum(), t.data[0] from tab t")
         assertThat(node.getDescendants(DmlGrammar.MODEL_CELL_REFERENCE_SUFFIX)).isEmpty()
+        assertThat(node.getDescendants(SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION)).hasSize(2)
     }
 
     @Test
@@ -338,10 +339,12 @@ class ModelClauseTest : RuleTest() {
 
         val node = p.parse(
             "select value from values_table model dimension by (year) measures (value) "
-                + "rules (value[1] = t.data[0])"
+                + "rules (value[1] = ref.measure[0])"
         )
 
         assertThat(node.getDescendants(DmlGrammar.MODEL_CELL_REFERENCE_SUFFIX)).hasSize(2)
+        assertThat(node.getDescendants(SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION)).isEmpty()
+        assertThat(node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION)).isNotEmpty()
     }
 
     @Test

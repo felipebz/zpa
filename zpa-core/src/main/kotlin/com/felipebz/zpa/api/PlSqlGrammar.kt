@@ -24,6 +24,7 @@ import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
 import com.felipebz.zpa.grammar.ExecuteBufferExpression
+import com.felipebz.zpa.grammar.JsonArrayStepAdmissionExpression
 import com.felipebz.zpa.sslr.ElseClause
 import com.felipebz.zpa.sslr.ElsifClause
 import com.felipebz.zpa.sslr.IfStatement
@@ -808,7 +809,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         b.next(IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, LBRACKET),
                         MEMBER_EXPRESSION
                     ),
-                    SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION,
+                    b.sequence(
+                        JsonArrayStepAdmissionExpression,
+                        SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION
+                    ),
                     METHOD_CALL,
                     QUALIFIED_EXPRESSION)).skipIfOneChild()
 

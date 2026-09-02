@@ -799,19 +799,16 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(JSON_OBJECT_ACCESS_EXPRESSION).define(
+                IDENTIFIER_NAME, DOT, IDENTIFIER_NAME,
                 b.firstOf(
                     // The two-part form is ambiguous with reference_model.measure[...].
-                    // CALL_EXPRESSION gives the shared MODEL member path priority
-                    // for that form; masking the context keeps JSON access
-                    // available for the unambiguous forms and ordinary SQL scopes.
-                    b.withoutContext(
-                        MODEL_EXPRESSION_CONTEXT,
-                        IDENTIFIER_NAME, DOT, IDENTIFIER_NAME,
+                    // CALL_EXPRESSION gives the shared MODEL member path priority for
+                    // that form before attempting JSON access.
+                    b.sequence(
                         JSON_ARRAY_STEP,
                         b.nextNot(LPARENTHESIS)
                     ),
                     b.sequence(
-                        IDENTIFIER_NAME, DOT, IDENTIFIER_NAME,
                         DOT, IDENTIFIER_NAME,
                         JSON_ARRAY_STEP,
                         b.nextNot(LPARENTHESIS)
