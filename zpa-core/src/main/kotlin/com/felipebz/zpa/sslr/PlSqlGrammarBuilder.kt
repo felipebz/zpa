@@ -95,6 +95,11 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun isOneOfThem(t1: TokenType, vararg rest: TokenType): Any = builder.isOneOfThem(t1, *rest)
 
+    fun isOneOfThem(tokens: Array<TokenType>): Any {
+        require(tokens.isNotEmpty())
+        return builder.isOneOfThem(tokens[0], *tokens.copyOfRange(1, tokens.size))
+    }
+
     fun bridge(from: TokenType, to: TokenType): Any = builder.bridge(from, to)
 
     fun anyToken(): Any = builder.anyToken()

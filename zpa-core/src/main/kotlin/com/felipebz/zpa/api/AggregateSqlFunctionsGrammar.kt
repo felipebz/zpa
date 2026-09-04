@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.api
 
+import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_CLAUSE
@@ -37,6 +38,14 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
+        val admissionTokens: Array<TokenType> = arrayOf(
+            LISTAGG,
+            XMLAGG,
+            COLLECT,
+            JSON_ARRAYAGG,
+            JSON_OBJECTAGG,
+        )
+
         fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(FILTER_CLAUSE).define(
                 FILTER, LPARENTHESIS, WHERE, ConditionsGrammar.CONDITION, RPARENTHESIS)

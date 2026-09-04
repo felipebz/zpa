@@ -797,9 +797,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.optional(EXPLICIT_CHOICE_LIST),
                 RPARENTHESIS)
 
+            val singleRowTokens = SingleRowSqlFunctionsGrammar.admissionTokens
+            val aggregateTokens = AggregateSqlFunctionsGrammar.admissionTokens
+
             b.rule(CALL_EXPRESSION).define(b.firstOf(
-                    SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
-                    AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION,
+                    b.sequence(
+                        b.next(b.isOneOfThem(singleRowTokens)),
+                        SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION
+                    ),
+                    b.sequence(
+                        b.next(b.isOneOfThem(aggregateTokens)),
+                        AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION
+                    ),
                     // Keep the ambiguous two-part reference_model.measure[...]
                     // form on the shared MEMBER_EXPRESSION path while MODEL
                     // syntax is active. JSON access is still available for

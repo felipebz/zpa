@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.api
 
+import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
@@ -147,6 +148,60 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     SINGLE_ROW_SQL_FUNCTION;
 
     companion object {
+        val admissionTokens: Array<TokenType> = arrayOf(
+            EXTRACT,
+            JSON,
+            JSON_ARRAY,
+            JSON_DATAGUIDE,
+            JSON_MERGEPATCH,
+            JSON_OBJECT,
+            JSON_SCALAR,
+            JSON_SERIALIZE,
+            JSON_QUERY,
+            JSON_TABLE,
+            JSON_TRANSFORM,
+            JSON_VALUE,
+            XMLATTRIBUTES,
+            XMLCAST,
+            XMLCDATA,
+            XMLCOLATTVAL,
+            XMLCOMMENT,
+            XMLCONCAT,
+            XMLDIFF,
+            XMLELEMENT,
+            XMLEXISTS,
+            XMLFOREST,
+            XMLISVALID,
+            XMLPARSE,
+            XMLPATCH,
+            XMLPI,
+            XMLQUERY,
+            XMLROOT,
+            XMLSEQUENCE,
+            XMLSERIALIZE,
+            XMLTABLE,
+            XMLTRANSFORM,
+            TREAT,
+            SET,
+            CAST,
+            TO_BINARY_DOUBLE,
+            TO_BINARY_FLOAT,
+            TO_BOOLEAN,
+            TO_DATE,
+            TO_DSINTERVAL,
+            TO_NUMBER,
+            TO_TIMESTAMP,
+            TO_TIMESTAMP_TZ,
+            TO_YMINTERVAL,
+            TRIM,
+            TABLE,
+            THE,
+            CURSOR,
+            LBRACKET,
+            LBRACE,
+            LPARENTHESIS,
+        )
+
         fun buildOn(b: PlSqlGrammarBuilder) {
             createCharacterFunctions(b)
             createConversionFunctions(b)
