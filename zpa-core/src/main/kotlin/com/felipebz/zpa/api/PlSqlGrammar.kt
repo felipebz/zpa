@@ -271,7 +271,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             val keywords = PlSqlKeyword.nonReservedKeywords
             val rest = keywords.subList(2, keywords.size).toTypedArray()
-            b.rule(NON_RESERVED_KEYWORD).define(b.firstOf(keywords[0], keywords[1], *rest))
+            b.rule(NON_RESERVED_KEYWORD).define(b.isOneOfThem(keywords[0], keywords[1], *rest))
 
             b.rule(IDENTIFIER_NAME).define(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD))
 

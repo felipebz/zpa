@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api
 
 import com.felipebz.flr.tests.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat as assertThatValue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -69,8 +70,22 @@ class IdentifierNameTest : RuleTest() {
 
     @Test
     fun matchesNonReservedKeywords() {
-        assertThat(p).matches("cursor")
-        assertThat(p).matches("rowid")
+        PlSqlKeyword.nonReservedKeywords.forEach { keyword ->
+            assertThat(p).matches(keyword.value)
+        }
+    }
+
+    @Test
+    fun preservesNonReservedKeywordAst() {
+        val identifier = p.parse("CuRsOr")
+        val nonReservedKeyword = identifier.getFirstDescendant(PlSqlGrammar.NON_RESERVED_KEYWORD)
+
+        assertThatValue(identifier.type).isEqualTo(PlSqlGrammar.IDENTIFIER_NAME)
+        assertThatValue(nonReservedKeyword.type).isEqualTo(PlSqlGrammar.NON_RESERVED_KEYWORD)
+        assertThatValue(nonReservedKeyword.parent).isSameAs(identifier)
+        assertThatValue(nonReservedKeyword.fromIndex).isEqualTo(identifier.fromIndex)
+        assertThatValue(nonReservedKeyword.toIndex).isEqualTo(identifier.toIndex)
+        assertThatValue(nonReservedKeyword.tokens.map { it.originalValue }).containsExactly("CuRsOr")
     }
 
     @Test
@@ -107,6 +122,13 @@ class IdentifierNameTest : RuleTest() {
     fun notMatchesQuotedIdentifierCornerCases() {
         assertThat(p).notMatches("\"\"")
         assertThat(p).notMatches("\"\"\"\"")
+    }
+
+    @Test
+    fun rejectsTokensThatAreNotIdentifierNames() {
+        listOf("select", "begin", ",", "42", "'text'", "").forEach { source ->
+            assertThat(p).notMatches(source)
+        }
     }
 
 }
