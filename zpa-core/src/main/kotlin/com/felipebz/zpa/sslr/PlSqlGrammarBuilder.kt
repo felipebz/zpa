@@ -51,6 +51,12 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun firstOf(e1: Any, e2: Any, vararg rest: Any): Any = builder.firstOf(e1, e2, *rest)
 
+    fun firstOf(rules: List<GrammarRuleKey>): Any {
+        require(rules.size >= 2) { "firstOf requires at least 2 rules" }
+        val rest = Array<Any>(rules.size - 2) { i -> rules[i + 2] }
+        return builder.firstOf(rules[0], rules[1], *rest)
+    }
+
     fun <T> withContext(key: ContextKey<T>, value: T, e: Any): Any = builder.withContext(key, value, e)
 
     fun <T> withContext(key: ContextKey<T>, value: T, e1: Any, vararg rest: Any): Any =

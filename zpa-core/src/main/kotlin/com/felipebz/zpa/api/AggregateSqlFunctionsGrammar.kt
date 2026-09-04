@@ -38,13 +38,16 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     AGGREGATE_SQL_FUNCTION;
 
     companion object {
-        val admissionTokens: Array<TokenType> = arrayOf(
-            LISTAGG,
-            XMLAGG,
-            COLLECT,
-            JSON_ARRAYAGG,
-            JSON_OBJECTAGG,
+        internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
+            FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
+            FunctionAlternative(XMLAGG_EXPRESSION, XMLAGG),
+            FunctionAlternative(COLLECT_EXPRESSION, COLLECT),
+            FunctionAlternative(JSON_ARRAYAGG_EXPRESSION, JSON_ARRAYAGG),
+            FunctionAlternative(JSON_OBJECTAGG_EXPRESSION, JSON_OBJECTAGG),
         )
+
+        val admissionTokens: Array<TokenType> =
+            ALTERNATIVES.flatMap { it.admissionTokens }.distinct().toTypedArray()
 
         fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(FILTER_CLAUSE).define(
@@ -98,13 +101,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(AGGREGATE_SQL_FUNCTION).define(
-                b.firstOf(
-                    LISTAGG_EXPRESSION,
-                    XMLAGG_EXPRESSION,
-                    COLLECT_EXPRESSION,
-                    JSON_ARRAYAGG_EXPRESSION,
-                    JSON_OBJECTAGG_EXPRESSION
-                )
+                b.firstOf(ALTERNATIVES.map { it.ruleKey })
             )
         }
     }
