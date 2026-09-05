@@ -247,13 +247,33 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
             b.rule(CONDITION).define(
                 b.firstOf(
-                    RELATIONAL_CONDITION,
-                    BOOLEAN_TEST_CONDITION,
-                    LIKE_CONDITION,
-                    BETWEEN_CONDITION,
-                    MULTISET_CONDITION,
-                    IS_JSON_CONDITION,
-                    IS_OF_CONDITION,
+                    b.sequence(b.next(CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
+                    b.sequence(
+                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
+                        BOOLEAN_TEST_CONDITION
+                    ),
+                    b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
+                    b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
+                    b.sequence(
+                        b.next(
+                            CONCATENATION_EXPRESSION,
+                            b.firstOf(
+                                b.sequence(IS, b.optional(NOT), A, SET),
+                                b.sequence(IS, b.optional(NOT), EMPTY),
+                                b.sequence(b.optional(NOT), MEMBER, b.optional(OF)),
+                                b.sequence(b.optional(NOT), SUBMULTISET, b.optional(OF))
+                            )
+                        ),
+                        MULTISET_CONDITION
+                    ),
+                    b.sequence(
+                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), JSON),
+                        IS_JSON_CONDITION
+                    ),
+                    b.sequence(
+                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), OF),
+                        IS_OF_CONDITION
+                    ),
                     JSON_EQUAL_CONDITION,
                     JSON_EXISTS_CONDITION,
                     JSON_TEXTCONTAINS_CONDITION
