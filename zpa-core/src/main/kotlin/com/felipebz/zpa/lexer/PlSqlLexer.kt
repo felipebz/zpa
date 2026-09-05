@@ -21,7 +21,6 @@ package com.felipebz.zpa.lexer
 
 import com.felipebz.flr.impl.Lexer
 import com.felipebz.flr.impl.channel.BlackHoleChannel
-import com.felipebz.flr.impl.channel.IdentifierAndKeywordChannel
 import com.felipebz.flr.impl.channel.PunctuatorChannel
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.and
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.g
@@ -72,9 +71,7 @@ object PlSqlLexer {
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL)))
-            .withChannel(IdentifierChannel(IdentifierAndKeywordChannel(SIMPLE_IDENTIFIER, false,
-                PlSqlKeyword.entries.toTypedArray()
-            )))
+            .withChannel(IdentifierChannel(PlSqlKeyword.entries.toTypedArray()))
             .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
             .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(

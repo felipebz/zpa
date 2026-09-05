@@ -23,6 +23,7 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.tests.Assertions.assertThat
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.parser.PlSqlParser
@@ -237,6 +238,130 @@ class PlSqlLexerTest {
             .containsExactlyElementsOf(expectedTokens.map { it.second })
         org.assertj.core.api.Assertions.assertThat(actualTokens.map { it.originalValue })
             .containsExactlyElementsOf(originalValues)
+    }
+
+    @Test
+    fun identifierScannerPreservesAsciiAndKeywordBehavior() {
+        assertExactTokenStream("a", PlSqlKeyword.A to "A", originalValues = listOf("a"))
+        assertExactTokenStream("abc", GenericTokenType.IDENTIFIER to "ABC", originalValues = listOf("abc"))
+        assertExactTokenStream("A1", GenericTokenType.IDENTIFIER to "A1")
+        assertExactTokenStream("a_b", GenericTokenType.IDENTIFIER to "A_B", originalValues = listOf("a_b"))
+        assertExactTokenStream("a\$b", GenericTokenType.IDENTIFIER to "A\$B", originalValues = listOf("a\$b"))
+        assertExactTokenStream("a#b", GenericTokenType.IDENTIFIER to "A#B", originalValues = listOf("a#b"))
+        assertExactTokenStream(
+            "_abc",
+            GenericTokenType.UNKNOWN_CHAR to "_",
+            GenericTokenType.IDENTIFIER to "ABC",
+            originalValues = listOf("_", "abc")
+        )
+        assertExactTokenStream(
+            "1abc",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            GenericTokenType.IDENTIFIER to "ABC",
+            originalValues = listOf("1", "abc")
+        )
+
+        assertExactTokenStream("SELECT", PlSqlKeyword.SELECT to "SELECT")
+        assertExactTokenStream("select", PlSqlKeyword.SELECT to "SELECT", originalValues = listOf("select"))
+        assertExactTokenStream("SeLeCt", PlSqlKeyword.SELECT to "SELECT", originalValues = listOf("SeLeCt"))
+        assertExactTokenStream("CHAR", PlSqlKeyword.CHAR to "CHAR")
+        assertExactTokenStream("char", PlSqlKeyword.CHAR to "CHAR", originalValues = listOf("char"))
+    }
+
+    @Test
+    fun identifierScannerPreservesUnicodeAndBoundaries() {
+        assertExactTokenStream("á", GenericTokenType.IDENTIFIER to "Á", originalValues = listOf("á"))
+        assertExactTokenStream("ç", GenericTokenType.IDENTIFIER to "Ç", originalValues = listOf("ç"))
+        assertExactTokenStream("João", GenericTokenType.IDENTIFIER to "JOÃO", originalValues = listOf("João"))
+        assertExactTokenStream("Ж", GenericTokenType.IDENTIFIER to "Ж")
+        assertExactTokenStream(
+            "a\uD801\uDC00b",
+            GenericTokenType.IDENTIFIER to "A\uD801\uDC00B",
+            originalValues = listOf("a\uD801\uDC00b")
+        )
+        assertExactTokenStream(
+            "\uD801\uDC00abc",
+            GenericTokenType.UNKNOWN_CHAR to "\uD801",
+            GenericTokenType.UNKNOWN_CHAR to "\uDC00",
+            GenericTokenType.IDENTIFIER to "ABC",
+            originalValues = listOf("\uD801", "\uDC00", "abc")
+        )
+        assertExactTokenStream(
+            "a\uD835\uDFD9b",
+            PlSqlKeyword.A to "A",
+            GenericTokenType.UNKNOWN_CHAR to "\uD835",
+            GenericTokenType.UNKNOWN_CHAR to "\uDFD9",
+            GenericTokenType.IDENTIFIER to "B",
+            originalValues = listOf("a", "\uD835", "\uDFD9", "b")
+        )
+        assertExactTokenStream(
+            "e\u0301",
+            GenericTokenType.IDENTIFIER to "E",
+            GenericTokenType.UNKNOWN_CHAR to "\u0301",
+            originalValues = listOf("e", "\u0301")
+        )
+        assertExactTokenStream(
+            "a\u203F",
+            PlSqlKeyword.A to "A",
+            GenericTokenType.UNKNOWN_CHAR to "\u203F",
+            originalValues = listOf("a", "\u203F")
+        )
+        assertExactTokenStream(
+            "a١",
+            PlSqlKeyword.A to "A",
+            PlSqlTokenType.INTEGER_LITERAL to "١",
+            originalValues = listOf("a", "١")
+        )
+        assertExactTokenStream(
+            "𝔘",
+            GenericTokenType.UNKNOWN_CHAR to "\uD835",
+            GenericTokenType.UNKNOWN_CHAR to "\uDD18",
+            originalValues = listOf("\uD835", "\uDD18")
+        )
+        assertExactTokenStream("a𝔘", GenericTokenType.IDENTIFIER to "A𝔘", originalValues = listOf("a𝔘"))
+        assertExactTokenStream(
+            "a𝟙",
+            PlSqlKeyword.A to "A",
+            GenericTokenType.UNKNOWN_CHAR to "\uD835",
+            GenericTokenType.UNKNOWN_CHAR to "\uDFD9",
+            originalValues = listOf("a", "\uD835", "\uDFD9")
+        )
+
+        assertExactTokenStream(
+            "foo.bar",
+            GenericTokenType.IDENTIFIER to "FOO",
+            PlSqlPunctuator.DOT to ".",
+            GenericTokenType.IDENTIFIER to "BAR",
+            originalValues = listOf("foo", ".", "bar")
+        )
+        assertExactTokenStream("foo\$bar", GenericTokenType.IDENTIFIER to "FOO\$BAR", originalValues = listOf("foo\$bar"))
+        assertExactTokenStream("foo#bar", GenericTokenType.IDENTIFIER to "FOO#BAR", originalValues = listOf("foo#bar"))
+        assertExactTokenStream("foo_bar", GenericTokenType.IDENTIFIER to "FOO_BAR", originalValues = listOf("foo_bar"))
+        assertExactTokenStream("foo1", GenericTokenType.IDENTIFIER to "FOO1", originalValues = listOf("foo1"))
+        assertExactTokenStream(
+            "foo+",
+            GenericTokenType.IDENTIFIER to "FOO",
+            PlSqlPunctuator.PLUS to "+",
+            originalValues = listOf("foo", "+")
+        )
+        assertExactTokenStream(
+            "foo(",
+            GenericTokenType.IDENTIFIER to "FOO",
+            PlSqlPunctuator.LPARENTHESIS to "(",
+            originalValues = listOf("foo", "(")
+        )
+        assertExactTokenStream(
+            "foo:",
+            GenericTokenType.IDENTIFIER to "FOO",
+            PlSqlPunctuator.COLON to ":",
+            originalValues = listOf("foo", ":")
+        )
+        assertExactTokenStream(
+            "foo%",
+            GenericTokenType.IDENTIFIER to "FOO",
+            PlSqlPunctuator.MOD to "%",
+            originalValues = listOf("foo", "%")
+        )
     }
 
     @Test
