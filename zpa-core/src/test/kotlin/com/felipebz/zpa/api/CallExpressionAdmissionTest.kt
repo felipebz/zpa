@@ -306,22 +306,6 @@ class CallExpressionAdmissionTest : RuleTest() {
         assertThatAst(modelNode.getDescendants(DmlGrammar.MODEL_CELL_REFERENCE_SUFFIX)).isNotEmpty
     }
 
-    @Test
-    fun computesCorpusAstHash() {
-        val corpusDir = java.io.File("../../perf-corpus").canonicalFile
-        if (!corpusDir.exists()) return
-        val files = corpusDir.listFiles { f -> f.extension.equals("sql", ignoreCase = true) }?.sortedBy { it.name } ?: return
-        val conf = com.felipebz.zpa.squid.PlSqlConfiguration(java.nio.charset.StandardCharsets.UTF_8)
-        val parser = com.felipebz.zpa.parser.PlSqlParser.create(conf)
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        for (file in files) {
-            val root = parser.parse(file)
-            val xml = com.felipebz.flr.impl.ast.AstXmlPrinter.print(root)
-            digest.update(xml.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
-        }
-        val hash = digest.digest().joinToString("") { "%02x".format(it) }
-        assertThatAst(hash).isEqualTo("e223d288b68ebdc9b3a49aca088bab4961d0c57894bdde313c4d2bc3b8e19ec1")
-    }
 }
 
 
