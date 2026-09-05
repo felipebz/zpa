@@ -19,9 +19,11 @@
  */
 package com.felipebz.zpa.lexer
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.tests.Assertions.assertThat
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.PlSqlConfiguration
@@ -138,6 +140,103 @@ class PlSqlLexerTest {
         assertThatIsNotToken("..2", PlSqlTokenType.NUMBER_LITERAL)
 
         assertThatIsNotToken("e1", PlSqlTokenType.NUMBER_LITERAL)
+    }
+
+    @Test
+    fun numericAdmissionPreservesNumericAndRangeTokenStreams() {
+        assertExactTokenStream("0", PlSqlTokenType.INTEGER_LITERAL to "0")
+        assertExactTokenStream("1", PlSqlTokenType.INTEGER_LITERAL to "1")
+        assertExactTokenStream("42", PlSqlTokenType.INTEGER_LITERAL to "42")
+        assertExactTokenStream("123456789", PlSqlTokenType.INTEGER_LITERAL to "123456789")
+
+        assertExactTokenStream("1.", PlSqlTokenType.NUMBER_LITERAL to "1.")
+        assertExactTokenStream("1.0", PlSqlTokenType.NUMBER_LITERAL to "1.0")
+        assertExactTokenStream(".5", PlSqlTokenType.NUMBER_LITERAL to ".5")
+        assertExactTokenStream("0.5", PlSqlTokenType.NUMBER_LITERAL to "0.5")
+
+        assertExactTokenStream("1e3", PlSqlTokenType.NUMBER_LITERAL to "1e3")
+        assertExactTokenStream("1E-3", PlSqlTokenType.NUMBER_LITERAL to "1E-3")
+        assertExactTokenStream("1e+3", PlSqlTokenType.NUMBER_LITERAL to "1e+3")
+        assertExactTokenStream("1.2e3", PlSqlTokenType.NUMBER_LITERAL to "1.2e3")
+
+        assertExactTokenStream("1f", PlSqlTokenType.NUMBER_LITERAL to "1f")
+        assertExactTokenStream("1F", PlSqlTokenType.NUMBER_LITERAL to "1F")
+        assertExactTokenStream("1d", PlSqlTokenType.NUMBER_LITERAL to "1d")
+        assertExactTokenStream("1D", PlSqlTokenType.NUMBER_LITERAL to "1D")
+        assertExactTokenStream("1.0f", PlSqlTokenType.NUMBER_LITERAL to "1.0f")
+        assertExactTokenStream("1e3d", PlSqlTokenType.NUMBER_LITERAL to "1e3d")
+
+        assertExactTokenStream(
+            "1..10",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            PlSqlPunctuator.RANGE to "..",
+            PlSqlTokenType.INTEGER_LITERAL to "10"
+        )
+        assertExactTokenStream(
+            "1 .. 10",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            PlSqlPunctuator.RANGE to "..",
+            PlSqlTokenType.INTEGER_LITERAL to "10"
+        )
+        assertExactTokenStream(
+            "1..x",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            PlSqlPunctuator.RANGE to "..",
+            GenericTokenType.IDENTIFIER to "X",
+            originalValues = listOf("1", "..", "x")
+        )
+        assertExactTokenStream(
+            "1. .. 2",
+            PlSqlTokenType.NUMBER_LITERAL to "1.",
+            PlSqlPunctuator.RANGE to "..",
+            PlSqlTokenType.INTEGER_LITERAL to "2"
+        )
+
+        assertExactTokenStream(".", PlSqlPunctuator.DOT to ".")
+        assertExactTokenStream(
+            "1e",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            GenericTokenType.IDENTIFIER to "E",
+            originalValues = listOf("1", "e")
+        )
+        assertExactTokenStream(
+            "1e+",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            GenericTokenType.IDENTIFIER to "E",
+            PlSqlPunctuator.PLUS to "+",
+            originalValues = listOf("1", "e", "+")
+        )
+        assertExactTokenStream(
+            "1f2",
+            PlSqlTokenType.NUMBER_LITERAL to "1f",
+            PlSqlTokenType.INTEGER_LITERAL to "2"
+        )
+        assertExactTokenStream(
+            ".e1",
+            PlSqlPunctuator.DOT to ".",
+            GenericTokenType.IDENTIFIER to "E1",
+            originalValues = listOf(".", "e1")
+        )
+        assertExactTokenStream(
+            "1...",
+            PlSqlTokenType.INTEGER_LITERAL to "1",
+            PlSqlPunctuator.RANGE to "..",
+            PlSqlPunctuator.DOT to "."
+        )
+    }
+
+    private fun assertExactTokenStream(
+        sourceCode: String,
+        vararg expectedTokens: Pair<TokenType, String>,
+        originalValues: List<String> = expectedTokens.map { it.second }
+    ) {
+        val actualTokens = lexer.lex(sourceCode).dropLast(1)
+        org.assertj.core.api.Assertions.assertThat(actualTokens.map { it.type })
+            .containsExactlyElementsOf(expectedTokens.map { it.first })
+        org.assertj.core.api.Assertions.assertThat(actualTokens.map { it.value })
+            .containsExactlyElementsOf(expectedTokens.map { it.second })
+        org.assertj.core.api.Assertions.assertThat(actualTokens.map { it.originalValue })
+            .containsExactlyElementsOf(originalValues)
     }
 
     @Test
