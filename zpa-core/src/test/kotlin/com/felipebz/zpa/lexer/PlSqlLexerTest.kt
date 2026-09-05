@@ -91,6 +91,33 @@ class PlSqlLexerTest {
     }
 
     @Test
+    fun stringChannelPreservesPrefixesAndMalformedBoundaries() {
+        listOf("''", "'a'", "'a''b'", "N'a'", "n'a'", "q'[abc]'", "Q'[abc]'", "q'(abc)'", "q'{abc}'", "q'<abc>'",
+            "nq'[abc]'", "NQ'[abc]'", "nQ'[abc]'", "Nq'[abc]'", "q'!abc!'", "nq'!abc!'")
+            .forEach { assertExactTokenStream(it, PlSqlTokenType.STRING_LITERAL to it) }
+
+        assertExactTokenStream("n", GenericTokenType.IDENTIFIER to "N", originalValues = listOf("n"))
+        assertExactTokenStream("q", GenericTokenType.IDENTIFIER to "Q", originalValues = listOf("q"))
+        assertExactTokenStream("nx", GenericTokenType.IDENTIFIER to "NX", originalValues = listOf("nx"))
+        assertExactTokenStream("qx", GenericTokenType.IDENTIFIER to "QX", originalValues = listOf("qx"))
+        assertExactTokenStream("nq", GenericTokenType.IDENTIFIER to "NQ", originalValues = listOf("nq"))
+        assertExactTokenStream("nqX", GenericTokenType.IDENTIFIER to "NQX", originalValues = listOf("nqX"))
+        assertExactTokenStream("n''", PlSqlTokenType.STRING_LITERAL to "n''")
+        assertExactTokenStream(
+            "q''",
+            GenericTokenType.IDENTIFIER to "Q",
+            PlSqlTokenType.STRING_LITERAL to "''",
+            originalValues = listOf("q", "''")
+        )
+        assertExactTokenStream(
+            "nq''",
+            GenericTokenType.IDENTIFIER to "NQ",
+            PlSqlTokenType.STRING_LITERAL to "''",
+            originalValues = listOf("nq", "''")
+        )
+    }
+
+    @Test
     fun simpleIntegerLiteral() {
         assertThatIsToken("6", PlSqlTokenType.INTEGER_LITERAL)
     }

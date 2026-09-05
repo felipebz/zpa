@@ -28,12 +28,18 @@ class StringChannel(private val regexpChannel: RegexpChannel)
     : Channel<LexerOutput> by regexpChannel {
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        val nextChar = code.peek().toChar().lowercaseChar()
-        if (nextChar != '\'' && nextChar != 'n' && nextChar != 'q') {
-            return false
-        }
-
+        if (!canStartStringLiteral(code)) return false
         return regexpChannel.consume(code, output)
     }
 
+    private fun canStartStringLiteral(code: CodeReader): Boolean = when (code.peek()) {
+        '\''.code -> true
+        'n'.code, 'N'.code -> when (code.intAt(1)) {
+            '\''.code -> true
+            'q'.code, 'Q'.code -> code.intAt(2) == '\''.code
+            else -> false
+        }
+        'q'.code, 'Q'.code -> code.intAt(1) == '\''.code
+        else -> false
+    }
 }
