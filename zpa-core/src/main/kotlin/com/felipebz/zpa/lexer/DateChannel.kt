@@ -24,15 +24,16 @@ import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.flr.impl.channel.RegexpChannel
 
-class DateChannel(private val regexpChannel: RegexpChannel)
+class DateChannel(
+    private val regexpChannel: RegexpChannel,
+    private val expectedInitial: Char
+)
     : Channel<LexerOutput> by regexpChannel {
+    private val uppercaseInitial = expectedInitial.uppercaseChar()
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        val nextChar = code.peek().toChar().lowercaseChar()
-        if (nextChar != 'd' && nextChar != 't') {
-            return false
-        }
-
+        val nextChar = code.peek()
+        if (nextChar != expectedInitial.code && nextChar != uppercaseInitial.code) return false
         return regexpChannel.consume(code, output)
     }
 

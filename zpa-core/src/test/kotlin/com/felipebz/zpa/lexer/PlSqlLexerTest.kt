@@ -413,6 +413,46 @@ class PlSqlLexerTest {
         assertThatIsToken("TIMESTAMP '2015-01-01 01:01:01 America/Sao_Paulo -03'", PlSqlTokenType.TIMESTAMP_LITERAL)
     }
 
+    @Test
+    fun dateAndTimestampAdmissionsPreserveLiteralAndPrefixBoundaries() {
+        listOf(
+            "DATE '2026-09-05'",
+            "date '2026-09-05'",
+            "TIMESTAMP '2026-09-05 12:34:56'",
+            "timestamp '2026-09-05 12:34:56.123456789 America/Sao_Paulo -03'"
+        ).forEach { source ->
+            val token = lexer.lex(source).first()
+            assertThat(token.type).isEqualTo(
+                if (source.startsWith("DATE", ignoreCase = true)) PlSqlTokenType.DATE_LITERAL else PlSqlTokenType.TIMESTAMP_LITERAL
+            )
+            org.assertj.core.api.Assertions.assertThat(token.value).isEqualTo(source)
+            org.assertj.core.api.Assertions.assertThat(token.originalValue).isEqualTo(source)
+            org.assertj.core.api.Assertions.assertThat(token.line).isEqualTo(1)
+            org.assertj.core.api.Assertions.assertThat(token.column).isZero()
+            org.assertj.core.api.Assertions.assertThat(token.endLine).isEqualTo(1)
+            org.assertj.core.api.Assertions.assertThat(token.endColumn).isEqualTo(source.length)
+        }
+
+        assertExactTokenStream("DATE", PlSqlKeyword.DATE to "DATE")
+        assertExactTokenStream("TIMESTAMP", PlSqlKeyword.TIMESTAMP to "TIMESTAMP")
+        assertExactTokenStream(
+            "DATE '",
+            PlSqlKeyword.DATE to "DATE",
+            GenericTokenType.UNKNOWN_CHAR to "'",
+            originalValues = listOf("DATE", "'")
+        )
+        assertExactTokenStream(
+            "TIMESTAMP '",
+            PlSqlKeyword.TIMESTAMP to "TIMESTAMP",
+            GenericTokenType.UNKNOWN_CHAR to "'",
+            originalValues = listOf("TIMESTAMP", "'")
+        )
+        assertExactTokenStream("DATEVALUE", GenericTokenType.IDENTIFIER to "DATEVALUE")
+        assertExactTokenStream("TIMESTAMPVALUE", GenericTokenType.IDENTIFIER to "TIMESTAMPVALUE")
+        assertExactTokenStream("DUMMY", GenericTokenType.IDENTIFIER to "DUMMY")
+        assertExactTokenStream("TEST", GenericTokenType.IDENTIFIER to "TEST")
+    }
+
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {
         assertThat(lexer.lex(sourceCode)).hasToken(sourceCode, tokenType)
     }
