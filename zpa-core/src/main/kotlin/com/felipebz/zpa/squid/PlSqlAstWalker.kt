@@ -22,6 +22,7 @@ package com.felipebz.zpa.squid
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.checks.PlSqlVisitor
 import com.felipebz.zpa.api.squid.PlSqlCommentAnalyzer
@@ -30,6 +31,14 @@ import java.util.*
 class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
     private val visitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
+    private val callbackVisitors = checks.mapNotNull { check ->
+        val capabilities = callbackCapabilities.get(check.javaClass)
+        if (capabilities.visitsToken || capabilities.visitsComment) {
+            CallbackVisitor(check, capabilities.visitsToken, capabilities.visitsComment)
+        } else {
+            null
+        }
+    }
     private var lastVisitedToken: Token? = null
 
     fun walk(context: PlSqlVisitorContext) {
@@ -87,12 +96,16 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     private fun visitToken(ast: AstNode) {
         if (ast.hasToken() && lastVisitedToken !== ast.token) {
             lastVisitedToken = ast.token
-            for (astAndTokenVisitor in checks) {
-                astAndTokenVisitor.visitToken(ast.token)
+            for (callbackVisitor in callbackVisitors) {
+                if (callbackVisitor.visitsToken) {
+                    callbackVisitor.visitor.visitToken(ast.token)
+                }
 
-                for (trivia in ast.token.trivia) {
-                    astAndTokenVisitor.visitComment(trivia,
+                if (callbackVisitor.visitsComment) {
+                    for (trivia in ast.token.trivia) {
+                        callbackVisitor.visitor.visitComment(trivia,
                             PlSqlCommentAnalyzer.getContents(trivia.token.originalValue))
+                    }
                 }
             }
         }
@@ -106,5 +119,22 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
     private fun getNodeVisitors(ast: AstNode) =
         visitorsByNodeType[ast.type] ?: emptyList()
+
+    private class CallbackVisitor(val visitor: PlSqlVisitor,
+                                  val visitsToken: Boolean,
+                                  val visitsComment: Boolean)
+
+    private class CallbackCapabilities(val visitsToken: Boolean,
+                                       val visitsComment: Boolean)
+
+    private companion object {
+        private val callbackCapabilities = object : ClassValue<CallbackCapabilities>() {
+            override fun computeValue(type: Class<*>): CallbackCapabilities {
+                val visitsToken = type.getMethod("visitToken", Token::class.java).declaringClass != PlSqlVisitor::class.java
+                val visitsComment = type.getMethod("visitComment", Trivia::class.java, String::class.java).declaringClass != PlSqlVisitor::class.java
+                return CallbackCapabilities(visitsToken, visitsComment)
+            }
+        }
+    }
 
 }
