@@ -118,10 +118,10 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
     }
 
     private fun visit(ast: AstNode) {
-        visitNodeInternal(ast)
+        val leavesScope = visitNodeInternal(ast)
         visitChildren(ast)
 
-        if (ast.typeIs(scopeHolders)) {
+        if (leavesScope) {
             leaveScope()
         }
     }
@@ -132,7 +132,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         }
     }
 
-    private fun visitNodeInternal(node: AstNode) {
+    private fun visitNodeInternal(node: AstNode): Boolean {
         if (node.type === PlSqlGrammar.VARIABLE_DECLARATION) {
             visitVariableDeclaration(node)
         } else if (node.type === PlSqlGrammar.EXCEPTION_DECLARATION) {
@@ -151,12 +151,16 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             visitMemberExpression(node)
         } else if (node.type === PlSqlGrammar.CURSOR_DECLARATION) {
             visitCursor(node)
+            return true
         } else if (node.type === PlSqlGrammar.BLOCK_STATEMENT) {
             visitBlock(node)
+            return true
         } else if (node.type === PlSqlGrammar.FOR_STATEMENT) {
             visitFor(node)
+            return true
         } else if (node.type === PlSqlGrammar.FORALL_STATEMENT) {
             visitForAll(node)
+            return true
         } else if (node.type === PlSqlGrammar.PARAMETER_DECLARATION || node.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
             visitParameterDeclaration(node)
         } else if (node.type === PlSqlGrammar.CREATE_PROCEDURE ||
@@ -171,13 +175,18 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
             node.type === PlSqlGrammar.CREATE_TYPE_BODY ||
             node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) {
             visitUnit(node)
+            return true
         } else if (node.type === PlSqlGrammar.CREATE_PACKAGE || node.type === PlSqlGrammar.CREATE_PACKAGE_BODY) {
             visitPackage(node)
+            return true
         } else if (node.type === PlSqlGrammar.LITERAL) {
             visitLiteral(node)
         } else if (node.type === DmlGrammar.SELECT_EXPRESSION) {
             visitSelectExpression(node)
+            return true
         }
+
+        return false
     }
 
     private fun visitUnit(node: AstNode) {
