@@ -128,6 +128,78 @@ class ScopeImplTest {
         assertThat(innerScope.getSymbol("baz")).isNull()
     }
 
+    @Test
+    fun getSymbolPreservesInsertionOrderAndKindFiltering() {
+        val scope = ScopeImpl()
+        val first = createSymbol(scope, "foo", Kind.VARIABLE)
+        val second = createSymbol(scope, "foo", Kind.TYPE)
+        scope.addSymbol(first)
+        scope.addSymbol(second)
+
+        assertThat(scope.getSymbol("foo")).isEqualTo(first)
+        assertThat(scope.getSymbol("foo", Kind.TYPE)).isEqualTo(second)
+    }
+
+    @Test
+    fun getSymbolPreservesShadowingAndOuterFallback() {
+        val outerScope = ScopeImpl()
+        val outer = createSymbol(outerScope, "foo", Kind.VARIABLE)
+        outerScope.addSymbol(outer)
+
+        val innerScope = ScopeImpl(outerScope)
+        val inner = createSymbol(innerScope, "foo", Kind.VARIABLE)
+        innerScope.addSymbol(inner)
+
+        assertThat(innerScope.getSymbol("foo")).isEqualTo(inner)
+        assertThat(innerScope.getSymbol("bar")).isNull()
+        assertThat(ScopeImpl(outerScope).getSymbol("foo")).isEqualTo(outer)
+    }
+
+    @Test
+    fun getSymbolPreservesPathFiltering() {
+        val outerScope = ScopeImpl(identifier = "outer")
+        val outer = createSymbol(outerScope, "foo", Kind.VARIABLE)
+        outerScope.addSymbol(outer)
+        val innerScope = ScopeImpl(outerScope, identifier = "inner")
+        val inner = createSymbol(innerScope, "foo", Kind.VARIABLE)
+        innerScope.addSymbol(inner)
+
+        assertThat(innerScope.getSymbol("foo", listOf("inner"))).isEqualTo(inner)
+        assertThat(innerScope.getSymbol("foo", listOf("outer"))).isEqualTo(outer)
+    }
+
+    @Test
+    fun getSymbolPreservesQuotedAndUnquotedNameSemantics() {
+        val scope = ScopeImpl()
+        val unquoted = createSymbol(scope, "Foo", Kind.VARIABLE)
+        val quoted = createSymbol(scope, "\"Foo\"", Kind.VARIABLE)
+        scope.addSymbol(unquoted)
+        scope.addSymbol(quoted)
+
+        assertThat(scope.getSymbol("foo")).isEqualTo(unquoted)
+        assertThat(scope.getSymbol("FOO")).isEqualTo(unquoted)
+        assertThat(scope.getSymbol("\"Foo\"")).isEqualTo(quoted)
+        assertThat(scope.getSymbol("\"foo\"")).isNull()
+    }
+
+    @Test
+    fun getSymbolPreservesEqualsIgnoreCaseUnicodeSemantics() {
+        val scope = ScopeImpl()
+        val kelvin = createSymbol(scope, "\u212A", Kind.VARIABLE)
+        val longS = createSymbol(scope, "\u017F", Kind.TYPE)
+        val sharpS = createSymbol(scope, "\u00DF", Kind.FUNCTION)
+        val supplementary = createSymbol(scope, "\uD801\uDC00", Kind.PACKAGE)
+        scope.addSymbol(kelvin)
+        scope.addSymbol(longS)
+        scope.addSymbol(sharpS)
+        scope.addSymbol(supplementary)
+
+        assertThat(scope.getSymbol("k")).isEqualTo(kelvin)
+        assertThat(scope.getSymbol("s", Kind.TYPE)).isEqualTo(longS)
+        assertThat(scope.getSymbol("SS")).isNull()
+        assertThat(scope.getSymbol("\uD801\uDC28", Kind.PACKAGE)).isEqualTo(supplementary)
+    }
+
     private fun mockAstNode() = mock(AstNode::class.java)
 
     private fun createSymbol(scope: Scope, name: String, kind: Kind): Symbol {

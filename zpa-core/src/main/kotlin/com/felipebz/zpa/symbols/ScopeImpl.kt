@@ -54,6 +54,9 @@ class ScopeImpl(override val outer: Scope? = null,
 
     override val symbols = mutableListOf<Symbol>()
 
+    private val exactNameIndex = HashMap<String, MutableList<Symbol>>()
+    private val caseInsensitiveNameIndex = HashMap<String, MutableList<Symbol>>()
+
     override val identifier: String? =
         try {
             identifier ?: node?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)?.tokenValue
@@ -99,6 +102,14 @@ class ScopeImpl(override val outer: Scope? = null,
 
     override fun addSymbol(symbol: Symbol) {
         symbols.add(symbol)
+        if (symbol.name.startsWith('"')) {
+            val candidates = exactNameIndex.getOrPut(symbol.name) { ArrayList() }
+            candidates.add(symbol)
+        } else {
+            val key = caseInsensitiveKey(symbol.name)
+            val candidates = caseInsensitiveNameIndex.getOrPut(key) { ArrayList() }
+            candidates.add(symbol)
+        }
     }
 
     override fun addInnerScope(scope: Scope) {
@@ -112,10 +123,25 @@ class ScopeImpl(override val outer: Scope? = null,
     }
 
     override fun getSymbol(name: String, path: List<String>, vararg kinds: Symbol.Kind): Symbol? {
+        val quoted = name.startsWith('"')
+        val caseInsensitiveName = if (quoted) null else caseInsensitiveKey(name)
         var scope: Scope? = this
         while (scope != null) {
-            for (s in scope.symbols) {
-                if (s.called(name) && (path.isEmpty() || pathContainedIn(path, scope)) && (kinds.isEmpty() || kinds.contains(s.kind))) {
+            val indexedScope = scope as? ScopeImpl
+            val candidates = if (indexedScope != null) {
+                if (quoted) {
+                    val indexed = indexedScope.exactNameIndex[name].orEmpty()
+                    indexed
+                } else {
+                    val indexed = indexedScope.caseInsensitiveNameIndex[caseInsensitiveName].orEmpty()
+                    indexed
+                }
+            } else {
+                scope.symbols
+            }
+            for (s in candidates) {
+                val nameMatches = s.called(name)
+                if (nameMatches && (path.isEmpty() || pathContainedIn(path, scope)) && (kinds.isEmpty() || kinds.contains(s.kind))) {
                     return s
                 }
             }
@@ -123,6 +149,17 @@ class ScopeImpl(override val outer: Scope? = null,
         }
 
         return null
+    }
+
+    private fun caseInsensitiveKey(value: String): String {
+        return buildString(value.length) {
+            var index = 0
+            while (index < value.length) {
+                val codePoint = value.codePointAt(index)
+                appendCodePoint(Character.toLowerCase(Character.toUpperCase(codePoint)))
+                index += Character.charCount(codePoint)
+            }
+        }
     }
 
     // check if path is a prefix of this scope's path
