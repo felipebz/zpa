@@ -26,6 +26,7 @@ import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleBuilder
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
+import com.felipebz.flr.internal.vm.lexerful.TokenTypeDispatchExpression
 import kotlin.reflect.KClass
 
 class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
@@ -104,6 +105,14 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
     fun isOneOfThem(tokens: Array<TokenType>): Any {
         require(tokens.isNotEmpty())
         return builder.isOneOfThem(tokens[0], *tokens.copyOfRange(1, tokens.size))
+    }
+
+    fun tokenTypeDispatch(vararg branches: Pair<TokenType, Any>): Any {
+        return TokenTypeDispatchExpression(
+            branches.associate { (tokenType, ruleKey) ->
+                tokenType to builder.convertToExpression(ruleKey)
+            }
+        )
     }
 
     fun bridge(from: TokenType, to: TokenType): Any = builder.bridge(from, to)

@@ -350,8 +350,24 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(INTERVAL_LITERAL).define(b.firstOf(INTERVAL_YEAR_TO_MONTH_LITERAL, INTERVAL_DAY_TO_SECOND_LITERAL))
             b.rule(INQUIRY_DIRECTIVE).define(DOUBLEDOLLAR, IDENTIFIER_NAME)
 
-            b.rule(LITERAL).define(b.firstOf(NULL_LITERAL, BOOLEAN_LITERAL, NUMERIC_LITERAL,
-                FLOATING_POINT_LITERAL, CHARACTER_LITERAL, DATE_LITERAL, TIMESTAMP_LITERAL, INTERVAL_LITERAL, INQUIRY_DIRECTIVE))
+            b.rule(LITERAL).define(
+                b.tokenTypeDispatch(
+                    NULL to NULL_LITERAL,
+                    TRUE to BOOLEAN_LITERAL,
+                    FALSE to BOOLEAN_LITERAL,
+                    INTEGER_LITERAL to NUMERIC_LITERAL,
+                    NUMBER_LITERAL to NUMERIC_LITERAL,
+                    BINARY_DOUBLE_INFINITY to FLOATING_POINT_LITERAL,
+                    BINARY_DOUBLE_NAN to FLOATING_POINT_LITERAL,
+                    BINARY_FLOAT_INFINITY to FLOATING_POINT_LITERAL,
+                    BINARY_FLOAT_NAN to FLOATING_POINT_LITERAL,
+                    STRING_LITERAL to CHARACTER_LITERAL,
+                    DATE_LITERAL to DATE_LITERAL,
+                    TIMESTAMP_LITERAL to TIMESTAMP_LITERAL,
+                    INTERVAL to INTERVAL_LITERAL,
+                    DOUBLEDOLLAR to INQUIRY_DIRECTIVE
+                )
+            )
         }
 
         private fun createOperators(b: PlSqlGrammarBuilder) {
