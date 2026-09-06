@@ -127,7 +127,7 @@ jobs:
         run: git archive --format=zip -o build/plsql-custom-rules.zip HEAD:plsql-custom-rules
 
       - name: Create local Maven repository
-        run: ./gradlew publish
+        run: ./gradlew publish --refresh-dependencies
 
       - name: Run SonarQube Scanner
         run: ./gradlew sonar --info
