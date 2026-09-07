@@ -101,6 +101,63 @@ class MethodMatcherTest : RuleTest() {
     }
 
     @Test
+    fun keepsTheLastComparedComponentAfterSuccessfulMatch() {
+        val matcher = MethodMatcher.create().schema("sch").packageName("pack").name("func")
+
+        assertThat(matcher.matches(p.parse("sch.pack.func").firstChild)).isTrue
+        assertThat(matcher.methodName).isEqualTo("SCH")
+    }
+
+    @Test
+    fun keepsTheComponentThatFailedTheMethodComparison() {
+        val matcher = MethodMatcher.create().name("func")
+
+        assertThat(matcher.matches(p.parse("other").firstChild)).isFalse
+        assertThat(matcher.methodName).isEqualTo("OTHER")
+    }
+
+    @Test
+    fun keepsTheComponentThatFailedThePackageComparison() {
+        val matcher = MethodMatcher.create().packageName("pack").name("func")
+
+        assertThat(matcher.matches(p.parse("other.func").firstChild)).isFalse
+        assertThat(matcher.methodName).isEqualTo("OTHER")
+    }
+
+    @Test
+    fun keepsTheComponentThatFailedTheSchemaComparison() {
+        val matcher = MethodMatcher.create().schema("sch").packageName("pack").name("func")
+
+        assertThat(matcher.matches(p.parse("other.pack.func").firstChild)).isFalse
+        assertThat(matcher.methodName).isEqualTo("OTHER")
+    }
+
+    @Test
+    fun preservesTheFirstThreeComponentsWhenMoreArePresent() {
+        val matcher = MethodMatcher.create().schema("a").packageName("b").name("c")
+
+        assertThat(matcher.matches(p.parse("a.b.c.d").firstChild)).isTrue
+        assertThat(matcher.methodName).isEqualTo("A")
+    }
+
+    @Test
+    fun unwrapsCallStatement() {
+        setRootRule(PlSqlGrammar.BLOCK_STATEMENT)
+        val matcher = MethodMatcher.create().name("func").withNoParameterConstraint()
+        val callStatement = p.parse("begin func; end;").getFirstDescendant(PlSqlGrammar.CALL_STATEMENT)
+
+        assertThat(matcher.matches(callStatement)).isTrue
+    }
+
+    @Test
+    fun keepsTheMethodComponentWhenArgumentValidationFails() {
+        val matcher = MethodMatcher.create().name("func").addParameter()
+
+        assertThat(matcher.matches(p.parse("func(x, y)").firstChild)).isFalse
+        assertThat(matcher.methodName).isEqualTo("FUNC")
+    }
+
+    @Test
     fun detectMethodWithOneParameter() {
         val matcher = MethodMatcher.create().name("func").addParameter()
         matches(matcher, "func(x)")

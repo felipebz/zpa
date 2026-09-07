@@ -102,33 +102,75 @@ class MethodMatcher private constructor()
     fun matches(originalNode: AstNode): Boolean {
         val node = normalize(originalNode)
 
-        var i = -1
-        val nodes = arrayOfNulls<String>(3)
-        for (child in node.children) {
-            if (i < 2 && (child.type === PlSqlGrammar.VARIABLE_NAME || child.type === PlSqlGrammar.IDENTIFIER_NAME)) {
-                nodes[++i] = child.tokenValue
+        var componentCount = 0
+        var firstComponent: String? = null
+        var secondComponent: String? = null
+        var thirdComponent: String? = null
+        val children = node.children
+        var childIndex = 0
+        while (childIndex < children.size) {
+            val child = children[childIndex]
+            if (componentCount < 3 &&
+                (child.type === PlSqlGrammar.VARIABLE_NAME || child.type === PlSqlGrammar.IDENTIFIER_NAME)) {
+                when (componentCount) {
+                    0 -> firstComponent = child.tokenValue
+                    1 -> secondComponent = child.tokenValue
+                    else -> thirdComponent = child.tokenValue
+                }
+                componentCount++
             }
+            childIndex++
         }
 
-        fun hasMoreItensToCheck() = i > -1
-        fun nextNode() = nodes[i--]
-
-        if (!hasMoreItensToCheck()) {
+        if (componentCount == 0) {
             return false
         }
 
-        var matches =  methodNameCriteria?.let { nameAcceptable(nextNode(), it) } ?: true
+        var componentIndex = componentCount - 1
+        var matches = true
 
-        packageNameCriteria?.let {
-            matches = matches and (hasMoreItensToCheck() && nameAcceptable(nextNode(), it))
+        val methodCriteria = methodNameCriteria
+        if (methodCriteria != null) {
+            val component = when (componentIndex) {
+                2 -> thirdComponent
+                1 -> secondComponent
+                else -> firstComponent
+            }
+            componentIndex--
+            matches = nameAcceptable(component, methodCriteria)
         }
 
-        schemaNameCriteria?.let {
-            matches = matches and (schemaIsOptional && !hasMoreItensToCheck() ||
-                hasMoreItensToCheck() && nameAcceptable(nextNode(), it))
+        val packageCriteria = packageNameCriteria
+        if (packageCriteria != null) {
+            val packageMatches = if (componentIndex > -1) {
+                val component = when (componentIndex) {
+                    2 -> thirdComponent
+                    1 -> secondComponent
+                    else -> firstComponent
+                }
+                componentIndex--
+                nameAcceptable(component, packageCriteria)
+            } else false
+            matches = matches and packageMatches
         }
 
-        return matches && !hasMoreItensToCheck() && argumentsAcceptable(originalNode)
+        val schemaCriteria = schemaNameCriteria
+        if (schemaCriteria != null) {
+            val schemaMatches = if (schemaIsOptional && componentIndex == -1) {
+                true
+            } else if (componentIndex > -1) {
+                val component = when (componentIndex) {
+                    2 -> thirdComponent
+                    1 -> secondComponent
+                    else -> firstComponent
+                }
+                componentIndex--
+                nameAcceptable(component, schemaCriteria)
+            } else false
+            matches = matches and schemaMatches
+        }
+
+        return matches && componentIndex == -1 && argumentsAcceptable(originalNode)
     }
 
     private fun nameAcceptable(name: String?, criteria: NameCriteria): Boolean {
