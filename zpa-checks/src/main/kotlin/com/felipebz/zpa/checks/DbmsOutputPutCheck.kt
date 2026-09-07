@@ -30,24 +30,24 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 @ActivatedByDefault
 class DbmsOutputPutCheck : AbstractBaseCheck() {
 
+    private val putMatcher = MethodMatcher.create()
+        .schema("sys").schemaIsOptional()
+        .packageName("dbms_output")
+        .name("put")
+        .addParameter()
+
+    private val putLineMatcher = MethodMatcher.create()
+        .schema("sys").schemaIsOptional()
+        .packageName("dbms_output")
+        .name("put_line")
+        .addParameter()
+
     override fun init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL)
     }
 
     override fun visitNode(node: AstNode) {
-        val put = MethodMatcher.create()
-                .schema("sys").schemaIsOptional()
-                .packageName("dbms_output")
-                .name("put")
-                .addParameter()
-
-        val putLine = MethodMatcher.create()
-                .schema("sys").schemaIsOptional()
-                .packageName("dbms_output")
-                .name("put_line")
-                .addParameter()
-
-        if (!put.matches(node) && !putLine.matches(node)) {
+        if (!putMatcher.matches(node) && !putLineMatcher.matches(node)) {
             return
         }
 
