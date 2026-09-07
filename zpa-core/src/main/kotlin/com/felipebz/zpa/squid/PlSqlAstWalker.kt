@@ -88,8 +88,11 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun visitChildren(ast: AstNode) {
-        for (child in ast.children) {
-            visit(child)
+        val children = ast.children
+        var index = 0
+        while (index < children.size) {
+            visit(children[index])
+            index++
         }
     }
 
