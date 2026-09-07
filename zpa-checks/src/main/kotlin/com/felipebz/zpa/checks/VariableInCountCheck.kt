@@ -32,14 +32,17 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 @ActivatedByDefault
 class VariableInCountCheck : AbstractBaseCheck() {
 
+    private val count = MethodMatcher.create().name("count").addParameter()
+
     override fun init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL)
     }
 
     override fun visitNode(node: AstNode) {
-        val count = MethodMatcher.create().name("count").addParameter()
-
-        if (!node.parent.typeIs(DmlGrammar.SELECT_COLUMN) || !count.matches(node)) {
+        if (!node.parent.typeIs(DmlGrammar.SELECT_COLUMN)) {
+            return
+        }
+        if (!count.matches(node)) {
             return
         }
 
