@@ -30,13 +30,13 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 @ActivatedByDefault
 class NvlWithNullParameterCheck : AbstractBaseCheck() {
 
+    private val nvl = MethodMatcher.create().name("nvl").addParameters(2)
+
     override fun init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL)
     }
 
     override fun visitNode(node: AstNode) {
-        val nvl = MethodMatcher.create().name("nvl").addParameters(2)
-
         if (!nvl.matches(node)) {
             return
         }
