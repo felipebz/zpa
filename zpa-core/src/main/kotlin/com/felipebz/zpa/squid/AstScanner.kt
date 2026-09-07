@@ -28,6 +28,7 @@ import com.felipebz.zpa.metrics.ComplexityVisitor
 import com.felipebz.zpa.metrics.FunctionComplexityVisitor
 import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -47,7 +48,8 @@ import kotlin.concurrent.withLock
 class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  private val formsMetadata: FormsMetadata?,
                  isErrorRecoveryEnabled: Boolean,
-                 charset: Charset = StandardCharsets.UTF_8) {
+                 charset: Charset = StandardCharsets.UTF_8,
+                 private val projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) {
 
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
     val globalScope = ScopeImpl()

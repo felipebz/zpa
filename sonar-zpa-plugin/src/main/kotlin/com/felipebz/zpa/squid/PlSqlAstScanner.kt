@@ -32,6 +32,7 @@ import com.felipebz.zpa.PlSqlChecks
 import com.felipebz.zpa.checks.IssueLocation
 import com.felipebz.zpa.highlight.PlSqlHighlighterVisitor
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.metrics.CpdVisitor
 import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
 import com.felipebz.zpa.symbols.ObjectLocator
@@ -47,10 +48,11 @@ class PlSqlAstScanner(private val context: SensorContext,
                       private val noSonarFilter: NoSonarFilter,
                       formsMetadata: FormsMetadata?,
                       isErrorRecoveryEnabled: Boolean,
-                      private val fileLinesContextFactory: FileLinesContextFactory?) {
+                      private val fileLinesContextFactory: FileLinesContextFactory?,
+                      projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) {
 
     private val astScanner: AstScanner =
-        AstScanner(checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding())
+        AstScanner(checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding(), projectAnalysisContext)
 
     private lateinit var plsqlChecks: PlSqlChecks
 
@@ -60,7 +62,16 @@ class PlSqlAstScanner(private val context: SensorContext,
                 formsMetadata: FormsMetadata?,
                 isErrorRecoveryEnabled: Boolean,
                 fileLinesContextFactory: FileLinesContextFactory,
-                objectLocator: ObjectLocator) : this(context, checks.all(), noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory) {
+                objectLocator: ObjectLocator,
+                projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) : this(
+        context,
+        checks.all(),
+        noSonarFilter,
+        formsMetadata,
+        isErrorRecoveryEnabled,
+        fileLinesContextFactory,
+        projectAnalysisContext
+    ) {
         this.plsqlChecks = checks
         objectLocator.setScope(astScanner.globalScope)
     }

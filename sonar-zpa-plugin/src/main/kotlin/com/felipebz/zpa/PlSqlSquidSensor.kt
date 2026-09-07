@@ -28,6 +28,13 @@ import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.FileLinesContextFactory
 import com.felipebz.zpa.checks.CheckList
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectDeclarationExtractor
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.project.ProjectSourceReader
+import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
 import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
 import com.felipebz.zpa.squid.PlSqlAstScanner
@@ -64,7 +71,29 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         val inputFiles = fs.inputFiles(fs.predicates().hasLanguage(PlSql.Companion.KEY)).toList()
 
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
-        val scanner = PlSqlAstScanner(context, checks, noSonarFilter, formsMetadata, isErrorRecoveryEnabled, fileLinesContextFactory, objectLocator)
+        val projectAnalysisContext = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation(
+                ProjectDeclarationExtractor(PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled))
+            ).prepare(
+                inputFiles.map { inputFile ->
+                    ProjectSource(
+                        FileId(inputFile.uri().toString()),
+                        ProjectSourceReader { inputFile.contents() }
+                    )
+                },
+                concurrent = isConcurrentModeEnabled
+            )
+        )
+        val scanner = PlSqlAstScanner(
+            context,
+            checks,
+            noSonarFilter,
+            formsMetadata,
+            isErrorRecoveryEnabled,
+            fileLinesContextFactory,
+            objectLocator,
+            projectAnalysisContext
+        )
 
         progressReport.start(inputFiles.map { it.toString() })
 
