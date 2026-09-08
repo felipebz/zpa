@@ -107,6 +107,11 @@ sealed interface ProjectDeclaration {
     val sourceRange: SourceRange
 }
 
+/** The declaration kinds returned by the first project type resolver. */
+sealed interface ProjectTypeDeclaration : ProjectDeclaration {
+    val qualifiedName: QualifiedName
+}
+
 data class PackageDeclaration(
     val name: QualifiedName,
     override val role: DeclarationRole,
@@ -129,9 +134,10 @@ data class StandaloneTypeDeclaration(
     val shape: ProjectTypeShape?,
     override val fileId: FileId,
     override val sourceRange: SourceRange
-) : ProjectDeclaration {
+) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE
+    override val qualifiedName: QualifiedName = name
 }
 
 data class PackageTypeDeclaration(
@@ -140,9 +146,10 @@ data class PackageTypeDeclaration(
     val shape: ProjectTypeShape?,
     override val fileId: FileId,
     override val sourceRange: SourceRange
-) : ProjectDeclaration {
+) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.PACKAGE_TYPE
     override val role = DeclarationRole.SPECIFICATION
+    override val qualifiedName: QualifiedName = owner.append(name)
 }
 
 data class PackageSubtypeDeclaration(
@@ -151,9 +158,10 @@ data class PackageSubtypeDeclaration(
     val baseType: TypeRef,
     override val fileId: FileId,
     override val sourceRange: SourceRange
-) : ProjectDeclaration {
+) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.PACKAGE_SUBTYPE
     override val role = DeclarationRole.SPECIFICATION
+    override val qualifiedName: QualifiedName = owner.append(name)
 }
 
 sealed interface PackageSubprogramDeclaration : ProjectDeclaration {

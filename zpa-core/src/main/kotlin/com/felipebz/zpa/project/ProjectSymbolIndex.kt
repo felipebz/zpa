@@ -39,7 +39,7 @@ class ProjectSymbolIndex internal constructor(
         .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
     private val typesByOwnerAndName = this.declarations
-        .filter { it is PackageTypeDeclaration || it is PackageSubtypeDeclaration || it is StandaloneTypeDeclaration }
+        .filterIsInstance<ProjectTypeDeclaration>()
         .groupBy { declaration -> typeKey(declaration) }
         .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
@@ -50,7 +50,7 @@ class ProjectSymbolIndex internal constructor(
 
     fun findPackages(name: QualifiedName): List<PackageDeclaration> = packagesByName[name].orEmpty()
 
-    fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectDeclaration> =
+    fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectTypeDeclaration> =
         typesByOwnerAndName[owner to name].orEmpty()
 
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
@@ -77,12 +77,9 @@ class ProjectSymbolIndex internal constructor(
 
         internal fun empty() = ProjectSymbolIndex(emptyList(), emptyList())
 
-        private fun typeKey(declaration: ProjectDeclaration): Pair<QualifiedName?, OracleIdentifier> = when (declaration) {
-            is PackageTypeDeclaration -> declaration.owner to declaration.name
-            is PackageSubtypeDeclaration -> declaration.owner to declaration.name
-            is StandaloneTypeDeclaration -> declaration.name.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName) to declaration.name.last
-            else -> error("Not a type declaration: $declaration")
-        }
+        private fun typeKey(declaration: ProjectTypeDeclaration): Pair<QualifiedName?, OracleIdentifier> =
+            declaration.qualifiedName.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName) to
+                declaration.qualifiedName.last
 
         /** Semantic identity. It deliberately excludes comparison-only metadata. */
         private fun declarationIdentityKey(declaration: ProjectDeclaration): String = when (declaration) {
