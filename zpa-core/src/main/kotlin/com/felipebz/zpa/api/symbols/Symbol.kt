@@ -23,6 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
+import com.felipebz.zpa.project.ProjectTypeDeclaration
 import java.util.*
 
 open class Symbol(val node: AstNode?,
@@ -51,6 +52,9 @@ open class Symbol(val node: AstNode?,
     val type: PlSqlType = datatype?.type ?: PlSqlType.UNKNOWN
 
     val datatype: PlSqlDatatype = datatype ?: UnknownDatatype
+
+    /** Unique project target of the declared type, independent of concrete datatype semantics. */
+    internal var projectTypeDeclaration: ProjectTypeDeclaration? = null
 
     val modifiers: List<AstNode>
         get() = Collections.unmodifiableList(internalModifiers)

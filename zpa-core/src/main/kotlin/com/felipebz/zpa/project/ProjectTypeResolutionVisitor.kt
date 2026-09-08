@@ -23,10 +23,31 @@ internal class ProjectTypeResolutionVisitor(
 
         val owner = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
             ?.let(::packageName)
-        (node as SemanticAstNode).projectTypeResolution = resolver.resolve(
+        val resolution = resolver.resolve(
             reference,
             ProjectTypeLookupContext(owner)
         )
+        (node as SemanticAstNode).projectTypeResolution = resolution
+        if (resolution is ProjectTypeResolution.Resolved) {
+            declaredTypeSymbol(node)?.projectTypeDeclaration = resolution.declaration
+        }
+    }
+
+    /** Only direct declared types, never collection elements or record fields' enclosing type. */
+    private fun declaredTypeSymbol(datatype: AstNode): Symbol? {
+        val declaration = datatype.parent
+        when (declaration.type) {
+            PlSqlGrammar.VARIABLE_DECLARATION,
+            PlSqlGrammar.PARAMETER_DECLARATION,
+            PlSqlGrammar.CURSOR_PARAMETER_DECLARATION,
+            PlSqlGrammar.CUSTOM_SUBTYPE,
+            PlSqlGrammar.ITERAND_DECLARATION,
+            PlSqlGrammar.CREATE_FUNCTION,
+            PlSqlGrammar.FUNCTION_DECLARATION -> Unit
+            else -> return null
+        }
+        val identifier = declaration.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
+        return (identifier as? SemanticAstNode)?.symbol
     }
 
     private fun namedTypeReference(node: AstNode): NamedTypeRef? {
