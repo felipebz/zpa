@@ -7,11 +7,19 @@ package com.felipebz.zpa.project
 class ProjectTypeResolver(
     private val projectAnalysisContext: ProjectAnalysisContext
 ) {
-    fun resolve(reference: NamedTypeRef): ProjectTypeResolution = when (val state = projectAnalysisContext.state) {
+    fun resolve(
+        reference: NamedTypeRef,
+        lookupContext: ProjectTypeLookupContext = ProjectTypeLookupContext()
+    ): ProjectTypeResolution = when (val state = projectAnalysisContext.state) {
         ProjectAnalysisContext.State.NotPrepared -> ProjectTypeResolution.NotPrepared(reference)
         is ProjectAnalysisContext.State.Prepared -> {
+            val owner = if (reference.name.segments.size == 1) {
+                lookupContext.packageOwner
+            } else {
+                reference.name.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName)
+            }
             val candidates = state.result.index.findTypes(
-                reference.name.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName),
+                owner,
                 reference.name.last
             )
             if (state.result.failures.isNotEmpty()) {
@@ -26,6 +34,11 @@ class ProjectTypeResolver(
         }
     }
 }
+
+/** Context that can be derived from the current AST without guessing database namespaces. */
+data class ProjectTypeLookupContext(
+    val packageOwner: QualifiedName? = null
+)
 
 sealed interface ProjectTypeResolution {
     val reference: NamedTypeRef

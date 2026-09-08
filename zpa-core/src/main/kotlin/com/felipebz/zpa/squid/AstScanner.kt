@@ -28,7 +28,10 @@ import com.felipebz.zpa.metrics.ComplexityVisitor
 import com.felipebz.zpa.metrics.FunctionComplexityVisitor
 import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectTypeResolutionVisitor
+import com.felipebz.zpa.project.ProjectTypeResolver
 import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -54,7 +57,11 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
     val globalScope = ScopeImpl()
 
-    fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor> = emptyList()) : AstScannerResult {
+    fun scanFile(
+        inputFile: PlSqlFile,
+        extraVisitors: List<PlSqlVisitor> = emptyList(),
+        fileId: FileId = FileId(inputFile.path().toString())
+    ): AstScannerResult {
         val newVisitorContext = getPlSqlVisitorContext(inputFile)
 
         val metricsVisitor = MetricsVisitor()
@@ -64,6 +71,9 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
 
         val checksToRun = mutableListOf<PlSqlVisitor>()
         checksToRun.add(symbolVisitor)
+        if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
+            checksToRun.add(ProjectTypeResolutionVisitor(ProjectTypeResolver(projectAnalysisContext), fileId))
+        }
 
         if (inputFile.type() == PlSqlFile.Type.MAIN) {
             checksToRun.addAll(

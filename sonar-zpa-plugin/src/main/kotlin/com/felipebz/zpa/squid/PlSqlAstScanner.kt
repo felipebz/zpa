@@ -32,6 +32,7 @@ import com.felipebz.zpa.PlSqlChecks
 import com.felipebz.zpa.checks.IssueLocation
 import com.felipebz.zpa.highlight.PlSqlHighlighterVisitor
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.metrics.CpdVisitor
 import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
@@ -90,7 +91,8 @@ class PlSqlAstScanner(private val context: SensorContext,
         val result = try {
             astScanner.scanFile(
                 plSqlFile,
-                listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile))
+                listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)),
+                FileId(inputFile.uri().toString())
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -124,7 +126,11 @@ class PlSqlAstScanner(private val context: SensorContext,
 
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
-        val result = astScanner.scanFile(plSqlFile, listOf(PlSqlHighlighterVisitor(context, inputFile)))
+        val result = astScanner.scanFile(
+            plSqlFile,
+            listOf(PlSqlHighlighterVisitor(context, inputFile)),
+            FileId(inputFile.uri().toString())
+        )
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 

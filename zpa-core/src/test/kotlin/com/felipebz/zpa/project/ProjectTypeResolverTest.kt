@@ -17,10 +17,16 @@ class ProjectTypeResolverTest {
             "CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); SUBTYPE small IS NUMBER; END p;"
         )
         val resolver = ProjectTypeResolver(context(standaloneFile to standalone, packageFile to packageDeclarations))
+        val standaloneDeclaration = standalone.filterIsInstance<StandaloneTypeDeclaration>().single()
+        val packageTypeDeclaration = packageDeclarations.filterIsInstance<PackageTypeDeclaration>().single()
+        val packageSubtypeDeclaration = packageDeclarations.filterIsInstance<PackageSubtypeDeclaration>().single()
 
-        assertThat(resolver.resolve(named("t"))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
-        assertThat(resolver.resolve(named("p.t"))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
-        assertThat(resolver.resolve(named("p.small"))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
+        assertThat(resolver.resolve(named("t")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("t"), standaloneDeclaration))
+        assertThat(resolver.resolve(named("p.t")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("p.t"), packageTypeDeclaration))
+        assertThat(resolver.resolve(named("p.small")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("p.small"), packageSubtypeDeclaration))
     }
 
     @Test
@@ -53,19 +59,35 @@ class ProjectTypeResolverTest {
         val unquoted = FileId("unquoted.sql")
         val quoted = FileId("quoted.sql")
         val qualified = FileId("qualified.sql")
+        val packageQualified = FileId("package-qualified.sql")
+        val unquotedDeclaration = extractor.extract(unquoted, "CREATE TYPE FOO AS OBJECT (id NUMBER);")
+            .filterIsInstance<StandaloneTypeDeclaration>().single()
+        val quotedDeclaration = extractor.extract(quoted, "CREATE TYPE \"Foo\" AS OBJECT (id NUMBER);")
+            .filterIsInstance<StandaloneTypeDeclaration>().single()
+        val qualifiedDeclaration = extractor.extract(qualified, "CREATE TYPE \"P\".\"T\" AS OBJECT (id NUMBER);")
+            .filterIsInstance<StandaloneTypeDeclaration>().single()
+        val packageQualifiedDeclaration = extractor.extract(
+            packageQualified,
+            "CREATE PACKAGE P AS TYPE \"T\" IS RECORD (id NUMBER); END P;"
+        ).filterIsInstance<PackageTypeDeclaration>().single()
         val context = context(
-            unquoted to extractor.extract(unquoted, "CREATE TYPE FOO AS OBJECT (id NUMBER);"),
-            quoted to extractor.extract(quoted, "CREATE TYPE \"Foo\" AS OBJECT (id NUMBER);"),
-            qualified to extractor.extract(qualified, "CREATE TYPE \"P\".\"T\" AS OBJECT (id NUMBER);")
+            unquoted to listOf(unquotedDeclaration),
+            quoted to listOf(quotedDeclaration),
+            qualified to listOf(qualifiedDeclaration),
+            packageQualified to listOf(packageQualifiedDeclaration)
         )
         val resolver = ProjectTypeResolver(context)
 
-        assertThat(resolver.resolve(named("foo"))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
-        assertThat(resolver.resolve(named("\"Foo\""))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
-        assertThat(resolver.resolve(named("Foo"))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
-        assertThat(resolver.resolve(named("\"P\".\"T\""))).isInstanceOf(ProjectTypeResolution.Resolved::class.java)
+        assertThat(resolver.resolve(named("foo")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("foo"), unquotedDeclaration))
+        assertThat(resolver.resolve(named("\"Foo\"")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("\"Foo\""), quotedDeclaration))
+        assertThat(resolver.resolve(named("Foo")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("Foo"), unquotedDeclaration))
+        assertThat(resolver.resolve(named("\"P\".\"T\"")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("\"P\".\"T\""), qualifiedDeclaration))
         assertThat(resolver.resolve(named("P.\"T\"")))
-            .isEqualTo(ProjectTypeResolution.NotFoundInProject(named("P.\"T\"")))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("P.\"T\""), packageQualifiedDeclaration))
     }
 
     @Test
@@ -85,23 +107,18 @@ class ProjectTypeResolverTest {
     }
 
     @Test
-    fun resolvesNamesWithMoreThanTwoSegmentsStructurally() {
-        val file = FileId("schema.sql")
-        val declaration = StandaloneTypeDeclaration(
-            QualifiedName(listOf(
-                OracleIdentifier.fromSource("S"),
-                OracleIdentifier.fromSource("P"),
-                OracleIdentifier.fromSource("T")
-            )),
-            ProjectTypeShape.OBJECT,
-            file,
-            range
-        )
+    fun unqualifiedNamesUseOnlyExplicitPackageContext() {
+        val file = FileId("package.sql")
+        val declaration = extractor.extract(file, "CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;")
+            .filterIsInstance<PackageTypeDeclaration>().single()
         val resolver = ProjectTypeResolver(context(file to listOf(declaration)))
 
-        val resolution = resolver.resolve(named("s.p.t"))
-
-        assertThat(resolution).isEqualTo(ProjectTypeResolution.Resolved(named("s.p.t"), declaration))
+        assertThat(resolver.resolve(named("t")))
+            .isEqualTo(ProjectTypeResolution.NotFoundInProject(named("t")))
+        assertThat(resolver.resolve(named("t"), ProjectTypeLookupContext(
+            QualifiedName(OracleIdentifier.fromSource("P"))
+        )))
+            .isEqualTo(ProjectTypeResolution.Resolved(named("t"), declaration))
     }
 
     @Test

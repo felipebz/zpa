@@ -26,6 +26,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.sslr.Tree
 import com.felipebz.zpa.sslr.TreeImpl
 
+import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
@@ -46,6 +47,12 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     var plSqlDatatype: PlSqlDatatype = UnknownDatatype
         get() = this.symbol?.datatype ?: field
+
+    /**
+     * Project-level named-type information is kept separately from the legacy datatype.
+     * The property is internal until project semantics become part of the public API.
+     */
+    internal var projectTypeResolution: ProjectTypeResolution? = null
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type
