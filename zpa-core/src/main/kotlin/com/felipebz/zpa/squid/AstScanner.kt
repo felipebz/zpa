@@ -30,9 +30,9 @@ import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.project.ProjectTypeResolver
 import com.felipebz.zpa.symbols.DefaultTypeSolver
+import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.utils.getAnnotation

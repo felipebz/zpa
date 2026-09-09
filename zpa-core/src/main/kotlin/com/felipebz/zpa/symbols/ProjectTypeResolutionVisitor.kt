@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.project
+package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
@@ -25,6 +25,14 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.NamedTypeRef
+import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.ProjectTypeLookupContext
+import com.felipebz.zpa.project.ProjectTypeResolution
+import com.felipebz.zpa.project.ProjectTypeResolver
+import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.SourceRange
 
 /** Adds project resolution facts without changing the legacy datatype result. */
 internal class ProjectTypeResolutionVisitor(
