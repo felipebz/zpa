@@ -28,6 +28,7 @@ import com.felipebz.zpa.sslr.TreeImpl
 
 import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
 import com.felipebz.zpa.project.ProjectRecordMemberResolution
+import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
 import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
@@ -61,6 +62,9 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     /** Project type information for a resolved RECORD field, kept separate from datatype state. */
     internal var projectRecordFieldTypeResolution: ProjectRecordFieldTypeResolution? = null
+
+    /** Bounded project RECORD member path information, separate from legacy AST semantics. */
+    internal var projectRecordMemberPathResolution: ProjectRecordMemberPathResolution? = null
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type

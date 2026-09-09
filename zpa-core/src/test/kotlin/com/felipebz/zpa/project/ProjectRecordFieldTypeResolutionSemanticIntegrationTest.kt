@@ -159,7 +159,9 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val field = orderType.recordFields.single()
         val memberNode = SemanticAstNode(PlSqlGrammar.MEMBER_EXPRESSION, "MEMBER_EXPRESSION", null)
         memberNode.projectRecordMemberResolution = ProjectRecordMemberResolution.Resolved(orderType, field)
-        val visitor = ProjectRecordFieldTypeResolutionVisitor(ProjectTypeResolver(context))
+        val visitor = ProjectRecordFieldTypeResolutionVisitor(
+            ProjectRecordFieldTypeResolver(ProjectTypeResolver(context))
+        )
         visitor.visitNode(memberNode)
 
         val resolution = (memberNode.projectRecordFieldTypeResolution
@@ -181,7 +183,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         )
 
         ProjectRecordFieldTypeResolutionVisitor(
-            ProjectTypeResolver(ProjectAnalysisContext.NOT_PREPARED)
+            ProjectRecordFieldTypeResolver(ProjectTypeResolver(ProjectAnalysisContext.NOT_PREPARED))
         ).visitNode(node)
 
         val resolution = (node.projectRecordFieldTypeResolution
@@ -290,6 +292,231 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(member.projectRecordFieldTypeResolution).isNull()
     }
 
+    @Test
+    fun resolvesExactlyTwoProjectRecordHopsInReadAndWriteExpressions() {
+        val customerFile = FileId("customer.sql")
+        val orderFile = FileId("order.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        val sources = listOf(
+            customerFile to "CREATE PACKAGE customer_pkg AS TYPE customer_rec IS RECORD (name VARCHAR2(100)); END customer_pkg;",
+            orderFile to "CREATE PACKAGE order_pkg AS TYPE order_rec IS RECORD (customer customer_pkg.customer_rec); END order_pkg;",
+            useFile to "DECLARE value order_pkg.order_rec; result VARCHAR2(100); BEGIN value.customer.name := 'x'; result := value.customer.name; END;"
+        )
+
+        val scanned = scan(sources, useFile, check)
+        val orderType = scanned.index.findTypes(name("order_pkg"), OracleIdentifier.fromSource("order_rec"))
+            .single() as PackageTypeDeclaration
+        val customerType = scanned.index.findTypes(name("customer_pkg"), OracleIdentifier.fromSource("customer_rec"))
+            .single() as PackageTypeDeclaration
+        val firstField = orderType.recordFields.single()
+        val secondField = customerType.recordFields.single()
+        val paths = check.members.filter { it.parts() == listOf("value", "customer", "name") }
+
+        assertThat(paths).hasSize(2)
+        paths.forEach { pathNode ->
+            val path = pathNode.projectRecordMemberPathResolution
+            assertThat(path).isInstanceOf(ProjectRecordMemberPathResolution.Completed::class.java)
+            val completed = path as ProjectRecordMemberPathResolution.Completed
+            assertThat(completed.segments).hasSize(2)
+            assertThat(completed.segments[0].field).isSameAs(firstField)
+            assertThat(completed.segments[1].field).isSameAs(secondField)
+            assertThat(completed.segments[1].fieldTypeResolution).isNull()
+
+            val firstTypeResolution = completed.segments[0].fieldTypeResolution
+            assertThat(firstTypeResolution).isInstanceOf(ProjectRecordFieldTypeResolution.Named::class.java)
+            assertThat((firstTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+                .isEqualTo(ProjectTypeResolution.Resolved(firstField.typeRef as NamedTypeRef, customerType))
+            assertThat(pathNode.projectRecordMemberResolution).isNull()
+            assertThat(pathNode.projectRecordFieldTypeResolution).isNull()
+        }
+        assertThat(scanned.result.symbols.single { it.name.equals("value", true) }.projectTypeDeclaration)
+            .isSameAs(orderType)
+    }
+
+    @Test
+    fun resolvesPackageLocalFirstFieldTypeBeforeTheSecondHop() {
+        val packageFile = FileId("package.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        val scanned = scan(listOf(
+            packageFile to """
+                CREATE PACKAGE p AS
+                  TYPE child_t IS RECORD (name VARCHAR2(100));
+                  TYPE parent_t IS RECORD (child child_t);
+                END p;
+            """.trimIndent(),
+            useFile to "DECLARE value p.parent_t; BEGIN value.child.name := 'x'; END;"
+        ), useFile, check)
+
+        val path = check.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
+        val childType = scanned.index.findTypes(name("p"), OracleIdentifier.fromSource("child_t")).single()
+        assertThat((path.segments[0].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(path.segments[0].field.typeRef as NamedTypeRef, childType))
+        assertThat(path.segments[1].field).isSameAs((childType as PackageTypeDeclaration).recordFields.single())
+    }
+
+    @Test
+    fun memberPathTargetsAreIndependentOfFileOrder() {
+        val customerFile = FileId("customer.sql")
+        val orderFile = FileId("order.sql")
+        val useFile = FileId("use.sql")
+        val sources = listOf(
+            customerFile to "CREATE PACKAGE customer_pkg AS TYPE customer_rec IS RECORD (name VARCHAR2(100)); END customer_pkg;",
+            orderFile to "CREATE PACKAGE order_pkg AS TYPE order_rec IS RECORD (customer customer_pkg.customer_rec); END order_pkg;",
+            useFile to "DECLARE value order_pkg.order_rec; BEGIN value.customer.name := 'x'; END;"
+        )
+
+        val forward = scan(sources, useFile, RecordingCheck())
+        val reverse = scan(sources.asReversed(), useFile, RecordingCheck())
+
+        assertThat(forward.check.path(listOf("value", "customer", "name"))
+            .projectRecordMemberPathResolution)
+            .isEqualTo(reverse.check.path(listOf("value", "customer", "name"))
+                .projectRecordMemberPathResolution)
+    }
+
+    @Test
+    fun preservesQuotedSecondHopFieldIdentity() {
+        val childFile = FileId("child.sql")
+        val parentFile = FileId("parent.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        val scanned = scan(listOf(
+            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (\"Display Name\" VARCHAR2(100)); END child_pkg;",
+            parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (child child_pkg.child_rec); END parent_pkg;",
+            useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.child.\"Display Name\" := 'x'; END;"
+        ), useFile, check)
+
+        val childType = scanned.index.findTypes(name("child_pkg"), OracleIdentifier.fromSource("child_rec"))
+            .single() as PackageTypeDeclaration
+        val path = check.path(listOf("value", "child", "\"Display Name\""))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
+
+        assertThat(path.segments[1].field).isSameAs(childType.recordFields.single())
+        assertThat(path.segments[1].field.name)
+            .isEqualTo(OracleIdentifier.fromSource("\"Display Name\""))
+    }
+
+    @Test
+    fun stopsBeforeTheSecondHopWhenTheFirstFieldTypeIsAmbiguous() {
+        val firstFile = FileId("first.sql")
+        val secondFile = FileId("second.sql")
+        val parentFile = FileId("parent.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        scan(listOf(
+            firstFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (name VARCHAR2(100)); END child_pkg;",
+            secondFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (name VARCHAR2(100)); END child_pkg;",
+            parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (child child_pkg.child_rec); END parent_pkg;",
+            useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.child.name := 'x'; END;"
+        ), useFile, check)
+
+        val path = check.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        val typeResolution = path.segments.single().fieldTypeResolution
+            as ProjectRecordFieldTypeResolution.Named
+        assertThat(typeResolution.resolution).isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
+        assertThat(path.nextMember).isEqualTo(OracleIdentifier.fromSource("name"))
+        assertThat(path.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
+    }
+
+    @Test
+    fun stopsWhenTheFirstFieldTypeIsNotInTheProject() {
+        val parentFile = FileId("parent.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        scan(listOf(
+            parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (child external_schema.external_type); END parent_pkg;",
+            useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.child.name := 'x'; END;"
+        ), useFile, check)
+
+        val path = check.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        val typeResolution = path.segments.single().fieldTypeResolution
+            as ProjectRecordFieldTypeResolution.Named
+        assertThat(typeResolution.resolution).isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+        assertThat(path.segments).hasSize(1)
+    }
+
+    @Test
+    fun stopsForUnsupportedFirstFieldTypeFormsAndShapes() {
+        val anchoredFile = FileId("anchored.sql")
+        val refFile = FileId("ref.sql")
+        val collectionFile = FileId("collection.sql")
+        val anchoredCheck = RecordingCheck()
+        val refCheck = RecordingCheck()
+        val collectionCheck = RecordingCheck()
+
+        val anchored = scan(listOf(
+            anchoredFile to "CREATE PACKAGE p AS TYPE t IS RECORD (child some_table.row%ROWTYPE); END p;",
+            FileId("use_anchored.sql") to "DECLARE value p.t; BEGIN value.child.name := 'x'; END;"
+        ), FileId("use_anchored.sql"), anchoredCheck)
+        val ref = scan(listOf(
+            refFile to "CREATE PACKAGE p AS TYPE t IS RECORD (child REF some_object_type); END p;",
+            FileId("use_ref.sql") to "DECLARE value p.t; BEGIN value.child.name := 'x'; END;"
+        ), FileId("use_ref.sql"), refCheck)
+        scan(listOf(
+            collectionFile to "CREATE PACKAGE child_pkg AS TYPE collection_type IS TABLE OF NUMBER; END child_pkg;",
+            FileId("parent.sql") to "CREATE PACKAGE p AS TYPE t IS RECORD (child child_pkg.collection_type); END p;",
+            FileId("use_collection.sql") to "DECLARE value p.t; BEGIN value.child.name := 'x'; END;"
+        ), FileId("use_collection.sql"), collectionCheck)
+
+        val anchoredPath = anchored.check.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        val refPath = ref.check.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        val collectionPath = collectionCheck.path(listOf("value", "child", "name"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        assertThat(anchoredPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
+        assertThat(refPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
+        assertThat(collectionPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
+        assertThat(anchored.result.issues).isEmpty()
+    }
+
+    @Test
+    fun stopsExplicitlyAtTheThirdMemberHop() {
+        val childFile = FileId("child.sql")
+        val parentFile = FileId("parent.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        scan(listOf(
+            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (b NUMBER); END child_pkg;",
+            parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (a child_pkg.child_rec); END parent_pkg;",
+            useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.a.b.c := 1; END;"
+        ), useFile, check)
+
+        val path = check.path(listOf("value", "a", "b", "c"))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
+        assertThat(path.segments).hasSize(2)
+        assertThat(path.nextMember).isEqualTo(OracleIdentifier.fromSource("c"))
+        assertThat(path.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.HOP_LIMIT)
+    }
+
+    @Test
+    fun localAndQualifiedNonRecordExpressionsDoNotBecomeProjectPaths() {
+        val projectFile = FileId("project.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        scan(listOf(
+            projectFile to "CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;",
+            useFile to """
+                DECLARE
+                  TYPE local_t IS RECORD (child local_child_t);
+                  value local_t;
+                BEGIN
+                  value.child.name := 1;
+                  p.some_procedure;
+                END;
+            """.trimIndent()
+        ), useFile, check)
+
+        assertThat(check.path(listOf("value", "child", "name")).projectRecordMemberPathResolution).isNull()
+        assertThat(check.members.single { it.parts() == listOf("p", "some_procedure") }
+            .projectRecordMemberPathResolution).isNull()
+    }
+
     private fun scan(
         sources: List<Pair<FileId, String>>,
         observedFile: FileId,
@@ -336,9 +563,10 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         }
 
         fun member(parts: List<String>): SemanticAstNode = members.single {
-            it.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
-                .map { child -> child.tokenOriginalValue } == parts
+            it.parts() == parts
         }
+
+        fun path(parts: List<String>): SemanticAstNode = member(parts)
     }
 
     private fun name(vararg segments: String) = QualifiedName(segments.map(OracleIdentifier::fromSource))
@@ -353,3 +581,6 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         override fun type() = PlSqlFile.Type.MAIN
     }
 }
+
+private fun SemanticAstNode.parts(): List<String> =
+    getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME).map { it.tokenOriginalValue }

@@ -30,11 +30,14 @@ import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectRecordFieldTypeResolver
 import com.felipebz.zpa.project.ProjectRecordMemberResolver
+import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
 import com.felipebz.zpa.project.ProjectTypeResolver
 import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
+import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -76,9 +79,16 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         checksToRun.add(symbolVisitor)
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
             val projectTypeResolver = ProjectTypeResolver(projectAnalysisContext)
+            val projectRecordMemberResolver = ProjectRecordMemberResolver()
+            val projectRecordFieldTypeResolver = ProjectRecordFieldTypeResolver(projectTypeResolver)
             checksToRun.add(ProjectTypeResolutionVisitor(projectTypeResolver, fileId))
-            checksToRun.add(ProjectRecordMemberResolutionVisitor(ProjectRecordMemberResolver()))
-            checksToRun.add(ProjectRecordFieldTypeResolutionVisitor(projectTypeResolver))
+            checksToRun.add(ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver))
+            checksToRun.add(ProjectRecordFieldTypeResolutionVisitor(projectRecordFieldTypeResolver))
+            checksToRun.add(
+                ProjectRecordMemberPathResolutionVisitor(
+                    ProjectRecordMemberPathResolver(projectRecordMemberResolver, projectRecordFieldTypeResolver)
+                )
+            )
         }
 
         if (inputFile.type() == PlSqlFile.Type.MAIN) {

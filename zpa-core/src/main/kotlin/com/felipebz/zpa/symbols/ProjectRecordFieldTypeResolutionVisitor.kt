@@ -23,15 +23,12 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
 import com.felipebz.zpa.project.ProjectRecordMemberResolution
-import com.felipebz.zpa.project.ProjectTypeLookupContext
-import com.felipebz.zpa.project.ProjectTypeResolver
+import com.felipebz.zpa.project.ProjectRecordFieldTypeResolver
 
 /** Resolves only the type reference of a field whose RECORD member identity is known. */
 internal class ProjectRecordFieldTypeResolutionVisitor(
-    private val resolver: ProjectTypeResolver
+    private val resolver: ProjectRecordFieldTypeResolver
 ) : PlSqlCheck() {
 
     init {
@@ -42,14 +39,6 @@ internal class ProjectRecordFieldTypeResolutionVisitor(
         val memberExpression = node as? SemanticAstNode ?: return
         val member = memberExpression.projectRecordMemberResolution
             as? ProjectRecordMemberResolution.Resolved ?: return
-        val field = member.field
-
-        memberExpression.projectRecordFieldTypeResolution = when (val typeRef = field.typeRef) {
-            is NamedTypeRef -> ProjectRecordFieldTypeResolution.Named(
-                field,
-                resolver.resolve(typeRef, ProjectTypeLookupContext(member.declaration.owner))
-            )
-            else -> ProjectRecordFieldTypeResolution.Unsupported(field, typeRef)
-        }
+        memberExpression.projectRecordFieldTypeResolution = resolver.resolve(member)
     }
 }
