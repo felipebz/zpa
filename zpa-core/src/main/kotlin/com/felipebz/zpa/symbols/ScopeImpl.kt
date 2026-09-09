@@ -127,18 +127,7 @@ class ScopeImpl(override val outer: Scope? = null,
         val caseInsensitiveName = if (quoted) null else caseInsensitiveKey(name)
         var scope: Scope? = this
         while (scope != null) {
-            val indexedScope = scope as? ScopeImpl
-            val candidates = if (indexedScope != null) {
-                if (quoted) {
-                    val indexed = indexedScope.exactNameIndex[name].orEmpty()
-                    indexed
-                } else {
-                    val indexed = indexedScope.caseInsensitiveNameIndex[caseInsensitiveName].orEmpty()
-                    indexed
-                }
-            } else {
-                scope.symbols
-            }
+            val candidates = candidatesFor(scope, name, quoted, caseInsensitiveName)
             for (s in candidates) {
                 val nameMatches = s.called(name)
                 if (nameMatches && (path.isEmpty() || pathContainedIn(path, scope)) && (kinds.isEmpty() || kinds.contains(s.kind))) {
@@ -149,6 +138,15 @@ class ScopeImpl(override val outer: Scope? = null,
         }
 
         return null
+    }
+
+    private fun candidatesFor(scope: Scope, name: String, quoted: Boolean, caseInsensitiveName: String?): Iterable<Symbol> {
+        val indexedScope = scope as? ScopeImpl ?: return scope.symbols
+        return if (quoted) {
+            indexedScope.exactNameIndex[name].orEmpty()
+        } else {
+            indexedScope.caseInsensitiveNameIndex[caseInsensitiveName].orEmpty()
+        }
     }
 
     private fun caseInsensitiveKey(value: String): String {
