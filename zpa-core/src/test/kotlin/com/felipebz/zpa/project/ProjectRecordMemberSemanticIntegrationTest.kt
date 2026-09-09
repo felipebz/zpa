@@ -189,6 +189,8 @@ class ProjectRecordMemberSemanticIntegrationTest {
         val resolution = check.members.single { it.memberParts() == listOf("value", "id") }
             .projectRecordMemberResolution
         assertThat(resolution).isInstanceOf(ProjectRecordMemberResolution.UnsupportedType::class.java)
+        assertThat(check.members.single { it.memberParts() == listOf("value", "id") }
+            .projectRecordFieldTypeResolution).isNull()
     }
 
     @Test
