@@ -27,7 +27,7 @@ class ProjectRecordMemberPathResolverTest {
     private val extractor = ProjectDeclarationExtractor()
 
     @Test
-    fun retainsTwoOrderedExactFieldsAndTheTypeFactUsedForTheSecondHop() {
+    fun retainsTwoOrderedExactFieldsAndTypeFactsForBothHops() {
         val childFile = FileId("child.sql")
         val parentFile = FileId("parent.sql")
         val context = context(
@@ -52,7 +52,11 @@ class ProjectRecordMemberPathResolverTest {
         val firstType = completed.segments[0].fieldTypeResolution
             as ProjectRecordFieldTypeResolution.Named
         assertThat((firstType.resolution as ProjectTypeResolution.Resolved).declaration).isSameAs(child)
-        assertThat(completed.segments[1].fieldTypeResolution).isNull()
+        val secondType = completed.segments[1].fieldTypeResolution
+            as ProjectRecordFieldTypeResolution.Named
+        assertThat(secondType.field).isSameAs(child.recordFields.single())
+        assertThat(secondType.resolution)
+            .isEqualTo(ProjectTypeResolution.NotFoundInProject(secondType.field.typeRef as NamedTypeRef))
         assertThatThrownBy { (completed.segments as MutableList).clear() }
             .isInstanceOf(UnsupportedOperationException::class.java)
     }
@@ -80,6 +84,10 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(stopped.nextMember).isEqualTo(OracleIdentifier.fromSource("third"))
         assertThat(stopped.nextMemberOrdinal).isEqualTo(2)
         assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.HOP_LIMIT)
+        val secondType = stopped.segments[1].fieldTypeResolution
+            as ProjectRecordFieldTypeResolution.Named
+        assertThat(secondType.resolution)
+            .isEqualTo(ProjectTypeResolution.NotFoundInProject(secondType.field.typeRef as NamedTypeRef))
     }
 
     @Test
@@ -130,6 +138,41 @@ class ProjectRecordMemberPathResolverTest {
         assertThat((stopped.segments.single().fieldTypeResolution
             as ProjectRecordFieldTypeResolution.Named).resolution)
             .isInstanceOf(ProjectTypeResolution.IncompleteIndex::class.java)
+    }
+
+    @Test
+    fun completedPathRetainsAnIncompleteTerminalFieldType() {
+        val file = FileId("record.sql")
+        val context = context(
+            file to "CREATE PACKAGE p AS TYPE t IS RECORD (child child_t); TYPE child_t IS RECORD (name external_type); END p;"
+        )
+        val parent = type(context, "p", "t")
+        val child = type(context, "p", "child_t")
+        val first = ProjectRecordMemberResolution.Resolved(parent, parent.recordFields.single())
+        val second = ProjectRecordMemberResolution.Resolved(child, child.recordFields.single())
+        val incomplete = ProjectTypeResolution.IncompleteIndex(
+            second.field.typeRef as NamedTypeRef,
+            emptyList(),
+            listOf(ProjectIndexPreparationFailure(FileId("broken.sql"), "test.failure"))
+        )
+
+        val result = ProjectRecordMemberPathResolution.Completed(listOf(
+            ProjectRecordMemberPathSegment(
+                first.field,
+                ProjectRecordFieldTypeResolution.Named(
+                    first.field,
+                    ProjectTypeResolution.Resolved(first.field.typeRef as NamedTypeRef, child)
+                )
+            ),
+            ProjectRecordMemberPathSegment(
+                second.field,
+                ProjectRecordFieldTypeResolution.Named(second.field, incomplete)
+            )
+        ))
+
+        assertThat(result.segments[1].field).isSameAs(second.field)
+        assertThat((result.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isSameAs(incomplete)
     }
 
     private fun resolver(context: ProjectAnalysisContext) = ProjectRecordMemberPathResolver(

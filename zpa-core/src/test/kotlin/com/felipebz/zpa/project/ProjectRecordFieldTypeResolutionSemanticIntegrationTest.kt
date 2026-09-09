@@ -321,12 +321,15 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
             assertThat(completed.segments).hasSize(2)
             assertThat(completed.segments[0].field).isSameAs(firstField)
             assertThat(completed.segments[1].field).isSameAs(secondField)
-            assertThat(completed.segments[1].fieldTypeResolution).isNull()
 
             val firstTypeResolution = completed.segments[0].fieldTypeResolution
             assertThat(firstTypeResolution).isInstanceOf(ProjectRecordFieldTypeResolution.Named::class.java)
             assertThat((firstTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
                 .isEqualTo(ProjectTypeResolution.Resolved(firstField.typeRef as NamedTypeRef, customerType))
+            val secondTypeResolution = completed.segments[1].fieldTypeResolution
+            assertThat(secondTypeResolution).isInstanceOf(ProjectRecordFieldTypeResolution.Named::class.java)
+            assertThat((secondTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+                .isEqualTo(ProjectTypeResolution.NotFoundInProject(secondField.typeRef as NamedTypeRef))
             assertThat(pathNode.projectRecordMemberResolution).isNull()
             assertThat(pathNode.projectRecordFieldTypeResolution).isNull()
         }
@@ -342,7 +345,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val scanned = scan(listOf(
             packageFile to """
                 CREATE PACKAGE p AS
-                  TYPE child_t IS RECORD (name VARCHAR2(100));
+                  TYPE grandchild_t IS RECORD (id NUMBER);
+                  TYPE child_t IS RECORD (name grandchild_t);
                   TYPE parent_t IS RECORD (child child_t);
                 END p;
             """.trimIndent(),
@@ -355,6 +359,9 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat((path.segments[0].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
             .isEqualTo(ProjectTypeResolution.Resolved(path.segments[0].field.typeRef as NamedTypeRef, childType))
         assertThat(path.segments[1].field).isSameAs((childType as PackageTypeDeclaration).recordFields.single())
+        val grandchildType = scanned.index.findTypes(name("p"), OracleIdentifier.fromSource("grandchild_t")).single()
+        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(path.segments[1].field.typeRef as NamedTypeRef, grandchildType))
     }
 
     @Test
@@ -397,6 +404,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(path.segments[1].field).isSameAs(childType.recordFields.single())
         assertThat(path.segments[1].field.name)
             .isEqualTo(OracleIdentifier.fromSource("\"Display Name\""))
+        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isEqualTo(ProjectTypeResolution.NotFoundInProject(path.segments[1].field.typeRef as NamedTypeRef))
     }
 
     @Test
@@ -441,6 +450,56 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
     }
 
     @Test
+    fun terminalFieldTypeStateDoesNotStopACompletedPath() {
+        val childFile = FileId("child.sql")
+        val duplicateOne = FileId("duplicate-one.sql")
+        val duplicateTwo = FileId("duplicate-two.sql")
+        val parentFile = FileId("parent.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        val scanned = scan(listOf(
+            childFile to """
+                CREATE PACKAGE child_pkg AS
+                  TYPE child_rec IS RECORD (
+                    external_value external_schema.external_type,
+                    anchored_value some_table.id%TYPE,
+                    ref_value REF some_object_type,
+                    ambiguous_value duplicate_pkg.duplicate_type
+                  );
+                END child_pkg;
+            """.trimIndent(),
+            duplicateOne to "CREATE PACKAGE duplicate_pkg AS TYPE duplicate_type IS RECORD (id NUMBER); END duplicate_pkg;",
+            duplicateTwo to "CREATE PACKAGE duplicate_pkg AS TYPE duplicate_type IS RECORD (id NUMBER); END duplicate_pkg;",
+            parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (child child_pkg.child_rec); END parent_pkg;",
+            useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.child.external_value := NULL; value.child.anchored_value := NULL; value.child.ref_value := NULL; value.child.ambiguous_value := NULL; END;"
+        ), useFile, check)
+
+        val childType = scanned.index.findTypes(name("child_pkg"), OracleIdentifier.fromSource("child_rec"))
+            .single() as PackageTypeDeclaration
+        val expectedFields = childType.recordFields.associateBy { it.name.lookupName }
+        listOf("external_value", "anchored_value", "ref_value", "ambiguous_value").forEach { fieldName ->
+            val path = check.path(listOf("value", "child", fieldName))
+                .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
+            val second = path.segments[1]
+            assertThat(second.field).isSameAs(expectedFields[fieldName.uppercase()])
+            val typeResolution = second.fieldTypeResolution
+            when (fieldName) {
+                "external_value" -> assertThat(typeResolution).isEqualTo(
+                    ProjectRecordFieldTypeResolution.Named(
+                        second.field,
+                        ProjectTypeResolution.NotFoundInProject(second.field.typeRef as NamedTypeRef)
+                    )
+                )
+                "ambiguous_value" -> assertThat((typeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+                    .isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
+                else -> assertThat(typeResolution).isEqualTo(
+                    ProjectRecordFieldTypeResolution.Unsupported(second.field, second.field.typeRef)
+                )
+            }
+        }
+    }
+
+    @Test
     fun stopsForUnsupportedFirstFieldTypeFormsAndShapes() {
         val anchoredFile = FileId("anchored.sql")
         val refFile = FileId("ref.sql")
@@ -481,8 +540,9 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val parentFile = FileId("parent.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
-        scan(listOf(
-            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (b NUMBER); END child_pkg;",
+        val scanned = scan(listOf(
+            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (b other_pkg.other_rec); END child_pkg;",
+            FileId("other.sql") to "CREATE PACKAGE other_pkg AS TYPE other_rec IS RECORD (id NUMBER); END other_pkg;",
             parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (a child_pkg.child_rec); END parent_pkg;",
             useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.a.b.c := 1; END;"
         ), useFile, check)
@@ -492,6 +552,14 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(path.segments).hasSize(2)
         assertThat(path.nextMember).isEqualTo(OracleIdentifier.fromSource("c"))
         assertThat(path.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.HOP_LIMIT)
+        val secondType = path.segments[1].fieldTypeResolution
+            as ProjectRecordFieldTypeResolution.Named
+        val otherType = scanned.index.findTypes(
+            name("other_pkg"),
+            OracleIdentifier.fromSource("other_rec")
+        ).single()
+        assertThat(secondType.resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(secondType.field.typeRef as NamedTypeRef, otherType))
     }
 
     @Test

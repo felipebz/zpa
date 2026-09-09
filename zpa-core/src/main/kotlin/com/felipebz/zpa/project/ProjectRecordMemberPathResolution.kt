@@ -19,10 +19,10 @@
  */
 package com.felipebz.zpa.project
 
-/** A resolved project RECORD member segment, with the type fact used to reach it. */
+/** A resolved project RECORD member segment and the type fact for that field. */
 internal data class ProjectRecordMemberPathSegment(
     val field: ProjectRecordField,
-    val fieldTypeResolution: ProjectRecordFieldTypeResolution?
+    val fieldTypeResolution: ProjectRecordFieldTypeResolution
 )
 
 /**
@@ -133,7 +133,10 @@ internal class ProjectRecordMemberPathResolver(
 
         val segments = listOf(
             firstSegment,
-            ProjectRecordMemberPathSegment(second.field, null)
+            ProjectRecordMemberPathSegment(
+                second.field,
+                fieldTypeResolver.resolve(second)
+            )
         )
         if (memberNames.size > 2) {
             return stopped(
