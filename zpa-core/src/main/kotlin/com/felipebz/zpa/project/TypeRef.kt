@@ -46,3 +46,11 @@ data class AnchoredTypeRef(
 ) : TypeRef {
     override fun structuralKey() = "anchored:${name.lookupKey()}:$anchor"
 }
+
+/** An Oracle REF datatype whose target object type remains unresolved. */
+data class RefTypeRef(
+    override val name: QualifiedName,
+    override val sourceRange: SourceRange
+) : TypeRef {
+    override fun structuralKey() = "ref:${name.lookupKey()}"
+}

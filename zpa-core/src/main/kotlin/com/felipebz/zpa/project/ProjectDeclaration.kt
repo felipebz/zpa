@@ -48,6 +48,17 @@ enum class ParameterMode {
     IN_OUT
 }
 
+data class ProjectRecordField(
+    val name: OracleIdentifier,
+    val ordinal: Int,
+    val typeRef: TypeRef,
+    val sourceRange: SourceRange
+) {
+    init {
+        require(ordinal >= 0) { "Record field ordinals are zero-based" }
+    }
+}
+
 data class ProjectParameter(
     val name: OracleIdentifier,
     val ordinal: Int,
@@ -159,16 +170,34 @@ data class StandaloneTypeDeclaration(
     override val qualifiedName: QualifiedName = name
 }
 
-data class PackageTypeDeclaration(
+class PackageTypeDeclaration(
     val owner: QualifiedName,
     val name: OracleIdentifier,
     val shape: ProjectTypeShape?,
+    recordFields: List<ProjectRecordField>,
     override val fileId: FileId,
     override val sourceRange: SourceRange
 ) : ProjectTypeDeclaration {
+
+    val recordFields: List<ProjectRecordField> = immutableList(recordFields)
     override val kind = ProjectDeclarationKind.PACKAGE_TYPE
     override val role = DeclarationRole.SPECIFICATION
     override val qualifiedName: QualifiedName = owner.append(name)
+
+    init {
+        require(shape == ProjectTypeShape.RECORD || recordFields.isEmpty()) {
+            "Only RECORD declarations may contain record fields"
+        }
+    }
+
+    override fun equals(other: Any?): Boolean = other is PackageTypeDeclaration &&
+        owner == other.owner && name == other.name && shape == other.shape &&
+        recordFields == other.recordFields && fileId == other.fileId && sourceRange == other.sourceRange
+
+    override fun hashCode(): Int = listOf(owner, name, shape, recordFields, fileId, sourceRange).hashCode()
+
+    override fun toString(): String =
+        "PackageTypeDeclaration($qualifiedName, $shape, $recordFields, $fileId, $sourceRange)"
 }
 
 data class PackageSubtypeDeclaration(

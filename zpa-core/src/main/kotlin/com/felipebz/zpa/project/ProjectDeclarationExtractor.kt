@@ -123,8 +123,38 @@ class ProjectDeclarationExtractor(
             val name = identifierAt(index + 1) ?: return null
             val end = semicolonAfter(index + 1)
             val shape = typeShape(index, end)
-            val declaration = PackageTypeDeclaration(owner, name.first, shape, fileId, range(index, end))
+            val recordFields = if (shape == ProjectTypeShape.RECORD) {
+                parseRecordFields(name.second, end)
+            } else {
+                emptyList()
+            }
+            val declaration = PackageTypeDeclaration(owner, name.first, shape, recordFields, fileId, range(index, end))
             return ParsedDeclaration(declaration, end + 1)
+        }
+
+        private fun parseRecordFields(start: Int, end: Int): List<ProjectRecordField> {
+            val record = firstAtTopLevel(start, setOf("RECORD"), end) ?: return emptyList()
+            val open = record + 1
+            if (valueAt(open) != "(") return emptyList()
+            val close = matching(open)
+            if (close > end) return emptyList()
+
+            val result = mutableListOf<ProjectRecordField>()
+            forEachDelimitedPart(open + 1, close) { fieldStart, fieldEnd ->
+                parseRecordField(fieldStart, fieldEnd, result.size)?.let(result::add)
+            }
+            return immutableList(result)
+        }
+
+        private fun parseRecordField(start: Int, endExclusive: Int, ordinal: Int): ProjectRecordField? {
+            val name = identifierAt(start) ?: return null
+            val typeEnd = firstAtTopLevel(
+                name.second,
+                setOf("NOT", "NULL", "DEFAULT", ":="),
+                endExclusive
+            ) ?: endExclusive
+            val typeRef = typeReference(name.second, typeEnd) ?: return null
+            return ProjectRecordField(name.first, ordinal, typeRef, range(start, endExclusive - 1))
         }
 
         private fun parsePackageSubtype(index: Int, owner: QualifiedName): ParsedDeclaration? {
@@ -171,19 +201,29 @@ class ProjectDeclarationExtractor(
 
         private fun parseParameters(start: Int, close: Int): List<ProjectParameter> {
             val result = mutableListOf<ProjectParameter>()
+            forEachDelimitedPart(start, close) { partStart, partEnd ->
+                parseParameter(partStart, partEnd, result.size + 1)?.let(result::add)
+            }
+            return result.toList()
+        }
+
+        private inline fun forEachDelimitedPart(
+            start: Int,
+            endExclusive: Int,
+            consume: (Int, Int) -> Unit
+        ) {
             var partStart = start
             var depth = 0
-            for (index in start..close) {
+            for (index in start..endExclusive) {
                 when (valueAt(index)) {
                     "(", "[" -> depth++
                     ")", "]" -> depth--
                 }
-                if ((valueAt(index) == "," && depth == 0) || index == close) {
-                    if (partStart < index) parseParameter(partStart, index, result.size + 1)?.let { result += it }
+                if ((valueAt(index) == "," && depth == 0) || index == endExclusive) {
+                    if (partStart < index) consume(partStart, index)
                     partStart = index + 1
                 }
             }
-            return result.toList()
         }
 
         private fun parseParameter(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
@@ -245,7 +285,13 @@ class ProjectDeclarationExtractor(
             val end = endExclusive.coerceAtMost(tokens.size)
             val selected = tokens.subList(start, end)
             val percent = selected.indexOfFirst { value(it) == "%" }
-            val nameTokens = if (percent >= 0) selected.subList(0, percent) else selected
+            val ref = valueAt(start) == "REF"
+            val nameStart = if (ref) 1 else 0
+            val nameTokens = if (percent >= 0) {
+                selected.subList(nameStart, percent)
+            } else {
+                selected.subList(nameStart, selected.size)
+            }
             val name = qualifiedSegments(nameTokens) ?: return null
             val sourceRange = range(start, end - 1)
             if (percent >= 0) {
@@ -256,6 +302,7 @@ class ProjectDeclarationExtractor(
                 }
                 if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
             }
+            if (ref) return RefTypeRef(name, sourceRange)
             return NamedTypeRef(name, sourceRange)
         }
 
