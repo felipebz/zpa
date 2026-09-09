@@ -25,10 +25,7 @@ internal data class ProjectRecordMemberPathSegment(
     val fieldTypeResolution: ProjectRecordFieldTypeResolution
 )
 
-/**
- * The bounded result of composing project RECORD members. It can contain at most two
- * resolved segments; a stopped result records why the next segment was not considered.
- */
+/** A project RECORD member path result; a stopped result records why the next segment was not considered. */
 internal sealed interface ProjectRecordMemberPathResolution {
     val segments: List<ProjectRecordMemberPathSegment>
 
@@ -38,7 +35,7 @@ internal sealed interface ProjectRecordMemberPathResolution {
         override val segments: List<ProjectRecordMemberPathSegment> = immutableList(segments)
 
         init {
-            require(segments.size == 2) { "A completed project member path requires two segments" }
+            require(segments.size >= 2) { "A completed project member path requires at least two segments" }
         }
 
         override fun equals(other: Any?): Boolean = other is Completed && segments == other.segments
@@ -57,7 +54,6 @@ internal sealed interface ProjectRecordMemberPathResolution {
         override val segments: List<ProjectRecordMemberPathSegment> = immutableList(segments)
 
         init {
-            require(segments.size <= 2) { "A project member path can retain at most two segments" }
             require(nextMemberOrdinal == segments.size) {
                 "The next member ordinal must follow the resolved segments"
             }
@@ -76,12 +72,11 @@ internal sealed interface ProjectRecordMemberPathResolution {
         MEMBER_NOT_FOUND,
         MEMBER_AMBIGUOUS,
         UNSUPPORTED_TYPE,
-        FIELD_TYPE_UNRESOLVED,
-        HOP_LIMIT
+        FIELD_TYPE_UNRESOLVED
     }
 }
 
-/** Composes at most two project RECORD member lookups from an already known base type. */
+/** Composes a finite project RECORD member path from an already known base type. */
 internal class ProjectRecordMemberPathResolver(
     private val memberResolver: ProjectRecordMemberResolver,
     private val fieldTypeResolver: ProjectRecordFieldTypeResolver
@@ -92,60 +87,43 @@ internal class ProjectRecordMemberPathResolver(
     ): ProjectRecordMemberPathResolution {
         require(memberNames.size >= 2) { "A project member path requires two member names" }
 
-        val first = memberResolver.resolve(baseDeclaration, memberNames[0])
-        if (first !is ProjectRecordMemberResolution.Resolved) {
-            return stopped(emptyList(), memberNames[0], reason(first))
-        }
+        val segments = mutableListOf<ProjectRecordMemberPathSegment>()
+        var currentDeclaration: ProjectTypeDeclaration = baseDeclaration
 
-        val firstType = fieldTypeResolver.resolve(first)
-        val firstSegment = ProjectRecordMemberPathSegment(first.field, firstType)
-        val firstTypeDeclaration = when (firstType) {
-            is ProjectRecordFieldTypeResolution.Named ->
-                (firstType.resolution as? ProjectTypeResolution.Resolved)?.declaration
-            is ProjectRecordFieldTypeResolution.Unsupported -> null
-        }
-        if (firstTypeDeclaration == null) {
-            val reason = if (firstType is ProjectRecordFieldTypeResolution.Unsupported) {
-                ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
-            } else {
-                ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED
+        for (index in memberNames.indices) {
+            val member = memberResolver.resolve(currentDeclaration, memberNames[index])
+            if (member !is ProjectRecordMemberResolution.Resolved) {
+                return stopped(segments, memberNames[index], reason(member))
             }
-            return stopped(listOf(firstSegment), memberNames[1], reason)
+
+            val fieldTypeResolution = fieldTypeResolver.resolve(member)
+            segments += ProjectRecordMemberPathSegment(member.field, fieldTypeResolution)
+
+            if (index == memberNames.lastIndex) {
+                return ProjectRecordMemberPathResolution.Completed(segments)
+            }
+
+            val nextDeclaration = when (fieldTypeResolution) {
+                is ProjectRecordFieldTypeResolution.Named ->
+                    (fieldTypeResolution.resolution as? ProjectTypeResolution.Resolved)?.declaration
+                is ProjectRecordFieldTypeResolution.Unsupported -> null
+            }
+            if (nextDeclaration == null) {
+                return stopped(segments, memberNames[index + 1], fieldTypeReason(fieldTypeResolution))
+            }
+
+            val nestedRecord = nextDeclaration as? PackageTypeDeclaration
+            if (nestedRecord == null || nestedRecord.shape != ProjectTypeShape.RECORD) {
+                return stopped(
+                    segments,
+                    memberNames[index + 1],
+                    ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
+                )
+            }
+            currentDeclaration = nestedRecord
         }
 
-        val nestedRecord = firstTypeDeclaration as? PackageTypeDeclaration
-        if (nestedRecord == null || nestedRecord.shape != ProjectTypeShape.RECORD) {
-            return stopped(
-                listOf(firstSegment),
-                memberNames[1],
-                ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
-            )
-        }
-
-        val second = memberResolver.resolve(nestedRecord, memberNames[1])
-        if (second !is ProjectRecordMemberResolution.Resolved) {
-            return stopped(
-                listOf(firstSegment),
-                memberNames[1],
-                reason(second)
-            )
-        }
-
-        val segments = listOf(
-            firstSegment,
-            ProjectRecordMemberPathSegment(
-                second.field,
-                fieldTypeResolver.resolve(second)
-            )
-        )
-        if (memberNames.size > 2) {
-            return stopped(
-                segments,
-                memberNames[2],
-                ProjectRecordMemberPathResolution.StopReason.HOP_LIMIT
-            )
-        }
-        return ProjectRecordMemberPathResolution.Completed(segments)
+        error("A project member path must contain at least two member names")
     }
 
     private fun stopped(
@@ -160,5 +138,13 @@ internal class ProjectRecordMemberPathResolver(
             is ProjectRecordMemberResolution.Ambiguous -> ProjectRecordMemberPathResolution.StopReason.MEMBER_AMBIGUOUS
             is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
             is ProjectRecordMemberResolution.Resolved -> error("Resolved member was not expected here")
+        }
+
+    private fun fieldTypeReason(
+        resolution: ProjectRecordFieldTypeResolution
+    ): ProjectRecordMemberPathResolution.StopReason =
+        when (resolution) {
+            is ProjectRecordFieldTypeResolution.Named -> ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED
+            is ProjectRecordFieldTypeResolution.Unsupported -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
         }
 }

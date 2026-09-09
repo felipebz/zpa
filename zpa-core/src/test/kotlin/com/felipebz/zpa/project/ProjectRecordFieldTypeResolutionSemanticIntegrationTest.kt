@@ -275,7 +275,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
     }
 
     @Test
-    fun doesNotResolveASecondHopUsingTheFirstFieldType() {
+    fun doesNotAttachDirectMemberMetadataToAnUnresolvedMultiHopExpression() {
         val declarationFile = FileId("record.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
@@ -338,7 +338,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
     }
 
     @Test
-    fun resolvesPackageLocalFirstFieldTypeBeforeTheSecondHop() {
+    fun resolvesBothPackageLocalFieldTypesAlongAPath() {
         val packageFile = FileId("package.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
@@ -366,21 +366,23 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
 
     @Test
     fun memberPathTargetsAreIndependentOfFileOrder() {
+        val addressFile = FileId("address.sql")
         val customerFile = FileId("customer.sql")
         val orderFile = FileId("order.sql")
         val useFile = FileId("use.sql")
         val sources = listOf(
-            customerFile to "CREATE PACKAGE customer_pkg AS TYPE customer_rec IS RECORD (name VARCHAR2(100)); END customer_pkg;",
+            addressFile to "CREATE PACKAGE address_pkg AS TYPE address_rec IS RECORD (city VARCHAR2(100)); END address_pkg;",
+            customerFile to "CREATE PACKAGE customer_pkg AS TYPE customer_rec IS RECORD (address address_pkg.address_rec); END customer_pkg;",
             orderFile to "CREATE PACKAGE order_pkg AS TYPE order_rec IS RECORD (customer customer_pkg.customer_rec); END order_pkg;",
-            useFile to "DECLARE value order_pkg.order_rec; BEGIN value.customer.name := 'x'; END;"
+            useFile to "DECLARE value order_pkg.order_rec; BEGIN value.customer.address.city := 'x'; END;"
         )
 
         val forward = scan(sources, useFile, RecordingCheck())
         val reverse = scan(sources.asReversed(), useFile, RecordingCheck())
 
-        assertThat(forward.check.path(listOf("value", "customer", "name"))
+        assertThat(forward.check.path(listOf("value", "customer", "address", "city"))
             .projectRecordMemberPathResolution)
-            .isEqualTo(reverse.check.path(listOf("value", "customer", "name"))
+            .isEqualTo(reverse.check.path(listOf("value", "customer", "address", "city"))
                 .projectRecordMemberPathResolution)
     }
 
@@ -535,31 +537,58 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
     }
 
     @Test
-    fun stopsExplicitlyAtTheThirdMemberHop() {
+    fun resolvesThreeProjectRecordMemberHops() {
+        val grandchildFile = FileId("grandchild.sql")
         val childFile = FileId("child.sql")
         val parentFile = FileId("parent.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
         val scanned = scan(listOf(
-            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (b other_pkg.other_rec); END child_pkg;",
-            FileId("other.sql") to "CREATE PACKAGE other_pkg AS TYPE other_rec IS RECORD (id NUMBER); END other_pkg;",
+            grandchildFile to "CREATE PACKAGE grandchild_pkg AS TYPE grandchild_rec IS RECORD (c NUMBER); END grandchild_pkg;",
+            childFile to "CREATE PACKAGE child_pkg AS TYPE child_rec IS RECORD (b grandchild_pkg.grandchild_rec); END child_pkg;",
             parentFile to "CREATE PACKAGE parent_pkg AS TYPE parent_rec IS RECORD (a child_pkg.child_rec); END parent_pkg;",
             useFile to "DECLARE value parent_pkg.parent_rec; BEGIN value.a.b.c := 1; END;"
         ), useFile, check)
 
         val path = check.path(listOf("value", "a", "b", "c"))
-            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
-        assertThat(path.segments).hasSize(2)
-        assertThat(path.nextMember).isEqualTo(OracleIdentifier.fromSource("c"))
-        assertThat(path.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.HOP_LIMIT)
-        val secondType = path.segments[1].fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
-        val otherType = scanned.index.findTypes(
-            name("other_pkg"),
-            OracleIdentifier.fromSource("other_rec")
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
+        assertThat(path.segments.map { it.field.name.lookupName }).containsExactly("A", "B", "C")
+        assertThat(path.segments).allMatch { it.fieldTypeResolution is ProjectRecordFieldTypeResolution.Named }
+        val childType = scanned.index.findTypes(name("child_pkg"), OracleIdentifier.fromSource("child_rec")).single()
+        val grandchildType = scanned.index.findTypes(
+            name("grandchild_pkg"),
+            OracleIdentifier.fromSource("grandchild_rec")
         ).single()
-        assertThat(secondType.resolution)
-            .isEqualTo(ProjectTypeResolution.Resolved(secondType.field.typeRef as NamedTypeRef, otherType))
+        assertThat((path.segments[0].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(path.segments[0].field.typeRef as NamedTypeRef, childType))
+        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(path.segments[1].field.typeRef as NamedTypeRef, grandchildType))
+        assertThat((path.segments[2].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+    }
+
+    @Test
+    fun preservesQuotedMemberIdentityAtADeeperPathPosition() {
+        val leafFile = FileId("leaf.sql")
+        val middleFile = FileId("middle.sql")
+        val rootFile = FileId("root.sql")
+        val useFile = FileId("use.sql")
+        val check = RecordingCheck()
+        val scanned = scan(listOf(
+            leafFile to "CREATE PACKAGE leaf_pkg AS TYPE leaf_rec IS RECORD (\"Display Name\" NUMBER); END leaf_pkg;",
+            middleFile to "CREATE PACKAGE middle_pkg AS TYPE middle_rec IS RECORD (leaf leaf_pkg.leaf_rec); END middle_pkg;",
+            rootFile to "CREATE PACKAGE root_pkg AS TYPE root_rec IS RECORD (middle middle_pkg.middle_rec); END root_pkg;",
+            useFile to "DECLARE value root_pkg.root_rec; BEGIN value.middle.leaf.\"Display Name\" := 1; END;"
+        ), useFile, check)
+
+        val leafType = scanned.index.findTypes(name("leaf_pkg"), OracleIdentifier.fromSource("leaf_rec")).single()
+        val path = check.path(listOf("value", "middle", "leaf", "\"Display Name\""))
+            .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
+
+        assertThat(path.segments).hasSize(3)
+        assertThat(path.segments.last().field).isSameAs((leafType as PackageTypeDeclaration).recordFields.single())
+        assertThat(path.segments.last().field.name)
+            .isEqualTo(OracleIdentifier.fromSource("\"Display Name\""))
     }
 
     @Test

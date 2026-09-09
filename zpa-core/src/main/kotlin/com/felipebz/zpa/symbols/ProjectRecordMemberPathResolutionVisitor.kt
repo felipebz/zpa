@@ -28,7 +28,7 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
 
-/** Resolves exactly two project RECORD member hops from a semantic base symbol. */
+/** Resolves project RECORD member paths from a semantic base symbol. */
 internal class ProjectRecordMemberPathResolutionVisitor(
     private val resolver: ProjectRecordMemberPathResolver
 ) : PlSqlCheck() {
