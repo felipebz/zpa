@@ -32,7 +32,7 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
     private val visitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
     private val callbackVisitors = checks.mapNotNull { check ->
-        val capabilities = callbackCapabilities.get(check.javaClass)
+        val capabilities = callbackCapabilities[check.javaClass]
         if (capabilities.visitsToken || capabilities.visitsComment) {
             CallbackVisitor(check, capabilities.visitsToken, capabilities.visitsComment)
         } else {
