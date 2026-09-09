@@ -30,8 +30,10 @@ import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectRecordMemberResolver
 import com.felipebz.zpa.project.ProjectTypeResolver
 import com.felipebz.zpa.symbols.DefaultTypeSolver
+import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -73,6 +75,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         checksToRun.add(symbolVisitor)
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
             checksToRun.add(ProjectTypeResolutionVisitor(ProjectTypeResolver(projectAnalysisContext), fileId))
+            checksToRun.add(ProjectRecordMemberResolutionVisitor(ProjectRecordMemberResolver()))
         }
 
         if (inputFile.type() == PlSqlFile.Type.MAIN) {

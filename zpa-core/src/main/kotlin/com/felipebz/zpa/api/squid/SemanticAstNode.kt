@@ -26,6 +26,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.sslr.Tree
 import com.felipebz.zpa.sslr.TreeImpl
 
+import com.felipebz.zpa.project.ProjectRecordMemberResolution
 import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
@@ -53,6 +54,9 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
      * The property is internal until project semantics become part of the public API.
      */
     internal var projectTypeResolution: ProjectTypeResolution? = null
+
+    /** Project RECORD member information, kept separate from legacy symbol/datatype state. */
+    internal var projectRecordMemberResolution: ProjectRecordMemberResolution? = null
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type
