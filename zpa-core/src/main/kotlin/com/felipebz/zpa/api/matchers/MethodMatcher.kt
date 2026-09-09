@@ -126,51 +126,87 @@ class MethodMatcher private constructor()
             return false
         }
 
-        var componentIndex = componentCount - 1
-        var matches = true
+        return matchesNameComponents(
+            componentCount,
+            firstComponent,
+            secondComponent,
+            thirdComponent,
+        ) && argumentsAcceptable(originalNode)
+    }
 
-        val methodCriteria = methodNameCriteria
-        if (methodCriteria != null) {
-            val component = when (componentIndex) {
-                2 -> thirdComponent
-                1 -> secondComponent
-                else -> firstComponent
-            }
-            componentIndex--
-            matches = nameAcceptable(component, methodCriteria)
-        }
+    private fun matchesNameComponents(
+        componentCount: Int,
+        firstComponent: String?,
+        secondComponent: String?,
+        thirdComponent: String?,
+    ): Boolean {
+        val methodMatches = matchesMethodComponent(componentCount, firstComponent, secondComponent, thirdComponent)
+        val packageMatches = matchesPackageComponent(componentCount, firstComponent, secondComponent, thirdComponent)
+        val schemaMatches = matchesSchemaComponent(componentCount, firstComponent, secondComponent, thirdComponent)
 
-        val packageCriteria = packageNameCriteria
-        if (packageCriteria != null) {
-            val packageMatches = if (componentIndex > -1) {
-                val component = when (componentIndex) {
-                    2 -> thirdComponent
-                    1 -> secondComponent
-                    else -> firstComponent
-                }
-                componentIndex--
-                nameAcceptable(component, packageCriteria)
-            } else false
-            matches = matches and packageMatches
-        }
+        return methodMatches and packageMatches and schemaMatches &&
+            consumedComponentCount(componentCount) == componentCount
+    }
 
-        val schemaCriteria = schemaNameCriteria
-        if (schemaCriteria != null) {
-            val schemaMatches = if (schemaIsOptional && componentIndex == -1) {
-                true
-            } else if (componentIndex > -1) {
-                val component = when (componentIndex) {
-                    2 -> thirdComponent
-                    1 -> secondComponent
-                    else -> firstComponent
-                }
-                componentIndex--
-                nameAcceptable(component, schemaCriteria)
-            } else false
-            matches = matches and schemaMatches
-        }
+    private fun matchesMethodComponent(
+        componentCount: Int,
+        firstComponent: String?,
+        secondComponent: String?,
+        thirdComponent: String?,
+    ): Boolean {
+        val criteria = methodNameCriteria ?: return true
+        return nameAcceptable(componentAt(componentCount - 1, firstComponent, secondComponent, thirdComponent), criteria)
+    }
 
-        return matches && componentIndex == -1 && argumentsAcceptable(originalNode)
+    private fun matchesPackageComponent(
+        componentCount: Int,
+        firstComponent: String?,
+        secondComponent: String?,
+        thirdComponent: String?,
+    ): Boolean {
+        val criteria = packageNameCriteria ?: return true
+        val componentIndex = componentCount - 1 - methodNameCriteria.configuredComponentCount()
+        return componentIndex > -1 &&
+            nameAcceptable(componentAt(componentIndex, firstComponent, secondComponent, thirdComponent), criteria)
+    }
+
+    private fun matchesSchemaComponent(
+        componentCount: Int,
+        firstComponent: String?,
+        secondComponent: String?,
+        thirdComponent: String?,
+    ): Boolean {
+        val criteria = schemaNameCriteria ?: return true
+        val componentIndex = componentCount - 1 - methodNameCriteria.configuredComponentCount() -
+            consumedPackageComponentCount(componentCount)
+
+        return (schemaIsOptional && componentIndex == -1) ||
+            (componentIndex > -1 &&
+                nameAcceptable(componentAt(componentIndex, firstComponent, secondComponent, thirdComponent), criteria))
+    }
+
+    private fun consumedComponentCount(componentCount: Int): Int {
+        var consumed = methodNameCriteria.configuredComponentCount()
+        consumed += consumedPackageComponentCount(componentCount)
+        if (schemaNameCriteria != null && consumed < componentCount) consumed++
+        return consumed
+    }
+
+    private fun consumedPackageComponentCount(componentCount: Int): Int {
+        return if (packageNameCriteria != null && methodNameCriteria.configuredComponentCount() < componentCount) 1 else 0
+    }
+
+    private fun NameCriteria?.configuredComponentCount() = if (this == null) 0 else 1
+
+    private fun componentAt(
+        index: Int,
+        firstComponent: String?,
+        secondComponent: String?,
+        thirdComponent: String?,
+    ): String? = when (index) {
+        2 -> thirdComponent
+        1 -> secondComponent
+        else -> firstComponent
     }
 
     private fun nameAcceptable(name: String?, criteria: NameCriteria): Boolean {
