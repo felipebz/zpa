@@ -23,6 +23,8 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
+import com.felipebz.zpa.symbols.EffectiveTypeCategory
 
 class MethodMatcher private constructor()
 {
@@ -223,7 +225,11 @@ class MethodMatcher private constructor()
         var result = true
         for ((i, type) in expectedArgumentTypes.withIndex()) {
             val actualArgument = arguments[i].firstChild
-            result = result and (type === PlSqlType.UNKNOWN || type === semantic(actualArgument).plSqlType)
+            val actualType = when (val category = EffectiveSemanticTypeQuery.typeCategory(semantic(actualArgument))) {
+                is EffectiveTypeCategory.Known -> category.type
+                EffectiveTypeCategory.Unknown -> PlSqlType.UNKNOWN
+            }
+            result = result and (type === PlSqlType.UNKNOWN || type === actualType)
         }
         return result
     }
