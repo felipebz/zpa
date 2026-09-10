@@ -32,7 +32,7 @@ class ProjectDeclarationTest {
     private val extractor = ProjectDeclarationExtractor()
 
     @Test
-    fun extractsPackageDeclarationsWithoutExposingBodyDeclarations() {
+    fun extractsPackageDeclarationsAndBodySubprograms() {
         val declarations = extractor.extract(fileId, """
             CREATE OR REPLACE PACKAGE "Pack" AS
               TYPE t_record IS RECORD (id NUMBER);
@@ -73,22 +73,302 @@ class ProjectDeclarationTest {
         )
 
         val procedures = declarations.filterIsInstance<PackageProcedureDeclaration>()
-        assertThat(procedures).hasSize(2)
-        assertThat(procedures.map { it.parameters.size }).containsExactly(3, 1)
-        assertThat(procedures.first().parameters.map { it.ordinal }).containsExactly(1, 2, 3)
-        assertThat(procedures.first().parameters.map { it.mode }).containsExactly(ParameterMode.IN, ParameterMode.OUT, ParameterMode.IN)
-        assertThat(procedures.first().parameters[1].nocopy).isTrue
-        assertThat(procedures.first().parameters[2].defaultPresent).isTrue
+        val specificationProcedures = procedures.filter { it.role == DeclarationRole.SPECIFICATION }
+        assertThat(specificationProcedures).hasSize(2)
+        assertThat(specificationProcedures.map { it.parameters.size }).containsExactly(3, 1)
+        assertThat(specificationProcedures.first().parameters.map { it.ordinal }).containsExactly(1, 2, 3)
+        assertThat(specificationProcedures.first().parameters.map { it.mode })
+            .containsExactly(ParameterMode.IN, ParameterMode.OUT, ParameterMode.IN)
+        assertThat(specificationProcedures.first().parameters[1].nocopy).isTrue
+        assertThat(specificationProcedures.first().parameters[2].defaultPresent).isTrue
 
-        val function = declarations.filterIsInstance<PackageFunctionDeclaration>().single()
+        val function = declarations.filterIsInstance<PackageFunctionDeclaration>()
+            .single { it.role == DeclarationRole.SPECIFICATION }
         assertThat(function.parameters.single().mode).isEqualTo(ParameterMode.IN_OUT)
         assertThat(function.parameters.single().nocopy).isTrue
         assertThat(function.parameters.single().defaultPresent).isTrue
         assertThat(function.returnType).isInstanceOf(AnchoredTypeRef::class.java)
 
-        assertThat(declarations).noneMatch { declaration ->
-            declaration is PackageSubprogramDeclaration && declaration.name.lookupName == "PRIVATE_BODY_DECLARATION"
-        }
+        val bodyProcedure = procedures.single { it.role == DeclarationRole.BODY }
+        assertThat(bodyProcedure.name.lookupName).isEqualTo("PRIVATE_BODY_DECLARATION")
+        assertThat(bodyProcedure.owner).isEqualTo(packageDeclaration.name)
+        assertThat(bodyProcedure.parameters).isEmpty()
+    }
+
+    @Test
+    fun extractsPackageBodyImplementationsAndSkipsForwardDeclarationsAndNestedSubprograms() {
+        val declarations = extractor.extract(fileId, """
+            CREATE OR REPLACE NONEDITIONABLE PACKAGE BODY p AS
+              PROCEDURE public_work(value IN OUT NOCOPY CLOB) IS
+              BEGIN
+                NULL;
+              END public_work;
+
+              FUNCTION make_value(value IN NUMBER) RETURN VARCHAR2 IS
+              BEGIN
+                RETURN 'value';
+              END make_value;
+
+              PROCEDURE private_helper(value NUMBER);
+
+              PROCEDURE private_helper(value NUMBER DEFAULT 1) IS
+              BEGIN
+                NULL;
+              END private_helper;
+
+              PROCEDURE outer_work IS
+                PROCEDURE nested_work(value NUMBER) IS
+                BEGIN
+                  NULL;
+                END nested_work;
+              BEGIN
+                NULL;
+              END outer_work;
+            BEGIN
+              NULL;
+            END p;
+        """.trimIndent())
+
+        val bodyProcedures = declarations.filterIsInstance<PackageProcedureDeclaration>()
+            .filter { it.role == DeclarationRole.BODY }
+        assertThat(bodyProcedures.map { it.name.lookupName })
+            .containsExactly("PUBLIC_WORK", "PRIVATE_HELPER", "OUTER_WORK")
+        assertThat(bodyProcedures.map { it.parameters.size }).containsExactly(1, 1, 0)
+        assertThat(bodyProcedures.first().parameters.single().nocopy).isTrue
+        assertThat(bodyProcedures.first().sourceRange.startLine).isEqualTo(2)
+        assertThat(bodyProcedures.first().sourceRange.endLine).isEqualTo(5)
+        assertThat(bodyProcedures[1].parameters.single().defaultPresent).isTrue
+        assertThat(bodyProcedures).noneMatch { it.name.lookupName == "NESTED_WORK" }
+
+        val bodyFunction = declarations.filterIsInstance<PackageFunctionDeclaration>()
+            .single { it.role == DeclarationRole.BODY }
+        assertThat(bodyFunction.owner).isEqualTo(QualifiedName(OracleIdentifier.fromSource("p")))
+        assertThat(bodyFunction.name.lookupName).isEqualTo("MAKE_VALUE")
+        assertThat(bodyFunction.parameters.single().typeRef).isEqualTo(
+            NamedTypeRef(
+                QualifiedName(OracleIdentifier.fromSource("NUMBER")),
+                bodyFunction.parameters.single().typeRef.sourceRange
+            )
+        )
+        assertThat(bodyFunction.returnType).isEqualTo(
+            NamedTypeRef(QualifiedName(OracleIdentifier.fromSource("VARCHAR2")), bodyFunction.returnType.sourceRange)
+        )
+        assertThat(bodyFunction.sourceRange.startLine).isEqualTo(7)
+        assertThat(bodyFunction.sourceRange.endLine).isEqualTo(10)
+    }
+
+    @Test
+    fun preservesSpecificationAndBodyMetadataIndependently() {
+        val specification = extractor.extract(FileId("p_spec.sql"), """
+            CREATE PACKAGE p AS
+              PROCEDURE test(value IN OUT NOCOPY CLOB DEFAULT NULL);
+            END p;
+        """.trimIndent()).filterIsInstance<PackageProcedureDeclaration>().single()
+        val body = extractor.extract(FileId("p_body.sql"), """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE test(value IN OUT CLOB) IS
+              BEGIN
+                NULL;
+              END test;
+            END p;
+        """.trimIndent()).filterIsInstance<PackageProcedureDeclaration>().single()
+
+        assertThat(specification.role).isEqualTo(DeclarationRole.SPECIFICATION)
+        assertThat(body.role).isEqualTo(DeclarationRole.BODY)
+        assertThat(specification.owner).isEqualTo(body.owner)
+        assertThat(specification.name).isEqualTo(body.name)
+        assertThat(specification.parameters.single().nocopy).isTrue
+        assertThat(body.parameters.single().nocopy).isFalse
+        assertThat(specification.parameters.single().defaultPresent).isTrue
+        assertThat(body.parameters.single().defaultPresent).isFalse
+        assertThat(specification.overloadIdentity()).isEqualTo(body.overloadIdentity())
+        assertThat(specification.headerIdentity()).isEqualTo(body.headerIdentity())
+        assertThat(specification.sourceRange).isNotEqualTo(body.sourceRange)
+    }
+
+    @Test
+    fun preservesQuotedBodyIdentifiersAndAcceptedCreatePrefixes() {
+        val declarations = extractor.extract(fileId, """
+            CREATE OR REPLACE EDITIONABLE PACKAGE BODY "Pack" AS
+              FUNCTION "Make Value"("Input" IN "Owner"."Number Type") RETURN "Owner"."Result Type" IS
+              BEGIN
+                RETURN NULL;
+              END "Make Value";
+            END "Pack";
+        """.trimIndent())
+
+        val function = declarations.filterIsInstance<PackageFunctionDeclaration>().single()
+        assertThat(function.role).isEqualTo(DeclarationRole.BODY)
+        assertThat(function.owner).isEqualTo(QualifiedName(OracleIdentifier.fromSource("\"Pack\"")))
+        assertThat(function.name).isEqualTo(OracleIdentifier.fromSource("\"Make Value\""))
+        assertThat(function.parameters.single().name).isEqualTo(OracleIdentifier.fromSource("\"Input\""))
+        assertThat(function.parameters.single().typeRef).isEqualTo(
+            NamedTypeRef(
+                QualifiedName(listOf(OracleIdentifier.fromSource("\"Owner\""), OracleIdentifier.fromSource("\"Number Type\""))),
+                function.parameters.single().typeRef.sourceRange
+            )
+        )
+        assertThat(function.returnType).isEqualTo(
+            NamedTypeRef(
+                QualifiedName(listOf(OracleIdentifier.fromSource("\"Owner\""), OracleIdentifier.fromSource("\"Result Type\""))),
+                function.returnType.sourceRange
+            )
+        )
+    }
+
+    @Test
+    fun extractsPackageBodyCallSpecificationsAsImplementations() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE external_work(value NUMBER) AS
+                EXTERNAL NAME external_work LIBRARY native_library;
+            END p;
+        """.trimIndent())
+
+        val procedure = declarations.filterIsInstance<PackageProcedureDeclaration>().single()
+        assertThat(procedure.role).isEqualTo(DeclarationRole.BODY)
+        assertThat(procedure.name.lookupName).isEqualTo("EXTERNAL_WORK")
+        assertThat(procedure.parameters.single().typeRef).isEqualTo(
+            NamedTypeRef(QualifiedName(OracleIdentifier.fromSource("NUMBER")), procedure.parameters.single().typeRef.sourceRange)
+        )
+    }
+
+    @Test
+    fun boundsPackageBodiesWithInitializationBeforeFollowingCreateUnits() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE work IS
+              BEGIN
+                NULL;
+              END work;
+            BEGIN
+              NULL;
+            END p;
+
+            CREATE PACKAGE q AS
+              PROCEDURE q_work;
+            END q;
+
+            CREATE PACKAGE BODY q AS
+              PROCEDURE q_work IS
+              BEGIN
+                NULL;
+              END q_work;
+            END q;
+
+            CREATE TYPE after_packages AS OBJECT (id NUMBER);
+        """.trimIndent())
+
+        val procedures = declarations.filterIsInstance<PackageProcedureDeclaration>()
+        assertThat(procedures.map { it.owner to it.name.lookupName })
+            .containsExactly(
+                QualifiedName(OracleIdentifier.fromSource("p")) to "WORK",
+                QualifiedName(OracleIdentifier.fromSource("q")) to "Q_WORK",
+                QualifiedName(OracleIdentifier.fromSource("q")) to "Q_WORK"
+            )
+        assertThat(procedures.map { it.role })
+            .containsExactly(DeclarationRole.BODY, DeclarationRole.SPECIFICATION, DeclarationRole.BODY)
+        assertThat(procedures[0].sourceRange.startLine).isEqualTo(2)
+        assertThat(procedures[0].sourceRange.endLine).isEqualTo(5)
+        assertThat(procedures[1].sourceRange.startLine).isEqualTo(11)
+        assertThat(procedures[2].sourceRange.startLine).isEqualTo(15)
+        assertThat(declarations.filterIsInstance<StandaloneTypeDeclaration>())
+            .singleElement()
+            .extracting { it.name }
+            .isEqualTo(QualifiedName(OracleIdentifier.fromSource("after_packages")))
+    }
+
+    @Test
+    fun doesNotEndPackageBodyAtSqlCaseExpression() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE work IS
+                result NUMBER;
+              BEGIN
+                SELECT CASE
+                         WHEN 1 = 1 THEN 10
+                         ELSE 20
+                       END
+                  INTO result
+                  FROM dual;
+
+                result := result + 1;
+              END work;
+
+              PROCEDURE after_work IS
+              BEGIN
+                NULL;
+              END after_work;
+            END p;
+        """.trimIndent())
+
+        val procedures = declarations.filterIsInstance<PackageProcedureDeclaration>()
+        assertThat(procedures.map { it.name.lookupName }).containsExactly("WORK", "AFTER_WORK")
+        assertThat(procedures[0].sourceRange.startLine).isEqualTo(2)
+        assertThat(procedures[0].sourceRange.endLine).isEqualTo(13)
+        assertThat(procedures[1].sourceRange.startLine).isEqualTo(15)
+        assertThat(procedures[1].sourceRange.endLine).isEqualTo(18)
+    }
+
+    @Test
+    fun doesNotEndPackageBodyAtDeclarativeSqlCaseExpression() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE BODY p AS
+              initial_value NUMBER := CASE WHEN 1 = 1 THEN 1 ELSE 0 END;
+
+              PROCEDURE work IS
+              BEGIN
+                NULL;
+              END work;
+            BEGIN
+              NULL;
+            END p;
+        """.trimIndent())
+
+        val procedure = declarations.filterIsInstance<PackageProcedureDeclaration>().single()
+        assertThat(procedure.name.lookupName).isEqualTo("WORK")
+        assertThat(procedure.sourceRange.startLine).isEqualTo(4)
+        assertThat(procedure.sourceRange.endLine).isEqualTo(7)
+    }
+
+    @Test
+    fun preservesPackageBoundaryWithNestedBlocksAndCaseStatements() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE work IS
+                result NUMBER;
+                PROCEDURE nested_work IS
+                BEGIN
+                  NULL;
+                END nested_work;
+              BEGIN
+                BEGIN
+                  IF TRUE THEN
+                    NULL;
+                  END IF;
+                  LOOP
+                    EXIT;
+                  END LOOP;
+                  CASE
+                    WHEN TRUE THEN NULL;
+                    ELSE NULL;
+                  END CASE;
+                  result := CASE WHEN TRUE THEN 1 ELSE 0 END;
+                END;
+              END work;
+
+              PROCEDURE after_work IS
+              BEGIN
+                NULL;
+              END after_work;
+            END p;
+        """.trimIndent())
+
+        val procedures = declarations.filterIsInstance<PackageProcedureDeclaration>()
+        assertThat(procedures.map { it.name.lookupName }).containsExactly("WORK", "AFTER_WORK")
+        assertThat(procedures).noneMatch { it.name.lookupName == "NESTED_WORK" }
+        assertThat(procedures[0].sourceRange.endLine).isEqualTo(22)
+        assertThat(procedures[1].sourceRange.startLine).isEqualTo(24)
     }
 
     @Test

@@ -68,6 +68,46 @@ class ProjectSymbolIndexTest {
     }
 
     @Test
+    fun indexPreservesSpecificationAndBodyCandidatesDeterministically() {
+        val specificationFile = FileId("a_spec.sql")
+        val bodyFile = FileId("b_body.sql")
+        val specificationSource = "CREATE PACKAGE p AS PROCEDURE work(value IN NUMBER); END p;"
+        val bodySource = """
+            CREATE PACKAGE BODY p AS
+              PROCEDURE work(value IN NUMBER) IS BEGIN NULL; END;
+              PROCEDURE work(value IN VARCHAR2) IS BEGIN NULL; END;
+              PROCEDURE helper(value IN DATE) IS BEGIN NULL; END;
+            END p;
+        """.trimIndent()
+
+        val first = ProjectIndexPreparation().prepare(
+            listOf(
+                ProjectSource(specificationFile) { specificationSource },
+                ProjectSource(bodyFile) { bodySource }
+            ),
+            concurrent = false
+        ).index
+        val second = ProjectIndexPreparation().prepare(
+            listOf(
+                ProjectSource(bodyFile) { bodySource },
+                ProjectSource(specificationFile) { specificationSource }
+            ),
+            concurrent = false
+        ).index
+
+        val owner = QualifiedName(OracleIdentifier.fromSource("p"))
+        val candidates = first.findSubprograms(owner, OracleIdentifier.fromSource("work"))
+        val reorderedCandidates = second.findSubprograms(owner, OracleIdentifier.fromSource("work"))
+        assertThat(candidates).containsExactlyElementsOf(reorderedCandidates)
+        assertThat(candidates.map { it.role }).containsExactly(DeclarationRole.SPECIFICATION, DeclarationRole.BODY, DeclarationRole.BODY)
+        assertThat(candidates.map { it.overloadIdentity() }.distinct()).hasSize(2)
+        assertThat(first.findSubprograms(owner, OracleIdentifier.fromSource("helper")))
+            .singleElement()
+            .extracting { it.role }
+            .isEqualTo(DeclarationRole.BODY)
+    }
+
+    @Test
     fun typeLookupIncludesPackageSubtypes() {
         val file = FileId("subtype.sql")
         val facts = extractor.extract(file, "CREATE PACKAGE p AS SUBTYPE small IS NUMBER; END p;")

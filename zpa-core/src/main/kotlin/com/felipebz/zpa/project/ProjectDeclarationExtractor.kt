@@ -84,10 +84,7 @@ class ProjectDeclarationExtractor(
             val nameIndex = if (body) packageIndex + 2 else packageIndex + 1
             val name = qualifiedName(nameIndex) ?: return null
             if (body) {
-                val nextCreate = nextValue(name.second, "CREATE")
-                // The body is recognized only to keep its private declarations out of the
-                // public index. Its role is reserved in the model for later correlation.
-                return ParsedUnit(emptyList(), nextCreate ?: tokens.size)
+                return parsePackageBody(name.first, name.second)
             }
 
             val header = firstAtTopLevel(name.second, setOf("IS", "AS")) ?: return null
@@ -118,6 +115,199 @@ class ProjectDeclarationExtractor(
             }
             return ParsedUnit(declarations, end + 1)
         }
+
+        private fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {
+            val header = firstAtTopLevel(afterName, setOf("IS", "AS")) ?: return null
+            val parsed = parsePackageBodySubprograms(header + 1, owner)
+            return ParsedUnit(parsed.declarations, parsed.end + 1)
+        }
+
+        private fun parsePackageBodySubprograms(start: Int, owner: QualifiedName): ParsedPackageBody {
+            val result = mutableListOf<ProjectDeclaration>()
+            var cursor = start
+            val blocks = mutableListOf<BlockKind>()
+            while (cursor < tokens.size) {
+                if (blocks.isEmpty() && isSubprogramKeyword(cursor)) {
+                    val parsed = parseBodySubprogram(cursor, tokens.size, owner)
+                    if (parsed != null) {
+                        parsed.declaration?.let(result::add)
+                        cursor = parsed.nextIndex
+                        continue
+                    }
+                }
+
+                when {
+                    isCaseStart(cursor) -> blocks += BlockKind.CASE
+                    isKeyword(cursor, "BEGIN") -> {
+                        if (blocks.isEmpty()) {
+                            val end = executableBlockEnd(cursor, tokens.size) ?: tokens.lastIndex
+                            return ParsedPackageBody(immutableList(result), end)
+                        }
+                        blocks += BlockKind.BEGIN
+                    }
+                    isKeyword(cursor, "END") -> when {
+                        isKeyword(cursor + 1, "IF") || isKeyword(cursor + 1, "LOOP") -> Unit
+                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
+                        blocks.lastOrNull() == BlockKind.BEGIN -> blocks.removeAt(blocks.lastIndex)
+                        blocks.isEmpty() -> return ParsedPackageBody(immutableList(result), semicolonAfter(cursor))
+                    }
+                }
+                cursor++
+            }
+            return ParsedPackageBody(immutableList(result), tokens.lastIndex)
+        }
+
+        private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
+            val function = valueAt(index) == "FUNCTION"
+            val name = identifierAt(index + 1) ?: return null
+            var cursor = name.second
+            val parameters: List<ProjectParameter>
+            if (valueAt(cursor) == "(") {
+                val close = matching(cursor)
+                if (close >= end) return null
+                parameters = parseParameters(cursor + 1, close)
+                cursor = close + 1
+            } else {
+                parameters = emptyList()
+            }
+
+            val header = firstBodyHeaderDelimiter(cursor, end) ?: return null
+            if (header.kind == BodyHeaderDelimiterKind.FORWARD_DECLARATION) {
+                return ParsedBodySubprogram(null, header.index + 1)
+            }
+
+            val implementationEnd = implementationEnd(header.index + 1, end) ?: return null
+            val declaration = if (function) {
+                val returnIndex = firstAtTopLevel(cursor, setOf("RETURN"), header.index)
+                    ?: return null
+                val modifier = firstAtTopLevel(
+                    returnIndex + 1,
+                    setOf("DETERMINISTIC", "PIPELINED", "PARALLEL_ENABLE", "RESULT_CACHE"),
+                    header.index
+                )
+                val returnType = typeReference(returnIndex + 1, modifier ?: header.index)
+                    ?: return null
+                PackageFunctionDeclaration(
+                    owner,
+                    name.first,
+                    parameters,
+                    returnType,
+                    fileId,
+                    range(index, implementationEnd),
+                    DeclarationRole.BODY
+                )
+            } else {
+                PackageProcedureDeclaration(
+                    owner,
+                    name.first,
+                    parameters,
+                    fileId,
+                    range(index, implementationEnd),
+                    DeclarationRole.BODY
+                )
+            }
+            return ParsedBodySubprogram(declaration, implementationEnd + 1)
+        }
+
+        private fun firstBodyHeaderDelimiter(start: Int, end: Int): BodyHeaderDelimiter? {
+            var depth = 0
+            for (index in start until end.coerceAtMost(tokens.size)) {
+                when (valueAt(index)) {
+                    "(", "[" -> depth++
+                    ")", "]" -> depth--
+                }
+                if (depth == 0) {
+                    when (valueAt(index)) {
+                        "IS", "AS" -> return BodyHeaderDelimiter(BodyHeaderDelimiterKind.IMPLEMENTATION, index)
+                        ";" -> return BodyHeaderDelimiter(BodyHeaderDelimiterKind.FORWARD_DECLARATION, index)
+                    }
+                }
+            }
+            return null
+        }
+
+        private fun implementationEnd(start: Int, end: Int): Int? {
+            if (valueAt(start) == "LANGUAGE" || valueAt(start) == "EXTERNAL") {
+                return semicolonAfter(start).coerceAtMost(end)
+            }
+            val blocks = mutableListOf<BlockKind>()
+            var bodyStarted = false
+            var index = start
+            while (index < end.coerceAtMost(tokens.size)) {
+                if (!bodyStarted && isSubprogramKeyword(index)) {
+                    val nestedEnd = bodySubprogramEnd(index, end)
+                    if (nestedEnd != null) {
+                        index = nestedEnd + 1
+                        continue
+                    }
+                }
+                when {
+                    isKeyword(index, "BEGIN") -> {
+                        bodyStarted = true
+                        blocks += BlockKind.BEGIN
+                    }
+                    isCaseStart(index) -> blocks += BlockKind.CASE
+                    isKeyword(index, "END") -> when {
+                        isKeyword(index + 1, "IF") || isKeyword(index + 1, "LOOP") -> Unit
+                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
+                        blocks.lastOrNull() == BlockKind.BEGIN -> {
+                            blocks.removeAt(blocks.lastIndex)
+                            if (bodyStarted && blocks.isEmpty()) return semicolonAfter(index).coerceAtMost(end)
+                        }
+                        else -> return null
+                    }
+                }
+                index++
+            }
+            return null
+        }
+
+        private fun bodySubprogramEnd(index: Int, end: Int): Int? {
+            val name = identifierAt(index + 1) ?: return null
+            var cursor = name.second
+            if (valueAt(cursor) == "(") {
+                val close = matching(cursor)
+                if (close >= end) return null
+                cursor = close + 1
+            }
+            val header = firstBodyHeaderDelimiter(cursor, end) ?: return null
+            return if (header.kind == BodyHeaderDelimiterKind.FORWARD_DECLARATION) {
+                header.index
+            } else {
+                implementationEnd(header.index + 1, end)
+            }
+        }
+
+        private fun executableBlockEnd(start: Int, end: Int): Int? {
+            val blocks = mutableListOf<BlockKind>()
+            var index = start
+            while (index < end.coerceAtMost(tokens.size)) {
+                when {
+                    isKeyword(index, "BEGIN") -> blocks += BlockKind.BEGIN
+                    isCaseStart(index) -> blocks += BlockKind.CASE
+                    isKeyword(index, "END") -> when {
+                        isKeyword(index + 1, "IF") || isKeyword(index + 1, "LOOP") -> Unit
+                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
+                        blocks.lastOrNull() == BlockKind.BEGIN -> {
+                            blocks.removeAt(blocks.lastIndex)
+                            if (blocks.isEmpty()) return semicolonAfter(index).coerceAtMost(end)
+                        }
+                        else -> return null
+                    }
+                }
+                index++
+            }
+            return null
+        }
+
+        private fun isSubprogramKeyword(index: Int): Boolean =
+            isKeyword(index, "PROCEDURE") || isKeyword(index, "FUNCTION")
+
+        private fun isCaseStart(index: Int): Boolean =
+            isKeyword(index, "CASE") && !isKeyword(index - 1, "END")
+
+        private fun isKeyword(index: Int, keyword: String): Boolean =
+            index in tokens.indices && tokens[index].type is PlSqlKeyword && valueAt(index) == keyword
 
         private fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
             val name = identifierAt(index + 1) ?: return null
@@ -421,5 +611,25 @@ class ProjectDeclarationExtractor(
 
         private data class ParsedUnit(val declarations: List<ProjectDeclaration>, val nextIndex: Int)
         private data class ParsedDeclaration(val declaration: ProjectDeclaration, val nextIndex: Int)
+        private data class ParsedBodySubprogram(
+            val declaration: ProjectDeclaration?,
+            val nextIndex: Int
+        )
+        private data class ParsedPackageBody(
+            val declarations: List<ProjectDeclaration>,
+            val end: Int
+        )
+        private data class BodyHeaderDelimiter(
+            val kind: BodyHeaderDelimiterKind,
+            val index: Int
+        )
+        private enum class BodyHeaderDelimiterKind {
+            IMPLEMENTATION,
+            FORWARD_DECLARATION
+        }
+        private enum class BlockKind {
+            BEGIN,
+            CASE
+        }
     }
 }
