@@ -54,7 +54,7 @@ class SemanticTreeBuilderTest {
             "base type: p.t",
             "member: id",
             "member type: NUMBER",
-            "NUMBER: No project declaration",
+            "NUMBER: Built-in NUMERIC",
             "Project context: 1 file · 2 declarations"
         )
         assertThat(tree.labels().count { it.startsWith("Direct RECORD") }).isEqualTo(2)
@@ -99,7 +99,7 @@ class SemanticTreeBuilderTest {
             "[1] address",
             "[2] city",
             "type: VARCHAR2",
-            "project declaration: No project declaration"
+            "semantic type: Built-in CHARACTER"
         )
     }
 

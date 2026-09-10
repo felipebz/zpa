@@ -19,36 +19,14 @@
  */
 package com.felipebz.zpa.project
 
-/**
- * Project resolution information for the type of an already identified RECORD field.
- * This wrapper keeps unsupported type-reference forms explicit while preserving the
- * complete ProjectTypeResolution for named references.
- */
-internal sealed interface ProjectRecordFieldTypeResolution {
-    val field: ProjectRecordField
-
-    data class Named(
-        override val field: ProjectRecordField,
-        val resolution: ProjectTypeResolution
-    ) : ProjectRecordFieldTypeResolution {
-        init {
-            require(field.typeRef == resolution.reference) {
-                "Named field type resolution must refer to the field type"
-            }
-        }
-    }
-
-    data class Unsupported(
-        override val field: ProjectRecordField,
-        val typeRef: TypeRef
-    ) : ProjectRecordFieldTypeResolution {
-        init {
-            require(field.typeRef == typeRef) {
-                "Unsupported field type resolution must refer to the field type"
-            }
-            require(typeRef !is NamedTypeRef) {
-                "Named field type references must use Named resolution"
-            }
+/** Semantic TypeRef facts for the type of an already identified RECORD field. */
+internal data class ProjectRecordFieldTypeResolution(
+    val field: ProjectRecordField,
+    val resolution: TypeRefSemanticResolution
+) {
+    init {
+        require(field.typeRef == resolution.reference) {
+            "Field type resolution must refer to the field type"
         }
     }
 }

@@ -220,7 +220,7 @@ internal class SemanticTreeBuilder {
             val segmentNode = DefaultMutableTreeNode("[${segment.ordinal}] ${segment.field.name}")
             segmentNode.add(DefaultMutableTreeNode("type: ${segment.fieldTypeResolution.typeRef.name}"))
             segmentNode.add(DefaultMutableTreeNode(
-                "project declaration: ${fieldTypeState(segment.fieldTypeResolution)}"
+                "${fieldTypeSummaryLabel(segment.fieldTypeResolution)}: ${fieldTypeState(segment.fieldTypeResolution)}"
             ))
             node.add(segmentNode)
         }
@@ -364,6 +364,9 @@ internal class SemanticTreeBuilder {
         node.add(DefaultMutableTreeNode("raw state: ${resolution.state}"))
         node.add(getRecordFieldTreeNode("field", resolution.field))
         node.add(getTypeRefTreeNode("type reference", resolution.typeRef))
+        resolution.semanticType?.let {
+            node.add(DefaultMutableTreeNode("semantic type: $it"))
+        }
         resolution.resolution?.let {
             node.add(getProjectTypeResolutionTreeNode("project type resolution", it))
         }
@@ -383,6 +386,9 @@ internal class SemanticTreeBuilder {
             )
             fieldType.add(DefaultMutableTreeNode("raw state: ${segment.fieldTypeResolution.state}"))
             fieldType.add(getTypeRefTreeNode("type reference", segment.fieldTypeResolution.typeRef))
+            segment.fieldTypeResolution.semanticType?.let {
+                fieldType.add(DefaultMutableTreeNode("semantic type: $it"))
+            }
             segment.fieldTypeResolution.resolution?.let {
                 fieldType.add(getProjectTypeResolutionTreeNode("project type resolution", it))
             }
@@ -427,10 +433,19 @@ internal class SemanticTreeBuilder {
     }
 
     private fun fieldTypeState(resolution: ProjectRecordFieldTypeResolutionSummary): String = when {
+        resolution.state == ProjectRecordFieldTypeResolutionState.BUILT_IN ->
+            "Built-in ${resolution.semanticType ?: "type"}"
         resolution.state == ProjectRecordFieldTypeResolutionState.UNSUPPORTED -> "Unsupported reference form"
         resolution.resolution == null -> "No project resolution"
         else -> projectTypeState(resolution.resolution!!.state)
     }
+
+    private fun fieldTypeSummaryLabel(resolution: ProjectRecordFieldTypeResolutionSummary): String =
+        if (resolution.state == ProjectRecordFieldTypeResolutionState.BUILT_IN) {
+            "semantic type"
+        } else {
+            "project declaration"
+        }
 
     private fun memberState(state: ProjectRecordMemberResolutionState): String = when (state) {
         ProjectRecordMemberResolutionState.RESOLVED -> "Resolved"

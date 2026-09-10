@@ -24,6 +24,7 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
@@ -50,8 +51,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val scanned = scan(sources, useFile, check)
         val member = check.member(listOf("value", "customer"))
         val memberResolution = member.projectRecordMemberResolution as ProjectRecordMemberResolution.Resolved
-        val fieldType = member.projectRecordFieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
+        val fieldType = member.projectRecordFieldTypeResolution!!
         val expected = scanned.index.findTypes(
             name("customer_pkg"),
             OracleIdentifier.fromSource("customer_rec")
@@ -59,10 +59,11 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
 
         assertThat(fieldType.field).isSameAs(memberResolution.field)
         assertThat(fieldType.field.typeRef).isInstanceOf(NamedTypeRef::class.java)
-        assertThat(fieldType.resolution).isEqualTo(
+        val projectResolution = fieldType.resolution as TypeRefSemanticResolution.Project
+        assertThat(projectResolution.resolution).isEqualTo(
             ProjectTypeResolution.Resolved(fieldType.field.typeRef as NamedTypeRef, expected)
         )
-        assertThat((fieldType.resolution as ProjectTypeResolution.Resolved).declaration).isSameAs(expected)
+        assertThat((projectResolution.resolution as ProjectTypeResolution.Resolved).declaration).isSameAs(expected)
         assertThat(scanned.result.symbols.single { it.name.equals("value", true) }.datatype)
             .isSameAs(UnknownDatatype)
     }
@@ -84,13 +85,14 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
 
         val scanned = scan(sources, useFile, check)
         val fieldType = check.member(listOf("value", "child"))
-            .projectRecordFieldTypeResolution as ProjectRecordFieldTypeResolution.Named
+            .projectRecordFieldTypeResolution!!
         val expected = scanned.index.findTypes(
             name("p"),
             OracleIdentifier.fromSource("child_t")
         ).single()
 
-        assertThat((fieldType.resolution as ProjectTypeResolution.Resolved).declaration).isSameAs(expected)
+        assertThat(((fieldType.resolution as TypeRefSemanticResolution.Project).resolution
+            as ProjectTypeResolution.Resolved).declaration).isSameAs(expected)
     }
 
     @Test
@@ -110,8 +112,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val reverseResolution = reverse.fieldTypeResolution(listOf("value", "customer"))
 
         assertThat(forwardResolution).isEqualTo(reverseResolution)
-        assertThat((forwardResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-            .isEqualTo((reverseResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat(forwardResolution!!.resolution)
+            .isEqualTo(reverseResolution!!.resolution)
     }
 
     @Test
@@ -129,7 +131,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         ), useFile, check)
 
         val resolution = (check.member(listOf("value", "customer"))
-            .projectRecordFieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution
+            .projectRecordFieldTypeResolution!!.resolution as TypeRefSemanticResolution.Project).resolution
         assertThat(resolution).isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
         assertThat((resolution as ProjectTypeResolution.Ambiguous).candidates.map { it.fileId.value })
             .containsExactly("first.sql", "second.sql")
@@ -160,12 +162,12 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val memberNode = SemanticAstNode(PlSqlGrammar.MEMBER_EXPRESSION, "MEMBER_EXPRESSION", null)
         memberNode.projectRecordMemberResolution = ProjectRecordMemberResolution.Resolved(orderType, field)
         val visitor = ProjectRecordFieldTypeResolutionVisitor(
-            ProjectRecordFieldTypeResolver(ProjectTypeResolver(context))
+            ProjectRecordFieldTypeResolver(TypeRefSemanticResolver(ProjectTypeResolver(context)))
         )
         visitor.visitNode(memberNode)
 
-        val resolution = (memberNode.projectRecordFieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named).resolution
+        val resolution = (memberNode.projectRecordFieldTypeResolution!!.resolution
+            as TypeRefSemanticResolution.Project).resolution
         assertThat(resolution).isInstanceOf(ProjectTypeResolution.IncompleteIndex::class.java)
         assertThat((resolution as ProjectTypeResolution.IncompleteIndex).knownCandidates).hasSize(1)
     }
@@ -183,16 +185,18 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         )
 
         ProjectRecordFieldTypeResolutionVisitor(
-            ProjectRecordFieldTypeResolver(ProjectTypeResolver(ProjectAnalysisContext.NOT_PREPARED))
+            ProjectRecordFieldTypeResolver(
+                TypeRefSemanticResolver(ProjectTypeResolver(ProjectAnalysisContext.NOT_PREPARED))
+            )
         ).visitNode(node)
 
-        val resolution = (node.projectRecordFieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named).resolution
+        val resolution = (node.projectRecordFieldTypeResolution!!.resolution
+            as TypeRefSemanticResolution.Project).resolution
         assertThat(resolution).isInstanceOf(ProjectTypeResolution.NotPrepared::class.java)
     }
 
     @Test
-    fun keepsBuiltInAndExternalFieldTypesAsNotFoundInProject() {
+    fun distinguishesBuiltInAndExternalFieldTypes() {
         val file = FileId("types.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
@@ -202,10 +206,17 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         ), useFile, check)
 
         val resolutions = listOf("id", "external_value").map {
-            (check.member(listOf("value", it)).projectRecordFieldTypeResolution
-                as ProjectRecordFieldTypeResolution.Named).resolution
+            check.member(listOf("value", it)).projectRecordFieldTypeResolution!!.resolution
         }
-        assertThat(resolutions).allMatch { it is ProjectTypeResolution.NotFoundInProject }
+        assertThat(resolutions[0]).isEqualTo(
+            TypeRefSemanticResolution.BuiltIn(
+                (check.member(listOf("value", "id")).projectRecordFieldTypeResolution!!.field.typeRef
+                    as NamedTypeRef),
+                PlSqlType.NUMERIC
+            )
+        )
+        assertThat((resolutions[1] as TypeRefSemanticResolution.Project).resolution)
+            .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
         assertThat(scanned.result.symbols.single { it.name.equals("value", true) }.datatype)
             .isSameAs(UnknownDatatype)
         assertThat(scanned.result.issues).isEmpty()
@@ -224,10 +235,10 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val resolutions = listOf("id", "reference").map {
             check.member(listOf("value", it)).projectRecordFieldTypeResolution
         }
-        assertThat(resolutions).allMatch { it is ProjectRecordFieldTypeResolution.Unsupported }
-        assertThat((resolutions[0] as ProjectRecordFieldTypeResolution.Unsupported).typeRef)
+        assertThat(resolutions).allMatch { it?.resolution is TypeRefSemanticResolution.Unsupported }
+        assertThat((resolutions[0]!!.resolution as TypeRefSemanticResolution.Unsupported).reference)
             .isInstanceOf(AnchoredTypeRef::class.java)
-        assertThat((resolutions[1] as ProjectRecordFieldTypeResolution.Unsupported).typeRef)
+        assertThat((resolutions[1]!!.resolution as TypeRefSemanticResolution.Unsupported).reference)
             .isInstanceOf(RefTypeRef::class.java)
     }
 
@@ -242,7 +253,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         ), useFile, check)
 
         val resolution = (check.member(listOf("value", "customer"))
-            .projectRecordFieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution
+            .projectRecordFieldTypeResolution!!.resolution as TypeRefSemanticResolution.Project).resolution
         val expected = scanned.index.findTypes(
             name("\"Customer_Pkg\""),
             OracleIdentifier.fromSource("\"Customer_Rec\"")
@@ -323,13 +334,12 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
             assertThat(completed.segments[1].field).isSameAs(secondField)
 
             val firstTypeResolution = completed.segments[0].fieldTypeResolution
-            assertThat(firstTypeResolution).isInstanceOf(ProjectRecordFieldTypeResolution.Named::class.java)
-            assertThat((firstTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+            assertThat((firstTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
                 .isEqualTo(ProjectTypeResolution.Resolved(firstField.typeRef as NamedTypeRef, customerType))
             val secondTypeResolution = completed.segments[1].fieldTypeResolution
-            assertThat(secondTypeResolution).isInstanceOf(ProjectRecordFieldTypeResolution.Named::class.java)
-            assertThat((secondTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-                .isEqualTo(ProjectTypeResolution.NotFoundInProject(secondField.typeRef as NamedTypeRef))
+            assertThat(secondTypeResolution.resolution).isEqualTo(
+                TypeRefSemanticResolution.BuiltIn(secondField.typeRef as NamedTypeRef, PlSqlType.CHARACTER)
+            )
             assertThat(pathNode.projectRecordMemberResolution).isNull()
             assertThat(pathNode.projectRecordFieldTypeResolution).isNull()
         }
@@ -356,11 +366,11 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val path = check.path(listOf("value", "child", "name"))
             .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
         val childType = scanned.index.findTypes(name("p"), OracleIdentifier.fromSource("child_t")).single()
-        assertThat((path.segments[0].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((path.segments[0].fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isEqualTo(ProjectTypeResolution.Resolved(path.segments[0].field.typeRef as NamedTypeRef, childType))
         assertThat(path.segments[1].field).isSameAs((childType as PackageTypeDeclaration).recordFields.single())
         val grandchildType = scanned.index.findTypes(name("p"), OracleIdentifier.fromSource("grandchild_t")).single()
-        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((path.segments[1].fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isEqualTo(ProjectTypeResolution.Resolved(path.segments[1].field.typeRef as NamedTypeRef, grandchildType))
     }
 
@@ -406,8 +416,12 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(path.segments[1].field).isSameAs(childType.recordFields.single())
         assertThat(path.segments[1].field.name)
             .isEqualTo(OracleIdentifier.fromSource("\"Display Name\""))
-        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-            .isEqualTo(ProjectTypeResolution.NotFoundInProject(path.segments[1].field.typeRef as NamedTypeRef))
+        assertThat(path.segments[1].fieldTypeResolution.resolution).isEqualTo(
+            TypeRefSemanticResolution.BuiltIn(
+                path.segments[1].field.typeRef as NamedTypeRef,
+                PlSqlType.CHARACTER
+            )
+        )
     }
 
     @Test
@@ -426,8 +440,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
 
         val path = check.path(listOf("value", "child", "name"))
             .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
-        val typeResolution = path.segments.single().fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
+        val typeResolution = path.segments.single().fieldTypeResolution.resolution
+            as TypeRefSemanticResolution.Project
         assertThat(typeResolution.resolution).isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
         assertThat(path.nextMember).isEqualTo(OracleIdentifier.fromSource("name"))
         assertThat(path.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
@@ -445,8 +459,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
 
         val path = check.path(listOf("value", "child", "name"))
             .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
-        val typeResolution = path.segments.single().fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
+        val typeResolution = path.segments.single().fieldTypeResolution.resolution
+            as TypeRefSemanticResolution.Project
         assertThat(typeResolution.resolution).isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
         assertThat(path.segments).hasSize(1)
     }
@@ -486,17 +500,12 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
             assertThat(second.field).isSameAs(expectedFields[fieldName.uppercase()])
             val typeResolution = second.fieldTypeResolution
             when (fieldName) {
-                "external_value" -> assertThat(typeResolution).isEqualTo(
-                    ProjectRecordFieldTypeResolution.Named(
-                        second.field,
-                        ProjectTypeResolution.NotFoundInProject(second.field.typeRef as NamedTypeRef)
-                    )
-                )
-                "ambiguous_value" -> assertThat((typeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+                "external_value" -> assertThat((typeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
+                    .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+                "ambiguous_value" -> assertThat((typeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
                     .isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
-                else -> assertThat(typeResolution).isEqualTo(
-                    ProjectRecordFieldTypeResolution.Unsupported(second.field, second.field.typeRef)
-                )
+                else -> assertThat(typeResolution.resolution)
+                    .isEqualTo(TypeRefSemanticResolution.Unsupported(second.field.typeRef))
             }
         }
     }
@@ -553,18 +562,23 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         val path = check.path(listOf("value", "a", "b", "c"))
             .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Completed
         assertThat(path.segments.map { it.field.name.lookupName }).containsExactly("A", "B", "C")
-        assertThat(path.segments).allMatch { it.fieldTypeResolution is ProjectRecordFieldTypeResolution.Named }
+        assertThat(path.segments.map { it.fieldTypeResolution.resolution })
+            .allMatch { it is TypeRefSemanticResolution.BuiltIn || it is TypeRefSemanticResolution.Project }
         val childType = scanned.index.findTypes(name("child_pkg"), OracleIdentifier.fromSource("child_rec")).single()
         val grandchildType = scanned.index.findTypes(
             name("grandchild_pkg"),
             OracleIdentifier.fromSource("grandchild_rec")
         ).single()
-        assertThat((path.segments[0].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((path.segments[0].fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isEqualTo(ProjectTypeResolution.Resolved(path.segments[0].field.typeRef as NamedTypeRef, childType))
-        assertThat((path.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((path.segments[1].fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isEqualTo(ProjectTypeResolution.Resolved(path.segments[1].field.typeRef as NamedTypeRef, grandchildType))
-        assertThat((path.segments[2].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-            .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+        assertThat(path.segments[2].fieldTypeResolution.resolution).isEqualTo(
+            TypeRefSemanticResolution.BuiltIn(
+                path.segments[2].field.typeRef as NamedTypeRef,
+                PlSqlType.NUMERIC
+            )
+        )
     }
 
     @Test

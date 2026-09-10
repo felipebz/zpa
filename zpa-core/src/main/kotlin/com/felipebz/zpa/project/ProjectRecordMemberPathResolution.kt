@@ -103,10 +103,11 @@ internal class ProjectRecordMemberPathResolver(
                 return ProjectRecordMemberPathResolution.Completed(segments)
             }
 
-            val nextDeclaration = when (fieldTypeResolution) {
-                is ProjectRecordFieldTypeResolution.Named ->
-                    (fieldTypeResolution.resolution as? ProjectTypeResolution.Resolved)?.declaration
-                is ProjectRecordFieldTypeResolution.Unsupported -> null
+            val nextDeclaration = when (val semanticResolution = fieldTypeResolution.resolution) {
+                is TypeRefSemanticResolution.Project ->
+                    (semanticResolution.resolution as? ProjectTypeResolution.Resolved)?.declaration
+                is TypeRefSemanticResolution.BuiltIn,
+                is TypeRefSemanticResolution.Unsupported -> null
             }
             if (nextDeclaration == null) {
                 return stopped(segments, memberNames[index + 1], fieldTypeReason(fieldTypeResolution))
@@ -143,8 +144,9 @@ internal class ProjectRecordMemberPathResolver(
     private fun fieldTypeReason(
         resolution: ProjectRecordFieldTypeResolution
     ): ProjectRecordMemberPathResolution.StopReason =
-        when (resolution) {
-            is ProjectRecordFieldTypeResolution.Named -> ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED
-            is ProjectRecordFieldTypeResolution.Unsupported -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
+        when (resolution.resolution) {
+            is TypeRefSemanticResolution.Project -> ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED
+            is TypeRefSemanticResolution.BuiltIn,
+            is TypeRefSemanticResolution.Unsupported -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
         }
 }

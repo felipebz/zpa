@@ -21,16 +21,13 @@ package com.felipebz.zpa.project
 
 /** Resolves only the type reference of an already identified project RECORD field. */
 internal class ProjectRecordFieldTypeResolver(
-    private val resolver: ProjectTypeResolver
+    private val resolver: TypeRefSemanticResolver
 ) {
     fun resolve(member: ProjectRecordMemberResolution.Resolved): ProjectRecordFieldTypeResolution {
         val field = member.field
-        return when (val typeRef = field.typeRef) {
-            is NamedTypeRef -> ProjectRecordFieldTypeResolution.Named(
-                field,
-                resolver.resolve(typeRef, ProjectTypeLookupContext(member.declaration.owner))
-            )
-            else -> ProjectRecordFieldTypeResolution.Unsupported(field, typeRef)
-        }
+        return ProjectRecordFieldTypeResolution(
+            field,
+            resolver.resolve(field.typeRef, ProjectTypeLookupContext(member.declaration.owner))
+        )
     }
 }

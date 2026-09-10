@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.project
 
+import com.felipebz.zpa.api.symbols.PlSqlType
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -49,14 +50,13 @@ class ProjectRecordMemberPathResolverTest {
             parent.recordFields.single(),
             child.recordFields.single()
         )
-        val firstType = completed.segments[0].fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
-        assertThat((firstType.resolution as ProjectTypeResolution.Resolved).declaration).isSameAs(child)
+        val firstType = completed.segments[0].fieldTypeResolution.resolution
+        assertThat((firstType as TypeRefSemanticResolution.Project).resolution)
+            .isEqualTo(ProjectTypeResolution.Resolved(firstType.reference, child))
         val secondType = completed.segments[1].fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
         assertThat(secondType.field).isSameAs(child.recordFields.single())
         assertThat(secondType.resolution)
-            .isEqualTo(ProjectTypeResolution.NotFoundInProject(secondType.field.typeRef as NamedTypeRef))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(secondType.field.typeRef as NamedTypeRef, PlSqlType.CHARACTER))
         assertThatThrownBy { (completed.segments as MutableList).clear() }
             .isInstanceOf(UnsupportedOperationException::class.java)
     }
@@ -104,9 +104,13 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(result).isInstanceOf(ProjectRecordMemberPathResolution.Completed::class.java)
         val completed = result as ProjectRecordMemberPathResolution.Completed
         assertThat(completed.segments.map { it.field.name.lookupName }).containsExactly("CHILD", "NESTED", "ID")
-        assertThat(completed.segments).allMatch { it.fieldTypeResolution is ProjectRecordFieldTypeResolution.Named }
-        assertThat((completed.segments[2].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-            .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+        assertThat(completed.segments.map { it.fieldTypeResolution.resolution })
+            .allMatch { it is TypeRefSemanticResolution.BuiltIn || it is TypeRefSemanticResolution.Project }
+        assertThat(completed.segments[2].fieldTypeResolution.resolution)
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(
+                completed.segments[2].field.typeRef as NamedTypeRef,
+                PlSqlType.NUMERIC
+            ))
     }
 
     @Test
@@ -124,8 +128,8 @@ class ProjectRecordMemberPathResolverTest {
         val stopped = result as ProjectRecordMemberPathResolution.Stopped
         assertThat(stopped.segments).hasSize(1)
         assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
-        assertThat((stopped.segments.single().fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((stopped.segments.single().fieldTypeResolution.resolution
+            as TypeRefSemanticResolution.Project).resolution)
             .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
     }
 
@@ -154,8 +158,8 @@ class ProjectRecordMemberPathResolverTest {
         val stopped = result as ProjectRecordMemberPathResolution.Stopped
         assertThat(stopped.segments).hasSize(1)
         assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
-        assertThat((stopped.segments.single().fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((stopped.segments.single().fieldTypeResolution.resolution
+            as TypeRefSemanticResolution.Project).resolution)
             .isInstanceOf(ProjectTypeResolution.IncompleteIndex::class.java)
     }
 
@@ -178,19 +182,25 @@ class ProjectRecordMemberPathResolverTest {
         val result = ProjectRecordMemberPathResolution.Completed(listOf(
             ProjectRecordMemberPathSegment(
                 first.field,
-                ProjectRecordFieldTypeResolution.Named(
+                ProjectRecordFieldTypeResolution(
                     first.field,
-                    ProjectTypeResolution.Resolved(first.field.typeRef as NamedTypeRef, child)
+                    TypeRefSemanticResolution.Project(
+                        first.field.typeRef as NamedTypeRef,
+                        ProjectTypeResolution.Resolved(first.field.typeRef, child)
+                    )
                 )
             ),
             ProjectRecordMemberPathSegment(
                 second.field,
-                ProjectRecordFieldTypeResolution.Named(second.field, incomplete)
+                ProjectRecordFieldTypeResolution(
+                    second.field,
+                    TypeRefSemanticResolution.Project(second.field.typeRef as NamedTypeRef, incomplete)
+                )
             )
         ))
 
         assertThat(result.segments[1].field).isSameAs(second.field)
-        assertThat((result.segments[1].fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((result.segments[1].fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isSameAs(incomplete)
     }
 
@@ -212,9 +222,11 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(completed.segments).hasSize(typeCount)
         assertThat(completed.segments.map { it.field.name.lookupName })
             .containsExactlyElementsOf(memberNames.map { it.lookupName })
-        assertThat(completed.segments).allMatch { it.fieldTypeResolution is ProjectRecordFieldTypeResolution.Named }
-        assertThat((completed.segments.last().fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
-            .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
+        assertThat(completed.segments.last().fieldTypeResolution.resolution)
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(
+                completed.segments.last().field.typeRef as NamedTypeRef,
+                PlSqlType.NUMERIC
+            ))
         assertThatThrownBy {
             ProjectRecordMemberPathResolution.Completed(completed.segments.take(1))
         }.isInstanceOf(IllegalArgumentException::class.java)
@@ -247,7 +259,7 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(stopped.nextMember).isEqualTo(OracleIdentifier.fromSource("missing"))
         assertThat(stopped.nextMemberOrdinal).isEqualTo(3)
         assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
-        assertThat((stopped.segments.last().fieldTypeResolution as ProjectRecordFieldTypeResolution.Named).resolution)
+        assertThat((stopped.segments.last().fieldTypeResolution.resolution as TypeRefSemanticResolution.Project).resolution)
             .isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
     }
 
@@ -299,8 +311,8 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(stopped.nextMember).isEqualTo(OracleIdentifier.fromSource("next"))
         assertThat(stopped.nextMemberOrdinal).isEqualTo(3)
         assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED)
-        val typeResolution = stopped.segments.last().fieldTypeResolution
-            as ProjectRecordFieldTypeResolution.Named
+        val typeResolution = stopped.segments.last().fieldTypeResolution.resolution
+            as TypeRefSemanticResolution.Project
         assertThat(typeResolution.resolution).isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
     }
 
@@ -404,7 +416,7 @@ class ProjectRecordMemberPathResolverTest {
 
     private fun resolver(context: ProjectAnalysisContext) = ProjectRecordMemberPathResolver(
         ProjectRecordMemberResolver(),
-        ProjectRecordFieldTypeResolver(ProjectTypeResolver(context))
+        ProjectRecordFieldTypeResolver(TypeRefSemanticResolver(ProjectTypeResolver(context)))
     )
 
     private fun context(vararg sources: Pair<FileId, String>) = ProjectAnalysisContext.prepared(

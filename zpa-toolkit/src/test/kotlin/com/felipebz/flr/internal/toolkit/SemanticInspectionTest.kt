@@ -67,7 +67,7 @@ class SemanticInspectionTest {
         assertThat(field.typeRef.name).isEqualTo("address_rec")
         assertThat(field.sourceRange.startLine).isEqualTo(9)
         assertThat(fieldType.state)
-            .isEqualTo(ProjectRecordFieldTypeResolutionState.NAMED)
+            .isEqualTo(ProjectRecordFieldTypeResolutionState.PROJECT)
         assertThat(fieldTypeResolution.state)
             .isEqualTo(ProjectTypeResolutionState.RESOLVED)
         assertThat(fieldTypeResolution.declaration!!.qualifiedName)
@@ -101,12 +101,13 @@ class SemanticInspectionTest {
         assertThat(resolution.segments.map { it.field.name }).containsExactly("customer", "address", "city")
         assertThat(resolution.segments.map { it.fieldTypeResolution.state })
             .containsExactly(
-                ProjectRecordFieldTypeResolutionState.NAMED,
-                ProjectRecordFieldTypeResolutionState.NAMED,
-                ProjectRecordFieldTypeResolutionState.NAMED
+                ProjectRecordFieldTypeResolutionState.PROJECT,
+                ProjectRecordFieldTypeResolutionState.PROJECT,
+                ProjectRecordFieldTypeResolutionState.BUILT_IN
             )
-        assertThat(resolution.segments.last().fieldTypeResolution.resolution!!.state)
-            .isEqualTo(ProjectTypeResolutionState.NOT_FOUND_IN_PROJECT)
+        assertThat(resolution.segments.last().fieldTypeResolution.resolution).isNull()
+        assertThat(resolution.segments.last().fieldTypeResolution.semanticType)
+            .isEqualTo("CHARACTER")
     }
 
     @Test

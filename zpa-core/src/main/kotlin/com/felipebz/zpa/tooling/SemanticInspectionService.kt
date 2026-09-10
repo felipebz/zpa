@@ -38,6 +38,7 @@ import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.project.RefTypeRef
 import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.project.TypeRef
+import com.felipebz.zpa.project.TypeRefSemanticResolution
 import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.SemanticAnalysisPipeline
 import com.felipebz.zpa.symbols.ScopeImpl
@@ -181,7 +182,8 @@ public data class ProjectRecordMemberResolutionSummary(
 )
 
 public enum class ProjectRecordFieldTypeResolutionState {
-    NAMED,
+    BUILT_IN,
+    PROJECT,
     UNSUPPORTED
 }
 
@@ -189,7 +191,8 @@ public data class ProjectRecordFieldTypeResolutionSummary(
     public val state: ProjectRecordFieldTypeResolutionState,
     public val field: ProjectRecordFieldSummary,
     public val typeRef: SemanticTypeRefSummary,
-    public val resolution: ProjectTypeResolutionSummary?
+    public val resolution: ProjectTypeResolutionSummary?,
+    public val semanticType: String? = null
 )
 
 public data class ProjectRecordMemberPathSegmentSummary(
@@ -354,18 +357,20 @@ private object SemanticInspectionMapper {
 
     private fun fieldTypeResolution(
         resolution: ProjectRecordFieldTypeResolution
-    ): ProjectRecordFieldTypeResolutionSummary = when (resolution) {
-        is ProjectRecordFieldTypeResolution.Named -> ProjectRecordFieldTypeResolutionSummary(
-            ProjectRecordFieldTypeResolutionState.NAMED,
-            field(resolution.field),
-            typeRef(resolution.field.typeRef),
-            projectTypeResolution(resolution.resolution)
-        )
-        is ProjectRecordFieldTypeResolution.Unsupported -> ProjectRecordFieldTypeResolutionSummary(
-            ProjectRecordFieldTypeResolutionState.UNSUPPORTED,
-            field(resolution.field),
-            typeRef(resolution.typeRef),
-            null
+    ): ProjectRecordFieldTypeResolutionSummary {
+        val semanticResolution = resolution.resolution
+        return ProjectRecordFieldTypeResolutionSummary(
+            state = when (semanticResolution) {
+                is TypeRefSemanticResolution.BuiltIn -> ProjectRecordFieldTypeResolutionState.BUILT_IN
+                is TypeRefSemanticResolution.Project -> ProjectRecordFieldTypeResolutionState.PROJECT
+                is TypeRefSemanticResolution.Unsupported -> ProjectRecordFieldTypeResolutionState.UNSUPPORTED
+            },
+            field = field(resolution.field),
+            typeRef = typeRef(semanticResolution.reference),
+            resolution = (semanticResolution as? TypeRefSemanticResolution.Project)
+                ?.resolution?.let(::projectTypeResolution),
+            semanticType = (semanticResolution as? TypeRefSemanticResolution.BuiltIn)
+                ?.type?.name
         )
     }
 
