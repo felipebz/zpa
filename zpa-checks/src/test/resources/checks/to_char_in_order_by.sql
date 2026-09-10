@@ -12,6 +12,14 @@ select *
 from emp
 order by empno; -- Compliant
 
+select *
+from emp
+order by 'employee'; -- Compliant
+
+select *
+from emp
+order by null; -- Compliant
+
 select empno
 from emp
 order by 1; -- Compliant

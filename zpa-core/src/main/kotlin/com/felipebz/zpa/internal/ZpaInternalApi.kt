@@ -1,0 +1,33 @@
+/**
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2026 Felipe Zorzo
+ * mailto:felipe AT felipezorzo DOT com DOT br
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package com.felipebz.zpa.internal
+
+import kotlin.RequiresOptIn
+
+/**
+ * Marks an API reserved for ZPA's built-in modules and subject to change without notice.
+ */
+@RequiresOptIn(
+    level = RequiresOptIn.Level.ERROR,
+    message = "This API is intended only for ZPA built-in modules and may change without notice."
+)
+@Retention(AnnotationRetention.BINARY)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class ZpaInternalApi

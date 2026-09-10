@@ -25,6 +25,8 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.internal.InternalSemanticTypeBridge
+import com.felipebz.zpa.internal.ZpaInternalApi
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
@@ -36,6 +38,7 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
         subscribeTo(DmlGrammar.ORDER_BY_ITEM)
     }
 
+    @OptIn(ZpaInternalApi::class)
     override fun visitNode(node: AstNode) {
         val expression = node.firstChild
 
@@ -43,7 +46,9 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
             addIssue(node, getLocalizedMessage())
         }
 
-        if (expression.type === PlSqlGrammar.LITERAL && semantic(expression).plSqlType === PlSqlType.NUMERIC) {
+        if (expression.type === PlSqlGrammar.LITERAL &&
+            InternalSemanticTypeBridge.effectivePlSqlType(semantic(expression)) === PlSqlType.NUMERIC
+        ) {
             val index = Integer.parseInt(expression.tokenOriginalValue)
 
             val selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)
