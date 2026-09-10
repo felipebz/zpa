@@ -22,10 +22,13 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
 import com.felipebz.flr.toolkit.ConfigurationModel
-import com.felipebz.zpa.symbols.DefaultTypeSolver
-import com.felipebz.zpa.symbols.SymbolVisitor
-import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.symbols.SymbolTable
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.tooling.SemanticInspectionResult
+import com.felipebz.zpa.tooling.SemanticInspectionService
 import java.io.File
 import java.nio.charset.Charset
 import kotlin.system.measureNanoTime
@@ -40,26 +43,42 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
     var parseTime: Long = 0
         private set
 
+    private var semanticInspectionResult: SemanticInspectionResult? = null
+    private val currentBufferFileId = FileId("zpa-toolkit://current-buffer")
+
+    private val semanticInspectionService = SemanticInspectionService()
+
     fun setSourceCode(source: File, charset: Charset) {
-        setSourceCode(source.readText(charset))
+        val fileId = FileId(source.toPath().toAbsolutePath().normalize().toString())
+        setSourceCode(source.readText(charset), fileId)
     }
 
     fun setSourceCode(sourceCode: String) {
+        setSourceCode(sourceCode, currentBufferFileId)
+    }
+
+    fun inspect(node: AstNode) = semanticInspectionResult?.inspect(node)
+
+    private fun setSourceCode(sourceCode: String, fileId: FileId) {
+        semanticInspectionResult = null
         parseTime = measureNanoTime {
             astNode = configurationModel.parser.parse(sourceCode)
         }
         this.sourceCode = sourceCode
-        loadSymbolTable()
+        val preparation = ProjectIndexPreparation().prepare(
+            listOf(ProjectSource(fileId) { sourceCode }),
+            concurrent = false
+        )
+        val result = semanticInspectionService.analyze(
+            astNode,
+            fileId,
+            ProjectAnalysisContext.prepared(preparation)
+        )
+        semanticInspectionResult = result
+        symbolTable = result.symbolTable
     }
 
     val xml: String
         get() = AstXmlPrinter.print(astNode)
 
-    private fun loadSymbolTable() {
-        val symbolVisitor = SymbolVisitor(DefaultTypeSolver())
-        symbolVisitor.context = PlSqlVisitorContext(astNode, null, null)
-        symbolVisitor.init()
-        symbolVisitor.visitFile(astNode)
-        symbolTable = symbolVisitor.symbolTable
-    }
 }

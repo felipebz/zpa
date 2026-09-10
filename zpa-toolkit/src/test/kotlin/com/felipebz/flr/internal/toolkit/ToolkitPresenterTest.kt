@@ -31,6 +31,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
 import com.felipebz.zpa.symbols.SymbolTableImpl
+import com.felipebz.zpa.tooling.SemanticNodeInspection
 import java.awt.Point
 import java.io.File
 import java.io.PrintWriter
@@ -106,6 +107,7 @@ class ToolkitPresenterTest {
         verify(view).displaySourceCode("", emptyList())
         verify(view).displayAst(null)
         verify(view).displayXml("")
+        verify(view).displaySemantics(null)
         verify(view).disableXPathEvaluateButton()
         verify(view).run()
     }
@@ -298,6 +300,7 @@ class ToolkitPresenterTest {
         presenter.onSourceCodeKeyTyped()
         verify(view).displayAst(null)
         verify(view).displayXml("")
+        verify(view).displaySemantics(null)
         verify(view).clearSourceCodeHighlights()
         verify(view).disableXPathEvaluateButton()
     }
@@ -313,6 +316,7 @@ class ToolkitPresenterTest {
         verify(view).clearAstSelections()
         verify(view).selectAstNode(astNode)
         verify(view).scrollAstTo(astNode)
+        verify(view).displaySemantics(null)
     }
 
     @Test
@@ -327,6 +331,39 @@ class ToolkitPresenterTest {
         verify(view).clearSourceCodeHighlights()
         verify(view).scrollSourceCodeTo(firstAstNode.tokenOrNull)
         verify(view).scrollSourceCodeTo(secondAstNode.tokenOrNull)
+        verify(view).displaySemantics(null)
+    }
+
+    @Test
+    fun onSourceCodeTextCursorMoved_updatesSemanticsForSelectedNode() {
+        val view = mock<ToolkitView>()
+        val model = mock<SourceCodeModel>()
+        val astNode = mock<AstNode>()
+        val inspection = mock<SemanticNodeInspection>()
+        whenever(view.astNodeFollowingCurrentSourceCodeTextCursorPosition).thenReturn(astNode)
+        whenever(model.inspect(astNode)).thenReturn(inspection)
+        val presenter = ToolkitPresenter(mock(), model)
+        presenter.setView(view)
+
+        presenter.onSourceCodeTextCursorMoved()
+
+        verify(view).displaySemantics(inspection)
+    }
+
+    @Test
+    fun onAstSelectionChanged_updatesSemanticsForFirstSelectedNode() {
+        val view = mock<ToolkitView>()
+        val model = mock<SourceCodeModel>()
+        val astNode = mock<AstNode>()
+        val inspection = mock<SemanticNodeInspection>()
+        whenever(view.selectedAstNodes).thenReturn(listOf(astNode))
+        whenever(model.inspect(astNode)).thenReturn(inspection)
+        val presenter = ToolkitPresenter(mock(), model)
+        presenter.setView(view)
+
+        presenter.onAstSelectionChanged()
+
+        verify(view).displaySemantics(inspection)
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.tooling.SemanticNodeInspection
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
@@ -56,6 +57,9 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val configurationPropertiesPanels: MutableMap<String?, ConfigurationPropertyPanel> = HashMap()
     private val symbolTree = JTree()
     private val symbolTreeScrollPane = JScrollPane(symbolTree)
+    private val semanticsTree = JTree()
+    private val semanticsTreeScrollPane = JScrollPane(semanticsTree)
+    private val semanticTreeBuilder = SemanticTreeBuilder()
     private val sourceCodeLabel = JLabel(" Source Code")
     private val sourceCodeEditorPane = NoWrapJTextPane()
     private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
@@ -110,6 +114,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.tabPlacement = JTabbedPane.TOP
         tabbedPane.add("AST", astTreeScrollPane)
         tabbedPane.add("Symbol table", symbolTreeScrollPane)
+        tabbedPane.add("Semantics", semanticsTreeScrollPane)
         tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
@@ -226,6 +231,15 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             val treeNode = getScopeTreeNode(scope)
             symbolTree.model = DefaultTreeModel(treeNode)
         }
+    }
+
+    override fun displaySemantics(inspection: SemanticNodeInspection?) {
+        semanticsTree.model = if (inspection == null) {
+            DefaultTreeModel(DefaultMutableTreeNode("No semantic information for this node"))
+        } else {
+            DefaultTreeModel(semanticTreeBuilder.build(inspection))
+        }
+        if (inspection != null) semanticTreeBuilder.expandPrimary(semanticsTree)
     }
 
     override fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long) {

@@ -23,6 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.symbols.Scope
+import com.felipebz.zpa.tooling.SemanticNodeInspection
 import java.awt.Point
 import java.io.File
 
@@ -80,6 +81,13 @@ internal interface ToolkitView {
      * @param scope The scope to display
      */
     fun displayScope(scope: Scope?)
+
+    /**
+     * Display the diagnostic semantic information for the currently selected AST node.
+     *
+     * @param inspection the node inspection, or null when no node is selected
+     */
+    fun displaySemantics(inspection: SemanticNodeInspection?)
 
     fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long)
 

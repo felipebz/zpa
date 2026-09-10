@@ -74,6 +74,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayAst(null)
         view.displayXml("")
         view.displayScope(null)
+        view.displaySemantics(null)
         view.displayStatistics(0, 0, 0, 0)
         view.disableXPathEvaluateButton()
         initConfigurationTab()
@@ -96,6 +97,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             view.displayAst(model.astNode)
             view.displayXml(model.xml)
             view.displayScope(symbolTable.scopes.firstOrNull())
+            view.displaySemantics(null)
             view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
             view.scrollSourceCodeTo(Point(0, 0))
             view.setFocusOnAbstractSyntaxTreeView()
@@ -113,6 +115,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayAst(model.astNode)
         view.displayXml(model.xml)
         view.displayScope(symbolTable.scopes.firstOrNull())
+        view.displaySemantics(null)
         view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
         view.scrollSourceCodeTo(sourceCodeScrollbarPosition)
         view.setFocusOnAbstractSyntaxTreeView()
@@ -139,6 +142,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         }
         view.scrollAstTo(firstAstNode)
         view.scrollSourceCodeTo(firstAstNode?.tokenOrNull)
+        view.displaySemantics(firstAstNode?.let { model.inspect(it) })
         view.setFocusOnAbstractSyntaxTreeView()
     }
 
@@ -147,6 +151,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayXml("")
         view.displayScope(null)
         view.displayStatistics(0, 0, 0, 0)
+        view.displaySemantics(null)
         view.clearSourceCodeHighlights()
         view.disableXPathEvaluateButton()
     }
@@ -156,6 +161,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         val astNode = view.astNodeFollowingCurrentSourceCodeTextCursorPosition
         view.selectAstNode(astNode)
         view.scrollAstTo(astNode)
+        view.displaySemantics(astNode?.let { model.inspect(it) })
     }
 
     fun onAstSelectionChanged() {
@@ -183,6 +189,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         } else {
             view.scrollSourceCodeTo(firstTrivia?.token)
         }
+        view.displaySemantics(firstAstNode?.let { model.inspect(it) })
     }
 
     fun onSymbolSelectionChanged() {
