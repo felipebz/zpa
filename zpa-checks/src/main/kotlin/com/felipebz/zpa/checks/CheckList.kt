@@ -76,6 +76,7 @@ object CheckList {
                 XPathCheck::class.java,
                 VariableNameCheck::class.java,
                 ToCharInOrderByCheck::class.java,
+                PackageBodyParameterNocopyCheck::class.java,
                 DisabledTestCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java)

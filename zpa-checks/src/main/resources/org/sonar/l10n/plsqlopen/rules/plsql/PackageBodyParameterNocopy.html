@@ -1,0 +1,27 @@
+<p>Make the <code>NOCOPY</code> qualification of a package body parameter match the corresponding package specification parameter.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE p AS
+  PROCEDURE work(value IN OUT NOCOPY CLOB);
+END p;
+
+CREATE PACKAGE BODY p AS
+  PROCEDURE work(value IN OUT CLOB) IS
+  BEGIN
+    NULL;
+  END work;
+END p;
+</pre>
+
+<h2>Compliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE BODY p AS
+  PROCEDURE work(value IN OUT NOCOPY CLOB) IS
+  BEGIN
+    NULL;
+  END work;
+END p;
+</pre>

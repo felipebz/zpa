@@ -1,0 +1,27 @@
+<p>Faça com que a qualificação <code>NOCOPY</code> do parâmetro do corpo do pacote corresponda à do parâmetro da especificação.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE PACKAGE p AS
+  PROCEDURE work(value IN OUT NOCOPY CLOB);
+END p;
+
+CREATE PACKAGE BODY p AS
+  PROCEDURE work(value IN OUT CLOB) IS
+  BEGIN
+    NULL;
+  END work;
+END p;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+CREATE PACKAGE BODY p AS
+  PROCEDURE work(value IN OUT NOCOPY CLOB) IS
+  BEGIN
+    NULL;
+  END work;
+END p;
+</pre>
