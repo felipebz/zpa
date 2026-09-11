@@ -23,6 +23,9 @@ import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.impl.Parser
 import com.felipebz.zpa.FormsMetadataAwareCheck
+import com.felipebz.zpa.internal.BuiltInProjectAnalysisConsumer
+import com.felipebz.zpa.internal.BuiltInProjectAnalysisQueries
+import com.felipebz.zpa.internal.ZpaInternalApi
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.metrics.ComplexityVisitor
 import com.felipebz.zpa.metrics.FunctionComplexityVisitor
@@ -53,6 +56,9 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
     val globalScope = ScopeImpl()
     private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext, globalScope)
+    @OptIn(ZpaInternalApi::class)
+    private val builtInProjectAnalysisQueries =
+        BuiltInProjectAnalysisQueries.create(projectAnalysisContext)
 
     fun scanFile(
         inputFile: PlSqlFile,
@@ -89,6 +95,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         checksToRun.addAll(extraVisitors)
 
         val issues = lock.withLock {
+            injectBuiltInProjectAnalysisQueries(checksToRun)
             val newWalker = PlSqlAstWalker(checksToRun)
             newWalker.walk(newVisitorContext)
 
@@ -109,6 +116,12 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
             executableLines = metricsVisitor.getExecutableLines(),
             issues = issues
         )
+    }
+
+    @OptIn(ZpaInternalApi::class)
+    private fun injectBuiltInProjectAnalysisQueries(checksToRun: Collection<PlSqlVisitor>) {
+        checksToRun.filterIsInstance<BuiltInProjectAnalysisConsumer>()
+            .forEach { it.setProjectAnalysisQueries(builtInProjectAnalysisQueries) }
     }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
