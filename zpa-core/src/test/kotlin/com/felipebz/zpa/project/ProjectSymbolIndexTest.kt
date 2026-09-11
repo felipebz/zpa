@@ -165,4 +165,56 @@ class ProjectSymbolIndexTest {
         assertThatThrownBy { (index.declarations as MutableList<ProjectDeclaration>).clear() }
             .isInstanceOf(UnsupportedOperationException::class.java)
     }
+
+    @Test
+    fun declarationsForReturnsOnlyFrozenFactsForTheRequestedFile() {
+        val firstFile = FileId("first.sql")
+        val secondFile = FileId("second.sql")
+        val firstFacts = extractor.extract(firstFile, "CREATE PACKAGE p AS PROCEDURE first_work; END p;")
+        val secondFacts = extractor.extract(secondFile, "CREATE PACKAGE q AS PROCEDURE second_work; END q;")
+        val index = ProjectSymbolIndexBuilder().also {
+            it.add(firstFile, firstFacts)
+            it.add(secondFile, secondFacts)
+        }.build()
+
+        val perFile = index.declarationsFor(firstFile)
+
+        assertThat(perFile).containsExactlyElementsOf(firstFacts)
+        assertThat(perFile).allSatisfy { declaration ->
+            assertThat(declaration.fileId).isEqualTo(firstFile)
+            assertThat(index.declarations.single { it === declaration }).isSameAs(declaration)
+        }
+        assertThat(index.declarationsFor(secondFile)).containsExactlyElementsOf(secondFacts)
+        val unknownFileFacts = index.declarationsFor(FileId("unknown.sql"))
+        assertThat(unknownFileFacts).isEmpty()
+        assertThatThrownBy { (unknownFileFacts as java.util.List<ProjectDeclaration>).add(firstFacts.first()) }
+            .isInstanceOf(UnsupportedOperationException::class.java)
+        assertThatThrownBy { (perFile as java.util.List<ProjectDeclaration>).clear() }
+            .isInstanceOf(UnsupportedOperationException::class.java)
+    }
+
+    @Test
+    fun declarationsForHasStableOrderingIndependentOfInputOrder() {
+        val firstFile = FileId("first.sql")
+        val secondFile = FileId("second.sql")
+        val firstFacts = extractor.extract(firstFile, """
+            CREATE PACKAGE p AS
+              PROCEDURE first_work;
+              TYPE first_type IS RECORD (id NUMBER);
+            END p;
+        """.trimIndent())
+        val secondFacts = extractor.extract(secondFile, "CREATE PACKAGE q AS PROCEDURE second_work; END q;")
+
+        val first = ProjectSymbolIndexBuilder().also {
+            it.add(firstFile, firstFacts)
+            it.add(secondFile, secondFacts)
+        }.build()
+        val second = ProjectSymbolIndexBuilder().also {
+            it.add(secondFile, secondFacts.asReversed())
+            it.add(firstFile, firstFacts.asReversed())
+        }.build()
+
+        assertThat(first.declarationsFor(firstFile)).containsExactlyElementsOf(second.declarationsFor(firstFile))
+        assertThat(first.declarationsFor(secondFile)).containsExactlyElementsOf(second.declarationsFor(secondFile))
+    }
 }

@@ -40,17 +40,27 @@ class ProjectSymbolIndexBuilder {
             .sortedBy { it.key.value }
             .flatMap { it.value }
             .sortedWith(ProjectSymbolIndex.declarationComparator)
-        return ProjectSymbolIndex(declarationsByFile.keys.toList().sortedBy { it.value }, declarations)
+        val frozenDeclarationsByFile = declarationsByFile.entries
+            .sortedBy { it.key.value }
+            .associate { (fileId, facts) ->
+                fileId to immutableList(facts.sortedWith(ProjectSymbolIndex.declarationComparator))
+            }
+        return ProjectSymbolIndex(frozenDeclarationsByFile.keys.toList(), declarations, frozenDeclarationsByFile)
     }
 }
 
 /** Immutable project-wide declaration registry. It does not perform semantic resolution. */
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
-    declarations: List<ProjectDeclaration>
+    declarations: List<ProjectDeclaration>,
+    fileDeclarations: Map<FileId, List<ProjectDeclaration>>
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
     val declarations: List<ProjectDeclaration> = immutableList(declarations)
+    private val declarationsByFile: Map<FileId, List<ProjectDeclaration>> = fileDeclarations.toMap()
+
+    /** Returns the frozen declarations belonging to exactly one source file. */
+    internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> = declarationsByFile[fileId].orEmpty()
 
     private val packagesByName = this.declarations
         .filterIsInstance<PackageDeclaration>()
@@ -94,7 +104,7 @@ class ProjectSymbolIndex internal constructor(
             { declarationOrderingKey(it) }
         )
 
-        internal fun empty() = ProjectSymbolIndex(emptyList(), emptyList())
+        internal fun empty() = ProjectSymbolIndex(emptyList(), emptyList(), emptyMap())
 
         private fun typeKey(declaration: ProjectTypeDeclaration): Pair<QualifiedName?, OracleIdentifier> =
             declaration.qualifiedName.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName) to

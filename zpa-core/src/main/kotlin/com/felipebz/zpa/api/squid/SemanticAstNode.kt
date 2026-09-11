@@ -29,6 +29,7 @@ import com.felipebz.zpa.sslr.TreeImpl
 import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
 import com.felipebz.zpa.project.ProjectRecordMemberResolution
 import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
+import com.felipebz.zpa.project.PackageSubprogramDeclaration
 import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
@@ -65,6 +66,9 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     /** Project RECORD member path information, separate from legacy AST semantics. */
     internal var projectRecordMemberPathResolution: ProjectRecordMemberPathResolution? = null
+
+    /** Exact AST-free project fact for an immediate PACKAGE BODY subprogram, when available. */
+    internal var projectSubprogramDeclaration: PackageSubprogramDeclaration? = null
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type

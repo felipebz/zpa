@@ -26,6 +26,7 @@ import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
+import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -46,6 +47,7 @@ class SemanticAnalysisPipelineTest {
 
         assertThat(visitors.map { it::class }).containsExactly(
             SymbolVisitor::class,
+            ProjectSubprogramDeclarationResolutionVisitor::class,
             ProjectTypeResolutionVisitor::class,
             ProjectRecordMemberResolutionVisitor::class,
             ProjectRecordFieldTypeResolutionVisitor::class,

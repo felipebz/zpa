@@ -30,6 +30,7 @@ import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
+import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
@@ -63,6 +64,8 @@ internal class SemanticAnalysisPipeline(
             val projectRecordFieldTypeResolver = ProjectRecordFieldTypeResolver(
                 TypeRefSemanticResolver(projectTypeResolver)
             )
+            val projectIndex = (projectAnalysisContext.state as ProjectAnalysisContext.State.Prepared).result.index
+            visitors.add(ProjectSubprogramDeclarationResolutionVisitor(projectIndex, fileId))
             visitors.add(ProjectTypeResolutionVisitor(projectTypeResolver, fileId))
             visitors.add(ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver))
             visitors.add(ProjectRecordFieldTypeResolutionVisitor(projectRecordFieldTypeResolver))
