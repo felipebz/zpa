@@ -493,7 +493,47 @@ class ProjectDeclarationExtractor(
                 if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
             }
             if (ref) return RefTypeRef(name, sourceRange)
-            return NamedTypeRef(name, sourceRange)
+            val headerTypeIdentity = normalizedHeaderTypeIdentity(selected)
+            return if (headerTypeIdentity == null) {
+                NamedTypeRef(name, sourceRange)
+            } else {
+                NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
+            }
+        }
+
+        /**
+         * Keeps the complete datatype token sequence for callable-heading correlation.
+         * Token boundaries are length encoded so punctuation and adjacent words cannot
+         * collapse into the same identity. Lexer trivia is not part of this sequence.
+         */
+        private fun normalizedHeaderTypeIdentity(selected: List<Token>): String? {
+            if (isPlainQualifiedName(selected)) return null
+            return selected.joinToString(separator = "") { token ->
+                val part = normalizedHeaderToken(token)
+                "${part.length}:$part;"
+            }
+        }
+
+        private fun isPlainQualifiedName(selected: List<Token>): Boolean {
+            var index = 0
+            if (!isNameAt(selected, index)) return false
+            while (true) {
+                index++
+                if (valueAt(selected, index) != "." || !isNameAt(selected, index + 1)) {
+                    return index == selected.size
+                }
+                index += 2
+            }
+        }
+
+        private fun normalizedHeaderToken(token: Token): String = when (val type = token.type) {
+            GenericTokenType.IDENTIFIER -> "identifier:${QualifiedName(identifier(token)).lookupKey()}"
+            is PlSqlKeyword -> if (type.isReserved) {
+                "keyword:${value(token)}"
+            } else {
+                "identifier:${QualifiedName(identifier(token)).lookupKey()}"
+            }
+            else -> "token:${token.originalValue}"
         }
 
         private fun qualifiedName(start: Int): Pair<QualifiedName, Int>? {
@@ -525,6 +565,9 @@ class ProjectDeclarationExtractor(
         }
 
         private fun isNameAt(tokens: List<Token>, index: Int) = index in tokens.indices && isName(tokens[index])
+
+        private fun valueAt(tokens: List<Token>, index: Int): String =
+            if (index in tokens.indices) value(tokens[index]) else ""
 
         private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? {
             if (start !in tokens.indices || !isName(tokens[start])) return null

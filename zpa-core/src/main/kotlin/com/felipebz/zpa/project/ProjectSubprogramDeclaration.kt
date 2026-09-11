@@ -111,8 +111,8 @@ sealed interface PackageSubprogramDeclaration : ProjectDeclaration {
     /** Header-correlation identity; excludes NOCOPY and defaults but includes parameter mode. */
     fun headerIdentity(): SubprogramHeaderIdentity = SubprogramHeaderIdentity(
         overloadIdentity(),
-        parameters.map { ParameterHeaderIdentity(it.name, it.mode, it.typeRef.structuralKey()) },
-        (this as? PackageFunctionDeclaration)?.returnType?.structuralKey()
+        parameters.map { ParameterHeaderIdentity(it.name, it.mode, it.typeRef.headerIdentityKey()) },
+        (this as? PackageFunctionDeclaration)?.returnType?.headerIdentityKey()
     )
 }
 
