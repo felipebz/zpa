@@ -75,7 +75,7 @@ open class ZpaChecks constructor(private val activeRules: ZpaActiveRules,
         try {
             var check = checkClassOrInstance
             if (check is Class<*>) {
-                check = (checkClassOrInstance as Class<*>).getDeclaredConstructor().newInstance()
+                check = checkClassOrInstance.getDeclaredConstructor().newInstance()
             }
             configureFields(activeRule, check)
             return check as PlSqlVisitor

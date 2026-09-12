@@ -194,7 +194,7 @@ class ProjectRecordMemberPathResolverTest {
                 second.field,
                 ProjectRecordFieldTypeResolution(
                     second.field,
-                    TypeRefSemanticResolution.Project(second.field.typeRef as NamedTypeRef, incomplete)
+                    TypeRefSemanticResolution.Project(second.field.typeRef, incomplete)
                 )
             )
         ))
