@@ -138,7 +138,7 @@ class CustomAnnotationBasedRulesDefinition(private val repository: ZpaRepository
             var url: URL? = CustomAnnotationBasedRulesDefinition::class.java.getResource(path)
 
             if (url == null) {
-                val localeWithoutCountry = if (locale.country == null) locale else Locale(locale.language)
+                val localeWithoutCountry = if (locale.country == null) locale else Locale.of(locale.language)
                 path = control.toBundleName(baseName, localeWithoutCountry)
                 url = CustomAnnotationBasedRulesDefinition::class.java.getResource(path)
 
