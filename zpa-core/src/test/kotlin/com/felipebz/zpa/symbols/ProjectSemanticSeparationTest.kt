@@ -20,9 +20,7 @@
 package com.felipebz.zpa.symbols
 
 import com.felipebz.zpa.api.PlSqlFile
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.Symbol
-import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.project.DeclarationRole
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
@@ -34,10 +32,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.file.Paths
 
-class GlobalScopeRetentionTest {
+class ProjectSemanticSeparationTest {
 
     @Test
-    fun packageSubprogramCopiesAreNotPublishedToGlobalScope() {
+    fun lexicalSymbolsRemainFileLocalWhileProjectFactsAreIndexed() {
         val source = """
             CREATE PACKAGE p AS
               PROCEDURE work(value NUMBER);
@@ -60,24 +58,13 @@ class GlobalScopeRetentionTest {
         val scanner = AstScanner(emptyList(), null, true)
         val result = scanner.scanFile(file, fileId = fileId)
 
-        fun descendants(scope: Scope): List<Scope> = listOf(scope) + scope.innerScopes.flatMap(::descendants)
-
-        val packageScopes = descendants(scanner.globalScope).filter {
-            it.type == PlSqlGrammar.CREATE_PACKAGE || it.type == PlSqlGrammar.CREATE_PACKAGE_BODY
-        }
-        assertThat(packageScopes).hasSize(2)
-        assertThat(packageScopes.flatMap { it.symbols })
-            .noneMatch { it.kind == Symbol.Kind.PROCEDURE || it.kind == Symbol.Kind.FUNCTION }
-        assertThat(packageScopes.flatMap { it.innerScopes })
-            .noneMatch {
-                it.type == PlSqlGrammar.PROCEDURE_DECLARATION ||
-                    it.type == PlSqlGrammar.FUNCTION_DECLARATION
-            }
-
         assertThat(result.symbols.filter {
             it.kind == Symbol.Kind.PROCEDURE || it.kind == Symbol.Kind.FUNCTION
         }.map { it.name })
             .containsExactlyInAnyOrder("WORK", "VALUE", "WORK", "VALUE")
+        assertThat(result.symbols.filter {
+            it.kind == Symbol.Kind.PROCEDURE || it.kind == Symbol.Kind.FUNCTION
+        }).allSatisfy { assertThat(it.isGlobal).isTrue }
 
         val index = ProjectIndexPreparation().prepare(
             listOf(ProjectSource(fileId) { source }),

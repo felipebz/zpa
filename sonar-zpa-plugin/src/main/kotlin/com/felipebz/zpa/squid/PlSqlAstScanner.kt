@@ -36,11 +36,13 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.metrics.CpdVisitor
 import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
-import com.felipebz.zpa.symbols.ObjectLocator
+import com.felipebz.zpa.symbols.MappedObject
+import com.felipebz.zpa.symbols.ObjectLocationVisitor
 import com.felipebz.zpa.symbols.SonarQubeSymbolTable
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.checks.PlSqlVisitor
 import java.io.Serializable
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -63,7 +65,6 @@ class PlSqlAstScanner(private val context: SensorContext,
                 formsMetadata: FormsMetadata?,
                 isErrorRecoveryEnabled: Boolean,
                 fileLinesContextFactory: FileLinesContextFactory,
-                objectLocator: ObjectLocator,
                 projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) : this(
         context,
         checks.all(),
@@ -74,8 +75,19 @@ class PlSqlAstScanner(private val context: SensorContext,
         projectAnalysisContext
     ) {
         this.plsqlChecks = checks
-        objectLocator.setScope(astScanner.globalScope)
     }
+
+    private val mappedObjects = ConcurrentLinkedQueue<MappedObject>()
+
+    internal fun objectLocations(): List<MappedObject> = mappedObjects.toList().sortedWith(
+        compareBy<MappedObject>(
+            { it.path.toString() },
+            { it.firstLine },
+            { it.lastLine },
+            { it.objectType.toString() },
+            { it.identifier }
+        )
+    )
 
     fun scanFile(inputFile: InputFile) {
         val plSqlFile = SonarQubePlSqlFile(inputFile)
@@ -91,7 +103,11 @@ class PlSqlAstScanner(private val context: SensorContext,
         val result = try {
             astScanner.scanFile(
                 plSqlFile,
-                listOf(PlSqlHighlighterVisitor(context, inputFile), CpdVisitor(context, inputFile)),
+                listOf(
+                    ObjectLocationVisitor(plSqlFile, mappedObjects),
+                    PlSqlHighlighterVisitor(context, inputFile),
+                    CpdVisitor(context, inputFile)
+                ),
                 FileId(inputFile.uri().toString())
             )
         } catch (e: Exception) {
@@ -128,7 +144,10 @@ class PlSqlAstScanner(private val context: SensorContext,
         val inputFile = plSqlFile.inputFile
         val result = astScanner.scanFile(
             plSqlFile,
-            listOf(PlSqlHighlighterVisitor(context, inputFile)),
+            listOf(
+                ObjectLocationVisitor(plSqlFile, mappedObjects),
+                PlSqlHighlighterVisitor(context, inputFile)
+            ),
             FileId(inputFile.uri().toString())
         )
 

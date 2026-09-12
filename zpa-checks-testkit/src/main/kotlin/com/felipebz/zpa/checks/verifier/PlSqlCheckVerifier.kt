@@ -23,7 +23,6 @@ import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.TestPlSqlVisitorRunner
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.DefaultTypeSolver
-import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import java.io.File
@@ -102,7 +101,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
             val verifier = PlSqlCheckVerifier()
             val file = File(path)
 
-            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver(), ScopeImpl()), verifier, check)
+            TestPlSqlVisitorRunner.scanFile(file, metadata, SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true), verifier, check)
             val issues = check.issues()
 
             val actualIssues = issues.sortedBy { it.primaryLocation().startLine() }.iterator()

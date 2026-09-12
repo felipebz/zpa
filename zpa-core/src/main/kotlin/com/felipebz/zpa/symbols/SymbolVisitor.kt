@@ -31,7 +31,7 @@ import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.*
 
-class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globalScope: Scope? = null) : PlSqlCheck() {
+class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlobalContext: Boolean = false) : PlSqlCheck() {
 
     private val scopeHolders = arrayOf<AstNodeType>(
         PlSqlGrammar.CREATE_PROCEDURE,
@@ -61,7 +61,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
 
     override fun init() {
         subscribeTo(*scopeHolders)
-        fileScope = ScopeImpl(globalScope = globalScope)
+        fileScope = ScopeImpl(isGlobalContext = isGlobalContext)
         symbolTable.addScope(fileScope)
         currentScope = fileScope
     }
@@ -70,60 +70,7 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val globa
         visit(node)
 
         context.symbolTable = symbolTable
-
-        if (globalScope != null) {
-            for (innerScope in fileScope.innerScopes) {
-                declareGlobalSymbols(innerScope, globalScope)
-            }
-        }
     }
-
-    private fun declareGlobalSymbols(current: Scope, outer: Scope) {
-        val scope = ScopeImpl(
-            outer = outer,
-            firstToken = current.firstToken,
-            lastToken = current.lastToken,
-            isAutonomousTransaction = current.isAutonomousTransaction,
-            hasExceptionHandler = current.hasExceptionHandler,
-            isOverridingMember = current.isOverridingMember,
-            identifier = current.identifier,
-            type = current.type,
-            plSqlFile = context.plSqlFile()
-        )
-
-        for (symbol in current.symbols.filter {
-            it.isGlobal && !isPackageSubprogramSymbol(current, it)
-        }) {
-            val newSymbol = Symbol(null, symbol.kind, scope, symbol.datatype, symbol.name)
-            scope.addSymbol(newSymbol)
-        }
-
-        for (innerScope in current.innerScopes.filter {
-            it.isGlobal && !isPackageSubprogramScope(current, it)
-        }) {
-            declareGlobalSymbols(innerScope, scope)
-        }
-    }
-
-    /**
-     * Package subprogram declarations are represented by ProjectSymbolIndex. They do not
-     * need a second, AST-backed registry copy in globalScope. Package containers remain in
-     * globalScope because ObjectLocator uses their source metadata.
-    */
-    private fun isPackageSubprogramSymbol(scope: Scope, symbol: Symbol): Boolean =
-        isPackageScope(scope) && when (symbol.kind) {
-            Symbol.Kind.PROCEDURE, Symbol.Kind.FUNCTION -> true
-            else -> false
-        }
-
-    private fun isPackageSubprogramScope(parent: Scope, child: Scope): Boolean =
-        isPackageScope(parent) && when (child.type) {
-            PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION -> true
-            else -> false
-        }
-
-    private fun isPackageScope(scope: Scope): Boolean =
-        scope.type == PlSqlGrammar.CREATE_PACKAGE || scope.type == PlSqlGrammar.CREATE_PACKAGE_BODY
 
     override fun visitNode(node: AstNode) {
         if (node.typeIs(scopeHolders)) {

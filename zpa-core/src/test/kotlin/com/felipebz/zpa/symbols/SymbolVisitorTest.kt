@@ -41,7 +41,7 @@ class SymbolVisitorTest {
     @field:TempDir
     lateinit var tempFolder: File
 
-    private val visitor = SymbolVisitor(DefaultTypeSolver(), ScopeImpl())
+    private val visitor = SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true)
 
     @Test
     fun variableDeclaration() {

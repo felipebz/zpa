@@ -31,7 +31,6 @@ import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.utils.getAnnotation
 import com.felipebz.zpa.utils.log.Loggers
 import com.felipebz.zpa.api.PlSqlFile
@@ -53,8 +52,7 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
                  private val projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) {
 
     private val parser: Parser<Grammar> = PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled))
-    val globalScope = ScopeImpl()
-    private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext, globalScope)
+    private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext)
     @OptIn(ZpaExperimentalApi::class)
     private val semanticScanCapabilities = SemanticScanCapabilities(
         createProjectAnalysis(projectAnalysisContext)

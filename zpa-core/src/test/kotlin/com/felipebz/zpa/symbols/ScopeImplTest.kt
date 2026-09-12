@@ -20,6 +20,7 @@
 package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.Symbol.Kind
@@ -37,6 +38,47 @@ class ScopeImplTest {
         assertThat(scope.outer).isNull()
         assertThat(scope.tree).isEqualTo(node)
         assertThat(scope.isAutonomousTransaction).isFalse
+        assertThat(scope.isGlobal).isFalse
+    }
+
+    @Test
+    fun globalContextMarkerPreservesGlobalScopeSemantics() {
+        val fileScope = ScopeImpl(isGlobalContext = true)
+        val packageScope = ScopeImpl(fileScope, type = PlSqlGrammar.CREATE_PACKAGE)
+        val packageBodyScope = ScopeImpl(fileScope, type = PlSqlGrammar.CREATE_PACKAGE_BODY)
+        val typeScope = ScopeImpl(fileScope, type = PlSqlGrammar.CREATE_TYPE)
+        val typeBodyScope = ScopeImpl(fileScope, type = PlSqlGrammar.CREATE_TYPE_BODY)
+        val standaloneScope = ScopeImpl(fileScope, type = PlSqlGrammar.CREATE_PROCEDURE)
+        val nestedBlockScope = ScopeImpl(standaloneScope, type = PlSqlGrammar.BLOCK_STATEMENT)
+        val packageMemberScope = ScopeImpl(packageScope, type = PlSqlGrammar.PROCEDURE_DECLARATION)
+        val packageBodyMemberScope = ScopeImpl(packageBodyScope, type = PlSqlGrammar.PROCEDURE_DECLARATION)
+        val typeMemberScope = ScopeImpl(typeScope, type = PlSqlGrammar.PROCEDURE_DECLARATION)
+        val typeBodyMemberScope = ScopeImpl(typeBodyScope, type = PlSqlGrammar.PROCEDURE_DECLARATION)
+
+        assertThat(fileScope.outer).isNull()
+        assertThat(packageScope.outer).isSameAs(fileScope)
+        assertThat(fileScope.isGlobal).isTrue
+        assertThat(packageScope.isGlobal).isTrue
+        assertThat(packageBodyScope.isGlobal).isTrue
+        assertThat(typeScope.isGlobal).isTrue
+        assertThat(typeBodyScope.isGlobal).isTrue
+        assertThat(standaloneScope.isGlobal).isTrue
+        assertThat(nestedBlockScope.isGlobal).isFalse
+        assertThat(packageMemberScope.isGlobal).isTrue
+        assertThat(packageBodyMemberScope.isGlobal).isFalse
+        assertThat(typeMemberScope.isGlobal).isTrue
+        assertThat(typeBodyMemberScope.isGlobal).isFalse
+
+        assertThat(Symbol(null, Kind.VARIABLE, packageScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.TYPE, packageScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.CURSOR, packageScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.PROCEDURE, packageScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.FUNCTION, packageScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.PROCEDURE, fileScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.FUNCTION, fileScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.PROCEDURE, packageBodyScope, null).isGlobal).isTrue
+        assertThat(Symbol(null, Kind.PROCEDURE, packageBodyMemberScope, null).isGlobal).isFalse
+        assertThat(Symbol(null, Kind.VARIABLE, nestedBlockScope, null).isGlobal).isFalse
     }
 
     @Test

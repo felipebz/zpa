@@ -32,10 +32,8 @@ import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
-import com.felipebz.zpa.symbols.ScopeImpl
 import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.api.checks.PlSqlVisitor
-import com.felipebz.zpa.api.symbols.Scope
 
 /**
  * Creates the semantic visitors in the one order required by the analysis pipeline.
@@ -45,8 +43,7 @@ import com.felipebz.zpa.api.symbols.Scope
  * semantic decoration order used by ZPA.
  */
 internal class SemanticAnalysisPipeline(
-    private val projectAnalysisContext: ProjectAnalysisContext,
-    private val globalScope: Scope
+    private val projectAnalysisContext: ProjectAnalysisContext
 ) {
 
     data class Visitors(
@@ -55,7 +52,7 @@ internal class SemanticAnalysisPipeline(
     )
 
     fun create(fileId: FileId): Visitors {
-        val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), globalScope)
+        val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true)
         val visitors = mutableListOf<PlSqlVisitor>(symbolVisitor)
 
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
@@ -81,6 +78,6 @@ internal class SemanticAnalysisPipeline(
 
     companion object {
         fun forTooling(projectAnalysisContext: ProjectAnalysisContext): SemanticAnalysisPipeline =
-            SemanticAnalysisPipeline(projectAnalysisContext, ScopeImpl())
+            SemanticAnalysisPipeline(projectAnalysisContext)
     }
 }

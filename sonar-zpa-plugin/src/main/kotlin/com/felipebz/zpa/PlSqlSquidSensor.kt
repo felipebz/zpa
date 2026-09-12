@@ -91,7 +91,6 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
             formsMetadata,
             isErrorRecoveryEnabled,
             fileLinesContextFactory,
-            objectLocator,
             projectAnalysisContext
         )
 
@@ -112,6 +111,8 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
                 logger.error("Error during analysis of file $it", e)
             }
         }
+
+        objectLocator.setObjects(scanner.objectLocations())
 
         progressReport.stop()
     }

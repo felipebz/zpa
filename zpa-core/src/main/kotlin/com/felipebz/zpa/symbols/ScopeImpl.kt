@@ -39,7 +39,7 @@ class ScopeImpl(override val outer: Scope? = null,
                 override val isOverridingMember: Boolean = false,
                 identifier: String? = null,
                 type: AstNodeType? = null,
-                private val globalScope: Scope? = null,
+                private val isGlobalContext: Boolean = false,
                 override val plSqlFile: PlSqlFile? = null) : Scope {
 
     private val mutex = ReentrantLock()
@@ -78,8 +78,8 @@ class ScopeImpl(override val outer: Scope? = null,
     }
     override val innerScopes = mutableListOf<Scope>()
 
-    override val isGlobal: Boolean = globalScope != null ||
-        (outer as? ScopeImpl)?.globalScope != null ||
+    override val isGlobal: Boolean = isGlobalContext ||
+        (outer as? ScopeImpl)?.isGlobalContext == true ||
         (outer?.type in arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_TYPE) && outer?.isGlobal == true)
 
     /**

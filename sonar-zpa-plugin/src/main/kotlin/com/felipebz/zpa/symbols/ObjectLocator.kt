@@ -21,38 +21,14 @@ package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNodeType
 import org.sonar.api.scanner.ScannerSide
-import com.felipebz.zpa.squid.SonarQubePlSqlFile
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.symbols.Scope
+import java.util.Collections
 
 @ScannerSide
 class ObjectLocator {
-    private var scope: Scope = ScopeImpl()
+    private var mappedObjects: List<MappedObject> = emptyList()
 
-    private val mappedObjects
-        get() = scope.innerScopes
-            .union(scope.innerScopes
-                .flatMap { it.innerScopes }
-                .filter { it.type == PlSqlGrammar.CREATE_PACKAGE_BODY || it.type == PlSqlGrammar.CREATE_TYPE_BODY })
-            .map {
-                val plSqlFile = it.plSqlFile as SonarQubePlSqlFile? ?: return@map null
-                val identifier = it.identifier ?: return@map null
-                val type = it.type ?: return@map null
-                val firstLine = it.firstToken?.line ?: return@map null
-                val lastLine = it.lastToken?.line ?: return@map null
-                MappedObject(
-                    identifier,
-                    type,
-                    plSqlFile.type(),
-                    plSqlFile.path(),
-                    plSqlFile.inputFile,
-                    firstLine,
-                    lastLine
-                )
-            }.filterNotNull()
-
-    fun setScope(scope: Scope) {
-        this.scope = scope
+    internal fun setObjects(objects: Collection<MappedObject>) {
+        mappedObjects = Collections.unmodifiableList(objects.toList())
     }
 
     fun findMainObject(identifier: String, vararg types: AstNodeType): MappedObject? {
