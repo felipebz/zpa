@@ -26,36 +26,30 @@ import com.felipebz.zpa.api.annotations.ConstantRemediation
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
 import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.internal.BuiltInPackageParameter
-import com.felipebz.zpa.internal.BuiltInPackageSpecificationResolution
-import com.felipebz.zpa.internal.BuiltInProjectAnalysisConsumer
-import com.felipebz.zpa.internal.BuiltInProjectAnalysisQueries
-import com.felipebz.zpa.internal.ZpaInternalApi
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.PackageParameter
+import com.felipebz.zpa.api.project.PackageSpecificationResolution
 
-@OptIn(ZpaInternalApi::class)
+@OptIn(ZpaExperimentalApi::class)
 @Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
-class PackageBodyParameterNocopyCheck : AbstractBaseCheck(), BuiltInProjectAnalysisConsumer {
-
-    private var projectAnalysisQueries: BuiltInProjectAnalysisQueries? = null
+class PackageBodyParameterNocopyCheck : AbstractBaseCheck() {
 
     override fun init() {
         subscribeTo(PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION)
     }
 
-    override fun setProjectAnalysisQueries(queries: BuiltInProjectAnalysisQueries) {
-        projectAnalysisQueries = queries
-    }
-
     override fun visitNode(node: AstNode) {
-        val resolution = projectAnalysisQueries
-            ?.resolvePackageSpecification(semantic(node))
-        if (resolution !is BuiltInPackageSpecificationResolution.Resolved) return
+        val resolution = projectAnalysis().resolvePackageSpecification(node)
+        if (resolution.status != PackageSpecificationResolution.Status.RESOLVED) return
 
-        val bodyParameters = resolution.body.parameters
-        val specificationParameters = resolution.specification.parameters
+        val body = resolution.body.orElseThrow()
+        val specification = resolution.specification.orElseThrow()
+
+        val bodyParameters = body.parameters
+        val specificationParameters = specification.parameters
         val astParameters = node.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)
             ?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION)
             ?: emptyList()
@@ -64,7 +58,7 @@ class PackageBodyParameterNocopyCheck : AbstractBaseCheck(), BuiltInProjectAnaly
 
         bodyParameters.forEachIndexed { index, bodyParameter ->
             val specificationParameter = specificationParameters[index]
-            if (specificationParameter.nocopy != bodyParameter.nocopy) {
+            if (specificationParameter.isNocopy() != bodyParameter.isNocopy()) {
                 addIssue(
                     astParameters[index].getFirstChild(PlSqlGrammar.IDENTIFIER_NAME),
                     getLocalizedMessage()
@@ -74,8 +68,8 @@ class PackageBodyParameterNocopyCheck : AbstractBaseCheck(), BuiltInProjectAnaly
     }
 
     private fun parametersAreAligned(
-        bodyParameters: List<BuiltInPackageParameter>,
-        specificationParameters: List<BuiltInPackageParameter>,
+        bodyParameters: List<PackageParameter>,
+        specificationParameters: List<PackageParameter>,
         astParameterCount: Int
     ): Boolean {
         if (bodyParameters.size != specificationParameters.size || bodyParameters.size != astParameterCount) {

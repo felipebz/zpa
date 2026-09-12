@@ -24,7 +24,9 @@ import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.PlSqlCommentAnalyzer
 import java.util.*
 
@@ -42,7 +44,15 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     private var lastVisitedToken: Token? = null
 
     fun walk(context: PlSqlVisitorContext) {
+        walk(context, SemanticScanCapabilities.NOT_PREPARED)
+    }
+
+    @OptIn(ZpaExperimentalApi::class)
+    internal fun walk(context: PlSqlVisitorContext, capabilities: SemanticScanCapabilities) {
         for (check in checks) {
+            if (check is PlSqlCheck) {
+                check.installProjectAnalysisForScan(capabilities.projectAnalysis)
+            }
             check.context = context
             check.startScan()
             check.init()

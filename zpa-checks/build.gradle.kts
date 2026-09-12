@@ -9,7 +9,7 @@ dependencies {
     implementation(libs.flr.core)
     implementation(libs.flr.xpath)
     implementation(project(":zpa-core"))
-    testImplementation(project(":zpa-checks-testkit"))
+    testImplementation(project(path = ":zpa-checks-testkit", configuration = "rawRuntimeElements"))
 }
 
 testing {

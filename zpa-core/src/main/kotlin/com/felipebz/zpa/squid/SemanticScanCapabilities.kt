@@ -17,10 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.internal
+package com.felipebz.zpa.squid
 
-/** Opt-in contract for built-in checks that consume the analysis-scoped project capability. */
-@ZpaInternalApi
-interface BuiltInProjectAnalysisConsumer {
-    fun setProjectAnalysisQueries(queries: BuiltInProjectAnalysisQueries)
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectAnalysis
+
+/** Capabilities installed for one walker execution before lifecycle callbacks begin. */
+@OptIn(ZpaExperimentalApi::class)
+internal class SemanticScanCapabilities(
+    val projectAnalysis: ProjectAnalysis
+) {
+    companion object {
+        val NOT_PREPARED = SemanticScanCapabilities(
+            createNotPreparedProjectAnalysis()
+        )
+    }
 }

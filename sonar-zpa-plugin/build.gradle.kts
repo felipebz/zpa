@@ -16,7 +16,6 @@ dependencies {
     implementation(libs.woodstox)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
-    implementation(project(":zpa-checks-testkit"))
     compileOnly(libs.sonar.plugin.api)
     compileOnly(libs.sonar.plugin.api.impl)
 }

@@ -19,6 +19,8 @@
  */
 package com.felipebz.zpa.checks
 
+import com.felipebz.zpa.checks.verifier.ProjectPlSqlCheckVerifier
+import com.felipebz.zpa.checks.verifier.ProjectTestSource
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
@@ -33,6 +35,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
+
+    private val message = "Make this parameter's NOCOPY qualification match its package specification."
 
     @Test
     fun reportsOnlyTheBodyParameterThatOmitsNocopy() {
@@ -51,7 +55,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             CREATE PACKAGE BODY p AS
               PROCEDURE work(
                 first_value NUMBER,
-                payload IN OUT CLOB,
+                payload IN OUT CLOB, -- Noncompliant {{$message}}
                 last_value NUMBER
               ) IS
               BEGIN
@@ -60,13 +64,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             END p;
         """.trimIndent()
 
-        val check = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
-
-        assertThat(check.issues()).hasSize(1)
-        assertThat(check.issues().single().primaryLocation().startLine()).isEqualTo(4)
-        assertThat(check.issues().single().primaryLocation().startLineOffset()).isEqualTo(4)
-        assertThat(check.issues().single().primaryLocation().message())
-            .isEqualTo("Make this parameter's NOCOPY qualification match its package specification.")
+        verify(specFile to specification, bodyFile to body)
     }
 
     @Test
@@ -74,11 +72,9 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
         val specFile = FileId("function-spec.sql")
         val bodyFile = FileId("function-body.sql")
         val specification = "CREATE PACKAGE p AS FUNCTION work(value IN OUT NOCOPY CLOB) RETURN NUMBER; END p;"
-        val body = "CREATE PACKAGE BODY p AS FUNCTION work(value IN OUT CLOB) RETURN NUMBER IS BEGIN RETURN 1; END work; END p;"
+        val body = "CREATE PACKAGE BODY p AS FUNCTION work(value IN OUT CLOB) RETURN NUMBER IS BEGIN RETURN 1; END work; END p; -- Noncompliant {{$message}}"
 
-        val check = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
-
-        assertThat(check.issues()).hasSize(1)
+        verify(specFile to specification, bodyFile to body)
     }
 
     @Test
@@ -107,22 +103,29 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             END p;
         """.trimIndent()
 
-        val mismatching = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
-        assertThat(mismatching.issues().map { it.primaryLocation().startLine() }).containsExactly(3, 4)
+        val mismatchingBody = body.replace(
+            "first_value IN OUT CLOB,",
+            "first_value IN OUT CLOB, -- Noncompliant {{$message}}"
+        ).replace(
+            "payload IN OUT CLOB,",
+            "payload IN OUT CLOB, -- Noncompliant {{$message}}"
+        )
+        verify(specFile to specification, bodyFile to mismatchingBody)
 
         val bothNocopy = body.replace("first_value IN OUT CLOB", "first_value IN OUT NOCOPY CLOB")
             .replace("payload IN OUT CLOB", "payload IN OUT NOCOPY CLOB")
-        assertThat(run(specFile to specification, bodyFile to bothNocopy, bodyFile = bodyFile).issues()).isEmpty()
+        verify(specFile to specification, bodyFile to bothNocopy)
 
         val bothWithoutNocopy = specification.replace(" IN OUT NOCOPY", " IN OUT")
-        assertThat(run(specFile to bothWithoutNocopy, bodyFile to body.replace(" IN OUT NOCOPY", " IN OUT"), bodyFile = bodyFile).issues())
-            .isEmpty()
+        verify(specFile to bothWithoutNocopy, bodyFile to body.replace(" IN OUT NOCOPY", " IN OUT"))
 
         val specificationWithoutNocopy = specification.replace(" IN OUT NOCOPY", " IN OUT")
         val bodyWithOnlyOneNocopy = body.replace(" IN OUT NOCOPY", " IN OUT")
-            .replace("first_value IN OUT CLOB", "first_value IN OUT NOCOPY CLOB")
-        assertThat(run(specFile to specificationWithoutNocopy, bodyFile to bodyWithOnlyOneNocopy, bodyFile = bodyFile).issues())
-            .hasSize(1)
+            .replace(
+                "first_value IN OUT CLOB,",
+                "first_value IN OUT NOCOPY CLOB, -- Noncompliant {{$message}}"
+            )
+        verify(specFile to specificationWithoutNocopy, bodyFile to bodyWithOnlyOneNocopy)
     }
 
     @Test
@@ -134,7 +137,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             CREATE PACKAGE BODY p AS
               PROCEDURE forward(value IN OUT NOCOPY CLOB);
 
-              PROCEDURE implemented(value IN OUT CLOB) IS
+              PROCEDURE implemented(value IN OUT CLOB) IS -- Noncompliant {{$message}}
               BEGIN
                 NULL;
               END implemented;
@@ -150,10 +153,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             END p;
         """.trimIndent()
 
-        val check = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
-
-        assertThat(check.issues()).hasSize(1)
-        assertThat(check.issues().single().primaryLocation().startLine()).isEqualTo(4)
+        verify(specFile to specification, bodyFile to body)
     }
 
     @Test
@@ -168,7 +168,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
         """.trimIndent()
         val body = """
             CREATE PACKAGE BODY p AS
-              PROCEDURE work(value IN OUT NUMBER) IS
+              PROCEDURE work(value IN OUT NUMBER) IS -- Noncompliant {{$message}}
               BEGIN
                 NULL;
               END work;
@@ -180,10 +180,7 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
             END p;
         """.trimIndent()
 
-        val check = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
-
-        assertThat(check.issues()).hasSize(1)
-        assertThat(check.issues().single().primaryLocation().startLine()).isEqualTo(2)
+        verify(specFile to specification, bodyFile to body)
     }
 
     @Test
@@ -194,13 +191,11 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
         val specification = "CREATE PACKAGE p AS PROCEDURE work(value IN OUT NOCOPY CLOB); END p;"
         val body = "CREATE PACKAGE BODY p AS PROCEDURE work(value IN OUT CLOB) IS BEGIN NULL; END work; END p;"
 
-        val ambiguous = run(
+        verify(
             specFile to specification,
             duplicateSpecFile to specification,
-            bodyFile to body,
-            bodyFile = bodyFile
+            bodyFile to body
         )
-        assertThat(ambiguous.issues()).isEmpty()
 
         val complete = prepare(specFile to specification, bodyFile to body)
         val incomplete = ProjectIndexPreparationResult(
@@ -233,11 +228,16 @@ class PackageBodyParameterNocopyCheckTest : BaseCheckTest() {
         val specFile = FileId("quoted-spec.sql")
         val bodyFile = FileId("quoted-body.sql")
         val specification = "CREATE PACKAGE \"P\" AS PROCEDURE \"Work\"(\"Payload\" IN OUT NOCOPY CLOB); END \"P\";"
-        val body = "CREATE PACKAGE BODY \"P\" AS PROCEDURE \"Work\"(\"Payload\" IN OUT CLOB) IS BEGIN NULL; END \"Work\"; END \"P\";"
+        val body = "CREATE PACKAGE BODY \"P\" AS PROCEDURE \"Work\"(\"Payload\" IN OUT CLOB) IS BEGIN NULL; END \"Work\"; END \"P\"; -- Noncompliant {{$message}}"
 
-        val check = run(specFile to specification, bodyFile to body, bodyFile = bodyFile)
+        verify(specFile to specification, bodyFile to body)
+    }
 
-        assertThat(check.issues()).hasSize(1)
+    private fun verify(vararg sources: Pair<FileId, String>) {
+        ProjectPlSqlCheckVerifier.verify(
+            sources.map { (fileId, source) -> ProjectTestSource(fileId.value, source) },
+            PackageBodyParameterNocopyCheck()
+        )
     }
 
     private fun run(

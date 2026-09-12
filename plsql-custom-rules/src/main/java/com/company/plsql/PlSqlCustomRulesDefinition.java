@@ -17,7 +17,8 @@ public class PlSqlCustomRulesDefinition extends CustomPlSqlRulesDefinition {
     @Override
     public Class[] checkClasses() {
         return new Class[] {
-            ForbiddenDmlCheck.class
+            ForbiddenDmlCheck.class,
+            PackageSubprogramShouldBePublicCheck.class
         };
     }
 

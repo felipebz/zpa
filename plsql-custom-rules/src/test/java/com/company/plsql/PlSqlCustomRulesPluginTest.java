@@ -11,7 +11,8 @@ public class PlSqlCustomRulesPluginTest {
         PlSqlCustomRulesDefinition plugin = new PlSqlCustomRulesDefinition();
         assertEquals("Company", plugin.repositoryName());
         assertEquals("my-rules", plugin.repositoryKey());
-        assertEquals(1, plugin.checkClasses().length);
+        assertEquals(2, plugin.checkClasses().length);
+        assertEquals(PackageSubprogramShouldBePublicCheck.class, plugin.checkClasses()[1]);
     }
 
 }

@@ -24,19 +24,34 @@ import com.felipebz.flr.api.Token
 import com.felipebz.zpa.checks.IssueLocation
 import com.felipebz.zpa.sslr.Tree
 import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectAnalysis
+import com.felipebz.zpa.squid.createNotPreparedProjectAnalysis
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import java.text.MessageFormat
 import java.util.*
+import kotlin.jvm.JvmSynthetic
 
+@OptIn(ZpaExperimentalApi::class)
 open class PlSqlCheck : PlSqlVisitor() {
 
     private val issues = ArrayList<PreciseIssue>()
+    private var projectAnalysisForScan: ProjectAnalysis = createNotPreparedProjectAnalysis()
 
     override fun startScan() {
         issues.clear()
     }
 
     fun semantic(node: AstNode) = node as SemanticAstNode
+
+    /** Returns the read-only project capability for the current analysis run. */
+    @ZpaExperimentalApi
+    protected fun projectAnalysis(): ProjectAnalysis = projectAnalysisForScan
+
+    @JvmSynthetic
+    internal fun installProjectAnalysisForScan(projectAnalysis: ProjectAnalysis) {
+        projectAnalysisForScan = projectAnalysis
+    }
 
     fun issues(): List<PreciseIssue> = Collections.unmodifiableList(issues)
 
