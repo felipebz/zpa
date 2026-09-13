@@ -152,11 +152,25 @@ class DefaultTypeSolverTest {
     @Test
     fun emptyStringShouldNotBeTypedAsCharacter() {
         val type = solveTypeFromLiteral("''")
-        val type2 = solveTypeFromLiteral("q'!!'")
-        val type3 = solveTypeFromLiteral("n'!!'")
-        val type4 = solveTypeFromLiteral("nq'!!'")
+        val type2 = solveTypeFromLiteral("N''")
+        val type3 = solveTypeFromLiteral("n''")
+        val type4 = solveTypeFromLiteral("q'[]'")
+        val type5 = solveTypeFromLiteral("NQ'[]'")
 
-        assertThat(arrayOf(type, type2, type3, type4)).allMatch { it == PlSqlType.NULL }
+        assertThat(arrayOf(type, type2, type3, type4, type5)).allMatch { it == PlSqlType.NULL }
+    }
+
+    @Test
+    fun nonEmptyCharacterLiteralsShouldNotBeTypedAsNull() {
+        val type = solveTypeFromLiteral("'a'")
+        val type2 = solveTypeFromLiteral("N'a'")
+        val type3 = solveTypeFromLiteral("n'a'")
+        val type4 = solveTypeFromLiteral("n'!!'")
+        val type5 = solveTypeFromLiteral("q'[a]'")
+        val type6 = solveTypeFromLiteral("NQ'[a]'")
+
+        assertThat(arrayOf(type, type2, type3, type4, type5, type6))
+            .allMatch { it == PlSqlType.CHARACTER }
     }
 
     private fun solveTypeFromDatatype(code: String): PlSqlType {

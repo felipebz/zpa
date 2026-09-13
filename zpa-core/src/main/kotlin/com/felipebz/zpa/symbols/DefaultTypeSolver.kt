@@ -83,15 +83,20 @@ open class DefaultTypeSolver {
     private fun isEmptyString(node: AstNode): Boolean {
         val characterLiteral = node.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL) ?: return false
         val value = characterLiteral.tokenValue
-        if (value == "''") {
-            return true
+        val openingQuote = value.indexOf('\'')
+        val closingQuote = value.lastIndexOf('\'')
+        if (openingQuote < 0 || closingQuote <= openingQuote) {
+            return false
         }
-        if (value.startsWith('n', ignoreCase = true) || value.startsWith('q', ignoreCase = true)) {
-            val actualStart = value.indexOf('\'') + 2
-            val actualEnd = value.lastIndexOf('\'') - 1
-            return actualStart == actualEnd
+
+        val quotedContent = value.substring(openingQuote + 1, closingQuote)
+        return if (value.substring(0, openingQuote).endsWith('q', ignoreCase = true)) {
+            // Alternative-quoted literals include one opening and one closing delimiter.
+            quotedContent.length == 2
+        } else {
+            // This includes regular and national character literals such as N''.
+            quotedContent.isEmpty()
         }
-        return false
     }
 
 }
