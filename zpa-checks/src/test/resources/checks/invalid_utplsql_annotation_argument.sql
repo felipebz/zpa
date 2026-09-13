@@ -1,53 +1,14 @@
 CREATE PACKAGE invalid_args AS
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%suitepath
-
   PROCEDURE suitepath_missing;
-
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%suitepath()
-
   PROCEDURE suitepath_empty;
-
-  -- Noncompliant@+1 {{Invalid value "foo bar" for this utPLSQL annotation.}}
-  --%suitepath(foo bar)
-
   PROCEDURE suitepath_spaces;
-
-  -- Noncompliant@+1 {{Invalid value "foo..bar" for this utPLSQL annotation.}}
-  --%suitepath(foo..bar)
-
   PROCEDURE suitepath_empty_component;
-
-  --%suitepath(foo.bar)
-
   PROCEDURE suitepath_valid;
-
-  --%suitepath(brasil.emissão)
-
   PROCEDURE suitepath_unicode;
-
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%rollback
-
   PROCEDURE rollback_missing;
-
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%rollback()
-
   PROCEDURE rollback_empty;
-
-  -- Noncompliant@+1 {{Invalid value "transactional" for this utPLSQL annotation.}}
-  --%rollback(transactional)
-
   PROCEDURE rollback_invalid;
-
-  --%rollback(AUTO)
-
   PROCEDURE rollback_auto;
-
-  --%rollback(manual)
-
   PROCEDURE rollback_manual;
 
   -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
@@ -147,18 +108,8 @@ CREATE PACKAGE invalid_args AS
   --%throws(no_such_resolution_required)
   PROCEDURE throws_identifier;
 
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%displayname
-
   PROCEDURE package_displayname_missing;
-
-  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
-  --%displayname()
-
   PROCEDURE package_displayname_empty;
-
-  --%displayname(Package description)
-
   PROCEDURE package_displayname_valid;
 
   --%displayname
@@ -295,6 +246,15 @@ CREATE PACKAGE invalid_args AS
 
   --%suite
 
+  --%suitepath(valid.path)
+  --%suitepath(invalid..path)
+  --%suitepath(unclosed
+
+  --%rollback(auto)
+  --%rollback(invalid)
+  --%displayname(first)
+  --%displayname(unclosed
+
   --%test
   PROCEDURE optional_test;
 
@@ -308,12 +268,140 @@ CREATE PACKAGE invalid_args AS
   --%disabled()
   PROCEDURE disabled_optional;
 
+  --%context(Context arguments)
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%displayname
+  -- Noncompliant@+1 {{Invalid value "invalid" for this utPLSQL annotation.}}
+  --%rollback(invalid)
+  -- Noncompliant@+1 {{Invalid value "-fast" for this utPLSQL annotation.}}
+  --%tags(-fast)
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%beforeall
+  --%endcontext
+
+  --%context(Duplicate context arguments)
+  --%displayname(first)
+  --%displayname(unclosed
+  --%rollback(auto)
+  --%rollback(invalid)
+  --%endcontext
+
+  --%context(Independent parent)
+  -- Noncompliant@+1 {{Invalid value "invalid" for this utPLSQL annotation.}}
+  --%rollback(invalid)
+  --%context(Independent child)
+  -- Noncompliant@+1 {{Invalid value "invalid" for this utPLSQL annotation.}}
+  --%rollback(invalid)
+  --%endcontext
+  --%endcontext
+
+  --%test
+  --%displayname(first)
+  --%displayname(unclosed
+  PROCEDURE duplicate_test_displayname;
+
+  -- Noncompliant@+2 {{Invalid value "-fast" for this utPLSQL annotation.}}
+  --%test
+  --%tags(-fast)
+  --%tags(b)
+  -- Noncompliant@-1 {{Invalid value "b" for this utPLSQL annotation.}}
+  PROCEDURE repeated_test_tags;
+
   --%future_annotation(foo)
   PROCEDURE unknown_annotation;
 
   --%future_annotation(unclosed
   PROCEDURE unknown_malformed_annotation;
 END invalid_args;
+
+CREATE PACKAGE suitepath_missing_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%suitepath
+END suitepath_missing_case;
+
+CREATE PACKAGE suitepath_empty_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%suitepath()
+END suitepath_empty_case;
+
+CREATE PACKAGE suitepath_spaces_case AS
+  --%suite
+  -- Noncompliant@+1 {{Invalid value "foo bar" for this utPLSQL annotation.}}
+  --%suitepath(foo bar)
+END suitepath_spaces_case;
+
+CREATE PACKAGE suitepath_empty_component_case AS
+  --%suite
+  -- Noncompliant@+1 {{Invalid value "foo..bar" for this utPLSQL annotation.}}
+  --%suitepath(foo..bar)
+END suitepath_empty_component_case;
+
+CREATE PACKAGE suitepath_valid_case AS
+  --%suite
+  --%suitepath(foo.bar)
+END suitepath_valid_case;
+
+CREATE PACKAGE suitepath_unicode_case AS
+  --%suite
+  --%suitepath(brasil.emissão)
+END suitepath_unicode_case;
+
+CREATE PACKAGE rollback_missing_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%rollback
+END rollback_missing_case;
+
+CREATE PACKAGE rollback_empty_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%rollback()
+END rollback_empty_case;
+
+CREATE PACKAGE rollback_invalid_case AS
+  --%suite
+  -- Noncompliant@+1 {{Invalid value "transactional" for this utPLSQL annotation.}}
+  --%rollback(transactional)
+END rollback_invalid_case;
+
+CREATE PACKAGE rollback_auto_case AS
+  --%suite
+  --%rollback(AUTO)
+END rollback_auto_case;
+
+CREATE PACKAGE rollback_manual_case AS
+  --%suite
+  --%rollback(manual)
+END rollback_manual_case;
+
+CREATE PACKAGE displayname_missing_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%displayname
+END displayname_missing_case;
+
+CREATE PACKAGE displayname_empty_case AS
+  --%suite
+  -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
+  --%displayname()
+END displayname_empty_case;
+
+CREATE PACKAGE displayname_valid_case AS
+  --%suite
+  --%displayname(Package description)
+END displayname_valid_case;
+
+CREATE PACKAGE no_suite_args AS
+  --%rollback(invalid)
+
+  PROCEDURE helper_without_suite;
+
+  --%context(Context without suite)
+  --%displayname
+  --%endcontext
+END no_suite_args;
 
 CREATE PACKAGE BODY invalid_args AS
   PROCEDURE suitepath_missing IS BEGIN NULL; END;
@@ -387,4 +475,10 @@ CREATE PACKAGE BODY invalid_args AS
   PROCEDURE disabled_optional IS BEGIN NULL; END;
   PROCEDURE unknown_annotation IS BEGIN NULL; END;
   PROCEDURE unknown_malformed_annotation IS BEGIN NULL; END;
+  PROCEDURE duplicate_test_displayname IS BEGIN NULL; END;
+  PROCEDURE repeated_test_tags IS BEGIN NULL; END;
 END invalid_args;
+
+CREATE PACKAGE BODY no_suite_args AS
+  PROCEDURE helper_without_suite IS BEGIN NULL; END;
+END no_suite_args;

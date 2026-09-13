@@ -29,6 +29,9 @@ import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotation
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationGroup
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationKind
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
+import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCardinality
+import com.felipebz.zpa.checks.utplsql.UtPlSqlContextCollector
+import com.felipebz.zpa.checks.utplsql.UtPlSqlPackageContextModel
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
 @RuleInfo(scope = RuleInfo.Scope.TEST)
@@ -36,22 +39,49 @@ import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
 class ConflictingUtPlSqlAnnotationsCheck : AbstractBaseCheck() {
 
     override fun visitFile(node: AstNode) {
-        val groups = UtPlSqlAnnotationCollector.collect(node).groups
+        val annotationModel = UtPlSqlAnnotationCollector.collect(node)
+        val contextModel = UtPlSqlContextCollector.collect(node)
+        val groups = annotationModel.groups
             .filter { it.packageNode.type == PlSqlGrammar.CREATE_PACKAGE }
 
         groups.groupBy { it.packageNode }.values.forEach { packageGroups ->
-            checkDuplicate(
-                packageGroups.filter { it.declarationNode == null }.flatMap { it.annotations },
-                PACKAGE_SINGLETONS
-            )
-            packageGroups.filter { it.declarationNode != null }.forEach(::checkProcedureGroup)
+            val packageModel = contextModel.packages.firstOrNull { it.packageNode === packageGroups.first().packageNode }
+            checkPackageGlobalDuplicates(packageGroups, packageModel)
+            val hasEffectiveSuite = packageModel?.annotations?.any { it.kind == UtPlSqlAnnotationKind.SUITE } == true
+            packageGroups.filter { it.declarationNode != null }.forEach { group ->
+                checkProcedureGroup(group, hasEffectiveSuite)
+            }
+            if (hasEffectiveSuite) {
+                checkEffectiveScopeDuplicates(packageModel)
+            }
         }
     }
 
-    private fun checkProcedureGroup(group: UtPlSqlAnnotationGroup) {
+    private fun checkPackageGlobalDuplicates(
+        packageGroups: List<UtPlSqlAnnotationGroup>,
+        packageModel: UtPlSqlPackageContextModel?
+    ) {
+        if (packageModel?.annotations?.none { it.kind == UtPlSqlAnnotationKind.SUITE } == true) return
+        checkDuplicate(
+            packageModel?.annotations
+                ?: packageGroups.filter { it.declarationNode == null }.flatMap { it.annotations },
+            UtPlSqlAnnotationCardinality.PACKAGE_GLOBAL_SINGLETONS
+        )
+    }
+
+    private fun checkEffectiveScopeDuplicates(packageModel: UtPlSqlPackageContextModel) {
+        checkDuplicate(packageModel.rootAnnotations, UtPlSqlAnnotationCardinality.SCOPE_SINGLETONS)
+        packageModel.contexts.forEach { context ->
+            checkDuplicate(context.annotations, UtPlSqlAnnotationCardinality.SCOPE_SINGLETONS)
+        }
+    }
+
+    private fun checkProcedureGroup(group: UtPlSqlAnnotationGroup, hasEffectiveSuite: Boolean) {
         checkPackageOnlyAnnotations(group)
-        checkDuplicate(group.annotations, PROCEDURE_SINGLETONS)
-        checkRoleConflicts(group)
+        if (hasEffectiveSuite) {
+            checkDuplicate(group.annotations, UtPlSqlAnnotationCardinality.PROCEDURE_SINGLETONS)
+            checkRoleConflicts(group)
+        }
     }
 
     private fun checkPackageOnlyAnnotations(group: UtPlSqlAnnotationGroup) {
@@ -93,19 +123,6 @@ class ConflictingUtPlSqlAnnotationsCheck : AbstractBaseCheck() {
             UtPlSqlAnnotationKind.CONTEXT,
             UtPlSqlAnnotationKind.NAME,
             UtPlSqlAnnotationKind.ENDCONTEXT
-        )
-        private val PACKAGE_SINGLETONS = setOf(
-            UtPlSqlAnnotationKind.SUITE,
-            UtPlSqlAnnotationKind.SUITEPATH
-        )
-        private val PROCEDURE_SINGLETONS = setOf(
-            UtPlSqlAnnotationKind.TEST,
-            UtPlSqlAnnotationKind.DISPLAYNAME,
-            UtPlSqlAnnotationKind.ROLLBACK,
-            UtPlSqlAnnotationKind.BEFOREALL,
-            UtPlSqlAnnotationKind.AFTERALL,
-            UtPlSqlAnnotationKind.BEFOREEACH,
-            UtPlSqlAnnotationKind.AFTEREACH
         )
         private val PROCEDURE_SETUP_ROLES = setOf(
             UtPlSqlAnnotationKind.BEFOREALL,

@@ -29,11 +29,13 @@ internal class UtPlSqlContext(
     val closingAnnotation: UtPlSqlAnnotation?,
     val parentIndex: Int?,
     childIndices: List<Int>,
+    annotations: List<UtPlSqlAnnotation>,
     selectedNameAnnotation: UtPlSqlAnnotation?,
     duplicateNameAnnotations: List<UtPlSqlAnnotation>,
     lateNameAnnotations: List<UtPlSqlAnnotation>
 ) {
     val childIndices: List<Int> = Collections.unmodifiableList(childIndices.toList())
+    val annotations: List<UtPlSqlAnnotation> = Collections.unmodifiableList(annotations.toList())
     val selectedNameAnnotation: UtPlSqlAnnotation? = selectedNameAnnotation
     val duplicateNameAnnotations: List<UtPlSqlAnnotation> =
         Collections.unmodifiableList(duplicateNameAnnotations.toList())
@@ -44,12 +46,14 @@ internal class UtPlSqlContext(
 internal class UtPlSqlPackageContextModel internal constructor(
     val packageNode: AstNode,
     annotations: List<UtPlSqlAnnotation>,
+    rootAnnotations: List<UtPlSqlAnnotation>,
     contexts: List<UtPlSqlContext>,
     unmatchedEndContextAnnotations: List<UtPlSqlAnnotation>,
     nameAnnotationsOutsideContexts: List<UtPlSqlAnnotation>,
     duplicateContextAnnotations: List<UtPlSqlAnnotation>
 ) {
     val annotations: List<UtPlSqlAnnotation> = Collections.unmodifiableList(annotations.toList())
+    val rootAnnotations: List<UtPlSqlAnnotation> = Collections.unmodifiableList(rootAnnotations.toList())
     val contexts: List<UtPlSqlContext> = Collections.unmodifiableList(contexts.toList())
     val unmatchedEndContextAnnotations: List<UtPlSqlAnnotation> =
         Collections.unmodifiableList(unmatchedEndContextAnnotations.toList())
@@ -154,12 +158,32 @@ internal object UtPlSqlContextCollector {
 
         val indexByBuilder = IdentityHashMap<ContextBuilder, Int>()
         effectiveBuilders.forEachIndexed { index, builder -> indexByBuilder[builder] = index }
+        val positions = IdentityHashMap<UtPlSqlAnnotation, Int>()
+        annotations.forEachIndexed { position, annotation -> positions[annotation] = position }
+        val effectiveRanges = effectiveBuilders.associateWith { builder ->
+            val end = builder.closingAnnotation?.let { positions[it] } ?: annotations.lastIndex
+            builder.position to end
+        }
+        fun isInRange(position: Int, range: Pair<Int, Int>): Boolean =
+            position in range.first..range.second
+
+        val rootAnnotations = annotations.filterIndexed { position, _ ->
+            effectiveRanges.values.none { isInRange(position, it) }
+        }
         val contexts = effectiveBuilders.map { builder ->
+            val range = effectiveRanges.getValue(builder)
+            val childRanges = builder.children
+                .filter { effectiveRanges.containsKey(it) }
+                .map(effectiveRanges::getValue)
+            val contextAnnotations = annotations.filterIndexed { position, _ ->
+                isInRange(position, range) && childRanges.none { isInRange(position, it) }
+            }
             UtPlSqlContext(
                 openingAnnotation = builder.openingAnnotation,
                 closingAnnotation = builder.closingAnnotation,
                 parentIndex = builder.parent?.let(indexByBuilder::getValue),
                 childIndices = builder.children.mapNotNull { indexByBuilder[it] },
+                annotations = contextAnnotations,
                 selectedNameAnnotation = builder.nameAnnotations.firstOrNull(),
                 duplicateNameAnnotations = builder.nameAnnotations.drop(1),
                 lateNameAnnotations = builder.lateNameAnnotations
@@ -169,6 +193,7 @@ internal object UtPlSqlContextCollector {
         return UtPlSqlPackageContextModel(
             packageNode = packageNode,
             annotations = annotations,
+            rootAnnotations = rootAnnotations,
             contexts = contexts,
             unmatchedEndContextAnnotations = unmatchedEndContexts,
             nameAnnotationsOutsideContexts = namesOutsideContexts,

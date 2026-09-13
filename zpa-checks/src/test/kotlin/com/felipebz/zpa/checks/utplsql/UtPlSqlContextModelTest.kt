@@ -252,6 +252,50 @@ class UtPlSqlContextModelTest {
             .containsExactly("First", "Second")
     }
 
+    @Test
+    fun assignsAnnotationsToTheirEffectiveRootOrContextScope() {
+        val model = collect(
+            """
+            CREATE PACKAGE p AS
+              --%suite
+              --%displayname(Root name)
+
+              --%context(Outer)
+              --%displayname(Outer name)
+              --%context(Inner)
+              --%displayname(Inner name)
+              --%endcontext
+              --%rollback(auto)
+              --%endcontext
+
+              --%rollback(manual)
+            END p;
+            """
+        )
+
+        val packageModel = model.packages.single()
+        assertThat(packageModel.rootAnnotations.map { it.kind to it.argument })
+            .containsExactly(
+                UtPlSqlAnnotationKind.SUITE to null,
+                UtPlSqlAnnotationKind.DISPLAYNAME to "Root name",
+                UtPlSqlAnnotationKind.ROLLBACK to "manual"
+            )
+
+        assertThat(packageModel.contexts[0].annotations.map { it.kind to it.argument })
+            .containsExactly(
+                UtPlSqlAnnotationKind.CONTEXT to "Outer",
+                UtPlSqlAnnotationKind.DISPLAYNAME to "Outer name",
+                UtPlSqlAnnotationKind.ROLLBACK to "auto",
+                UtPlSqlAnnotationKind.ENDCONTEXT to null
+            )
+        assertThat(packageModel.contexts[1].annotations.map { it.kind to it.argument })
+            .containsExactly(
+                UtPlSqlAnnotationKind.CONTEXT to "Inner",
+                UtPlSqlAnnotationKind.DISPLAYNAME to "Inner name",
+                UtPlSqlAnnotationKind.ENDCONTEXT to null
+            )
+    }
+
     private fun collect(source: String): UtPlSqlContextModel =
         UtPlSqlContextCollector.collect(
             PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).parse(source.trimIndent())
