@@ -1,13 +1,13 @@
-<p>Quando um teste falha, por exemplo, devido a problemas de infraestrutura, você pode querer ignorá-lo temporariamente.
-  Mas sem nenhum tipo de explicação do motivo do teste ter sido ignorado, talvez ele nunca seja reativado.</p>
+<p>Quando um teste falha, por exemplo, devido a problemas de infraestrutura, você pode querer desativá-lo temporariamente.
+  Testes desativados não são executados pelo utPLSQL e devem ser reativados quando o problema for resolvido.</p>
 
-<p>Essa regra registra um problema em cada teste desativado que não tem um comentário explicando o motivo disso.</p>
+<p>Essa regra registra um problema em cada procedimento de teste utPLSQL efetivo anotado com <code>%disabled</code>.</p>
 
 <h2>Código em desconformidade</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 -- %test(my test)
--- %disabled
+-- %disabled(temporariamente quebrado)
 procedure test;
 </pre>
 
@@ -18,6 +18,5 @@ procedure test;
 procedure test;
 </pre>
 
-<h2>Exceções</h2>
-
-<p>A regra não registra um problema se houver um comentário na anotação <code>%disabled</code>.</p>
+<p>Anotações <code>%disabled</code> no nível do pacote ou do contexto, procedimentos auxiliares,
+corpos de pacote e funções estão fora do escopo desta regra.</p>

@@ -1,13 +1,13 @@
-<p>When a test fails due, for example, to infrastructure issues, you might want to ignore it temporarily.
-But without some kind of notation about why the test is being disabled, it may never be reactivated.</p>
+<p>When a test fails due, for example, to infrastructure issues, you might want to disable it temporarily.
+Disabled tests are not executed by utPLSQL and should be re-enabled when the problem is resolved.</p>
 
-<p>This rule raises an issue for each disabled test that does not have a notation about why it was disabled.</p>
+<p>This rule raises an issue for each effective utPLSQL test procedure annotated with <code>%disabled</code>.</p>
 
 <h2>Noncompliant Code Example</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 -- %test(my test)
--- %disabled
+-- %disabled(temporarily broken)
 procedure test;
 </pre>
 
@@ -18,6 +18,5 @@ procedure test;
 procedure test;
 </pre>
 
-<h2>Exceptions</h2>
-
-<p>The rule doesn't raise an issue if there is a comment in the <code>%disabled</code> annotation.</p>
+<p>Package-level and context-level <code>%disabled</code> annotations, helper procedures, package bodies,
+and functions are outside this rule's scope.</p>
