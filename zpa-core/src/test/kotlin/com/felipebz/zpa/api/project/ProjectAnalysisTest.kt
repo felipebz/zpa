@@ -242,6 +242,292 @@ class ProjectAnalysisTest {
             .isEqualTo(PackageProcedureResolution.Status.INCOMPLETE)
     }
 
+    @Test
+    fun resolvesOnlyUniquelyIndexedProjectSequences() {
+        val sequenceFile = FileId("sequences.sql")
+        val targetFile = FileId("target.sql")
+        val source = """
+            SELECT app.order_seq.NEXTVAL FROM dual;
+            SELECT "Seq".NEXTVAL FROM dual;
+            SELECT order_seq.NEXTVAL FROM dual;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            targetFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    sequenceFile to "CREATE SEQUENCE app.order_seq; CREATE SEQUENCE \"Seq\";",
+                    targetFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN
+        )
+    }
+
+    @Test
+    fun resolvesUnqualifiedStandaloneSequenceAcrossProjectFiles() {
+        val declarationFile = FileId("a.sql")
+        val referenceFile = FileId("b.sql")
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            "SELECT order_seq.NEXTVAL FROM dual;",
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE order_seq;",
+                    referenceFile to "SELECT order_seq.NEXTVAL FROM dual;"
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(SequenceReferenceResolution.RESOLVED_SEQUENCE)
+    }
+
+    @Test
+    fun keepsUnresolvedAndAmbiguousSequenceReferencesUnknown() {
+        val sequenceFile = FileId("sequences.sql")
+        val targetFile = FileId("target.sql")
+        val source = """
+            SELECT t.NEXTVAL FROM some_table t;
+            SELECT external_seq.NEXTVAL FROM dual;
+            SELECT ambiguous_seq.NEXTVAL FROM dual;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            targetFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    sequenceFile to "CREATE SEQUENCE t; CREATE SEQUENCE ambiguous_seq; CREATE SEQUENCE ambiguous_seq;",
+                    targetFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.UNKNOWN
+        )
+    }
+
+    @Test
+    fun keepsLocalDmlQualifiersFromResolvingAsSequences() {
+        val declarationFile = FileId("sequences.sql")
+        val referenceFile = FileId("target.sql")
+        val source = """
+            UPDATE some_table t
+               SET value = CASE WHEN flag = 1 THEN t.NEXTVAL ELSE 0 END;
+            MERGE INTO target_table t
+            USING source_table src
+               ON (t.id = src.id)
+            WHEN MATCHED THEN
+              UPDATE SET value = CASE
+                WHEN flag = 1 THEN t.NEXTVAL
+                WHEN flag = 2 THEN src.NEXTVAL
+                ELSE order_seq.NEXTVAL
+              END;
+            INSERT INTO some_table t (value)
+              VALUES (CASE WHEN flag = 1 THEN t.NEXTVAL ELSE 0 END);
+            INSERT INTO some_table t (value)
+              VALUES (CASE WHEN flag = 1 THEN order_seq.NEXTVAL ELSE 0 END);
+            UPDATE some_table t
+               SET value = CASE WHEN flag = 1 THEN order_seq.NEXTVAL ELSE 0 END;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE t; CREATE SEQUENCE src; CREATE SEQUENCE order_seq;",
+                    referenceFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE
+        )
+    }
+
+    @Test
+    fun keepsSelectExpressionQualifiersForOrderByAndValuesSources() {
+        val declarationFile = FileId("sequences.sql")
+        val referenceFile = FileId("target.sql")
+        val source = """
+            SELECT value
+              FROM some_table t
+             ORDER BY CASE WHEN flag = 1 THEN t.NEXTVAL ELSE 0 END;
+            SELECT value
+              FROM some_table t
+             ORDER BY CASE WHEN flag = 1 THEN order_seq.NEXTVAL ELSE 0 END;
+            SELECT 1
+              FROM (VALUES (1)) AS t(value)
+             ORDER BY CASE WHEN 1 = 1 THEN t.NEXTVAL ELSE 0 END;
+            SELECT 1
+              FROM (VALUES (1)) AS t(value)
+             ORDER BY CASE WHEN 1 = 1 THEN order_seq.NEXTVAL ELSE 0 END;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE t; CREATE SEQUENCE order_seq;",
+                    referenceFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE
+        )
+    }
+
+    @Test
+    fun doesNotUseNestedSelectQualifiersForOuterSelectExpression() {
+        val declarationFile = FileId("sequences.sql")
+        val referenceFile = FileId("target.sql")
+        val source = """
+            SELECT 1
+              FROM some_table s
+             ORDER BY CASE
+                WHEN flag = 1 THEN t.NEXTVAL
+                ELSE (SELECT 1 FROM nested_table t)
+              END;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE t;",
+                    referenceFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(SequenceReferenceResolution.RESOLVED_SEQUENCE)
+    }
+
+    @Test
+    fun considersEnclosingSqlQualifiersForCorrelatedReferences() {
+        val declarationFile = FileId("sequences.sql")
+        val referenceFile = FileId("target.sql")
+        val source = """
+            SELECT 1
+              FROM some_table t
+             WHERE EXISTS (
+                   SELECT CASE WHEN 1 = 1 THEN t.NEXTVAL ELSE 0 END
+                     FROM dual
+             );
+            SELECT 1
+              FROM some_table t
+             WHERE EXISTS (
+                   SELECT CASE WHEN 1 = 1 THEN order_seq.NEXTVAL ELSE 0 END
+                     FROM dual
+             );
+            UPDATE some_table t
+               SET value = (SELECT CASE WHEN 1 = 1 THEN t.NEXTVAL ELSE 0 END FROM dual);
+            MERGE INTO target_table t
+            USING source_table src
+               ON (t.id = src.id)
+            WHEN MATCHED THEN
+              UPDATE SET value = (SELECT CASE WHEN 1 = 1 THEN src.NEXTVAL ELSE 0 END FROM dual);
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE t; CREATE SEQUENCE src; CREATE SEQUENCE order_seq;",
+                    referenceFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN,
+            SequenceReferenceResolution.UNKNOWN
+        )
+    }
+
+    @Test
+    fun preservesAuthoritativeRecordMemberAsNonSequence() {
+        val packageFile = FileId("record-package.sql")
+        val targetFile = FileId("record-target.sql")
+        val source = "DECLARE value record_pkg.record_type; BEGIN value.nextval := 1; END;"
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            targetFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    packageFile to "CREATE PACKAGE record_pkg AS TYPE record_type IS RECORD (nextval NUMBER); END record_pkg;",
+                    targetFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(SequenceReferenceResolution.RESOLVED_NON_SEQUENCE)
+    }
+
+    @Test
+    fun suppressesSequenceResolutionWhenProjectIsNotPreparedOrIncomplete() {
+        val file = FileId("target.sql")
+        val source = "SELECT order_seq.NEXTVAL FROM dual;"
+        val notPreparedProbe = SequenceResolutionProbe()
+        scan(file, source, ProjectAnalysisContext.NOT_PREPARED, notPreparedProbe)
+        assertThat(notPreparedProbe.results.single()).isEqualTo(SequenceReferenceResolution.UNKNOWN)
+
+        val prepared = prepare(file to source)
+        val incomplete = ProjectIndexPreparationResult(
+            prepared.index,
+            attemptedFileCount = 2,
+            failures = listOf(ProjectIndexPreparationFailure(FileId("broken.sql"), "test.failure"))
+        )
+        val incompleteProbe = SequenceResolutionProbe()
+        scan(file, source, ProjectAnalysisContext.prepared(incomplete), incompleteProbe)
+        assertThat(incompleteProbe.results.single()).isEqualTo(SequenceReferenceResolution.UNKNOWN)
+    }
+
     private fun prepare(vararg sources: Pair<FileId, String>) =
         ProjectIndexPreparation().prepare(
             sources.map { (fileId, source) -> ProjectSource(fileId) { source } },
@@ -294,6 +580,21 @@ class ProjectAnalysisTest {
         override fun visitNode(node: AstNode) {
             references.forEach { reference ->
                 results += projectAnalysis().resolvePackageProcedure(node, reference)
+            }
+        }
+    }
+
+    @OptIn(ZpaExperimentalApi::class)
+    private class SequenceResolutionProbe : PlSqlCheck() {
+        val results = mutableListOf<SequenceReferenceResolution>()
+
+        init {
+            subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION)
+        }
+
+        override fun visitNode(node: AstNode) {
+            if (node.getDescendants(com.felipebz.zpa.api.PlSqlKeyword.NEXTVAL).isNotEmpty()) {
+                results += projectAnalysis().resolveSequenceReference(node)
             }
         }
     }

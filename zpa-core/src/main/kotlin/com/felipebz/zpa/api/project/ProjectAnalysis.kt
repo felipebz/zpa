@@ -29,6 +29,8 @@ import com.felipebz.zpa.project.PackageSubprogramDeclaration
 import com.felipebz.zpa.project.ProjectPackageProcedureResolution
 import com.felipebz.zpa.project.ProjectPackageProcedureResolver
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectSequenceReferenceResolution
+import com.felipebz.zpa.project.ProjectSequenceReferenceResolver
 import com.felipebz.zpa.project.ProjectSubprogramSpecificationResolution
 import com.felipebz.zpa.project.ProjectSubprogramSpecificationResolver
 import com.felipebz.zpa.project.OracleIdentifier
@@ -42,6 +44,7 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
     private val projectAnalysisContext = contextHolder as? ProjectAnalysisContext
         ?: throw IllegalArgumentException("Unexpected project analysis context")
     private val specificationResolver = ProjectSubprogramSpecificationResolver(projectAnalysisContext)
+    private val sequenceReferenceResolver = ProjectSequenceReferenceResolver(projectAnalysisContext)
 
     /**
      * Resolves the package specification corresponding to an immediate PACKAGE BODY declaration.
@@ -131,6 +134,20 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
                 PackageProcedureResolution.of(PackageProcedureResolution.Status.NOT_PREPARED)
         }
     }
+
+    /**
+     * Resolves a sequence-shaped member expression using only positive project and file-local
+     * semantic evidence. Unresolved or ambiguous references return UNKNOWN.
+     */
+    @ZpaExperimentalApi
+    fun resolveSequenceReference(node: AstNode): SequenceReferenceResolution =
+        when (sequenceReferenceResolver.resolve(node)) {
+            ProjectSequenceReferenceResolution.RESOLVED_SEQUENCE ->
+                SequenceReferenceResolution.RESOLVED_SEQUENCE
+            ProjectSequenceReferenceResolution.RESOLVED_NON_SEQUENCE ->
+                SequenceReferenceResolution.RESOLVED_NON_SEQUENCE
+            ProjectSequenceReferenceResolution.UNKNOWN -> SequenceReferenceResolution.UNKNOWN
+        }
 
     @OptIn(ZpaExperimentalApi::class)
     private fun PackageSubprogramDeclaration.toPublicView(): PackageSubprogram {

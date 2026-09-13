@@ -49,7 +49,12 @@ class ProjectSymbolIndexBuilder {
     }
 }
 
-/** Immutable project-wide declaration registry. It does not perform semantic resolution. */
+/**
+ * Immutable project-wide declaration registry. It does not perform semantic resolution.
+ *
+ * Unqualified standalone project declarations belong to one logical project namespace. Source
+ * paths do not define schemas; explicitly qualified declarations remain distinct.
+ */
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
     declarations: List<ProjectDeclaration>,
@@ -77,6 +82,11 @@ class ProjectSymbolIndex internal constructor(
         .groupBy { it.owner to it.name }
         .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
+    private val sequencesByName = this.declarations
+        .filterIsInstance<SequenceDeclaration>()
+        .groupBy { it.name }
+        .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
+
     fun findPackages(name: QualifiedName): List<PackageDeclaration> = packagesByName[name].orEmpty()
 
     fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectTypeDeclaration> =
@@ -85,6 +95,8 @@ class ProjectSymbolIndex internal constructor(
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
         subprogramsByOwnerAndName[owner to name].orEmpty().filterIsInstance<PackageSubprogramDeclaration>()
 
+    fun findSequences(name: QualifiedName): List<SequenceDeclaration> = sequencesByName[name].orEmpty()
+
     fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> = declarations.filter { declaration ->
         when (declaration) {
             is PackageDeclaration -> declaration.name == name
@@ -92,6 +104,7 @@ class ProjectSymbolIndex internal constructor(
             is PackageTypeDeclaration -> declaration.owner.append(declaration.name) == name
             is PackageSubtypeDeclaration -> declaration.owner.append(declaration.name) == name
             is PackageSubprogramDeclaration -> declaration.owner.append(declaration.name) == name
+            is SequenceDeclaration -> declaration.name == name
         }
     }
 
@@ -117,6 +130,7 @@ class ProjectSymbolIndex internal constructor(
             is PackageTypeDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}"
             is PackageSubtypeDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}:${declaration.baseType.structuralKey()}"
             is PackageSubprogramDeclaration -> declaration.overloadIdentity().toString()
+            is SequenceDeclaration -> declaration.name.lookupKey()
         }
 
         /** Stable tie-breaker only; source spelling and rule metadata do not define identity. */
@@ -130,6 +144,7 @@ class ProjectSymbolIndex internal constructor(
                 is PackageSubtypeDeclaration -> declaration.baseType.structuralKey()
                 is PackageProcedureDeclaration -> declaration.parameters.orderingKey()
                 is PackageFunctionDeclaration -> declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey()
+                is SequenceDeclaration -> ""
             }
 
         private fun List<ProjectParameter>.orderingKey(): String = joinToString("|") {

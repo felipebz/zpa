@@ -68,6 +68,41 @@ class ProjectSymbolIndexTest {
     }
 
     @Test
+    fun indexesSequencesByQualifiedIdentityAndPreservesDuplicates() {
+        val firstFile = FileId("a.sql")
+        val secondFile = FileId("b.sql")
+        val firstFacts = extractor.extract(firstFile, "CREATE SEQUENCE app.seq;")
+        val secondFacts = extractor.extract(secondFile, "CREATE SEQUENCE APP.SEQ;")
+        val index = ProjectSymbolIndexBuilder().also {
+            it.add(secondFile, secondFacts)
+            it.add(firstFile, firstFacts)
+        }.build()
+
+        val name = QualifiedName(listOf(OracleIdentifier.fromSource("app"), OracleIdentifier.fromSource("seq")))
+        assertThat(index.findSequences(name)).containsExactly(
+            firstFacts.filterIsInstance<SequenceDeclaration>().single(),
+            secondFacts.filterIsInstance<SequenceDeclaration>().single()
+        )
+        assertThat(index.findSequences(QualifiedName(OracleIdentifier.fromSource("seq")))).isEmpty()
+    }
+
+    @Test
+    fun sequenceIndexPreparationIsDeterministicInSerialAndConcurrentModes() {
+        val sources = listOf(
+            ProjectSource(FileId("b.sql")) { "CREATE SEQUENCE app.second;" },
+            ProjectSource(FileId("a.sql")) { "CREATE SEQUENCE app.first;" }
+        )
+        val serial = ProjectIndexPreparation().prepare(sources, concurrent = false)
+        val concurrent = ProjectIndexPreparation().prepare(sources, concurrent = true)
+
+        assertThat(serial.index.declarations).containsExactlyElementsOf(concurrent.index.declarations)
+        assertThat(serial.index.findSequences(QualifiedName(listOf(
+            OracleIdentifier.fromSource("app"),
+            OracleIdentifier.fromSource("first")
+        )))).hasSize(1)
+    }
+
+    @Test
     fun indexPreservesSpecificationAndBodyCandidatesDeterministically() {
         val specificationFile = FileId("a_spec.sql")
         val bodyFile = FileId("b_body.sql")

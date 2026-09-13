@@ -32,6 +32,31 @@ class ProjectDeclarationTest {
     private val extractor = ProjectDeclarationExtractor()
 
     @Test
+    fun extractsSequenceIdentityWithoutStoringOptions() {
+        val declarations = extractor.extract(fileId, """
+            CREATE SEQUENCE seq;
+            CREATE SEQUENCE app.seq START WITH 10 INCREMENT BY 2 CACHE 20;
+            CREATE SEQUENCE "Seq";
+            CREATE SEQUENCE "App"."Seq";
+        """.trimIndent())
+
+        val sequences = declarations.filterIsInstance<SequenceDeclaration>()
+        assertThat(sequences).hasSize(4)
+        assertThat(sequences.map { it.name }).containsExactly(
+            QualifiedName(OracleIdentifier.fromSource("seq")),
+            QualifiedName(listOf(OracleIdentifier.fromSource("app"), OracleIdentifier.fromSource("seq"))),
+            QualifiedName(OracleIdentifier.fromSource("\"Seq\"")),
+            QualifiedName(listOf(OracleIdentifier.fromSource("\"App\""), OracleIdentifier.fromSource("\"Seq\"")))
+        )
+        assertThat(sequences).allSatisfy { sequence ->
+            assertThat(sequence.kind).isEqualTo(ProjectDeclarationKind.SEQUENCE)
+            assertThat(sequence.role).isEqualTo(DeclarationRole.STANDALONE)
+            assertThat(sequence.fileId).isEqualTo(fileId)
+        }
+        assertThat(sequences.map { it.sourceRange.startLine }).containsExactly(1, 2, 3, 4)
+    }
+
+    @Test
     fun extractsPackageDeclarationsAndBodySubprograms() {
         val declarations = extractor.extract(fileId, """
             CREATE OR REPLACE PACKAGE "Pack" AS

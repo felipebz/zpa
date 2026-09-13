@@ -73,9 +73,26 @@ class ProjectDeclarationExtractor(
             if (valueAt(index) == "EDITIONABLE" || valueAt(index) == "NONEDITIONABLE") index++
             return when (valueAt(index)) {
                 "PACKAGE" -> parsePackage(create, index)
+                "SEQUENCE" -> parseSequence(create, index)
                 "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(index) else parseStandaloneType(create, index)
                 else -> null
             }
+        }
+
+        private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
+            // CREATE SEQUENCE has no OR REPLACE or EDITIONABLE prefix in the supported
+            // grammar. Keep extraction aligned with that grammar even though parseCreate
+            // handles those prefixes for other schema objects.
+            if (sequenceIndex != create + 1) return null
+
+            val parsedName = qualifiedName(sequenceIndex + 1) ?: return null
+            if (parsedName.first.segments.size !in 1..2) return null
+
+            val end = semicolonAfter(parsedName.second)
+            return ParsedUnit(
+                listOf(SequenceDeclaration(parsedName.first, fileId, range(create, end))),
+                end + 1
+            )
         }
 
         private fun parsePackage(create: Int, packageIndex: Int): ParsedUnit? {

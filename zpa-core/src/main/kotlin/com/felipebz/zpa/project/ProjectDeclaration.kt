@@ -32,7 +32,8 @@ enum class ProjectDeclarationKind {
     PACKAGE_TYPE,
     PACKAGE_SUBTYPE,
     PACKAGE_PROCEDURE,
-    PACKAGE_FUNCTION
+    PACKAGE_FUNCTION,
+    SEQUENCE
 }
 
 sealed interface ProjectDeclaration {
@@ -57,4 +58,13 @@ data class PackageDeclaration(
     } else {
         ProjectDeclarationKind.PACKAGE_BODY
     }
+}
+
+data class SequenceDeclaration(
+    val name: QualifiedName,
+    override val fileId: FileId,
+    override val sourceRange: SourceRange
+) : ProjectDeclaration {
+    override val kind = ProjectDeclarationKind.SEQUENCE
+    override val role = DeclarationRole.STANDALONE
 }
