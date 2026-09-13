@@ -1,0 +1,23 @@
+<p>utPLSQL allows a test without a description and displays the procedure name in its report. This rule enforces a readability convention: every effective test should have a human-readable description.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  --%suite
+  --%test
+  PROCEDURE creates_customer;
+END test_pkg;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  --%suite
+  --%test(Returns the customer when it exists)
+  PROCEDURE creates_customer;
+END test_pkg;
+</pre>
+
+<p>A current effective <code>%displayname(description)</code> also supplies the test description, but <code>%test(description)</code> is preferred because utPLSQL documents <code>%displayname</code> as redundant and potentially removable.</p>

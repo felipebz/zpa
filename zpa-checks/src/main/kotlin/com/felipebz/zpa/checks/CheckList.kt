@@ -83,6 +83,7 @@ object CheckList {
                 InvalidUtPlSqlAnnotationArgumentCheck::class.java,
                 InvalidUtPlSqlContextStructureCheck::class.java,
                 UnresolvedUtPlSqlSetupCleanupReferenceCheck::class.java,
+                UtPlSqlTestShouldHaveDescriptionCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java)
 

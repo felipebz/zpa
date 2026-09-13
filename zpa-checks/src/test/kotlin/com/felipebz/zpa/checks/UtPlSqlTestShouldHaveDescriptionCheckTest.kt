@@ -17,27 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa
+package com.felipebz.zpa.checks
 
-import org.assertj.core.api.Assertions.assertThat
+import com.felipebz.zpa.checks.verifier.PlSqlCheckVerifier
 import org.junit.jupiter.api.Test
-import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition.Context
-import com.felipebz.zpa.checks.CheckList
 
-class PlSqlProfileTest {
+class UtPlSqlTestShouldHaveDescriptionCheckTest : BaseCheckTest() {
 
     @Test
-    fun should_create_sonar_way_profile() {
-        val context = Context()
-
-        val definition = PlSqlProfile()
-        definition.define(context)
-
-        val profile = context.profile(PlSql.KEY, CheckList.SONAR_WAY_PROFILE)
-        assertThat(profile).isNotNull
-
-        val activeRules = profile.rules()
-        assertThat(activeRules.size).isGreaterThan(50)
+    fun reportsEffectiveTestsWithoutDescriptions() {
+        PlSqlCheckVerifier.verify(
+            getPath("utplsql_test_should_have_description.sql"),
+            UtPlSqlTestShouldHaveDescriptionCheck()
+        )
     }
-
 }
