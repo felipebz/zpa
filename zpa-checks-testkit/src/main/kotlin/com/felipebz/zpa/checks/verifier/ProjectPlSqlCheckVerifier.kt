@@ -107,13 +107,23 @@ class ProjectPlSqlCheckVerifier private constructor() {
                 if (markerIndex < 0) {
                     null
                 } else {
-                    val marker = line.substring(markerIndex + "-- Noncompliant".length).trim()
+                    var marker = line.substring(markerIndex + "-- Noncompliant".length).trim()
+                    var issueLine = index + 1
+                    if (marker.startsWith("@")) {
+                        val shiftEnd = marker.indexOfFirst { it.isWhitespace() || it == '{' }
+                        val shift = if (shiftEnd < 0) marker else marker.substring(0, shiftEnd)
+                        require(shift.length > 2 && (shift[1] == '+' || shift[1] == '-')) {
+                            "Use only '@+N' or '@-N' to shift project verifier messages."
+                        }
+                        issueLine += shift.substring(2).toInt() * if (shift[1] == '+') 1 else -1
+                        marker = if (shiftEnd < 0) "" else marker.substring(shiftEnd).trim()
+                    }
                     val message = if (marker.startsWith("{{") && marker.endsWith("}}")) {
                         marker.substring(2, marker.length - 2)
                     } else {
                         null
                     }
-                    ExpectedIssue(index + 1, message)
+                    ExpectedIssue(issueLine, message)
                 }
             }.toList()
 

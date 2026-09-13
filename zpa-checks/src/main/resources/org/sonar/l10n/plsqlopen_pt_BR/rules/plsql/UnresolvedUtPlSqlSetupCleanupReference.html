@@ -1,0 +1,32 @@
+<p>O utPLSQL executa referências de configuração e limpeza como chamadas de procedimentos de
+pacote sem argumentos. Um destino ausente, privado, não chamável ou ambíguo pode impedir a
+execução da configuração ou limpeza do teste mesmo quando o PL/SQL é compilado com sucesso.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %beforeall(configuracao_inexistente)
+
+  -- %test
+  PROCEDURE algum_teste;
+END test_pkg;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %beforeall(configuracao)
+
+  -- %test
+  PROCEDURE algum_teste;
+  PROCEDURE configuracao;
+END test_pkg;
+</pre>
+
+<p>O ZPA resolve apenas procedimentos públicos presentes nas especificações dos pacotes
+analisados. Um pacote que não faz parte do projeto analisado pode ser uma dependência válida do
+banco de dados e não é reportado apenas porque seu código-fonte não está disponível.</p>

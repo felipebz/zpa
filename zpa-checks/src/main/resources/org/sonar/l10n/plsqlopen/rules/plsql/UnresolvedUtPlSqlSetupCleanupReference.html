@@ -1,0 +1,30 @@
+<p>utPLSQL executes setup and cleanup references as package procedure calls without arguments. A missing, private, non-callable, or ambiguous target can prevent test setup or cleanup from running even when the PL/SQL itself compiles successfully.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %beforeall(missing_setup)
+
+  -- %test
+  PROCEDURE some_test;
+END test_pkg;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %beforeall(setup)
+
+  -- %test
+  PROCEDURE some_test;
+  PROCEDURE setup;
+END test_pkg;
+</pre>
+
+<p>ZPA resolves only public procedures represented by the analyzed package specifications. A
+package that is not part of the analyzed project may be a valid database dependency and is not
+reported solely because its source is unavailable.</p>

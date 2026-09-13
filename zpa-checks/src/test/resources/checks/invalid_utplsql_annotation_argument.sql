@@ -124,6 +124,12 @@ CREATE PACKAGE invalid_args AS
 
   PROCEDURE package_beforeall_valid;
 
+  -- Noncompliant@+2 {{This utPLSQL executable reference "owner.package.procedure.extra" has an invalid qualification.}}
+  -- Noncompliant@+1 {{This utPLSQL executable reference "package..procedure" has an invalid qualification.}}
+  --%beforeall(owner.package.procedure.extra, package..procedure)
+
+  PROCEDURE malformed_reference;
+
   -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
   --%afterall
 
@@ -184,6 +190,33 @@ CREATE PACKAGE invalid_args AS
   --%aftertest
   PROCEDURE helper_aftertest;
 
+  --%beforeall(owner.pkg.setup.extra)
+  PROCEDURE helper_beforeall_text;
+
+  --%afterall(owner.pkg.setup.extra)
+  PROCEDURE helper_afterall_text;
+
+  --%beforeeach(owner.pkg.setup.extra)
+  PROCEDURE helper_beforeeach_text;
+
+  --%aftereach(owner.pkg.setup.extra)
+  PROCEDURE helper_aftereach_text;
+
+  --%beforetest(owner.pkg.setup.extra)
+  PROCEDURE helper_beforetest_text;
+
+  --%aftertest(package..cleanup)
+  PROCEDURE helper_aftertest_text;
+
+  --%beforeall(owner.pkg.setup
+  PROCEDURE helper_beforeall_malformed;
+  --%afterall(owner.pkg.setup
+  PROCEDURE helper_afterall_malformed;
+  --%beforeeach(owner.pkg.setup
+  PROCEDURE helper_beforeeach_malformed;
+  --%aftereach(owner.pkg.setup
+  PROCEDURE helper_aftereach_malformed;
+
   --%displayname(unclosed
   PROCEDURE helper_displayname;
 
@@ -218,6 +251,20 @@ CREATE PACKAGE invalid_args AS
   --%test
   --%aftertest
   PROCEDURE actual_test_aftertest;
+
+  -- Noncompliant@+2 {{This utPLSQL executable reference "owner.pkg.setup.extra" has an invalid qualification.}}
+  --%test
+  --%beforetest(owner.pkg.setup.extra)
+  PROCEDURE actual_test_beforetest_malformed;
+
+  -- Noncompliant@+2 {{This utPLSQL executable reference "package..cleanup" has an invalid qualification.}}
+  --%test
+  --%aftertest(package..cleanup)
+  PROCEDURE actual_test_aftertest_malformed;
+
+  --%test
+  --%beforeall(owner.pkg.setup
+  PROCEDURE actual_test_beforeall_malformed;
 
   -- Noncompliant@+2 {{This utPLSQL annotation argument is malformed and will be ignored.}}
   --%test
@@ -277,6 +324,8 @@ CREATE PACKAGE invalid_args AS
   --%tags(-fast)
   -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
   --%beforeall
+  -- Noncompliant@+1 {{This utPLSQL executable reference "owner.pkg.setup.extra" has an invalid qualification.}}
+  --%aftereach(owner.pkg.setup.extra)
   --%endcontext
 
   --%context(Duplicate context arguments)
@@ -457,6 +506,16 @@ CREATE PACKAGE BODY invalid_args AS
   PROCEDURE helper_throws IS BEGIN NULL; END;
   PROCEDURE helper_beforetest IS BEGIN NULL; END;
   PROCEDURE helper_aftertest IS BEGIN NULL; END;
+  PROCEDURE helper_beforeall_text IS BEGIN NULL; END;
+  PROCEDURE helper_afterall_text IS BEGIN NULL; END;
+  PROCEDURE helper_beforeeach_text IS BEGIN NULL; END;
+  PROCEDURE helper_aftereach_text IS BEGIN NULL; END;
+  PROCEDURE helper_beforetest_text IS BEGIN NULL; END;
+  PROCEDURE helper_aftertest_text IS BEGIN NULL; END;
+  PROCEDURE helper_beforeall_malformed IS BEGIN NULL; END;
+  PROCEDURE helper_afterall_malformed IS BEGIN NULL; END;
+  PROCEDURE helper_beforeeach_malformed IS BEGIN NULL; END;
+  PROCEDURE helper_aftereach_malformed IS BEGIN NULL; END;
   PROCEDURE helper_displayname IS BEGIN NULL; END;
   PROCEDURE helper_disabled IS BEGIN NULL; END;
   PROCEDURE floating_test IS BEGIN NULL; END;
@@ -465,6 +524,9 @@ CREATE PACKAGE BODY invalid_args AS
   PROCEDURE actual_test_throws IS BEGIN NULL; END;
   PROCEDURE actual_test_beforetest IS BEGIN NULL; END;
   PROCEDURE actual_test_aftertest IS BEGIN NULL; END;
+  PROCEDURE actual_test_beforetest_malformed IS BEGIN NULL; END;
+  PROCEDURE actual_test_aftertest_malformed IS BEGIN NULL; END;
+  PROCEDURE actual_test_beforeall_malformed IS BEGIN NULL; END;
   PROCEDURE actual_test_displayname IS BEGIN NULL; END;
   PROCEDURE actual_test_disabled IS BEGIN NULL; END;
   PROCEDURE malformed_suite IS BEGIN NULL; END;

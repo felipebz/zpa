@@ -29,6 +29,11 @@ CREATE PACKAGE test_pkg AS
   -- %beforeall
   PROCEDURE beforeall_test;
 
+  -- Noncompliant@+2 {{This utPLSQL annotation conflicts with "test" in the same utPLSQL scope.}}
+  -- %test
+  -- %beforeall(owner.pkg.setup
+  PROCEDURE test_beforeall_malformed;
+
   -- Noncompliant@+1 {{This package-level utPLSQL annotation is ineffective when attached to a subprogram.}}
   -- %suite
   PROCEDURE suite_on_procedure;
@@ -190,6 +195,7 @@ CREATE PACKAGE BODY test_pkg AS
   PROCEDURE duplicate_test IS BEGIN NULL; END;
   PROCEDURE test_beforeall IS BEGIN NULL; END;
   PROCEDURE beforeall_test IS BEGIN NULL; END;
+  PROCEDURE test_beforeall_malformed IS BEGIN NULL; END;
   PROCEDURE suite_on_procedure IS BEGIN NULL; END;
   PROCEDURE repeatable_annotations IS BEGIN NULL; END;
   PROCEDURE valid_procedure IS BEGIN NULL; END;

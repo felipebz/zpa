@@ -32,6 +32,7 @@ import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationGroup
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationKind
 import com.felipebz.zpa.checks.utplsql.UtPlSqlContextCollector
+import com.felipebz.zpa.checks.utplsql.UtPlSqlExecutableReferenceParser
 import com.felipebz.zpa.checks.utplsql.UtPlSqlPackageContextModel
 import com.felipebz.zpa.checks.utplsql.UtPlSqlOracleWordSyntax
 import java.util.IdentityHashMap
@@ -73,6 +74,7 @@ class InvalidUtPlSqlAnnotationArgumentCheck : AbstractBaseCheck() {
 
     private fun validate(group: UtPlSqlAnnotationGroup, annotation: UtPlSqlAnnotation) {
         if (annotation.kind == UtPlSqlAnnotationKind.UNKNOWN || !isApplicable(group, annotation)) return
+        if (!isArgumentSemanticallyConsumed(group, annotation)) return
 
         if (annotation.argumentSyntax == UtPlSqlAnnotationArgumentSyntax.MALFORMED) {
             addIssue(annotation.token, getLocalizedMessage("malformedMessage"))
@@ -115,7 +117,13 @@ class InvalidUtPlSqlAnnotationArgumentCheck : AbstractBaseCheck() {
             UtPlSqlAnnotationKind.THROWS,
             UtPlSqlAnnotationKind.BEFORETEST,
             UtPlSqlAnnotationKind.AFTERTEST -> {
-                if (annotation.argument == null) reportRequired(annotation)
+                if (annotation.argument == null) {
+                    reportRequired(annotation)
+                } else if (annotation.kind == UtPlSqlAnnotationKind.BEFORETEST ||
+                    annotation.kind == UtPlSqlAnnotationKind.AFTERTEST
+                ) {
+                    validateExecutableReferences(annotation)
+                }
             }
 
             UtPlSqlAnnotationKind.DISPLAYNAME -> {
@@ -126,11 +134,38 @@ class InvalidUtPlSqlAnnotationArgumentCheck : AbstractBaseCheck() {
             UtPlSqlAnnotationKind.AFTERALL,
             UtPlSqlAnnotationKind.BEFOREEACH,
             UtPlSqlAnnotationKind.AFTEREACH -> {
-                if (group.declarationNode == null && annotation.argument == null) reportRequired(annotation)
+                if (group.declarationNode == null) {
+                    if (annotation.argument == null) reportRequired(annotation)
+                    validateExecutableReferences(annotation)
+                }
             }
 
             else -> Unit
         }
+    }
+
+    private fun isArgumentSemanticallyConsumed(
+        group: UtPlSqlAnnotationGroup,
+        annotation: UtPlSqlAnnotation
+    ): Boolean = when (annotation.kind) {
+        UtPlSqlAnnotationKind.BEFOREALL,
+        UtPlSqlAnnotationKind.AFTERALL,
+        UtPlSqlAnnotationKind.BEFOREEACH,
+        UtPlSqlAnnotationKind.AFTEREACH -> group.declarationNode == null
+        else -> true
+    }
+
+    private fun validateExecutableReferences(annotation: UtPlSqlAnnotation) {
+        val argument = annotation.argument ?: return
+        UtPlSqlExecutableReferenceParser.parse(argument)
+            .filterNot { it.hasSupportedComponentShape }
+            .forEach { reference ->
+                addIssue(
+                    annotation.token,
+                    getLocalizedMessage("invalidReferenceMessage"),
+                    reference.sourceText
+                )
+            }
     }
 
     private fun isApplicable(group: UtPlSqlAnnotationGroup, annotation: UtPlSqlAnnotation): Boolean {
