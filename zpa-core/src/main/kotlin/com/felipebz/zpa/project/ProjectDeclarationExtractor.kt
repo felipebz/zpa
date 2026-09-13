@@ -21,12 +21,11 @@ package com.felipebz.zpa.project
 
 import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
-import com.felipebz.flr.impl.Lexer
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.lexer.PlSqlLexer
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
-import java.util.Locale
+import java.util.*
 
 /**
  * Extracts the small, project-relevant declaration slice without constructing an AST.
@@ -74,7 +73,7 @@ class ProjectDeclarationExtractor(
             if (valueAt(index) == "EDITIONABLE" || valueAt(index) == "NONEDITIONABLE") index++
             return when (valueAt(index)) {
                 "PACKAGE" -> parsePackage(create, index)
-                "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(create, index) else parseStandaloneType(create, index)
+                "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(index) else parseStandaloneType(create, index)
                 else -> null
             }
         }
@@ -454,7 +453,7 @@ class ProjectDeclarationExtractor(
             return ParsedUnit(listOf(declaration), end + 1)
         }
 
-        private fun parseTypeBody(create: Int, typeIndex: Int): ParsedUnit {
+        private fun parseTypeBody(typeIndex: Int): ParsedUnit {
             val nextCreate = nextValue(typeIndex + 2, "CREATE")
             return ParsedUnit(emptyList(), nextCreate ?: tokens.size)
         }
