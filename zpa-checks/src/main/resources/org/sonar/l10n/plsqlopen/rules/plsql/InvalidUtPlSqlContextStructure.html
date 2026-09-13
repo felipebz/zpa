@@ -1,0 +1,35 @@
+<p>Fix utPLSQL context structures that are ignored or handled unexpectedly when the suite is built.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %context(First context)
+  -- %name(shared)
+  -- %endcontext
+  -- %context(Second context)
+  -- %name(shared)              -- Noncompliant
+  -- %endcontext
+END test_pkg;
+</pre>
+
+<p>Context names must be valid and unique among sibling contexts. A missing
+<code>%endcontext</code>, a name outside a context, or a duplicate name can make utPLSQL
+ignore the annotation or use an automatic context name instead. The PL/SQL can still compile
+successfully. utPLSQL uses the first <code>%name</code> before a nested context; later names are
+ignored. An empty <code>%name</code> uses an automatic name.</p>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %context(First context)
+  -- %name(first_context)
+  -- %endcontext
+  -- %context(Second context)
+  -- %name(second_context)
+  -- %endcontext
+END test_pkg;
+</pre>

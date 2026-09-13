@@ -23,6 +23,10 @@ CREATE PACKAGE invalid_args AS
 
   PROCEDURE suitepath_valid;
 
+  --%suitepath(brasil.emissão)
+
+  PROCEDURE suitepath_unicode;
+
   -- Noncompliant@+1 {{This utPLSQL annotation requires an argument.}}
   --%rollback
 
@@ -283,6 +287,12 @@ CREATE PACKAGE invalid_args AS
   --%test(unclosed
   PROCEDURE malformed_test;
 
+  --%context(Malformed context name)
+  -- Noncompliant@+1 {{This utPLSQL annotation argument is malformed and will be ignored.}}
+  --%name(unclosed
+  --%name(valid_name_after_malformed)
+  --%endcontext
+
   --%suite
 
   --%test
@@ -311,6 +321,7 @@ CREATE PACKAGE BODY invalid_args AS
   PROCEDURE suitepath_spaces IS BEGIN NULL; END;
   PROCEDURE suitepath_empty_component IS BEGIN NULL; END;
   PROCEDURE suitepath_valid IS BEGIN NULL; END;
+  PROCEDURE suitepath_unicode IS BEGIN NULL; END;
   PROCEDURE rollback_missing IS BEGIN NULL; END;
   PROCEDURE rollback_empty IS BEGIN NULL; END;
   PROCEDURE rollback_invalid IS BEGIN NULL; END;

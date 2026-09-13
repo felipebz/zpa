@@ -30,6 +30,7 @@ import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationArgumentSyntax
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationGroup
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationKind
+import com.felipebz.zpa.checks.utplsql.UtPlSqlOracleWordSyntax
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
 @RuleInfo(scope = RuleInfo.Scope.TEST)
@@ -59,7 +60,7 @@ class InvalidUtPlSqlAnnotationArgumentCheck : AbstractBaseCheck() {
                 val argument = annotation.argument
                 if (argument == null) {
                     reportRequired(annotation)
-                } else if (!SUITEPATH_PATTERN.matches(argument)) {
+                } else if (!UtPlSqlOracleWordSyntax.isQualifiedWordOrDollarOrHash(argument)) {
                     reportInvalidValue(annotation, argument)
                 }
             }
@@ -143,7 +144,6 @@ class InvalidUtPlSqlAnnotationArgumentCheck : AbstractBaseCheck() {
             tag !in RESERVED_TAG_WORDS
 
     companion object {
-        private val SUITEPATH_PATTERN = Regex("^[A-Za-z0-9_$#]+(?:\\.[A-Za-z0-9_$#]+)*$")
         private val TAG_EXPRESSION_CHARACTERS = setOf('(', ')', '&', '|', '!')
         private val RESERVED_TAG_WORDS = setOf("none", "any")
         private val PACKAGE_ONLY = setOf(

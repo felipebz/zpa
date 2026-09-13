@@ -1,0 +1,36 @@
+<p>Corrija estruturas de contexto do utPLSQL que são ignoradas ou tratadas de forma inesperada
+durante a construção da suíte.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %context(Primeiro contexto)
+  -- %name(shared)
+  -- %endcontext
+  -- %context(Segundo contexto)
+  -- %name(shared)              -- Não conforme
+  -- %endcontext
+END test_pkg;
+</pre>
+
+<p>Os nomes de contexto devem ser válidos e únicos entre contextos irmãos. A ausência de
+<code>%endcontext</code>, um nome fora de um contexto ou um nome duplicado pode fazer com que o
+utPLSQL ignore a anotação ou use um nome de contexto automático. O PL/SQL ainda pode ser
+compilado com sucesso. O utPLSQL usa o primeiro <code>%name</code> antes de um contexto aninhado;
+os nomes posteriores são ignorados. Um <code>%name</code> vazio usa um nome automático.</p>
+
+<h2>Código correto</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %suite
+  -- %context(Primeiro contexto)
+  -- %name(first_context)
+  -- %endcontext
+  -- %context(Segundo contexto)
+  -- %name(second_context)
+  -- %endcontext
+END test_pkg;
+</pre>
