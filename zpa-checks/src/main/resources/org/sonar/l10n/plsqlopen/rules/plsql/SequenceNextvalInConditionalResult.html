@@ -1,0 +1,18 @@
+<p>Do not use a sequence <code>NEXTVAL</code> in a conditional <code>CASE</code>
+result when the value appears to be consumed only by the selected branch.</p>
+
+<p>Oracle sequences are special expressions in SQL. A conditional result can be
+correct while evaluating <code>NEXTVAL</code> still advances the sequence. Keep
+the sequence operation outside the conditional result when that side effect
+must be conditional.</p>
+
+<pre>
+select case when status = 'NEW' then order_seq.nextval else 0 end
+  from orders;
+</pre>
+
+<p>This rule reports only sequence references that ZPA can positively identify
+from project declarations. References to sequences outside the analyzed project
+may remain undetected. It does not analyze generic <code>DECODE</code> calls
+because the current AST cannot prove that an unqualified call is Oracle's
+built-in function.</p>
