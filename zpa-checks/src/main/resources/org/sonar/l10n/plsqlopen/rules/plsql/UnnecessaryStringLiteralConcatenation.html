@@ -1,0 +1,20 @@
+<p>Merge adjacent non-empty string literals joined by <code>||</code> when they are on the same
+line. This removes syntax that makes a short constant harder to read.</p>
+
+<pre>
+v := 'foo' || 'bar';
+</pre>
+
+<p>Use the single literal instead:</p>
+
+<pre>
+v := 'foobar';
+</pre>
+
+<p>Concatenation used to make longer or structured text easier to read is intentionally outside
+the scope of this rule:</p>
+
+<pre>
+v := 'foo ' ||
+     'bar';
+</pre>

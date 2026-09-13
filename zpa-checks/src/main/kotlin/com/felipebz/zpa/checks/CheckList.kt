@@ -61,6 +61,7 @@ object CheckList {
                 UnnecessaryElseCheck::class.java,
                 DeadCodeCheck::class.java,
                 ConcatenationWithNullCheck::class.java,
+                UnnecessaryStringLiteralConcatenationCheck::class.java,
                 SameBranchCheck::class.java,
                 UnusedParameterCheck::class.java,
                 CommitRollbackCheck::class.java,

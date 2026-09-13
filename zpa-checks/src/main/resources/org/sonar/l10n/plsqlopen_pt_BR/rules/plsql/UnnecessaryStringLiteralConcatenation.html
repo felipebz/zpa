@@ -1,0 +1,20 @@
+<p>Una literais de string não vazios unidos por <code>||</code> quando estiverem na mesma linha.
+Isso remove uma sintaxe que torna uma constante curta mais difícil de ler.</p>
+
+<pre>
+v := 'foo' || 'bar';
+</pre>
+
+<p>Use um único literal:</p>
+
+<pre>
+v := 'foobar';
+</pre>
+
+<p>A concatenação usada para tornar textos longos ou estruturados mais fáceis de ler fica fora do
+escopo desta regra:</p>
+
+<pre>
+v := 'foo ' ||
+     'bar';
+</pre>
