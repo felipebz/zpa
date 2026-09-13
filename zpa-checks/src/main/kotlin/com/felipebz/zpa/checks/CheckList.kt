@@ -79,6 +79,7 @@ object CheckList {
                 PackageBodyParameterNocopyCheck::class.java,
                 DisabledTestCheck::class.java,
                 IneffectiveUtPlSqlAnnotationCheck::class.java,
+                ConflictingUtPlSqlAnnotationsCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java)
 

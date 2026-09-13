@@ -20,49 +20,24 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ActivatedByDefault
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
 import com.felipebz.zpa.api.annotations.RuleInfo
+import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationKind
-import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationParser
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault
 class IneffectiveUtPlSqlAnnotationCheck : AbstractBaseCheck() {
 
-    private var packageBodyDepth = 0
-
-    override fun startScan() {
-        super.startScan()
-        packageBodyDepth = 0
-    }
-
-    override fun init() {
-        subscribeTo(PlSqlGrammar.CREATE_PACKAGE_BODY)
-    }
-
-    override fun visitNode(node: AstNode) {
-        if (node.type == PlSqlGrammar.CREATE_PACKAGE_BODY) {
-            packageBodyDepth++
-        }
-    }
-
-    override fun leaveNode(node: AstNode) {
-        if (node.type == PlSqlGrammar.CREATE_PACKAGE_BODY) {
-            packageBodyDepth--
-        }
-    }
-
-    override fun visitComment(trivia: Trivia, content: String) {
-        if (packageBodyDepth == 0) return
-
-        val annotation = UtPlSqlAnnotationParser.parse(trivia.token, content) ?: return
-        if (annotation.kind != UtPlSqlAnnotationKind.UNKNOWN) {
-            addIssue(annotation.token, getLocalizedMessage())
-        }
+    override fun visitFile(node: AstNode) {
+        UtPlSqlAnnotationCollector.collect(node).groups
+            .filter { it.packageNode.type == PlSqlGrammar.CREATE_PACKAGE_BODY }
+            .flatMap { it.annotations }
+            .filter { it.kind != UtPlSqlAnnotationKind.UNKNOWN }
+            .forEach { addIssue(it.token, getLocalizedMessage()) }
     }
 }

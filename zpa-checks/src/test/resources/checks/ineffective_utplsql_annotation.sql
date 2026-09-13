@@ -29,7 +29,7 @@ create or replace package body test_pkg as
   -- this is an ordinary comment containing %test
   procedure another_helper is
   begin
-    null;
+    null; --%test
   end;
 
 end test_pkg;

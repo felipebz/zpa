@@ -24,17 +24,26 @@ import java.util.Locale
 
 internal object UtPlSqlAnnotationParser {
 
-    private val annotationPattern = Regex(
-        "^ *%([A-Za-z][A-Za-z0-9#_$]*)[ \\t]*(?:\\((.*)\\)[ \\t]*)?$",
+    private val annotationNamePattern = Regex(
+        "^ *%([A-Za-z][A-Za-z0-9#_$]*)",
+        RegexOption.IGNORE_CASE
+    )
+    private val annotationArgumentPattern = Regex(
+        "^ *%([A-Za-z][A-Za-z0-9#_$]*)[ \\t]*(?:\\((.*)\\)[ \\t]*)$",
         RegexOption.IGNORE_CASE
     )
 
     fun parse(token: Token, content: String): UtPlSqlAnnotation? {
         if (!token.originalValue.startsWith("--")) return null
 
-        val match = annotationPattern.matchEntire(content) ?: return null
-        val name = match.groupValues[1].lowercase(Locale.ROOT)
-        val argument = match.groups[2]?.value?.trim()
+        val nameMatch = annotationNamePattern.find(content) ?: return null
+        val name = nameMatch.groupValues[1].lowercase(Locale.ROOT)
+        val argument = annotationArgumentPattern.matchEntire(content)
+            ?.groups
+            ?.get(2)
+            ?.value
+            ?.trim()
+            ?.takeUnless(String::isEmpty)
 
         return UtPlSqlAnnotation(
             kind = UtPlSqlAnnotationKind.from(name),
@@ -44,4 +53,3 @@ internal object UtPlSqlAnnotationParser {
         )
     }
 }
-

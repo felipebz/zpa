@@ -52,6 +52,23 @@ class UtPlSqlAnnotationParserTest {
     }
 
     @Test
+    fun normalizesEmptyArgumentsToNull() {
+        val annotations = listOf("--%test", "--%test()", "--%test(   )")
+            .map { source ->
+                UtPlSqlAnnotationParser.parse(
+                    token(source),
+                    source.removePrefix("--")
+                )
+            }
+
+        assertThat(annotations).allSatisfy { annotation ->
+            assertThat(annotation).isNotNull
+            assertThat(annotation!!.kind).isEqualTo(UtPlSqlAnnotationKind.TEST)
+            assertThat(annotation.argument).isNull()
+        }
+    }
+
+    @Test
     fun annotationNamesAreCaseInsensitiveAndArgumentsAreTrimmed() {
         val annotation = UtPlSqlAnnotationParser.parse(
             token("-- %RoLlBaCk(  foo  )"),
@@ -96,8 +113,19 @@ class UtPlSqlAnnotationParserTest {
     }
 
     @Test
-    fun ignoresMalformedAnnotationsWithoutThrowing() {
-        assertThat(UtPlSqlAnnotationParser.parse(token("--%test(unclosed"), "%test(unclosed")).isNull()
+    fun retainsAnnotationNamesWhenParametersAreMalformedOrIgnored() {
+        val unclosed = UtPlSqlAnnotationParser.parse(token("--%test(unclosed"), "%test(unclosed")
+        val missingBrackets = UtPlSqlAnnotationParser.parse(
+            token("--%suite Description without brackets"),
+            "%suite Description without brackets"
+        )
+
+        assertThat(unclosed).isNotNull
+        assertThat(unclosed!!.kind).isEqualTo(UtPlSqlAnnotationKind.TEST)
+        assertThat(unclosed.argument).isNull()
+        assertThat(missingBrackets).isNotNull
+        assertThat(missingBrackets!!.kind).isEqualTo(UtPlSqlAnnotationKind.SUITE)
+        assertThat(missingBrackets.argument).isNull()
         assertThat(UtPlSqlAnnotationParser.parse(token("--%"), "%")).isNull()
     }
 

@@ -19,21 +19,16 @@
  */
 package com.felipebz.zpa.checks
 
-import com.felipebz.zpa.CustomAnnotationBasedRulesDefinition.Companion.convertCheckClassName
-import com.felipebz.zpa.api.checks.PlSqlCheck
-import java.util.*
+import com.felipebz.zpa.checks.verifier.PlSqlCheckVerifier
+import org.junit.jupiter.api.Test
 
-abstract class AbstractBaseCheck : PlSqlCheck() {
+class ConflictingUtPlSqlAnnotationsCheckTest : BaseCheckTest() {
 
-    private val bundle: ResourceBundle = ResourceBundle.getBundle("org.sonar.l10n.plsqlopen", Locale.getDefault())
-
-    protected fun getLocalizedMessage(): String {
-        return bundle.getString("${convertCheckClassName(this::class.java)}.message")
+    @Test
+    fun reportsOnlyVerifiedConflicts() {
+        PlSqlCheckVerifier.verify(
+            getPath("conflicting_utplsql_annotations.sql"),
+            ConflictingUtPlSqlAnnotationsCheck()
+        )
     }
-
-    protected fun getLocalizedMessage(key: String): String {
-        return bundle.getString("${convertCheckClassName(this::class.java)}.$key")
-    }
-
-
 }

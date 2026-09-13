@@ -1,0 +1,24 @@
+<p>Para anotações únicas repetidas, o utPLSQL mantém a primeira anotação e emite um aviso para as ocorrências posteriores. Um <code>%test</code> de procedimento é incompatível com <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code> e <code>%aftereach</code>; o utPLSQL emite um aviso para a anotação de configuração ou limpeza. O PL/SQL pode ser compilado normalmente, mas a anotação conflitante não tem efeito no utPLSQL.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test
+  -- %test(Descrição de teste duplicada)
+  PROCEDURE some_test;
+END test_pkg;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test(Descrição de teste)
+  PROCEDURE some_test;
+END test_pkg;
+</pre>
+
+<p>Vários procedimentos distintos com <code>%beforeall</code>, <code>%afterall</code>,
+<code>%beforeeach</code>, <code>%aftereach</code>, <code>%beforetest</code> e
+<code>%aftertest</code> são válidos e não são reportados por esta regra.</p>

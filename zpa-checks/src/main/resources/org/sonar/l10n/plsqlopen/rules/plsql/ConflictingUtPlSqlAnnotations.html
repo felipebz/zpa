@@ -1,0 +1,24 @@
+<p>For repeated singleton annotations, utPLSQL keeps the first annotation and warns about later occurrences. A procedure-level <code>%test</code> is incompatible with <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code>, and <code>%aftereach</code>; utPLSQL warns about the setup or cleanup annotation. The PL/SQL can compile successfully, but the conflicting annotation is ineffective in utPLSQL.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test
+  -- %test(Duplicate test description)
+  PROCEDURE some_test;
+END test_pkg;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test(Some test description)
+  PROCEDURE some_test;
+END test_pkg;
+</pre>
+
+<p>Multiple distinct <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code>,
+<code>%aftereach</code>, <code>%beforetest</code>, and <code>%aftertest</code> procedures are
+valid and are not reported by this rule.</p>
