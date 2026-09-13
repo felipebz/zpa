@@ -1,0 +1,22 @@
+<p>O utPLSQL lê as anotações de testes a partir da especificação do pacote. Uma anotação no corpo do pacote pode ser aceita pelo compilador PL/SQL, mas será ignorada pelo utPLSQL.</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE PACKAGE BODY test_pkg AS
+  -- %test
+  PROCEDURE does_something IS
+  BEGIN
+    NULL;
+  END;
+END test_pkg;
+</pre>
+
+<h2>Solução</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test(Does something)
+  PROCEDURE does_something;
+END test_pkg;
+</pre>

@@ -78,6 +78,7 @@ object CheckList {
                 ToCharInOrderByCheck::class.java,
                 PackageBodyParameterNocopyCheck::class.java,
                 DisabledTestCheck::class.java,
+                IneffectiveUtPlSqlAnnotationCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java)
 

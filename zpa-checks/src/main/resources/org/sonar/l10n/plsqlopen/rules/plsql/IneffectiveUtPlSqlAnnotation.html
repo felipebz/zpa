@@ -1,0 +1,22 @@
+<p>utPLSQL reads test annotations from a package specification. An annotation in a package body may be accepted by the PL/SQL compiler, but utPLSQL will ignore it.</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE PACKAGE BODY test_pkg AS
+  -- %test
+  PROCEDURE does_something IS
+  BEGIN
+    NULL;
+  END;
+END test_pkg;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE PACKAGE test_pkg AS
+  -- %test(Does something)
+  PROCEDURE does_something;
+END test_pkg;
+</pre>
