@@ -49,13 +49,15 @@ class SequenceNextvalInConditionalResultCheck : AbstractBaseCheck() {
 
     override fun init() {
         subscribeTo(PlSqlGrammar.CASE_EXPRESSION)
+        subscribeTo(PlSqlGrammar.METHOD_CALL)
     }
 
     override fun visitNode(node: AstNode) {
-        if (!isSqlExpression(node)) return
-
         when {
-            node.type === PlSqlGrammar.CASE_EXPRESSION -> checkCaseResults(node)
+            node.type === PlSqlGrammar.CASE_EXPRESSION && isSqlExpression(node) -> checkCaseResults(node)
+            node.type === PlSqlGrammar.METHOD_CALL && isBuiltInDecode(node) && isSqlExpression(node) -> {
+                checkDecodeResults(node)
+            }
         }
     }
 
@@ -73,6 +75,37 @@ class SequenceNextvalInConditionalResultCheck : AbstractBaseCheck() {
             if (child.`is`(PlSqlKeyword.THEN, PlSqlKeyword.ELSE)) {
                 caseExpression.children.getOrNull(index + 1)?.let(::scanConditionalResult)
             }
+        }
+    }
+
+    private fun checkDecodeResults(methodCall: AstNode) {
+        val arguments = methodCall.getFirstChildOrNull(PlSqlGrammar.ARGUMENTS)
+            ?.getChildren(PlSqlGrammar.ARGUMENT)
+            .orEmpty()
+        if (arguments.size < 3) return
+
+        arguments.forEachIndexed { index, argument ->
+            if (
+                (index >= 2 && index % 2 == 0) ||
+                (index == arguments.lastIndex && arguments.size % 2 == 0)
+            ) {
+                scanConditionalResult(argument.lastChild)
+            }
+        }
+    }
+
+    private fun isBuiltInDecode(methodCall: AstNode): Boolean {
+        val callee = methodCall.children.firstOrNull {
+            it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.MEMBER_EXPRESSION
+        } ?: return false
+        if (callee.type !== PlSqlGrammar.VARIABLE_NAME) return false
+
+        val component = callee.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return false
+        val spelling = component.token.originalValue
+        return if (spelling.startsWith("\"") && spelling.endsWith("\"")) {
+            spelling == "\"DECODE\""
+        } else {
+            spelling.equals("DECODE", ignoreCase = true)
         }
     }
 

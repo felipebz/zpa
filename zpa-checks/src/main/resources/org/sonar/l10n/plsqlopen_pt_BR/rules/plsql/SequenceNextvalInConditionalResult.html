@@ -1,6 +1,6 @@
 <p>Não use <code>NEXTVAL</code> de uma sequência em um resultado condicional de
-<code>CASE</code> quando o valor aparenta ser consumido somente pelo ramo
-selecionado.</p>
+<code>CASE</code> ou de uma chamada nativa <code>DECODE</code> quando o valor
+aparenta ser consumido somente pelo ramo selecionado.</p>
 
 <p>Sequências Oracle são expressões especiais em SQL. O resultado condicional
 pode estar correto, mas a avaliação de <code>NEXTVAL</code> ainda pode avançar a
@@ -14,6 +14,8 @@ select case when status = 'NEW' then order_seq.nextval else 0 end
 
 <p>Esta regra reporta somente referências a sequências que o ZPA consegue
 identificar positivamente a partir das declarações do projeto. Referências a
-sequências fora do projeto analisado podem não ser detectadas. Ela não analisa
-chamadas genéricas a <code>DECODE</code>, pois a AST atual não consegue provar
-que uma chamada não qualificada é a função nativa do Oracle.</p>
+sequências fora do projeto analisado podem não ser detectadas. Para
+<code>DECODE</code>, somente uma chamada não qualificada sem aspas (sem distinção
+de maiúsculas e minúsculas) ou um identificador entre aspas escrito exatamente como
+<code>&quot;DECODE&quot;</code> é tratada como a função nativa do Oracle. A expressão
+principal e as expressões de busca não são resultados condicionais.</p>

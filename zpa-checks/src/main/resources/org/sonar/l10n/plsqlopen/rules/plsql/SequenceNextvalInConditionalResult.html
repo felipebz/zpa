@@ -1,5 +1,6 @@
 <p>Do not use a sequence <code>NEXTVAL</code> in a conditional <code>CASE</code>
-result when the value appears to be consumed only by the selected branch.</p>
+or built-in <code>DECODE</code> result when the value appears to be consumed
+only by the selected branch.</p>
 
 <p>Oracle sequences are special expressions in SQL. A conditional result can be
 correct while evaluating <code>NEXTVAL</code> still advances the sequence. Keep
@@ -13,6 +14,7 @@ select case when status = 'NEW' then order_seq.nextval else 0 end
 
 <p>This rule reports only sequence references that ZPA can positively identify
 from project declarations. References to sequences outside the analyzed project
-may remain undetected. It does not analyze generic <code>DECODE</code> calls
-because the current AST cannot prove that an unqualified call is Oracle's
-built-in function.</p>
+may remain undetected. For <code>DECODE</code>, only an unqualified unquoted
+call (case-insensitive) or a quoted identifier spelled exactly
+<code>&quot;DECODE&quot;</code> call is treated as Oracle's built-in function. The
+main expression and search expressions are not conditional results.</p>
