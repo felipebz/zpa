@@ -38,17 +38,25 @@ internal object UtPlSqlAnnotationParser {
 
         val nameMatch = annotationNamePattern.find(content) ?: return null
         val name = nameMatch.groupValues[1].lowercase(Locale.ROOT)
-        val argument = annotationArgumentPattern.matchEntire(content)
+        val argumentMatch = annotationArgumentPattern.matchEntire(content)
+        val argument = argumentMatch
             ?.groups
             ?.get(2)
             ?.value
             ?.trim()
-            ?.takeUnless(String::isEmpty)
+            ?.takeUnless { it.isEmpty() }
+        val trailingText = content.substring(nameMatch.range.last + 1)
+        val argumentSyntax = when {
+            argumentMatch != null -> UtPlSqlAnnotationArgumentSyntax.PARENTHESIZED
+            trailingText.all { it == ' ' || it == '\t' } -> UtPlSqlAnnotationArgumentSyntax.NONE
+            else -> UtPlSqlAnnotationArgumentSyntax.MALFORMED
+        }
 
         return UtPlSqlAnnotation(
             kind = UtPlSqlAnnotationKind.from(name),
             name = name,
             argument = argument,
+            argumentSyntax = argumentSyntax,
             token = token
         )
     }

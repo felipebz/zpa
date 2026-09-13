@@ -80,6 +80,7 @@ object CheckList {
                 DisabledTestCheck::class.java,
                 IneffectiveUtPlSqlAnnotationCheck::class.java,
                 ConflictingUtPlSqlAnnotationsCheck::class.java,
+                InvalidUtPlSqlAnnotationArgumentCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java)
 

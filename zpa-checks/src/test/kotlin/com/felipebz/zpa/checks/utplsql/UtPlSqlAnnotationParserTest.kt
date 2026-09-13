@@ -36,6 +36,7 @@ class UtPlSqlAnnotationParserTest {
         assertThat(annotation!!.kind).isEqualTo(UtPlSqlAnnotationKind.TEST)
         assertThat(annotation.name).isEqualTo("test")
         assertThat(annotation.argument).isNull()
+        assertThat(annotation.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.NONE)
         assertThat(annotation.token).isSameAs(token)
     }
 
@@ -49,6 +50,7 @@ class UtPlSqlAnnotationParserTest {
         assertThat(annotation).isNotNull
         assertThat(annotation!!.kind).isEqualTo(UtPlSqlAnnotationKind.TEST)
         assertThat(annotation.argument).isEqualTo("Does something: use (a, b)")
+        assertThat(annotation.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.PARENTHESIZED)
     }
 
     @Test
@@ -66,6 +68,18 @@ class UtPlSqlAnnotationParserTest {
             assertThat(annotation!!.kind).isEqualTo(UtPlSqlAnnotationKind.TEST)
             assertThat(annotation.argument).isNull()
         }
+        assertThat(annotations[0]!!.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.NONE)
+        assertThat(annotations[1]!!.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.PARENTHESIZED)
+        assertThat(annotations[2]!!.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.PARENTHESIZED)
+    }
+
+    @Test
+    fun retainsMalformedArgumentSyntaxForLaterValidation() {
+        val annotation = UtPlSqlAnnotationParser.parse(token("--%test(unclosed"), "%test(unclosed")
+
+        assertThat(annotation).isNotNull
+        assertThat(annotation!!.argument).isNull()
+        assertThat(annotation.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.MALFORMED)
     }
 
     @Test
@@ -126,6 +140,7 @@ class UtPlSqlAnnotationParserTest {
         assertThat(missingBrackets).isNotNull
         assertThat(missingBrackets!!.kind).isEqualTo(UtPlSqlAnnotationKind.SUITE)
         assertThat(missingBrackets.argument).isNull()
+        assertThat(missingBrackets.argumentSyntax).isEqualTo(UtPlSqlAnnotationArgumentSyntax.MALFORMED)
         assertThat(UtPlSqlAnnotationParser.parse(token("--%"), "%")).isNull()
     }
 

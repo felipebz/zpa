@@ -1,0 +1,13 @@
+<p>Fix invalid utPLSQL annotation arguments. The PL/SQL can compile successfully while utPLSQL ignores an invalid value or malformed argument.</p>
+
+<h2>Why this matters</h2>
+<p>utPLSQL validates selected annotation values while building the test suite. An invalid argument can therefore silently prevent a suite, test, tag, rollback policy, or expected exception from being applied.</p>
+<p>Tag names cannot start with a dash, contain whitespace or the expression characters <code>(</code>, <code>)</code>, <code>&amp;</code>, <code>|</code>, or <code>!</code>. The reserved words <code>none</code> and <code>any</code> are not literal tag names.</p>
+
+<h2>Examples</h2>
+<pre>
+--%suitepath(foo bar)       -- Invalid path
+--%rollback(transactional)  -- Only auto and manual are supported
+--%tags(-fast)              -- A tag cannot start with '-'
+--%throws                   -- An expected exception is required
+</pre>

@@ -1,0 +1,13 @@
+<p>Corrija os argumentos inválidos das anotações utPLSQL. O PL/SQL pode ser compilado com sucesso enquanto o utPLSQL ignora um valor inválido ou um argumento malformado.</p>
+
+<h2>Por que isso importa</h2>
+<p>O utPLSQL valida determinados valores das anotações ao construir a suíte de testes. Um argumento inválido pode impedir silenciosamente que uma suíte, teste, tag, política de rollback ou exceção esperada seja aplicada.</p>
+<p>Os nomes das tags não podem começar com hífen, conter espaços ou os caracteres de expressão <code>(</code>, <code>)</code>, <code>&amp;</code>, <code>|</code> ou <code>!</code>. As palavras reservadas <code>none</code> e <code>any</code> não são nomes literais de tags.</p>
+
+<h2>Exemplos</h2>
+<pre>
+--%suitepath(foo bar)       -- Caminho inválido
+--%rollback(transactional)  -- Apenas auto e manual são suportados
+--%tags(-fast)              -- Uma tag não pode começar com '-'
+--%throws                   -- Uma exceção esperada é necessária
+</pre>

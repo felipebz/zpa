@@ -17,20 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.checks.utplsql
+package com.felipebz.zpa.checks
 
-import com.felipebz.flr.api.Token
+import com.felipebz.zpa.checks.verifier.PlSqlCheckVerifier
+import org.junit.jupiter.api.Test
 
-internal enum class UtPlSqlAnnotationArgumentSyntax {
-    NONE,
-    PARENTHESIZED,
-    MALFORMED
+class InvalidUtPlSqlAnnotationArgumentCheckTest : BaseCheckTest() {
+
+    @Test
+    fun reportsArgumentsThatUtPlSqlRejectsOrIgnores() {
+        PlSqlCheckVerifier.verify(
+            getPath("invalid_utplsql_annotation_argument.sql"),
+            InvalidUtPlSqlAnnotationArgumentCheck()
+        )
+    }
 }
-
-internal data class UtPlSqlAnnotation(
-    val kind: UtPlSqlAnnotationKind,
-    val name: String,
-    val argument: String?,
-    val argumentSyntax: UtPlSqlAnnotationArgumentSyntax,
-    val token: Token
-)
