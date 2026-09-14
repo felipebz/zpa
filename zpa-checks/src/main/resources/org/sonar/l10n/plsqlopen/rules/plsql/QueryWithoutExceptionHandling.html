@@ -1,3 +1,6 @@
 <p>
-Usually you should add an exception handling block for SELECT statements, to avoid unexpected exceptions.
+Ordinary <code>SELECT ... INTO</code> statements can raise <code>NO_DATA_FOUND</code> or <code>TOO_MANY_ROWS</code> when their result cardinality is not handled.
+</p>
+<p>
+Single-group aggregate queries without <code>GROUP BY</code>, <code>HAVING</code>, set operators, row-limiting clauses, or <code>MODEL</code> always produce one result row and are ignored by this rule. This guarantee concerns result cardinality only; aggregate queries can still raise other runtime exceptions.
 </p>

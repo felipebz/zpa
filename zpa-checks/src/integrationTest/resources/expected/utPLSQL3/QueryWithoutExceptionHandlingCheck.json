@@ -5,80 +5,19 @@
   "source/api/ut.pkb" : [
     810
   ],
-  "source/check_sys_grants.sql" : [
-    16
-  ],
-  "source/core/coverage/dbms_plssqlcode.sql" : [
-    4,
-    31,
-    50
-  ],
-  "source/core/coverage/proftab.sql" : [
-    4,
-    33,
-    64,
-    96
-  ],
-  "source/core/coverage/ut_coverage_runs.sql" : [
-    4
-  ],
-  "source/core/output_buffers/ut_output_buffer_base.tpb" : [
-    27
-  ],
-  "source/core/output_buffers/ut_output_bulk_buffer.tpb" : [
-    106
-  ],
-  "source/core/ut_dbms_output_cache.sql" : [
-    22
-  ],
-  "source/core/ut_metadata.pkb" : [
-    126,
-    160
-  ],
-  "source/core/ut_suite_cache_manager.pkb" : [
-    291,
-    321,
-    473,
-    482,
-    490
-  ],
-  "source/core/ut_suite_manager.pkb" : [
-    613
-  ],
-  "source/core/ut_suite_tag_filter.pkb" : [
-    62,
-    68
-  ],
   "source/core/ut_utils.pkb" : [
     654
   ],
   "source/expectations/data_values/ut_cursor_details.tpb" : [
-    6,
-    146,
     231,
     243
   ],
   "source/reporters/ut_debug_reporter.tpb" : [
     74
   ],
-  "source/uninstall_coverage_tables.sql" : [
-    23
-  ],
-  "source/uninstall_objects.sql" : [
-    6
-  ],
-  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [
-    102,
-    154,
-    374,
-    408,
-    443
-  ],
   "test/ut3_tester/core/test_output_buffer.pkb" : [
     23,
-    31,
     85,
-    119,
     177,
     195
   ],
@@ -89,50 +28,8 @@
     10,
     271
   ],
-  "test/ut3_tester_helper/other_dummy_object.tps" : [
-    4
-  ],
   "test/ut3_tester_helper/run_helper.pkb" : [
     164
-  ],
-  "test/ut3_tester_helper/test_dummy_dble_nest_lst_obj.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_double_nested_list.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_double_nested_object.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_nested_object.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_nested_object_list.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_number.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_object.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_dummy_object_list.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_event_object.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_nested_tab_varray.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_tab_varchar2.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/test_tab_varray.tps" : [
-    4
-  ],
-  "test/ut3_tester_helper/ut_test_table.sql" : [
-    4
   ],
   "test/ut3_user/api/test_ut_run.pkb" : [
     829
@@ -157,7 +54,6 @@
     264,
     275,
     336,
-    350,
     371,
     388,
     406,

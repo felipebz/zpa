@@ -3,11 +3,6 @@
     48
   ],
   "examples/te_employee.pkb" : [
-    863,
-    874,
-    890,
-    904,
-    918,
     967
   ],
   "examples/test_te_employee.pkb" : [
@@ -26,12 +21,5 @@
   ],
   "source/ut_receq.pkb" : [
     151
-  ],
-  "source/ut_result.pkb" : [
-    291,
-    298
-  ],
-  "source/ut_routcome.pkb" : [
-    162
   ]
 }

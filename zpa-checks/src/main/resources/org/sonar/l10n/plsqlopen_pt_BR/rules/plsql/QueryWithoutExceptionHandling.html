@@ -1,3 +1,6 @@
 <p>
-Geralmente você deve adicionar um bloco de tratamento de exceptions para comandos SELECT, para evitar exceções inesperadas.
+Comandos <code>SELECT ... INTO</code> comuns podem lançar <code>NO_DATA_FOUND</code> ou <code>TOO_MANY_ROWS</code> quando a cardinalidade do resultado não é tratada.
+</p>
+<p>
+Consultas de agregação de grupo único sem <code>GROUP BY</code>, <code>HAVING</code>, operadores de conjunto, cláusulas de limitação de linhas ou <code>MODEL</code> sempre produzem uma linha de resultado e são ignoradas por esta regra. Essa garantia trata apenas da cardinalidade; consultas de agregação ainda podem lançar outras exceções em tempo de execução.
 </p>

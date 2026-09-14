@@ -20,11 +20,12 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.typeIs
+import com.felipebz.zpa.api.AggregateSqlFunctionsGrammar
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.typeIs
 
 @Rule(priority = Priority.CRITICAL)
 @ConstantRemediation("20min")
@@ -45,6 +46,10 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
             return
         }
 
+        if (isGuaranteedSingleRowAggregate(node)) {
+            return
+        }
+
         if (strictMode) {
             val parentBlock = node.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
 
@@ -57,6 +62,70 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
                 addIssue(node, getLocalizedMessage())
             }
         }
+    }
+
+    private fun isGuaranteedSingleRowAggregate(selectStatement: AstNode): Boolean {
+        val intoClause = selectStatement.getFirstDescendantOrNull(DmlGrammar.INTO_CLAUSE) ?: return false
+        if (intoClause.firstChild.typeIs(PlSqlKeyword.BULK)) return false
+
+        val selectExpression = selectStatement.getFirstChildOrNull(DmlGrammar.SELECT_EXPRESSION) ?: return false
+        if (selectExpression.getChildren(DmlGrammar.QUERY_BLOCK).size != 1 ||
+            selectExpression.hasDirectChildren(
+                PlSqlKeyword.UNION,
+                PlSqlKeyword.INTERSECT,
+                PlSqlKeyword.EXCEPT,
+                PlSqlKeyword.MINUS_KEYWORD,
+                DmlGrammar.ROW_LIMITING_CLAUSE
+            )
+        ) {
+            return false
+        }
+
+        val queryBlock = selectExpression.getFirstChildOrNull(DmlGrammar.QUERY_BLOCK) ?: return false
+        if (queryBlock.hasDirectChildren(
+                DmlGrammar.GROUP_BY_CLAUSE,
+                DmlGrammar.HAVING_CLAUSE,
+                DmlGrammar.MODEL_CLAUSE
+            )
+        ) {
+            return false
+        }
+
+        return queryBlock.getChildren(DmlGrammar.SELECT_COLUMN).any { selectColumn ->
+            selectColumn.getDescendants(
+                PlSqlGrammar.METHOD_CALL,
+                AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION
+            ).any { aggregate ->
+                aggregate.getFirstAncestorOrNull(DmlGrammar.QUERY_BLOCK) === queryBlock &&
+                    isAggregate(aggregate) &&
+                    !isAnalytic(aggregate)
+            }
+        }
+    }
+
+    private fun isAggregate(node: AstNode): Boolean {
+        if (node.type === AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION) return true
+        if (node.type !== PlSqlGrammar.METHOD_CALL) return false
+
+        val callee = node.children.firstOrNull {
+            it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.MEMBER_EXPRESSION
+        } ?: return false
+        if (callee.type !== PlSqlGrammar.VARIABLE_NAME) return false
+
+        val identifier = callee.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return false
+        val spelling = identifier.token.originalValue
+        return !spelling.startsWith("\"") && COMMON_AGGREGATE_FUNCTIONS.any {
+            it.equals(spelling, ignoreCase = true)
+        }
+    }
+
+    private fun isAnalytic(node: AstNode): Boolean {
+        return node.getFirstAncestorOrNull(PlSqlGrammar.POSTFIX_EXPRESSION)
+            ?.hasDescendant(DmlGrammar.ANALYTIC_CLAUSE) == true
+    }
+
+    private companion object {
+        val COMMON_AGGREGATE_FUNCTIONS = setOf("count", "sum", "avg", "min", "max")
     }
 
 }

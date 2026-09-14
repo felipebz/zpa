@@ -1,8 +1,4 @@
 {
-  "examples/ex13.sql" : [
-    46,
-    70
-  ],
   "src/addons/pljson_util_pkg.package.sql" : [
     260
   ],
