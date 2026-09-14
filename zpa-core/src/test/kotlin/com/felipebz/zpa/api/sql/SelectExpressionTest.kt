@@ -195,6 +195,14 @@ class SelectExpressionTest : RuleTest() {
         assertThat(p).matches("select first_value(foo) ignore nulls over (order by bar) from dual")
         assertThat(p).matches("select first_value(foo) respect nulls over (partition by baz order by bar) from dual")
         assertThat(p).matches("select lag(foo, 1) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select first_value(foo ignore nulls) over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo, 1 respect nulls) over (order by bar) from dual")
+    }
+
+    @Test
+    fun matchesSelectWithNthValueFromFirstOrLast() {
+        assertThat(p).matches("select nth_value(foo, 2) from first over (order by bar) from dual")
+        assertThat(p).matches("select nth_value(foo, 2) from last ignore nulls over (order by bar) from dual")
     }
 
     @Test
