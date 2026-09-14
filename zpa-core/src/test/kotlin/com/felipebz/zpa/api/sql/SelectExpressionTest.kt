@@ -191,6 +191,13 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithNullTreatmentInAnalyticFunction() {
+        assertThat(p).matches("select first_value(foo) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select first_value(foo) respect nulls over (partition by baz order by bar) from dual")
+        assertThat(p).matches("select lag(foo, 1) ignore nulls over (order by bar) from dual")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }

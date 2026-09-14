@@ -883,6 +883,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         ),
                         b.sequence(
                             OBJECT_REFERENCE,
+                            b.optional(NULL_TREATMENT_CLAUSE, b.next(OVER)),
                             b.optional(b.firstOf(
                                 ANALYTIC_CLAUSE,
                                 b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))

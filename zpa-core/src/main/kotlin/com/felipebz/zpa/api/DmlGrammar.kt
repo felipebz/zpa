@@ -38,6 +38,7 @@ enum class DmlGrammar : GrammarRuleKey {
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
     KEEP_CLAUSE,
+    NULL_TREATMENT_CLAUSE,
     ANALYTIC_CLAUSE,
     ON_OR_USING_EXPRESSION,
     INNER_CROSS_JOIN_CLAUSE,
@@ -167,6 +168,8 @@ enum class DmlGrammar : GrammarRuleKey {
                     KEEP, LPARENTHESIS,
                     DENSE_RANK, b.firstOf(FIRST, LAST), ORDER_BY_CLAUSE,
                     RPARENTHESIS)
+
+            b.rule(NULL_TREATMENT_CLAUSE).define(b.firstOf(IGNORE, RESPECT), NULLS)
 
             b.rule(ANALYTIC_CLAUSE).define(
                     OVER,

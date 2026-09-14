@@ -465,6 +465,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     RENAME("rename"),
     REPEAT("repeat"),
     REPLACE("replace"),
+    RESPECT("respect"),
     RESTRICT_REFERENCES("restrict_references"),
     RESULT("result"),
     RESULT_CACHE("result_cache"),
