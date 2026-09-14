@@ -42,6 +42,7 @@ enum class DmlGrammar : GrammarRuleKey {
     ANALYTIC_CLAUSE,
     ON_OR_USING_EXPRESSION,
     INNER_CROSS_JOIN_CLAUSE,
+    CROSS_OUTER_APPLY_CLAUSE,
     OUTER_JOIN_TYPE,
     QUERY_PARTITION_CLAUSE,
     OUTER_JOIN_CLAUSE,
@@ -207,8 +208,12 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.firstOf(
                                     CROSS,
                                     b.sequence(NATURAL, b.optional(INNER))),
-                            JOIN, DML_TABLE_EXPRESSION_CLAUSE)
+                            JOIN, DML_TABLE_EXPRESSION_CLAUSE),
+                    CROSS_OUTER_APPLY_CLAUSE
             ))
+
+            b.rule(CROSS_OUTER_APPLY_CLAUSE).define(
+                    b.firstOf(CROSS, OUTER), APPLY, DML_TABLE_EXPRESSION_CLAUSE)
 
             b.rule(OUTER_JOIN_CLAUSE).define(
                     b.optional(QUERY_PARTITION_CLAUSE),

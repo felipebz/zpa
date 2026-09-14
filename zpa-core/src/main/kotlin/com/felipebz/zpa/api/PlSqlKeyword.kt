@@ -113,6 +113,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     ANALYZE("analyze"),
     ANY_CS("any_cs"),
     APPEND("append"),
+    APPLY("apply"),
     ARRAY("array"),
     ARROW("arrow"),
     ASCII("ascii"),

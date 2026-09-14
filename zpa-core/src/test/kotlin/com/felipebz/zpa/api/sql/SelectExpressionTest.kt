@@ -198,6 +198,19 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithCrossApply() {
+        assertThat(p).matches("select 1 from foo cross apply (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo cross apply (select id from bar where bar.id = foo.id) baz")
+        assertThat(p).matches("select 1 from foo cross apply table(foo.items) baz")
+    }
+
+    @Test
+    fun matchesSelectWithOuterApply() {
+        assertThat(p).matches("select 1 from foo outer apply (select id from bar where bar.id = foo.id) baz")
+        assertThat(p).matches("select 1 from foo outer apply table(foo.items)")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }
