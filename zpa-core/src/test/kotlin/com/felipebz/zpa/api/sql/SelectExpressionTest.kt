@@ -169,6 +169,18 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithLateralInlineView() {
+        assertThat(p).matches("select 1 from foo, lateral (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo, lateral (select id from bar where bar.id = foo.id) baz")
+    }
+
+    @Test
+    fun matchesSelectWithLateralInJoin() {
+        assertThat(p).matches("select 1 from foo cross join lateral (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo left join lateral (select id from bar where bar.id = foo.id) baz on 1 = 1")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }

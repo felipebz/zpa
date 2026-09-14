@@ -317,6 +317,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     KEYS("keys"),
     LANGUAGE("language"),
     LAST("last"),
+    LATERAL("lateral"),
     LAX("lax"),
     LEADING("leading"),
     LEFT("left"),

@@ -236,7 +236,7 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
-                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, b.optional(
+                            b.sequence(b.optional(LATERAL), LPARENTHESIS, SELECT_EXPRESSION, b.optional(
                                 b.firstOf(
                                     PIVOT_CLAUSE,
                                     UNPIVOT_CLAUSE
