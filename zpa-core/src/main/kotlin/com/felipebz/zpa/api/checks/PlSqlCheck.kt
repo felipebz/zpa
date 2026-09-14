@@ -28,6 +28,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectAnalysis
 import com.felipebz.zpa.squid.createNotPreparedProjectAnalysis
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.syntax.SyntaxView
 import java.text.MessageFormat
 import java.util.*
 import kotlin.jvm.JvmSynthetic
@@ -65,6 +66,16 @@ open class PlSqlCheck : PlSqlVisitor() {
         val newIssue = PreciseIssue(IssueLocation.preciseLocation(node, message))
         issues.add(newIssue)
         return newIssue
+    }
+
+    @ZpaExperimentalApi
+    fun addIssue(view: SyntaxView, message: String): PreciseIssue {
+        return addIssue(view.astNode, message)
+    }
+
+    @ZpaExperimentalApi
+    fun addIssue(view: SyntaxView, message: String, vararg messageParameters: Any): PreciseIssue {
+        return addIssue(view, MessageFormat.format(message, *messageParameters))
     }
 
     fun addIssue(node: AstNode, message: String, vararg messageParameters: Any): PreciseIssue {

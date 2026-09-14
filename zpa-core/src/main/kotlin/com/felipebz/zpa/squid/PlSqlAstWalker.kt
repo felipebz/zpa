@@ -32,7 +32,8 @@ import java.util.*
 
 class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
-    private val visitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
+    private val rawVisitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
+    private val typedVisitorsByNodeType = IdentityHashMap<AstNodeType, MutableList<PlSqlVisitor>>()
     private val callbackVisitors = checks.mapNotNull { check ->
         val capabilities = callbackCapabilities[check.javaClass]
         if (capabilities.visitsToken || capabilities.visitsComment) {
@@ -49,16 +50,24 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
     @OptIn(ZpaExperimentalApi::class)
     internal fun walk(context: PlSqlVisitorContext, capabilities: SemanticScanCapabilities) {
+        rawVisitorsByNodeType.clear()
+        typedVisitorsByNodeType.clear()
+        lastVisitedToken = null
+
         for (check in checks) {
             if (check is PlSqlCheck) {
                 check.installProjectAnalysisForScan(capabilities.projectAnalysis)
             }
             check.context = context
             check.startScan()
+            check.resetSyntaxViewSubscriptions()
             check.init()
 
             for (type in check.subscribedKinds()) {
-                visitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
+                rawVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
+            }
+            for (type in check.syntaxViewSubscribedKinds()) {
+                typedVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
             }
         }
 
@@ -84,11 +93,13 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun visit(ast: AstNode) {
-        val nodeVisitors = getNodeVisitors(ast)
-        visitNode(ast, nodeVisitors)
+        val rawNodeVisitors = getRawNodeVisitors(ast)
+        val typedNodeVisitors = getTypedNodeVisitors(ast)
+        visitNode(ast, rawNodeVisitors)
+        visitSyntaxViews(ast, typedNodeVisitors)
         visitToken(ast)
         visitChildren(ast)
-        leaveNode(ast, nodeVisitors)
+        leaveNode(ast, rawNodeVisitors)
     }
 
     private fun leaveNode(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
@@ -130,8 +141,17 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
         }
     }
 
-    private fun getNodeVisitors(ast: AstNode) =
-        visitorsByNodeType[ast.type] ?: emptyList()
+    private fun visitSyntaxViews(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
+        for (nodeVisitor in nodeVisitors) {
+            nodeVisitor.dispatchSyntaxViews(ast)
+        }
+    }
+
+    private fun getRawNodeVisitors(ast: AstNode) =
+        rawVisitorsByNodeType[ast.type] ?: emptyList()
+
+    private fun getTypedNodeVisitors(ast: AstNode) =
+        typedVisitorsByNodeType[ast.type] ?: emptyList()
 
     private class CallbackVisitor(val visitor: PlSqlVisitor,
                                   val visitsToken: Boolean,
