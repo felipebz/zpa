@@ -233,35 +233,8 @@
   "lnpls/DEPRECATE-pragma-18.sql" : [
     2
   ],
-  "lnpls/SQL_MACRO-clause-1.sql" : [
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-13.sql" : [
-    10
-  ],
-  "lnpls/SQL_MACRO-clause-16.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-19.sql" : [
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-2.sql" : [
-    4
-  ],
   "lnpls/SQL_MACRO-clause-24.sql" : [
-    4
-  ],
-  "lnpls/SQL_MACRO-clause-3.sql" : [
-    5
-  ],
-  "lnpls/SQL_MACRO-clause-4.sql" : [
-    6
-  ],
-  "lnpls/SQL_MACRO-clause-5.sql" : [
-    6
-  ],
-  "lnpls/SQL_MACRO-clause-6.sql" : [
-    7
+    9
   ],
   "lnpls/assigning-values-record-variables-12.sql" : [
     2
@@ -1655,9 +1628,6 @@
   "sqlrf/COLUMN_VALUE-Pseudocolumn-4.sql" : [
     7
   ],
-  "sqlrf/CORR-2.sql" : [
-    3
-  ],
   "sqlrf/CREATE-ANALYTIC-VIEW-1.sql" : [
     2
   ],
@@ -2333,9 +2303,6 @@
   "sqlrf/DROP-DATABASE-0.sql" : [
     4
   ],
-  "sqlrf/Data-Types-16.sql" : [
-    2
-  ],
   "sqlrf/Data-Types-17.sql" : [
     5
   ],
@@ -2573,15 +2540,6 @@
   "sqlrf/SELECT-117.sql" : [
     4
   ],
-  "sqlrf/SELECT-17.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-20.sql" : [
-    5
-  ],
-  "sqlrf/SELECT-21.sql" : [
-    2
-  ],
   "sqlrf/SELECT-31.sql" : [
     6
   ],
@@ -2654,9 +2612,6 @@
   "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql" : [
     3
   ],
-  "sqlrf/TRANSLATE-USING-0.sql" : [
-    10
-  ],
   "sqlrf/TRUNCATE-CLUSTER-0.sql" : [
     2
   ],
@@ -2695,15 +2650,6 @@
   ],
   "sqlrf/Using-XML-in-SQL-Statements-9.sql" : [
     5
-  ],
-  "sqlrf/VALIDATE_CONVERSION-0.sql" : [
-    2
-  ],
-  "sqlrf/VALIDATE_CONVERSION-1.sql" : [
-    2
-  ],
-  "sqlrf/VALIDATE_CONVERSION-2.sql" : [
-    2
   ],
   "sqlrf/XMLDATA-Pseudocolumn-0.sql" : [
     2

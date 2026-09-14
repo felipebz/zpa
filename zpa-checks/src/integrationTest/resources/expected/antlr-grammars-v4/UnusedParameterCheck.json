@@ -16,6 +16,9 @@
   "examples/create_procedure01.sql" : [
     1
   ],
+  "examples/function07.sql" : [
+    1
+  ],
   "examples/package_body.sql" : [
     4
   ]

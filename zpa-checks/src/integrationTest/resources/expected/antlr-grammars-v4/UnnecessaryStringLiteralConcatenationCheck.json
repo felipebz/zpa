@@ -1,4 +1,7 @@
 {
+  "examples/json_sql.sql" : [
+    1
+  ],
   "examples/lexer02.sql" : [
     1
   ],

@@ -666,6 +666,10 @@
   "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
     6
   ],
+  "sqlrf/TRANSLATE-USING-0.sql" : [
+    8,
+    11
+  ],
   "sqlrf/Using-XML-in-SQL-Statements-7.sql" : [
     2,
     5
