@@ -169,6 +169,13 @@ class MergeStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesMergeIntoPartition() {
+        assertThat(p).matches("merge into dest_tab partition (part1) d "
+                + "using source_tab s on (d.id = s.id) "
+                + "when matched then update set col1 = val;")
+    }
+
+    @Test
     fun matchesMergeWithDefaultValues() {
         assertThat(p).matches("merge into dest_tab d "
                 + "using source_tab s on (d.id = s.id) "

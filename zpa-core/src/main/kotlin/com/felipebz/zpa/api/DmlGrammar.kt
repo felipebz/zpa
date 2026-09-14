@@ -785,6 +785,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(INSERT_INTO_CLAUSE).define(INTO,
                 b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), b.firstOf(
                     TABLE_EXPRESSION, THE_EXPRESSION, TABLE_REFERENCE)),
+                b.optional(PARTITION_EXTENSION_CLAUSE),
                 b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
 
             b.rule(VALUES_CLAUSE).define(
@@ -836,7 +837,8 @@ enum class DmlGrammar : GrammarRuleKey {
 
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
             b.rule(MERGE_EXPRESSION).define(
-                    MERGE, INTO, TABLE_REFERENCE, b.optional(b.nextNot(USING), IDENTIFIER_NAME),
+                    MERGE, INTO, TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE),
+                    b.optional(b.nextNot(USING), IDENTIFIER_NAME),
                     USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(
                             b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
