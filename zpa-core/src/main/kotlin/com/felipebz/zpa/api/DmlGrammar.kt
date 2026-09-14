@@ -30,6 +30,7 @@ import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar.*
 enum class DmlGrammar : GrammarRuleKey {
 
     TABLE_REFERENCE,
+    PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
     ALIAS,
     VALUES_EXPRESSION_CLAUSE,
@@ -142,6 +143,11 @@ enum class DmlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)))
 
+            b.rule(PARTITION_EXTENSION_CLAUSE).define(
+                    b.firstOf(PARTITION, SUBPARTITION),
+                    b.optional(FOR),
+                    LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+
             b.rule(ALIAS).define(IDENTIFIER_NAME)
 
             b.rule(PARTITION_BY_CLAUSE).define(PARTITION, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION))
@@ -242,7 +248,7 @@ enum class DmlGrammar : GrammarRuleKey {
                                     UNPIVOT_CLAUSE
                                 )
                             ), RPARENTHESIS),
-                            b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
+                            b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),

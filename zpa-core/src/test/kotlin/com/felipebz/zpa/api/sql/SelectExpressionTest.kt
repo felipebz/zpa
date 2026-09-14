@@ -181,6 +181,16 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithPartitionExtendedTableName() {
+        assertThat(p).matches("select 1 from foo partition (part1)")
+        assertThat(p).matches("select 1 from foo partition (part1) bar")
+        assertThat(p).matches("select 1 from foo partition for (1)")
+        assertThat(p).matches("select 1 from foo subpartition (subpart1) bar")
+        assertThat(p).matches("select 1 from foo subpartition for ('a', 1) bar")
+        assertThat(p).matches("select 1 from foo join bar partition (part1) baz on baz.id = foo.id")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }
