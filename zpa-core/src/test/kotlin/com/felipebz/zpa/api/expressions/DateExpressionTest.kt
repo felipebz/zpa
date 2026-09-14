@@ -33,6 +33,12 @@ class DateExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesDateLiteralWithoutLeadingZeros() {
+        assertThat(p).matches("date '1-1-1'")
+        assertThat(p).matches("date '2024-2-22'")
+    }
+
+    @Test
     fun matchesDateLiteralAddition() {
         assertThat(p).matches("DATE '2015-01-01' + 1")
     }

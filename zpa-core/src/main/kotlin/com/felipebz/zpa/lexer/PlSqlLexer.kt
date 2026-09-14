@@ -52,7 +52,7 @@ object PlSqlLexer {
             g("""?:\{.*?\}'"""))) // text with user-defined delimiter
         + ")")
 
-    private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\d{4}-\d{2}-\d{2}')"""
+    private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\d{1,4}-\d{1,2}-\d{1,2}')"""
 
     private const val TIMESTAMP_LITERAL = """(?i)TIMESTAMP\s*?'\d{4}-\d{2}-\d{2}\s++\d{1,2}:\d{2}:\d{2}(?:.\d{1,9})?(?:\s++[A-Z0-9_/+-:]++(?:\s++[A-Z0-9_/+-]{1,5})?)?'"""
 
