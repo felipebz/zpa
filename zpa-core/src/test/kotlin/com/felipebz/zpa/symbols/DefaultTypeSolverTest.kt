@@ -23,6 +23,9 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.symbols.datatype.CharacterDatatype
+import com.felipebz.zpa.api.symbols.datatype.NullDatatype
+import com.felipebz.zpa.api.symbols.datatype.NumericDatatype
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.RowtypeDatatype
 import com.felipebz.zpa.parser.PlSqlParser
@@ -64,6 +67,55 @@ class DefaultTypeSolverTest {
         val type = solveTypeFromDatatype("varchar2(100)")
         assertThat(type).isEqualTo(PlSqlType.CHARACTER)
         assertThat(type.isCharacter).isTrue
+    }
+
+    @Test
+    fun evaluateStaticDatatypeConstraints() {
+        val numeric = solveDatatype("number(2 + 3)") as NumericDatatype
+        val numericWithScale = solveDatatype("number(5, 1 + 1)") as NumericDatatype
+        val character = solveDatatype("varchar2(2 + 3)") as CharacterDatatype
+
+        assertThat(numeric.length).isEqualTo(5)
+        assertThat(numericWithScale.length).isEqualTo(5)
+        assertThat(numericWithScale.scale).isEqualTo(2)
+        assertThat(character.length).isEqualTo(5)
+    }
+
+    @Test
+    fun evaluateParenthesizedAndUnaryDatatypeConstraints() {
+        val parenthesized = solveDatatype("number((2 + 3))") as NumericDatatype
+        val unary = solveDatatype("number(-(-5))") as NumericDatatype
+
+        assertThat(parenthesized.length).isEqualTo(5)
+        assertThat(unary.length).isEqualTo(5)
+    }
+
+    @Test
+    fun preserveNumericScaleValuesFromLiteralsAndExpressions() {
+        val positive = solveDatatype("number(5, 2)") as NumericDatatype
+        val zero = solveDatatype("number(5, 0)") as NumericDatatype
+        val negative = solveDatatype("number(5, -2)") as NumericDatatype
+        val calculatedZero = solveDatatype("number(5, 1 - 1)") as NumericDatatype
+        val calculatedNegative = solveDatatype("number(5, 1 - 3)") as NumericDatatype
+
+        assertThat(positive.scale).isEqualTo(2)
+        assertThat(zero.scale).isEqualTo(0)
+        assertThat(negative.scale).isEqualTo(-2)
+        assertThat(calculatedZero.scale).isEqualTo(0)
+        assertThat(calculatedNegative.scale).isEqualTo(-2)
+    }
+
+    @Test
+    fun unsupportedOrNonIntegralDatatypeConstraintsRemainUnknown() {
+        val nonIntegral = solveDatatype("number(1 / 2)") as NumericDatatype
+        val unresolved = solveDatatype("number(unknown_name)") as NumericDatatype
+        val unsupported = solveDatatype("number(abs(-5))") as NumericDatatype
+        val outOfRange = solveDatatype("number(2147483648)") as NumericDatatype
+
+        assertThat(nonIntegral.length).isNull()
+        assertThat(unresolved.length).isNull()
+        assertThat(unsupported.length).isNull()
+        assertThat(outOfRange.length).isNull()
     }
 
     @Test
@@ -151,13 +203,14 @@ class DefaultTypeSolverTest {
 
     @Test
     fun emptyStringShouldNotBeTypedAsCharacter() {
-        val type = solveTypeFromLiteral("''")
-        val type2 = solveTypeFromLiteral("N''")
-        val type3 = solveTypeFromLiteral("n''")
-        val type4 = solveTypeFromLiteral("q'[]'")
-        val type5 = solveTypeFromLiteral("NQ'[]'")
+        val datatype = solveLiteralDatatype("''")
+        val datatype2 = solveLiteralDatatype("N''")
+        val datatype3 = solveLiteralDatatype("n''")
+        val datatype4 = solveLiteralDatatype("q'[]'")
+        val datatype5 = solveLiteralDatatype("NQ'[]'")
 
-        assertThat(arrayOf(type, type2, type3, type4, type5)).allMatch { it == PlSqlType.NULL }
+        assertThat(arrayOf(datatype, datatype2, datatype3, datatype4, datatype5))
+            .allMatch { it is NullDatatype }
     }
 
     @Test
@@ -174,13 +227,21 @@ class DefaultTypeSolverTest {
     }
 
     private fun solveTypeFromDatatype(code: String): PlSqlType {
+        return solveDatatype(code).type
+    }
+
+    private fun solveDatatype(code: String): PlSqlDatatype {
         p.setRootRule(p.grammar.rule(PlSqlGrammar.DATATYPE))
-        return typeSolver.solve(p.parse(code), scope).type
+        return typeSolver.solve(p.parse(code), scope)
     }
 
     private fun solveTypeFromLiteral(code: String): PlSqlType {
+        return solveLiteralDatatype(code).type
+    }
+
+    private fun solveLiteralDatatype(code: String): PlSqlDatatype {
         p.setRootRule(p.grammar.rule(PlSqlGrammar.LITERAL))
-        return typeSolver.solve(p.parse(code), scope).type
+        return typeSolver.solve(p.parse(code), scope)
     }
 
     private fun mockAstNode() = mock(AstNode::class.java)

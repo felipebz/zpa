@@ -22,12 +22,15 @@ package com.felipebz.zpa.symbols
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.*
 
 open class DefaultTypeSolver {
+
+    private val staticExpressionEvaluator = StaticExpressionEvaluator()
 
     fun solve(node: AstNode, scope: Scope?): PlSqlDatatype {
         if (node.type === PlSqlGrammar.DATATYPE) {
@@ -41,9 +44,16 @@ open class DefaultTypeSolver {
     open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
         var type: PlSqlDatatype = UnknownDatatype
         if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
-            type = CharacterDatatype(node)
+            type = CharacterDatatype(evaluateCharacterLength(node, scope))
         } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
-            type = NumericDatatype(node)
+            val constraint = node.firstChild.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
+            val precision = constraint
+                ?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_PRECISION)
+                ?.let { staticExpressionEvaluator.evaluateIntegerAsInt(it, scope) }
+            val scale = constraint
+                ?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_SCALE)
+                ?.let { staticExpressionEvaluator.evaluateIntegerAsInt(it, scope) }
+            type = NumericDatatype(precision, scale)
         } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
             type = DateDatatype()
         } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
@@ -62,6 +72,19 @@ open class DefaultTypeSolver {
             type = scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
         }
         return type
+    }
+
+    private fun evaluateCharacterLength(node: AstNode, scope: Scope?): Int? {
+        val constraint = node.firstChild.getFirstChildOrNull(PlSqlGrammar.CHARACTER_DATATYPE_CONSTRAINT)
+            ?: return null
+        val lengthExpression = constraint.children.firstOrNull {
+            it.type !== PlSqlPunctuator.LPARENTHESIS &&
+                it.type !== PlSqlPunctuator.RPARENTHESIS &&
+                it.type !== PlSqlKeyword.BYTE &&
+                it.type !== PlSqlKeyword.CHAR &&
+                it.type !== PlSqlGrammar.CHARACTER_SET_CLAUSE
+        }
+        return staticExpressionEvaluator.evaluateIntegerAsInt(lengthExpression, scope)
     }
 
     open fun solveLiteral(node: AstNode): PlSqlDatatype {

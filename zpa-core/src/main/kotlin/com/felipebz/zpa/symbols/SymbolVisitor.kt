@@ -279,7 +279,11 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlo
         val datatype = node.getFirstChild(PlSqlGrammar.DATATYPE)
 
         val type = solveType(datatype)
-        createSymbol(identifier, Symbol.Kind.VARIABLE, type)
+        createSymbol(identifier, Symbol.Kind.VARIABLE, type).also { symbol ->
+            if (node.hasDirectChildren(PlSqlKeyword.CONSTANT)) {
+                symbol.addModifiers(node.getChildren(PlSqlKeyword.CONSTANT))
+            }
+        }
     }
 
     private fun visitExceptionDeclaration(node: AstNode) {

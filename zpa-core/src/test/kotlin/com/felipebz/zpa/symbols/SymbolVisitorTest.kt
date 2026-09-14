@@ -658,10 +658,13 @@ end;
         )
         assertThat(symbols).hasSize(4)
 
+        val constLength = symbols.find("const_length", 2, 3)
+        assertThat(constLength.hasModifier("constant")).isTrue
+
         val variable = symbols.find("variable", 4, 3)
         assertThat(variable.type).isEqualTo(PlSqlType.NUMERIC)
-        assertThat((variable.datatype as NumericDatatype).length).isNull()
-        assertThat(variable.datatype.scale).isNull()
+        assertThat((variable.datatype as NumericDatatype).length).isEqualTo(20)
+        assertThat(variable.datatype.scale).isEqualTo(5)
         assertThat(variable.references).containsExactly(
             tuple(7, 3)
         )
@@ -669,9 +672,98 @@ end;
 
         val text = symbols.find("text", 5, 3)
         assertThat(text.type).isEqualTo(PlSqlType.CHARACTER)
-        assertThat((text.datatype as CharacterDatatype).length).isNull()
+        assertThat((text.datatype as CharacterDatatype).length).isEqualTo(20)
         assertThat(text.references).isEmpty()
         assertThat(text.innerScope).isNull()
+    }
+
+    @Test
+    fun constantNumberLengthMatchesLiteralLength() {
+        val symbols = scan(
+            """
+declare
+  const_length constant number := 5;
+  var1 number(const_length);
+  var2 number(5);
+begin
+  null;
+end;
+"""
+        )
+
+        assertThat((symbols.find("var1", 3, 3).datatype as NumericDatatype).length).isEqualTo(5)
+        assertThat((symbols.find("var2", 4, 3).datatype as NumericDatatype).length).isEqualTo(5)
+    }
+
+    @Test
+    fun variableDeclarationWithConstantPlsIntegerForLength() {
+        val symbols = scan(
+            """
+declare
+  const_length constant pls_integer := 5;
+  variable number(const_length);
+begin
+  null;
+end;
+"""
+        )
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat((variable.datatype as NumericDatatype).length).isEqualTo(5)
+    }
+
+    @Test
+    fun variableDeclarationWithCalculatedAndChainedConstants() {
+        val symbols = scan(
+            """
+declare
+  c1 constant pls_integer := 2;
+  c2 constant pls_integer := c1 + 3;
+  variable number(c2);
+begin
+  null;
+end;
+"""
+        )
+
+        val variable = symbols.find("variable", 4, 3)
+        assertThat((variable.datatype as NumericDatatype).length).isEqualTo(5)
+    }
+
+    @Test
+    fun nonConstantVariableIsNotUsedForDatatypeConstraint() {
+        val symbols = scan(
+            """
+declare
+  value pls_integer := 5;
+  variable number(value);
+begin
+  null;
+end;
+"""
+        )
+
+        val variable = symbols.find("variable", 3, 3)
+        assertThat((variable.datatype as NumericDatatype).length).isNull()
+    }
+
+    @Test
+    fun packageConstantIsUsedForQualifiedDatatypeConstraint() {
+        val symbols = scan(
+            """
+create package p as
+  c_precision constant pls_integer := 5;
+  c_number constant number := 5;
+  variable number(p.c_precision);
+  variable2 number(p.c_number);
+end p;
+"""
+        )
+
+        val variable = symbols.find("variable", 4, 3)
+        val variable2 = symbols.find("variable2", 5, 3)
+        assertThat((variable.datatype as NumericDatatype).length).isEqualTo(5)
+        assertThat((variable2.datatype as NumericDatatype).length).isEqualTo(5)
     }
 
     @Test

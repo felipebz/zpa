@@ -45,7 +45,7 @@ class NumericDatatype : PlSqlDatatype {
 
     constructor(length: Int?, scale: Int?) {
         this.length = if (length != null && length > 0) length else null
-        this.scale = if (scale != null && scale > 0) scale else null
+        this.scale = scale
     }
 
     constructor(node: AstNode? = null) {
