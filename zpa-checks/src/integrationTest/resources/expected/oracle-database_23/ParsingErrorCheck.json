@@ -2321,12 +2321,6 @@
   "sqlrf/DELETE-0.sql" : [
     3
   ],
-  "sqlrf/DELETE-12.sql" : [
-    2
-  ],
-  "sqlrf/DELETE-5.sql" : [
-    2
-  ],
   "sqlrf/DELETE-7.sql" : [
     11
   ],
@@ -2415,12 +2409,6 @@
     2
   ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [
-    2
-  ],
-  "sqlrf/LOCK-TABLE-1.sql" : [
-    2
-  ],
-  "sqlrf/LOCK-TABLE-2.sql" : [
     2
   ],
   "sqlrf/MERGE-10.sql" : [
@@ -2606,9 +2594,6 @@
   "sqlrf/SELECT-37.sql" : [
     4
   ],
-  "sqlrf/SELECT-42.sql" : [
-    2
-  ],
   "sqlrf/SELECT-44.sql" : [
     2
   ],
@@ -2642,18 +2627,6 @@
   "sqlrf/SELECT-87.sql" : [
     7
   ],
-  "sqlrf/SELECT-91.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-94.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-95.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-97.sql" : [
-    8
-  ],
   "sqlrf/SELECT-98.sql" : [
     14
   ],
@@ -2678,9 +2651,6 @@
   "sqlrf/SYS_OP_ZONE_ID-3.sql" : [
     2
   ],
-  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-3.sql" : [
-    4
-  ],
   "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql" : [
     3
   ],
@@ -2695,9 +2665,6 @@
   ],
   "sqlrf/UPDATE-0.sql" : [
     4
-  ],
-  "sqlrf/UPDATE-5.sql" : [
-    2
   ],
   "sqlrf/UPDATE-6.sql" : [
     2

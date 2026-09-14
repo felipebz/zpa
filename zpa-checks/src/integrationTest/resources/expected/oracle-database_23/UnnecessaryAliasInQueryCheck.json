@@ -450,6 +450,9 @@
     10,
     10
   ],
+  "sqlrf/SELECT-42.sql" : [
+    2
+  ],
   "sqlrf/SELECT-55.sql" : [
     6,
     6
@@ -478,6 +481,14 @@
     4
   ],
   "sqlrf/SELECT-89.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-94.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-95.sql" : [
     3,
     3
   ],

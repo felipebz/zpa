@@ -105,7 +105,7 @@
     1
   ],
   "examples/analytic_query.sql" : [
-    2
+    39
   ],
   "examples/analyze.sql" : [
     1
@@ -257,9 +257,6 @@
   "examples/fetch_clause02.sql" : [
     3
   ],
-  "examples/fetch_clause04.sql" : [
-    2
-  ],
   "examples/flashback01.sql" : [
     1
   ],
@@ -289,9 +286,6 @@
   ],
   "examples/join17.sql" : [
     4
-  ],
-  "examples/join23.sql" : [
-    3
   ],
   "examples/json_sql.sql" : [
     4
@@ -328,9 +322,6 @@
   ],
   "examples/select_analytic_view.sql" : [
     2
-  ],
-  "examples/select_cte.sql" : [
-    6
   ],
   "examples/select_dense_rank.sql" : [
     2

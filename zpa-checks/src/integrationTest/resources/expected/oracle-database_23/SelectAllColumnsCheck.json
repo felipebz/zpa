@@ -634,6 +634,9 @@
   "sqlrf/SELECT-4.sql" : [
     2
   ],
+  "sqlrf/SELECT-42.sql" : [
+    2
+  ],
   "sqlrf/SELECT-43.sql" : [
     2
   ],
@@ -646,6 +649,19 @@
   ],
   "sqlrf/SELECT-93.sql" : [
     2
+  ],
+  "sqlrf/SELECT-94.sql" : [
+    3
+  ],
+  "sqlrf/SELECT-95.sql" : [
+    3
+  ],
+  "sqlrf/SELECT-97.sql" : [
+    4,
+    5
+  ],
+  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-3.sql" : [
+    3
   ],
   "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
     6
