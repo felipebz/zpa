@@ -110,7 +110,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             presenter.onSymbolSelectionChanged()
         }
         consoleTextArea.isEditable = false
-        consoleTextArea.font = Font.decode("Monospaced")
+        consoleTextArea.font = monospacedFont(consoleTextArea.font)
         tabbedPane.tabPlacement = JTabbedPane.TOP
         tabbedPane.add("AST", astTreeScrollPane)
         tabbedPane.add("Symbol table", symbolTreeScrollPane)
@@ -121,7 +121,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         tabbedPane.add("Statistics", statisticsPanel)
         configurationOuterPanel.add(configurationInnerPanel, BorderLayout.NORTH)
         configurationOuterPanel.add(Box.createGlue(), BorderLayout.CENTER)
-        sourceCodeEditorPane.font = Font.decode("Monospaced")
+        sourceCodeEditorPane.font = monospacedFont(sourceCodeEditorPane.font)
         (sourceCodeEditorPane.caret as DefaultCaret).updatePolicy = DefaultCaret.UPDATE_WHEN_ON_EDT
         sourceCodeEditorPane.document.addDocumentListener(object : DocumentListener {
             override fun removeUpdate(e: DocumentEvent) {
@@ -185,6 +185,10 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         statisticsInnerPanel.add(JLabel("Parse time:").apply { horizontalAlignment = JLabel.RIGHT })
         statisticsInnerPanel.add(parseTimeLabel)
         statisticsPanel.add(statisticsInnerPanel)
+    }
+
+    private fun monospacedFont(font: Font): Font {
+        return Font(Font.MONOSPACED, font.style, font.size)
     }
 
     override fun run() {
