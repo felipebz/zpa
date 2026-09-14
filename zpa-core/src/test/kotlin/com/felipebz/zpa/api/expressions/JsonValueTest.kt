@@ -33,6 +33,11 @@ class JsonValueTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonValueWithOnEmptyBeforeOnError() {
+        assertThat(p).matches("json_value(doc, '$.id' null on empty null on error)")
+    }
+
+    @Test
     fun matchesJsonValue() {
         assertThat(p).matches("json_value(doc, '$')")
     }

@@ -284,6 +284,7 @@ enum class DmlGrammar : GrammarRuleKey {
                                     RETURN,
                                     RETURNING,
                                     b.sequence(LOG, ERRORS),
+                                    OFFSET,
                                     EXCEPT,
                                     SET,
                                     MODEL
@@ -728,6 +729,7 @@ enum class DmlGrammar : GrammarRuleKey {
                         b.optional(INTO_CLAUSE),
                         b.optional(FROM_CLAUSE),
                         b.optional(WHERE_CLAUSE),
+                        b.optional(HIERARCHICAL_QUERY_CLAUSE),
                         b.optional(b.firstOf(
                             b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
                             b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
@@ -839,7 +841,11 @@ enum class DmlGrammar : GrammarRuleKey {
 
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
             b.rule(MERGE_EXPRESSION).define(
-                    MERGE, INTO, TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE),
+                    MERGE, INTO,
+                    b.firstOf(
+                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                            TABLE_REFERENCE),
+                    b.optional(PARTITION_EXTENSION_CLAUSE),
                     b.optional(b.nextNot(USING), IDENTIFIER_NAME),
                     USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(

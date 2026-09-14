@@ -96,6 +96,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
     BOOLEAN_EXPRESSION,
     PRIMARY_EXPRESSION,
     BRACKED_EXPRESSION,
+    INTERVAL_QUALIFIER,
+    SQL_MACRO_CLAUSE,
+    PARALLEL_ENABLE_CLAUSE,
     MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION,
     OUTER_JOIN_PLUS_SIGN,
@@ -729,9 +732,35 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(PRIMARY_EXPRESSION).define(
                     b.firstOf(LITERAL, VARIABLE_NAME, SQL, MULTIPLICATION)).skip()
 
+            b.rule(SQL_MACRO_CLAUSE).define(
+                    SQL_MACRO,
+                    b.optional(LPARENTHESIS, b.optional(TYPE, ASSOCIATION), b.firstOf(TABLE, SCALAR), RPARENTHESIS))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/21/lnpls/PARALLEL_ENABLE-clause.html
+            b.rule(PARALLEL_ENABLE_CLAUSE).define(
+                    PARALLEL_ENABLE,
+                    b.optional(
+                            LPARENTHESIS,
+                            b.optional(
+                                    PARTITION, IDENTIFIER_NAME, BY,
+                                    b.firstOf(
+                                            ANY,
+                                            b.sequence(
+                                                    b.firstOf(HASH, RANGE_KEYWORD, VALUE),
+                                                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS))),
+                            b.optional(
+                                    b.firstOf(ORDER, CLUSTER), IDENTIFIER_NAME, BY,
+                                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                            RPARENTHESIS))
+
             b.rule(BRACKED_EXPRESSION).define(b.firstOf(
                     PRIMARY_EXPRESSION,
-                    b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild()
+                    b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS, b.optional(INTERVAL_QUALIFIER)))).skipIfOneChild()
+
+            b.rule(INTERVAL_QUALIFIER).define(
+                    b.firstOf(
+                            b.sequence(YEAR, TO, MONTH),
+                            b.sequence(DAY, TO, SECOND)))
 
             b.rule(MULTIPLE_VALUE_EXPRESSION).define(b.firstOf(
                     BRACKED_EXPRESSION,
@@ -771,7 +800,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             )
                     )).skipIfOneChild()
 
-            b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION,
+            b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(b.firstOf(DISTINCT, UNIQUE)), EXPRESSION,
                     b.optional(NULL_TREATMENT_CLAUSE))
 
             b.rule(ARGUMENTS).define(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS)
@@ -1045,7 +1074,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(FUNCTION_DECLARATION).define(
                     FUNCTION, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
-                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE)),
+                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, SQL_MACRO_CLAUSE, PARALLEL_ENABLE_CLAUSE)),
                     b.optional(RESULT_CACHE, b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
                     b.optional(b.firstOf(
                             SEMICOLON,
@@ -1348,7 +1377,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(b.firstOf(
                             DETERMINISTIC,
                             PIPELINED,
-                            PARALLEL_ENABLE,
+                            SQL_MACRO_CLAUSE,
+                            PARALLEL_ENABLE_CLAUSE,
                             b.sequence(
                                     RESULT_CACHE,
                                     b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),

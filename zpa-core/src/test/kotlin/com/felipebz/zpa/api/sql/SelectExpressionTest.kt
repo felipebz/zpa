@@ -219,6 +219,23 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithGroupByAfterHierarchicalQuery() {
+        assertThat(p).matches("select 1 from foo start with a = 1 connect by prior b = c group by d")
+        assertThat(p).matches("select 1 from foo start with a = 1 connect by prior b = c group by d having count(1) > 1")
+    }
+
+    @Test
+    fun matchesSelectWithOffsetWithoutOrderBy() {
+        assertThat(p).matches("select 1 from dual offset 1 rows")
+        assertThat(p).matches("select 1 from dual offset (a - 1) * b rows fetch next b rows only")
+    }
+
+    @Test
+    fun matchesSelectWithCountUnique() {
+        assertThat(p).matches("select count(unique foo) from dual")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }

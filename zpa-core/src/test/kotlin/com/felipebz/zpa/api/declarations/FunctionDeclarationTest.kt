@@ -33,6 +33,20 @@ class FunctionDeclarationTest : RuleTest() {
     }
 
     @Test
+    fun matchesFunctionWithSqlMacro() {
+        assertThat(p).matches("function foo return clob sql_macro is begin return 'x'; end;")
+        assertThat(p).matches("function foo return clob sql_macro(table) is begin return 'x'; end;")
+    }
+
+    @Test
+    fun matchesFunctionWithParallelEnableClause() {
+        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "parallel_enable (order p_cursor by (col)) is begin null; end;")
+        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "parallel_enable (partition p_cursor by hash(col)) is begin null; end;")
+    }
+
+    @Test
     fun matchesSimpleFunction() {
         assertThat(p).matches(""
                 + "function test return number is\n"

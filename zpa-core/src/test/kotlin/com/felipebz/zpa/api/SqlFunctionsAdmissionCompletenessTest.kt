@@ -231,6 +231,8 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION, PlSqlPunctuator.LPARENTHESIS, "(x as my_type)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.SET_EXPRESSION, PlSqlKeyword.SET, "set(s)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.CAST_EXPRESSION, PlSqlKeyword.CAST, "cast(x as number)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.TRANSLATE_USING_EXPRESSION, PlSqlKeyword.TRANSLATE, "translate(x using char_cs)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.VALIDATE_CONVERSION_EXPRESSION, PlSqlKeyword.VALIDATE_CONVERSION, "validate_conversion(x as number)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TO_BINARY_DOUBLE_EXPRESSION, PlSqlKeyword.TO_BINARY_DOUBLE, "to_binary_double('1.0')"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TO_BINARY_FLOAT_EXPRESSION, PlSqlKeyword.TO_BINARY_FLOAT, "to_binary_float('1.0')"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TO_BOOLEAN_EXPRESSION, PlSqlKeyword.TO_BOOLEAN, "to_boolean('true')"),
