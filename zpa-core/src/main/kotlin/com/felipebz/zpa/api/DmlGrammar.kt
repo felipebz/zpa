@@ -283,7 +283,7 @@ enum class DmlGrammar : GrammarRuleKey {
                                     JOIN,
                                     RETURN,
                                     RETURNING,
-                                    LOG,
+                                    b.sequence(LOG, ERRORS),
                                     EXCEPT,
                                     SET,
                                     MODEL
@@ -475,7 +475,9 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(OFFSET_CLAUSE).define(OFFSET, EXPRESSION, b.firstOf(ROW, ROWS))
 
-            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.firstOf(FIRST, NEXT), b.optional(EXPRESSION, b.optional(PERCENT)), b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)))
+            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.firstOf(FIRST, NEXT),
+                    b.optional(b.nextNot(b.firstOf(ROW, ROWS)), EXPRESSION, b.optional(PERCENT)),
+                    b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)))
 
             b.rule(ROW_LIMITING_CLAUSE).define(b.firstOf(
                     b.sequence(OFFSET_CLAUSE, b.optional(FETCH_ROW_CLAUSE)),

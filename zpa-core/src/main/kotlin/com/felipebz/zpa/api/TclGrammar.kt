@@ -22,6 +22,8 @@ package com.felipebz.zpa.api
 import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
+import com.felipebz.zpa.api.DmlGrammar.PARTITION_EXTENSION_CLAUSE
+import com.felipebz.zpa.api.DmlGrammar.TABLE_REFERENCE
 import com.felipebz.zpa.api.PlSqlGrammar.IDENTIFIER_NAME
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.COMMA
@@ -37,6 +39,8 @@ enum class TclGrammar : GrammarRuleKey {
     ROLLBACK_EXPRESSION,
     SAVEPOINT_EXPRESSION,
     SET_TRANSACTION_EXPRESSION,
+    LOCK_TABLE_MODE,
+    LOCK_TABLE_EXPRESSION,
     TCL_COMMAND;
 
     companion object {
@@ -72,12 +76,30 @@ enum class TclGrammar : GrammarRuleKey {
                                     b.optional(TRANSACTION_NAME)),
                             TRANSACTION_NAME))
 
+            //https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/LOCK-TABLE.html
+            b.rule(LOCK_TABLE_MODE).define(
+                    b.firstOf(
+                            b.sequence(SHARE, ROW, EXCLUSIVE),
+                            b.sequence(SHARE, UPDATE),
+                            b.sequence(ROW, SHARE),
+                            b.sequence(ROW, EXCLUSIVE),
+                            SHARE,
+                            EXCLUSIVE))
+
+            b.rule(LOCK_TABLE_EXPRESSION).define(
+                    LOCK, TABLE,
+                    TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE),
+                    b.zeroOrMore(COMMA, TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE)),
+                    IN, LOCK_TABLE_MODE, MODE,
+                    b.optional(b.firstOf(NOWAIT, b.sequence(WAIT, INTEGER_LITERAL))))
+
             b.rule(TCL_COMMAND).define(
                     b.firstOf(
                             COMMIT_EXPRESSION,
                             ROLLBACK_EXPRESSION,
                             SAVEPOINT_EXPRESSION,
-                            SET_TRANSACTION_EXPRESSION),
+                            SET_TRANSACTION_EXPRESSION,
+                            LOCK_TABLE_EXPRESSION),
                     b.optional(SEMICOLON))
         }
     }
