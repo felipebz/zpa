@@ -20,14 +20,16 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
+import com.felipebz.zpa.api.syntax.MethodCall
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.MINOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class DbmsOutputPutCheck : AbstractBaseCheck() {
 
     private val putMatcher = MethodMatcher.create()
@@ -43,15 +45,15 @@ class DbmsOutputPutCheck : AbstractBaseCheck() {
         .addParameter()
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.METHOD_CALL)
+        subscribeTo(SyntaxViews.METHOD_CALL, ::visitMethodCall)
     }
 
-    override fun visitNode(node: AstNode) {
-        if (!putMatcher.matches(node) && !putLineMatcher.matches(node)) {
+    private fun visitMethodCall(call: MethodCall) {
+        if (!putMatcher.matches(call) && !putLineMatcher.matches(call)) {
             return
         }
 
-        addIssue(node, getLocalizedMessage())
+        addIssue(call, getLocalizedMessage())
     }
 
 }

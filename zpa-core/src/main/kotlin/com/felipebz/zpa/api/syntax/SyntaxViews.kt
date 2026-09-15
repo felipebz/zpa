@@ -34,6 +34,12 @@ public object SyntaxViews {
     @ZpaExperimentalApi
     public val TABLE_REFERENCE: SyntaxViewKind<TableReference> =
         SyntaxViewKind.create(DmlGrammar.TABLE_REFERENCE, ::AstTableReference)
+
+    /** A descriptor for generic method calls represented by the parser. */
+    @JvmField
+    @ZpaExperimentalApi
+    public val METHOD_CALL: SyntaxViewKind<MethodCall> =
+        SyntaxViewKind.create(PlSqlGrammar.METHOD_CALL, ::AstMethodCall)
 }
 
 @OptIn(ZpaExperimentalApi::class)
