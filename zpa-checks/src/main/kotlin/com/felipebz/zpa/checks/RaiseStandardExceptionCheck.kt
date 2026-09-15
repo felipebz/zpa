@@ -20,9 +20,9 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.sslr.RaiseStatement
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.*
 
 @Rule(priority = Priority.MAJOR)
@@ -59,8 +59,7 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val statement = node.asTree<RaiseStatement>()
-        val exceptionIdentifier = statement.exception
+        val exceptionIdentifier = raisedException(node)
         if (exceptionIdentifier != null) {
             val exceptionName = exceptionIdentifier.tokenValue
 
@@ -68,6 +67,11 @@ class RaiseStandardExceptionCheck : AbstractBaseCheck() {
                 addLineIssue(getLocalizedMessage(), exceptionIdentifier.tokenLine, exceptionName)
             }
         }
+    }
+
+    private fun raisedException(node: AstNode): AstNode? {
+        return node.getFirstChildOrNull(PlSqlKeyword.RAISE)?.nextSibling
+            ?.takeUnless { it.type === PlSqlPunctuator.SEMICOLON }
     }
 
 }

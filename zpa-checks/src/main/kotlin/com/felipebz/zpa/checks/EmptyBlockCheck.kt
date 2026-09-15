@@ -20,8 +20,6 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.isOf
-import com.felipebz.zpa.sslr.NullStatement
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 
@@ -43,7 +41,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
         val statements = node.getFirstChild(PlSqlGrammar.STATEMENTS).getChildren(PlSqlGrammar.STATEMENT)
         if (statements.size == 1) {
             val statement = statements[0]
-            if (statement.isOf<NullStatement>()) {
+            if (statement.hasDirectChildren(PlSqlGrammar.NULL_STATEMENT)) {
                 addIssue(statement, getLocalizedMessage())
             }
         }

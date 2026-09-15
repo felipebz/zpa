@@ -20,51 +20,42 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.sslr.IfStatement
-import com.felipebz.zpa.sslr.TreeWithStatements
 import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.IfStatement
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.MINOR, tags = [Tags.CLUMSY])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class ReturnOfBooleanExpressionCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.IF_STATEMENT)
+        subscribeTo(SyntaxViews.IF_STATEMENT, ::visitIfStatement)
     }
 
-    override fun visitNode(node: AstNode) {
-        val ifStatement = node.asTree<IfStatement>()
-
-        val elseClause = ifStatement.elseClause
-        if (!hasElsif(ifStatement) && elseClause != null) {
-            val firstBoolean = getBooleanValue(ifStatement)
-            val secondBoolean = getBooleanValue(elseClause)
+    private fun visitIfStatement(statement: IfStatement) {
+        val elseBranch = statement.elseBranch
+        if (!hasElsif(statement) && elseBranch != null) {
+            val firstBoolean = booleanReturnedBy(statement.statementAstNodes)
+            val secondBoolean = booleanReturnedBy(elseBranch.statementAstNodes)
 
             if (firstBoolean != null && secondBoolean != null
                     && firstBoolean.tokenValue != secondBoolean.tokenValue) {
-                addIssue(node, getLocalizedMessage())
+                addIssue(statement, getLocalizedMessage())
             }
         }
     }
 
     private fun hasElsif(ifStatement: IfStatement): Boolean {
-        return ifStatement.elsifClauses.isNotEmpty()
+        return ifStatement.elsifBranches.isNotEmpty()
     }
 
-    private fun getBooleanValue(node: TreeWithStatements): AstNode? {
-        return extractBooleanValueFromReturn(getStatementFrom(node))
-    }
-
-    private fun getStatementFrom(node: TreeWithStatements): AstNode? {
-        val statements = node.statements
-        return if (statements.size == 1) {
-            statements[0]
-        } else null
+    private fun booleanReturnedBy(statements: List<AstNode>): AstNode? {
+        return extractBooleanValueFromReturn(statements.singleOrNull())
     }
 
     private fun extractBooleanValueFromReturn(node: AstNode?): AstNode? {
