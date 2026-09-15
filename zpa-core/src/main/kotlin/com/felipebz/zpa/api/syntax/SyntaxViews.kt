@@ -52,6 +52,12 @@ public object SyntaxViews {
     @ZpaExperimentalApi
     public val IF_STATEMENT: SyntaxViewKind<IfStatement> =
         SyntaxViewKind.create(PlSqlGrammar.IF_STATEMENT, ::AstIfStatement)
+
+    /** A descriptor for PL/SQL SELECT statements represented by the parser. */
+    @JvmField
+    @ZpaExperimentalApi
+    public val SELECT_STATEMENT: SyntaxViewKind<SelectStatement> =
+        SyntaxViewKind.create(PlSqlGrammar.SELECT_STATEMENT, ::AstSelectStatement)
 }
 
 @OptIn(ZpaExperimentalApi::class)
