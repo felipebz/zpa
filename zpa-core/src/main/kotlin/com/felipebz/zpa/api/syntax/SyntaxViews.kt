@@ -40,6 +40,12 @@ public object SyntaxViews {
     @ZpaExperimentalApi
     public val METHOD_CALL: SyntaxViewKind<MethodCall> =
         SyntaxViewKind.create(PlSqlGrammar.METHOD_CALL, ::AstMethodCall)
+
+    /** A descriptor for variable declarations represented by the parser. */
+    @JvmField
+    @ZpaExperimentalApi
+    public val VARIABLE_DECLARATION: SyntaxViewKind<VariableDeclaration> =
+        SyntaxViewKind.create(PlSqlGrammar.VARIABLE_DECLARATION, ::AstVariableDeclaration)
 }
 
 @OptIn(ZpaExperimentalApi::class)
