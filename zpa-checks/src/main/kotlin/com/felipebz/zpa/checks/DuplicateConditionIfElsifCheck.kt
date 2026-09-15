@@ -20,24 +20,23 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.sslr.IfStatement
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.IfStatement
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.IF_STATEMENT)
+        subscribeTo(SyntaxViews.IF_STATEMENT, ::visitIfStatement)
     }
 
-    override fun visitNode(node: AstNode) {
-        val ifStatement = node.asTree<IfStatement>()
-        val conditions = collectConditionsFromBranches(ifStatement)
+    private fun visitIfStatement(statement: IfStatement) {
+        val conditions = collectConditionsFromBranches(statement)
         findSameConditions(conditions)
     }
 
@@ -59,16 +58,9 @@ class DuplicateConditionIfElsifCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun collectConditionsFromBranches(ifStatement: IfStatement): List<AstNode> {
-        val conditionsFromBranches = ArrayList<AstNode>()
-
-        conditionsFromBranches.add(ifStatement.condition)
-
-        for (branch in ifStatement.elsifClauses) {
-            conditionsFromBranches.add(branch.condition)
-        }
-
-        return conditionsFromBranches
+    private fun collectConditionsFromBranches(statement: IfStatement) = buildList {
+        add(statement.conditionAstNode)
+        statement.elsifBranches.forEach { add(it.conditionAstNode) }
     }
 
 }

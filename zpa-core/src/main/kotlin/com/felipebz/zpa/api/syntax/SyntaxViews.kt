@@ -46,6 +46,12 @@ public object SyntaxViews {
     @ZpaExperimentalApi
     public val VARIABLE_DECLARATION: SyntaxViewKind<VariableDeclaration> =
         SyntaxViewKind.create(PlSqlGrammar.VARIABLE_DECLARATION, ::AstVariableDeclaration)
+
+    /** A descriptor for IF statements represented by the parser. */
+    @JvmField
+    @ZpaExperimentalApi
+    public val IF_STATEMENT: SyntaxViewKind<IfStatement> =
+        SyntaxViewKind.create(PlSqlGrammar.IF_STATEMENT, ::AstIfStatement)
 }
 
 @OptIn(ZpaExperimentalApi::class)

@@ -20,24 +20,23 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.sslr.IfStatement
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.IfStatement
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class SameBranchCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.IF_STATEMENT)
+        subscribeTo(SyntaxViews.IF_STATEMENT, ::visitIfStatement)
     }
 
-    override fun visitNode(node: AstNode) {
-        val ifStatement = node.asTree<IfStatement>()
-        val branches = collectStatementsFromBranches(ifStatement)
+    private fun visitIfStatement(statement: IfStatement) {
+        val branches = collectStatementsFromBranches(statement)
         findSameBranches(branches)
     }
 
@@ -57,21 +56,10 @@ class SameBranchCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun collectStatementsFromBranches(ifStatement: IfStatement): List<AstNode> {
-        val statementsFromBranches = ArrayList<AstNode>()
-
-        statementsFromBranches.add(ifStatement.statements.astNode)
-
-        for (branch in ifStatement.elsifClauses) {
-            statementsFromBranches.add(branch.statements.astNode)
-        }
-
-        val elseBranch = ifStatement.elseClause
-        if (elseBranch != null) {
-            statementsFromBranches.add(elseBranch.statements.astNode)
-        }
-
-        return statementsFromBranches
+    private fun collectStatementsFromBranches(statement: IfStatement) = buildList {
+        add(statement.statementsAstNode)
+        statement.elsifBranches.forEach { add(it.statementsAstNode) }
+        statement.elseBranch?.let { add(it.statementsAstNode) }
     }
 
 }
