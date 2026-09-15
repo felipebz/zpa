@@ -21,7 +21,7 @@ package com.felipebz.zpa.api.syntax
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-/** A Java- and Kotlin-friendly callback for a typed syntax view. */
+/** A Java- and Kotlin-friendly callback invoked for a matching syntax view. */
 @ZpaExperimentalApi
 public fun interface SyntaxViewConsumer<T : SyntaxView> {
 

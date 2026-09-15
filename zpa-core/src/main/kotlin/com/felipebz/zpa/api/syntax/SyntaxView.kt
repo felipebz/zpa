@@ -22,10 +22,13 @@ package com.felipebz.zpa.api.syntax
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-/** A lightweight public view over one node in the existing syntax tree. */
+/** A lightweight public view over one node in ZPA's existing parser AST. */
 @ZpaExperimentalApi
 public interface SyntaxView {
 
-    /** The backing syntax node, available as an explicit escape hatch. */
+    /**
+     * The backing AST node, available as an explicit escape hatch when the
+     * typed view does not expose a required detail.
+     */
     public val astNode: AstNode
 }

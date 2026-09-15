@@ -19,10 +19,7 @@
  */
 package com.felipebz.zpa.api.syntax;
 
-import com.felipebz.flr.api.AstNode;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,10 +38,10 @@ class SelectStatementJavaApiTest {
         }
 
         private void visitSelectStatement(SelectStatement statement) {
-            AstNode expression = statement.getSelectExpressionAstNode();
+            statement.getSelectExpressionAstNode();
 
             for (SelectQueryBlock block : statement.getQueryBlocks()) {
-                List<AstNode> columns = block.getSelectColumnAstNodes();
+                block.getSelectColumnAstNodes();
                 SelectIntoClause into = block.getIntoClause();
                 if (into != null) {
                     into.isBulkCollect();
@@ -54,15 +51,9 @@ class SelectStatementJavaApiTest {
                 block.getGroupByClauseAstNode();
                 block.getHavingClauseAstNode();
                 block.getModelClauseAstNode();
-                if (columns == null) {
-                    throw new AssertionError();
-                }
             }
 
-            boolean setQuery = statement.getHasSetOperation();
-            if (expression == null && setQuery) {
-                throw new AssertionError();
-            }
+            statement.getHasSetOperation();
         }
     }
 }

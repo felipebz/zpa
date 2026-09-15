@@ -25,7 +25,13 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-/** Public descriptors for the syntax views currently provided by ZPA. */
+/**
+ * Public descriptors for the syntax views currently provided by ZPA.
+ *
+ * Use these descriptors with the typed [com.felipebz.zpa.api.checks.PlSqlVisitor.subscribeTo]
+ * overload. Only selected parser constructs have views; the raw AST API
+ * remains available for syntax that is not represented here.
+ */
 @ZpaExperimentalApi
 public object SyntaxViews {
 
@@ -35,25 +41,34 @@ public object SyntaxViews {
     public val TABLE_REFERENCE: SyntaxViewKind<TableReference> =
         SyntaxViewKind.create(DmlGrammar.TABLE_REFERENCE, ::AstTableReference)
 
-    /** A descriptor for generic method calls represented by the parser. */
+    /**
+     * A descriptor for generic METHOD_CALL syntax represented by the parser.
+     * Specialized SQL-function grammar nodes are not included.
+     */
     @JvmField
     @ZpaExperimentalApi
     public val METHOD_CALL: SyntaxViewKind<MethodCall> =
         SyntaxViewKind.create(PlSqlGrammar.METHOD_CALL, ::AstMethodCall)
 
-    /** A descriptor for variable declarations represented by the parser. */
+    /**
+     * A descriptor for local PL/SQL variable declarations represented by the
+     * parser. EXCEPTION_DECLARATION is not included.
+     */
     @JvmField
     @ZpaExperimentalApi
     public val VARIABLE_DECLARATION: SyntaxViewKind<VariableDeclaration> =
         SyntaxViewKind.create(PlSqlGrammar.VARIABLE_DECLARATION, ::AstVariableDeclaration)
 
-    /** A descriptor for IF statements represented by the parser. */
+    /** A descriptor for IF statements and their direct branches. */
     @JvmField
     @ZpaExperimentalApi
     public val IF_STATEMENT: SyntaxViewKind<IfStatement> =
         SyntaxViewKind.create(PlSqlGrammar.IF_STATEMENT, ::AstIfStatement)
 
-    /** A descriptor for PL/SQL SELECT statements represented by the parser. */
+    /**
+     * A descriptor for PL/SQL SELECT statements and their top-level query
+     * blocks. This is not a complete typed SQL AST.
+     */
     @JvmField
     @ZpaExperimentalApi
     public val SELECT_STATEMENT: SyntaxViewKind<SelectStatement> =

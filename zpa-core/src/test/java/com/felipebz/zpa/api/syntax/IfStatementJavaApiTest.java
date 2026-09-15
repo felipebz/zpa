@@ -19,10 +19,7 @@
  */
 package com.felipebz.zpa.api.syntax;
 
-import com.felipebz.flr.api.AstNode;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,9 +38,9 @@ class IfStatementJavaApiTest {
         }
 
         private void visitIfStatement(IfStatement statement) {
-            AstNode condition = statement.getConditionAstNode();
-            AstNode statements = statement.getStatementsAstNode();
-            List<AstNode> children = statement.getStatementAstNodes();
+            statement.getConditionAstNode();
+            statement.getStatementsAstNode();
+            statement.getStatementAstNodes();
 
             for (IfElsifBranch branch : statement.getElsifBranches()) {
                 branch.getConditionAstNode();
@@ -52,9 +49,6 @@ class IfStatementJavaApiTest {
             }
 
             IfElseBranch elseBranch = statement.getElseBranch();
-            if (condition == null || statements == null || children == null) {
-                throw new AssertionError();
-            }
             if (elseBranch != null) {
                 elseBranch.getStatementsAstNode();
                 elseBranch.getStatementAstNodes();

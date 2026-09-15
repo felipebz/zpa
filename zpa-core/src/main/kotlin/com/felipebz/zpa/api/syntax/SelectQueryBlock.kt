@@ -32,13 +32,18 @@ public interface SelectQueryBlock : SyntaxView {
     /** INTO clause for this query block, or null when absent. */
     public val intoClause: SelectIntoClause?
 
+    /** The direct FROM clause, or null when absent. */
     public val fromClauseAstNode: AstNode?
 
+    /** The direct WHERE clause, or null when absent. */
     public val whereClauseAstNode: AstNode?
 
+    /** The direct GROUP BY clause, or null when absent. */
     public val groupByClauseAstNode: AstNode?
 
+    /** The direct HAVING clause, or null when absent. */
     public val havingClauseAstNode: AstNode?
 
+    /** The direct MODEL clause, or null when absent. */
     public val modelClauseAstNode: AstNode?
 }

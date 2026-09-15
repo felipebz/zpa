@@ -27,14 +27,18 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
  * Component properties contain the original spelling of each identifier. In
  * particular, quoted identifier delimiters and case are preserved. Separators
  * are not included in the individual properties; [databaseLink] contains all
- * of the link's identifier components joined with dots.
+ * of the link's identifier components joined with dots. This view describes
+ * syntax only and does not resolve the referenced database object.
  */
 @ZpaExperimentalApi
 public interface TableReference : SyntaxView {
 
+    /** The optional schema component, preserving its original spelling. */
     public val schema: String?
 
+    /** The table-reference name, preserving its original spelling. */
     public val name: String
 
+    /** The optional database-link suffix, preserving its original spelling. */
     public val databaseLink: String?
 }

@@ -31,15 +31,21 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 @ZpaExperimentalApi
 public interface MethodCall : SyntaxView {
 
-    /** The target components before [name], preserving their original spelling. */
+    /**
+     * The syntactic target components before [name], preserving their original
+     * spelling. These are not classified as schema, package, or object names.
+     */
     public val qualifier: List<String>
 
-    /** The final target component, preserving its original spelling. */
+    /** The final syntactic target component, preserving its original spelling. */
     public val name: String
 
-    /** The database-link components after the target, or null when absent. */
+    /** The database-link suffix after the target, or null when absent. */
     public val databaseLink: String?
 
-    /** The argument lists represented by the call, in source order. */
+    /**
+     * The argument lists represented by the call, in source order. Multiple
+     * lists are kept separate when the parser represents them separately.
+     */
     public val argumentLists: List<List<MethodCallArgument>>
 }

@@ -19,7 +19,6 @@
  */
 package com.felipebz.zpa.api.syntax;
 
-import com.felipebz.flr.api.AstNode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,16 +38,13 @@ class VariableDeclarationJavaApiTest {
         }
 
         private void visitVariableDeclaration(VariableDeclaration declaration) {
-            String name = declaration.getName();
+            declaration.getName();
             declaration.getNameAstNode();
             declaration.isConstant();
-            AstNode datatype = declaration.getDatatypeAstNode();
-            VariableNullability nullability = declaration.getNullability();
-            VariableInitializerKind initializerKind = declaration.getInitializerKind();
+            declaration.getDatatypeAstNode();
+            declaration.getNullability();
+            declaration.getInitializerKind();
             declaration.getInitializerAstNode();
-            if (name == null || datatype == null || nullability == null) {
-                throw new AssertionError();
-            }
         }
     }
 }

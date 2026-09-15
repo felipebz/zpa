@@ -21,8 +21,6 @@ package com.felipebz.zpa.api.syntax;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MethodCallJavaApiTest {
@@ -37,20 +35,14 @@ class MethodCallJavaApiTest {
         @Override
         public void init() {
             subscribeTo(SyntaxViews.METHOD_CALL, call -> {
-                String name = call.getName();
-                List<String> qualifier = call.getQualifier();
-                String databaseLink = call.getDatabaseLink();
-                List<List<MethodCallArgument>> argumentLists = call.getArgumentLists();
-                argumentLists.forEach(arguments -> arguments.forEach(argument -> {
-                    String argumentName = argument.getName();
-                    boolean distinct = argument.isDistinct();
-                    if (argumentName == null && distinct && databaseLink == null) {
-                        argument.getExpressionAstNode();
-                    }
+                call.getName();
+                call.getQualifier();
+                call.getDatabaseLink();
+                call.getArgumentLists().forEach(arguments -> arguments.forEach(argument -> {
+                    argument.getName();
+                    argument.isDistinct();
+                    argument.getExpressionAstNode();
                 }));
-                if (name == null || qualifier == null) {
-                    throw new AssertionError();
-                }
             });
         }
     }

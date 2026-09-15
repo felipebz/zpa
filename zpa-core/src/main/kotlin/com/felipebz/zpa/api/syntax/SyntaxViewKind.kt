@@ -24,7 +24,12 @@ import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import kotlin.jvm.JvmSynthetic
 
-/** A descriptor used to subscribe to a particular [SyntaxView] kind. */
+/**
+ * An opaque descriptor used to subscribe to a particular [SyntaxView] kind.
+ *
+ * Descriptors are supplied by [SyntaxViews]; callers do not need to depend on
+ * the parser grammar type behind a descriptor.
+ */
 @ZpaExperimentalApi
 public class SyntaxViewKind<T : SyntaxView> private constructor(
     private val astNodeType: AstNodeType,
