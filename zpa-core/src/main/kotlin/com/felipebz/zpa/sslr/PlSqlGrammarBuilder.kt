@@ -19,7 +19,6 @@
  */
 package com.felipebz.zpa.sslr
 
-import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.ContextKey
@@ -27,18 +26,12 @@ import com.felipebz.flr.grammar.GrammarRuleBuilder
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
 import com.felipebz.flr.internal.vm.lexerful.TokenTypeDispatchExpression
-import kotlin.reflect.KClass
 
 class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun build(): Grammar = builder.build()
 
-    fun rule(ruleKey: GrammarRuleKey): GrammarRuleBuilder = rule(ruleKey, TreeImpl::class)
-
-    fun rule(ruleKey: GrammarRuleKey, clazz: KClass<out Tree>): GrammarRuleBuilder {
-        typedClasses[ruleKey] = clazz.java
-        return builder.rule(ruleKey)
-    }
+    fun rule(ruleKey: GrammarRuleKey): GrammarRuleBuilder = builder.rule(ruleKey)
 
     fun setRootRule(ruleKey: GrammarRuleKey) {
         builder.setRootRule(ruleKey)
@@ -126,11 +119,5 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
     fun exclusiveTill(e: Any): Any = builder.exclusiveTill(e)
 
     fun exclusiveTill(e1: Any, vararg rest: Any): Any = builder.exclusiveTill(e1, *rest)
-
-    companion object {
-        private val typedClasses = mutableMapOf<AstNodeType, Class<out Tree>>()
-
-        fun classForType(key: AstNodeType): Class<out Tree> = typedClasses.getOrDefault(key, TreeImpl::class.java)
-    }
 
 }

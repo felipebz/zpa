@@ -25,13 +25,7 @@ import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
 import com.felipebz.zpa.grammar.ExecuteBufferExpression
 import com.felipebz.zpa.grammar.JsonArrayStepAdmissionExpression
-import com.felipebz.zpa.sslr.ElseClause
-import com.felipebz.zpa.sslr.ElsifClause
-import com.felipebz.zpa.sslr.IfStatement
-import com.felipebz.zpa.sslr.NullStatement
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
-import com.felipebz.zpa.sslr.RaiseStatement
-import com.felipebz.zpa.sslr.Statements
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.DclGrammar.DCL_COMMAND
 import com.felipebz.zpa.api.DdlGrammar.DDL_COMMAND
@@ -499,7 +493,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 )
             )
 
-            b.rule(NULL_STATEMENT, NullStatement::class).define(NULL, SEMICOLON)
+            b.rule(NULL_STATEMENT).define(NULL, SEMICOLON)
 
             b.rule(EXCEPTION_HANDLER).define(
                     WHEN,
@@ -524,11 +518,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ASSIGNMENT_STATEMENT).define(b.optional(LABEL), OBJECT_REFERENCE, ASSIGNMENT, EXPRESSION, SEMICOLON)
 
-            b.rule(ELSIF_CLAUSE, ElsifClause::class).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
+            b.rule(ELSIF_CLAUSE).define(ELSIF, EXPRESSION, THEN, STATEMENTS)
 
-            b.rule(ELSE_CLAUSE, ElseClause::class).define(ELSE, STATEMENTS)
+            b.rule(ELSE_CLAUSE).define(ELSE, STATEMENTS)
 
-            b.rule(IF_STATEMENT, IfStatement::class).define(
+            b.rule(IF_STATEMENT).define(
                     b.optional(LABEL),
                     IF, EXPRESSION, THEN,
                     STATEMENTS,
@@ -619,7 +613,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(SAVEPOINT_STATEMENT).define(b.optional(LABEL), SAVEPOINT_EXPRESSION, SEMICOLON)
 
-            b.rule(RAISE_STATEMENT, RaiseStatement::class).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
+            b.rule(RAISE_STATEMENT).define(b.optional(LABEL), RAISE, b.optional(MEMBER_EXPRESSION), SEMICOLON)
 
             b.rule(SELECT_STATEMENT).define(b.optional(LABEL), SELECT_EXPRESSION, SEMICOLON)
 
@@ -714,7 +708,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     INLINE_PRAGMA_STATEMENT,
                     COVERAGE_PRAGMA))
 
-            b.rule(STATEMENTS, Statements::class).define(b.oneOrMore(STATEMENT))
+            b.rule(STATEMENTS).define(b.oneOrMore(STATEMENT))
         }
 
         private fun createExpressions(b: PlSqlGrammarBuilder) {

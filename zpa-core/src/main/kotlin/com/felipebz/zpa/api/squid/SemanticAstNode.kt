@@ -22,9 +22,6 @@ package com.felipebz.zpa.api.squid
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Token
-import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
-import com.felipebz.zpa.sslr.Tree
-import com.felipebz.zpa.sslr.TreeImpl
 
 import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
 import com.felipebz.zpa.project.ProjectRecordMemberResolution
@@ -38,8 +35,6 @@ import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 
 class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
     constructor(token: Token) : this(token.type, token.type.name, token)
-
-    private var internalTree: Tree? = null
 
     var symbol: Symbol? = null
         set(symbol) {
@@ -72,25 +67,6 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type
-
-    val tree: Tree
-        get() {
-            internalTree?.let { return it }
-
-            var classType = PlSqlGrammarBuilder.classForType(super.type)
-            if (classType == TreeImpl::class.java) {
-                var node = this
-                while (classType == TreeImpl::class.java && node.numberOfChildren == 1) {
-                    node = node.firstChild as SemanticAstNode
-                    classType = PlSqlGrammarBuilder.classForType(node.type)
-                }
-            }
-
-            val instance = classType.getDeclaredConstructor(SemanticAstNode::class.java)
-                .newInstance(this)
-            internalTree = instance
-            return instance
-        }
 
     val allTokensToString: String
         get() = tokens.joinToString(" ") { it.originalValue }
