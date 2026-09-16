@@ -146,7 +146,8 @@ class PackageFunctionDeclaration(
     val returnType: TypeRef,
     override val fileId: FileId,
     override val sourceRange: SourceRange,
-    override val role: DeclarationRole = DeclarationRole.SPECIFICATION
+    override val role: DeclarationRole = DeclarationRole.SPECIFICATION,
+    val deterministic: Boolean = false
 ) : PackageSubprogramDeclaration {
     override val parameters: List<ProjectParameter> = immutableList(parameters)
     override val kind = ProjectDeclarationKind.PACKAGE_FUNCTION
@@ -156,9 +157,10 @@ class PackageFunctionDeclaration(
 
     override fun equals(other: Any?): Boolean = other is PackageFunctionDeclaration &&
         owner == other.owner && name == other.name && parameters == other.parameters &&
-        returnType == other.returnType && fileId == other.fileId && sourceRange == other.sourceRange && role == other.role
+        returnType == other.returnType && fileId == other.fileId && sourceRange == other.sourceRange &&
+        role == other.role && deterministic == other.deterministic
 
-    override fun hashCode(): Int = listOf(owner, name, parameters, returnType, fileId, sourceRange, role).hashCode()
+    override fun hashCode(): Int = listOf(owner, name, parameters, returnType, fileId, sourceRange, role, deterministic).hashCode()
 
-    override fun toString(): String = "PackageFunctionDeclaration($owner.$name, $parameters, $returnType, $fileId, $sourceRange)"
+    override fun toString(): String = "PackageFunctionDeclaration($owner.$name, $parameters, $returnType, $fileId, $sourceRange, deterministic=$deterministic)"
 }

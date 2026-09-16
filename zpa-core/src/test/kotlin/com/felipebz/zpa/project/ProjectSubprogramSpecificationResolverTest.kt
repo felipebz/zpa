@@ -60,7 +60,7 @@ class ProjectSubprogramSpecificationResolverTest {
     @Test
     fun correlatesFunctionsAndPreservesReturnMetadata() {
         val context = context(
-            "p_spec.sql" to "CREATE PACKAGE p AS FUNCTION make_value(value IN NUMBER) RETURN VARCHAR2; END p;",
+            "p_spec.sql" to "CREATE PACKAGE p AS FUNCTION make_value(value IN NUMBER) RETURN VARCHAR2 DETERMINISTIC; END p;",
             "p_body.sql" to "CREATE PACKAGE BODY p AS FUNCTION make_value(value IN NUMBER) RETURN VARCHAR2 IS BEGIN RETURN NULL; END make_value; END p;"
         )
         val specification = specification(context, "MAKE_VALUE")
@@ -71,6 +71,8 @@ class ProjectSubprogramSpecificationResolverTest {
         assertThat(result).isEqualTo(ProjectSubprogramSpecificationResolution.Resolved(body, specification))
         assertThat((specification as PackageFunctionDeclaration).returnType.structuralKey())
             .isEqualTo((body as PackageFunctionDeclaration).returnType.structuralKey())
+        assertThat((specification as PackageFunctionDeclaration).deterministic).isTrue
+        assertThat((body as PackageFunctionDeclaration).deterministic).isFalse
         assertThat(specification.sourceRange).isNotEqualTo(body.sourceRange)
     }
 

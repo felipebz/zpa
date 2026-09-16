@@ -393,9 +393,18 @@ class ProjectDeclarationExtractor(
                     setOf("DETERMINISTIC", "PIPELINED", "PARALLEL_ENABLE", "RESULT_CACHE"),
                     end
                 )
+                val deterministic = firstAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
                 val returnType = typeReference(returnIndex + 1, modifier ?: end) ?: return null
                 return ParsedDeclaration(
-                    PackageFunctionDeclaration(owner, name.first, parameters, returnType, fileId, range(index, end)),
+                    PackageFunctionDeclaration(
+                        owner,
+                        name.first,
+                        parameters,
+                        returnType,
+                        fileId,
+                        range(index, end),
+                        deterministic = deterministic
+                    ),
                     end + 1
                 )
             }

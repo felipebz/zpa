@@ -69,6 +69,27 @@ class ProjectAnalysisTest {
     }
 
     @Test
+    fun exposesDeterministicMetadataForCorrelatedPackageFunctions() {
+        val specificationFile = FileId("p-spec.sql")
+        val bodyFile = FileId("p-body.sql")
+        val specification = "CREATE PACKAGE p AS FUNCTION work RETURN NUMBER DETERMINISTIC; END p;"
+        val body = "CREATE PACKAGE BODY p AS FUNCTION work RETURN NUMBER IS BEGIN RETURN 1; END work; END p;"
+        val probe = FunctionProjectAnalysisProbe()
+
+        scan(
+            bodyFile,
+            body,
+            ProjectAnalysisContext.prepared(prepare(specificationFile to specification, bodyFile to body)),
+            probe
+        )
+
+        val result = probe.results.single()
+        assertThat(result.status).isEqualTo(PackageSpecificationResolution.Status.RESOLVED)
+        assertThat(result.getBody().orElseThrow().isDeterministic).isFalse
+        assertThat(result.getSpecification().orElseThrow().isDeterministic).isTrue
+    }
+
+    @Test
     fun replacesPreparedStateOnDirectAndSubsequentPreparedScans() {
         val specificationFile = FileId("p-spec.sql")
         val bodyFile = FileId("p-body.sql")
@@ -268,6 +289,36 @@ class ProjectAnalysisTest {
         assertThat(probe.results).containsExactly(
             SequenceReferenceResolution.RESOLVED_SEQUENCE,
             SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN
+        )
+    }
+
+    @Test
+    fun resolvesCurrvalWithTheSameConservativeSequenceSemantics() {
+        val declarationFile = FileId("sequences.sql")
+        val referenceFile = FileId("target.sql")
+        val source = """
+            SELECT order_seq.CURRVAL FROM dual;
+            SELECT external_seq.CURRVAL FROM dual;
+            SELECT t.CURRVAL FROM some_table t;
+        """.trimIndent()
+        val probe = SequenceResolutionProbe()
+
+        scan(
+            referenceFile,
+            source,
+            ProjectAnalysisContext.prepared(
+                prepare(
+                    declarationFile to "CREATE SEQUENCE order_seq; CREATE SEQUENCE t;",
+                    referenceFile to source
+                )
+            ),
+            probe
+        )
+
+        assertThat(probe.results).containsExactly(
+            SequenceReferenceResolution.RESOLVED_SEQUENCE,
+            SequenceReferenceResolution.UNKNOWN,
             SequenceReferenceResolution.UNKNOWN
         )
     }
@@ -557,6 +608,19 @@ class ProjectAnalysisTest {
         }
     }
 
+    @OptIn(ZpaExperimentalApi::class)
+    private class FunctionProjectAnalysisProbe : PlSqlCheck() {
+        val results = mutableListOf<PackageSpecificationResolution>()
+
+        init {
+            subscribeTo(PlSqlGrammar.FUNCTION_DECLARATION)
+        }
+
+        override fun visitNode(node: AstNode) {
+            results += projectAnalysis().resolvePackageSpecification(node)
+        }
+    }
+
     private class FixtureFile(
         private val fileId: FileId,
         private val source: String
@@ -593,7 +657,11 @@ class ProjectAnalysisTest {
         }
 
         override fun visitNode(node: AstNode) {
-            if (node.getDescendants(com.felipebz.zpa.api.PlSqlKeyword.NEXTVAL).isNotEmpty()) {
+            if (node.getDescendants(
+                    com.felipebz.zpa.api.PlSqlKeyword.NEXTVAL,
+                    com.felipebz.zpa.api.PlSqlKeyword.CURRVAL
+                ).isNotEmpty()
+            ) {
                 results += projectAnalysis().resolveSequenceReference(node)
             }
         }

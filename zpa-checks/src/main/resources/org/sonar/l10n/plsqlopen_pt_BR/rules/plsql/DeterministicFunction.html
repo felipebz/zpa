@@ -1,0 +1,31 @@
+<p>
+A palavra-chave <code>DETERMINISTIC</code> é uma promessa de que uma função retorna o mesmo resultado para os mesmos valores de entrada.
+O Oracle confia nessa declaração e não verifica se a implementação a cumpre.
+Uma declaração incorreta pode fazer com que consultas usem resultados desatualizados ou incorretos.
+</p>
+
+<p>
+Esta regra identifica funções determinísticas cuja implementação contém evidências claras de dependência de estado variável
+de tempo, sessão ou sequência, leitura de dados mutáveis do banco ou efeito colateral.
+A análise é deliberadamente conservadora e não prova que uma função não reportada seja determinística.
+Ela não infere impureza a partir de chamadas para rotinas definidas pelo usuário, estado de pacote ou global não resolvido, ou expressões sensíveis a NLS.
+Para funções de pacote, a declaração deve ser DETERMINISTIC na especificação de pacote correspondente.
+</p>
+
+<h2>Código em desconformidade</h2>
+
+<pre>
+CREATE FUNCTION current_value RETURN DATE DETERMINISTIC IS
+BEGIN
+  RETURN SYSDATE;
+END;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre>
+CREATE FUNCTION double_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
+BEGIN
+  RETURN p_value * 2;
+END;
+</pre>

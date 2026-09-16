@@ -157,7 +157,8 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
         }
         return PackageSubprogram(
             kind,
-            parameters.map { PackageParameter(it.ordinal, it.nocopy) }
+            parameters.map { PackageParameter(it.ordinal, it.nocopy) },
+            (this as? PackageFunctionDeclaration)?.deterministic == true
         )
     }
 
