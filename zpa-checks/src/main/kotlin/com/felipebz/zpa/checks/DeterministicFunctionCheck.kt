@@ -23,7 +23,6 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ActivatedByDefault
 import com.felipebz.zpa.api.annotations.ConstantRemediation
 import com.felipebz.zpa.api.annotations.Priority
@@ -177,30 +176,9 @@ class DeterministicFunctionCheck : AbstractBaseCheck() {
                         belongsTo(function, it) &&
                             it.getFirstAncestorOrNull(DmlGrammar.SELECT_EXPRESSION) === select
                     }
-                    .any { !isDual(it) && !isCteReference(select, it) }
+                    .any { !SqlQueryScope.isDual(it) && !SqlQueryScope.isCteReference(select, it) }
             }
     }
-
-    private fun isCteReference(selectExpression: AstNode, tableReference: AstNode): Boolean {
-        val tableComponents = tableReference.getChildren(PlSqlGrammar.IDENTIFIER_NAME)
-        if (tableComponents.size != 1) return false
-        val tableName = tableComponents.single().tokenOriginalValue
-        return visibleCteNames(selectExpression).any { sameIdentifier(tableName, it) }
-    }
-
-    private fun visibleCteNames(selectExpression: AstNode): List<String> {
-        return generateSequence(selectExpression) { it.parentOrNull }
-            .filter { it.type === DmlGrammar.SELECT_EXPRESSION }
-            .flatMap { directCteNames(it).asSequence() }
-            .toList()
-    }
-
-    private fun directCteNames(selectExpression: AstNode): List<String> =
-        selectExpression.getDescendants(DmlGrammar.SUBQUERY_FACTORING_CLAUSE)
-            .filter { it.getFirstAncestorOrNull(DmlGrammar.SELECT_EXPRESSION) === selectExpression }
-            .mapNotNull {
-                it.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue
-            }
 
     private fun hasSideEffectingStatement(function: AstNode, roots: List<AstNode>): Boolean {
         return roots.asSequence()
@@ -241,25 +219,6 @@ class DeterministicFunctionCheck : AbstractBaseCheck() {
 
     private fun nearestSubprogram(node: AstNode): AstNode? =
         node.getFirstAncestorOrNull(*SUBPROGRAM_TYPES)
-
-    private fun isDual(tableReference: AstNode): Boolean {
-        if (tableReference.getDescendants(PlSqlPunctuator.REMOTE).isNotEmpty()) return false
-        val components = tableReference.getChildren(PlSqlGrammar.IDENTIFIER_NAME)
-        val names = components.map { it.tokenOriginalValue }
-        return when {
-            names.size == 1 -> isUnquoted(names.single()) && names.single().equals("DUAL", ignoreCase = true)
-            names.size == 2 -> isUnquoted(names[0]) && isUnquoted(names[1]) &&
-                names[0].equals("SYS", ignoreCase = true) && names[1].equals("DUAL", ignoreCase = true)
-            else -> false
-        }
-    }
-
-    private fun sameIdentifier(first: String, second: String): Boolean =
-        if (isUnquoted(first) && isUnquoted(second)) {
-            first.equals(second, ignoreCase = true)
-        } else {
-            first == second
-        }
 
     private fun isUnquoted(value: String): Boolean =
         !value.startsWith("\"") && !value.endsWith("\"")

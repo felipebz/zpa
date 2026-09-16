@@ -1,0 +1,12 @@
+CREATE FUNCTION forms_candidate RETURN NUMBER IS
+  invalid_name_ NUMBER;
+BEGIN
+  RETURN 42;
+END;
+/
+
+CREATE FUNCTION forms_non_deterministic RETURN DATE IS
+BEGIN
+  RETURN SYSDATE;
+END;
+/

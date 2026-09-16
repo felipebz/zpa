@@ -1,0 +1,43 @@
+<p>
+A palavra-chave <code>DETERMINISTIC</code> é uma promessa de que uma função retorna o mesmo resultado para os mesmos valores de entrada.
+Declarar uma função adequada como determinística pode permitir que o Oracle reutilize seu resultado, mas o Oracle confia na declaração
+em vez de provar que ela é válida. Por isso, esta regra recomenda a declaração apenas para um subconjunto restrito e de alta confiança.
+</p>
+
+<p>
+A recomendação é limitada a funções com parâmetros somente de entrada e uma implementação composta por estado local, literais,
+operadores determinísticos, fluxo de controle simples e nenhuma chamada para rotinas desconhecidas. Leituras do banco, efeitos
+colaterais, estado externo, sequências, comportamento explícito de exceção e construções não suportadas impedem a recomendação.
+A ausência de um problema não prova que uma função seja determinística, e esta regra não faz uma análise completa do fluxo de exceções.
+</p>
+
+<p>
+Esta regra não é aplicada quando há metadados do Oracle Forms disponíveis. Nesse contexto, as funções são locais a um módulo Forms,
+portanto adicionar <code>DETERMINISTIC</code> não oferece o benefício de uma função armazenada no banco que esta recomendação procura.
+</p>
+
+<h2>Código elegível para a recomendação</h2>
+
+<pre>
+CREATE FUNCTION double_value(p_value NUMBER)
+  RETURN NUMBER
+IS
+BEGIN
+  RETURN p_value * 2;
+END;
+</pre>
+
+<h2>Código não elegível para a recomendação</h2>
+
+<pre>
+CREATE FUNCTION current_value
+  RETURN DATE
+IS
+BEGIN
+  RETURN SYSDATE;
+END;
+</pre>
+
+<p>
+Esta função não é sugerida como candidata a determinística porque seu resultado depende do horário atual.
+</p>

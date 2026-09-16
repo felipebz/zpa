@@ -1,0 +1,43 @@
+<p>
+The <code>DETERMINISTIC</code> keyword is a promise that a function returns the same result for the same input values.
+Declaring a suitable function deterministic can allow Oracle to reuse its result, but Oracle trusts the declaration rather
+than proving it. This rule therefore recommends the declaration only for a narrow, high-confidence subset of functions.
+</p>
+
+<p>
+The recommendation is limited to functions with input-only parameters and an implementation made from local state,
+literal values, deterministic operators, simple control flow, and calls to no unknown routines. Database reads, side effects,
+external state, sequences, explicit exception behavior, and unsupported constructs suppress the recommendation.
+The absence of an issue does not prove that a function is deterministic, and this rule does not provide complete exception-flow analysis.
+</p>
+
+<p>
+This rule is not applied when Oracle Forms metadata is available. In that context, functions are local to a Forms module, so adding
+<code>DETERMINISTIC</code> does not provide the stored-database-function benefit targeted by this recommendation.
+</p>
+
+<h2>Code eligible for the recommendation</h2>
+
+<pre>
+CREATE FUNCTION double_value(p_value NUMBER)
+  RETURN NUMBER
+IS
+BEGIN
+  RETURN p_value * 2;
+END;
+</pre>
+
+<h2>Code not eligible for the recommendation</h2>
+
+<pre>
+CREATE FUNCTION current_value
+  RETURN DATE
+IS
+BEGIN
+  RETURN SYSDATE;
+END;
+</pre>
+
+<p>
+This function is not suggested as a deterministic candidate because its result depends on the current time.
+</p>

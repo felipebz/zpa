@@ -50,6 +50,7 @@ object CheckList {
                 IfWithExitCheck::class.java,
                 FunctionWithOutParameterCheck::class.java,
                 DeterministicFunctionCheck::class.java,
+                FunctionShouldBeDeterministicCheck::class.java,
                 SameConditionCheck::class.java,
                 AddParenthesesInNestedExpressionCheck::class.java,
                 RaiseStandardExceptionCheck::class.java,
