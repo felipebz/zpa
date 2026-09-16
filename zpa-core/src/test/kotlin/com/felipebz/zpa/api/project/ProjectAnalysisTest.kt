@@ -90,6 +90,26 @@ class ProjectAnalysisTest {
     }
 
     @Test
+    fun exposesParameterDefaultMetadataForCorrelatedPackageFunctions() {
+        val specificationFile = FileId("p-spec.sql")
+        val bodyFile = FileId("p-body.sql")
+        val specification = "CREATE PACKAGE p AS FUNCTION work(value DATE DEFAULT SYSDATE) RETURN DATE; END p;"
+        val body = "CREATE PACKAGE BODY p AS FUNCTION work(value DATE) RETURN DATE IS BEGIN RETURN value; END work; END p;"
+        val probe = FunctionProjectAnalysisProbe()
+
+        scan(
+            bodyFile,
+            body,
+            ProjectAnalysisContext.prepared(prepare(specificationFile to specification, bodyFile to body)),
+            probe
+        )
+
+        val result = probe.results.single()
+        assertThat(result.getSpecification().orElseThrow().parameters.single().isDefaultPresent).isTrue
+        assertThat(result.getBody().orElseThrow().parameters.single().isDefaultPresent).isFalse
+    }
+
+    @Test
     fun replacesPreparedStateOnDirectAndSubsequentPreparedScans() {
         val specificationFile = FileId("p-spec.sql")
         val bodyFile = FileId("p-body.sql")
