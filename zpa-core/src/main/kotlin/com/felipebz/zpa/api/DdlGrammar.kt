@@ -38,6 +38,31 @@ enum class DdlGrammar : GrammarRuleKey {
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
+    CREATE_INDEX,
+    CREATE_INDEX_SCHEMA_OBJECT_NAME,
+    CREATE_INDEX_ON_CLAUSE,
+    CREATE_INDEX_CLUSTER_CLAUSE,
+    CREATE_INDEX_TABLE_CLAUSE,
+    CREATE_INDEX_BITMAP_JOIN_CLAUSE,
+    CREATE_INDEX_EXPR,
+    CREATE_INDEX_ATTRIBUTES,
+    CREATE_INDEX_ATTRIBUTE,
+    CREATE_INDEX_PROPERTIES,
+    CREATE_INDEX_PARTITIONING_CLAUSE,
+    CREATE_INDEX_PARTITION_STORAGE_CLAUSE,
+    CREATE_INDEX_GLOBAL_PARTITIONED,
+    CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY,
+    CREATE_INDEX_HASH_PARTITIONS,
+    CREATE_INDEX_LOCAL_PARTITIONED,
+    CREATE_INDEX_LOCAL_RANGE_PARTITIONS,
+    CREATE_INDEX_LOCAL_HASH_PARTITIONS,
+    CREATE_INDEX_LOCAL_COMPOSITE_PARTITIONS,
+    CREATE_INDEX_SUBPARTITION_CLAUSE,
+    CREATE_INDEX_SUBPARTITION,
+    CREATE_INDEX_DOMAIN_CLAUSE,
+    CREATE_INDEX_LOCAL_DOMAIN_CLAUSE,
+    CREATE_INDEX_XMLINDEX_CLAUSE,
+    CREATE_INDEX_LOCAL_XMLINDEX_CLAUSE,
     ALTER_TABLE,
     ALTER_INDEX,
     ALTER_INDEX_ACTION,
@@ -763,6 +788,245 @@ enum class DdlGrammar : GrammarRuleKey {
                 INDEX_ANNOTATION, b.zeroOrMore(COMMA, INDEX_ANNOTATION),
                 RPARENTHESIS)
 
+            b.rule(CREATE_INDEX_ATTRIBUTE).define(
+                b.firstOf(
+                    INDEX_PHYSICAL_ATTRIBUTES_WITH_PCTFREE_CLAUSE,
+                    LOGGING_CLAUSE,
+                    ONLINE,
+                    b.sequence(TABLESPACE, b.firstOf(IDENTIFIER_NAME, DEFAULT)),
+                    INDEX_COMPRESSION_CLAUSE,
+                    b.firstOf(SORT, NOSORT),
+                    REVERSE,
+                    b.firstOf(VISIBLE, INVISIBLE),
+                    INDEX_PARTIAL_CLAUSE,
+                    INDEX_PARALLEL_CLAUSE,
+                    INDEX_ANNOTATIONS_CLAUSE))
+
+            b.rule(CREATE_INDEX_ATTRIBUTES).define(
+                b.oneOrMore(CREATE_INDEX_ATTRIBUTE))
+
+            b.rule(CREATE_INDEX_SCHEMA_OBJECT_NAME).define(
+                b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME)
+
+            b.rule(CREATE_INDEX_EXPR).define(
+                b.firstOf(
+                    SingleRowSqlFunctionsGrammar.JSON_TABLE_EXPRESSION,
+                    EXPRESSION),
+                b.optional(b.firstOf(ASC, DESC)))
+
+            b.rule(CREATE_INDEX_PARTITION_STORAGE_CLAUSE).define(
+                b.oneOrMore(b.firstOf(
+                    INDEX_SEGMENT_ATTRIBUTES_CLAUSE,
+                    INDEX_COMPRESSION_CLAUSE,
+                    b.sequence(OVERFLOW, STORE, IN, LPARENTHESIS,
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS))))
+
+            b.rule(CREATE_INDEX_PARTITIONING_CLAUSE).define(
+                PARTITION, b.optional(IDENTIFIER_NAME),
+                VALUES, LESS, THAN, LPARENTHESIS,
+                b.firstOf(LITERAL, MAXVALUE),
+                b.zeroOrMore(COMMA, b.firstOf(LITERAL, MAXVALUE)),
+                RPARENTHESIS,
+                b.optional(INDEX_SEGMENT_ATTRIBUTES_CLAUSE))
+
+            b.rule(CREATE_INDEX_HASH_PARTITIONS).define(
+                LPARENTHESIS,
+                PARTITION, b.optional(IDENTIFIER_NAME),
+                b.optional(CREATE_INDEX_PARTITION_STORAGE_CLAUSE),
+                b.zeroOrMore(COMMA,
+                    PARTITION, b.optional(IDENTIFIER_NAME),
+                    b.optional(CREATE_INDEX_PARTITION_STORAGE_CLAUSE)),
+                RPARENTHESIS)
+
+            b.rule(CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY).define(
+                PARTITIONS, INTEGER_LITERAL,
+                b.optional(b.sequence(STORE, IN, LPARENTHESIS,
+                    IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
+                b.optional(INDEX_COMPRESSION_CLAUSE),
+                b.optional(b.sequence(OVERFLOW, STORE, IN, LPARENTHESIS,
+                    IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)))
+
+            b.rule(CREATE_INDEX_GLOBAL_PARTITIONED).define(
+                GLOBAL, PARTITION, BY,
+                b.firstOf(
+                    b.sequence(
+                        RANGE_KEYWORD, LPARENTHESIS,
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                        LPARENTHESIS,
+                        CREATE_INDEX_PARTITIONING_CLAUSE,
+                        b.zeroOrMore(COMMA, CREATE_INDEX_PARTITIONING_CLAUSE),
+                        RPARENTHESIS),
+                    b.sequence(
+                        HASH, LPARENTHESIS,
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                        b.firstOf(CREATE_INDEX_HASH_PARTITIONS,
+                            CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY))))
+
+            b.rule(CREATE_INDEX_SUBPARTITION).define(
+                SUBPARTITION, b.optional(IDENTIFIER_NAME),
+                b.optional(b.sequence(TABLESPACE, IDENTIFIER_NAME)),
+                b.optional(INDEX_COMPRESSION_CLAUSE),
+                b.optional(b.firstOf(USABLE, UNUSABLE)))
+
+            b.rule(CREATE_INDEX_SUBPARTITION_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(STORE, IN, LPARENTHESIS,
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                    b.sequence(LPARENTHESIS,
+                        CREATE_INDEX_SUBPARTITION,
+                        b.zeroOrMore(COMMA, CREATE_INDEX_SUBPARTITION),
+                        RPARENTHESIS)))
+
+            b.rule(CREATE_INDEX_LOCAL_RANGE_PARTITIONS).define(
+                LPARENTHESIS,
+                PARTITION, b.optional(IDENTIFIER_NAME),
+                b.zeroOrMore(b.firstOf(INDEX_SEGMENT_ATTRIBUTES_CLAUSE, INDEX_COMPRESSION_CLAUSE)),
+                b.optional(b.firstOf(USABLE, UNUSABLE)),
+                b.zeroOrMore(COMMA,
+                    PARTITION, b.optional(IDENTIFIER_NAME),
+                    b.zeroOrMore(b.firstOf(INDEX_SEGMENT_ATTRIBUTES_CLAUSE, INDEX_COMPRESSION_CLAUSE)),
+                    b.optional(b.firstOf(USABLE, UNUSABLE))),
+                RPARENTHESIS)
+
+            b.rule(CREATE_INDEX_LOCAL_HASH_PARTITIONS).define(
+                b.firstOf(
+                    b.sequence(STORE, IN, LPARENTHESIS,
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                    b.sequence(LPARENTHESIS,
+                        PARTITION, b.optional(IDENTIFIER_NAME),
+                        b.optional(b.sequence(TABLESPACE, IDENTIFIER_NAME)),
+                        b.optional(b.firstOf(USABLE, UNUSABLE)),
+                        b.zeroOrMore(COMMA,
+                            PARTITION, b.optional(IDENTIFIER_NAME),
+                            b.optional(b.sequence(TABLESPACE, IDENTIFIER_NAME)),
+                            b.optional(b.firstOf(USABLE, UNUSABLE))),
+                        RPARENTHESIS)))
+
+            b.rule(CREATE_INDEX_LOCAL_COMPOSITE_PARTITIONS).define(
+                b.optional(b.sequence(STORE, IN, LPARENTHESIS,
+                    IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
+                LPARENTHESIS,
+                PARTITION, b.optional(IDENTIFIER_NAME),
+                b.zeroOrMore(b.firstOf(INDEX_SEGMENT_ATTRIBUTES_CLAUSE, INDEX_COMPRESSION_CLAUSE)),
+                b.optional(b.firstOf(USABLE, UNUSABLE)),
+                b.optional(CREATE_INDEX_SUBPARTITION_CLAUSE),
+                b.zeroOrMore(COMMA,
+                    PARTITION, b.optional(IDENTIFIER_NAME),
+                    b.zeroOrMore(b.firstOf(INDEX_SEGMENT_ATTRIBUTES_CLAUSE, INDEX_COMPRESSION_CLAUSE)),
+                    b.optional(b.firstOf(USABLE, UNUSABLE)),
+                    b.optional(CREATE_INDEX_SUBPARTITION_CLAUSE)),
+                RPARENTHESIS)
+
+            b.rule(CREATE_INDEX_LOCAL_PARTITIONED).define(
+                LOCAL,
+                b.optional(b.firstOf(
+                    CREATE_INDEX_LOCAL_COMPOSITE_PARTITIONS,
+                    CREATE_INDEX_LOCAL_RANGE_PARTITIONS,
+                    CREATE_INDEX_LOCAL_HASH_PARTITIONS)))
+
+            b.rule(CREATE_INDEX_LOCAL_DOMAIN_CLAUSE).define(
+                LOCAL,
+                b.optional(LPARENTHESIS,
+                    PARTITION, IDENTIFIER_NAME, b.optional(INDEX_PARAMETERS_CLAUSE),
+                    b.zeroOrMore(COMMA,
+                        PARTITION, IDENTIFIER_NAME, b.optional(INDEX_PARAMETERS_CLAUSE)),
+                    RPARENTHESIS))
+
+            b.rule(CREATE_INDEX_DOMAIN_CLAUSE).define(
+                UNIT_NAME,
+                b.optional(CREATE_INDEX_LOCAL_DOMAIN_CLAUSE),
+                b.optional(INDEX_PARALLEL_CLAUSE),
+                b.optional(INDEX_PARAMETERS_CLAUSE))
+
+            b.rule(CREATE_INDEX_LOCAL_XMLINDEX_CLAUSE).define(
+                LOCAL,
+                b.optional(LPARENTHESIS,
+                    PARTITION, IDENTIFIER_NAME, b.optional(INDEX_PARAMETERS_CLAUSE),
+                    b.zeroOrMore(COMMA,
+                        PARTITION, IDENTIFIER_NAME, b.optional(INDEX_PARAMETERS_CLAUSE)),
+                    RPARENTHESIS))
+
+            b.rule(CREATE_INDEX_XMLINDEX_CLAUSE).define(
+                b.optional(XDB, DOT), XMLINDEX,
+                b.optional(CREATE_INDEX_LOCAL_XMLINDEX_CLAUSE),
+                b.optional(INDEX_PARALLEL_CLAUSE),
+                b.optional(INDEX_PARAMETERS_CLAUSE))
+
+            b.rule(CREATE_INDEX_PROPERTIES).define(
+                b.firstOf(
+                    b.oneOrMore(b.firstOf(
+                        CREATE_INDEX_GLOBAL_PARTITIONED,
+                        CREATE_INDEX_LOCAL_PARTITIONED,
+                        CREATE_INDEX_ATTRIBUTE)),
+                    b.sequence(INDEXTYPE, IS,
+                        b.firstOf(CREATE_INDEX_XMLINDEX_CLAUSE, CREATE_INDEX_DOMAIN_CLAUSE))))
+
+            b.rule(CREATE_INDEX_ON_CLAUSE).define(
+                ON,
+                b.firstOf(
+                    CREATE_INDEX_CLUSTER_CLAUSE,
+                    CREATE_INDEX_BITMAP_JOIN_CLAUSE,
+                    CREATE_INDEX_TABLE_CLAUSE))
+
+            b.rule(CREATE_INDEX_CLUSTER_CLAUSE).define(
+                CLUSTER, CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                b.optional(CREATE_INDEX_ATTRIBUTES))
+
+            b.rule(CREATE_INDEX_TABLE_CLAUSE).define(
+                CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                b.optional(IDENTIFIER_NAME),
+                LPARENTHESIS,
+                CREATE_INDEX_EXPR,
+                b.zeroOrMore(COMMA, CREATE_INDEX_EXPR),
+                RPARENTHESIS,
+                b.optional(CREATE_INDEX_PROPERTIES))
+
+            b.rule(CREATE_INDEX_BITMAP_JOIN_CLAUSE).define(
+                CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                b.optional(IDENTIFIER_NAME),
+                LPARENTHESIS,
+                b.optional(b.firstOf(
+                    b.sequence(IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, DOT),
+                    b.sequence(IDENTIFIER_NAME, DOT))),
+                IDENTIFIER_NAME, b.optional(b.firstOf(ASC, DESC)),
+                b.zeroOrMore(COMMA,
+                    b.optional(b.firstOf(
+                        b.sequence(IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, DOT),
+                        b.sequence(IDENTIFIER_NAME, DOT))),
+                    IDENTIFIER_NAME, b.optional(b.firstOf(ASC, DESC))),
+                RPARENTHESIS,
+                FROM,
+                CREATE_INDEX_SCHEMA_OBJECT_NAME, b.optional(IDENTIFIER_NAME),
+                b.zeroOrMore(COMMA,
+                    CREATE_INDEX_SCHEMA_OBJECT_NAME, b.optional(IDENTIFIER_NAME)),
+                WHERE, BOOLEAN_EXPRESSION,
+                b.optional(CREATE_INDEX_LOCAL_PARTITIONED),
+                b.optional(CREATE_INDEX_ATTRIBUTES))
+
+            b.rule(CREATE_INDEX).define(
+                CREATE,
+                b.firstOf(
+                    b.sequence(
+                        JSON,
+                        b.optional(UNIQUE),
+                        b.optional(b.firstOf(SPARSE, DENSE)),
+                        b.optional(b.firstOf(SINGLEVALUE, MULTIVALUE))),
+                    b.sequence(
+                        b.optional(JSON),
+                        b.optional(b.firstOf(UNIQUE, BITMAP, MULTIVALUE, SPARSE, DENSE))),
+                ),
+                INDEX,
+                b.optional(IF, NOT, EXISTS),
+                CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                // Oracle documents both placements: before ON in the SQL Reference diagram,
+                // and after the indexed object in the VLDB guide example.
+                b.firstOf(
+                    b.sequence(INDEX_ILM_CLAUSE, CREATE_INDEX_ON_CLAUSE),
+                    b.sequence(CREATE_INDEX_ON_CLAUSE, b.optional(INDEX_ILM_CLAUSE))),
+                b.optional(b.firstOf(USABLE, UNUSABLE)),
+                b.optional(b.firstOf(DEFERRED, IMMEDIATE), INVALIDATION),
+                b.optional(SEMICOLON))
+
             b.rule(INDEX_SEGMENT_ATTRIBUTES_CLAUSE).define(
                 b.oneOrMore(b.firstOf(
                     INDEX_PHYSICAL_ATTRIBUTES_WITH_PCTFREE_CLAUSE,
@@ -1019,6 +1283,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
+                CREATE_INDEX,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,

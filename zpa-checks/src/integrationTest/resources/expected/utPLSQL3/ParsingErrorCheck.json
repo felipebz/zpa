@@ -2,9 +2,6 @@
   "development/mystats/mystats.sql" : [
     425
   ],
-  "source/core/annotations/ut_annotation_cache.sql" : [
-    24
-  ],
   "source/core/annotations/ut_annotation_cache_info.sql" : [
     21
   ],

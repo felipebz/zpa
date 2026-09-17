@@ -870,6 +870,11 @@
   "lnpls/retrieving-error-code-and-error-message-0.sql" : [
     19
   ],
+  "lnpls/retrying-transactions-handling-exceptions-0.sql" : [
+    17,
+    34,
+    39
+  ],
   "lnpls/scope-and-visibility-identifiers-1.sql" : [
     10,
     12
