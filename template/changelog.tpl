@@ -1,21 +1,28 @@
 ## SonarQube compatibility
 
-This release is compatible with SonarQube Community Build 26.2 and newer and it has been tested on versions 26.2 to 26.5.
+This release supports **SonarQube Community Build 26.2 and newer** and has been tested with versions **26.2 through 26.9**.
 
-SonarQube commercial builds are not supported. For that, consider using [zpa-cli](https://github.com/felipebz/zpa-cli) instead.
+SonarQube commercial builds are not supported. If you need to analyze projects without installing a SonarQube plugin, consider using [zpa-cli](https://github.com/felipebz/zpa-cli).
 
-## Install/update instructions
+## Install or update
 
-* Download the {{#f_release_download_url}}sonar-zpa-plugin-{{projectVersion}}.jar{{/f_release_download_url}} and copy it to the SONARQUBE_HOME/extensions/plugins.
-* Remove the older plugin from that directory.
-* Restart the SonarQube instance.
+1. Download {{#f_release_download_url}}sonar-zpa-plugin-{{projectVersion}}.jar{{/f_release_download_url}}.
+2. Copy it to `SONARQUBE_HOME/extensions/plugins`, replacing the previous ZPA version.
+3. Restart SonarQube.
 
-## For custom plugin developers
-
-Binary compatibility is not guaranteed either in between any version number change. Custom plugins should be recompiled against the same version of `sonar-zpa-plugin`.
-
-Download the {{#f_release_download_url}}zpa-toolkit-{{projectVersion}}.jar{{/f_release_download_url}} (requires Java 17+) to test the parser and view the AST.
-
-## Full changelog
+## What's changed
 
 {{changelogChanges}}
+
+## ZPA Toolkit
+
+Download {{#f_release_download_url}}zpa-toolkit-{{projectVersion}}.jar{{/f_release_download_url}} to inspect the parser AST and symbol table.
+
+The toolkit requires Java 21 or newer.
+
+<details>
+<summary>Developing custom ZPA plugins?</summary>
+
+Binary compatibility is not guaranteed between ZPA versions. Custom plugins should be recompiled against the same version of `sonar-zpa-plugin` used by the SonarQube instance.
+
+</details>
