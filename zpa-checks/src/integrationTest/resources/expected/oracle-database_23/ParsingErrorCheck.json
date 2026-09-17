@@ -1,10 +1,4 @@
 {
-  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
-    3
-  ],
-  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
-    25
-  ],
   "adjsn/creating-b-tree-indexes-json_value-0.sql" : [
     2
   ],
@@ -105,9 +99,6 @@
     2
   ],
   "adjsn/persistent-data-guide-information-part-json-search-index-1.sql" : [
-    2
-  ],
-  "adjsn/persistent-data-guide-information-part-json-search-index-2.sql" : [
     2
   ],
   "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
@@ -768,45 +759,6 @@
     2
   ],
   "sqlrf/ALTER-HIERARCHY-0.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-0.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-1.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-10.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-11.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-12.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-2.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-3.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-4.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-5.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-6.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-7.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-8.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-9.sql" : [
     2
   ],
   "sqlrf/ALTER-INDEXTYPE-0.sql" : [
