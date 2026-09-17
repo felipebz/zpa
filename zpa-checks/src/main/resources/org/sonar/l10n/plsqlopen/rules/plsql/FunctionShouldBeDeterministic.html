@@ -8,6 +8,8 @@ than proving it. This rule therefore recommends the declaration only for a narro
 The recommendation is limited to functions with input-only parameters and an implementation made from local state,
 literal values, deterministic operators, simple control flow, and calls to no unknown routines. Database reads, side effects,
 external state, sequences, explicit exception behavior, and unsupported constructs suppress the recommendation.
+The only function calls currently recognized as safe are numeric <code>NVL</code> and one-argument character
+<code>LTRIM</code>, <code>RTRIM</code>, and simple <code>TRIM</code> calls with statically known argument types.
 The absence of an issue does not prove that a function is deterministic, and this rule does not provide complete exception-flow analysis.
 </p>
 

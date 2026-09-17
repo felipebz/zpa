@@ -8,6 +8,8 @@ em vez de provar que ela é válida. Por isso, esta regra recomenda a declaraç�
 A recomendação é limitada a funções com parâmetros somente de entrada e uma implementação composta por estado local, literais,
 operadores determinísticos, fluxo de controle simples e nenhuma chamada para rotinas desconhecidas. Leituras do banco, efeitos
 colaterais, estado externo, sequências, comportamento explícito de exceção e construções não suportadas impedem a recomendação.
+Apenas chamadas para <code>NVL</code> numérico e chamadas de um argumento com tipos conhecidos para <code>LTRIM</code>,
+<code>RTRIM</code> e <code>TRIM</code> simples são atualmente reconhecidas como seguras.
 A ausência de um problema não prova que uma função seja determinística, e esta regra não faz uma análise completa do fluxo de exceções.
 </p>
 

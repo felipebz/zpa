@@ -121,6 +121,157 @@ class FunctionShouldBeDeterministicCheckTest : BaseCheckTest() {
     }
 
     @Test
+    fun doesNotTreatPackageDeclaredRoutinesAsOracleBuiltins() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "builtin_name_shadow_spec.sql",
+                    """
+                    CREATE PACKAGE builtin_name_shadow AS
+                      FUNCTION NVL(p_value NUMBER, p_default NUMBER) RETURN NUMBER DETERMINISTIC;
+                      FUNCTION LTRIM(p_value VARCHAR2) RETURN VARCHAR2 DETERMINISTIC;
+                      FUNCTION RTRIM(p_value VARCHAR2) RETURN VARCHAR2 DETERMINISTIC;
+                      FUNCTION TRIM(p_value VARCHAR2) RETURN VARCHAR2 DETERMINISTIC;
+                      FUNCTION candidate_nvl(p_value NUMBER) RETURN NUMBER;
+                      FUNCTION candidate_ltrim(p_value VARCHAR2) RETURN VARCHAR2;
+                      FUNCTION candidate_rtrim(p_value VARCHAR2) RETURN VARCHAR2;
+                      FUNCTION candidate_trim(p_value VARCHAR2) RETURN VARCHAR2;
+                    END builtin_name_shadow;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "builtin_name_shadow_body.sql",
+                    """
+                    CREATE PACKAGE BODY builtin_name_shadow AS
+                      FUNCTION candidate_nvl(p_value NUMBER) RETURN NUMBER IS
+                      BEGIN
+                        RETURN NVL(p_value, 0);
+                      END candidate_nvl;
+
+                      FUNCTION candidate_ltrim(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN LTRIM(p_value);
+                      END candidate_ltrim;
+
+                      FUNCTION candidate_rtrim(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN RTRIM(p_value);
+                      END candidate_rtrim;
+
+                      FUNCTION candidate_trim(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN TRIM(p_value);
+                      END candidate_trim;
+
+                      FUNCTION NVL(p_value NUMBER, p_default NUMBER) RETURN NUMBER IS
+                      BEGIN
+                        RETURN p_value;
+                      END NVL;
+
+                      FUNCTION LTRIM(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN p_value;
+                      END LTRIM;
+
+                      FUNCTION RTRIM(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN p_value;
+                      END RTRIM;
+
+                      FUNCTION TRIM(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN p_value;
+                      END TRIM;
+                    END builtin_name_shadow;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "builtin_name_clear_spec.sql",
+                    """
+                    CREATE PACKAGE builtin_name_clear AS
+                      FUNCTION candidate_number(p_value NUMBER) RETURN NUMBER;
+                      FUNCTION candidate_text(p_value VARCHAR2) RETURN VARCHAR2;
+                    END builtin_name_clear;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "builtin_name_clear_body.sql",
+                    """
+                    CREATE PACKAGE BODY builtin_name_clear AS
+                      FUNCTION candidate_number(p_value NUMBER) RETURN NUMBER IS -- Noncompliant
+                      BEGIN
+                        RETURN NVL(p_value, 0);
+                      END candidate_number;
+
+                      FUNCTION candidate_text(p_value VARCHAR2) RETURN VARCHAR2 IS -- Noncompliant
+                      BEGIN
+                        RETURN TRIM(RTRIM(LTRIM(p_value)));
+                      END candidate_text;
+                    END builtin_name_clear;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
+    fun doesNotTreatLocallyDeclaredTrimRoutinesAsTheOracleBuiltin() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "local_trim_shadow.sql",
+                    """
+                    CREATE FUNCTION local_trim_shadow(p_value VARCHAR2)
+                    RETURN VARCHAR2 IS
+                      FUNCTION TRIM(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN p_value;
+                      END TRIM;
+                    BEGIN
+                      RETURN TRIM(p_value);
+                    END local_trim_shadow;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "trim_private_spec.sql",
+                    """
+                    CREATE PACKAGE trim_private AS
+                      FUNCTION candidate(p_value VARCHAR2) RETURN VARCHAR2;
+                    END trim_private;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "trim_private_body.sql",
+                    """
+                    CREATE PACKAGE BODY trim_private AS
+                      FUNCTION TRIM(p_value VARCHAR2) RETURN VARCHAR2;
+
+                      FUNCTION candidate(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN TRIM(p_value);
+                      END candidate;
+
+                      FUNCTION TRIM(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN p_value;
+                      END TRIM;
+                    END trim_private;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
     fun ignoresUnresolvedPackageFunctions() {
         ProjectPlSqlCheckVerifier.verify(
             listOf(

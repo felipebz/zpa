@@ -4,5 +4,8 @@
   ],
   "examples/create_function04.sql" : [
     3
+  ],
+  "examples/editionable_function.sql" : [
+    1
   ]
 }

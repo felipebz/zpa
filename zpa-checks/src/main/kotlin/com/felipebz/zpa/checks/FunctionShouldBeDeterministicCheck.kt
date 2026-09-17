@@ -26,11 +26,15 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar
 import com.felipebz.zpa.api.annotations.ConstantRemediation
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
 import com.felipebz.zpa.api.annotations.RuleInfo
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.matchers.MethodMatcher
+import com.felipebz.zpa.api.project.PackageProcedureReference
+import com.felipebz.zpa.api.project.PackageProcedureResolution
 import com.felipebz.zpa.api.project.PackageSpecificationResolution
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
@@ -45,6 +49,10 @@ import com.felipebz.zpa.api.symbols.Symbol
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @OptIn(ZpaExperimentalApi::class)
 class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
+
+    private val nvlCall = MethodMatcher.create().name("nvl").addParameters(2)
+    private val ltrimCall = MethodMatcher.create().name("ltrim").addParameters(1)
+    private val rtrimCall = MethodMatcher.create().name("rtrim").addParameters(1)
 
     override fun init() {
         subscribeTo(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_FUNCTION)
@@ -353,6 +361,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             PlSqlGrammar.LITERAL -> return isSafeLiteral(node)
             PlSqlGrammar.VARIABLE_NAME -> return isSafeVariable(node)
             PlSqlGrammar.MEMBER_EXPRESSION -> return isSafeMember(node)
+            PlSqlGrammar.METHOD_CALL,
+            SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
+            SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> return safeBuiltinResultType(node) != null
             PlSqlGrammar.UNARY_EXPRESSION -> return isSafeUnaryExpression(node)
             PlSqlGrammar.EXPONENTIATION_EXPRESSION -> return node.children.size == 1 &&
                 isSafeExpressionNode(node.firstChild)
@@ -456,6 +467,131 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             .all { isSafeExpressionNode(it) && expressionType(it) == PlSqlType.BOOLEAN }
     }
 
+    /** Validates the entire supported call shape so safety and inferred result type cannot diverge. */
+    private fun safeBuiltinResultType(node: AstNode): PlSqlType? = when (node.type) {
+        PlSqlGrammar.METHOD_CALL -> safeBuiltinMethodCall(
+            node,
+            nvlCall,
+            "NVL",
+            PlSqlType.NUMERIC,
+            PlSqlType.NUMERIC,
+            PlSqlType.NUMERIC,
+        ) ?: safeBuiltinMethodCall(
+            node,
+            ltrimCall,
+            "LTRIM",
+            PlSqlType.CHARACTER,
+            PlSqlType.CHARACTER,
+        ) ?: safeBuiltinMethodCall(
+            node,
+            rtrimCall,
+            "RTRIM",
+            PlSqlType.CHARACTER,
+            PlSqlType.CHARACTER,
+        )
+        SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION -> node.children.singleOrNull()
+            ?.takeIf { it.type === SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION }
+            ?.let(::safeSimpleTrimResultType)
+        SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> safeSimpleTrimResultType(node)
+        else -> null
+    }
+
+    private fun safeBuiltinMethodCall(
+        node: AstNode,
+        matcher: MethodMatcher,
+        builtinName: String,
+        resultType: PlSqlType,
+        vararg argumentTypes: PlSqlType,
+    ): PlSqlType? {
+        if (!matcher.matches(node)) return null
+        val arguments = positionalArguments(node) ?: return null
+        if (!hasNoPackageShadow(node, builtinName)) return null
+        if (arguments.size != argumentTypes.size) return null
+        return resultType.takeIf {
+            arguments.indices.all { index ->
+                isSafeExpressionNode(arguments[index]) && expressionType(arguments[index]) == argumentTypes[index]
+            }
+        }
+    }
+
+    private fun positionalArguments(call: AstNode): List<AstNode>? {
+        if (call.children.size != 2 || call.children[1].type !== PlSqlGrammar.ARGUMENTS) return null
+        val target = call.children[0]
+        if (target.type !== PlSqlGrammar.VARIABLE_NAME || target.children.size != 1) return null
+        val identifier = target.children.single()
+        if (identifier.type !== PlSqlGrammar.IDENTIFIER_NAME || !isUnquoted(identifier.tokenOriginalValue)) return null
+
+        // A locally resolved routine or other declaration with the same name is not the Oracle built-in.
+        val targetSemantic = target as? SemanticAstNode ?: return null
+        if (targetSemantic.symbol != null) return null
+
+        return call.children[1].getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
+            argument.children.singleOrNull() ?: return null
+        }
+    }
+
+    private fun safeSimpleTrimResultType(node: AstNode): PlSqlType? {
+        if (node.children.size != 4 ||
+            node.children[0].type !== PlSqlKeyword.TRIM ||
+            node.children[1].type !== PlSqlPunctuator.LPARENTHESIS ||
+            node.children[3].type !== PlSqlPunctuator.RPARENTHESIS
+        ) {
+            return null
+        }
+        val argument = node.children[2]
+        return PlSqlType.CHARACTER.takeIf {
+            hasNoPackageShadow(node, "TRIM") &&
+                hasNoLocalTrimShadow(node) &&
+                isSafeExpressionNode(argument) && expressionType(argument) == PlSqlType.CHARACTER
+        }
+    }
+
+    /**
+     * TRIM has a dedicated SQL-function AST node, so it has no METHOD_CALL target for the
+     * lexical symbol check used by NVL/LTRIM/RTRIM. Inspect the enclosing routine declarations
+     * instead. Package bodies are searched as a whole to include private and later declarations;
+     * for standalone functions, only that function and its declarative section are relevant.
+     */
+    private fun hasNoLocalTrimShadow(node: AstNode): Boolean {
+        val packageBody = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE_BODY)
+        if (packageBody != null) {
+            return !declaresTrimRoutine(packageBody)
+        }
+
+        val function = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_FUNCTION) ?: return false
+        if (isTrimRoutine(function)) return false
+        val declarations = function.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION) ?: return true
+        return !declaresTrimRoutine(declarations)
+    }
+
+    private fun declaresTrimRoutine(node: AstNode): Boolean =
+        node.getDescendants(PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.PROCEDURE_DECLARATION)
+            .any(::isTrimRoutine)
+
+    private fun isTrimRoutine(node: AstNode): Boolean {
+        val name = when (node.type) {
+            PlSqlGrammar.CREATE_FUNCTION -> functionNameNode(node)
+            PlSqlGrammar.FUNCTION_DECLARATION,
+            PlSqlGrammar.PROCEDURE_DECLARATION -> node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
+            else -> null
+        }?.tokenOriginalValue ?: return false
+
+        return if (name.startsWith('"') && name.endsWith('"')) {
+            name == "\"TRIM\""
+        } else {
+            name.equals("TRIM", ignoreCase = true)
+        }
+    }
+
+    /** Only NOT_FOUND proves that the current package does not declare this routine name. */
+    private fun hasNoPackageShadow(node: AstNode, builtinName: String): Boolean {
+        val packageBody = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE_BODY) ?: return true
+        return projectAnalysis().resolvePackageProcedure(
+            packageBody,
+            PackageProcedureReference.currentPackage(builtinName)
+        ).status == PackageProcedureResolution.Status.NOT_FOUND
+    }
+
     private fun areComparable(left: AstNode, right: AstNode): Boolean {
         val leftType = expressionType(left) ?: return false
         val rightType = expressionType(right) ?: return false
@@ -484,6 +620,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
     private fun expressionType(node: AstNode): PlSqlType? {
         when (node.type) {
             PlSqlGrammar.LITERAL -> return (node as? SemanticAstNode)?.plSqlType?.takeUnless { it.isUnknown }
+            PlSqlGrammar.METHOD_CALL,
+            SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
+            SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> return safeBuiltinResultType(node)
             PlSqlGrammar.VARIABLE_NAME,
             PlSqlGrammar.MEMBER_EXPRESSION -> return (node as? SemanticAstNode)?.symbol?.type
                 ?.takeUnless { it.isUnknown }

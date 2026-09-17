@@ -387,3 +387,115 @@ BEGIN
   RETURN 1;
 END;
 /
+
+CREATE FUNCTION nvl_numeric(p_number NUMBER) RETURN NUMBER -- Noncompliant
+IS
+BEGIN
+  RETURN nvl(p_number, 0);
+END;
+/
+
+CREATE FUNCTION zvl(p_nr_numero IN NUMBER, p_vl_retorno IN NUMBER) RETURN NUMBER -- Noncompliant
+IS
+BEGIN
+  IF NVL(p_nr_numero, 0) = 0 THEN
+    RETURN p_vl_retorno;
+  ELSE
+    RETURN p_nr_numero;
+  END IF;
+END;
+/
+
+CREATE FUNCTION left_trimmed(p_value VARCHAR2) RETURN VARCHAR2 -- Noncompliant
+IS
+BEGIN
+  RETURN LTRIM(p_value);
+END;
+/
+
+CREATE FUNCTION right_trimmed(p_value VARCHAR2) RETURN VARCHAR2 -- Noncompliant
+IS
+BEGIN
+  RETURN RTRIM(p_value);
+END;
+/
+
+CREATE FUNCTION trimmed(p_value VARCHAR2) RETURN VARCHAR2 -- Noncompliant
+IS
+BEGIN
+  RETURN TRIM(p_value);
+END;
+/
+
+CREATE FUNCTION lrtrim(p_value VARCHAR2) RETURN VARCHAR2 -- Noncompliant
+IS
+BEGIN
+  RETURN RTRIM(LTRIM(p_value));
+END;
+/
+
+CREATE FUNCTION nvl_number_character(p_number NUMBER) RETURN NUMBER IS
+BEGIN
+  RETURN NVL(p_number, '0');
+END;
+/
+
+CREATE FUNCTION nvl_character_character(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN NVL(p_text, 'fallback');
+END;
+/
+
+CREATE FUNCTION nvl_character_number(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN NVL(p_text, 0);
+END;
+/
+
+CREATE FUNCTION ltrim_two_arguments(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN LTRIM(p_text, 'x');
+END;
+/
+
+CREATE FUNCTION rtrim_two_arguments(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN RTRIM(p_text, 'x');
+END;
+/
+
+CREATE FUNCTION trim_from(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN TRIM('x' FROM p_text);
+END;
+/
+
+CREATE FUNCTION trim_leading(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN TRIM(LEADING 'x' FROM p_text);
+END;
+/
+
+CREATE FUNCTION trim_trailing(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN TRIM(TRAILING 'x' FROM p_text);
+END;
+/
+
+CREATE FUNCTION trim_both(p_text VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN TRIM(BOTH 'x' FROM p_text);
+END;
+/
+
+CREATE FUNCTION nvl_with_unknown_call RETURN NUMBER IS
+BEGIN
+  RETURN NVL(unknown_function(), 0);
+END;
+/
+
+CREATE FUNCTION ltrim_with_unknown_call RETURN VARCHAR2 IS
+BEGIN
+  RETURN LTRIM(unknown_function());
+END;
+/
