@@ -2,6 +2,12 @@ begin
   if (x = y) then -- Noncompliant {{Replace this IF ... EXIT by a EXIT WHEN statement.}} [[sc=3;el=+2;ec=10]]
     exit;
   end if;
+
+  if (x = y) then
+    if (a = b) then -- Noncompliant
+      exit;
+    end if;
+  end if;
   
   if (x = y) then
     foo := bar;

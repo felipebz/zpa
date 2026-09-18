@@ -1,4 +1,11 @@
 {
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
   "adjsn/handling-input-values-sql-json-generation-functions-0.sql" : [
     2
   ],

@@ -17,15 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.asSemantic
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-open class TreeImpl(override val astNode: SemanticAstNode) : Tree {
+/** A lightweight view of the ELSE branch in an [IfStatement]. */
+@ZpaExperimentalApi
+public interface IfElseBranch : SyntaxView {
 
-    override val parent: Tree? by lazy {
-        astNode.parent.asSemantic().tree
-    }
+    /** The statements node belonging to this branch. */
+    public val statementsAstNode: AstNode
 
+    /** The direct raw statement nodes in this branch, without recursively flattening nested statements. */
+    public val statementAstNodes: List<AstNode>
 }

@@ -168,7 +168,7 @@
     1
   ],
   "examples/create_index.sql" : [
-    1
+    2
   ],
   "examples/create_inmemory_join_group.sql" : [
     1
@@ -264,9 +264,6 @@
     1
   ],
   "examples/function06.sql" : [
-    1
-  ],
-  "examples/index.sql" : [
     1
   ],
   "examples/interval01.sql" : [

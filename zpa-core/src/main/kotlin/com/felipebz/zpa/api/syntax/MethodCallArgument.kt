@@ -17,25 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.asSemantic
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-class IfStatement(override val astNode: SemanticAstNode) : TreeWithStatements(astNode) {
+/** A view of one argument in a generic [MethodCall]. */
+@ZpaExperimentalApi
+public interface MethodCallArgument : SyntaxView {
 
-    val condition : SemanticAstNode by lazy {
-        astNode.children[1].asSemantic()
-    }
+    /** The named-argument identifier, or null for a positional argument. */
+    public val name: String?
 
-    val elsifClauses : List<ElsifClause> by lazy {
-        astNode.getChildren(PlSqlGrammar.ELSIF_CLAUSE).asTree()
-    }
+    /** Whether the argument has a direct DISTINCT modifier. */
+    public val isDistinct: Boolean
 
-    val elseClause : ElseClause? by lazy {
-        astNode.getFirstChildOrNull(PlSqlGrammar.ELSE_CLAUSE)?.asTree()
-    }
-
+    /** The existing AST expression represented by this argument. */
+    public val expressionAstNode: AstNode
 }

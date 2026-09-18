@@ -26,12 +26,39 @@ jreleaser {
                 formatted.set(org.jreleaser.model.Active.ALWAYS)
                 preset.set("conventional-commits")
                 contentTemplate.set(file("template/changelog.tpl"))
+                extraProperties.put("categorizeScopes", "true")
+                format.set(
+                    "- {{#conventionalCommitIsBreakingChange}}🚨 {{/conventionalCommitIsBreakingChange}}" +
+                        "{{conventionalCommitDescription}}" +
+                        "{{#conventionalCommitBreakingChangeContent}} - *{{conventionalCommitBreakingChangeContent}}*" +
+                        "{{/conventionalCommitBreakingChangeContent}}"
+                )
                 contributors {
-                    enabled.set(false)
+                    enabled.set(true)
                 }
                 hide {
                     uncategorized.set(true)
+                    categories.addAll(
+                        listOf(
+                            "merge",
+                            "test",
+                            "tasks",
+                            "build",
+                            "docs"
+                        )
+                    )
                 }
+
+                labeler {
+                    label.set("internal")
+                    title.set("regex:^(?:[a-z]+)(?:\\(deps\\))?!?:.*")
+                }
+                labeler {
+                    label.set("internal")
+                    title.set("regex:^(?:refactor|style)(?:\\([^)]*\\))?!?:.*")
+                }
+
+                excludeLabels.add("internal")
             }
         }
     }

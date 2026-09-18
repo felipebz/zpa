@@ -17,15 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.asSemantic
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-class ElsifClause(override val astNode: SemanticAstNode) : TreeWithStatements(astNode) {
+/** A lightweight public view over one node in ZPA's existing parser AST. */
+@ZpaExperimentalApi
+public interface SyntaxView {
 
-    val condition : SemanticAstNode by lazy {
-        astNode.children[1].asSemantic()
-    }
-
+    /**
+     * The backing AST node, available as an explicit escape hatch when the
+     * typed view does not expose a required detail.
+     */
+    public val astNode: AstNode
 }

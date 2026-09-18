@@ -17,16 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax;
 
-import com.felipebz.zpa.asSemantic
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import org.junit.jupiter.api.Test;
 
-class RaiseStatement(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
+import static org.assertj.core.api.Assertions.assertThat;
 
-    val exception : SemanticAstNode? by lazy {
-        astNode.getFirstChildOrNull(PlSqlKeyword.RAISE)?.nextSibling?.asSemantic()
+class MethodCallJavaApiTest {
+
+    @Test
+    void exposesMethodCallViewToJavaSubscribers() {
+        assertThat(new JavaVisitor()).isNotNull();
     }
 
+    private static class JavaVisitor extends com.felipebz.zpa.api.checks.PlSqlVisitor {
+
+        @Override
+        public void init() {
+            subscribeTo(SyntaxViews.METHOD_CALL, call -> {
+                call.getName();
+                call.getQualifier();
+                call.getDatabaseLink();
+                call.getArgumentLists().forEach(arguments -> arguments.forEach(argument -> {
+                    argument.getName();
+                    argument.isDistinct();
+                    argument.getExpressionAstNode();
+                }));
+            });
+        }
+    }
 }

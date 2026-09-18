@@ -25,41 +25,46 @@ import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.SelectStatement
+import com.felipebz.zpa.api.syntax.SyntaxViews
 import com.felipebz.zpa.typeIs
 
 @Rule(priority = Priority.CRITICAL)
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
 
     @RuleProperty(key = "strict", defaultValue = "true")
     var strictMode = true
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.SELECT_STATEMENT)
+        subscribeTo(SyntaxViews.SELECT_STATEMENT, ::visitSelectStatement)
     }
 
-    override fun visitNode(node: AstNode) {
-        val intoClause = node.getFirstDescendantOrNull(DmlGrammar.INTO_CLAUSE)
-        if (intoClause?.firstChild.typeIs(PlSqlKeyword.BULK)) {
+    private fun visitSelectStatement(statement: SelectStatement) {
+        val intoClause = statement.queryBlocks.asSequence()
+            .mapNotNull { it.intoClause }
+            .firstOrNull()
+        if (intoClause?.isBulkCollect == true) {
             return
         }
 
-        if (isGuaranteedSingleRowAggregate(node)) {
+        if (isGuaranteedSingleRowAggregate(statement.astNode)) {
             return
         }
 
         if (strictMode) {
-            val parentBlock = node.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
+            val parentBlock = statement.astNode.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
 
             if (parentBlock?.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS) == false) {
-                addIssue(node, getLocalizedMessage())
+                addIssue(statement, getLocalizedMessage())
             }
         } else {
             val hasExceptionHandler = context.currentScope?.hasExceptionHandler ?: false
             if (!hasExceptionHandler) {
-                addIssue(node, getLocalizedMessage())
+                addIssue(statement, getLocalizedMessage())
             }
         }
     }

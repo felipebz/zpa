@@ -17,8 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-class NullStatement(astNode: SemanticAstNode) : TreeImpl(astNode)
+/** The syntax form used to initialize a variable declaration. */
+@ZpaExperimentalApi
+public enum class VariableInitializerKind {
+    ASSIGNMENT,
+    DEFAULT,
+}

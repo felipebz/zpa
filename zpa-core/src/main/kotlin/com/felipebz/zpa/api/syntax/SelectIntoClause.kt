@@ -17,23 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.RuleTest
-import com.felipebz.zpa.asSemantic
-import org.junit.jupiter.api.BeforeEach
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-abstract class TreeTest<T : Tree>(private val root: PlSqlGrammar) : RuleTest() {
+/** A lightweight view of a SELECT INTO clause. */
+@ZpaExperimentalApi
+public interface SelectIntoClause : SyntaxView {
 
-    @BeforeEach
-    fun init() {
-        setRootRule(root)
-    }
-
-    fun parse(content: String): T {
-        @Suppress("UNCHECKED_CAST")
-        return p.parse(content).asSemantic().tree as T
-    }
-
+    /** Whether this is a BULK COLLECT INTO clause. */
+    public val isBulkCollect: Boolean
 }

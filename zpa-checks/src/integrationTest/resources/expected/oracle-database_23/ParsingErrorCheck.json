@@ -1,31 +1,4 @@
 {
-  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
-    3
-  ],
-  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
-    25
-  ],
-  "adjsn/creating-b-tree-indexes-json_value-0.sql" : [
-    2
-  ],
-  "adjsn/creating-b-tree-indexes-json_value-1.sql" : [
-    2
-  ],
-  "adjsn/creating-b-tree-indexes-json_value-2.sql" : [
-    2
-  ],
-  "adjsn/creating-b-tree-indexes-json_value-3.sql" : [
-    2
-  ],
-  "adjsn/creating-bitmap-indexes-json_value-0.sql" : [
-    2
-  ],
-  "adjsn/creating-multivalue-function-based-indexes-json_exists-1.sql" : [
-    2
-  ],
-  "adjsn/creating-multivalue-function-based-indexes-json_exists-2.sql" : [
-    2
-  ],
   "adjsn/creating-view-json-data-using-json_table-1.sql" : [
     3
   ],
@@ -40,9 +13,6 @@
   ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     3
-  ],
-  "adjsn/json-query-rewrite-use-materialized-view-json_table-2.sql" : [
-    2
   ],
   "adjsn/json-schema-11.sql" : [
     5
@@ -107,9 +77,6 @@
   "adjsn/persistent-data-guide-information-part-json-search-index-1.sql" : [
     2
   ],
-  "adjsn/persistent-data-guide-information-part-json-search-index-2.sql" : [
-    2
-  ],
   "adjsn/populate-json-type-column-querying-textual-json-0.sql" : [
     2
   ],
@@ -138,9 +105,6 @@
     4
   ],
   "adjsn/use-bind-variables-json_transform-0.sql" : [
-    2
-  ],
-  "adjsn/using-geojson-geographic-data-5.sql" : [
     2
   ],
   "adjsn/using-online-redefinition-migrate-json-data-type-2.sql" : [
@@ -397,9 +361,6 @@
   ],
   "lnpls/release-changes-3.sql" : [
     2
-  ],
-  "lnpls/retrying-transactions-handling-exceptions-0.sql" : [
-    7
   ],
   "lnpls/scope-and-visibility-identifiers-11.sql" : [
     3
@@ -741,45 +702,6 @@
     2
   ],
   "sqlrf/ALTER-HIERARCHY-0.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-0.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-1.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-10.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-11.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-12.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-2.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-3.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-4.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-5.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-6.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-7.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-8.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-INDEX-9.sql" : [
     2
   ],
   "sqlrf/ALTER-INDEXTYPE-0.sql" : [
@@ -1326,7 +1248,7 @@
     2
   ],
   "sqlrf/ALTER-TABLE-70.sql" : [
-    2
+    4
   ],
   "sqlrf/ALTER-TABLE-71.sql" : [
     4
@@ -1697,12 +1619,6 @@
   "sqlrf/CREATE-CLUSTER-0.sql" : [
     2
   ],
-  "sqlrf/CREATE-CLUSTER-1.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-CLUSTER-10.sql" : [
-    2
-  ],
   "sqlrf/CREATE-CLUSTER-2.sql" : [
     3
   ],
@@ -1787,70 +1703,7 @@
   "sqlrf/CREATE-HIERARCHY-2.sql" : [
     2
   ],
-  "sqlrf/CREATE-INDEX-0.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-10.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-12.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-14.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-15.sql" : [
-    2
-  ],
   "sqlrf/CREATE-INDEX-17.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-19.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-20.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-21.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-22.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-23.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-24.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-25.sql" : [
-    30
-  ],
-  "sqlrf/CREATE-INDEX-26.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-27.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-28.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-29.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-4.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-6.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-7.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-8.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-INDEX-9.sql" : [
     2
   ],
   "sqlrf/CREATE-INDEXTYPE-0.sql" : [
@@ -2591,9 +2444,6 @@
   "sqlrf/SET-CONSTRAINTS-1.sql" : [
     3
   ],
-  "sqlrf/SQL-JSON-Conditions-36.sql" : [
-    2
-  ],
   "sqlrf/SYS_GUID-0.sql" : [
     2
   ],
@@ -2631,9 +2481,6 @@
     2
   ],
   "sqlrf/Using-Extensible-Indexing-4.sql" : [
-    2
-  ],
-  "sqlrf/Using-Extensible-Indexing-6.sql" : [
     2
   ],
   "sqlrf/Using-XML-in-SQL-Statements-0.sql" : [

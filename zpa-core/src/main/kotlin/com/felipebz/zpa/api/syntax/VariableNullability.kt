@@ -17,16 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.asTree
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-open class TreeWithStatements(override val astNode: SemanticAstNode) : TreeImpl(astNode) {
-
-    val statements : Statements by lazy {
-        astNode.getFirstChild(PlSqlGrammar.STATEMENTS).asTree()
-    }
-
+/** The nullability clause written on a variable declaration. */
+@ZpaExperimentalApi
+public enum class VariableNullability {
+    UNSPECIFIED,
+    NULLABLE,
+    NOT_NULL,
 }

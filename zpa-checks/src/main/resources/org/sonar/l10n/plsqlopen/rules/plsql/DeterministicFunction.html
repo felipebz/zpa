@@ -1,0 +1,31 @@
+<p>
+The <code>DETERMINISTIC</code> keyword is a promise that a function returns the same result for the same input values.
+Oracle trusts this declaration and does not verify that the implementation satisfies it.
+An incorrect declaration can therefore allow queries to use stale or incorrect results.
+</p>
+
+<p>
+This rule reports deterministic functions whose implementation contains clear evidence of a dependency on changing
+time, session or sequence state, reads mutable database data, or performs a side effect.
+The analysis is intentionally conservative and does not prove that an unreported function is deterministic.
+It does not infer impurity from calls to user-defined routines, unresolved package or global state, or NLS-sensitive expressions.
+For package functions, the declaration must be DETERMINISTIC in the matched package specification.
+</p>
+
+<h2>Noncompliant Code Example</h2>
+
+<pre>
+CREATE FUNCTION current_value RETURN DATE DETERMINISTIC IS
+BEGIN
+  RETURN SYSDATE;
+END;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre>
+CREATE FUNCTION double_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
+BEGIN
+  RETURN p_value * 2;
+END;
+</pre>

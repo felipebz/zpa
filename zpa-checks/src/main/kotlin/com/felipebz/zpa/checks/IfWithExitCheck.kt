@@ -19,29 +19,26 @@
  */
 package com.felipebz.zpa.checks
 
-import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.sslr.IfStatement
-import com.felipebz.zpa.tryGetAsTree
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.IfStatement
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.MINOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class IfWithExitCheck : AbstractBaseCheck() {
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.EXIT_STATEMENT)
+        subscribeTo(SyntaxViews.IF_STATEMENT, ::visitIfStatement)
     }
 
-    override fun visitNode(node: AstNode) {
-        val statement = node.parent
-        val ifStatement = statement.parent.parent.tryGetAsTree<IfStatement>()
-        if (ifStatement != null &&
-                ifStatement.elsifClauses.isEmpty() && ifStatement.elseClause == null &&
-                ifStatement.statements.size == 1) {
-            addIssue(ifStatement, getLocalizedMessage())
+    private fun visitIfStatement(statement: IfStatement) {
+        if (statement.elsifBranches.isEmpty() && statement.elseBranch == null &&
+                statement.statementAstNodes.singleOrNull()?.hasDirectChildren(PlSqlGrammar.EXIT_STATEMENT) == true) {
+            addIssue(statement, getLocalizedMessage())
         }
     }
 

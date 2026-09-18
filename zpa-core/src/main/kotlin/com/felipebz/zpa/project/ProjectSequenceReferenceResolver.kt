@@ -69,7 +69,7 @@ internal class ProjectSequenceReferenceResolver(
 
         val suffix = parts.last()
         if (suffix.type != PlSqlGrammar.IDENTIFIER_NAME ||
-            suffix.getDescendants(PlSqlKeyword.NEXTVAL).isEmpty()) return null
+            suffix.getDescendants(PlSqlKeyword.NEXTVAL, PlSqlKeyword.CURRVAL).isEmpty()) return null
 
         val prefix = parts.dropLast(1).mapNotNull(::identifier)
         if (prefix.size !in 1..2) return null

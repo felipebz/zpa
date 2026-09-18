@@ -19,15 +19,16 @@
  */
 package com.felipebz.zpa.checks
 
-import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.syntax.SyntaxViews
+import com.felipebz.zpa.api.syntax.VariableDeclaration
 import java.util.regex.Pattern
 
 @Rule(priority = Priority.MINOR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class VariableNameCheck : AbstractBaseCheck() {
 
     @RuleProperty(key = "regexp", defaultValue = DEFAULT_REGEXP)
@@ -38,15 +39,14 @@ class VariableNameCheck : AbstractBaseCheck() {
     }
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION)
+        subscribeTo(SyntaxViews.VARIABLE_DECLARATION, ::visitVariableDeclaration)
     }
 
-    override fun visitNode(node: AstNode) {
-        val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-        val name = identifier.tokenOriginalValue
+    private fun visitVariableDeclaration(declaration: VariableDeclaration) {
+        val name = declaration.name
 
         if (!pattern.matcher(name).matches()) {
-            addIssue(identifier, getLocalizedMessage(), name, regexp)
+            addIssue(declaration.nameAstNode, getLocalizedMessage(), name, regexp)
         }
     }
 

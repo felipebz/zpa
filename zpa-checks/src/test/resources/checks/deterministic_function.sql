@@ -1,0 +1,256 @@
+CREATE OR REPLACE FUNCTION current_date_value RETURN DATE DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN CURRENT_DATE;
+END;
+/
+
+CREATE OR REPLACE FUNCTION system_date_value RETURN DATE DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN SYSDATE;
+END;
+/
+
+CREATE OR REPLACE FUNCTION system_timestamp_value RETURN TIMESTAMP DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN SYSTIMESTAMP;
+END;
+/
+
+CREATE OR REPLACE FUNCTION current_timestamp_value RETURN TIMESTAMP DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN CURRENT_TIMESTAMP;
+END;
+/
+
+CREATE OR REPLACE FUNCTION local_timestamp_value RETURN TIMESTAMP DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN LOCALTIMESTAMP;
+END;
+/
+
+CREATE OR REPLACE FUNCTION random_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN DBMS_RANDOM.VALUE;
+END;
+/
+
+CREATE OR REPLACE FUNCTION random_number RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN DBMS_RANDOM.RANDOM;
+END;
+/
+
+CREATE OR REPLACE FUNCTION generated_identifier RETURN RAW DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN SYS_GUID();
+END;
+/
+
+CREATE OR REPLACE FUNCTION session_value RETURN VARCHAR2 DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN SYS_CONTEXT('USERENV', 'SESSION_USER');
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_value(p_id NUMBER) RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+  v_value NUMBER;
+BEGIN
+  SELECT value INTO v_value FROM test_table WHERE id = p_id;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION insert_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  INSERT INTO test_table (id) VALUES (1);
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION update_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  UPDATE test_table SET value = 1 WHERE id = 1;
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION delete_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  DELETE FROM test_table WHERE id = 1;
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION merge_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  MERGE INTO test_table target
+  USING source_table source
+  ON (target.id = source.id)
+  WHEN MATCHED THEN UPDATE SET target.value = source.value;
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION commit_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  COMMIT;
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION rollback_value RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  ROLLBACK;
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION conditional_date_value(p_value NUMBER) RETURN DATE DETERMINISTIC IS -- Noncompliant
+BEGIN
+  IF p_value > 0 THEN
+    RETURN SYSDATE;
+  END IF;
+  RETURN NULL;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_dual RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  SELECT 1 INTO v_value FROM dual;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_sys_dual RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  SELECT 1 INTO v_value FROM sys.dual;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_cte RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  WITH values_cte AS (
+    SELECT 1 AS value FROM dual
+  )
+  SELECT value INTO v_value FROM values_cte;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_nested_cte RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  WITH values_cte AS (
+    SELECT 1 AS value FROM dual
+  )
+  SELECT (SELECT value FROM values_cte) INTO v_value FROM dual;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_chained_cte RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  WITH first_cte AS (
+    SELECT 1 AS value FROM dual
+  ), second_cte AS (
+    SELECT value FROM first_cte
+  )
+  SELECT value INTO v_value FROM second_cte;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_cte_table RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+  v_value NUMBER;
+BEGIN
+  WITH values_cte AS (
+    SELECT value FROM test_table
+  )
+  SELECT value INTO v_value FROM values_cte;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION read_chained_cte_table RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+  v_value NUMBER;
+BEGIN
+  WITH first_cte AS (
+    SELECT value FROM test_table
+  ), second_cte AS (
+    SELECT value FROM first_cte
+  )
+  SELECT value INTO v_value FROM second_cte;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION pure_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
+BEGIN
+  RETURN ABS(p_value) + 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION delegated_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
+BEGIN
+  RETURN normalize(p_value);
+END;
+/
+
+CREATE OR REPLACE FUNCTION local_assignment(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
+  v_value NUMBER;
+BEGIN
+  v_value := p_value * 2;
+  RETURN v_value;
+END;
+/
+
+CREATE OR REPLACE FUNCTION out_parameter(p_value OUT NUMBER) RETURN NUMBER DETERMINISTIC IS -- Noncompliant
+BEGIN
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION non_deterministic_without_keyword RETURN DATE IS
+BEGIN
+  RETURN SYSDATE;
+END;
+/
+
+CREATE OR REPLACE FUNCTION nested_routine RETURN NUMBER DETERMINISTIC IS
+  FUNCTION helper RETURN DATE IS
+  BEGIN
+    RETURN SYSDATE;
+  END;
+BEGIN
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION nested_procedure RETURN NUMBER DETERMINISTIC IS
+  PROCEDURE helper IS
+  BEGIN
+    COMMIT;
+  END;
+BEGIN
+  RETURN 1;
+END;
+/
+
+CREATE OR REPLACE FUNCTION several_violations RETURN DATE DETERMINISTIC IS -- Noncompliant
+BEGIN
+  COMMIT;
+  RETURN SYSDATE;
+END;
+/
+
+CREATE OR REPLACE FUNCTION comment_and_string RETURN VARCHAR2 DETERMINISTIC IS
+BEGIN
+  -- SYSDATE NEXTVAL COMMIT ROLLBACK
+  RETURN 'SYSDATE NEXTVAL COMMIT ROLLBACK';
+END;
+/

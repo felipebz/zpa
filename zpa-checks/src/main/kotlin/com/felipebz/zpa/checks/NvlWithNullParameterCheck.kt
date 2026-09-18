@@ -19,31 +19,34 @@
  */
 package com.felipebz.zpa.checks
 
-import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
+import com.felipebz.zpa.api.syntax.MethodCall
+import com.felipebz.zpa.api.syntax.SyntaxViews
 
 @Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class NvlWithNullParameterCheck : AbstractBaseCheck() {
 
     private val nvl = MethodMatcher.create().name("nvl").addParameters(2)
 
     override fun init() {
-        subscribeTo(PlSqlGrammar.METHOD_CALL)
+        subscribeTo(SyntaxViews.METHOD_CALL, ::visitMethodCall)
     }
 
-    override fun visitNode(node: AstNode) {
-        if (!nvl.matches(node)) {
+    private fun visitMethodCall(call: MethodCall) {
+        if (!nvl.matches(call)) {
             return
         }
 
-        for (argument in nvl.getArgumentsValues(node)) {
-            if (CheckUtils.isNullLiteralOrEmptyString(argument)) {
-                addIssue(node, getLocalizedMessage(), argument.tokenValue)
+        for (argument in call.argumentLists.firstOrNull().orEmpty()) {
+            val expression = argument.expressionAstNode
+
+            if (CheckUtils.isNullLiteralOrEmptyString(expression)) {
+                addIssue(call, getLocalizedMessage(), expression.tokenValue)
             }
         }
     }

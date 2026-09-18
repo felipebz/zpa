@@ -51,6 +51,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_RELATIVE_OBJECT_ACCESS,
     JSON_TABLE_ON_ERROR_CLAUSE,
     JSON_TABLE_ON_EMPTY_CLAUSE,
+    JSON_TABLE_ON_MISMATCH_CLAUSE,
     JSON_TABLE_COLUMNS_CLAUSE,
     JSON_COLUMNS_CLAUSE,
     JSON_COLUMN_DEFINITION,
@@ -726,6 +727,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_TABLE_ON_ERROR_CLAUSE),
                 b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 b.optional(JSON_TABLE_ON_EMPTY_CLAUSE),
+                b.optional(JSON_TABLE_ON_MISMATCH_CLAUSE),
                 JSON_TABLE_COLUMNS_CLAUSE,
                 RPARENTHESIS
             )
@@ -738,6 +740,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(JSON_TABLE_ON_EMPTY_CLAUSE).define(
                 b.firstOf(ERROR, NULL),
                 ON, EMPTY
+            )
+
+            b.rule(JSON_TABLE_ON_MISMATCH_CLAUSE).define(
+                b.firstOf(ERROR, NULL),
+                ON, MISMATCH
             )
 
             b.rule(JSON_TABLE_COLUMNS_CLAUSE).define(

@@ -20,8 +20,6 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.isOf
-import com.felipebz.zpa.sslr.NullStatement
 import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
@@ -46,7 +44,7 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
             if (child.typeIs(PlSqlGrammar.IDENTIFIER_NAME) && "TOO_MANY_ROWS".equals(child.tokenValue, ignoreCase = true)) {
                 // and have only one NULL_STATEMENT
                 val children = node.getFirstChild(PlSqlGrammar.STATEMENTS).children
-                if (children.size == 1 && children[0].isOf<NullStatement>()) {
+                if (children.size == 1 && children[0].hasDirectChildren(PlSqlGrammar.NULL_STATEMENT)) {
                     addIssue(node, getLocalizedMessage())
                 }
             }
@@ -54,4 +52,3 @@ class TooManyRowsHandlerCheck : AbstractBaseCheck() {
     }
 
 }
-

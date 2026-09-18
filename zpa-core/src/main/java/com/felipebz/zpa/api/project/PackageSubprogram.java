@@ -11,9 +11,19 @@ public final class PackageSubprogram {
 
     private final PackageSubprogramKind kind;
     private final List<PackageParameter> parameters;
+    private final boolean deterministic;
 
     PackageSubprogram(PackageSubprogramKind kind, Iterable<PackageParameter> parameters) {
+        this(kind, parameters, false);
+    }
+
+    PackageSubprogram(
+        PackageSubprogramKind kind,
+        Iterable<PackageParameter> parameters,
+        boolean deterministic
+    ) {
         this.kind = kind;
+        this.deterministic = deterministic;
         List<PackageParameter> copy = new ArrayList<>();
         for (PackageParameter parameter : parameters) {
             copy.add(parameter);
@@ -27,5 +37,10 @@ public final class PackageSubprogram {
 
     public List<PackageParameter> getParameters() {
         return parameters;
+    }
+
+    /** Whether this package function declaration is marked DETERMINISTIC. */
+    public boolean isDeterministic() {
+        return deterministic;
     }
 }

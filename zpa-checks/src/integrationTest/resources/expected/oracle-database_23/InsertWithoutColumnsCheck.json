@@ -1,4 +1,10 @@
 {
+  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
+    5
+  ],
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
+    27
+  ],
   "adjsn/creating-multivalue-function-based-indexes-json_exists-0.sql" : [
     3,
     6

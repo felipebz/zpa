@@ -21,7 +21,9 @@ package com.felipebz.zpa.api.matchers
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
 import com.felipebz.zpa.symbols.EffectiveTypeCategory
@@ -135,6 +137,10 @@ class MethodMatcher private constructor()
             thirdComponent,
         ) && argumentsAcceptable(originalNode)
     }
+
+    @ZpaExperimentalApi
+    @OptIn(ZpaExperimentalApi::class)
+    fun matches(call: MethodCall): Boolean = matches(call.astNode)
 
     private fun matchesNameComponents(
         componentCount: Int,

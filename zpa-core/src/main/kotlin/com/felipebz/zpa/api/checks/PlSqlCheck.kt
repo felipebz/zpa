@@ -22,12 +22,12 @@ package com.felipebz.zpa.api.checks
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.checks.IssueLocation
-import com.felipebz.zpa.sslr.Tree
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectAnalysis
 import com.felipebz.zpa.squid.createNotPreparedProjectAnalysis
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.syntax.SyntaxView
 import java.text.MessageFormat
 import java.util.*
 import kotlin.jvm.JvmSynthetic
@@ -67,18 +67,18 @@ open class PlSqlCheck : PlSqlVisitor() {
         return newIssue
     }
 
+    @ZpaExperimentalApi
+    fun addIssue(view: SyntaxView, message: String): PreciseIssue {
+        return addIssue(view.astNode, message)
+    }
+
+    @ZpaExperimentalApi
+    fun addIssue(view: SyntaxView, message: String, vararg messageParameters: Any): PreciseIssue {
+        return addIssue(view, MessageFormat.format(message, *messageParameters))
+    }
+
     fun addIssue(node: AstNode, message: String, vararg messageParameters: Any): PreciseIssue {
         return addIssue(node, MessageFormat.format(message, *messageParameters))
-    }
-
-    fun addIssue(tree: Tree, message: String): PreciseIssue {
-        val newIssue = PreciseIssue(IssueLocation.preciseLocation(tree.astNode, message))
-        issues.add(newIssue)
-        return newIssue
-    }
-
-    fun addIssue(tree: Tree, message: String, vararg messageParameters: Any): PreciseIssue {
-        return addIssue(tree, MessageFormat.format(message, *messageParameters))
     }
 
     fun addIssue(primaryLocation: IssueLocation): PreciseIssue {

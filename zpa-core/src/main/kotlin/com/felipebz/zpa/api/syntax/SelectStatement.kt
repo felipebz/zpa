@@ -17,12 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.sslr
+package com.felipebz.zpa.api.syntax
 
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
-interface Tree {
-    val astNode: SemanticAstNode
+/** A lightweight view of a PL/SQL SELECT statement. */
+@ZpaExperimentalApi
+public interface SelectStatement : SyntaxView {
 
-    val parent: Tree?
+    /** The SELECT_EXPRESSION directly represented by this PL/SQL statement. */
+    public val selectExpressionAstNode: AstNode
+
+    /**
+     * Logical top-level query blocks in source order.
+     *
+     * Parenthesized QUERY_BLOCK wrappers are transparently unwrapped. Query
+     * blocks belonging to CTEs, scalar subqueries, and inline views are not
+     * included.
+     */
+    public val queryBlocks: List<SelectQueryBlock>
+
+    /** True when the top-level query expression uses a set operator. */
+    public val hasSetOperation: Boolean
 }

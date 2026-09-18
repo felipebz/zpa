@@ -46,6 +46,17 @@
     578,
     590
   ],
+  "source/ut_assertion.tab" : [
+    9,
+    10,
+    11,
+    12,
+    15,
+    18,
+    21,
+    24,
+    27
+  ],
   "source/ut_config.pks" : [
     44,
     46
@@ -69,6 +80,10 @@
   "source/ut_outcome.pks" : [
     32,
     33
+  ],
+  "source/ut_outcome.tab" : [
+    8,
+    9
   ],
   "source/ut_plsql.pks" : [
     37,
@@ -99,6 +114,9 @@
     37,
     38
   ],
+  "source/ut_suite.tab" : [
+    13
+  ],
   "source/ut_suiteutp.pkb" : [
     47
   ],
@@ -109,6 +127,9 @@
   "source/ut_testcase.pks" : [
     32,
     33
+  ],
+  "source/ut_testcase.tab" : [
+    16
   ],
   "source/ut_unittest.pks" : [
     32,
