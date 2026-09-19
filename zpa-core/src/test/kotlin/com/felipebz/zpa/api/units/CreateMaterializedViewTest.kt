@@ -119,6 +119,7 @@ class CreateMaterializedViewTest : RuleTest() {
     @Test
     fun rejectsIncompleteMaterializedViewOptions() {
         assertThat(p).notMatches("create materialized view foo refresh as select 1 from dual;")
+        assertThat(p).notMatches("create materialized view log on customers;")
         assertThat(p).notMatches("create materialized view foo on prebuilt as select 1 from dual;")
         assertThat(p).notMatches("create materialized view foo (id,) as select 1 from dual;")
         assertThat(p).notMatches(

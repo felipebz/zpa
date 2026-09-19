@@ -243,6 +243,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
     CREATE_MATERIALIZED_VIEW,
+    CREATE_MATERIALIZED_VIEW_LOG,
+    MATERIALIZED_VIEW_LOG_ATTRIBUTE,
+    MATERIALIZED_VIEW_LOG_WITH_CLAUSE,
+    MATERIALIZED_VIEW_LOG_PURGE_CLAUSE,
+    MATERIALIZED_VIEW_LOG_REFRESH_CLAUSE,
     MATERIALIZED_VIEW_ATTRIBUTE,
     MATERIALIZED_VIEW_COLUMN_DEFINITION,
     MATERIALIZED_VIEW_ENCRYPTION_SPEC,
@@ -1536,6 +1541,96 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 )
             )
 
+            b.rule(MATERIALIZED_VIEW_LOG_ATTRIBUTE).define(
+                b.firstOf(
+                    PHISICAL_ATRIBUTES_CLAUSE,
+                    b.sequence(TABLESPACE, IDENTIFIER_NAME),
+                    LOGGING_CLAUSE,
+                    b.firstOf(CACHE, NOCACHE),
+                    b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL))),
+                    b.firstOf(PARTITION_BY_RANGE, PARTITION_BY_HASH, PARTITION_BY_LIST, PARTITION_COMPOSITE)
+                )
+            )
+
+            b.rule(MATERIALIZED_VIEW_LOG_WITH_CLAUSE).define(
+                WITH,
+                b.optional(
+                    b.firstOf(
+                        b.sequence(OBJECT, IDENTIFIER),
+                        b.sequence(PRIMARY, KEY),
+                        ROWID,
+                        b.sequence(
+                            SEQUENCE,
+                            b.optional(
+                                LPARENTHESIS,
+                                IDENTIFIER_NAME,
+                                b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                                RPARENTHESIS
+                            )
+                        ),
+                        b.sequence(COMMIT, SCN)
+                    ),
+                    b.zeroOrMore(
+                        COMMA,
+                        b.firstOf(
+                            b.sequence(OBJECT, IDENTIFIER),
+                            b.sequence(PRIMARY, KEY),
+                            ROWID,
+                            b.sequence(
+                                SEQUENCE,
+                                b.optional(
+                                    LPARENTHESIS,
+                                    IDENTIFIER_NAME,
+                                    b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                                    RPARENTHESIS
+                                )
+                            ),
+                            b.sequence(COMMIT, SCN)
+                        )
+                    )
+                ),
+                b.optional(
+                    LPARENTHESIS,
+                    IDENTIFIER_NAME,
+                    b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                    RPARENTHESIS
+                ),
+                b.optional(b.firstOf(INCLUDING, EXCLUDING), NEW, VALUES)
+            )
+
+            b.rule(MATERIALIZED_VIEW_LOG_PURGE_CLAUSE).define(
+                PURGE,
+                b.firstOf(
+                    b.sequence(IMMEDIATE, b.optional(b.firstOf(SYNCHRONOUS, ASYNCHRONOUS))),
+                    b.sequence(
+                        b.optional(START, WITH, EXPRESSION),
+                        b.firstOf(
+                            b.sequence(NEXT, EXPRESSION),
+                            b.sequence(REPEAT, EXPRESSION)
+                        )
+                    )
+                )
+            )
+
+            b.rule(MATERIALIZED_VIEW_LOG_REFRESH_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(FOR, SYNCHRONOUS, REFRESH, USING, UNIT_NAME),
+                    b.sequence(FOR, FAST, REFRESH)
+                )
+            )
+
+            b.rule(CREATE_MATERIALIZED_VIEW_LOG).define(
+                CREATE, MATERIALIZED, VIEW, LOG,
+                b.optional(IF, NOT, EXISTS),
+                ON, UNIT_NAME,
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                b.zeroOrMore(MATERIALIZED_VIEW_LOG_ATTRIBUTE),
+                b.optional(MATERIALIZED_VIEW_LOG_WITH_CLAUSE),
+                b.optional(MATERIALIZED_VIEW_LOG_PURGE_CLAUSE),
+                b.optional(MATERIALIZED_VIEW_LOG_REFRESH_CLAUSE),
+                b.optional(SEMICOLON)
+            )
+
             b.rule(CREATE_MATERIALIZED_VIEW).define(
                 CREATE, MATERIALIZED, VIEW,
                 b.optional(IF, NOT, EXISTS),
@@ -1755,6 +1850,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     CREATE_FUNCTION,
                     CREATE_PACKAGE,
                     CREATE_PACKAGE_BODY,
+                    CREATE_MATERIALIZED_VIEW_LOG,
                     CREATE_MATERIALIZED_VIEW,
                     CREATE_VIEW,
                     CREATE_TRIGGER,

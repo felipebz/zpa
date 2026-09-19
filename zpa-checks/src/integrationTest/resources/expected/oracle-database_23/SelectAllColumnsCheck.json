@@ -334,6 +334,9 @@
   "sqlrf/CREATE-MATERIALIZED-VIEW-6.sql" : [
     3
   ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-7.sql" : [
+    10
+  ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-8.sql" : [
     9,
     11
