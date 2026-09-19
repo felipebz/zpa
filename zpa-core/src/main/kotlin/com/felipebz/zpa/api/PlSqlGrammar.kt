@@ -867,7 +867,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                                                     b.sequence(IDENTIFIER_NAME, PARTITION_BY_CLAUSE)
                                                 ),
                                                 RPARENTHESIS
-                                            )
+                                            ),
+                                            b.sequence(OVER, LPARENTHESIS, RPARENTHESIS)
                                         )
                                     ),
                                     ANALYTIC_CLAUSE

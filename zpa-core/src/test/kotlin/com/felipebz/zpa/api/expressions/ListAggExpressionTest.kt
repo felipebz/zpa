@@ -131,6 +131,11 @@ class ListAggExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesListAggWithDelimiterAndPartitionBy() {
+        assertThat(p).matches("listagg(foo, ';') over (partition by grp)")
+    }
+
+    @Test
     fun matchesListAggWithWindowName() {
         assertThat(p).matches("listagg(foo) over list_window")
     }
@@ -141,8 +146,18 @@ class ListAggExpressionTest : RuleTest() {
     }
 
     @Test
-    fun rejectsListAggWithEmptyAnalyticClause() {
-        assertThat(p).notMatches("listagg(foo) over ()")
+    fun matchesListAggWithEmptyAnalyticClause() {
+        assertThat(p).matches("listagg(foo) over ()")
+    }
+
+    @Test
+    fun matchesListAggWithDelimiterAndEmptyAnalyticClause() {
+        assertThat(p).matches("listagg(foo, ';') over ()")
+    }
+
+    @Test
+    fun matchesListAggWithWithinGroupAndEmptyAnalyticClause() {
+        assertThat(p).matches("listagg(foo, ';') within group (order by foo) over ()")
     }
 
     @Test
@@ -181,8 +196,14 @@ class ListAggExpressionTest : RuleTest() {
     @Test
     fun rejectsListAggAnalyticOrderBy() {
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (order by baz)")
+        assertThat(p).notMatches("listagg(foo, ';') over (order by foo)")
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (list_window order by baz)")
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (partition by baz order by qux)")
+    }
+
+    @Test
+    fun rejectsListAggAnalyticWindowing() {
+        assertThat(p).notMatches("listagg(foo) over (partition by grp rows between unbounded preceding and current row)")
     }
 
     @Test
