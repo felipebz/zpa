@@ -243,6 +243,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
     CREATE_MATERIALIZED_VIEW,
+    MATERIALIZED_VIEW_ATTRIBUTE,
+    MATERIALIZED_VIEW_COLUMN_DEFINITION,
+    MATERIALIZED_VIEW_ENCRYPTION_SPEC,
+    MATERIALIZED_VIEW_SCOPED_REF_CONSTRAINT,
+    MATERIALIZED_VIEW_REFRESH,
+    MATERIALIZED_VIEW_EVALUATION_EDITION_CLAUSE,
+    MATERIALIZED_VIEW_QUERY_REWRITE_CLAUSE,
+    MATERIALIZED_VIEW_UNUSABLE_EDITIONS_CLAUSE,
     CREATE_VIEW,
     VIEW_COLUMN_DEFINITION,
     OBJECT_VIEW_CLAUSE,
@@ -1389,26 +1397,160 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 )
             )
 
-            b.rule(CREATE_MATERIALIZED_VIEW).define(
-                CREATE, MATERIALIZED, VIEW, UNIT_NAME,
-                b.zeroOrMore(
-                    b.firstOf(
-                        b.sequence(PCTFREE, INTEGER_LITERAL),
-                        b.sequence(PCTUSED, INTEGER_LITERAL),
-                        b.sequence(INITRANS, INTEGER_LITERAL),
-                        b.sequence(TABLESPACE, IDENTIFIER_NAME)
+            b.rule(MATERIALIZED_VIEW_ENCRYPTION_SPEC).define(
+                b.optional(USING, CHARACTER_LITERAL),
+                b.optional(IDENTIFIED, BY, IDENTIFIER_NAME),
+                b.optional(CHARACTER_LITERAL),
+                b.optional(b.optional(NO), SALT)
+            )
+
+            b.rule(MATERIALIZED_VIEW_SCOPED_REF_CONSTRAINT).define(
+                SCOPE, FOR, LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS,
+                IS, UNIT_NAME
+            )
+
+            b.rule(MATERIALIZED_VIEW_COLUMN_DEFINITION).define(
+                b.firstOf(
+                    MATERIALIZED_VIEW_SCOPED_REF_CONSTRAINT,
+                    b.sequence(
+                        IDENTIFIER_NAME,
+                        b.optional(ENCRYPT, b.optional(MATERIALIZED_VIEW_ENCRYPTION_SPEC)),
+                        b.optional(ANNOTATIONS_CLAUSE)
                     )
-                ),
+                )
+            )
+
+            b.rule(MATERIALIZED_VIEW_REFRESH).define(
+                b.firstOf(
+                    b.sequence(
+                        REFRESH,
+                        b.oneOrMore(
+                            b.firstOf(
+                                FAST,
+                                COMPLETE,
+                                FORCE,
+                                b.sequence(ON, b.firstOf(DEMAND, COMMIT, STATEMENT_KEYWORD)),
+                                b.sequence(START, WITH, EXPRESSION),
+                                b.sequence(NEXT, EXPRESSION),
+                                b.sequence(WITH, b.firstOf(b.sequence(PRIMARY, KEY), ROWID)),
+                                b.sequence(
+                                    USING,
+                                    b.firstOf(
+                                        b.sequence(
+                                            DEFAULT,
+                                            b.optional(b.firstOf(MASTER, LOCAL)),
+                                            ROLLBACK,
+                                            SEGMENT
+                                        ),
+                                        b.sequence(
+                                            b.optional(b.firstOf(MASTER, LOCAL)),
+                                            ROLLBACK,
+                                            SEGMENT,
+                                            IDENTIFIER_NAME
+                                        ),
+                                        b.sequence(ENFORCED, CONSTRAINTS),
+                                        b.sequence(TRUSTED, CONSTRAINTS)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    b.sequence(NEVER, REFRESH)
+                )
+            )
+
+            b.rule(MATERIALIZED_VIEW_EVALUATION_EDITION_CLAUSE).define(
+                EVALUATE, USING,
+                b.firstOf(
+                    b.sequence(CURRENT, EDITION),
+                    b.sequence(EDITION, IDENTIFIER_NAME),
+                    b.sequence(NULL, EDITION)
+                )
+            )
+            b.rule(MATERIALIZED_VIEW_UNUSABLE_EDITIONS_CLAUSE).define(
+                b.oneOrMore(
+                    b.firstOf(
+                        b.sequence(
+                            UNUSABLE, BEFORE,
+                            b.firstOf(
+                                b.sequence(CURRENT, EDITION),
+                                b.sequence(EDITION, IDENTIFIER_NAME)
+                            )
+                        ),
+                        b.sequence(
+                            UNUSABLE, BEGINNING, WITH,
+                            b.firstOf(
+                                b.sequence(CURRENT, EDITION),
+                                b.sequence(EDITION, IDENTIFIER_NAME),
+                                b.sequence(NULL, EDITION)
+                            )
+                        )
+                    )
+                )
+            )
+
+            b.rule(MATERIALIZED_VIEW_QUERY_REWRITE_CLAUSE).define(
+                b.firstOf(ENABLE, DISABLE),
+                QUERY, REWRITE,
+                b.optional(MATERIALIZED_VIEW_UNUSABLE_EDITIONS_CLAUSE)
+            )
+
+            b.rule(MATERIALIZED_VIEW_ATTRIBUTE).define(
+                b.firstOf(
+                    b.sequence(
+                        ON, PREBUILT, TABLE,
+                        b.optional(b.firstOf(
+                            b.sequence(WITH, REDUCED, PRECISION),
+                            b.sequence(WITHOUT, REDUCED, PRECISION)
+                        ))
+                    ),
+                    b.sequence(
+                        USING,
+                        b.firstOf(
+                            b.sequence(NO, INDEX),
+                            b.sequence(
+                                INDEX,
+                                b.zeroOrMore(
+                                    b.firstOf(
+                                        INDEX_PHYSICAL_ATTRIBUTES_WITH_PCTFREE_CLAUSE,
+                                        b.sequence(TABLESPACE, IDENTIFIER_NAME)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    b.sequence(SEGMENT, CREATION, b.firstOf(IMMEDIATE, DEFERRED)),
+                    b.firstOf(PARTITION_BY_RANGE, PARTITION_BY_HASH, PARTITION_BY_LIST, PARTITION_COMPOSITE),
+                    SEGMENT_ATTRIBUTES_CLAUSE,
+                    MATERIALIZED_VIEW_REFRESH,
+                    b.sequence(BUILD, b.firstOf(IMMEDIATE, DEFERRED)),
+                    b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL))),
+                    MATERIALIZED_VIEW_EVALUATION_EDITION_CLAUSE,
+                    b.sequence(b.firstOf(ENABLE, DISABLE), ON, QUERY, COMPUTATION),
+                    MATERIALIZED_VIEW_QUERY_REWRITE_CLAUSE,
+                    b.sequence(b.firstOf(ENABLE, DISABLE), CONCURRENT, REFRESH),
+                    b.firstOf(CACHE, NOCACHE),
+                    TABLE_COMPRESSION,
+                    b.sequence(FOR, UPDATE),
+                    ANNOTATIONS_CLAUSE
+                )
+            )
+
+            b.rule(CREATE_MATERIALIZED_VIEW).define(
+                CREATE, MATERIALIZED, VIEW,
+                b.optional(IF, NOT, EXISTS),
+                UNIT_NAME,
+                b.optional(OF, UNIT_NAME),
                 b.optional(
-                    b.optional(NO),
-                    REFRESH,
-                    COMPLETE,
-                    b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)
+                    LPARENTHESIS,
+                    MATERIALIZED_VIEW_COLUMN_DEFINITION,
+                    b.zeroOrMore(COMMA, MATERIALIZED_VIEW_COLUMN_DEFINITION),
+                    RPARENTHESIS
                 ),
+                b.optional(DEFAULT, COLLATION, IDENTIFIER_NAME),
+                b.zeroOrMore(MATERIALIZED_VIEW_ATTRIBUTE),
                 AS,
                 SELECT_EXPRESSION,
-                b.optional(VIEW_RESTRICTION_CLAUSE),
-                b.optional(ORDER_BY_CLAUSE),
                 b.optional(SEMICOLON)
             )
 

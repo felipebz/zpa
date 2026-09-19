@@ -1,15 +1,9 @@
 {
-  "adjsn/creating-view-json-data-using-json_table-1.sql" : [
-    3
-  ],
   "adjsn/json-collections-2.sql" : [
     2
   ],
   "adjsn/json-collections-3.sql" : [
     2
-  ],
-  "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
-    3
   ],
   "adjsn/json-schema-11.sql" : [
     5
@@ -1493,9 +1487,6 @@
   "sqlrf/APPROX_PERCENTILE-3.sql" : [
     4
   ],
-  "sqlrf/APPROX_PERCENTILE_DETAIL-0.sql" : [
-    3
-  ],
   "sqlrf/APPROX_RANK-0.sql" : [
     4
   ],
@@ -1748,32 +1739,11 @@
   "sqlrf/CREATE-LOCKDOWN-PROFILE-0.sql" : [
     2
   ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-11.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-12.sql" : [
-    2
-  ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-2.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-3.sql" : [
-    4
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-4.sql" : [
-    5
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-5.sql" : [
-    3
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-6.sql" : [
     2
   ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-7.sql" : [
     2
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-8.sql" : [
-    5
   ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-9.sql" : [
     2
@@ -1795,9 +1765,6 @@
   ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-LOG-6.sql" : [
     2
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-LOG-7.sql" : [
-    3
   ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-LOG-8.sql" : [
     2

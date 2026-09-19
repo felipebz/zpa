@@ -2,8 +2,14 @@
   "adjsn/creating-view-json-data-using-json_table-0.sql" : [
     3
   ],
+  "adjsn/creating-view-json-data-using-json_table-1.sql" : [
+    5
+  ],
   "adjsn/json-data-type-7.sql" : [
     2
+  ],
+  "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
+    5
   ],
   "adjsn/querying-data-guide-0.sql" : [
     4
@@ -315,6 +321,22 @@
   ],
   "sqlrf/CREATE-MATERIALIZED-VIEW-1.sql" : [
     3
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-11.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-12.sql" : [
+    3
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-5.sql" : [
+    5
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-6.sql" : [
+    3
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-8.sql" : [
+    9,
+    11
   ],
   "sqlrf/CREATE-TABLE-47.sql" : [
     2
