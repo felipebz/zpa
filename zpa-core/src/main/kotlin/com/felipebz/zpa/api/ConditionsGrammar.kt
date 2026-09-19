@@ -41,6 +41,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     BOOLEAN_TEST_CONDITION,
     LIKE_CONDITION,
     BETWEEN_CONDITION,
+    OVERLAPS_CONDITION,
     MULTISET_CONDITION,
     IS_A_SET_CONDITION,
     IS_EMPTY_CONDITION,
@@ -80,6 +81,20 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 b.optional(NOT), LIKE,
                 CONCATENATION_EXPRESSION,
                 b.optional(ESCAPE, CONCATENATION_EXPRESSION)
+            )
+
+            b.rule(OVERLAPS_CONDITION).define(
+                PlSqlPunctuator.LPARENTHESIS,
+                CONCATENATION_EXPRESSION,
+                PlSqlPunctuator.COMMA,
+                CONCATENATION_EXPRESSION,
+                PlSqlPunctuator.RPARENTHESIS,
+                OVERLAPS,
+                PlSqlPunctuator.LPARENTHESIS,
+                CONCATENATION_EXPRESSION,
+                PlSqlPunctuator.COMMA,
+                CONCATENATION_EXPRESSION,
+                PlSqlPunctuator.RPARENTHESIS
             )
 
             b.rule(BETWEEN_CONDITION).define(
@@ -247,6 +262,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
             b.rule(CONDITION).define(
                 b.firstOf(
+                    OVERLAPS_CONDITION,
                     b.sequence(b.next(CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
                     b.sequence(
                         b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
