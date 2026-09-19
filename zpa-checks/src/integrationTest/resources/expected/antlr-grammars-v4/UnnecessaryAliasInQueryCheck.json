@@ -61,6 +61,15 @@
     2,
     3
   ],
+  "examples/join23.sql" : [
+    2,
+    3
+  ],
+  "examples/json_sql.sql" : [
+    7,
+    10,
+    12
+  ],
   "examples/keywordasidentifier03.sql" : [
     14,
     14,

@@ -38,6 +38,13 @@ class InsertStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesInsertIntoPartition() {
+        assertThat(p).matches("insert into tab partition (part1) values (1);")
+        assertThat(p).matches("insert into tab subpartition (subpart1) t values (1);")
+        assertThat(p).matches("insert into tab partition for (1) (col1) values (1);")
+    }
+
+    @Test
     fun matchesInsertWithTableAlias() {
         assertThat(p).matches("insert into tab t values (1);")
     }

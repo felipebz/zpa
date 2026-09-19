@@ -169,6 +169,73 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesSelectWithLateralInlineView() {
+        assertThat(p).matches("select 1 from foo, lateral (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo, lateral (select id from bar where bar.id = foo.id) baz")
+    }
+
+    @Test
+    fun matchesSelectWithLateralInJoin() {
+        assertThat(p).matches("select 1 from foo cross join lateral (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo left join lateral (select id from bar where bar.id = foo.id) baz on 1 = 1")
+    }
+
+    @Test
+    fun matchesSelectWithPartitionExtendedTableName() {
+        assertThat(p).matches("select 1 from foo partition (part1)")
+        assertThat(p).matches("select 1 from foo partition (part1) bar")
+        assertThat(p).matches("select 1 from foo partition for (1)")
+        assertThat(p).matches("select 1 from foo subpartition (subpart1) bar")
+        assertThat(p).matches("select 1 from foo subpartition for ('a', 1) bar")
+        assertThat(p).matches("select 1 from foo join bar partition (part1) baz on baz.id = foo.id")
+    }
+
+    @Test
+    fun matchesSelectWithNullTreatmentInAnalyticFunction() {
+        assertThat(p).matches("select first_value(foo) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select first_value(foo) respect nulls over (partition by baz order by bar) from dual")
+        assertThat(p).matches("select lag(foo, 1) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select first_value(foo ignore nulls) over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo, 1 respect nulls) over (order by bar) from dual")
+    }
+
+    @Test
+    fun matchesSelectWithNthValueFromFirstOrLast() {
+        assertThat(p).matches("select nth_value(foo, 2) from first over (order by bar) from dual")
+        assertThat(p).matches("select nth_value(foo, 2) from last ignore nulls over (order by bar) from dual")
+    }
+
+    @Test
+    fun matchesSelectWithCrossApply() {
+        assertThat(p).matches("select 1 from foo cross apply (select id from bar where bar.id = foo.id)")
+        assertThat(p).matches("select 1 from foo cross apply (select id from bar where bar.id = foo.id) baz")
+        assertThat(p).matches("select 1 from foo cross apply table(foo.items) baz")
+    }
+
+    @Test
+    fun matchesSelectWithOuterApply() {
+        assertThat(p).matches("select 1 from foo outer apply (select id from bar where bar.id = foo.id) baz")
+        assertThat(p).matches("select 1 from foo outer apply table(foo.items)")
+    }
+
+    @Test
+    fun matchesSelectWithGroupByAfterHierarchicalQuery() {
+        assertThat(p).matches("select 1 from foo start with a = 1 connect by prior b = c group by d")
+        assertThat(p).matches("select 1 from foo start with a = 1 connect by prior b = c group by d having count(1) > 1")
+    }
+
+    @Test
+    fun matchesSelectWithOffsetWithoutOrderBy() {
+        assertThat(p).matches("select 1 from dual offset 1 rows")
+        assertThat(p).matches("select 1 from dual offset (a - 1) * b rows fetch next b rows only")
+    }
+
+    @Test
+    fun matchesSelectWithCountUnique() {
+        assertThat(p).matches("select count(unique foo) from dual")
+    }
+
+    @Test
     fun matchesSelectWithSubqueryFactoring() {
         assertThat(p).matches("with foo as (select id from tab) select 1 from foo join bar on join.id = bar.id")
     }

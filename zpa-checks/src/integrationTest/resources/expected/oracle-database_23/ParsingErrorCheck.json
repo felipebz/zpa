@@ -197,35 +197,8 @@
   "lnpls/DEPRECATE-pragma-18.sql" : [
     2
   ],
-  "lnpls/SQL_MACRO-clause-1.sql" : [
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-13.sql" : [
-    10
-  ],
-  "lnpls/SQL_MACRO-clause-16.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-19.sql" : [
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-2.sql" : [
-    4
-  ],
   "lnpls/SQL_MACRO-clause-24.sql" : [
-    4
-  ],
-  "lnpls/SQL_MACRO-clause-3.sql" : [
-    5
-  ],
-  "lnpls/SQL_MACRO-clause-4.sql" : [
-    6
-  ],
-  "lnpls/SQL_MACRO-clause-5.sql" : [
-    6
-  ],
-  "lnpls/SQL_MACRO-clause-6.sql" : [
-    7
+    9
   ],
   "lnpls/assigning-values-record-variables-12.sql" : [
     2
@@ -1577,9 +1550,6 @@
   "sqlrf/COLUMN_VALUE-Pseudocolumn-4.sql" : [
     7
   ],
-  "sqlrf/CORR-2.sql" : [
-    3
-  ],
   "sqlrf/CREATE-ANALYTIC-VIEW-1.sql" : [
     2
   ],
@@ -2174,12 +2144,6 @@
   "sqlrf/DELETE-0.sql" : [
     3
   ],
-  "sqlrf/DELETE-12.sql" : [
-    2
-  ],
-  "sqlrf/DELETE-5.sql" : [
-    2
-  ],
   "sqlrf/DELETE-7.sql" : [
     11
   ],
@@ -2191,9 +2155,6 @@
   ],
   "sqlrf/DROP-DATABASE-0.sql" : [
     4
-  ],
-  "sqlrf/Data-Types-16.sql" : [
-    2
   ],
   "sqlrf/Data-Types-17.sql" : [
     5
@@ -2268,12 +2229,6 @@
     2
   ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [
-    2
-  ],
-  "sqlrf/LOCK-TABLE-1.sql" : [
-    2
-  ],
-  "sqlrf/LOCK-TABLE-2.sql" : [
     2
   ],
   "sqlrf/MERGE-10.sql" : [
@@ -2438,15 +2393,6 @@
   "sqlrf/SELECT-117.sql" : [
     4
   ],
-  "sqlrf/SELECT-17.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-20.sql" : [
-    5
-  ],
-  "sqlrf/SELECT-21.sql" : [
-    2
-  ],
   "sqlrf/SELECT-31.sql" : [
     6
   ],
@@ -2458,9 +2404,6 @@
   ],
   "sqlrf/SELECT-37.sql" : [
     4
-  ],
-  "sqlrf/SELECT-42.sql" : [
-    2
   ],
   "sqlrf/SELECT-44.sql" : [
     2
@@ -2495,18 +2438,6 @@
   "sqlrf/SELECT-87.sql" : [
     7
   ],
-  "sqlrf/SELECT-91.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-94.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-95.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-97.sql" : [
-    8
-  ],
   "sqlrf/SELECT-98.sql" : [
     14
   ],
@@ -2528,14 +2459,8 @@
   "sqlrf/SYS_OP_ZONE_ID-3.sql" : [
     2
   ],
-  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-3.sql" : [
-    4
-  ],
   "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql" : [
     3
-  ],
-  "sqlrf/TRANSLATE-USING-0.sql" : [
-    10
   ],
   "sqlrf/TRUNCATE-CLUSTER-0.sql" : [
     2
@@ -2545,9 +2470,6 @@
   ],
   "sqlrf/UPDATE-0.sql" : [
     4
-  ],
-  "sqlrf/UPDATE-5.sql" : [
-    2
   ],
   "sqlrf/UPDATE-6.sql" : [
     2
@@ -2575,15 +2497,6 @@
   ],
   "sqlrf/Using-XML-in-SQL-Statements-9.sql" : [
     5
-  ],
-  "sqlrf/VALIDATE_CONVERSION-0.sql" : [
-    2
-  ],
-  "sqlrf/VALIDATE_CONVERSION-1.sql" : [
-    2
-  ],
-  "sqlrf/VALIDATE_CONVERSION-2.sql" : [
-    2
   ],
   "sqlrf/XMLDATA-Pseudocolumn-0.sql" : [
     2

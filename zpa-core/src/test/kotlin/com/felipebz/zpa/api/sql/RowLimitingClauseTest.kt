@@ -43,6 +43,14 @@ class RowLimitingClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesFetchRowClauseWithoutRowCount() {
+        assertThat(p).matches("fetch first row only")
+        assertThat(p).matches("fetch first rows only")
+        assertThat(p).matches("fetch next row only")
+        assertThat(p).matches("fetch next rows with ties")
+    }
+
+    @Test
     fun matchesOffsetAndFetchRowClause() {
         assertThat(p).matches("offset 1 row fetch first 1 row only")
     }

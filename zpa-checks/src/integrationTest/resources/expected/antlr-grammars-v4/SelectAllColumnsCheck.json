@@ -57,6 +57,12 @@
     5,
     7
   ],
+  "examples/fetch_clause01.sql" : [
+    1
+  ],
+  "examples/fetch_clause02.sql" : [
+    1
+  ],
   "examples/for_update01.sql" : [
     1
   ],
@@ -130,6 +136,15 @@
     1,
     3
   ],
+  "examples/join23.sql" : [
+    3
+  ],
+  "examples/json_sql.sql" : [
+    10,
+    12,
+    42,
+    44
+  ],
   "examples/keywordasidentifier06.sql" : [
     1
   ],
@@ -141,6 +156,9 @@
   ],
   "examples/merge02.sql" : [
     2
+  ],
+  "examples/offset_clause.sql" : [
+    1
   ],
   "examples/order_by01.sql" : [
     1
