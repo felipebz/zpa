@@ -75,7 +75,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     OPTION("option", true),
     OR("or", true),
     ORDER("order", true),
-    OUT("out", true),
+    OUT("out"),
     PCTFREE("pctfree"),
     PRIOR("prior"),
     PROCEDURE("procedure", true),

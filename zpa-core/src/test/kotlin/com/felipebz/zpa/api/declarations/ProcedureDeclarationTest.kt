@@ -67,6 +67,15 @@ class ProcedureDeclarationTest : RuleTest() {
                 + "null;\n"
                 + "end;")
     }
+    @Test
+    fun matchesProcedureNamedOut() {
+        assertThat(p).matches("procedure out(x number);")
+    }
+
+    @Test
+    fun matchesProcedureWithOutNamedParameter() {
+        assertThat(p).matches("procedure x(out number);")
+    }
 
     @Test
     fun matchesProcedureWithVariableDeclaration() {

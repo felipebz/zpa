@@ -79,6 +79,10 @@ class VariableDeclarationTest : RuleTest() {
     fun matchesTypeAnchoredDeclaration() {
         assertThat(p).matches("var custom%type;")
     }
+    @Test
+    fun matchesOutIdentifierDeclaration() {
+        assertThat(p).matches("out number;")
+    }
 
     @Test
     fun matchesObjectDeclaration() {

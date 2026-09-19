@@ -70,6 +70,36 @@ end;
         assertThat(text.references).isEmpty()
         assertThat(text.innerScope).isNull()
     }
+    @Test
+    fun outIdentifierIsDeclaredAndReferencedAsVariable() {
+        val symbols = scan("""
+declare
+  out number;
+begin
+  out := 0;
+end;
+""")
+        assertThat(symbols).hasSize(1)
+
+        val out = symbols.find("out", 2, 3)
+        assertThat(out.kind).isEqualTo(Symbol.Kind.VARIABLE)
+        assertThat(out.references).containsExactly(tuple(4, 3))
+    }
+
+    @Test
+    fun outParameterKeepsItsParameterModeModifier() {
+        val symbols = scan("""
+create procedure p(x out number) is
+begin
+  x := 0;
+end;
+""")
+        val parameter = symbols.single { it.kind == Symbol.Kind.PARAMETER }
+
+        assertThat(parameter.name).isEqualToIgnoringCase("x")
+        assertThat(parameter.hasModifier("out")).isTrue()
+        assertThat(parameter.references).containsExactly(tuple(3, 3))
+    }
 
     @Test
     fun variableDeclarationWithSubtype() {

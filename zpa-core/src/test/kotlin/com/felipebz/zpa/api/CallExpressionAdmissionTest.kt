@@ -58,6 +58,15 @@ class CallExpressionAdmissionTest : RuleTest() {
     }
 
     @Test
+    fun matchesQualifiedCallWithOutIdentifier() {
+        val source = "g_logger.out('foo')"
+
+        assertThat(p).matches(source)
+        val node = p.parse(source)
+        assertThatAst(node.getDescendants(PlSqlGrammar.METHOD_CALL)).hasSize(1)
+    }
+
+    @Test
     fun matchesStandardAggregateAndAnalyticFunctionsViaGenericCall() {
         listOf(
             "sum(salary)",

@@ -91,6 +91,15 @@ class ExecuteImmediateStatementTest : RuleTest() {
     fun matchesExecuteImmediateUsingWithInOutVariable() {
         assertThat(p).matches("execute immediate 'command' using in out var;")
     }
+    @Test
+    fun matchesExecuteImmediateUsingWithInOutVariableNamedOut() {
+        assertThat(p).matches("execute immediate 'command' using in out out;")
+    }
+
+    @Test
+    fun rejectsExecuteImmediateUsingOutWithoutVariable() {
+        assertThat(p).notMatches("execute immediate 'command' using out;")
+    }
 
     @Test
     fun matchesLabeledExecuteImmediate() {

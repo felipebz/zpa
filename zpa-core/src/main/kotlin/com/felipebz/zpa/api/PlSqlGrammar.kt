@@ -978,8 +978,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(IN),
                     b.firstOf(
-                            b.sequence(DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT)),
-                            b.sequence(OUT, b.optional(NOCOPY), DATATYPE))
+                            b.sequence(OUT, b.optional(NOCOPY), DATATYPE),
+                            b.sequence(b.nextNot(OUT), DATATYPE, b.optional(DEFAULT_VALUE_ASSIGNMENT)))
             )
 
             b.rule(PARAMETER_DECLARATIONS).define(LPARENTHESIS, b.oneOrMore(PARAMETER_DECLARATION, b.optional(COMMA)), RPARENTHESIS)

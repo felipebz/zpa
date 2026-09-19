@@ -36,6 +36,10 @@ class AssignmentStatementTest : RuleTest() {
     fun assignmentToVariable() {
         assertThat(p).matches("var := 1;")
     }
+    @Test
+    fun assignmentToOutIdentifier() {
+        assertThat(p).matches("out := 0;")
+    }
 
     @Test
     fun assignmentToRecordAttribute() {

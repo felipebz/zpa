@@ -87,6 +87,14 @@ class IdentifierNameTest : RuleTest() {
         assertThatValue(nonReservedKeyword.toIndex).isEqualTo(identifier.toIndex)
         assertThatValue(nonReservedKeyword.tokens.map { it.originalValue }).containsExactly("CuRsOr")
     }
+    @Test
+    fun preservesOutAsNonReservedKeywordAst() {
+        val identifier = p.parse("OuT")
+        val nonReservedKeyword = identifier.getFirstDescendant(PlSqlGrammar.NON_RESERVED_KEYWORD)
+
+        assertThatValue(identifier.type).isEqualTo(PlSqlGrammar.IDENTIFIER_NAME)
+        assertThatValue(nonReservedKeyword.tokens.map { it.type }).containsExactly(PlSqlKeyword.OUT)
+    }
 
     @Test
     fun matchesIdentifierWithSpecialCharacters() {
