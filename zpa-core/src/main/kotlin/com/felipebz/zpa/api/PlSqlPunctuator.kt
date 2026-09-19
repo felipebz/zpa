@@ -55,7 +55,8 @@ enum class PlSqlPunctuator(override val value: String) : TokenType {
     RBRACKET("]"),
     LBRACE("{"),
     RBRACE("}"),
-    QUESTION_MARK("?");
+    QUESTION_MARK("?"),
+    HASH("#");
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 }

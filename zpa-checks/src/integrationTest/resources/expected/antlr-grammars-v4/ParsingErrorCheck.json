@@ -237,7 +237,7 @@
     2
   ],
   "examples/create_view.sql" : [
-    16
+    32
   ],
   "examples/ctas.sql" : [
     1
@@ -354,16 +354,13 @@
     3
   ],
   "examples/views.sql" : [
-    6
+    59
   ],
   "hw-examples/alter_operator.sql" : [
     1
   ],
   "hw-examples/alter_outline.sql" : [
     1
-  ],
-  "long-running/order_by07.sql" : [
-    2
   ],
   "long-running/query_factoring07.sql" : [
     61

@@ -170,6 +170,9 @@
   "sqlrf/CREATE-TABLE-51.sql" : [
     2
   ],
+  "sqlrf/CREATE-VIEW-14.sql" : [
+    13
+  ],
   "sqlrf/CREATE-VIEW-8.sql" : [
     2
   ],

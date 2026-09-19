@@ -8,9 +8,6 @@
   "adjsn/json-collections-3.sql" : [
     2
   ],
-  "adjsn/json-collections-4.sql" : [
-    2
-  ],
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     3
   ],
@@ -1709,12 +1706,6 @@
   "sqlrf/CREATE-EDITION-1.sql" : [
     2
   ],
-  "sqlrf/CREATE-EDITION-2.sql" : [
-    3
-  ],
-  "sqlrf/CREATE-EDITION-3.sql" : [
-    3
-  ],
   "sqlrf/CREATE-FLASHBACK-ARCHIVE-0.sql" : [
     2
   ],
@@ -2140,15 +2131,6 @@
   ],
   "sqlrf/CREATE-VIEW-11.sql" : [
     3
-  ],
-  "sqlrf/CREATE-VIEW-14.sql" : [
-    15
-  ],
-  "sqlrf/CREATE-VIEW-2.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-VIEW-3.sql" : [
-    2
   ],
   "sqlrf/CUME_DIST-0.sql" : [
     3

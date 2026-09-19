@@ -28,7 +28,7 @@ import com.felipebz.zpa.grammar.JsonArrayStepAdmissionExpression
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.DclGrammar.DCL_COMMAND
-import com.felipebz.zpa.api.DdlGrammar.DDL_COMMAND
+import com.felipebz.zpa.api.DdlGrammar.*
 import com.felipebz.zpa.api.DmlGrammar.*
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
@@ -242,7 +242,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_PACKAGE,
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
+    CREATE_MATERIALIZED_VIEW,
     CREATE_VIEW,
+    VIEW_COLUMN_DEFINITION,
+    OBJECT_VIEW_CLAUSE,
+    XMLTYPE_VIEW_CLAUSE,
+    XMLSCHEMA_SPEC,
     TYPE_ATTRIBUTE,
     INHERITANCE_CLAUSE,
     TYPE_SUBPROGRAM,
@@ -1378,32 +1383,154 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)))
 
             b.rule(VIEW_RESTRICTION_CLAUSE).define(
-                    WITH, b.firstOf(
+                WITH, b.firstOf(
                     b.sequence(READ, ONLY),
                     b.sequence(CHECK, OPTION, b.optional(CONSTRAINT, IDENTIFIER_NAME))
-            )
+                )
             )
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/CREATE-VIEW.html
-            b.rule(CREATE_VIEW).define(
-                    CREATE, b.optional(
+            b.rule(CREATE_MATERIALIZED_VIEW).define(
+                CREATE, MATERIALIZED, VIEW, UNIT_NAME,
+                b.zeroOrMore(
                     b.firstOf(
-                            b.sequence(MATERIALIZED, VIEW, UNIT_NAME,
-                                    b.zeroOrMore(
-                                            b.firstOf(
-                                                    b.sequence(PCTFREE, INTEGER_LITERAL),
-                                                    b.sequence(PCTUSED, INTEGER_LITERAL),
-                                                    b.sequence(INITRANS, INTEGER_LITERAL),
-                                                    b.sequence(TABLESPACE, IDENTIFIER_NAME)
-                                            )),
-                                    b.optional(b.sequence(b.optional(NO), REFRESH, COMPLETE, b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)))),
-                            b.sequence(b.optional(b.sequence(OR, REPLACE)), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)), b.optional(b.optional(NO), FORCE), VIEW, UNIT_NAME))),
-                    b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
-                    AS,
-                    SELECT_EXPRESSION,
-                    b.optional(VIEW_RESTRICTION_CLAUSE),
-                    b.optional(ORDER_BY_CLAUSE),
-                    b.optional(SEMICOLON))
+                        b.sequence(PCTFREE, INTEGER_LITERAL),
+                        b.sequence(PCTUSED, INTEGER_LITERAL),
+                        b.sequence(INITRANS, INTEGER_LITERAL),
+                        b.sequence(TABLESPACE, IDENTIFIER_NAME)
+                    )
+                ),
+                b.optional(
+                    b.optional(NO),
+                    REFRESH,
+                    COMPLETE,
+                    b.optional(START, WITH, EXPRESSION, NEXT, EXPRESSION)
+                ),
+                AS,
+                SELECT_EXPRESSION,
+                b.optional(VIEW_RESTRICTION_CLAUSE),
+                b.optional(ORDER_BY_CLAUSE),
+                b.optional(SEMICOLON)
+            )
+
+            b.rule(VIEW_COLUMN_DEFINITION).define(
+                b.firstOf(
+                    OUT_OF_LINE_CONSTRAINT,
+                    b.sequence(
+                        IDENTIFIER_NAME,
+                        b.optional(b.firstOf(VISIBLE, INVISIBLE)),
+                        b.optional(ANNOTATIONS_CLAUSE),
+                        b.zeroOrMore(INLINE_CONSTRAINT)
+                    )
+                )
+            )
+
+            b.rule(OBJECT_VIEW_CLAUSE).define(
+                OF, UNIT_NAME,
+                b.firstOf(
+                    b.sequence(
+                        WITH, OBJECT, IDENTIFIER,
+                        b.firstOf(
+                            DEFAULT,
+                            b.sequence(
+                                LPARENTHESIS,
+                                EXPRESSION,
+                                b.zeroOrMore(COMMA, EXPRESSION),
+                                RPARENTHESIS
+                            )
+                        )
+                    ),
+                    b.sequence(UNDER, UNIT_NAME)
+                ),
+                b.optional(
+                    LPARENTHESIS,
+                    b.firstOf(
+                        OUT_OF_LINE_CONSTRAINT,
+                        b.sequence(IDENTIFIER_NAME, b.zeroOrMore(INLINE_CONSTRAINT))
+                    ),
+                    b.zeroOrMore(
+                        COMMA,
+                        b.firstOf(
+                            OUT_OF_LINE_CONSTRAINT,
+                            b.sequence(IDENTIFIER_NAME, b.zeroOrMore(INLINE_CONSTRAINT))
+                        )
+                    ),
+                    RPARENTHESIS
+                )
+            )
+
+            b.rule(XMLTYPE_VIEW_CLAUSE).define(
+                OF, XMLTYPE,
+                b.optional(XMLSCHEMA_SPEC),
+                WITH, OBJECT, IDENTIFIER,
+                b.firstOf(
+                    DEFAULT,
+                    b.sequence(
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        b.zeroOrMore(COMMA, EXPRESSION),
+                        RPARENTHESIS
+                    )
+                )
+            )
+
+            b.rule(XMLSCHEMA_SPEC).define(
+                XMLSCHEMA,
+                b.firstOf(STRING_LITERAL, IDENTIFIER_NAME),
+                ELEMENT,
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(STRING_LITERAL, IDENTIFIER_NAME),
+                        PlSqlPunctuator.HASH,
+                        b.firstOf(STRING_LITERAL, IDENTIFIER_NAME)
+                    ),
+                    b.firstOf(STRING_LITERAL, IDENTIFIER_NAME)
+                ),
+                b.optional(STORE, ALL, VARRAYS, AS, b.firstOf(LOBS, TABLES)),
+                b.optional(b.firstOf(ALLOW, DISALLOW), NONSCHEMA),
+                b.optional(b.firstOf(ALLOW, DISALLOW), ANYSCHEMA)
+            )
+
+            b.rule(CREATE_VIEW).define(
+                CREATE,
+                b.optional(OR, REPLACE),
+                b.optional(b.optional(NO), FORCE),
+                b.optional(
+                    b.firstOf(
+                        EDITIONING,
+                        b.sequence(EDITIONABLE, b.optional(EDITIONING)),
+                        NONEDITIONABLE
+                    )
+                ),
+                b.optional(JSON, COLLECTION),
+                VIEW,
+                b.optional(IF, NOT, EXISTS),
+                UNIT_NAME,
+                b.optional(
+                    SHARING,
+                    EQUALS,
+                    b.firstOf(METADATA, DATA, b.sequence(EXTENDED, DATA), NONE)
+                ),
+                b.optional(
+                    b.firstOf(
+                        b.sequence(
+                            LPARENTHESIS,
+                            VIEW_COLUMN_DEFINITION,
+                            b.zeroOrMore(COMMA, VIEW_COLUMN_DEFINITION),
+                            RPARENTHESIS
+                        ),
+                        OBJECT_VIEW_CLAUSE,
+                        XMLTYPE_VIEW_CLAUSE
+                    )
+                ),
+                b.optional(DEFAULT, COLLATION, IDENTIFIER_NAME),
+                b.optional(BEQUEATH, b.firstOf(CURRENT_USER, DEFINER)),
+                b.optional(ANNOTATIONS_CLAUSE),
+                AS,
+                SELECT_EXPRESSION,
+                b.optional(VIEW_RESTRICTION_CLAUSE),
+                b.optional(b.firstOf(CONTAINER_MAP, CONTAINERS_DEFAULT)),
+                b.optional(SEMICOLON)
+            )
 
             b.rule(TYPE_ATTRIBUTE).define(IDENTIFIER_NAME, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT))
 
@@ -1486,6 +1613,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     CREATE_FUNCTION,
                     CREATE_PACKAGE,
                     CREATE_PACKAGE_BODY,
+                    CREATE_MATERIALIZED_VIEW,
                     CREATE_VIEW,
                     CREATE_TRIGGER,
                     CREATE_TYPE_BODY,

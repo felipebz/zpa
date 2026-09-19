@@ -35,6 +35,8 @@ enum class DdlGrammar : GrammarRuleKey {
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
     OUT_OF_LINE_CONSTRAINT,
+    ANNOTATIONS_CLAUSE,
+    ANNOTATION,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
@@ -80,8 +82,6 @@ enum class DdlGrammar : GrammarRuleKey {
     INDEX_REBUILD_CLAUSE,
     INDEX_SEGMENT_ATTRIBUTES_CLAUSE,
     INDEX_PARTITION_DESCRIPTION,
-    INDEX_ANNOTATIONS_CLAUSE,
-    INDEX_ANNOTATION,
     INDEX_ILM_CLAUSE,
     INDEX_ILM_ACTION,
     INDEX_ILM_POLICY_CLAUSE,
@@ -548,7 +548,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                             SUBPARTITION,
                             BY,
-                            HASH,
+                            PlSqlKeyword.HASH,
                             LPARENTHESIS,
                             b.oneOrMore(
                                     IDENTIFIER_NAME,
@@ -593,7 +593,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                             PARTITION,
                             BY,
-                            HASH,
+                            PlSqlKeyword.HASH,
                             LPARENTHESIS,
                             b.oneOrMore(
                                     b.sequence(
@@ -773,7 +773,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(LPARENTHESIS, INDEX_ILM_ACTION, RPARENTHESIS),
                     INDEX_ILM_ACTION))
 
-            b.rule(INDEX_ANNOTATION).define(
+            b.rule(ANNOTATION).define(
                 b.optional(b.firstOf(
                     b.sequence(ADD, b.optional(b.firstOf(
                         b.sequence(IF, NOT, EXISTS),
@@ -783,9 +783,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME,
                 b.optional(CHARACTER_LITERAL))
 
-            b.rule(INDEX_ANNOTATIONS_CLAUSE).define(
+            b.rule(ANNOTATIONS_CLAUSE).define(
                 ANNOTATIONS, LPARENTHESIS,
-                INDEX_ANNOTATION, b.zeroOrMore(COMMA, INDEX_ANNOTATION),
+                ANNOTATION, b.zeroOrMore(COMMA, ANNOTATION),
                 RPARENTHESIS)
 
             b.rule(CREATE_INDEX_ATTRIBUTE).define(
@@ -800,7 +800,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(VISIBLE, INVISIBLE),
                     INDEX_PARTIAL_CLAUSE,
                     INDEX_PARALLEL_CLAUSE,
-                    INDEX_ANNOTATIONS_CLAUSE))
+                    ANNOTATIONS_CLAUSE))
 
             b.rule(CREATE_INDEX_ATTRIBUTES).define(
                 b.oneOrMore(CREATE_INDEX_ATTRIBUTE))
@@ -857,7 +857,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.zeroOrMore(COMMA, CREATE_INDEX_PARTITIONING_CLAUSE),
                         RPARENTHESIS),
                     b.sequence(
-                        HASH, LPARENTHESIS,
+                        PlSqlKeyword.HASH, LPARENTHESIS,
                         IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
                         b.firstOf(CREATE_INDEX_HASH_PARTITIONS,
                             CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY))))
@@ -1151,7 +1151,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(COALESCE, b.optional(CLEANUP), b.optional(ONLY), b.optional(INDEX_PARALLEL_CLAUSE)),
                     b.sequence(b.firstOf(MONITORING, NOMONITORING), USAGE),
                     b.sequence(UPDATE, BLOCK, REFERENCES),
-                    INDEX_ANNOTATIONS_CLAUSE))
+                    ANNOTATIONS_CLAUSE))
 
             b.rule(ALTER_INDEX).define(
                 ALTER, INDEX, b.optional(IF, EXISTS), UNIT_NAME,
