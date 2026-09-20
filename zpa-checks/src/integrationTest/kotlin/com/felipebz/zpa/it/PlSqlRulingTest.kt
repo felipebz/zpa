@@ -202,6 +202,7 @@ class PlSqlRulingTest {
 
         val writer = mapper.writer(prettyPrinter)
         var differences = ""
+        var classifiedParsingErrors = emptyList<ClassifiedParsingError>()
         for (check in checks) {
             val export = issues.filter { it.check == check }
                 .sortedBy { it.primaryLocation.startLine() }
@@ -211,6 +212,17 @@ class PlSqlRulingTest {
 
             val expectedFile = File("src/integrationTest/resources/expected/$project/${check::class.simpleName}.json")
             val expectedContent = if (expectedFile.exists()) mapper.readTree(expectedFile) else null
+
+            if (check is ParsingErrorCheck) {
+                val expectedParsingErrors = parseExpectedParsingErrors(expectedContent, expectedFile.path)
+                val metadataFile = File(expectedFile.parentFile, "ParsingErrorCheck.metadata.json")
+                val metadata = loadParsingErrorMetadata(mapper, metadataFile)
+                val staleMetadata = validateParsingErrorMetadata(expectedParsingErrors, metadata)
+                if (staleMetadata.isNotEmpty()) {
+                    differences += "\nStale parsing error metadata in $metadataFile: ${staleMetadata.joinToString()}"
+                }
+                classifiedParsingErrors = classifyParsingErrors(expectedParsingErrors, metadata)
+            }
 
             if (actualContent == null && expectedFile.exists()) {
                 differences += "\nExpected issues on $expectedFile were not found"
@@ -246,7 +258,7 @@ class PlSqlRulingTest {
             }
         }
 
-        summary.add(SummaryItem(project, files.size, issues.filter { it.check is ParsingErrorCheck }.size))
+        summary.add(summaryItem(project, files.size, classifiedParsingErrors))
     }
 
     companion object {
@@ -257,27 +269,8 @@ class PlSqlRulingTest {
         fun writeSummary() {
             val output = File("build/integrationTest/progress-summary.md")
             output.parentFile.mkdirs()
-            output.writeText("| Project | Files | Parsing Errors | % Success | Status |\n| --- | --- | --- | --- | --- |\n")
-
-            for (item in summary.sortedWith(compareByDescending<SummaryItem> { it.parsingErrors }.thenBy { it.name })) {
-                val successPercentage = ((item.files - item.parsingErrors).toDouble() / item.files) * 100
-                val status = if (item.parsingErrors > 0) "❌" else "✅"
-                output.appendText(
-                    "| ${item.name} | ${item.files} | ${item.parsingErrors} | ${
-                        String.format(
-                            "%.2f",
-                            successPercentage
-                        )
-                    }% | $status |\n"
-                )
-            }
+            output.writeText(renderProgressSummary(summary))
         }
     }
-
-    data class SummaryItem(
-        val name: String,
-        val files: Int,
-        val parsingErrors: Int,
-    )
 
 }

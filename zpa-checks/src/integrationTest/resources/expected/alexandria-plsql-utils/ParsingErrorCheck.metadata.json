@@ -1,0 +1,9 @@
+{
+  "demos/string_util_pkg_demo.sql": {
+    "39": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00572",
+      "reason": "The source declares the collection variable using a constructor-like parenthesized expression without := or DEFAULT; Oracle itself rejects this declaration."
+    }
+  }
+}
