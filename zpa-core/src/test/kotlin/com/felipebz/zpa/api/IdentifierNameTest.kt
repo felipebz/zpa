@@ -76,6 +76,13 @@ class IdentifierNameTest : RuleTest() {
     }
 
     @Test
+    fun matchesCreateJavaContextualKeywords() {
+        listOf("class", "named", "noforce", "resolve", "resolver", "source").forEach { keyword ->
+            assertThat(p).matches(keyword)
+        }
+    }
+
+    @Test
     fun preservesNonReservedKeywordAst() {
         val identifier = p.parse("CuRsOr")
         val nonReservedKeyword = identifier.getFirstDescendant(PlSqlGrammar.NON_RESERVED_KEYWORD)

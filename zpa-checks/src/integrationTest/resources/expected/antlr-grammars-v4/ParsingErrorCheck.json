@@ -173,9 +173,6 @@
   "examples/create_inmemory_join_group.sql" : [
     1
   ],
-  "examples/create_java.sql" : [
-    1
-  ],
   "examples/create_library.sql" : [
     1
   ],

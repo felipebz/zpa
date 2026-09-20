@@ -1727,15 +1727,6 @@
   "sqlrf/CREATE-INMEMORY-JOIN-GROUP-1.sql" : [
     2
   ],
-  "sqlrf/CREATE-JAVA-1.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-JAVA-2.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-JAVA-3.sql" : [
-    2
-  ],
   "sqlrf/CREATE-LOCKDOWN-PROFILE-0.sql" : [
     2
   ],
