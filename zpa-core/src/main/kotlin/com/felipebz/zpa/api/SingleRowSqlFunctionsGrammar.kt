@@ -65,6 +65,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_VALUE_RETURN_TYPE,
     JSON_VALUE_ON_ERROR_CLAUSE,
     JSON_VALUE_ON_EMPTY_CLAUSE,
+    JSON_VALUE_ERROR_EMPTY_CLAUSES,
     JSON_VALUE_ON_MISMATCH_CLAUSE,
     JSON_VALUE_RETURN_OBJECT_INSTANCE,
     JSON_TRANSFORM_OPERATION,
@@ -143,6 +144,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TO_TIMESTAMP_TZ_EXPRESSION,
     TO_YMINTERVAL_EXPRESSION,
     TRIM_EXPRESSION,
+    TRANSLATE_USING_EXPRESSION,
+    VALIDATE_CONVERSION_EXPRESSION,
     TABLE_EXPRESSION,
     THE_EXPRESSION,
     CURSOR_EXPRESSION,
@@ -185,6 +188,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(TREAT_AS_EXPRESSION, TREAT, LPARENTHESIS),
             FunctionAlternative(SET_EXPRESSION, SET),
             FunctionAlternative(CAST_EXPRESSION, CAST),
+            FunctionAlternative(TRANSLATE_USING_EXPRESSION, TRANSLATE),
+            FunctionAlternative(VALIDATE_CONVERSION_EXPRESSION, VALIDATE_CONVERSION),
             FunctionAlternative(TO_BINARY_DOUBLE_EXPRESSION, TO_BINARY_DOUBLE),
             FunctionAlternative(TO_BINARY_FLOAT_EXPRESSION, TO_BINARY_FLOAT),
             FunctionAlternative(TO_BOOLEAN_EXPRESSION, TO_BOOLEAN),
@@ -216,6 +221,15 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
+            // translate(expr using {char_cs | nchar_cs})
+            b.rule(TRANSLATE_USING_EXPRESSION).define(
+                TRANSLATE, LPARENTHESIS, EXPRESSION, USING, b.firstOf(CHAR_CS, NCHAR_CS), RPARENTHESIS)
+
+            // validate_conversion(expr as datatype [, fmt [, nlsparam]])
+            b.rule(VALIDATE_CONVERSION_EXPRESSION).define(
+                VALIDATE_CONVERSION, LPARENTHESIS, EXPRESSION, AS, DATATYPE,
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)), RPARENTHESIS)
+
             b.rule(TRIM_EXPRESSION).define(
                     TRIM, LPARENTHESIS,
                     b.optional(b.optional(b.firstOf(LEADING, TRAILING, BOTH)), EXPRESSION, FROM),
@@ -586,6 +600,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 JSON_OBJECT_ENTRY, b.zeroOrMore(COMMA, JSON_OBJECT_ENTRY),
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(STRICT),
                 b.optional(WITH, UNIQUE, KEYS)
             ).skip()
@@ -782,8 +798,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.nextNot(FORMAT),
                 b.optional(TRUNCATE),
                 b.optional(PATH, JSON_PATH),
-                b.optional(JSON_VALUE_ON_ERROR_CLAUSE),
-                b.optional(JSON_VALUE_ON_EMPTY_CLAUSE),
+                b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
                 b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE)
             )
 
@@ -889,6 +904,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 ), ON, EMPTY
             )
 
+            // Either order is accepted, but neither clause may be repeated (ORA-40450).
+            b.rule(JSON_VALUE_ERROR_EMPTY_CLAUSES).define(
+                b.firstOf(
+                    b.sequence(JSON_VALUE_ON_ERROR_CLAUSE, b.optional(JSON_VALUE_ON_EMPTY_CLAUSE)),
+                    b.sequence(JSON_VALUE_ON_EMPTY_CLAUSE, b.optional(JSON_VALUE_ON_ERROR_CLAUSE))
+                )
+            )
+
             b.rule(JSON_VALUE_ON_MISMATCH_CLAUSE).define(
                 b.firstOf(IGNORE, ERROR, NULL),
                 ON, MISMATCH,
@@ -914,8 +937,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 STRING_LITERAL,
                 b.optional(JSON_PASSING_CLAUSE),
                 b.optional(JSON_VALUE_RETURNING_CLAUSE),
-                b.optional(JSON_VALUE_ON_ERROR_CLAUSE),
-                b.optional(JSON_VALUE_ON_EMPTY_CLAUSE),
+                b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
                 b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
                 b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 RPARENTHESIS

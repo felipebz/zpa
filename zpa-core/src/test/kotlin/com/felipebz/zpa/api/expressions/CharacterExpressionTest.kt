@@ -33,6 +33,30 @@ class CharacterExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesTranslateUsingCharacterSet() {
+        assertThat(p).matches("translate(foo using char_cs)")
+        assertThat(p).matches("translate(foo using nchar_cs)")
+    }
+
+    @Test
+    fun matchesValidateConversion() {
+        assertThat(p).matches("validate_conversion(foo as number)")
+        assertThat(p).matches("validate_conversion(foo as date, 'yyyy-mm-dd')")
+        assertThat(p).matches("validate_conversion(foo as date, 'dd-mon-yyyy', 'nls_date_language=english')")
+    }
+
+    @Test
+    fun doesNotMatchValidateConversionWithAFourthArgument() {
+        assertThat(p).notMatches("validate_conversion(foo as date, 'dd-mon-yyyy', 'nls_date_language=english', 1)")
+    }
+
+    @Test
+    fun matchesIntervalQualifierAfterParenthesizedExpression() {
+        assertThat(p).matches("(a - b) year to month")
+        assertThat(p).matches("(a - b) day to second")
+    }
+
+    @Test
     fun matchesSimpleConcatenation() {
         assertThat(p).matches("'a'||'b'")
     }

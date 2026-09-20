@@ -31,6 +31,7 @@ import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar.*
 enum class DmlGrammar : GrammarRuleKey {
 
     TABLE_REFERENCE,
+    PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
     ALIAS,
     VALUES_EXPRESSION_CLAUSE,
@@ -38,9 +39,11 @@ enum class DmlGrammar : GrammarRuleKey {
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
     KEEP_CLAUSE,
+    NULL_TREATMENT_CLAUSE,
     ANALYTIC_CLAUSE,
     ON_OR_USING_EXPRESSION,
     INNER_CROSS_JOIN_CLAUSE,
+    CROSS_OUTER_APPLY_CLAUSE,
     OUTER_JOIN_TYPE,
     QUERY_PARTITION_CLAUSE,
     OUTER_JOIN_CLAUSE,
@@ -143,6 +146,11 @@ enum class DmlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)))
 
+            b.rule(PARTITION_EXTENSION_CLAUSE).define(
+                    b.firstOf(PARTITION, SUBPARTITION),
+                    b.optional(FOR),
+                    LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+
             b.rule(ALIAS).define(IDENTIFIER_NAME)
 
             b.rule(PARTITION_BY_CLAUSE).define(PARTITION, BY, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION))
@@ -162,6 +170,8 @@ enum class DmlGrammar : GrammarRuleKey {
                     KEEP, LPARENTHESIS,
                     DENSE_RANK, b.firstOf(FIRST, LAST), ORDER_BY_CLAUSE,
                     RPARENTHESIS)
+
+            b.rule(NULL_TREATMENT_CLAUSE).define(b.firstOf(IGNORE, RESPECT), NULLS)
 
             b.rule(ANALYTIC_CLAUSE).define(
                     OVER,
@@ -199,8 +209,12 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.firstOf(
                                     CROSS,
                                     b.sequence(NATURAL, b.optional(INNER))),
-                            JOIN, DML_TABLE_EXPRESSION_CLAUSE)
+                            JOIN, DML_TABLE_EXPRESSION_CLAUSE),
+                    CROSS_OUTER_APPLY_CLAUSE
             ))
+
+            b.rule(CROSS_OUTER_APPLY_CLAUSE).define(
+                    b.firstOf(CROSS, OUTER), APPLY, DML_TABLE_EXPRESSION_CLAUSE)
 
             b.rule(OUTER_JOIN_CLAUSE).define(
                     b.optional(QUERY_PARTITION_CLAUSE),
@@ -237,13 +251,13 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
-                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, b.optional(
+                            b.sequence(b.optional(LATERAL), LPARENTHESIS, SELECT_EXPRESSION, b.optional(
                                 b.firstOf(
                                     PIVOT_CLAUSE,
                                     UNPIVOT_CLAUSE
                                 )
                             ), RPARENTHESIS),
-                            b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS)),
+                            b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),
@@ -273,7 +287,11 @@ enum class DmlGrammar : GrammarRuleKey {
                                     JOIN,
                                     RETURN,
                                     RETURNING,
-                                    LOG,
+                                    b.sequence(LOG, ERRORS),
+                                    // The bare keyword is still a legal alias
+                                    // (`from some_table offset`); only a complete
+                                    // row-limiting clause must not be taken for one.
+                                    OFFSET_CLAUSE,
                                     EXCEPT,
                                     SET,
                                     MODEL,
@@ -466,7 +484,9 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(OFFSET_CLAUSE).define(OFFSET, EXPRESSION, b.firstOf(ROW, ROWS))
 
-            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.firstOf(FIRST, NEXT), b.optional(EXPRESSION, b.optional(PERCENT)), b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)))
+            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.firstOf(FIRST, NEXT),
+                    b.optional(b.nextNot(b.firstOf(ROW, ROWS)), EXPRESSION, b.optional(PERCENT)),
+                    b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)))
 
             b.rule(ROW_LIMITING_CLAUSE).define(b.firstOf(
                     b.sequence(OFFSET_CLAUSE, b.optional(FETCH_ROW_CLAUSE)),
@@ -717,6 +737,7 @@ enum class DmlGrammar : GrammarRuleKey {
                         b.optional(INTO_CLAUSE),
                         b.optional(FROM_CLAUSE),
                         b.optional(WHERE_CLAUSE),
+                        b.optional(HIERARCHICAL_QUERY_CLAUSE),
                         b.optional(b.firstOf(
                             b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),
                             b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
@@ -776,6 +797,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(INSERT_INTO_CLAUSE).define(INTO,
                 b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), b.firstOf(
                     TABLE_EXPRESSION, THE_EXPRESSION, TABLE_REFERENCE)),
+                b.optional(PARTITION_EXTENSION_CLAUSE),
                 b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
 
             b.rule(VALUES_CLAUSE).define(
@@ -827,7 +849,12 @@ enum class DmlGrammar : GrammarRuleKey {
 
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
             b.rule(MERGE_EXPRESSION).define(
-                    MERGE, INTO, TABLE_REFERENCE, b.optional(b.nextNot(USING), IDENTIFIER_NAME),
+                    MERGE, INTO,
+                    b.firstOf(
+                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                            TABLE_REFERENCE),
+                    b.optional(PARTITION_EXTENSION_CLAUSE),
+                    b.optional(b.nextNot(USING), IDENTIFIER_NAME),
                     USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(
                             b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),

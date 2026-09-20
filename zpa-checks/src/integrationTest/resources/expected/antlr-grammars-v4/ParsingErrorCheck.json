@@ -105,7 +105,7 @@
     1
   ],
   "examples/analytic_query.sql" : [
-    2
+    39
   ],
   "examples/analyze.sql" : [
     1
@@ -248,15 +248,6 @@
   "examples/explain01.sql" : [
     1
   ],
-  "examples/fetch_clause01.sql" : [
-    3
-  ],
-  "examples/fetch_clause02.sql" : [
-    3
-  ],
-  "examples/fetch_clause04.sql" : [
-    2
-  ],
   "examples/flashback01.sql" : [
     1
   ],
@@ -272,9 +263,6 @@
   "examples/function06.sql" : [
     1
   ],
-  "examples/function07.sql" : [
-    1
-  ],
   "examples/interval01.sql" : [
     1
   ],
@@ -284,9 +272,6 @@
   "examples/join17.sql" : [
     4
   ],
-  "examples/join23.sql" : [
-    3
-  ],
   "examples/materialized_views.sql" : [
     81
   ],
@@ -295,9 +280,6 @@
   ],
   "examples/noaudit_statement.sql" : [
     1
-  ],
-  "examples/offset_clause.sql" : [
-    3
   ],
   "examples/order_by04.sql" : [
     1
@@ -320,9 +302,6 @@
   "examples/select_analytic_view.sql" : [
     2
   ],
-  "examples/select_cte.sql" : [
-    6
-  ],
   "examples/select_dense_rank.sql" : [
     2
   ],
@@ -343,9 +322,6 @@
   ],
   "examples/unified.sql" : [
     1
-  ],
-  "examples/validate_conversion.sql" : [
-    3
   ],
   "examples/views.sql" : [
     59

@@ -61,6 +61,10 @@
     2,
     3
   ],
+  "examples/join23.sql" : [
+    2,
+    3
+  ],
   "examples/json_sql.sql" : [
     7,
     10,

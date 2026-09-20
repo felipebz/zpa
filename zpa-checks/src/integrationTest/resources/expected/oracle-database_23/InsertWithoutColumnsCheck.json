@@ -392,6 +392,9 @@
     16,
     18
   ],
+  "sqlrf/TRANSLATE-USING-0.sql" : [
+    4
+  ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [
     8
   ],

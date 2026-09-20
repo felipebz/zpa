@@ -92,6 +92,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
     BOOLEAN_EXPRESSION,
     PRIMARY_EXPRESSION,
     BRACKED_EXPRESSION,
+    INTERVAL_QUALIFIER,
+    SQL_MACRO_CLAUSE,
+    PARALLEL_ENABLE_CLAUSE,
     MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION,
     OUTER_JOIN_PLUS_SIGN,
@@ -174,6 +177,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     STATEMENTS,
     FORALL_STATEMENT,
     SET_TRANSACTION_STATEMENT,
+    LOCK_TABLE_STATEMENT,
     MERGE_STATEMENT,
     INLINE_PRAGMA_STATEMENT,
 
@@ -693,6 +697,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_10005.htm#SQLRF01705
             b.rule(SET_TRANSACTION_STATEMENT).define(b.optional(LABEL), SET_TRANSACTION_EXPRESSION, SEMICOLON)
 
+            b.rule(LOCK_TABLE_STATEMENT).define(b.optional(LABEL), LOCK_TABLE_EXPRESSION, SEMICOLON)
+
             b.rule(INLINE_PRAGMA_STATEMENT).define(PRAGMA, INLINE,
                     LPARENTHESIS, MEMBER_EXPRESSION, COMMA, STRING_LITERAL, RPARENTHESIS, SEMICOLON)
 
@@ -725,6 +731,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     PIPE_ROW_STATEMENT,
                     CASE_STATEMENT,
                     SET_TRANSACTION_STATEMENT,
+                    LOCK_TABLE_STATEMENT,
                     MERGE_STATEMENT,
                     INLINE_PRAGMA_STATEMENT,
                     COVERAGE_PRAGMA))
@@ -749,9 +756,34 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         )
                     )).skip()
 
+            b.rule(SQL_MACRO_CLAUSE).define(
+                    SQL_MACRO,
+                    b.optional(LPARENTHESIS, b.optional(TYPE, ASSOCIATION), b.firstOf(TABLE, SCALAR), RPARENTHESIS))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/21/lnpls/PARALLEL_ENABLE-clause.html
+            b.rule(PARALLEL_ENABLE_CLAUSE).define(
+                    PARALLEL_ENABLE,
+                    b.optional(
+                            LPARENTHESIS,
+                            PARTITION, IDENTIFIER_NAME, BY,
+                            b.firstOf(
+                                    ANY,
+                                    b.sequence(
+                                            b.firstOf(PlSqlKeyword.HASH, RANGE_KEYWORD, VALUE),
+                                            LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
+                            b.optional(
+                                    b.firstOf(ORDER, CLUSTER), IDENTIFIER_NAME, BY,
+                                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                            RPARENTHESIS))
+
             b.rule(BRACKED_EXPRESSION).define(b.firstOf(
                     PRIMARY_EXPRESSION,
-                    b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS))).skipIfOneChild()
+                    b.sequence(LPARENTHESIS, EXPRESSION, RPARENTHESIS, b.optional(INTERVAL_QUALIFIER)))).skipIfOneChild()
+
+            b.rule(INTERVAL_QUALIFIER).define(
+                    b.firstOf(
+                            b.sequence(YEAR, TO, MONTH),
+                            b.sequence(DAY, TO, SECOND)))
 
             b.rule(MULTIPLE_VALUE_EXPRESSION).define(b.firstOf(
                     BRACKED_EXPRESSION,
@@ -791,7 +823,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             )
                     )).skipIfOneChild()
 
-            b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(DISTINCT), EXPRESSION)
+            // The argument-level null treatment only exists for analytic functions, so it is
+            // guarded by a lookahead for the `over` that follows the argument list —
+            // without it `lower(x ignore nulls)` would parse as well.
+            b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(b.firstOf(DISTINCT, UNIQUE)), EXPRESSION,
+                    b.optional(NULL_TREATMENT_CLAUSE, b.next(RPARENTHESIS, OVER)))
 
             b.rule(ARGUMENTS).define(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS)
 
@@ -908,6 +944,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         ),
                         b.sequence(
                             OBJECT_REFERENCE,
+                            b.optional(
+                                b.firstOf(
+                                    b.sequence(FROM, b.firstOf(FIRST, LAST), b.optional(NULL_TREATMENT_CLAUSE), b.next(OVER)),
+                                    b.sequence(NULL_TREATMENT_CLAUSE, b.next(OVER))
+                                )
+                            ),
                             b.optional(b.firstOf(
                                 ANALYTIC_CLAUSE,
                                 b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
@@ -1059,7 +1101,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(FUNCTION_DECLARATION).define(
                     FUNCTION, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
-                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, PARALLEL_ENABLE)),
+                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, SQL_MACRO_CLAUSE, PARALLEL_ENABLE_CLAUSE)),
                     b.optional(RESULT_CACHE, b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
                     b.optional(b.firstOf(
                             SEMICOLON,
@@ -1362,7 +1404,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(b.firstOf(
                             DETERMINISTIC,
                             PIPELINED,
-                            PARALLEL_ENABLE,
+                            SQL_MACRO_CLAUSE,
+                            PARALLEL_ENABLE_CLAUSE,
                             b.sequence(
                                     RESULT_CACHE,
                                     b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),

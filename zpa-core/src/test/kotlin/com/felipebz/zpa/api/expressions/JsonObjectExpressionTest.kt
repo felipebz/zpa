@@ -33,6 +33,22 @@ class JsonObjectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonObjectWithKeyIs() {
+        assertThat(p).matches("json_object(key 'foo' is bar)")
+        assertThat(p).matches("json_object('foo' is bar, 'baz' is qux)")
+    }
+
+    @Test
+    fun matchesJsonObjectWithExpressionAndColon() {
+        assertThat(p).matches("json_object(lower(foo) : bar)")
+    }
+
+    @Test
+    fun matchesJsonObjectWithReturningAndPretty() {
+        assertThat(p).matches("json_object('foo' value bar returning clob pretty)")
+    }
+
+    @Test
     fun matchesSimpleJsonObject() {
         assertThat(p).matches("json_object(foo)")
     }
