@@ -27,6 +27,14 @@ import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 import java.util.*
 
+private val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
+    "DETERMINISTIC",
+    "PIPELINED",
+    "PARALLEL_ENABLE",
+    "RESULT_CACHE",
+    "SQL_MACRO"
+)
+
 /**
  * Extracts the small, project-relevant declaration slice without constructing an AST.
  * This scanner deliberately understands declaration boundaries only; it does not parse
@@ -198,7 +206,7 @@ class ProjectDeclarationExtractor(
                     ?: return null
                 val modifier = firstAtTopLevel(
                     returnIndex + 1,
-                    setOf("DETERMINISTIC", "PIPELINED", "PARALLEL_ENABLE", "RESULT_CACHE"),
+                    FUNCTION_RETURN_TYPE_TERMINATORS,
                     header.index
                 )
                 val returnType = typeReference(returnIndex + 1, modifier ?: header.index)
@@ -390,7 +398,7 @@ class ProjectDeclarationExtractor(
                 val returnIndex = firstAtTopLevel(cursor, setOf("RETURN"), end) ?: return null
                 val modifier = firstAtTopLevel(
                     returnIndex + 1,
-                    setOf("DETERMINISTIC", "PIPELINED", "PARALLEL_ENABLE", "RESULT_CACHE"),
+                    FUNCTION_RETURN_TYPE_TERMINATORS,
                     end
                 )
                 val deterministic = firstAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null

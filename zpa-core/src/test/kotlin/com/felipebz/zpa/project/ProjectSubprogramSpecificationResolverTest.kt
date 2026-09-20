@@ -77,6 +77,75 @@ class ProjectSubprogramSpecificationResolverTest {
     }
 
     @Test
+    fun correlatesSqlMacroFunctionsWithoutModifierTokensInReturnIdentity() {
+        val context = context(
+            "p_spec.sql" to """
+                CREATE PACKAGE p AS
+                  FUNCTION macro_value(value NUMBER)
+                    RETURN VARCHAR2 SQL_MACRO;
+                  FUNCTION macro_scalar(value NUMBER)
+                    RETURN VARCHAR2 SQL_MACRO(SCALAR);
+                END p;
+            """.trimIndent(),
+            "p_body.sql" to """
+                CREATE PACKAGE BODY p AS
+                  FUNCTION macro_value(value NUMBER)
+                    RETURN VARCHAR2 SQL_MACRO IS
+                  BEGIN
+                    RETURN 'value';
+                  END macro_value;
+
+                  FUNCTION macro_scalar(value NUMBER)
+                    RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+                  BEGIN
+                    RETURN 'value';
+                  END macro_scalar;
+                END p;
+            """.trimIndent()
+        )
+        val varchar2Identity = plainReturnTypeIdentity("VARCHAR2")
+
+        listOf("MACRO_VALUE", "MACRO_SCALAR").forEach { name ->
+            val specification = specification(context, name) as PackageFunctionDeclaration
+            val body = body(context, name) as PackageFunctionDeclaration
+
+            assertThat(ProjectSubprogramSpecificationResolver(context).resolve(body))
+                .isEqualTo(ProjectSubprogramSpecificationResolution.Resolved(body, specification))
+            assertThat(specification.returnType.name)
+                .isEqualTo(QualifiedName(OracleIdentifier.fromSource("VARCHAR2")))
+            assertThat(body.returnType.name)
+                .isEqualTo(QualifiedName(OracleIdentifier.fromSource("VARCHAR2")))
+            assertThat(specification.returnType.headerIdentityKey()).isEqualTo(varchar2Identity)
+            assertThat(body.returnType.headerIdentityKey()).isEqualTo(varchar2Identity)
+            assertThat(specification.returnType.headerIdentityKey())
+                .doesNotContain("SQL_MACRO", "SCALAR", "TABLE", "(", ")")
+            assertThat(body.returnType.headerIdentityKey())
+                .doesNotContain("SQL_MACRO", "SCALAR", "TABLE", "(", ")")
+        }
+    }
+
+    @Test
+    fun excludesParallelEnableFromFunctionReturnIdentity() {
+        val context = context(
+            "p_spec.sql" to """
+                CREATE PACKAGE p AS
+                  FUNCTION parallel_value(value NUMBER)
+                    RETURN NUMBER
+                    PARALLEL_ENABLE(PARTITION value BY HASH(value));
+                END p;
+            """.trimIndent()
+        )
+        val function = specification(context, "PARALLEL_VALUE") as PackageFunctionDeclaration
+
+        assertThat(function.returnType.name)
+            .isEqualTo(QualifiedName(OracleIdentifier.fromSource("NUMBER")))
+        assertThat(function.returnType.headerIdentityKey())
+            .isEqualTo(plainReturnTypeIdentity("NUMBER"))
+        assertThat(function.returnType.headerIdentityKey())
+            .doesNotContain("PARALLEL_ENABLE", "PARTITION", "HASH", "(", ")")
+    }
+
+    @Test
     fun doesNotCorrelatePrivateBodyHelper() {
         val context = context(
             "p_body.sql" to "CREATE PACKAGE BODY p AS PROCEDURE helper(value NUMBER) IS BEGIN NULL; END helper; END p;"
@@ -434,6 +503,12 @@ class ProjectSubprogramSpecificationResolverTest {
                 .resolve(specification!!)
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
+
+    private fun plainReturnTypeIdentity(typeName: String): String =
+        ProjectDeclarationExtractor().extract(
+            FileId("plain.sql"),
+            "CREATE PACKAGE p AS FUNCTION plain RETURN $typeName; END p;"
+        ).filterIsInstance<PackageFunctionDeclaration>().single().returnType.headerIdentityKey()
 
     private fun assertNotFound(specificationSource: String, bodySource: String, name: String = "WORK") {
         val context = context("p_spec.sql" to specificationSource, "p_body.sql" to bodySource)
