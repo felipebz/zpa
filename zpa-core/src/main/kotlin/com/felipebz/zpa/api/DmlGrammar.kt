@@ -147,9 +147,22 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)))
 
             b.rule(PARTITION_EXTENSION_CLAUSE).define(
-                    b.firstOf(PARTITION, SUBPARTITION),
-                    b.optional(FOR),
-                    LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+                b.firstOf(PARTITION, SUBPARTITION),
+                b.firstOf(
+                    b.sequence(
+                        LPARENTHESIS,
+                        IDENTIFIER_NAME,
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        FOR,
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        b.zeroOrMore(COMMA, EXPRESSION),
+                        RPARENTHESIS
+                    )
+                )
+            )
 
             b.rule(ALIAS).define(IDENTIFIER_NAME)
 
@@ -852,8 +865,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     MERGE, INTO,
                     b.firstOf(
                             b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
-                            TABLE_REFERENCE),
-                    b.optional(PARTITION_EXTENSION_CLAUSE),
+                            b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),
                     b.optional(b.nextNot(USING), IDENTIFIER_NAME),
                     USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(

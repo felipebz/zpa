@@ -185,9 +185,19 @@ class SelectExpressionTest : RuleTest() {
         assertThat(p).matches("select 1 from foo partition (part1)")
         assertThat(p).matches("select 1 from foo partition (part1) bar")
         assertThat(p).matches("select 1 from foo partition for (1)")
+        assertThat(p).matches("select 1 from foo partition for (1, 2)")
         assertThat(p).matches("select 1 from foo subpartition (subpart1) bar")
+        assertThat(p).matches("select 1 from foo subpartition (subpart1)")
         assertThat(p).matches("select 1 from foo subpartition for ('a', 1) bar")
         assertThat(p).matches("select 1 from foo join bar partition (part1) baz on baz.id = foo.id")
+    }
+
+    @Test
+    fun doesNotMatchInvalidPartitionExtensionForms() {
+        assertThat(p).notMatches("select 1 from foo partition (1 + 1)")
+        assertThat(p).notMatches("select 1 from foo partition (part1, part2)")
+        assertThat(p).notMatches("select 1 from foo subpartition (1 + 1)")
+        assertThat(p).notMatches("select 1 from foo subpartition (subpart1, subpart2)")
     }
 
     @Test
