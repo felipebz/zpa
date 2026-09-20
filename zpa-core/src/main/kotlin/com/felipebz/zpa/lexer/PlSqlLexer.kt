@@ -73,7 +73,6 @@ object PlSqlLexer {
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL), 't'))
             .withChannel(IdentifierChannel(PlSqlKeyword.entries.toTypedArray()))
             .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
-            .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",
                 "\\\$if.*?\\\$then",
@@ -81,6 +80,7 @@ object PlSqlLexer {
                 "\\\$error.*?\\\$end",
                 "\\\$end"
             )))
+            .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(UnknownCharacterChannel())
             .build()
 }

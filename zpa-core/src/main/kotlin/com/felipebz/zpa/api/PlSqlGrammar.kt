@@ -30,6 +30,8 @@ import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.DclGrammar.DCL_COMMAND
 import com.felipebz.zpa.api.DdlGrammar.*
 import com.felipebz.zpa.api.DmlGrammar.*
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_RECOGNITION_FUNCTION
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_INVALID_AGGREGATE_FUNCTION
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.*
@@ -320,6 +322,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             createProgramUnits(b)
             DdlGrammar.buildOn(b)
             DmlGrammar.buildOn(b)
+            RowPatternGrammar.buildOn(b)
             DclGrammar.buildOn(b)
             TclGrammar.buildOn(b)
             SqlPlusGrammar.buildOn(b)
@@ -735,7 +738,16 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(VARIABLE_NAME).define(b.firstOf(IDENTIFIER_NAME, HOST_AND_INDICATOR_VARIABLE))
 
             b.rule(PRIMARY_EXPRESSION).define(
-                    b.firstOf(LITERAL, VARIABLE_NAME, SQL, MULTIPLICATION)).skip()
+                    b.firstOf(
+                        b.sequence(
+                            b.requireContext(ROW_PATTERN_EXPRESSION_CONTEXT),
+                            ROW_PATTERN_RECOGNITION_FUNCTION
+                        ),
+                        b.sequence(
+                            b.nextNot(ROW_PATTERN_INVALID_AGGREGATE_FUNCTION),
+                            b.firstOf(LITERAL, VARIABLE_NAME, SQL, MULTIPLICATION)
+                        )
+                    )).skip()
 
             b.rule(BRACKED_EXPRESSION).define(b.firstOf(
                     PRIMARY_EXPRESSION,

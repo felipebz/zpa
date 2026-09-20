@@ -47,6 +47,7 @@ enum class PlSqlPunctuator(override val value: String) : TokenType {
     RLABEL(">>"),
     RANGE(".."),
     DOUBLEDOLLAR("$$"),
+    DOLLAR("$"),
     ASSOCIATION("=>"),
     EXCLAMATION("!"),
     TILDE("~"),
