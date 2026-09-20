@@ -284,7 +284,10 @@ enum class DmlGrammar : GrammarRuleKey {
                                     RETURN,
                                     RETURNING,
                                     b.sequence(LOG, ERRORS),
-                                    OFFSET,
+                                    // The bare keyword is still a legal alias
+                                    // (`from some_table offset`); only a complete
+                                    // row-limiting clause must not be taken for one.
+                                    OFFSET_CLAUSE,
                                     EXCEPT,
                                     SET,
                                     MODEL

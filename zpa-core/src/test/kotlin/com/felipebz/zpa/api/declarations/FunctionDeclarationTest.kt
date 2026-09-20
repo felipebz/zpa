@@ -41,9 +41,15 @@ class FunctionDeclarationTest : RuleTest() {
     @Test
     fun matchesFunctionWithParallelEnableClause() {
         assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
-                "parallel_enable (order p_cursor by (col)) is begin null; end;")
-        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
                 "parallel_enable (partition p_cursor by hash(col)) is begin null; end;")
+        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "parallel_enable (partition p_cursor by any order p_cursor by (col)) is begin null; end;")
+    }
+
+    @Test
+    fun doesNotMatchFunctionWithEmptyParallelEnableParentheses() {
+        assertThat(p).notMatches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "parallel_enable () is begin null; end;")
     }
 
     @Test

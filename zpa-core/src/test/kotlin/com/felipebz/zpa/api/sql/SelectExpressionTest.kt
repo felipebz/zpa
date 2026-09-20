@@ -200,6 +200,12 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun doesNotMatchNullTreatmentOutsideAnalyticFunction() {
+        assertThat(p).notMatches("select lower(foo ignore nulls) from dual")
+        assertThat(p).notMatches("select abs(1 respect nulls) from dual")
+    }
+
+    @Test
     fun matchesSelectWithNthValueFromFirstOrLast() {
         assertThat(p).matches("select nth_value(foo, 2) from first over (order by bar) from dual")
         assertThat(p).matches("select nth_value(foo, 2) from last ignore nulls over (order by bar) from dual")
@@ -228,6 +234,13 @@ class SelectExpressionTest : RuleTest() {
     fun matchesSelectWithOffsetWithoutOrderBy() {
         assertThat(p).matches("select 1 from dual offset 1 rows")
         assertThat(p).matches("select 1 from dual offset (a - 1) * b rows fetch next b rows only")
+    }
+
+    @Test
+    fun matchesOffsetAsAnAlias() {
+        assertThat(p).matches("select 1 from some_table offset")
+        assertThat(p).matches("select offset.id from some_table offset")
+        assertThat(p).matches("select 1 from some_table offset where offset.id = 1")
     }
 
     @Test

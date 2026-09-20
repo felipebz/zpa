@@ -38,6 +38,18 @@ class JsonTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonValueColumnWithOnErrorBeforeOnEmpty() {
+        assertThat(p).matches("json_table(doc, '$' columns (c1 path '$.c1' null on error null on empty))")
+        assertThat(p).matches("json_table(doc, '$' columns (c1 path '$.c1' null on empty null on error))")
+    }
+
+    @Test
+    fun doesNotMatchJsonValueColumnWithRepeatedOnErrorOrOnEmpty() {
+        assertThat(p).notMatches("json_table(doc, '$' columns (c1 path '$.c1' null on error error on error))")
+        assertThat(p).notMatches("json_table(doc, '$' columns (c1 path '$.c1' null on empty error on empty))")
+    }
+
+    @Test
     fun matchesJsonWithExistsColumn() {
         assertThat(p).matches("json_table(doc, '$' columns (c1 exists path '$.c1'))")
     }

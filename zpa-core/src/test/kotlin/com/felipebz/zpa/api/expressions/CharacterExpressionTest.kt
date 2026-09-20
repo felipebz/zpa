@@ -42,6 +42,12 @@ class CharacterExpressionTest : RuleTest() {
     fun matchesValidateConversion() {
         assertThat(p).matches("validate_conversion(foo as number)")
         assertThat(p).matches("validate_conversion(foo as date, 'yyyy-mm-dd')")
+        assertThat(p).matches("validate_conversion(foo as date, 'dd-mon-yyyy', 'nls_date_language=english')")
+    }
+
+    @Test
+    fun doesNotMatchValidateConversionWithAFourthArgument() {
+        assertThat(p).notMatches("validate_conversion(foo as date, 'dd-mon-yyyy', 'nls_date_language=english', 1)")
     }
 
     @Test

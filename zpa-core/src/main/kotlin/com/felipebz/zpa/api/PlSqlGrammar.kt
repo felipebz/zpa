@@ -735,13 +735,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     PARALLEL_ENABLE,
                     b.optional(
                             LPARENTHESIS,
-                            b.optional(
-                                    PARTITION, IDENTIFIER_NAME, BY,
-                                    b.firstOf(
-                                            ANY,
-                                            b.sequence(
-                                                    b.firstOf(HASH, RANGE_KEYWORD, VALUE),
-                                                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS))),
+                            PARTITION, IDENTIFIER_NAME, BY,
+                            b.firstOf(
+                                    ANY,
+                                    b.sequence(
+                                            b.firstOf(PlSqlKeyword.HASH, RANGE_KEYWORD, VALUE),
+                                            LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
                             b.optional(
                                     b.firstOf(ORDER, CLUSTER), IDENTIFIER_NAME, BY,
                                     LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
@@ -794,8 +793,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             )
                     )).skipIfOneChild()
 
+            // The argument-level null treatment only exists for analytic functions, so it is
+            // guarded by a lookahead for the `over` that follows the argument list —
+            // without it `lower(x ignore nulls)` would parse as well.
             b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(b.firstOf(DISTINCT, UNIQUE)), EXPRESSION,
-                    b.optional(NULL_TREATMENT_CLAUSE))
+                    b.optional(NULL_TREATMENT_CLAUSE, b.next(RPARENTHESIS, OVER)))
 
             b.rule(ARGUMENTS).define(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS)
 

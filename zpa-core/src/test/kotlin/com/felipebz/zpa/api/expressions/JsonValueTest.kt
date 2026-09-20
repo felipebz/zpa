@@ -38,6 +38,18 @@ class JsonValueTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonValueWithOnErrorBeforeOnEmpty() {
+        assertThat(p).matches("json_value(doc, '$.id' null on error null on empty)")
+    }
+
+    @Test
+    fun doesNotMatchJsonValueWithRepeatedOnErrorOrOnEmpty() {
+        assertThat(p).notMatches("json_value(doc, '$.id' null on error error on error)")
+        assertThat(p).notMatches("json_value(doc, '$.id' null on empty error on empty)")
+        assertThat(p).notMatches("json_value(doc, '$.id' null on error null on empty error on error)")
+    }
+
+    @Test
     fun matchesJsonValue() {
         assertThat(p).matches("json_value(doc, '$')")
     }
