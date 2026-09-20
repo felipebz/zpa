@@ -97,6 +97,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     XML_TABLE_COLUMN,
 
     // functions
+    LAG_LEAD_ANALYTIC_EXPRESSION,
+    FIRST_LAST_VALUE_ANALYTIC_EXPRESSION,
+    NTH_VALUE_ANALYTIC_EXPRESSION,
     EXTRACT_DATETIME_EXPRESSION,
     JSON_CONSTRUCTOR,
     JSON_ARRAY_EXPRESSION,
@@ -153,6 +156,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     companion object {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
+            FunctionAlternative(LAG_LEAD_ANALYTIC_EXPRESSION, LAG, LEAD),
+            FunctionAlternative(FIRST_LAST_VALUE_ANALYTIC_EXPRESSION, FIRST_VALUE, LAST_VALUE),
+            FunctionAlternative(NTH_VALUE_ANALYTIC_EXPRESSION, NTH_VALUE),
             FunctionAlternative(EXTRACT_DATETIME_EXPRESSION, EXTRACT),
             FunctionAlternative(JSON_CONSTRUCTOR, JSON),
             FunctionAlternative(JSON_ARRAY_EXPRESSION, JSON_ARRAY, JSON, LBRACKET),
@@ -209,6 +215,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             ALTERNATIVES.flatMap { it.admissionTokens }.distinct().toTypedArray()
 
         fun buildOn(b: PlSqlGrammarBuilder) {
+            createAnalyticFunctions(b)
             createCharacterFunctions(b)
             createConversionFunctions(b)
             createDateFunctions(b)
@@ -217,6 +224,70 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(SINGLE_ROW_SQL_FUNCTION).define(
                 b.firstOf(ALTERNATIVES.map { it.ruleKey })
+            )
+        }
+
+        private fun createAnalyticFunctions(b: PlSqlGrammarBuilder) {
+            b.rule(LAG_LEAD_ANALYTIC_EXPRESSION).define(
+                b.firstOf(LAG, LEAD),
+                b.firstOf(
+                    b.sequence(
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        DmlGrammar.NULL_TREATMENT_CLAUSE,
+                        b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                        RPARENTHESIS,
+                        DmlGrammar.ANALYTIC_CLAUSE
+                    ),
+                    b.sequence(
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                        RPARENTHESIS,
+                        b.optional(DmlGrammar.NULL_TREATMENT_CLAUSE),
+                        DmlGrammar.ANALYTIC_CLAUSE
+                    )
+                )
+            )
+
+            b.rule(FIRST_LAST_VALUE_ANALYTIC_EXPRESSION).define(
+                b.firstOf(FIRST_VALUE, LAST_VALUE),
+                b.firstOf(
+                    b.sequence(
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        DmlGrammar.NULL_TREATMENT_CLAUSE,
+                        RPARENTHESIS,
+                        DmlGrammar.ANALYTIC_CLAUSE
+                    ),
+                    b.sequence(
+                        LPARENTHESIS,
+                        EXPRESSION,
+                        RPARENTHESIS,
+                        b.optional(DmlGrammar.NULL_TREATMENT_CLAUSE),
+                        DmlGrammar.ANALYTIC_CLAUSE
+                    )
+                )
+            )
+
+            b.rule(NTH_VALUE_ANALYTIC_EXPRESSION).define(
+                NTH_VALUE,
+                LPARENTHESIS,
+                EXPRESSION,
+                COMMA,
+                EXPRESSION,
+                RPARENTHESIS,
+                b.optional(
+                    b.firstOf(
+                        b.sequence(
+                            FROM,
+                            b.firstOf(FIRST, LAST),
+                            b.optional(DmlGrammar.NULL_TREATMENT_CLAUSE)
+                        ),
+                        DmlGrammar.NULL_TREATMENT_CLAUSE
+                    )
+                ),
+                DmlGrammar.ANALYTIC_CLAUSE
             )
         }
 

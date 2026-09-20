@@ -191,24 +191,43 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
-    fun matchesSelectWithNullTreatmentInAnalyticFunction() {
-        assertThat(p).matches("select first_value(foo) ignore nulls over (order by bar) from dual")
-        assertThat(p).matches("select first_value(foo) respect nulls over (partition by baz order by bar) from dual")
-        assertThat(p).matches("select lag(foo, 1) ignore nulls over (order by bar) from dual")
+    fun matchesSelectWithFunctionSpecificNullTreatment() {
         assertThat(p).matches("select first_value(foo ignore nulls) over (order by bar) from dual")
-        assertThat(p).matches("select lag(foo, 1 respect nulls) over (order by bar) from dual")
-    }
-
-    @Test
-    fun doesNotMatchNullTreatmentOutsideAnalyticFunction() {
-        assertThat(p).notMatches("select lower(foo ignore nulls) from dual")
-        assertThat(p).notMatches("select abs(1 respect nulls) from dual")
-    }
-
-    @Test
-    fun matchesSelectWithNthValueFromFirstOrLast() {
+        assertThat(p).matches("select first_value(foo) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select last_value(foo respect nulls) over (order by bar) from dual")
+        assertThat(p).matches("select last_value(foo) respect nulls over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo ignore nulls) over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo ignore nulls, 1) over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo ignore nulls, 1, 0) over (order by bar) from dual")
+        assertThat(p).matches("select lag(foo, 1, 0) ignore nulls over (order by bar) from dual")
+        assertThat(p).matches("select lead(foo respect nulls, 1) over (order by bar) from dual")
+        assertThat(p).matches("select lead(foo, 1) respect nulls over (order by bar) from dual")
+        assertThat(p).matches("select nth_value(foo, 2) ignore nulls over (order by bar) from dual")
         assertThat(p).matches("select nth_value(foo, 2) from first over (order by bar) from dual")
         assertThat(p).matches("select nth_value(foo, 2) from last ignore nulls over (order by bar) from dual")
+    }
+
+    @Test
+    fun matchesSelectWithOrdinaryAnalyticFunctionForms() {
+        assertThat(p).matches("select lag(foo, 1) over (order by bar) from dual")
+        assertThat(p).matches("select first_value(foo) over (order by bar) from dual")
+        assertThat(p).matches("select nth_value(foo, 2) over (order by bar) from dual")
+    }
+
+    @Test
+    fun doesNotMatchInvalidNullTreatmentPlacement() {
+        assertThat(p).notMatches("select lag(foo, 1 ignore nulls) over (order by bar) from dual")
+        assertThat(p).notMatches("select lead(foo, 1 respect nulls) over (order by bar) from dual")
+        assertThat(p).notMatches("select lag(foo ignore nulls, 1) respect nulls over (order by bar) from dual")
+        assertThat(p).notMatches("select lead(foo respect nulls, 1) ignore nulls over (order by bar) from dual")
+        assertThat(p).notMatches("select first_value(foo ignore nulls) respect nulls over (order by bar) from dual")
+        assertThat(p).notMatches("select last_value(foo respect nulls) ignore nulls over (order by bar) from dual")
+        assertThat(p).notMatches("select nth_value(foo, 2 ignore nulls) over (order by bar) from dual")
+        assertThat(p).notMatches("select sum(1 ignore nulls) over () from dual")
+        assertThat(p).notMatches("select sum(1) ignore nulls over () from dual")
+        assertThat(p).notMatches("select lower(foo ignore nulls) from dual")
+        assertThat(p).notMatches("select lower(foo) ignore nulls over () from dual")
+        assertThat(p).notMatches("select abs(1 respect nulls) from dual")
     }
 
     @Test

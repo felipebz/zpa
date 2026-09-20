@@ -191,6 +191,11 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
         )
 
         val testCases = listOf(
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.LAG_LEAD_ANALYTIC_EXPRESSION, PlSqlKeyword.LAG, "lag(foo, 1) over (order by bar)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.LAG_LEAD_ANALYTIC_EXPRESSION, PlSqlKeyword.LEAD, "lead(foo, 1) over (order by bar)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.FIRST_LAST_VALUE_ANALYTIC_EXPRESSION, PlSqlKeyword.FIRST_VALUE, "first_value(foo) over (order by bar)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.FIRST_LAST_VALUE_ANALYTIC_EXPRESSION, PlSqlKeyword.LAST_VALUE, "last_value(foo) over (order by bar)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.NTH_VALUE_ANALYTIC_EXPRESSION, PlSqlKeyword.NTH_VALUE, "nth_value(foo, 2) over (order by bar)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.EXTRACT_DATETIME_EXPRESSION, PlSqlKeyword.EXTRACT, "extract(year from dt)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.JSON_CONSTRUCTOR, PlSqlKeyword.JSON, "json('{}')"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.JSON_ARRAY_EXPRESSION, PlSqlKeyword.JSON_ARRAY, "json_array(1, 2)"),

@@ -823,11 +823,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             )
                     )).skipIfOneChild()
 
-            // The argument-level null treatment only exists for analytic functions, so it is
-            // guarded by a lookahead for the `over` that follows the argument list —
-            // without it `lower(x ignore nulls)` would parse as well.
-            b.rule(ARGUMENT).define(b.optional(IDENTIFIER_NAME, ASSOCIATION), b.optional(b.firstOf(DISTINCT, UNIQUE)), EXPRESSION,
-                    b.optional(NULL_TREATMENT_CLAUSE, b.next(RPARENTHESIS, OVER)))
+            b.rule(ARGUMENT).define(
+                b.optional(IDENTIFIER_NAME, ASSOCIATION),
+                b.optional(b.firstOf(DISTINCT, UNIQUE)),
+                EXPRESSION
+            )
 
             b.rule(ARGUMENTS).define(LPARENTHESIS, b.optional(ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT)), RPARENTHESIS)
 
@@ -944,12 +944,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         ),
                         b.sequence(
                             OBJECT_REFERENCE,
-                            b.optional(
-                                b.firstOf(
-                                    b.sequence(FROM, b.firstOf(FIRST, LAST), b.optional(NULL_TREATMENT_CLAUSE), b.next(OVER)),
-                                    b.sequence(NULL_TREATMENT_CLAUSE, b.next(OVER))
-                                )
-                            ),
                             b.optional(b.firstOf(
                                 ANALYTIC_CLAUSE,
                                 b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
