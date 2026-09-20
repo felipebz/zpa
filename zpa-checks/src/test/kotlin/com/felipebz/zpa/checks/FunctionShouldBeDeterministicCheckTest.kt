@@ -121,6 +121,76 @@ class FunctionShouldBeDeterministicCheckTest : BaseCheckTest() {
     }
 
     @Test
+    fun ignoresStructuredFunctionModifiers() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "function_modifiers.sql",
+                    """
+                    CREATE FUNCTION macro_scalar(p_value VARCHAR2)
+                      RETURN VARCHAR2 SQL_MACRO(SCALAR)
+                    IS
+                    BEGIN
+                      RETURN p_value;
+                    END;
+                    /
+
+                    CREATE FUNCTION macro_default(p_value VARCHAR2)
+                      RETURN VARCHAR2 SQL_MACRO
+                    IS
+                    BEGIN
+                      RETURN p_value;
+                    END;
+                    /
+
+                    CREATE FUNCTION parallel_value(p_value NUMBER)
+                      RETURN NUMBER
+                      PARALLEL_ENABLE(PARTITION p_value BY HASH(p_value))
+                    IS
+                    BEGIN
+                      RETURN p_value;
+                    END;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
+    fun ignoresSqlMacroPackageFunction() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "sql_macro_package_spec.sql",
+                    """
+                    CREATE PACKAGE p AS
+                      FUNCTION macro_value(p_value VARCHAR2)
+                        RETURN VARCHAR2 SQL_MACRO(SCALAR);
+                    END p;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "sql_macro_package_body.sql",
+                    """
+                    CREATE PACKAGE BODY p AS
+                      FUNCTION macro_value(p_value VARCHAR2)
+                        RETURN VARCHAR2 SQL_MACRO(SCALAR) IS
+                      BEGIN
+                        RETURN p_value;
+                      END macro_value;
+                    END p;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
     fun doesNotTreatPackageDeclaredRoutinesAsOracleBuiltins() {
         ProjectPlSqlCheckVerifier.verify(
             listOf(

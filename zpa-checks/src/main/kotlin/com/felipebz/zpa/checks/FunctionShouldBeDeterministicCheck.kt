@@ -809,11 +809,12 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             PlSqlGrammar.INTERVAL_LITERAL,
         )
 
-        val UNSUPPORTED_FUNCTION_MODIFIERS = arrayOf(
+        val UNSUPPORTED_FUNCTION_MODIFIERS = arrayOf<AstNodeType>(
             PlSqlKeyword.AGGREGATE,
-            PlSqlKeyword.PARALLEL_ENABLE,
             PlSqlKeyword.PIPELINED,
             PlSqlKeyword.RESULT_CACHE,
+            PlSqlGrammar.PARALLEL_ENABLE_CLAUSE,
+            PlSqlGrammar.SQL_MACRO_CLAUSE,
         )
 
         val FUNCTION_SCOPE_TYPES = setOf<AstNodeType>(

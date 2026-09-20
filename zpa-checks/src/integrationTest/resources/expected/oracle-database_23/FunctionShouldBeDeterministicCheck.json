@@ -1,41 +1,8 @@
 {
-  "lnpls/SQL_MACRO-clause-1.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-16.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-19.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-2.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-3.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-4.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-5.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-6.sql" : [
-    2
-  ],
   "lnpls/release-changes-0.sql" : [
     2
   ],
   "lnpls/subprogram-parts-7.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-17.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-20.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-21.sql" : [
     2
   ]
 }
