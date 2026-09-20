@@ -287,9 +287,6 @@
   "examples/join23.sql" : [
     3
   ],
-  "examples/json_sql.sql" : [
-    4
-  ],
   "examples/materialized_views.sql" : [
     81
   ],

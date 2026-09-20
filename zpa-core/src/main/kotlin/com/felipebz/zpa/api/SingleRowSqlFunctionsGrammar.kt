@@ -599,9 +599,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_OBJECT_ENTRY).define(
                 b.firstOf(
-                    b.sequence(b.optional(KEY), EXPRESSION, VALUE, EXPRESSION),
-                    b.sequence(STRING_LITERAL, COLON, EXPRESSION),
-                    EXPRESSION
+                    b.sequence(b.optional(KEY), EXPRESSION, b.firstOf(VALUE, IS), EXPRESSION),
+                    b.sequence(EXPRESSION, b.optional(COLON, EXPRESSION))
                 ),
                 b.optional(FORMAT, JSON)
             )

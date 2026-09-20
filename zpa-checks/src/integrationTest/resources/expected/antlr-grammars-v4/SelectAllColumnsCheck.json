@@ -130,6 +130,12 @@
     1,
     3
   ],
+  "examples/json_sql.sql" : [
+    10,
+    12,
+    42,
+    44
+  ],
   "examples/keywordasidentifier06.sql" : [
     1
   ],
