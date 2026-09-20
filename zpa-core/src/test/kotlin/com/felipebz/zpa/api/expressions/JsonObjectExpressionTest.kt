@@ -69,6 +69,38 @@ class JsonObjectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonObjectWithIsSeparator() {
+        assertThat(p).matches("json_object('foo' is dummy)")
+    }
+
+    @Test
+    fun matchesJsonObjectWithExplicitKeyAndIsSeparator() {
+        assertThat(p).matches("json_object(key 'foo' is dummy)")
+    }
+
+    @Test
+    fun matchesJsonObjectWithMixedSeparators() {
+        assertThat(p).matches(
+            """
+            json_object(
+                'a' value dummy,
+                'b' is dummy,
+                'c' : dummy
+            )
+            """.trimIndent())
+    }
+
+    @Test
+    fun matchesJsonObjectWithIdentifierKeyAndColon() {
+        assertThat(p).matches("json_object(k: v)")
+    }
+
+    @Test
+    fun matchesJsonObjectWithExpressionKeyAndColon() {
+        assertThat(p).matches("json_object(first_name || '_key': value)")
+    }
+
+    @Test
     fun matchesJsonObjectWithFormatJson() {
         assertThat(p).matches("json_object('k': '{}' format json)")
     }
@@ -96,6 +128,7 @@ class JsonObjectExpressionTest : RuleTest() {
     fun matchesAlternativeSyntaxOfJsonObject() {
         assertThat(p).matches("json { foo }")
         assertThat(p).matches("json { 'k': 'v' }")
+        assertThat(p).matches("json { 'foo' is dummy }")
         assertThat(p).matches(
             """json { 'k' value 'v',
             'a': '{}' format json

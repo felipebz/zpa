@@ -2,6 +2,9 @@
   "adjsn/creating-view-json-data-using-json_table-0.sql" : [
     4
   ],
+  "adjsn/creating-view-json-data-using-json_table-1.sql" : [
+    6
+  ],
   "adjsn/data-type-considerations-json_value-indexing-and-querying-0.sql" : [
     2
   ],
@@ -31,6 +34,9 @@
   ],
   "adjsn/json-data-type-9.sql" : [
     2
+  ],
+  "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
+    6
   ],
   "adjsn/json-schema-18.sql" : [
     2
@@ -203,6 +209,10 @@
     4,
     4
   ],
+  "sqlrf/APPROX_PERCENTILE_DETAIL-0.sql" : [
+    8,
+    8
+  ],
   "sqlrf/CASE-Expressions-1.sql" : [
     3
   ],
@@ -229,6 +239,25 @@
   "sqlrf/CREATE-MATERIALIZED-VIEW-10.sql" : [
     4,
     4
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-2.sql" : [
+    13,
+    13,
+    13
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-3.sql" : [
+    10,
+    10,
+    10
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-4.sql" : [
+    10,
+    10,
+    10
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-9.sql" : [
+    5,
+    7
   ],
   "sqlrf/CREATE-TABLE-48.sql" : [
     2,
@@ -421,6 +450,9 @@
   "sqlrf/SELECT-103.sql" : [
     3,
     5
+  ],
+  "sqlrf/SELECT-116.sql" : [
+    15
   ],
   "sqlrf/SELECT-24.sql" : [
     5,

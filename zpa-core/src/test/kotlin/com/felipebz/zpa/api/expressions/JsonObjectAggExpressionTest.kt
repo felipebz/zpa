@@ -38,6 +38,16 @@ class JsonObjectAggExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesJsonObjectAggWithIsSeparator() {
+        assertThat(p).matches("json_objectagg(dummy is dummy)")
+    }
+
+    @Test
+    fun matchesJsonObjectAggWithExplicitKeyAndIsSeparator() {
+        assertThat(p).matches("json_objectagg(key dummy is dummy)")
+    }
+
+    @Test
     fun matchesJsonObjectAggWithExplicitKey() {
         assertThat(p).matches("json_objectagg(key k value 'v')")
     }

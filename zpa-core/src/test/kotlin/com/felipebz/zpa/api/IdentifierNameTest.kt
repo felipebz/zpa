@@ -76,6 +76,13 @@ class IdentifierNameTest : RuleTest() {
     }
 
     @Test
+    fun matchesCreateJavaContextualKeywords() {
+        listOf("class", "named", "noforce", "resolve", "resolver", "source").forEach { keyword ->
+            assertThat(p).matches(keyword)
+        }
+    }
+
+    @Test
     fun preservesNonReservedKeywordAst() {
         val identifier = p.parse("CuRsOr")
         val nonReservedKeyword = identifier.getFirstDescendant(PlSqlGrammar.NON_RESERVED_KEYWORD)
@@ -86,6 +93,14 @@ class IdentifierNameTest : RuleTest() {
         assertThatValue(nonReservedKeyword.fromIndex).isEqualTo(identifier.fromIndex)
         assertThatValue(nonReservedKeyword.toIndex).isEqualTo(identifier.toIndex)
         assertThatValue(nonReservedKeyword.tokens.map { it.originalValue }).containsExactly("CuRsOr")
+    }
+    @Test
+    fun preservesOutAsNonReservedKeywordAst() {
+        val identifier = p.parse("OuT")
+        val nonReservedKeyword = identifier.getFirstDescendant(PlSqlGrammar.NON_RESERVED_KEYWORD)
+
+        assertThatValue(identifier.type).isEqualTo(PlSqlGrammar.IDENTIFIER_NAME)
+        assertThatValue(nonReservedKeyword.tokens.map { it.type }).containsExactly(PlSqlKeyword.OUT)
     }
 
     @Test

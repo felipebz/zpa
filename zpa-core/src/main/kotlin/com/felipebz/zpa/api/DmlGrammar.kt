@@ -22,6 +22,7 @@ package com.felipebz.zpa.api
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_CLAUSE
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
@@ -261,11 +262,14 @@ enum class DmlGrammar : GrammarRuleKey {
                         ),
                         b.optional(NESTED_CLAUSE),
                         b.optional(
-                            b.oneOrMore(
-                                b.firstOf(
-                                    PIVOT_CLAUSE,
-                                    UNPIVOT_CLAUSE
-                                )
+                            b.firstOf(
+                                b.oneOrMore(
+                                    b.firstOf(
+                                        PIVOT_CLAUSE,
+                                        UNPIVOT_CLAUSE
+                                    )
+                                ),
+                                ROW_PATTERN_CLAUSE
                             )
                         ),
                         b.optional(
@@ -290,7 +294,8 @@ enum class DmlGrammar : GrammarRuleKey {
                                     OFFSET_CLAUSE,
                                     EXCEPT,
                                     SET,
-                                    MODEL
+                                    MODEL,
+                                    b.sequence(MATCH_RECOGNIZE, LPARENTHESIS)
                                 )
                             ),
                             b.optional(AS),

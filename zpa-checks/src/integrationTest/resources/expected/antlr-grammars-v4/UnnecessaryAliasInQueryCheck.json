@@ -128,5 +128,11 @@
   ],
   "long-running/aggregate01.sql" : [
     34
+  ],
+  "long-running/order_by07.sql" : [
+    68,
+    69,
+    71,
+    98
   ]
 }

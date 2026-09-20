@@ -1,0 +1,453 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release_please:
+    name: Create or update Release Please draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ github.token }}
+
+  prepare_release:
+    name: Prepare and verify stable release
+    if: needs.release_please.outputs.release_created == 'true'
+    needs: release_please
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.release.outputs.release_version }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      release_sha: ${{ steps.release.outputs.release_sha }}
+    env:
+      RELEASE_VERSION: ${{ needs.release_please.outputs.version }}
+      RELEASE_TAG: ${{ needs.release_please.outputs.tag_name }}
+      RELEASE_SHA: ${{ needs.release_please.outputs.sha }}
+    steps:
+      - name: Checkout exact release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.release_please.outputs.sha }}
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
+      - name: Verify exact release commit and versions
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [[ ${RELEASE_SHA} =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Release Please returned an invalid commit SHA: %s\n' "${RELEASE_SHA}" >&2
+            exit 1
+          }
+          [[ $(git rev-parse HEAD) == "${RELEASE_SHA}" ]] || {
+            printf 'Checked out commit does not match Release Please SHA\n' >&2
+            exit 1
+          }
+          [[ ${RELEASE_VERSION} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            printf 'Release version must be a stable X.Y.Z: %s\n' "${RELEASE_VERSION}" >&2
+            exit 1
+          }
+          [[ ${RELEASE_TAG} == "${RELEASE_VERSION}" ]] || {
+            printf 'Release tag %s does not match release version %s\n' "${RELEASE_TAG}" "${RELEASE_VERSION}" >&2
+            exit 1
+          }
+          [[ ${RELEASE_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            printf 'Release tag must be an unprefixed stable X.Y.Z: %s\n' "${RELEASE_TAG}" >&2
+            exit 1
+          }
+
+          project_version=$(./gradlew properties --console=plain | awk '$1 == "version:" { value=$2 } END { print value }')
+          custom_rules_gradle_version=$(sed -n 's/^val zpaVersion = "\([^"]*\)"$/\1/p' plsql-custom-rules/build.gradle.kts)
+          custom_rules_pom_version=$(sed -n 's:.*<zpa.version>\([^<]*\)</zpa.version>.*:\1:p' plsql-custom-rules/pom.xml)
+          for version_name in project_version custom_rules_gradle_version custom_rules_pom_version; do
+            version_value=${!version_name}
+            [[ ${version_value} == "${RELEASE_VERSION}" ]] || {
+              printf '%s %s does not match release version %s\n' "${version_name}" "${version_value}" "${RELEASE_VERSION}" >&2
+              exit 1
+            }
+            [[ ${version_value} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+              printf '%s is not a stable X.Y.Z version: %s\n' "${version_name}" "${version_value}" >&2
+              exit 1
+            }
+          done
+
+          {
+            printf 'release_version=%s\n' "${RELEASE_VERSION}"
+            printf 'release_tag=%s\n' "${RELEASE_TAG}"
+            printf 'release_sha=%s\n' "${RELEASE_SHA}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build with Gradle
+        run: ./gradlew build --refresh-dependencies
+
+      - name: Publish to local Maven repository
+        run: ./gradlew publishToMavenLocal --refresh-dependencies
+
+      - name: Run zpa-checks integration tests
+        run: |
+          ./gradlew :zpa-checks:integrationTest --rerun
+          cat zpa-checks/build/integrationTest/progress-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build custom rules example
+        run: ./gradlew build -p plsql-custom-rules --refresh-dependencies
+
+      - name: Run SonarQube Scanner
+        run: ./gradlew sonar --info
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: Generate custom rules archive
+        run: git archive --format=zip -o build/plsql-custom-rules.zip HEAD:plsql-custom-rules
+
+      - name: Publish to local Maven staging
+        run: ./gradlew publish --refresh-dependencies
+
+      - name: Generate JReleaser changelog
+        run: ./gradlew jreleaserChangelog --no-dryrun --rerun
+        env:
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
+      - name: Sign release assets with JReleaser
+        run: ./gradlew jreleaserSign --no-dryrun --rerun
+        env:
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_KEY_PASSWORD }}
+
+      - name: Verify Maven staging contents
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          staging_root=build/staging-deploy
+          group_root=${staging_root}/com/felipebz/zpa
+          expected_modules=(
+            zpa-core
+            zpa-checks
+            zpa-checks-testkit
+            zpa-toolkit
+            sonar-zpa-plugin
+          )
+
+          [[ -d ${group_root} ]] || {
+            printf 'Maven staging group directory is missing: %s\n' "${group_root}" >&2
+            exit 1
+          }
+
+          mapfile -t actual_modules < <(find "${group_root}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+          mapfile -t sorted_expected_modules < <(printf '%s\n' "${expected_modules[@]}" | sort)
+          [[ "${actual_modules[*]}" == "${sorted_expected_modules[*]}" ]] || {
+            printf 'Staged modules do not match expected modules\nExpected: %s\nActual: %s\n' "${expected_modules[*]}" "${actual_modules[*]}" >&2
+            exit 1
+          }
+
+          for module in "${expected_modules[@]}"; do
+            module_root=${group_root}/${module}
+            mapfile -t versions < <(find "${module_root}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+            [[ ${#versions[@]} -eq 1 && ${versions[0]} == "${RELEASE_VERSION}" ]] || {
+              printf 'Unexpected staged versions for %s: %s\n' "${module}" "${versions[*]}" >&2
+              exit 1
+            }
+
+            version_root=${module_root}/${RELEASE_VERSION}
+            for artifact in \
+              "${module}-${RELEASE_VERSION}.jar" \
+              "${module}-${RELEASE_VERSION}-sources.jar" \
+              "${module}-${RELEASE_VERSION}-javadoc.jar" \
+              "${module}-${RELEASE_VERSION}.pom"; do
+              [[ -f ${version_root}/${artifact} ]] || {
+                printf 'Expected staged file is missing: %s\n' "${version_root}/${artifact}" >&2
+                exit 1
+              }
+            done
+
+            case ${module} in
+              zpa-core|zpa-checks|zpa-toolkit)
+                [[ -f ${version_root}/${module}-${RELEASE_VERSION}.module ]] || {
+                  printf 'Expected Gradle module metadata is missing for %s\n' "${module}" >&2
+                  exit 1
+                }
+                ;;
+              *)
+                [[ ! -e ${version_root}/${module}-${RELEASE_VERSION}.module ]] || {
+                  printf 'Unexpected Gradle module metadata for %s\n' "${module}" >&2
+                  exit 1
+                }
+                ;;
+            esac
+
+            while IFS= read -r -d '' staged_file; do
+              staged_name=$(basename "${staged_file}")
+              case ${staged_name} in
+                maven-metadata.xml*|${module}-${RELEASE_VERSION}*) ;;
+                *)
+                  printf 'Staged file has an unexpected coordinate: %s\n' "${staged_file}" >&2
+                  exit 1
+                  ;;
+              esac
+            done < <(find "${version_root}" -mindepth 1 -maxdepth 1 -type f -print0)
+          done
+
+          unexpected_snapshot=$(find "${staging_root}" -name '*SNAPSHOT*' -print -quit)
+          [[ -z ${unexpected_snapshot} ]] || {
+            printf 'Snapshot path found in stable Maven staging: %s\n' "${unexpected_snapshot}" >&2
+            exit 1
+          }
+
+          printf 'Verified Maven staging for %s: %s\n' "${RELEASE_VERSION}" "${expected_modules[*]}"
+
+      - name: Assemble final GitHub release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          payload_root=build/github-release-payload
+          rm -rf "${payload_root}"
+          mkdir -p "${payload_root}"
+
+          cp "sonar-zpa-plugin/build/libs/sonar-zpa-plugin-${RELEASE_VERSION}.jar" "${payload_root}/"
+          cp "zpa-toolkit/build/libs/zpa-toolkit-${RELEASE_VERSION}.jar" "${payload_root}/"
+          cp build/plsql-custom-rules.zip "${payload_root}/"
+          cp build/jreleaser/checksums/checksums_sha256.txt "${payload_root}/"
+          cp build/jreleaser/signatures/*.asc "${payload_root}/"
+          cp build/jreleaser/release/CHANGELOG.md "${payload_root}/RELEASE.md"
+
+          expected_files=(
+            RELEASE.md
+            checksums_sha256.txt
+            checksums_sha256.txt.asc
+            plsql-custom-rules.zip
+            plsql-custom-rules.zip.asc
+            sonar-zpa-plugin-${RELEASE_VERSION}.jar
+            sonar-zpa-plugin-${RELEASE_VERSION}.jar.asc
+            zpa-toolkit-${RELEASE_VERSION}.jar
+            zpa-toolkit-${RELEASE_VERSION}.jar.asc
+          )
+          mapfile -t actual_files < <(find "${payload_root}" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | sort)
+          mapfile -t sorted_expected_files < <(printf '%s\n' "${expected_files[@]}" | sort)
+          [[ "${actual_files[*]}" == "${sorted_expected_files[*]}" ]] || {
+            printf 'GitHub payload does not match the intended asset set\nExpected: %s\nActual: %s\n' "${expected_files[*]}" "${actual_files[*]}" >&2
+            exit 1
+          }
+          [[ -s "${payload_root}/RELEASE.md" ]] || {
+            printf 'Generated release body is empty\n' >&2
+            exit 1
+          }
+          unexpected_snapshot=$(find "${payload_root}" -name '*SNAPSHOT*' -print -quit)
+          [[ -z ${unexpected_snapshot} ]] || {
+            printf 'Snapshot asset found in stable GitHub payload: %s\n' "${unexpected_snapshot}" >&2
+            exit 1
+          }
+
+      - name: Upload integration-test artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: stable-integration-artifacts-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          path: |
+            **/build/
+            zpa-checks/tools/
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload validated Maven staging
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: maven-staging-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          path: build/staging-deploy
+          if-no-files-found: error
+
+      - name: Upload GitHub release payload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: github-release-payload-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          path: build/github-release-payload
+          if-no-files-found: error
+
+  integration_tests:
+    name: Plugin integration test (${{ matrix.sqVersion }})
+    if: needs.prepare_release.result == 'success'
+    needs: prepare_release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sqVersion:
+          - 26.2.0.119303
+          - 26.3.0.120487
+          - 26.8.0.126808
+          - 26.9.0.129388
+    env:
+      RELEASE_SHA: ${{ needs.prepare_release.outputs.release_sha }}
+      RELEASE_VERSION: ${{ needs.prepare_release.outputs.release_version }}
+    steps:
+      - name: Checkout exact release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.prepare_release.outputs.release_sha }}
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
+      - name: Download integration-test artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: stable-integration-artifacts-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+
+      - name: Run plugin integration test
+        run: |
+          if [[ "$SQ_VERSION" == *"SNAPSHOT"* ]]; then
+            FOLDER="snapshots"
+          else
+            FOLDER="releases"
+          fi
+
+          FILE_NAME="sonar-application-${SQ_VERSION}.zip"
+          DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/${FOLDER}/${FILE_NAME}"
+
+          curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
+          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=$FILE_NAME --rerun --info
+        env:
+          SQ_VERSION: ${{ matrix.sqVersion }}
+          OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
+          OCI_PAR: ${{ secrets.OCI_PAR }}
+
+  deploy_maven:
+    name: Deploy stable Maven artifacts
+    if: needs.prepare_release.result == 'success' && needs.integration_tests.result == 'success'
+    needs:
+      - prepare_release
+      - integration_tests
+    runs-on: ubuntu-latest
+    concurrency:
+      group: zpa-maven-publication-main
+      cancel-in-progress: false
+    outputs:
+      release_version: ${{ needs.prepare_release.outputs.release_version }}
+      release_tag: ${{ needs.prepare_release.outputs.release_tag }}
+      release_sha: ${{ needs.prepare_release.outputs.release_sha }}
+    env:
+      RELEASE_VERSION: ${{ needs.prepare_release.outputs.release_version }}
+      RELEASE_TAG: ${{ needs.prepare_release.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.prepare_release.outputs.release_sha }}
+    steps:
+      - name: Checkout exact release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.prepare_release.outputs.release_sha }}
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
+      - name: Download validated Maven staging
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: maven-staging-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          path: build/staging-deploy
+
+      - name: Deploy to Maven Central
+        run: ./gradlew jreleaserDeploy
+        env:
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_KEY_PASSWORD }}
+
+  publish_github:
+    name: Publish GitHub Release
+    if: needs.deploy_maven.result == 'success'
+    needs: deploy_maven
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ needs.deploy_maven.outputs.release_version }}
+      RELEASE_TAG: ${{ needs.deploy_maven.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.deploy_maven.outputs.release_sha }}
+    steps:
+      - name: Download final GitHub release payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: github-release-payload-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          path: build/github-release-payload
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
+        with:
+          token: ${{ github.token }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Release ${{ env.RELEASE_VERSION }}
+          draft: false
+          body_path: build/github-release-payload/RELEASE.md
+          fail_on_unmatched_files: true
+          files: |
+            build/github-release-payload/RELEASE.md
+            build/github-release-payload/checksums_sha256.txt
+            build/github-release-payload/checksums_sha256.txt.asc
+            build/github-release-payload/plsql-custom-rules.zip
+            build/github-release-payload/plsql-custom-rules.zip.asc
+            build/github-release-payload/sonar-zpa-plugin-${{ env.RELEASE_VERSION }}.jar
+            build/github-release-payload/sonar-zpa-plugin-${{ env.RELEASE_VERSION }}.jar.asc
+            build/github-release-payload/zpa-toolkit-${{ env.RELEASE_VERSION }}.jar
+            build/github-release-payload/zpa-toolkit-${{ env.RELEASE_VERSION }}.jar.asc
+
+  dependency-submission:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb

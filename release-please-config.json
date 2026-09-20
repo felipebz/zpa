@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/v17.6.0/schemas/config.json",
+  "draft": true,
+  "force-tag-creation": true,
+  "packages": {
+    ".": {
+      "release-type": "java",
+      "package-name": "zpa",
+      "extra-files": [
+        { "type": "generic", "path": "gradle.properties" },
+        { "type": "generic", "path": "plsql-custom-rules/build.gradle.kts" },
+        { "type": "generic", "path": "plsql-custom-rules/pom.xml" }
+      ],
+      "skip-changelog": true,
+      "include-component-in-tag": false,
+      "include-v-in-tag": false
+    }
+  }
+}

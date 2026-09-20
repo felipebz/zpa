@@ -91,7 +91,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_OBJECTAGG_EXPRESSION).define(
                 JSON_OBJECTAGG, LPARENTHESIS,
-                b.optional(KEY), EXPRESSION, VALUE, EXPRESSION,
+                b.optional(KEY), EXPRESSION, b.firstOf(VALUE, IS), EXPRESSION,
                 b.optional(FORMAT, JSON),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_ON_NULL_CLAUSE),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_RETURNING_CLAUSE),

@@ -25,21 +25,9 @@ import com.felipebz.flr.internal.vm.Machine
 import com.felipebz.flr.internal.vm.NativeExpression
 import com.felipebz.zpa.api.PlSqlPunctuator
 
-public object ExecuteBufferExpression : NativeExpression(), Matcher {
+object ExecuteBufferExpression : NativeExpression(), Matcher {
     override fun execute(machine: Machine) {
-        if (machine.length < 2) {
-            machine.backtrack()
-            return
-        }
-
-        val previousTokenLine = if (machine.index == 0) 0 else machine.tokenAt(-1).line
-        val token = machine.tokenAt(0)
-        val nextToken = machine.tokenAt(1)
-
-        if (token.type == PlSqlPunctuator.DIVISION && token.column == 0
-            && (token.line != previousTokenLine || previousTokenLine == 0)
-            && (token.line != nextToken.line || nextToken.type == GenericTokenType.EOF)
-        ) {
+        if (isExecuteBufferDelimiter(machine, 0)) {
             machine.createLeafNode(this, 1)
             machine.jump(1)
         } else {
@@ -50,4 +38,23 @@ public object ExecuteBufferExpression : NativeExpression(), Matcher {
     override fun toString(): String {
         return "ExecuteBuffer"
     }
+}
+
+internal fun isExecuteBufferDelimiter(machine: Machine, offset: Int): Boolean {
+    if (machine.length <= offset + 1) {
+        return false
+    }
+
+    val previousTokenLine = if (offset == 0) {
+        if (machine.index == 0) 0 else machine.tokenAt(-1).line
+    } else {
+        machine.tokenAt(offset - 1).line
+    }
+    val token = machine.tokenAt(offset)
+    val nextToken = machine.tokenAt(offset + 1)
+
+    return token.type == PlSqlPunctuator.DIVISION
+        && token.column == 0
+        && (token.line != previousTokenLine || previousTokenLine == 0)
+        && (token.line != nextToken.line || nextToken.type == GenericTokenType.EOF)
 }

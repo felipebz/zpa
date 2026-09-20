@@ -20,10 +20,12 @@
 package com.felipebz.zpa.api.declarations
 
 import com.felipebz.flr.tests.Assertions.assertThat
+import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.RuleTest
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.RuleTest
 
 class ParameterDeclarationTest : RuleTest() {
 
@@ -54,22 +56,45 @@ class ParameterDeclarationTest : RuleTest() {
 
     @Test
     fun matchesOutParameter() {
-        assertThat(p).matches("parameter out number")
+        assertThat(p).matches("x out number")
     }
 
     @Test
     fun matchesInOutParameter() {
-        assertThat(p).matches("parameter in out number")
+        assertThat(p).matches("x in out number")
     }
 
     @Test
     fun matchesOutParameterWithNocopy() {
-        assertThat(p).matches("parameter out nocopy number")
+        assertThat(p).matches("x out nocopy number")
     }
 
     @Test
     fun matchesInOutParameterWithNocopy() {
-        assertThat(p).matches("parameter in out nocopy number")
+        assertThat(p).matches("x in out nocopy number")
+    }
+
+    @Test
+    fun preservesOutParameterModeAsKeyword() {
+        val parameter = p.parse("x in out nocopy number")
+
+        assertThatAst(parameter.children.map { it.type })
+            .containsExactly(
+                PlSqlGrammar.IDENTIFIER_NAME,
+                PlSqlKeyword.IN,
+                PlSqlKeyword.OUT,
+                PlSqlKeyword.NOCOPY,
+                PlSqlGrammar.DATATYPE
+            )
+    }
+
+    @Test
+    fun rejectsOutParameterWithoutDatatype() {
+        assertThat(p).notMatches("x out")
+    }
+    @Test
+    fun rejectsOutQualifiedDatatype() {
+        assertThat(p).notMatches("x out.t")
     }
 
 }

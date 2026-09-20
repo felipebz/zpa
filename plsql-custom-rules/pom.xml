@@ -10,7 +10,9 @@
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <zpa.version>4.2.0-SNAPSHOT</zpa.version>
+    <!-- x-release-please-start-version -->
+    <zpa.version>4.1.1-SNAPSHOT</zpa.version>
+    <!-- x-release-please-end -->
     <sonarqube.api.min.version>13.0.0.3026</sonarqube.api.min.version>
     <sonarqube.min.version>25.8.0.111929</sonarqube.min.version>
   </properties>
@@ -79,7 +81,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.6</version>
+        <version>3.6.0</version>
       </plugin>
     </plugins>
   </build>

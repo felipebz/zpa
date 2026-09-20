@@ -19,9 +19,16 @@ jreleaser {
     }
     release {
         github {
-            overwrite.set(true)
+            token.set("unused") // JReleaser requires a configured provider even for deploy tasks.
+            skipTag.set(true)
+            skipRelease.set(true)
+            artifacts.set(false)
+            files.set(false)
+            checksums.set(false)
+            catalogs.set(false)
+            signatures.set(false)
+            uploadAssets.set(org.jreleaser.model.Active.NEVER)
             tagName.set("{{projectVersion}}")
-            draft.set(true)
             changelog {
                 formatted.set(org.jreleaser.model.Active.ALWAYS)
                 preset.set("conventional-commits")

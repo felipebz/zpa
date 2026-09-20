@@ -21,11 +21,13 @@ package com.felipebz.zpa.api
 
 import com.felipebz.flr.api.GenericTokenType.EOF
 import com.felipebz.flr.grammar.GrammarRuleKey
-import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
+import com.felipebz.zpa.grammar.JavaSourceTextExpression
+import com.felipebz.zpa.grammar.JavaResolverMatchStringExpression
+import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 
 enum class DdlGrammar : GrammarRuleKey {
 
@@ -35,6 +37,8 @@ enum class DdlGrammar : GrammarRuleKey {
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
     OUT_OF_LINE_CONSTRAINT,
+    ANNOTATIONS_CLAUSE,
+    ANNOTATION,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
@@ -80,8 +84,6 @@ enum class DdlGrammar : GrammarRuleKey {
     INDEX_REBUILD_CLAUSE,
     INDEX_SEGMENT_ATTRIBUTES_CLAUSE,
     INDEX_PARTITION_DESCRIPTION,
-    INDEX_ANNOTATIONS_CLAUSE,
-    INDEX_ANNOTATION,
     INDEX_ILM_CLAUSE,
     INDEX_ILM_ACTION,
     INDEX_ILM_POLICY_CLAUSE,
@@ -105,6 +107,21 @@ enum class DdlGrammar : GrammarRuleKey {
     PACKAGE_COMPILE_CLAUSE,
     DROP_COMMAND,
     CREATE_SYNONYM,
+    CREATE_JAVA,
+    CREATE_JAVA_OBJECT,
+    CREATE_JAVA_SOURCE,
+    CREATE_JAVA_CLASS,
+    CREATE_JAVA_RESOURCE,
+    JAVA_NAMED_CLAUSE,
+    JAVA_SCHEMA_CLAUSE,
+    JAVA_SHARING_CLAUSE,
+    JAVA_AUTHID_CLAUSE,
+    JAVA_RESOLVER_CLAUSE,
+    JAVA_RESOLVER_ENTRY,
+    JAVA_RESOLVER_MATCH_STRING,
+    JAVA_RESOLVER_SCHEMA_NAME,
+    JAVA_USING_CLAUSE,
+    JAVA_SOURCE_TEXT,
     CREATE_SEQUENCE,
     PARTITION_BY_RANGE,
     PARTITION_BY_HASH,
@@ -548,7 +565,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                             SUBPARTITION,
                             BY,
-                            HASH,
+                            PlSqlKeyword.HASH,
                             LPARENTHESIS,
                             b.oneOrMore(
                                     IDENTIFIER_NAME,
@@ -593,7 +610,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                             PARTITION,
                             BY,
-                            HASH,
+                            PlSqlKeyword.HASH,
                             LPARENTHESIS,
                             b.oneOrMore(
                                     b.sequence(
@@ -773,7 +790,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(LPARENTHESIS, INDEX_ILM_ACTION, RPARENTHESIS),
                     INDEX_ILM_ACTION))
 
-            b.rule(INDEX_ANNOTATION).define(
+            b.rule(ANNOTATION).define(
                 b.optional(b.firstOf(
                     b.sequence(ADD, b.optional(b.firstOf(
                         b.sequence(IF, NOT, EXISTS),
@@ -783,9 +800,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME,
                 b.optional(CHARACTER_LITERAL))
 
-            b.rule(INDEX_ANNOTATIONS_CLAUSE).define(
+            b.rule(ANNOTATIONS_CLAUSE).define(
                 ANNOTATIONS, LPARENTHESIS,
-                INDEX_ANNOTATION, b.zeroOrMore(COMMA, INDEX_ANNOTATION),
+                ANNOTATION, b.zeroOrMore(COMMA, ANNOTATION),
                 RPARENTHESIS)
 
             b.rule(CREATE_INDEX_ATTRIBUTE).define(
@@ -800,7 +817,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(VISIBLE, INVISIBLE),
                     INDEX_PARTIAL_CLAUSE,
                     INDEX_PARALLEL_CLAUSE,
-                    INDEX_ANNOTATIONS_CLAUSE))
+                    ANNOTATIONS_CLAUSE))
 
             b.rule(CREATE_INDEX_ATTRIBUTES).define(
                 b.oneOrMore(CREATE_INDEX_ATTRIBUTE))
@@ -857,7 +874,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.zeroOrMore(COMMA, CREATE_INDEX_PARTITIONING_CLAUSE),
                         RPARENTHESIS),
                     b.sequence(
-                        HASH, LPARENTHESIS,
+                        PlSqlKeyword.HASH, LPARENTHESIS,
                         IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
                         b.firstOf(CREATE_INDEX_HASH_PARTITIONS,
                             CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY))))
@@ -1151,7 +1168,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(COALESCE, b.optional(CLEANUP), b.optional(ONLY), b.optional(INDEX_PARALLEL_CLAUSE)),
                     b.sequence(b.firstOf(MONITORING, NOMONITORING), USAGE),
                     b.sequence(UPDATE, BLOCK, REFERENCES),
-                    INDEX_ANNOTATIONS_CLAUSE))
+                    ANNOTATIONS_CLAUSE))
 
             b.rule(ALTER_INDEX).define(
                 ALTER, INDEX, b.optional(IF, EXISTS), UNIT_NAME,
@@ -1213,6 +1230,86 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(REUSE, SETTINGS))
 
             b.rule(DROP_COMMAND).define(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
+
+            b.rule(CREATE_JAVA).define(
+                CREATE,
+                b.optional(OR, REPLACE),
+                b.optional(AND, b.firstOf(RESOLVE, COMPILE)),
+                b.optional(NOFORCE),
+                JAVA,
+                b.optional(IF, NOT, EXISTS),
+                CREATE_JAVA_OBJECT,
+                b.optional(SEMICOLON))
+
+            b.rule(CREATE_JAVA_OBJECT).define(
+                b.firstOf(CREATE_JAVA_SOURCE, CREATE_JAVA_CLASS, CREATE_JAVA_RESOURCE))
+
+            b.rule(CREATE_JAVA_SOURCE).define(
+                SOURCE,
+                JAVA_NAMED_CLAUSE,
+                b.optional(JAVA_SHARING_CLAUSE),
+                b.optional(JAVA_AUTHID_CLAUSE),
+                b.optional(JAVA_RESOLVER_CLAUSE),
+                b.firstOf(
+                    b.sequence(AS, JAVA_SOURCE_TEXT),
+                    JAVA_USING_CLAUSE))
+
+            b.rule(CREATE_JAVA_CLASS).define(
+                CLASS,
+                b.optional(JAVA_SCHEMA_CLAUSE),
+                b.optional(JAVA_SHARING_CLAUSE),
+                b.optional(JAVA_AUTHID_CLAUSE),
+                b.optional(JAVA_RESOLVER_CLAUSE),
+                JAVA_USING_CLAUSE)
+
+            b.rule(CREATE_JAVA_RESOURCE).define(
+                RESOURCE,
+                JAVA_NAMED_CLAUSE,
+                b.optional(JAVA_SHARING_CLAUSE),
+                b.optional(JAVA_AUTHID_CLAUSE),
+                b.optional(JAVA_RESOLVER_CLAUSE),
+                JAVA_USING_CLAUSE)
+
+            b.rule(JAVA_NAMED_CLAUSE).define(NAMED, UNIT_NAME)
+
+            b.rule(JAVA_SCHEMA_CLAUSE).define(SCHEMA, IDENTIFIER_NAME)
+
+            b.rule(JAVA_SHARING_CLAUSE).define(
+                SHARING, EQUALS, b.firstOf(METADATA, NONE))
+
+            b.rule(JAVA_AUTHID_CLAUSE).define(
+                AUTHID, b.firstOf(CURRENT_USER, DEFINER))
+
+            b.rule(JAVA_RESOLVER_CLAUSE).define(
+                RESOLVER,
+                LPARENTHESIS,
+                b.oneOrMore(JAVA_RESOLVER_ENTRY),
+                RPARENTHESIS)
+
+            b.rule(JAVA_RESOLVER_ENTRY).define(
+                LPARENTHESIS,
+                JAVA_RESOLVER_MATCH_STRING,
+                b.optional(COMMA),
+                JAVA_RESOLVER_SCHEMA_NAME,
+                RPARENTHESIS)
+
+            b.rule(JAVA_RESOLVER_MATCH_STRING).define(JavaResolverMatchStringExpression)
+
+            b.rule(JAVA_RESOLVER_SCHEMA_NAME).define(
+                b.firstOf(IDENTIFIER_NAME, MINUS, PUBLIC))
+
+            b.rule(JAVA_USING_CLAUSE).define(
+                USING,
+                b.firstOf(
+                    b.sequence(BFILE, LPARENTHESIS, IDENTIFIER_NAME, COMMA, CHARACTER_LITERAL, RPARENTHESIS),
+                    b.sequence(
+                        b.firstOf(CLOB, BLOB, BFILE),
+                        LPARENTHESIS,
+                        DmlGrammar.SELECT_EXPRESSION,
+                        RPARENTHESIS),
+                    CHARACTER_LITERAL))
+
+            b.rule(JAVA_SOURCE_TEXT).define(JavaSourceTextExpression)
 
             b.rule(CREATE_SYNONYM).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
@@ -1284,6 +1381,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 DDL_COMMENT,
                 CREATE_TABLE,
                 CREATE_INDEX,
+                CREATE_JAVA,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,

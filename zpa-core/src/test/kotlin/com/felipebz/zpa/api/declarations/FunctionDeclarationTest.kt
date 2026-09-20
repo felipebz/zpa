@@ -87,6 +87,10 @@ class FunctionDeclarationTest : RuleTest() {
                 + "return 0;\n"
                 + "end;")
     }
+    @Test
+    fun matchesFunctionNamedOut() {
+        assertThat(p).matches("function out return number;")
+    }
 
     @Test
     fun matchesFunctionWithVariableDeclaration() {

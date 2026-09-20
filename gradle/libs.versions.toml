@@ -2,14 +2,14 @@
 kotlin = "2.4.20"
 dokka = "2.2.0"
 download = "5.7.0"
-jreleaser = "1.25.0"
+jreleaser = "1.26.0"
 license = "0.16.1"
 shadow = "9.6.1"
-sonarscanner = "7.4.0.8496"
+sonarscanner = "7.5.0.8588"
 
 # libs
 flatlaf = "3.7.2"
-flr = "1.6.0-SNAPSHOT"
+flr = "1.6.0"
 jackson = "2.22.2"
 jsoup = "1.23.2"
 min-sonarqube = "25.8.0.111929"
