@@ -53,6 +53,9 @@
   "examples/condition16.sql" : [
     1
   ],
+  "examples/create_package02.sql" : [
+    14
+  ],
   "examples/dblink01.sql" : [
     5,
     7
@@ -119,6 +122,9 @@
     1
   ],
   "examples/join16.sql" : [
+    1
+  ],
+  "examples/join17.sql" : [
     1
   ],
   "examples/join19.sql" : [
@@ -245,6 +251,12 @@
   ],
   "examples/simple12.sql" : [
     4
+  ],
+  "examples/simple13.sql" : [
+    1
+  ],
+  "examples/single_statement.sql" : [
+    2
   ],
   "examples/union05.sql" : [
     1,

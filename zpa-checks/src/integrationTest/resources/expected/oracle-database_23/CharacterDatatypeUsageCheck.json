@@ -48,6 +48,9 @@
   "lnpls/invokers-rights-and-definers-rights-authid-property-3.sql" : [
     4
   ],
+  "lnpls/native-dynamic-sql-11.sql" : [
+    4
+  ],
   "lnpls/pl-sql-function-result-cache-10.sql" : [
     3
   ],

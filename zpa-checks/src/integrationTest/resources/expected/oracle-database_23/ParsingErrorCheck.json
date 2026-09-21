@@ -53,9 +53,6 @@
   "adjsn/loading-external-json-data-4.sql" : [
     2
   ],
-  "adjsn/oracle-sql-function-json_transform-4.sql" : [
-    4
-  ],
   "adjsn/partitioning-json-data-0.sql" : [
     2
   ],
@@ -82,9 +79,6 @@
   ],
   "adjsn/sql-json-conditions-is-json-and-is-not-json-6.sql" : [
     6
-  ],
-  "adjsn/sql-json-function-json_object-14.sql" : [
-    3
   ],
   "adjsn/sql-json-function-json_object-21.sql" : [
     2
@@ -191,71 +185,11 @@
   "lnpls/assigning-values-record-variables-12.sql" : [
     2
   ],
-  "lnpls/autonomous-transactions-3.sql" : [
-    3
-  ],
-  "lnpls/autonomous-transactions-4.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-1.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-2.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-28.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-30.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-5.sql" : [
-    3
-  ],
   "lnpls/bulk-sql-and-bulk-binding-52.sql" : [
     10
   ],
-  "lnpls/bulk-sql-and-bulk-binding-59.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-6.sql" : [
-    8
-  ],
   "lnpls/bulk-sql-and-bulk-binding-61.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-63.sql" : [
-    3
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-65.sql" : [
-    3
-  ],
-  "lnpls/column-name-precedence-0.sql" : [
-    3
-  ],
-  "lnpls/column-name-precedence-2.sql" : [
-    3
-  ],
-  "lnpls/column-name-precedence-4.sql" : [
-    3
-  ],
-  "lnpls/compile-time-warnings-8.sql" : [
-    2
-  ],
-  "lnpls/compiling-pl-sql-units-native-execution-0.sql" : [
-    2
-  ],
-  "lnpls/compiling-pl-sql-units-native-execution-4.sql" : [
-    2
-  ],
-  "lnpls/compiling-pl-sql-units-native-execution-5.sql" : [
-    2
-  ],
-  "lnpls/conditional-compilation1-18.sql" : [
-    46
-  ],
-  "lnpls/conditional-compilation1-20.sql" : [
-    2
+    15
   ],
   "lnpls/conditional-compilation1-21.sql" : [
     2
@@ -266,23 +200,8 @@
   "lnpls/conditional-selection-statements-21.sql" : [
     8
   ],
-  "lnpls/continuing-execution-handling-exceptions-0.sql" : [
-    3
-  ],
-  "lnpls/cursors-overview-0.sql" : [
-    3
-  ],
-  "lnpls/cursors-overview-2.sql" : [
-    3
-  ],
   "lnpls/cursors-overview-7.sql" : [
     2
-  ],
-  "lnpls/description-static-sql-0.sql" : [
-    3
-  ],
-  "lnpls/description-static-sql-2.sql" : [
-    3
   ],
   "lnpls/expressions-52.sql" : [
     8
@@ -298,12 +217,6 @@
   ],
   "lnpls/loop-statements-31.sql" : [
     2
-  ],
-  "lnpls/native-dynamic-sql-11.sql" : [
-    2
-  ],
-  "lnpls/overview-exception-handling-6.sql" : [
-    22
   ],
   "lnpls/overview-polymorphic-table-functions-18.sql" : [
     3
@@ -329,9 +242,6 @@
   "lnpls/record-variables-26.sql" : [
     2
   ],
-  "lnpls/record-variables-28.sql" : [
-    2
-  ],
   "lnpls/release-changes-2.sql" : [
     2
   ],
@@ -352,21 +262,6 @@
   ],
   "lnpls/subprograms-invoked-triggers-0.sql" : [
     8
-  ],
-  "lnpls/transaction-processing-and-control-11.sql" : [
-    3
-  ],
-  "lnpls/transaction-processing-and-control-5.sql" : [
-    3
-  ],
-  "lnpls/transaction-processing-and-control-6.sql" : [
-    3
-  ],
-  "lnpls/transaction-processing-and-control-7.sql" : [
-    3
-  ],
-  "lnpls/transaction-processing-and-control-9.sql" : [
-    3
   ],
   "lnpls/triggers-publishing-events-0.sql" : [
     2
@@ -941,78 +836,6 @@
   "sqlrf/ALTER-SYNONYM-2.sql" : [
     2
   ],
-  "sqlrf/ALTER-SYSTEM-0.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-1.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-10.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-11.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-12.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-13.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-14.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-15.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-16.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-17.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-18.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-19.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-20.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-21.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-22.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-23.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-24.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-25.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-27.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-28.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-5.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-7.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-8.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-SYSTEM-9.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-0.sql" : [
     2
   ],
@@ -1028,23 +851,14 @@
   "sqlrf/ALTER-TABLE-103.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-104.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-105.sql" : [
     3
-  ],
-  "sqlrf/ALTER-TABLE-106.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-107.sql" : [
     3
   ],
   "sqlrf/ALTER-TABLE-109.sql" : [
     7
-  ],
-  "sqlrf/ALTER-TABLE-11.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-110.sql" : [
     2
@@ -1078,9 +892,6 @@
   ],
   "sqlrf/ALTER-TABLE-129.sql" : [
     3
-  ],
-  "sqlrf/ALTER-TABLE-17.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-18.sql" : [
     2
@@ -1125,9 +936,6 @@
     2
   ],
   "sqlrf/ALTER-TABLE-39.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-40.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-43.sql" : [
@@ -1185,10 +993,10 @@
     10
   ],
   "sqlrf/ALTER-TABLE-64.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-65.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-66.sql" : [
     3
@@ -1209,28 +1017,16 @@
     8
   ],
   "sqlrf/ALTER-TABLE-74.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-75.sql" : [
     3
   ],
   "sqlrf/ALTER-TABLE-76.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-77.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-79.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-8.sql" : [
     4
-  ],
-  "sqlrf/ALTER-TABLE-81.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-82.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-85.sql" : [
     2
@@ -1247,22 +1043,10 @@
   "sqlrf/ALTER-TABLE-9.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-90.sql" : [
-    3
-  ],
   "sqlrf/ALTER-TABLE-91.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-92.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-94.sql" : [
-    3
-  ],
   "sqlrf/ALTER-TABLE-99.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLESPACE-0.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLESPACE-1.sql" : [
@@ -1439,20 +1223,8 @@
   "sqlrf/AUDIT-Unified-Auditing-8.sql" : [
     2
   ],
-  "sqlrf/CALL-0.sql" : [
-    2
-  ],
-  "sqlrf/CALL-1.sql" : [
-    2
-  ],
-  "sqlrf/CALL-2.sql" : [
-    2
-  ],
   "sqlrf/CALL-3.sql" : [
     2
-  ],
-  "sqlrf/CALL-4.sql" : [
-    9
   ],
   "sqlrf/CAST-13.sql" : [
     2
@@ -1580,9 +1352,6 @@
   "sqlrf/CREATE-CLUSTER-9.sql" : [
     6
   ],
-  "sqlrf/CREATE-CONTEXT-0.sql" : [
-    2
-  ],
   "sqlrf/CREATE-CONTROLFILE-0.sql" : [
     4
   ],
@@ -1694,9 +1463,6 @@
   "sqlrf/CREATE-PROFILE-1.sql" : [
     2
   ],
-  "sqlrf/CREATE-PROFILE-2.sql" : [
-    2
-  ],
   "sqlrf/CREATE-PROFILE-4.sql" : [
     2
   ],
@@ -1769,16 +1535,10 @@
   "sqlrf/CREATE-TABLE-21.sql" : [
     2
   ],
-  "sqlrf/CREATE-TABLE-22.sql" : [
-    4
-  ],
   "sqlrf/CREATE-TABLE-23.sql" : [
     2
   ],
   "sqlrf/CREATE-TABLE-27.sql" : [
-    3
-  ],
-  "sqlrf/CREATE-TABLE-28.sql" : [
     3
   ],
   "sqlrf/CREATE-TABLE-34.sql" : [
@@ -1878,13 +1638,13 @@
     2
   ],
   "sqlrf/CREATE-TABLESPACE-12.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLESPACE-14.sql" : [
     2
   ],
   "sqlrf/CREATE-TABLESPACE-15.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLESPACE-16.sql" : [
     2
@@ -1896,7 +1656,7 @@
     2
   ],
   "sqlrf/CREATE-TABLESPACE-4.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLESPACE-5.sql" : [
     2
@@ -1952,9 +1712,6 @@
   "sqlrf/CUME_DIST-0.sql" : [
     3
   ],
-  "sqlrf/Comments-1.sql" : [
-    6
-  ],
   "sqlrf/Comments-2.sql" : [
     2
   ],
@@ -1981,9 +1738,6 @@
   ],
   "sqlrf/DISASSOCIATE-STATISTICS-0.sql" : [
     2
-  ],
-  "sqlrf/DROP-DATABASE-0.sql" : [
-    4
   ],
   "sqlrf/Data-Types-17.sql" : [
     5
@@ -2024,12 +1778,6 @@
   "sqlrf/FLASHBACK-DATABASE-1.sql" : [
     6
   ],
-  "sqlrf/FLASHBACK-TABLE-1.sql" : [
-    3
-  ],
-  "sqlrf/FLASHBACK-TABLE-3.sql" : [
-    3
-  ],
   "sqlrf/FLASHBACK-TABLE-6.sql" : [
     2
   ],
@@ -2048,9 +1796,6 @@
   "sqlrf/Graphic-Syntax-Diagrams-2.sql" : [
     2
   ],
-  "sqlrf/INSERT-26.sql" : [
-    8
-  ],
   "sqlrf/Interval-Expressions-0.sql" : [
     2
   ],
@@ -2065,9 +1810,6 @@
   ],
   "sqlrf/MERGE-12.sql" : [
     11
-  ],
-  "sqlrf/Multiset-Operators-0.sql" : [
-    2
   ],
   "sqlrf/Multiset-Operators-2.sql" : [
     5
@@ -2252,9 +1994,6 @@
   "sqlrf/SELECT-74.sql" : [
     3
   ],
-  "sqlrf/SELECT-75.sql" : [
-    2
-  ],
   "sqlrf/SELECT-82.sql" : [
     3
   ],
@@ -2361,10 +2100,7 @@
     4
   ],
   "sqlrf/annotations_clause-5.sql" : [
-    3
-  ],
-  "sqlrf/constraint-15.sql" : [
-    2
+    4
   ],
   "sqlrf/constraint-16.sql" : [
     2

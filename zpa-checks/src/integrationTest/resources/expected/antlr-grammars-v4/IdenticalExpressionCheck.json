@@ -11,6 +11,9 @@
   "examples/condition10.sql" : [
     4
   ],
+  "examples/create_package02.sql" : [
+    16
+  ],
   "examples/quntitative_expression.sql" : [
     2,
     3

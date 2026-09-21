@@ -54,6 +54,9 @@
     8,
     9
   ],
+  "lnpls/continuing-execution-handling-exceptions-0.sql" : [
+    16
+  ],
   "lnpls/continuing-execution-handling-exceptions-2.sql" : [
     18
   ],
@@ -62,6 +65,9 @@
   ],
   "lnpls/correlation-names-and-pseudorecords-17.sql" : [
     8
+  ],
+  "lnpls/description-static-sql-2.sql" : [
+    30
   ],
   "lnpls/dml-triggers-17.sql" : [
     2

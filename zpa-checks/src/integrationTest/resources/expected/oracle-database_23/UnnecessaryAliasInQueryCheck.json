@@ -283,6 +283,10 @@
   "sqlrf/Comments-0.sql" : [
     6
   ],
+  "sqlrf/Comments-1.sql" : [
+    4,
+    4
+  ],
   "sqlrf/Comments-10.sql" : [
     3
   ],

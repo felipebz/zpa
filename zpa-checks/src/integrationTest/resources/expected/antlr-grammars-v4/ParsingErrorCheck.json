@@ -90,7 +90,7 @@
     2
   ],
   "examples/alter_table_modify_partition_by_range.sql" : [
-    2
+    3
   ],
   "examples/alter_table_modify_partition_shrink.sql" : [
     1
@@ -119,20 +119,11 @@
   "examples/bindvar04.sql" : [
     6
   ],
-  "examples/call.sql" : [
-    1
-  ],
   "examples/cluster.sql" : [
     1
   ],
-  "examples/columns01.sql" : [
-    6
-  ],
   "examples/commit.sql" : [
     4
-  ],
-  "examples/context.sql" : [
-    1
   ],
   "examples/create_analytic_view.sql" : [
     1
@@ -188,14 +179,8 @@
   "examples/create_outline.sql" : [
     1
   ],
-  "examples/create_package02.sql" : [
-    12
-  ],
   "examples/create_package03.sql" : [
     8
-  ],
-  "examples/create_package05.sql" : [
-    19
   ],
   "examples/create_pmem_filestore.sql" : [
     1
@@ -227,9 +212,6 @@
   "examples/create_tablespace_set.sql" : [
     1
   ],
-  "examples/create_trigger01.sql" : [
-    7
-  ],
   "examples/create_trigger02.sql" : [
     2
   ],
@@ -237,7 +219,7 @@
     32
   ],
   "examples/ctas.sql" : [
-    1
+    3
   ],
   "examples/dblink.sql" : [
     1
@@ -257,20 +239,11 @@
   "examples/forall_indices_of.sql" : [
     12
   ],
-  "examples/function03.sql" : [
-    1
-  ],
-  "examples/function06.sql" : [
-    1
-  ],
   "examples/interval01.sql" : [
     1
   ],
   "examples/interval03.sql" : [
     16
-  ],
-  "examples/join17.sql" : [
-    4
   ],
   "examples/materialized_views.sql" : [
     81
@@ -309,12 +282,6 @@
     2
   ],
   "examples/select_time.sql" : [
-    1
-  ],
-  "examples/simple13.sql" : [
-    1
-  ],
-  "examples/single_statement.sql" : [
     1
   ],
   "examples/truncate_cluster.sql" : [
