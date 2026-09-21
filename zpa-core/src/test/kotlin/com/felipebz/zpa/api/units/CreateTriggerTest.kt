@@ -114,4 +114,18 @@ class CreateTriggerTest : RuleTest() {
                 + "begin null; end after statement;"
                 + "end foo;")
     }
+
+    @Test
+    fun matchesCompoundTriggerWithDeclarationsInTimingSection() {
+        assertThat(p).matches("create trigger trg for insert on tab compound trigger " +
+                "g number; " +
+                "before each row is l_data pkg.r_type; begin null; end before each row; " +
+                "end;")
+    }
+
+    @Test
+    fun doesNotMatchATimingSectionWithoutBegin() {
+        assertThat(p).notMatches("create trigger trg for insert on tab compound trigger " +
+                "before each row is l_data pkg.r_type; end before each row; end trg;")
+    }
 }

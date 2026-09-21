@@ -126,4 +126,19 @@ class MultisetExpressionsTest : RuleTest() {
     fun matchesMultipleMultisetUnion() {
         assertThat(p).matches("a multiset union b multiset union c multiset union d")
     }
+
+    @Test
+    fun matchesMultisetWithCaseOperand() {
+        assertThat(p).matches("foo multiset union case when 1 = 1 then bar else baz end")
+    }
+
+    @Test
+    fun matchesMultisetWithSubqueryOperand() {
+        assertThat(p).matches("foo multiset intersect (select cast(collect(id) as tab_of_number) from dual)")
+    }
+
+    @Test
+    fun doesNotMatchMultisetWithoutRightOperand() {
+        assertThat(p).notMatches("foo multiset union")
+    }
 }

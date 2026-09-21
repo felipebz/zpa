@@ -57,4 +57,15 @@ class CustomSubtypeTest : RuleTest() {
         assertThat(p).matches("subtype sub is number range 1..2;")
     }
 
+
+    @Test
+    fun matchesSubtypeWithRangeBoundsGivenByConstants() {
+        assertThat(p).matches("subtype t_code is pls_integer range gc_min .. gc_max;")
+        assertThat(p).matches("subtype t_code is pls_integer range -20999 .. -20000;")
+    }
+
+    @Test
+    fun doesNotMatchSubtypeWithAnIncompleteRange() {
+        assertThat(p).notMatches("subtype t_code is pls_integer range gc_min;")
+    }
 }

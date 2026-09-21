@@ -52,4 +52,14 @@ class VarrayDeclarationTest : RuleTest() {
         assertThat(p).matches("type foo is array(5) of number(2);")
     }
 
+
+    @Test
+    fun matchesVarrayWithSizeGivenByAConstant() {
+        assertThat(p).matches("type foo is varray(co_limit) of number;")
+    }
+
+    @Test
+    fun doesNotMatchVarrayWithoutSize() {
+        assertThat(p).notMatches("type foo is varray() of number;")
+    }
 }
