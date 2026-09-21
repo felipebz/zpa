@@ -110,4 +110,5 @@ class SelectColumnTest : RuleTest() {
         assertThat(p).matches("connect_by_root foo alias")
     }
 
+
 }

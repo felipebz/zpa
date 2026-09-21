@@ -76,4 +76,15 @@ class DeleteStatementTest : RuleTest() {
     fun matchesDeleteWithReturningInto() {
         assertThat(p).matches("delete from tab returning x bulk collect into y;")
     }
+
+    @Test
+    fun matchesDeleteWithErrorLoggingClause() {
+        assertThat(p).matches("delete from tab where id = 1 log errors into err\$_tab (tag) reject limit 100;")
+        assertThat(p).matches("delete from tab log errors;")
+    }
+
+    @Test
+    fun doesNotMatchDeleteWithErrorLoggingBeforeWhere() {
+        assertThat(p).notMatches("delete from tab log errors where id = 1;")
+    }
 }

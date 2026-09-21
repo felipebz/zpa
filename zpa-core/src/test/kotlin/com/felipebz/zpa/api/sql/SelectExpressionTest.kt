@@ -333,4 +333,31 @@ class SelectExpressionTest : RuleTest() {
         assertThat(p).matches("select 1 where 1 = 1")
         assertThat(p).matches("select 1 into var where 1 = 1")
     }
+
+    @Test
+    fun matchesColumnAliasedWithAPlSqlReservedWord() {
+        assertThat(p).matches("select foo as begin from dual")
+        assertThat(p).matches("select lower(foo) end, bar from dual")
+    }
+
+    @Test
+    fun matchesColumnWithAsAndNoAlias() {
+        assertThat(p).matches("select foo as from dual")
+        assertThat(p).matches("select case when 1 = 1 then 2 end as from dual")
+    }
+
+    @Test
+    fun doesNotMatchAsWithNoAliasInTheMiddleOfTheList() {
+        assertThat(p).notMatches("select foo as, bar from dual")
+    }
+
+    @Test
+    fun matchesTableAliasedAsOuter() {
+        assertThat(p).matches("select 1 from tab outer where outer.id = 1")
+    }
+
+    @Test
+    fun doesNotMatchOuterWithoutTheJoinedTable() {
+        assertThat(p).notMatches("select 1 from tab outer join")
+    }
 }

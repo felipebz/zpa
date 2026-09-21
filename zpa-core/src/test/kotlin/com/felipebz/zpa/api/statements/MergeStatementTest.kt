@@ -206,4 +206,15 @@ class MergeStatementTest : RuleTest() {
                 + "when matched then update set col1 = val, col2 = s.val, col3 = default "
                 + "when not matched then insert values (val, s.val, default);")
     }
+
+    @Test
+    fun matchesMergeInsertValuesOfCollectionElement() {
+        assertThat(p).matches("merge into tab d using src s on (d.id = s.id) " +
+                "when not matched then insert values l_tbl(x)(y);")
+    }
+
+    @Test
+    fun doesNotMatchMergeInsertWithoutValues() {
+        assertThat(p).notMatches("merge into tab d using src s on (d.id = s.id) when not matched then insert;")
+    }
 }

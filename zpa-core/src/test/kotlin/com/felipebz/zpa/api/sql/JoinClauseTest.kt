@@ -222,4 +222,15 @@ class JoinClauseTest : RuleTest() {
         assertThat(p).matches("(foo join bar on foo.a = bar.a) join bar on foo.a = bar.a")
     }
 
+
+    @Test
+    fun matchesNestedJoinWithoutParentheses() {
+        assertThat(p).matches("hdr a inner join sh s inner join ca c on c.id = s.id on a.va = s.va")
+        assertThat(p).matches("a left join b join c on c.id = b.id on b.id = a.id")
+    }
+
+    @Test
+    fun doesNotMatchNestedInnerJoinWithoutACondition() {
+        assertThat(p).notMatches("a join b join c on c.id = b.id")
+    }
 }
