@@ -27,6 +27,14 @@
   "examples/create_package01.sql" : [
     4
   ],
+  "examples/create_package02.sql" : [
+    3,
+    7
+  ],
+  "examples/create_package05.sql" : [
+    17,
+    27
+  ],
   "examples/create_procedure01.sql" : [
     1
   ],

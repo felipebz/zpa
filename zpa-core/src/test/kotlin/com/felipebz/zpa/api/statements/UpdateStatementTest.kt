@@ -77,4 +77,20 @@ class UpdateStatementTest : RuleTest() {
         assertThat(p).matches("update tab set x = default;")
     }
 
+
+    @Test
+    fun matchesUpdateWithErrorLoggingClause() {
+        assertThat(p).matches("update tab set col = 1 where id = 2 log errors into err\$_tab (tag) reject limit unlimited;")
+        assertThat(p).matches("update tab set col = 1 log errors;")
+    }
+
+    @Test
+    fun matchesUpdateOfColumnNamedBegin() {
+        assertThat(p).matches("update tab set begin = fix;")
+    }
+
+    @Test
+    fun doesNotMatchUpdateWithErrorLoggingBeforeWhere() {
+        assertThat(p).notMatches("update tab set col = 1 log errors where id = 2;")
+    }
 }

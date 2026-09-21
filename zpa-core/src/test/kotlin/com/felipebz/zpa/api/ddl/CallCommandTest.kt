@@ -17,49 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package com.felipebz.zpa.api.declarations
+package com.felipebz.zpa.api.ddl
 
 import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.DdlGrammar
 import com.felipebz.zpa.api.RuleTest
 
-class VarrayDeclarationTest : RuleTest() {
+class CallCommandTest : RuleTest() {
 
     @BeforeEach
     fun init() {
-        setRootRule(PlSqlGrammar.VARRAY_DECLARATION)
+        setRootRule(DdlGrammar.CALL_COMMAND)
     }
 
     @Test
-    fun matchesSimpleVarray() {
-        assertThat(p).matches("type foo is varray(5) of number(2);")
+    fun matchesCall() {
+        assertThat(p).matches("call pkg.proc(1, 'a');")
+        assertThat(p).matches("call pkg.func(1) into result;")
     }
 
     @Test
-    fun matchesSimpleVarrayNotNull() {
-        assertThat(p).matches("type foo is varray(5) of number(2) not null;")
-    }
-
-    @Test
-    fun matchesVaryingArray() {
-        assertThat(p).matches("type foo is varying array(5) of number(2);")
-    }
-
-    @Test
-    fun matchesArray() {
-        assertThat(p).matches("type foo is array(5) of number(2);")
-    }
-
-
-    @Test
-    fun matchesVarrayWithSizeGivenByAConstant() {
-        assertThat(p).matches("type foo is varray(co_limit) of number;")
-    }
-
-    @Test
-    fun doesNotMatchVarrayWithoutSize() {
-        assertThat(p).notMatches("type foo is varray() of number;")
+    fun doesNotMatchCallWithoutASubprogram() {
+        assertThat(p).notMatches("call;")
     }
 }

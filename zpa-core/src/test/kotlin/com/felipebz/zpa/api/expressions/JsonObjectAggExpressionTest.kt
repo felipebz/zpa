@@ -75,4 +75,15 @@ class JsonObjectAggExpressionTest : RuleTest() {
             strict with unique keys)""")
     }
 
+
+    @Test
+    fun matchesJsonObjectAggWithPrettyAndAscii() {
+        assertThat(p).matches("json_objectagg(key 'k' value foo returning clob pretty)")
+        assertThat(p).matches("json_objectagg(key 'k' value foo returning clob pretty ascii)")
+    }
+
+    @Test
+    fun doesNotMatchJsonObjectAggWithPrettyBeforeReturning() {
+        assertThat(p).notMatches("json_objectagg(key 'k' value foo pretty returning clob)")
+    }
 }

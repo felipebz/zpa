@@ -92,4 +92,9 @@ class BlockStatementTest : RuleTest() {
     fun matchesLabeledBlock() {
         assertThat(p).matches("<<foo>> begin null; end foo;")
     }
+
+    @Test
+    fun matchesAutonomousTransactionPragmaAmongStatements() {
+        assertThat(p).matches("begin null; pragma autonomous_transaction; null; end;")
+    }
 }

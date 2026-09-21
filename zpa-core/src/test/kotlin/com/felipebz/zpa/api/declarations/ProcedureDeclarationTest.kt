@@ -98,4 +98,15 @@ class ProcedureDeclarationTest : RuleTest() {
                 + "end;")
     }
 
+
+    @Test
+    fun matchesProcedureWithDeterministicAndParallelEnable() {
+        assertThat(p).matches("procedure foo(a number) deterministic is begin null; end;")
+        assertThat(p).matches("procedure foo(p_cursor sys_refcursor) parallel_enable is begin null; end;")
+    }
+
+    @Test
+    fun doesNotMatchProcedureWithDeterministicAfterIs() {
+        assertThat(p).notMatches("procedure foo(a number) is deterministic begin null; end;")
+    }
 }

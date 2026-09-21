@@ -47,6 +47,10 @@ enum class DdlGrammar : GrammarRuleKey {
     OBJECT_TABLE_PROPERTIES,
     OBJECT_IDENTIFIER_CLAUSE,
     NESTED_TABLE_COL_PROPERTIES,
+    ALTER_TABLE_COLUMN,
+    ALTER_SYSTEM,
+    CREATE_CONTEXT,
+    CALL_COMMAND,
     CREATE_TABLE,
     INDEX_ORGANIZED_TABLE_CLAUSE,
     INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
@@ -895,6 +899,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     DELETE,
                                                     PRESERVE),
                                             ROWS))),
+                    b.optional(AS, DmlGrammar.SELECT_EXPRESSION),
                     b.optional(SEMICOLON))
 
             // XMLIndex parameter syntax is carried inside the same quoted parameter string.
@@ -1385,28 +1390,59 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER_INDEX_ACTION),
                 b.optional(SEMICOLON))
 
+            // Only `modify` may leave the datatype out; `add` without one is ORA-02263.
+            b.rule(ALTER_TABLE_COLUMN).define(
+                    IDENTIFIER_NAME,
+                    b.optional(DATATYPE),
+                    b.optional(DEFAULT, EXPRESSION),
+                    b.zeroOrMore(INLINE_CONSTRAINT))
+
             b.rule(ALTER_TABLE).define(
-                ALTER, TABLE, UNIT_NAME,
-                b.firstOf(
-                    b.sequence(
-                        ADD,
-                        b.firstOf(
-                            TABLE_RELATIONAL_PROPERTIES,
-                            b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS)
-                        )
-                    ),
-                    b.sequence(DROP, TABLE_RELATIONAL_PROPERTIES)
-                ),
-                b.optional(SEMICOLON)
-            )
+                    ALTER, TABLE, UNIT_NAME,
+                    b.firstOf(
+                            b.sequence(
+                                    ADD,
+                                    b.firstOf(
+                                            b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
+                                            TABLE_RELATIONAL_PROPERTIES)),
+                            b.sequence(
+                                    MODIFY,
+                                    b.firstOf(
+                                            b.sequence(LPARENTHESIS, ALTER_TABLE_COLUMN,
+                                                    b.zeroOrMore(COMMA, ALTER_TABLE_COLUMN), RPARENTHESIS),
+                                            b.sequence(ALTER_TABLE_COLUMN,
+                                                    b.next(b.firstOf(SEMICOLON, DIVISION, EOF))))),
+                            b.sequence(DROP, TABLE_RELATIONAL_PROPERTIES),
+                            b.sequence(MOVE, b.optional(ONLINE),
+                                    b.optional(TABLESPACE, IDENTIFIER_NAME), b.optional(ONLINE)),
+                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)),
+                    b.optional(SEMICOLON))
+
+            b.rule(ALTER_SYSTEM).define(
+                    ALTER, SYSTEM,
+                    b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
+            b.rule(CREATE_CONTEXT).define(
+                    CREATE, b.optional(OR, REPLACE), CONTEXT, UNIT_NAME,
+                    USING, UNIT_NAME,
+                    b.optional(b.firstOf(
+                            b.sequence(INITIALIZED, b.firstOf(EXTERNALLY, GLOBALLY)),
+                            b.sequence(ACCESSED, GLOBALLY))),
+                    b.optional(SEMICOLON))
+
+            b.rule(CALL_COMMAND).define(
+                    CALL, OBJECT_REFERENCE, b.optional(INTO, EXPRESSION), b.optional(SEMICOLON))
 
             b.rule(COMPILE_CLAUSE).define(
                 COMPILE, b.optional(DEBUG),
                 b.zeroOrMore(COMPILER_PARAMETERS_CLAUSE),
                 b.optional(REUSE, SETTINGS))
 
+            // The value is not always quoted: `plsql_optimize_level=3`, `plsql_code_type = native`.
             b.rule(COMPILER_PARAMETERS_CLAUSE).define(
-                    IDENTIFIER_NAME, EQUALS_OPERATOR, CHARACTER_LITERAL)
+                    IDENTIFIER_NAME, EQUALS_OPERATOR, b.firstOf(LITERAL, IDENTIFIER_NAME))
 
             b.rule(ALTER_TRIGGER).define(
                     ALTER, TRIGGER, b.optional(IF, EXISTS), UNIT_NAME,
@@ -1602,6 +1638,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_TABLE,
                 CREATE_INDEX,
                 CREATE_JAVA,
+                CREATE_CONTEXT,
+                CALL_COMMAND,
+                ALTER_SYSTEM,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,

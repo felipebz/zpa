@@ -140,4 +140,18 @@ class FunctionDeclarationTest : RuleTest() {
             + "end;")
     }
 
+
+    @Test
+    fun matchesFunctionWithStreamingClauseOutsideParallelEnable() {
+        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "order p_cursor by (a, b) parallel_enable(partition p_cursor by hash(a)) is begin null; end;")
+        assertThat(p).matches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "cluster p_cursor by (a) is begin null; end;")
+    }
+
+    @Test
+    fun doesNotMatchAStreamingClauseWithoutColumns() {
+        assertThat(p).notMatches("function foo(p_cursor in sys_refcursor) return tab pipelined " +
+                "order p_cursor by is begin null; end;")
+    }
 }

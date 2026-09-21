@@ -170,6 +170,9 @@
     4,
     8
   ],
+  "lnpls/conditional-compilation1-18.sql" : [
+    26
+  ],
   "lnpls/conditional-selection-statements-10.sql" : [
     4,
     5,
@@ -195,6 +198,9 @@
   "lnpls/cursor-variables-16.sql" : [
     4,
     8
+  ],
+  "lnpls/cursors-overview-0.sql" : [
+    6
   ],
   "lnpls/dbms_sql-package-6.sql" : [
     7,
@@ -525,6 +531,9 @@
   ],
   "lnpls/wrapping-pl-sql-source-text-pl-sql-wrapper-utility-4.sql" : [
     15
+  ],
+  "sqlrf/CALL-4.sql" : [
+    2
   ],
   "sqlrf/CURSOR-Expressions-1.sql" : [
     2,

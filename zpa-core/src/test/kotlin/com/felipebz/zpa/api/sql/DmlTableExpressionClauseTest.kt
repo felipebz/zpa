@@ -86,4 +86,31 @@ class DmlTableExpressionClauseTest : RuleTest() {
         assertThat(p).matches("tab nested doc, '$.c1[*].c2' columns (foo path foo)")
     }
 
+
+    @Test
+    fun matchesTableFunctionCallWithoutTableOperator() {
+        assertThat(p).matches("apps.pkg.get_lines()")
+        assertThat(p).matches("pkg.get_lines(1) l")
+    }
+
+    @Test
+    fun matchesParenthesizedTableReference() {
+        assertThat(p).matches("((select id from foo) bar)")
+        assertThat(p).matches("(foo bar)")
+    }
+
+    @Test
+    fun matchesOuterJoinedLateralInlineView() {
+        assertThat(p).matches("lateral (select id from foo)(+) bar")
+    }
+
+    @Test
+    fun matchesAliasBeforeUnpivot() {
+        assertThat(p).matches("tab st unpivot exclude nulls (val for col in (a as 'A')) stt")
+    }
+
+    @Test
+    fun doesNotMatchAnEmptyParenthesizedTableReference() {
+        assertThat(p).notMatches("()")
+    }
 }

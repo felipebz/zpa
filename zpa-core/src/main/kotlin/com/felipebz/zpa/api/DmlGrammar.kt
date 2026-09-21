@@ -216,8 +216,12 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION)),
                             b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)))
 
+            // `a left join b join c on … on …`: the nested joins are consumed before
+            // the `on` that belongs to this one.
+            val nestedJoins = b.zeroOrMore(b.firstOf(INNER_CROSS_JOIN_CLAUSE, OUTER_JOIN_CLAUSE))
+
             b.rule(INNER_CROSS_JOIN_CLAUSE).define(b.firstOf(
-                    b.sequence(b.optional(INNER), JOIN, DML_TABLE_EXPRESSION_CLAUSE, ON_OR_USING_EXPRESSION),
+                    b.sequence(b.optional(INNER), JOIN, DML_TABLE_EXPRESSION_CLAUSE, nestedJoins, ON_OR_USING_EXPRESSION),
                     b.sequence(
                             b.firstOf(
                                     CROSS,
@@ -235,6 +239,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(OUTER_JOIN_TYPE, JOIN),
                             b.sequence(NATURAL, b.optional(OUTER_JOIN_TYPE), JOIN)),
                     b.sequence(DML_TABLE_EXPRESSION_CLAUSE, b.optional(QUERY_PARTITION_CLAUSE),
+                            nestedJoins,
                             b.optional(ON_OR_USING_EXPRESSION)))
 
             b.rule(NESTED_CLAUSE).define(
@@ -258,7 +263,45 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(LPARENTHESIS, JOIN_CLAUSE, RPARENTHESIS)
                 ))
 
-            b.rule(SELECT_COLUMN).define(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME, b.nextNot(COLLECT)))
+            b.rule(SELECT_COLUMN).define(EXPRESSION, b.optional(b.firstOf(
+                    b.sequence(b.optional(AS), IDENTIFIER_NAME, b.nextNot(COLLECT)),
+                    // Reserved in PL/SQL, not in SQL, so legal aliases; the lookahead
+                    // keeps the `end` of an enclosing `case` out.
+                    b.sequence(b.optional(AS), b.firstOf(BEGIN, END), b.next(b.firstOf(FROM, COMMA))),
+                    // Oracle tolerates `as` with the alias left out, but only before `from`.
+                    b.sequence(AS, b.next(FROM)))))
+
+            val tableAlias = b.sequence(
+                b.nextNot(
+                    b.firstOf(
+                        PARTITION,
+                        CROSS,
+                        USING,
+                        FULL,
+                        NATURAL,
+                        INNER,
+                        LEFT,
+                        RIGHT,
+                        // `outer` alone is a legal alias; only `outer join` and
+                        // `outer apply` must not be taken for one.
+                        b.sequence(OUTER, b.firstOf(JOIN, APPLY)),
+                        JOIN,
+                        RETURN,
+                        RETURNING,
+                        b.sequence(LOG, ERRORS),
+                        // The bare keyword is still a legal alias
+                        // (`from some_table offset`); only a complete
+                        // row-limiting clause must not be taken for one.
+                        OFFSET_CLAUSE,
+                        EXCEPT,
+                        SET,
+                        MODEL,
+                        b.sequence(MATCH_RECOGNIZE, LPARENTHESIS)
+                    )
+                ),
+                b.optional(AS),
+                ALIAS
+            )
 
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
@@ -269,51 +312,35 @@ enum class DmlGrammar : GrammarRuleKey {
                                     PIVOT_CLAUSE,
                                     UNPIVOT_CLAUSE
                                 )
-                            ), RPARENTHESIS),
+                            ), RPARENTHESIS,
+                                // `lateral (…)(+) alias`
+                                b.optional(LPARENTHESIS, PLUS, RPARENTHESIS)),
+                            // `from ((select …) alias)`
+                            b.sequence(LPARENTHESIS, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE), RPARENTHESIS),
+                            // A table function called without `table(…)`. It comes first:
+                            // `apps.pkg.fn()` matches TABLE_REFERENCE on its first two parts.
+                            METHOD_CALL,
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
                             OBJECT_REFERENCE
                         ),
                         b.optional(NESTED_CLAUSE),
                         b.optional(
                             b.firstOf(
-                                b.oneOrMore(
-                                    b.firstOf(
-                                        PIVOT_CLAUSE,
-                                        UNPIVOT_CLAUSE
+                                b.sequence(
+                                    // `join t st unpivot (…) stt` — the guard keeps this
+                                    // alias from eating the `pivot` keyword itself.
+                                    b.optional(b.nextNot(b.firstOf(PIVOT, UNPIVOT)), tableAlias),
+                                    b.oneOrMore(
+                                        b.firstOf(
+                                            PIVOT_CLAUSE,
+                                            UNPIVOT_CLAUSE
+                                        )
                                     )
                                 ),
                                 ROW_PATTERN_CLAUSE
                             )
                         ),
-                        b.optional(
-                            b.nextNot(
-                                b.firstOf(
-                                    PARTITION,
-                                    CROSS,
-                                    USING,
-                                    FULL,
-                                    NATURAL,
-                                    INNER,
-                                    LEFT,
-                                    RIGHT,
-                                    OUTER,
-                                    JOIN,
-                                    RETURN,
-                                    RETURNING,
-                                    b.sequence(LOG, ERRORS),
-                                    // The bare keyword is still a legal alias
-                                    // (`from some_table offset`); only a complete
-                                    // row-limiting clause must not be taken for one.
-                                    OFFSET_CLAUSE,
-                                    EXCEPT,
-                                    SET,
-                                    MODEL,
-                                    b.sequence(MATCH_RECOGNIZE, LPARENTHESIS)
-                                )
-                            ),
-                            b.optional(AS),
-                            ALIAS
-                        )
+                        b.optional(tableAlias)
                     ),
                     VALUES_EXPRESSION_CLAUSE
                 )
@@ -781,18 +808,21 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
-                    b.optional(RETURNING_INTO_CLAUSE))
+                    b.optional(RETURNING_INTO_CLAUSE),
+                    b.optional(ERROR_LOGGING_CLAUSE))
         }
 
         private fun createUpdateExpression(b: PlSqlGrammarBuilder) {
-            b.rule(UPDATE_COLUMN).define(OBJECT_REFERENCE, EQUALS, b.firstOf(EXPRESSION, DEFAULT))
+            // `begin` is reserved in PL/SQL but not in SQL, so it is a legal column name.
+            b.rule(UPDATE_COLUMN).define(b.firstOf(OBJECT_REFERENCE, BEGIN), EQUALS, b.firstOf(EXPRESSION, DEFAULT))
 
             b.rule(UPDATE_EXPRESSION).define(
                     UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
-                    b.optional(RETURNING_INTO_CLAUSE))
+                    b.optional(RETURNING_INTO_CLAUSE),
+                    b.optional(ERROR_LOGGING_CLAUSE))
         }
 
         private fun createInsertExpression(b: PlSqlGrammarBuilder) {
@@ -851,7 +881,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(LPARENTHESIS, OBJECT_REFERENCE, b.zeroOrMore(COMMA, OBJECT_REFERENCE), RPARENTHESIS),
                     VALUES, b.firstOf(
                     b.sequence(LPARENTHESIS, b.firstOf(EXPRESSION, DEFAULT), b.zeroOrMore(COMMA, b.firstOf(EXPRESSION, DEFAULT)), RPARENTHESIS),
-                    IDENTIFIER_NAME),
+                    EXPRESSION),
                     b.optional(WHERE_CLAUSE))
 
             b.rule(ERROR_LOGGING_CLAUSE).define(

@@ -52,4 +52,15 @@ class XmlQueryExpressionTest : RuleTest() {
         assertThat(p).matches("xmlquery('/foo' passing \"bar\" as bar, \"bar2\" as bar2 returning content)")
     }
 
+
+    @Test
+    fun matchesXmlQueryWithQueryExpression() {
+        assertThat(p).matches("xmlquery(l_query passing doc returning content)")
+        assertThat(p).matches("xmlquery('/a' || '/b' passing doc returning content)")
+    }
+
+    @Test
+    fun doesNotMatchXmlQueryWithoutReturningContent() {
+        assertThat(p).notMatches("xmlquery(l_query passing doc)")
+    }
 }

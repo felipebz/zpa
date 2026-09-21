@@ -714,4 +714,15 @@ class CreateTableTest : RuleTest() {
     fun matchesColumnDefaultOnNullForInsertAndUpdateWithExpression() {
         assertThat(p).matches("create table table_id (id number, created_date date default on null for insert and update sysdate);")
     }
+
+    @Test
+    fun matchesCreateTableAsSelect() {
+        assertThat(p).matches("create table tab_bkp as select * from tab;")
+        assertThat(p).matches("create global temporary table tab_tmp as select * from tab where 1 = 0;")
+    }
+
+    @Test
+    fun doesNotMatchCreateTableAsWithoutASubquery() {
+        assertThat(p).notMatches("create table tab_bkp as;")
+    }
 }

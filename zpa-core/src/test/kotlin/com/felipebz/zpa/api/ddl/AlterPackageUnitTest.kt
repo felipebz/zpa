@@ -72,4 +72,15 @@ class AlterPackageUnitTest : RuleTest() {
         assertThat(p).matches("alter package foo compile debug specification plsql_ccflags='no_op:true' plsql_ccflags='no_op:true' reuse settings;")
     }
 
+
+    @Test
+    fun matchesCompilerParameterWithoutQuotes() {
+        assertThat(p).matches("alter package pkg compile body plsql_optimize_level=3")
+        assertThat(p).matches("alter package pkg compile body plsql_code_type = native reuse settings")
+    }
+
+    @Test
+    fun doesNotMatchACompilerParameterWithoutAValue() {
+        assertThat(p).notMatches("alter package pkg compile body plsql_optimize_level=")
+    }
 }

@@ -79,4 +79,28 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table tab add (col number;")
         assertThat(p).notMatches("alter table tab add col number);")
     }
+
+    @Test
+    fun matchesAlterTableModify() {
+        assertThat(p).matches("alter table tab modify (col varchar2(350), other varchar2(4000));")
+        assertThat(p).matches("alter table tab modify col varchar2(500);")
+        assertThat(p).matches("alter table tab modify (col null);")
+    }
+
+    @Test
+    fun matchesAlterTableMove() {
+        assertThat(p).matches("alter table tab move online;")
+        assertThat(p).matches("alter table tab move tablespace data online;")
+    }
+
+    @Test
+    fun matchesAlterTableRowMovement() {
+        assertThat(p).matches("alter table tab enable row movement;")
+        assertThat(p).matches("alter table tab disable row movement;")
+    }
+
+    @Test
+    fun doesNotMatchAlterTableAddWithoutADatatype() {
+        assertThat(p).notMatches("alter table tab add (col);")
+    }
 }

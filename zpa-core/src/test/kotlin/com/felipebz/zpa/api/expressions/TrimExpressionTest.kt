@@ -57,4 +57,16 @@ class TrimExpressionTest : RuleTest() {
         assertThat(p).matches("trim(both ',' from foo)")
     }
 
+
+    @Test
+    fun matchesTrimWithoutTrimCharacter() {
+        assertThat(p).matches("trim(both from foo)")
+        assertThat(p).matches("trim(leading from foo)")
+        assertThat(p).matches("trim(trailing from foo)")
+    }
+
+    @Test
+    fun doesNotMatchTrimWithOnlyADirection() {
+        assertThat(p).notMatches("trim(both foo)")
+    }
 }

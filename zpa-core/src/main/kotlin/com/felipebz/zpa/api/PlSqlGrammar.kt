@@ -95,6 +95,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     INTERVAL_QUALIFIER,
     SQL_MACRO_CLAUSE,
     PARALLEL_ENABLE_CLAUSE,
+    STREAMING_CLAUSE,
     MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION,
     OUTER_JOIN_PLUS_SIGN,
@@ -734,6 +735,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     LOCK_TABLE_STATEMENT,
                     MERGE_STATEMENT,
                     INLINE_PRAGMA_STATEMENT,
+                    // Oracle compiles this one in the executable section too.
+                    AUTONOMOUS_TRANSACTION_PRAGMA,
                     COVERAGE_PRAGMA))
 
             b.rule(STATEMENTS).define(b.oneOrMore(STATEMENT))
@@ -761,6 +764,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(LPARENTHESIS, b.optional(TYPE, ASSOCIATION), b.firstOf(TABLE, SCALAR), RPARENTHESIS))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/21/lnpls/PARALLEL_ENABLE-clause.html
+            // Also stands on its own, outside the parentheses of parallel_enable.
+            b.rule(STREAMING_CLAUSE).define(
+                    b.firstOf(ORDER, CLUSTER), IDENTIFIER_NAME, BY,
+                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+
             b.rule(PARALLEL_ENABLE_CLAUSE).define(
                     PARALLEL_ENABLE,
                     b.optional(
@@ -989,7 +997,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             MULTISET,
                             b.firstOf(EXCEPT, INTERSECT, UNION),
                             b.optional(b.firstOf(ALL, DISTINCT)),
-                            OBJECT_REFERENCE))
+                            // Any expression yielding a nested table, not only a column.
+                            b.firstOf(
+                                    CASE_EXPRESSION,
+                                    OBJECT_REFERENCE,
+                                    b.sequence(
+                                            LPARENTHESIS,
+                                            b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
+                                            RPARENTHESIS))))
 
             b.rule(UNARY_EXPRESSION).define(b.firstOf(
                     b.sequence(PLUS, UNARY_EXPRESSION),
@@ -1083,6 +1098,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(PROCEDURE_DECLARATION).define(
                     PROCEDURE, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
+                    // Rejected on a standalone procedure, accepted on a packaged one.
+                    b.zeroOrMore(b.firstOf(DETERMINISTIC, PARALLEL_ENABLE_CLAUSE)),
                     b.optional(b.firstOf(
                             SEMICOLON,
                             b.sequence(b.firstOf(IS, AS),
@@ -1095,7 +1112,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(FUNCTION_DECLARATION).define(
                     FUNCTION, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
-                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, SQL_MACRO_CLAUSE, PARALLEL_ENABLE_CLAUSE)),
+                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, SQL_MACRO_CLAUSE, PARALLEL_ENABLE_CLAUSE, STREAMING_CLAUSE)),
                     b.optional(RESULT_CACHE, b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
                     b.optional(b.firstOf(
                             SEMICOLON,
@@ -1120,7 +1137,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(CUSTOM_SUBTYPE).define(
                 SUBTYPE, IDENTIFIER_NAME, IS, DATATYPE,
                 b.optional(DATATYPE_NULL_CONSTRAINT),
-                b.optional(RANGE_KEYWORD, NUMERIC_LITERAL, RANGE, NUMERIC_LITERAL),
+                // The bounds are constant expressions, not necessarily bare literals.
+                b.optional(RANGE_KEYWORD, EXPRESSION, RANGE, EXPRESSION),
                 SEMICOLON
             )
 
@@ -1158,7 +1176,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(VARRAY_TYPE_DEFINITION).define(
                 b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)),
-                LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS,
+                // The size limit may be a declared constant.
+                LPARENTHESIS, b.firstOf(INTEGER_LITERAL, OBJECT_REFERENCE), RPARENTHESIS,
                 OF, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT)
             )
 
@@ -1312,10 +1331,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     COMPOUND, TRIGGER,
                     b.optional(DECLARE_SECTION),
                     b.oneOrMore(TIMING_POINT_SECTION),
-                    END, UNIT_NAME, SEMICOLON)
+                    END, b.optional(UNIT_NAME), SEMICOLON)
 
             b.rule(TIMING_POINT_SECTION).define(
-                    TIMING_POINT, IS, BEGIN, TPS_BODY, END, TIMING_POINT, SEMICOLON)
+                    TIMING_POINT, IS, b.optional(DECLARE_SECTION), BEGIN, TPS_BODY, END, b.optional(TIMING_POINT), SEMICOLON)
 
             b.rule(TIMING_POINT).define(
                     b.firstOf(
@@ -1400,6 +1419,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             PIPELINED,
                             SQL_MACRO_CLAUSE,
                             PARALLEL_ENABLE_CLAUSE,
+                            STREAMING_CLAUSE,
                             b.sequence(
                                     RESULT_CACHE,
                                     b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),

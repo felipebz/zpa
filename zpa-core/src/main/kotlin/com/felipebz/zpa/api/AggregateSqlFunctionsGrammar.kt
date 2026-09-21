@@ -85,6 +85,8 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(ORDER_BY_CLAUSE),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_ON_NULL_CLAUSE),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(STRICT),
                 RPARENTHESIS
             )
@@ -95,6 +97,8 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(FORMAT, JSON),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_ON_NULL_CLAUSE),
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(STRICT),
                 b.optional(WITH, UNIQUE, KEYS),
                 RPARENTHESIS

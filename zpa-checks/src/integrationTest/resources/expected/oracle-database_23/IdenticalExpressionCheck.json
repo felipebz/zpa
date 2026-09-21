@@ -2,6 +2,9 @@
   "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
     57
   ],
+  "lnpls/column-name-precedence-0.sql" : [
+    8
+  ],
   "lnpls/expressions-28.sql" : [
     16
   ],

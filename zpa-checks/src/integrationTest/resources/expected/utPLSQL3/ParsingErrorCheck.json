@@ -2,9 +2,6 @@
   "development/mystats/mystats.sql" : [
     425
   ],
-  "source/core/ut_suite_cache.sql" : [
-    27
-  ],
   "source/create_grants.sql" : [
     56
   ],

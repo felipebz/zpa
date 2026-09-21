@@ -137,11 +137,19 @@
     41,
     47
   ],
+  "lnpls/bulk-sql-and-bulk-binding-28.sql" : [
+    12,
+    18
+  ],
   "lnpls/bulk-sql-and-bulk-binding-3.sql" : [
     42,
     43,
     44,
     45
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-30.sql" : [
+    23,
+    28
   ],
   "lnpls/bulk-sql-and-bulk-binding-32.sql" : [
     12,
@@ -193,6 +201,24 @@
   "lnpls/bulk-sql-and-bulk-binding-57.sql" : [
     16,
     18
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-59.sql" : [
+    17,
+    20
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-6.sql" : [
+    44,
+    47,
+    63,
+    67
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-63.sql" : [
+    23,
+    27
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-65.sql" : [
+    24,
+    28
   ],
   "lnpls/collection-comparisons-0.sql" : [
     11,
@@ -294,6 +320,15 @@
   "lnpls/collection-types-defined-package-specifications-0.sql" : [
     11
   ],
+  "lnpls/column-name-precedence-0.sql" : [
+    9
+  ],
+  "lnpls/column-name-precedence-2.sql" : [
+    9
+  ],
+  "lnpls/column-name-precedence-4.sql" : [
+    10
+  ],
   "lnpls/column-name-precedence-6.sql" : [
     21
   ],
@@ -312,6 +347,10 @@
   "lnpls/conditional-compilation1-14.sql" : [
     6,
     7
+  ],
+  "lnpls/conditional-compilation1-18.sql" : [
+    32,
+    41
   ],
   "lnpls/conditional-selection-statements-10.sql" : [
     21
@@ -356,6 +395,10 @@
   ],
   "lnpls/conditional-selection-statements-8.sql" : [
     17
+  ],
+  "lnpls/continuing-execution-handling-exceptions-0.sql" : [
+    17,
+    20
   ],
   "lnpls/continuing-execution-handling-exceptions-2.sql" : [
     14,
@@ -404,6 +447,10 @@
     19,
     20
   ],
+  "lnpls/cursors-overview-0.sql" : [
+    13,
+    17
+  ],
   "lnpls/cursors-overview-10.sql" : [
     26,
     27,
@@ -435,6 +482,9 @@
     31,
     32,
     33
+  ],
+  "lnpls/cursors-overview-2.sql" : [
+    9
   ],
   "lnpls/cursors-overview-20.sql" : [
     21,
@@ -484,6 +534,13 @@
   ],
   "lnpls/declarations-9.sql" : [
     5
+  ],
+  "lnpls/description-static-sql-0.sql" : [
+    24
+  ],
+  "lnpls/description-static-sql-2.sql" : [
+    19,
+    56
   ],
   "lnpls/dml-triggers-0.sql" : [
     11,
@@ -736,6 +793,9 @@
   "lnpls/overview-exception-handling-1.sql" : [
     29,
     31
+  ],
+  "lnpls/overview-exception-handling-6.sql" : [
+    19
   ],
   "lnpls/package-body-0.sql" : [
     10
@@ -1083,6 +1143,18 @@
     5,
     7,
     11
+  ],
+  "lnpls/transaction-processing-and-control-5.sql" : [
+    43
+  ],
+  "lnpls/transaction-processing-and-control-6.sql" : [
+    34
+  ],
+  "lnpls/transaction-processing-and-control-7.sql" : [
+    36
+  ],
+  "lnpls/transaction-processing-and-control-9.sql" : [
+    16
   ],
   "lnpls/trigger-restrictions-0.sql" : [
     21
