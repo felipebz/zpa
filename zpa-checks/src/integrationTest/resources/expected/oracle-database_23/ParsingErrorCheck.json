@@ -120,7 +120,7 @@
     2
   ],
   "lnpls/ALTER-TYPE-statement-2.sql" : [
-    5
+    6
   ],
   "lnpls/ALTER-TYPE-statement-3.sql" : [
     2
@@ -176,9 +176,6 @@
   "lnpls/CREATE-PROCEDURE-statement-5.sql" : [
     2
   ],
-  "lnpls/CREATE-TYPE-statement-17.sql" : [
-    2
-  ],
   "lnpls/CREATE-TYPE-statement-6.sql" : [
     2
   ],
@@ -199,9 +196,6 @@
   ],
   "lnpls/autonomous-transactions-4.sql" : [
     3
-  ],
-  "lnpls/avoiding-inner-capture-select-and-dml-statements-8.sql" : [
-    5
   ],
   "lnpls/bulk-sql-and-bulk-binding-1.sql" : [
     3
@@ -274,9 +268,6 @@
   ],
   "lnpls/continuing-execution-handling-exceptions-0.sql" : [
     3
-  ],
-  "lnpls/correlation-names-and-pseudorecords-17.sql" : [
-    4
   ],
   "lnpls/cursors-overview-0.sql" : [
     3
@@ -1049,19 +1040,13 @@
   "sqlrf/ALTER-TABLE-107.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-108.sql" : [
-    9
-  ],
   "sqlrf/ALTER-TABLE-109.sql" : [
-    4
+    7
   ],
   "sqlrf/ALTER-TABLE-11.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-110.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-112.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-113.sql" : [
@@ -1167,7 +1152,7 @@
     2
   ],
   "sqlrf/ALTER-TABLE-52.sql" : [
-    13
+    15
   ],
   "sqlrf/ALTER-TABLE-53.sql" : [
     3
@@ -1221,7 +1206,7 @@
     4
   ],
   "sqlrf/ALTER-TABLE-71.sql" : [
-    4
+    8
   ],
   "sqlrf/ALTER-TABLE-74.sql" : [
     2
@@ -1502,9 +1487,6 @@
   "sqlrf/COLLATE-Operator-0.sql" : [
     4
   ],
-  "sqlrf/COLUMN_VALUE-Pseudocolumn-4.sql" : [
-    7
-  ],
   "sqlrf/CREATE-ANALYTIC-VIEW-1.sql" : [
     2
   ],
@@ -1652,9 +1634,6 @@
   "sqlrf/CREATE-HIERARCHY-2.sql" : [
     2
   ],
-  "sqlrf/CREATE-INDEX-17.sql" : [
-    2
-  ],
   "sqlrf/CREATE-INDEXTYPE-0.sql" : [
     2
   ],
@@ -1796,35 +1775,20 @@
   "sqlrf/CREATE-TABLE-23.sql" : [
     2
   ],
-  "sqlrf/CREATE-TABLE-25.sql" : [
-    2
-  ],
   "sqlrf/CREATE-TABLE-27.sql" : [
     3
   ],
   "sqlrf/CREATE-TABLE-28.sql" : [
     3
   ],
-  "sqlrf/CREATE-TABLE-31.sql" : [
-    13
-  ],
-  "sqlrf/CREATE-TABLE-32.sql" : [
-    15
-  ],
-  "sqlrf/CREATE-TABLE-33.sql" : [
-    9
-  ],
   "sqlrf/CREATE-TABLE-34.sql" : [
-    13
+    16
   ],
   "sqlrf/CREATE-TABLE-36.sql" : [
     7
   ],
-  "sqlrf/CREATE-TABLE-37.sql" : [
-    2
-  ],
   "sqlrf/CREATE-TABLE-38.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLE-39.sql" : [
     5
@@ -1845,7 +1809,7 @@
     2
   ],
   "sqlrf/CREATE-TABLE-54.sql" : [
-    13
+    17
   ],
   "sqlrf/CREATE-TABLE-56.sql" : [
     10
@@ -1856,20 +1820,11 @@
   "sqlrf/CREATE-TABLE-6.sql" : [
     2
   ],
-  "sqlrf/CREATE-TABLE-60.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-TABLE-61.sql" : [
-    6
-  ],
-  "sqlrf/CREATE-TABLE-62.sql" : [
-    5
-  ],
   "sqlrf/CREATE-TABLE-63.sql" : [
     4
   ],
   "sqlrf/CREATE-TABLE-64.sql" : [
-    15
+    17
   ],
   "sqlrf/CREATE-TABLE-65.sql" : [
     2
@@ -1896,7 +1851,7 @@
     3
   ],
   "sqlrf/CREATE-TABLE-73.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLE-74.sql" : [
     3
@@ -2204,11 +2159,8 @@
   "sqlrf/RANK-1.sql" : [
     3
   ],
-  "sqlrf/REF-1.sql" : [
-    2
-  ],
   "sqlrf/REFTOHEX-0.sql" : [
-    2
+    6
   ],
   "sqlrf/RENAME-0.sql" : [
     2
@@ -2309,9 +2261,6 @@
   "sqlrf/SELECT-87.sql" : [
     7
   ],
-  "sqlrf/SELECT-98.sql" : [
-    14
-  ],
   "sqlrf/SET-CONSTRAINTS-1.sql" : [
     3
   ],
@@ -2333,14 +2282,8 @@
   "sqlrf/TRUNCATE-CLUSTER-0.sql" : [
     2
   ],
-  "sqlrf/Type-Constructor-Expressions-1.sql" : [
-    2
-  ],
   "sqlrf/UPDATE-0.sql" : [
     4
-  ],
-  "sqlrf/UPDATE-6.sql" : [
-    2
   ],
   "sqlrf/UPDATE-9.sql" : [
     4
@@ -2352,10 +2295,10 @@
     2
   ],
   "sqlrf/Using-XML-in-SQL-Statements-0.sql" : [
-    2
+    3
   ],
   "sqlrf/Using-XML-in-SQL-Statements-4.sql" : [
-    2
+    3
   ],
   "sqlrf/Using-XML-in-SQL-Statements-8.sql" : [
     5
@@ -2364,7 +2307,7 @@
     5
   ],
   "sqlrf/XMLDATA-Pseudocolumn-0.sql" : [
-    2
+    3
   ],
   "sqlrf/XMLDATA-Pseudocolumn-1.sql" : [
     3
@@ -2430,7 +2373,7 @@
     2
   ],
   "sqlrf/constraint-27.sql" : [
-    10
+    14
   ],
   "sqlrf/constraint-29.sql" : [
     5

@@ -91,6 +91,9 @@
   "sqlrf/CREATE-TABLE-57.sql" : [
     6
   ],
+  "sqlrf/CREATE-TABLE-62.sql" : [
+    3
+  ],
   "sqlrf/Concatenation-Operator-1.sql" : [
     2,
     3

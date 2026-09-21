@@ -41,16 +41,27 @@
   "lnpls/CREATE-TYPE-statement-12.sql" : [
     3
   ],
+  "lnpls/CREATE-TYPE-statement-17.sql" : [
+    3
+  ],
   "lnpls/avoiding-inner-capture-select-and-dml-statements-5.sql" : [
     3,
     4,
     5
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-8.sql" : [
+    7,
+    8,
+    9
   ],
   "lnpls/continuing-execution-handling-exceptions-2.sql" : [
     18
   ],
   "lnpls/correlation-names-and-pseudorecords-15.sql" : [
     4
+  ],
+  "lnpls/correlation-names-and-pseudorecords-17.sql" : [
+    8
   ],
   "lnpls/dml-triggers-17.sql" : [
     2
@@ -300,6 +311,9 @@
   "sqlrf/Pattern-matching-Conditions-10.sql" : [
     3
   ],
+  "sqlrf/REF-1.sql" : [
+    3
+  ],
   "sqlrf/SELECT-115.sql" : [
     3,
     4,
@@ -330,6 +344,9 @@
     6,
     7,
     8
+  ],
+  "sqlrf/SELECT-98.sql" : [
+    15
   ],
   "sqlrf/SELECT-99.sql" : [
     2
@@ -397,6 +414,9 @@
   ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [
     8
+  ],
+  "sqlrf/Type-Constructor-Expressions-1.sql" : [
+    3
   ],
   "sqlrf/Using-XML-in-SQL-Statements-1.sql" : [
     2

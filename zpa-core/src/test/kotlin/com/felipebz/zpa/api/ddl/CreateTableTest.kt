@@ -43,6 +43,93 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesObjectTables() {
+        assertThat(p).matches("create table sch.tab of sch.obj_type;")
+        assertThat(p).matches("create table t of obj_type substitutable at all levels;")
+        assertThat(p).matches("create table t of obj_type not substitutable at all levels;")
+        assertThat(p).matches(
+            "create global temporary table t of obj_type " +
+                "on commit preserve rows object identifier is system generated;"
+        )
+        assertThat(p).matches("create table t of obj_type object identifier is system generated;")
+        assertThat(p).matches(
+            "create table tab of obj_type (id primary key) object identifier is primary key;"
+        )
+    }
+
+    @Test
+    fun matchesNestedTableStorage() {
+        assertThat(p).matches(
+            "create table tab (values_list value_list_type) " +
+                "nested table values_list store as t_values;"
+        )
+        assertThat(p).matches(
+            "create table tab (warnings warning_list) " +
+                "nested table warnings store as tab_warnings;"
+        )
+        assertThat(p).matches(
+            "create table tab (warnings warning_list, tags tag_list) " +
+                "nested table warnings store as tab_warnings return as value " +
+                "nested table tags store as tab_tags return as locator;"
+        )
+        assertThat(p).matches(
+            "create table tab of tab_type " +
+                "nested table warnings store as tab_warnings return as locator;"
+        )
+    }
+
+    @Test
+    fun matchesRecursiveNestedTableStorage() {
+        assertThat(p).matches(
+            "create table tab (warnings warning_list) " +
+                "nested table warnings store as outer_warnings " +
+                "(nested table column_value store as inner_warnings);"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedObjectAndNestedTableClauses() {
+        assertThat(p).notMatches("create table tab of;")
+        assertThat(p).notMatches(
+            "create table tab of obj_type is of type (only other_type);"
+        )
+        assertThat(p).notMatches(
+            "create table tab of obj_type element is of type (only other_type);"
+        )
+        assertThat(p).notMatches(
+            "create table tab of obj_type object foo is system generated;"
+        )
+        assertThat(p).notMatches(
+            "create table tab of obj_type object whatever is primary key;"
+        )
+        assertThat(p).notMatches(
+            "create table tab of XMLTYPE " +
+                "XMLSCHEMA 'http://example.test/schema.xsd' ELEMENT 'Tab';"
+        )
+        assertThat(p).notMatches(
+            "create global temporary table t of obj_type " +
+                "object identifier is system generated on commit preserve rows;"
+        )
+        assertThat(p).notMatches("create table tab (values_list value_list_type) nested table values_list;")
+        assertThat(p).notMatches(
+            "create table tab (values_list value_list_type) " +
+                "nested table values_list store as other_schema.t_values;"
+        )
+        assertThat(p).notMatches(
+            "create table tab (warnings warning_list) nested table warnings store as;"
+        )
+        assertThat(p).notMatches(
+            "create table tab (warnings warning_list) " +
+                "nested table warnings store as tab_warnings return;"
+        )
+        assertThat(p).notMatches(
+            "create table tab (warnings warning_list) " +
+                "nested table warnings store as outer_warnings " +
+                "(nested table column_value store as);"
+        )
+    }
+
+    @Test
     fun matchesTableWithSchema() {
         assertThat(p).matches("create table sch.tab (id number);")
     }

@@ -42,6 +42,11 @@ enum class DdlGrammar : GrammarRuleKey {
     ANNOTATION,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
+    OBJECT_TABLE_CLAUSE,
+    OBJECT_TABLE_SUBSTITUTION,
+    OBJECT_TABLE_PROPERTIES,
+    OBJECT_IDENTIFIER_CLAUSE,
+    NESTED_TABLE_COL_PROPERTIES,
     CREATE_TABLE,
     INDEX_ORGANIZED_TABLE_CLAUSE,
     INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
@@ -210,6 +215,25 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(usingIndexProperties())
             )
 
+            fun objectTableProperty() = b.firstOf(
+                OUT_OF_LINE_CONSTRAINT,
+                b.sequence(IDENTIFIER_NAME, b.zeroOrMore(INLINE_CONSTRAINT))
+            )
+
+            fun nestedTableStorageProperty() = b.firstOf(
+                NESTED_TABLE_COL_PROPERTIES,
+                SEGMENT_ATTRIBUTES_CLAUSE,
+                LOB_STORAGE_CLAUSE
+            )
+
+            fun tablePropertyClauses() = b.sequence(
+                b.zeroOrMore(NESTED_TABLE_COL_PROPERTIES),
+                b.zeroOrMore(
+                    b.firstOf(
+                        LOB_STORAGE_CLAUSE,
+                        VARRAY_COL_PROPERTIES))
+            )
+
             fun indexOrganizedTableAttribute() = b.firstOf(
                 KEY_COMPRESSION,
                 b.sequence(PCTTHRESHOLD, INTEGER_LITERAL),
@@ -344,6 +368,69 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
                     b.oneOrMore(b.firstOf(OUT_OF_LINE_CONSTRAINT, TABLE_COLUMN_DEFINITION), b.optional(COMMA)))
+            b.rule(OBJECT_TABLE_PROPERTIES).define(
+                LPARENTHESIS,
+                objectTableProperty(),
+                b.zeroOrMore(COMMA, objectTableProperty()),
+                RPARENTHESIS
+            )
+
+            b.rule(OBJECT_IDENTIFIER_CLAUSE).define(
+                OBJECT,
+                "IDENTIFIER",
+                IS,
+                b.firstOf(
+                    b.sequence(PRIMARY, KEY),
+                    b.sequence("SYSTEM", "GENERATED")
+                )
+            )
+
+            b.rule(OBJECT_TABLE_SUBSTITUTION).define(
+                b.optional(NOT),
+                SUBSTITUTABLE,
+                AT,
+                ALL,
+                LEVELS
+            )
+
+            b.rule(OBJECT_TABLE_CLAUSE).define(
+                OF,
+                UNIT_NAME,
+                b.optional(OBJECT_TABLE_SUBSTITUTION),
+                b.optional(OBJECT_TABLE_PROPERTIES),
+                b.optional(
+                    ON,
+                    COMMIT,
+                    b.firstOf(
+                        DELETE,
+                        PRESERVE),
+                    ROWS),
+                b.optional(OBJECT_IDENTIFIER_CLAUSE)
+            )
+
+            b.rule(NESTED_TABLE_COL_PROPERTIES).define(
+                NESTED,
+                TABLE,
+                IDENTIFIER_NAME,
+                b.optional(SUBSTITUTABLE_COLUMN_CLAUSE),
+                b.optional(b.firstOf(LOCAL, GLOBAL)),
+                STORE,
+                AS,
+                IDENTIFIER_NAME,
+                b.optional(
+                    LPARENTHESIS,
+                    b.oneOrMore(
+                        nestedTableStorageProperty(),
+                        b.optional(COMMA)
+                    ),
+                    RPARENTHESIS
+                ),
+                b.optional(
+                    RETURN,
+                    b.optional(AS),
+                    b.firstOf("LOCATOR", VALUE)
+                )
+            )
 
             b.rule(PHISICAL_ATRIBUTES_CLAUSE).define(
                     b.oneOrMore(b.firstOf(
@@ -425,12 +512,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     ONLY,
                                     DATATYPE,
                                     RPARENTHESIS),
-                            b.sequence(
-                                    b.optional(NOT),
-                                    SUBSTITUTABLE,
-                                    AT,
-                                    ALL,
-                                    LEVELS)))
+                            OBJECT_TABLE_SUBSTITUTION))
 
             b.rule(SIZE_CLAUSE).define(
                     b.sequence(INTEGER_LITERAL, b.firstOf("K", "M", "G", "T", "P", "E")))
@@ -778,26 +860,41 @@ enum class DdlGrammar : GrammarRuleKey {
                             TEMPORARY),
                     TABLE,
                     UNIT_NAME,
-                    b.optional(
-                            LPARENTHESIS,
-                            TABLE_RELATIONAL_PROPERTIES,
-                            RPARENTHESIS),
-                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                    b.optional(b.firstOf(
-                            PARTITION_BY_RANGE,
-                            PARTITION_BY_HASH,
-                            PARTITION_BY_LIST,
-                            PARTITION_COMPOSITE)),
-                    b.optional(
-                            TABLESPACE,
-                            IDENTIFIER_NAME),
-                    b.optional(
-                            ON,
-                            COMMIT,
-                            b.firstOf(
-                                    DELETE,
-                                    PRESERVE),
-                            ROWS),
+                    b.firstOf(
+                            b.sequence(
+                                    OBJECT_TABLE_CLAUSE,
+                                    tablePropertyClauses(),
+                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                    b.optional(b.firstOf(
+                                            PARTITION_BY_RANGE,
+                                            PARTITION_BY_HASH,
+                                            PARTITION_BY_LIST,
+                                            PARTITION_COMPOSITE)),
+                                    b.optional(
+                                            TABLESPACE,
+                                            IDENTIFIER_NAME)),
+                            b.sequence(
+                                    b.optional(
+                                            LPARENTHESIS,
+                                            TABLE_RELATIONAL_PROPERTIES,
+                                            RPARENTHESIS),
+                                    tablePropertyClauses(),
+                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                    b.optional(b.firstOf(
+                                            PARTITION_BY_RANGE,
+                                            PARTITION_BY_HASH,
+                                            PARTITION_BY_LIST,
+                                            PARTITION_COMPOSITE)),
+                                    b.optional(
+                                            TABLESPACE,
+                                            IDENTIFIER_NAME),
+                                    b.optional(
+                                            ON,
+                                            COMMIT,
+                                            b.firstOf(
+                                                    DELETE,
+                                                    PRESERVE),
+                                            ROWS))),
                     b.optional(SEMICOLON))
 
             // XMLIndex parameter syntax is carried inside the same quoted parameter string.
