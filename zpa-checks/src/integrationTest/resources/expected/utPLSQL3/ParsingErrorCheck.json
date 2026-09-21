@@ -24,16 +24,13 @@
     18
   ],
   "source/create_grants.sql" : [
-    38
+    56
   ],
   "source/create_synonyms.sql" : [
-    54
+    72
   ],
   "source/create_utplsql_owner.sql" : [
     30
-  ],
-  "source/define_ut3_owner_param.sql" : [
-    49
   ],
   "source/install.sql" : [
     37

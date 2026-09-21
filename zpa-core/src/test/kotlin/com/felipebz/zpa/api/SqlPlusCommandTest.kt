@@ -48,8 +48,22 @@ class SqlPlusCommandTest : RuleTest() {
     }
 
     @Test
+    fun matchesHostAliasesAndLineEndpoints() {
+        assertThat(p).matches("! rm params.sql.tmp")
+        assertThat(p).matches("$ del params.sql.tmp")
+        assertThat(p).matches("! echo foo\n")
+        assertThat(p).matches("$ dir\n")
+    }
+
+    @Test
+    fun preservesOrdinaryDollarIdentifiersAndNotEqualsExpressions() {
+        setRootRule(PlSqlGrammar.EXPRESSION)
+        assertThat(p).matches("foo\$bar != foo\$bar")
+    }
+
+    @Test
     fun rejectsIdentifierPrefixesOfCommands() {
-        listOf("RUNNER", "STARTED", "CONNECTED", "APPENDING").forEach { source ->
+        listOf("RUNNER", "STARTED", "CONNECTED", "APPENDING", "foo\$bar").forEach { source ->
             assertThat(p).describedAs(source).notMatches(source)
         }
     }
@@ -99,7 +113,7 @@ class SqlPlusCommandTest : RuleTest() {
             "EXIT", "QUIT",
             "GET",
             "HELP", "?",
-            "HO", "HOST",
+            "HO", "HOST", "!", "$",
             "I", "INPUT",
             "L", "LIST",
             "PASSW", "PASSWORD",

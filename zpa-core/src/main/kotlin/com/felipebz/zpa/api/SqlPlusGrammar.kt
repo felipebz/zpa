@@ -57,7 +57,7 @@ enum class SqlPlusGrammar : GrammarRuleKey {
                             "EXIT", "QUIT",
                             "GET",
                             "HELP", "?",
-                            "HO", "HOST",
+                            "HO", "HOST", "!", "$",
                             "I", "INPUT",
                             "L", "LIST",
                             "PASSW", "PASSWORD",
