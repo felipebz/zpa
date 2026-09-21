@@ -1,0 +1,408 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG="${ZPA_ORACLE_PROBE_CONFIG:-$HOME/.config/zpa/oracle-probe.env}"
+ORACLE_CLIENT_DEFAULT="sqlplus"
+CONTAINER_RUNTIME_DEFAULT="podman"
+ORACLE_CONTAINER_CLIENT_DEFAULT="sqlplus"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  oracle-probe --ping
+  oracle-probe
+
+Reads a self-contained SQL/PLSQL probe from stdin and executes it against the
+configured Oracle test schema.
+
+Options:
+  --ping   Validate connectivity and print the Oracle version.
+  -h       Show this help.
+
+Configuration file (default):
+  ~/.config/zpa/oracle-probe.env
+
+Set ORACLE_CONTAINER in that file to execute SQL*Plus inside an existing
+Oracle container. Set CONTAINER_RUNTIME to `podman` or `docker`. Leave
+ORACLE_CONTAINER unset to use a local client.
+
+Override with:
+  ZPA_ORACLE_PROBE_CONFIG=/path/to/oracle-probe.env
+USAGE
+}
+
+PING=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --ping)
+      PING=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ ! -f "$CONFIG" ]]; then
+  echo "Oracle probe configuration not found: $CONFIG" >&2
+  echo "Copy oracle-probe.env.example and adjust the values." >&2
+  exit 2
+fi
+
+# shellcheck disable=SC1090
+source "$CONFIG"
+
+: "${ZPA_ORACLE_USER:?ZPA_ORACLE_USER is required}"
+: "${ZPA_ORACLE_PASSWORD:?ZPA_ORACLE_PASSWORD is required}"
+: "${ZPA_ORACLE_CONNECT:?ZPA_ORACLE_CONNECT is required}"
+
+# When ORACLE_CONTAINER is set, run SQL*Plus inside the already-running Oracle
+# container. Otherwise use a local Oracle client.
+ORACLE_CONTAINER="${ORACLE_CONTAINER:-}"
+ORACLE_CONTAINER_CLIENT="${ORACLE_CONTAINER_CLIENT:-$ORACLE_CONTAINER_CLIENT_DEFAULT}"
+CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-$CONTAINER_RUNTIME_DEFAULT}"
+ORACLE_CLIENT="${ORACLE_CLIENT:-${SQLPLUS_BIN:-${SQLCL_BIN:-$ORACLE_CLIENT_DEFAULT}}}"
+
+if [[ -n "$ORACLE_CONTAINER" ]]; then
+  if ! command -v "$CONTAINER_RUNTIME" >/dev/null 2>&1; then
+    echo "Container runtime executable not found: $CONTAINER_RUNTIME" >&2
+    exit 2
+  fi
+else
+  if ! command -v "$ORACLE_CLIENT" >/dev/null 2>&1; then
+    echo "Oracle client executable not found: $ORACLE_CLIENT" >&2
+    exit 2
+  fi
+fi
+
+oracle_client() {
+  if [[ -n "$ORACLE_CONTAINER" ]]; then
+    "$CONTAINER_RUNTIME" exec -i "$ORACLE_CONTAINER" \
+      "$ORACLE_CONTAINER_CLIENT" -S -L /nolog
+  else
+    "$ORACLE_CLIENT" -S -L /nolog
+  fi
+}
+
+trim_outer_blank_lines() {
+  awk '
+    { lines[NR] = $0 }
+    END {
+      first = 1
+      while (first <= NR && lines[first] ~ /^[[:space:]]*$/) first++
+      last = NR
+      while (last >= first && lines[last] ~ /^[[:space:]]*$/) last--
+      for (i = first; i <= last; i++) print lines[i]
+    }
+  '
+}
+
+session_prelude() {
+  cat <<SQL
+set echo off
+set verify off
+set feedback off
+set heading off
+set pagesize 0
+set linesize 32767
+set trimspool on
+set serveroutput on size unlimited
+set sqlblanklines on
+set define off
+whenever oserror exit failure
+whenever sqlerror exit failure
+connect ${ZPA_ORACLE_USER}/"${ZPA_ORACLE_PASSWORD}"@${ZPA_ORACLE_CONNECT}
+SQL
+}
+
+extract_section() {
+  local begin_marker="$1"
+  local end_marker="$2"
+  awk -v begin="$begin_marker" -v end="$end_marker" '
+    $0 == begin { capture=1; next }
+    $0 == end   { capture=0; exit }
+    capture     { print }
+  '
+}
+
+extract_probe_output() {
+  awk '
+    /^ZPA_PROBE_BEGIN$/ { capture=1; next }
+    /^ZPA_PROBE_END$/   { capture=0; exit }
+    capture              { print }
+  '
+}
+
+extract_version() {
+  extract_section ZPA_VERSION_BEGIN ZPA_VERSION_END |
+    awk '
+      $0 !~ /^[[:space:]]*$/ {
+        sub(/^[[:space:]]+/, "")
+        sub(/[[:space:]]+$/, "")
+        print
+        exit
+      }
+    '
+}
+
+extract_error_code() {
+  grep -Eo '(ORA|PLS)-[0-9]{5}|SP2-[0-9]{4}' | head -n 1 || true
+}
+
+print_error_code() {
+  local output="$1"
+  local error_code
+
+  error_code="$(printf '%s\n' "$output" | extract_error_code)"
+  if [[ -n "$error_code" ]]; then
+    echo "ERROR_CODE=$error_code"
+  fi
+}
+
+run_reset_session() {
+  {
+    session_prelude
+    cat "$ROOT/reset-probe.sql"
+    echo "exit success"
+  } | oracle_client
+}
+
+get_version() {
+  local output status version
+
+  output="$({
+    session_prelude
+    cat <<'SQL'
+prompt ZPA_VERSION_BEGIN
+select banner
+  from v$version
+ where lower(banner) like '%database%'
+   and rownum = 1;
+prompt ZPA_VERSION_END
+exit success
+SQL
+  } | oracle_client 2>&1)"
+  status=$?
+
+  if [[ $status -ne 0 ]]; then
+    printf '%s\n' "$output"
+    return "$status"
+  fi
+
+  version="$(printf '%s\n' "$output" | extract_version)"
+
+  if [[ -z "$version" ]]; then
+    printf '%s\n' 'Unable to determine Oracle version from V$VERSION.'
+    if [[ -n "$output" ]]; then
+      printf '%s\n' "$output"
+    fi
+    return 1
+  fi
+
+  printf '%s\n' "$version"
+}
+
+if $PING; then
+  VERSION="$(get_version 2>&1)"
+  STATUS=$?
+
+  if [[ $STATUS -ne 0 ]]; then
+    echo "STATUS=UNAVAILABLE"
+    printf '%s\n' "$VERSION"
+    exit 1
+  fi
+
+  echo "STATUS=AVAILABLE"
+  echo "ORACLE_VERSION=$VERSION"
+  exit 0
+fi
+
+PROBE_SQL="$(cat)"
+if [[ -z "${PROBE_SQL//[[:space:]]/}" ]]; then
+  echo "No SQL probe received on stdin." >&2
+  exit 2
+fi
+
+TMP_SQL="$(mktemp)"
+trap 'rm -f "$TMP_SQL"' EXIT
+printf '%s\n' "$PROBE_SQL" > "$TMP_SQL"
+
+# The normal path uses one SQL*Plus process for reset-before, version lookup,
+# probe execution, USER_ERRORS inspection, and reset-after. A hard SQL error
+# exits SQL*Plus immediately, in which case a second process performs cleanup.
+RAW_OUTPUT="$({
+  session_prelude
+
+  echo "prompt ZPA_RESET_BEFORE_BEGIN"
+  cat "$ROOT/reset-probe.sql"
+  echo "prompt ZPA_RESET_BEFORE_END"
+
+  cat <<'SQL'
+prompt ZPA_VERSION_BEGIN
+select banner
+  from v$version
+ where lower(banner) like '%database%'
+   and rownum = 1;
+prompt ZPA_VERSION_END
+
+variable zpa_oracle_probe_exit_code number
+begin
+  :zpa_oracle_probe_exit_code := 0;
+end;
+/
+
+prompt ZPA_PROBE_BEGIN
+SQL
+
+  cat "$TMP_SQL"
+
+  cat <<'SQL'
+
+declare
+  l_errors number;
+begin
+  select count(*)
+    into l_errors
+    from user_errors;
+
+  if l_errors > 0 then
+    :zpa_oracle_probe_exit_code := 1;
+
+    for r in (
+      select type,
+             name,
+             line,
+             position,
+             text
+        from user_errors
+       order by name, sequence
+    ) loop
+      dbms_output.put_line(
+        'ZPA_COMPILE_ERROR|' ||
+        r.type || '|' ||
+        r.name || '|' ||
+        r.line || '|' ||
+        r.position || '|' ||
+        replace(replace(r.text, chr(10), ' '), chr(13), ' ')
+      );
+    end loop;
+  end if;
+end;
+/
+
+prompt ZPA_PROBE_END
+prompt ZPA_CLEANUP_BEGIN
+whenever sqlerror continue
+SQL
+
+  cat "$ROOT/reset-probe.sql"
+
+  cat <<'SQL'
+prompt ZPA_CLEANUP_END
+exit :zpa_oracle_probe_exit_code
+SQL
+} | oracle_client 2>&1)"
+STATUS=$?
+
+# A failure before the probe starts is an environment/setup failure, not an
+# Oracle syntax result.
+if ! grep -q '^ZPA_RESET_BEFORE_BEGIN$' <<<"$RAW_OUTPUT"; then
+  echo "RESULT=ENVIRONMENT_ERROR"
+  echo "STAGE=CONNECT"
+  print_error_code "$RAW_OUTPUT"
+  printf '%s\n' "$RAW_OUTPUT" | trim_outer_blank_lines
+  exit 2
+fi
+
+if ! grep -q '^ZPA_RESET_BEFORE_END$' <<<"$RAW_OUTPUT"; then
+  echo "RESULT=ENVIRONMENT_ERROR"
+  echo "STAGE=RESET_BEFORE"
+  print_error_code "$RAW_OUTPUT"
+  printf '%s\n' "$RAW_OUTPUT" | trim_outer_blank_lines
+  exit 2
+fi
+
+VERSION="$(printf '%s\n' "$RAW_OUTPUT" | extract_version)"
+if [[ -z "$VERSION" ]]; then
+  echo "RESULT=ENVIRONMENT_ERROR"
+  echo "STAGE=VERSION"
+  print_error_code "$RAW_OUTPUT"
+  printf '%s\n' "$RAW_OUTPUT" | trim_outer_blank_lines
+  exit 2
+fi
+
+if ! grep -q '^ZPA_PROBE_BEGIN$' <<<"$RAW_OUTPUT"; then
+  echo "ORACLE_VERSION=$VERSION"
+  echo "RESULT=ENVIRONMENT_ERROR"
+  echo "STAGE=PROBE_SETUP"
+  print_error_code "$RAW_OUTPUT"
+  printf '%s\n' "$RAW_OUTPUT" | trim_outer_blank_lines
+  exit 2
+fi
+
+PROBE_OUTPUT="$(printf '%s\n' "$RAW_OUTPUT" | extract_probe_output | trim_outer_blank_lines)"
+
+RESULT="ACCEPTED"
+if grep -q '^ZPA_COMPILE_ERROR|' <<<"$PROBE_OUTPUT"; then
+  RESULT="COMPILE_ERROR"
+elif [[ $STATUS -ne 0 ]]; then
+  RESULT="REJECTED"
+fi
+
+echo "ORACLE_VERSION=$VERSION"
+echo "RESULT=$RESULT"
+if [[ "$RESULT" != "ACCEPTED" ]]; then
+  print_error_code "$PROBE_OUTPUT"
+fi
+if [[ -n "$PROBE_OUTPUT" ]]; then
+  echo
+  printf '%s\n' "$PROBE_OUTPUT"
+fi
+
+CLEANUP_DONE=false
+if grep -q '^ZPA_CLEANUP_END$' <<<"$RAW_OUTPUT"; then
+  CLEANUP_DONE=true
+  CLEANUP_OUTPUT="$(printf '%s\n' "$RAW_OUTPUT" | extract_section ZPA_CLEANUP_BEGIN ZPA_CLEANUP_END | trim_outer_blank_lines)"
+
+  if grep -q '^ZPA_CLEANUP_WARNING|' <<<"$CLEANUP_OUTPUT" || grep -q 'ORA-20990' <<<"$CLEANUP_OUTPUT"; then
+    echo
+    echo "CLEANUP=FAILED"
+    printf '%s\n' "$CLEANUP_OUTPUT"
+    exit 3
+  fi
+fi
+
+# Hard SQL/OS errors trigger WHENEVER ... EXIT before the in-session cleanup.
+# Restore the invariant that every invocation leaves the schema clean.
+if ! $CLEANUP_DONE; then
+  CLEANUP_OUTPUT="$(run_reset_session 2>&1)"
+  CLEANUP_STATUS=$?
+
+  if [[ $CLEANUP_STATUS -ne 0 ]]; then
+    echo
+    echo "CLEANUP=FAILED"
+    printf '%s\n' "$CLEANUP_OUTPUT" | trim_outer_blank_lines
+    exit 3
+  fi
+fi
+
+case "$RESULT" in
+  ACCEPTED)
+    exit 0
+    ;;
+  REJECTED|COMPILE_ERROR)
+    exit 1
+    ;;
+  *)
+    exit 2
+    ;;
+esac
