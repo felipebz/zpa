@@ -54,7 +54,6 @@ internal fun isExecuteBufferDelimiter(machine: Machine, offset: Int): Boolean {
     val nextToken = machine.tokenAt(offset + 1)
 
     return token.type == PlSqlPunctuator.DIVISION
-        && token.column == 0
         && (token.line != previousTokenLine || previousTokenLine == 0)
         && (token.line != nextToken.line || nextToken.type == GenericTokenType.EOF)
 }
