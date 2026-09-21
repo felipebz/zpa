@@ -48,4 +48,15 @@ class DateExpressionTest : RuleTest() {
         assertThat(p).matches("DATE '2015-01-01' - 1")
     }
 
+
+    @Test
+    fun matchesDateLiteralWithPadding() {
+        assertThat(p).matches("date' 2023-12-31'")
+        assertThat(p).matches("date '2023-12-31 '")
+    }
+
+    @Test
+    fun doesNotMatchDateLiteralWithPaddingInsideTheValue() {
+        assertThat(p).notMatches("date '2023- 12-31'")
+    }
 }
