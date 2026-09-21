@@ -2,26 +2,8 @@
   "development/mystats/mystats.sql" : [
     425
   ],
-  "source/core/annotations/ut_annotation_cache_info.sql" : [
-    23
-  ],
-  "source/core/annotations/ut_annotation_cache_schema.sql" : [
-    20
-  ],
-  "source/core/output_buffers/ut_output_buffer_info_tmp.sql" : [
-    23
-  ],
-  "source/core/output_buffers/ut_output_buffer_tmp.sql" : [
-    30
-  ],
   "source/core/ut_suite_cache.sql" : [
     15
-  ],
-  "source/core/ut_suite_cache_package.sql" : [
-    20
-  ],
-  "source/core/ut_suite_cache_schema.sql" : [
-    18
   ],
   "source/create_grants.sql" : [
     56

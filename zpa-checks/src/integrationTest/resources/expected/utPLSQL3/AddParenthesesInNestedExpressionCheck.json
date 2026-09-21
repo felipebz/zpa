@@ -8,6 +8,10 @@
   "source/api/ut_runner.pkb" : [
     52
   ],
+  "source/core/output_buffers/ut_output_buffer_tmp.sql" : [
+    27,
+    28
+  ],
   "source/core/output_buffers/ut_output_bulk_buffer.tpb" : [
     57
   ],

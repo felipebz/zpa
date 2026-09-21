@@ -43,6 +43,8 @@ enum class DdlGrammar : GrammarRuleKey {
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
+    INDEX_ORGANIZED_TABLE_CLAUSE,
+    INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
     CREATE_INDEX,
     CREATE_INDEX_FOR_CONSTRAINT,
     CREATE_INDEX_SCHEMA_OBJECT_NAME,
@@ -208,6 +210,17 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(usingIndexProperties())
             )
 
+            fun indexOrganizedTableAttribute() = b.firstOf(
+                KEY_COMPRESSION,
+                b.sequence(PCTTHRESHOLD, INTEGER_LITERAL),
+                b.firstOf(
+                    b.sequence(COMPRESS, ADVANCED, b.optional(LOW)),
+                    b.sequence(COMPRESS, b.optional(INTEGER_LITERAL)),
+                    NOCOMPRESS
+                ),
+                SEGMENT_ATTRIBUTES_CLAUSE
+            )
+
             b.rule(DDL_COMMENT).define(
                     COMMENT, ON,
                     b.firstOf(
@@ -352,6 +365,28 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                             b.sequence(MAPPING, TABLE),
                             NOMAPPING))
+
+            b.rule(INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE).define(
+                OVERFLOW,
+                b.optional(SEGMENT_ATTRIBUTES_CLAUSE)
+            )
+
+            b.rule(INDEX_ORGANIZED_TABLE_CLAUSE).define(
+                ORGANIZATION,
+                INDEX,
+                b.zeroOrMore(indexOrganizedTableAttribute()),
+                b.optional(
+                    b.firstOf(
+                        b.sequence(
+                            INCLUDING,
+                            IDENTIFIER_NAME,
+                            b.zeroOrMore(indexOrganizedTableAttribute()),
+                            INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE
+                        ),
+                        INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE
+                    )
+                )
+            )
 
             b.rule(LOB_STORAGE_CLAUSE).define(
                     b.sequence(LOB,
@@ -747,6 +782,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             LPARENTHESIS,
                             TABLE_RELATIONAL_PROPERTIES,
                             RPARENTHESIS),
+                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                     b.optional(b.firstOf(
                             PARTITION_BY_RANGE,
                             PARTITION_BY_HASH,

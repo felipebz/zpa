@@ -82,6 +82,9 @@
   "sqlrf/CAST-7.sql" : [
     12
   ],
+  "sqlrf/CREATE-TABLE-35.sql" : [
+    3
+  ],
   "sqlrf/CREATE-TABLE-42.sql" : [
     6
   ],

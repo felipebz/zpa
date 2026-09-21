@@ -88,6 +88,62 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesIndexOrganizedTables() {
+        assertThat(p).matches("create table t (id number primary key) organization index;")
+        assertThat(p).matches("create table t (id number primary key) organization index nologging initrans 10;")
+        assertThat(p).matches("create table t (id number primary key) organization index nologging initrans 100 overflow nologging initrans 100;")
+    }
+
+    @Test
+    fun matchesIndexOrganizedTableOptions() {
+        assertThat(p).matches("create table t (id number primary key) organization index mapping table;")
+        assertThat(p).matches("create table t (id number primary key) organization index nomapping;")
+        assertThat(p).matches("create table t (id number primary key) organization index compress 1;")
+        assertThat(p).matches("create table t (id number primary key) organization index compress advanced low;")
+        assertThat(p).matches("create table t (id number primary key) organization index tablespace users;")
+        assertThat(p).matches("create table t (id number primary key) organization index overflow tablespace users;")
+        assertThat(p).matches(
+            "create table countries_demo (" +
+                "country_id char(2) not null, " +
+                "country_name varchar2(40), " +
+                "constraint countries_demo_pk primary key (country_id)" +
+                ") organization index including country_name pctthreshold 2 storage (initial 4k) " +
+                "overflow storage (initial 4k);"
+        )
+    }
+
+    @Test
+    fun matchesMutuallyExclusiveIndexOrganizedOverflowForms() {
+        assertThat(p).matches("create table t (id number primary key) organization index overflow;")
+        assertThat(p).matches("create table t (id number primary key) organization index including id overflow;")
+        assertThat(p).matches(
+            "create table t (id number primary key, value varchar2(100)) " +
+                "organization index including value pctthreshold 20 storage (initial 4k) " +
+                "overflow storage (initial 4k);"
+        )
+    }
+
+    @Test
+    fun rejectsDuplicateIndexOrganizedOverflowClauses() {
+        assertThat(p).notMatches("create table t (id number primary key) organization index overflow overflow;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index including id overflow overflow;")
+        assertThat(p).notMatches(
+            "create table t (id number primary key) organization index including id " +
+                "pctthreshold 20 overflow overflow;"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedIndexOrganizedTableClauses() {
+        assertThat(p).notMatches("create table t (id number primary key) organization;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index pctthreshold;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index including id;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index overflow initrans;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index overflow tablespace;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index overflow nologging pctthreshold 20;")
+    }
+
+    @Test
     fun matchesPartitionByRangeMulti() {
         assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id1, column_id2) (partition patition_id values less than (column_id));")
     }
