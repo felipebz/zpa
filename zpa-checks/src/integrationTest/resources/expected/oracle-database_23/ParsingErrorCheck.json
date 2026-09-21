@@ -2423,9 +2423,6 @@
   "sqlrf/annotations_clause-5.sql" : [
     3
   ],
-  "sqlrf/constraint-1.sql" : [
-    10
-  ],
   "sqlrf/constraint-15.sql" : [
     2
   ],
@@ -2435,17 +2432,11 @@
   "sqlrf/constraint-17.sql" : [
     2
   ],
-  "sqlrf/constraint-2.sql" : [
-    4
-  ],
   "sqlrf/constraint-27.sql" : [
     10
   ],
   "sqlrf/constraint-29.sql" : [
     5
-  ],
-  "sqlrf/constraint-31.sql" : [
-    10
   ],
   "sqlrf/constraint-5.sql" : [
     3

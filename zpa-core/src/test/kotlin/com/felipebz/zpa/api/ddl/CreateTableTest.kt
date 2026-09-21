@@ -73,6 +73,21 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesCreateTableWithPrimaryKeyUsingIndex() {
+        assertThat(p).matches("create table tab (id number, constraint tab_pk primary key (id) using index);")
+    }
+
+    @Test
+    fun matchesCreateTableWithUniqueUsingIndex() {
+        assertThat(p).matches("create table tab (a number, b number, constraint tab_uk unique (a, b) using index);")
+    }
+
+    @Test
+    fun rejectsUsingIndexOnNotNullConstraint() {
+        assertThat(p).notMatches("create table tab (foo number not null using index);")
+    }
+
+    @Test
     fun matchesPartitionByRangeMulti() {
         assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id1, column_id2) (partition patition_id values less than (column_id));")
     }

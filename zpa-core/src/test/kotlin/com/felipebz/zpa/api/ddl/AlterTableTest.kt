@@ -43,6 +43,11 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableWithOutOfLineUniqueConstraintUsingIndex() {
+        assertThat(p).matches("alter table tab add constraint c_name unique (col1, col2) using index;")
+    }
+
+    @Test
     fun matchesAlterTableAddColumnWithDefaultOnNull() {
         assertThat(p).matches("alter table tab add col varchar2(100) default on null 'Default String';")
     }

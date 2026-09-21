@@ -37,12 +37,14 @@ enum class DdlGrammar : GrammarRuleKey {
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
     OUT_OF_LINE_CONSTRAINT,
+    USING_INDEX_CLAUSE,
     ANNOTATIONS_CLAUSE,
     ANNOTATION,
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     CREATE_TABLE,
     CREATE_INDEX,
+    CREATE_INDEX_FOR_CONSTRAINT,
     CREATE_INDEX_SCHEMA_OBJECT_NAME,
     CREATE_INDEX_ON_CLAUSE,
     CREATE_INDEX_CLUSTER_CLAUSE,
@@ -154,6 +156,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_DIRECTORY,
     TRUNCATE_TABLE,
     CONSTRAINT_STATE,
+    CONSTRAINT_STATE_WITHOUT_USING_INDEX,
     PRECHECK_STATE,
     EXCEPTIONS_CLAUSE;
 
@@ -163,6 +166,48 @@ enum class DdlGrammar : GrammarRuleKey {
         }
 
         private fun createDdlCommands(b: PlSqlGrammarBuilder) {
+            fun createIndexHeader() = b.sequence(
+                CREATE,
+                b.firstOf(
+                    b.sequence(
+                        JSON,
+                        b.optional(UNIQUE),
+                        b.optional(b.firstOf(SPARSE, DENSE)),
+                        b.optional(b.firstOf(SINGLEVALUE, MULTIVALUE))),
+                    b.sequence(
+                        b.optional(JSON),
+                        b.optional(b.firstOf(UNIQUE, BITMAP, MULTIVALUE, SPARSE, DENSE)))
+                ),
+                INDEX,
+                b.optional(IF, NOT, EXISTS),
+                CREATE_INDEX_SCHEMA_OBJECT_NAME
+            )
+
+            fun usingIndexProperties() = b.oneOrMore(b.firstOf(
+                CREATE_INDEX_GLOBAL_PARTITIONED,
+                CREATE_INDEX_LOCAL_PARTITIONED,
+                INDEX_PHYSICAL_ATTRIBUTES_WITH_PCTFREE_CLAUSE,
+                LOGGING_CLAUSE,
+                ONLINE,
+                b.sequence(TABLESPACE, b.firstOf(IDENTIFIER_NAME, DEFAULT)),
+                INDEX_COMPRESSION_CLAUSE,
+                b.firstOf(SORT, NOSORT),
+                REVERSE,
+                b.firstOf(VISIBLE, INVISIBLE),
+                INDEX_PARTIAL_CLAUSE,
+                ANNOTATIONS_CLAUSE
+            ))
+
+            fun createIndexTableClauseForConstraint() = b.sequence(
+                CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                b.optional(IDENTIFIER_NAME),
+                LPARENTHESIS,
+                CREATE_INDEX_EXPR,
+                b.zeroOrMore(COMMA, CREATE_INDEX_EXPR),
+                RPARENTHESIS,
+                b.optional(usingIndexProperties())
+            )
+
             b.rule(DDL_COMMENT).define(
                     COMMENT, ON,
                     b.firstOf(
@@ -196,15 +241,19 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
-                            b.sequence(b.optional(NOT), NULL),
                             UNIQUE,
-                            b.sequence(PRIMARY, KEY),
-                            REFERENCES_CLAUSE
+                            b.sequence(PRIMARY, KEY)
                         ), b.optional(CONSTRAINT_STATE)
                     ),
                     b.sequence(
+                        b.firstOf(
+                            b.sequence(b.optional(NOT), NULL),
+                            REFERENCES_CLAUSE
+                        ), b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX)
+                    ),
+                    b.sequence(
                         CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
-                        b.optional(CONSTRAINT_STATE),
+                        b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX),
                         b.optional(PRECHECK_STATE)
                     )
                 )
@@ -216,10 +265,32 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(b.optional(NOT), DEFERRABLE, b.optional(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE))),
                 )),
                 b.optional(b.firstOf(RELY, NORELY)),
-                // TODO b.optional(USING_INDEX_CLAUSE),
+                b.optional(USING_INDEX_CLAUSE),
                 b.optional(b.firstOf(ENABLE, DISABLE)),
                 b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
                 b.optional(EXCEPTIONS_CLAUSE)
+            )
+
+            b.rule(CONSTRAINT_STATE_WITHOUT_USING_INDEX).define(
+                b.optional(b.firstOf(
+                    b.sequence(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE), b.optional(b.optional(NOT), DEFERRABLE)),
+                    b.sequence(b.optional(NOT), DEFERRABLE, b.optional(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE))),
+                )),
+                b.optional(b.firstOf(RELY, NORELY)),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                b.optional(EXCEPTIONS_CLAUSE)
+            )
+
+            b.rule(USING_INDEX_CLAUSE).define(
+                USING, INDEX,
+                b.optional(
+                    b.firstOf(
+                        b.sequence(LPARENTHESIS, CREATE_INDEX_FOR_CONSTRAINT, RPARENTHESIS),
+                        usingIndexProperties(),
+                        UNIT_NAME
+                    )
+                )
             )
 
             b.rule(PRECHECK_STATE).define(b.firstOf(PRECHECK, NOPRECHECK))
@@ -243,13 +314,16 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                         b.firstOf(
                             b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
-                            b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS, b.optional(b.sequence(USING, INDEX))),
-                            b.sequence(FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE)
+                            b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS),
                         ), b.optional(CONSTRAINT_STATE)
                     ),
                     b.sequence(
+                        FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE,
+                        b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX)
+                    ),
+                    b.sequence(
                         CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
-                        b.optional(CONSTRAINT_STATE),
+                        b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX),
                         b.optional(PRECHECK_STATE)
                     )
                 )
@@ -1021,20 +1095,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(CREATE_INDEX_ATTRIBUTES))
 
             b.rule(CREATE_INDEX).define(
-                CREATE,
-                b.firstOf(
-                    b.sequence(
-                        JSON,
-                        b.optional(UNIQUE),
-                        b.optional(b.firstOf(SPARSE, DENSE)),
-                        b.optional(b.firstOf(SINGLEVALUE, MULTIVALUE))),
-                    b.sequence(
-                        b.optional(JSON),
-                        b.optional(b.firstOf(UNIQUE, BITMAP, MULTIVALUE, SPARSE, DENSE))),
-                ),
-                INDEX,
-                b.optional(IF, NOT, EXISTS),
-                CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                createIndexHeader(),
                 // Oracle documents both placements: before ON in the SQL Reference diagram,
                 // and after the indexed object in the VLDB guide example.
                 b.firstOf(
@@ -1043,6 +1104,20 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(b.firstOf(USABLE, UNUSABLE)),
                 b.optional(b.firstOf(DEFERRED, IMMEDIATE), INVALIDATION),
                 b.optional(SEMICOLON))
+
+            b.rule(CREATE_INDEX_FOR_CONSTRAINT).define(
+                createIndexHeader(),
+                b.firstOf(
+                    b.sequence(
+                        INDEX_ILM_CLAUSE,
+                        ON,
+                        createIndexTableClauseForConstraint()),
+                    b.sequence(
+                        ON,
+                        createIndexTableClauseForConstraint(),
+                        b.optional(INDEX_ILM_CLAUSE))),
+                b.optional(b.firstOf(USABLE, UNUSABLE)),
+                b.optional(b.firstOf(DEFERRED, IMMEDIATE), INVALIDATION))
 
             b.rule(INDEX_SEGMENT_ATTRIBUTES_CLAUSE).define(
                 b.oneOrMore(b.firstOf(

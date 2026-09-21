@@ -110,4 +110,15 @@ class InlineConstraintTest : RuleTest() {
         assertThat(p).matches("unique not deferrable initially deferred rely disable validate exceptions into sch.tab")
     }
 
+    @Test
+    fun matchesKeyUsingIndex() {
+        assertThat(p).matches("unique using index")
+        assertThat(p).matches("primary key using index")
+    }
+
+    @Test
+    fun rejectsUsingIndexOnUnsupportedInlineConstraint() {
+        assertThat(p).notMatches("references tab (col) using index")
+        assertThat(p).notMatches("check (x > 1) using index")
+    }
 }

@@ -96,4 +96,43 @@ class OutOfLineConstraintTest : RuleTest() {
         assertThat(p).matches("unique (foo) not deferrable initially deferred rely disable validate exceptions into sch.tab")
     }
 
+    @Test
+    fun matchesUniqueUsingIndex() {
+        assertThat(p).matches("unique (foo) using index")
+    }
+
+    @Test
+    fun matchesUniqueUsingNamedIndex() {
+        assertThat(p).matches("unique (foo) using index index_name")
+        assertThat(p).matches("unique (foo) using index sch.index_name")
+    }
+
+    @Test
+    fun matchesUniqueUsingIndexProperties() {
+        assertThat(p).matches("unique (foo) using index pctfree 5 tablespace stocks storage (initial 8m)")
+    }
+
+    @Test
+    fun matchesUniqueUsingCreateIndex() {
+        assertThat(p).matches("unique (foo) using index (create unique index index_name on tab (foo))")
+    }
+
+    @Test
+    fun rejectsUsingIndexOnUnsupportedConstraint() {
+        assertThat(p).notMatches("foreign key (foo) references tab (foo) using index")
+        assertThat(p).notMatches("check (foo > 1) using index")
+    }
+
+    @Test
+    fun rejectsMalformedUsingIndex() {
+        assertThat(p).notMatches("unique (foo) using index (")
+        assertThat(p).notMatches("unique (foo) using index pctfree tablespace")
+    }
+
+    @Test
+    fun rejectsProhibitedNestedCreateIndexSyntax() {
+        assertThat(p).notMatches("unique (foo) using index (create unique index i on tab(foo) parallel 2)")
+        assertThat(p).notMatches("unique (foo) using index (create index i on tab(foo) indextype is schema.my_indextype)")
+        assertThat(p).notMatches("unique (foo) using index (create unique index i on tab(foo);)")
+    }
 }
