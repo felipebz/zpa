@@ -61,4 +61,17 @@ class AlterTableTest : RuleTest() {
     fun matchesAlterTableAddColumnWithDefaultOnNullForInsertAndUpdate() {
         assertThat(p).matches("alter table tab add col varchar2(100) default on null for insert and update 'Default String';")
     }
+
+    @Test
+    fun matchesAlterTableAddColumnsWithParentheses() {
+        assertThat(p).matches("alter table ut_package add (last_run_id number);")
+        assertThat(p).matches("alter table tab add (col1 number, col2 varchar2(100));")
+        assertThat(p).matches("alter table tab add col number;")
+    }
+
+    @Test
+    fun doesNotMatchAlterTableAddWithUnmatchedParentheses() {
+        assertThat(p).notMatches("alter table tab add (col number;")
+        assertThat(p).notMatches("alter table tab add col number);")
+    }
 }

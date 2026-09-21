@@ -1178,7 +1178,19 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SEMICOLON))
 
             b.rule(ALTER_TABLE).define(
-                    ALTER, TABLE, UNIT_NAME, b.firstOf(ADD, DROP), TABLE_RELATIONAL_PROPERTIES, b.optional(SEMICOLON))
+                ALTER, TABLE, UNIT_NAME,
+                b.firstOf(
+                    b.sequence(
+                        ADD,
+                        b.firstOf(
+                            TABLE_RELATIONAL_PROPERTIES,
+                            b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS)
+                        )
+                    ),
+                    b.sequence(DROP, TABLE_RELATIONAL_PROPERTIES)
+                ),
+                b.optional(SEMICOLON)
+            )
 
             b.rule(COMPILE_CLAUSE).define(
                 COMPILE, b.optional(DEBUG),

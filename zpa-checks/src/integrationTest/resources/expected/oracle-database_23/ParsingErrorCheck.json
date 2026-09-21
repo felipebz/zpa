@@ -200,9 +200,6 @@
   "lnpls/autonomous-transactions-4.sql" : [
     3
   ],
-  "lnpls/avoiding-inner-capture-select-and-dml-statements-2.sql" : [
-    2
-  ],
   "lnpls/avoiding-inner-capture-select-and-dml-statements-8.sql" : [
     5
   ],
@@ -296,9 +293,6 @@
   "lnpls/description-static-sql-2.sql" : [
     3
   ],
-  "lnpls/dml-triggers-42.sql" : [
-    2
-  ],
   "lnpls/expressions-52.sql" : [
     8
   ],
@@ -384,9 +378,6 @@
     3
   ],
   "lnpls/triggers-publishing-events-0.sql" : [
-    2
-  ],
-  "lnpls/what-is-capture-2.sql" : [
     2
   ],
   "lnpls/wrapping-pl-sql-source-text-pl-sql-wrapper-utility-7.sql" : [
@@ -1044,19 +1035,19 @@
     3
   ],
   "sqlrf/ALTER-TABLE-103.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-104.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-105.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-106.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-107.sql" : [
-    2
+    3
   ],
   "sqlrf/ALTER-TABLE-108.sql" : [
     9
@@ -1151,13 +1142,7 @@
   "sqlrf/ALTER-TABLE-39.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-4.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-40.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-41.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-43.sql" : [
@@ -1205,9 +1190,6 @@
   "sqlrf/ALTER-TABLE-59.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-6.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-60.sql" : [
     3
   ],
@@ -1235,17 +1217,11 @@
   "sqlrf/ALTER-TABLE-69.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-7.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-70.sql" : [
     4
   ],
   "sqlrf/ALTER-TABLE-71.sql" : [
     4
-  ],
-  "sqlrf/ALTER-TABLE-73.sql" : [
-    3
   ],
   "sqlrf/ALTER-TABLE-74.sql" : [
     2
@@ -1269,9 +1245,6 @@
     2
   ],
   "sqlrf/ALTER-TABLE-82.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-83.sql" : [
     2
   ],
   "sqlrf/ALTER-TABLE-85.sql" : [
@@ -1299,12 +1272,6 @@
     3
   ],
   "sqlrf/ALTER-TABLE-94.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-96.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-98.sql" : [
     3
   ],
   "sqlrf/ALTER-TABLE-99.sql" : [
@@ -1938,7 +1905,7 @@
     3
   ],
   "sqlrf/CREATE-TABLE-75.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLE-8.sql" : [
     2
@@ -2151,7 +2118,7 @@
     2
   ],
   "sqlrf/Multiset-Operators-2.sql" : [
-    3
+    5
   ],
   "sqlrf/NCHR-0.sql" : [
     4
@@ -2351,9 +2318,6 @@
   "sqlrf/SET-CONSTRAINTS-1.sql" : [
     3
   ],
-  "sqlrf/SYS_GUID-0.sql" : [
-    2
-  ],
   "sqlrf/SYS_OP_ZONE_ID-0.sql" : [
     2
   ],
@@ -2394,9 +2358,6 @@
     2
   ],
   "sqlrf/Using-XML-in-SQL-Statements-4.sql" : [
-    2
-  ],
-  "sqlrf/Using-XML-in-SQL-Statements-6.sql" : [
     2
   ],
   "sqlrf/Using-XML-in-SQL-Statements-8.sql" : [
