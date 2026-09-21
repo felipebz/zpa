@@ -144,4 +144,15 @@ class JsonTransformExpressionTest : RuleTest() {
             union 'a' = 'b' ignore on missing ignore on null)""")
     }
 
+
+    @Test
+    fun matchesJsonTransformWithPrettyAndAscii() {
+        assertThat(p).matches("json_transform(doc, set '$.a' = 1 returning clob pretty)")
+        assertThat(p).matches("json_transform(doc, set '$.a' = 1 returning clob pretty ascii)")
+    }
+
+    @Test
+    fun doesNotMatchJsonTransformWithPrettyBeforeReturning() {
+        assertThat(p).notMatches("json_transform(doc, set '$.a' = 1 pretty returning clob)")
+    }
 }

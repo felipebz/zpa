@@ -84,4 +84,20 @@ class JsonArrayTest : RuleTest() {
         assertThat(p).matches("json[select * from tab]")
     }
 
+
+    @Test
+    fun matchesJsonArrayWithoutElements() {
+        assertThat(p).matches("json_array(returning clob)")
+    }
+
+    @Test
+    fun matchesJsonArrayWithPrettyAndAscii() {
+        assertThat(p).matches("json_array(1, 2 returning clob pretty)")
+        assertThat(p).matches("json_array(1 returning clob pretty ascii)")
+    }
+
+    @Test
+    fun doesNotMatchJsonArrayWithPrettyBeforeReturning() {
+        assertThat(p).notMatches("json_array(1 pretty returning clob)")
+    }
 }

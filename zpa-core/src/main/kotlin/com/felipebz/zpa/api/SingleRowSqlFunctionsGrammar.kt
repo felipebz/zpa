@@ -301,9 +301,14 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 VALIDATE_CONVERSION, LPARENTHESIS, EXPRESSION, AS, DATATYPE,
                 b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)), RPARENTHESIS)
 
+            // trim([ { {leading|trailing|both} [char] | char } from ] source)
             b.rule(TRIM_EXPRESSION).define(
                     TRIM, LPARENTHESIS,
-                    b.optional(b.optional(b.firstOf(LEADING, TRAILING, BOTH)), EXPRESSION, FROM),
+                    b.optional(
+                            b.firstOf(
+                                    b.sequence(b.firstOf(LEADING, TRAILING, BOTH), b.optional(EXPRESSION)),
+                                    EXPRESSION),
+                            FROM),
                     EXPRESSION, RPARENTHESIS)
         }
 
@@ -516,7 +521,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(XML_PASSING_CLAUSE).define(
                     PASSING, b.optional(BY, VALUE),
                     EXPRESSION, b.optional(AS, IDENTIFIER_NAME),
-                    b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(AS, IDENTIFIER_NAME)))
+                    b.zeroOrMore(COMMA, EXPRESSION, b.optional(AS, IDENTIFIER_NAME)))
 
             b.rule(XMLEXISTS_EXPRESSION).define(
                     XMLEXISTS, LPARENTHESIS, STRING_LITERAL,
@@ -524,7 +529,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     RPARENTHESIS)
 
             b.rule(XMLQUERY_EXPRESSION).define(
-                    XMLQUERY, LPARENTHESIS, STRING_LITERAL,
+                    XMLQUERY, LPARENTHESIS, EXPRESSION,
                     b.optional(XML_PASSING_CLAUSE),
                     RETURNING, CONTENT,
                     b.optional(NULL, ON, EMPTY),
@@ -575,9 +580,13 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     b.firstOf(
                             b.sequence(FOR, ORDINALITY),
                             b.sequence(
-                                    b.firstOf(
-                                            DATATYPE,
-                                            b.sequence(XMLTYPE, b.optional(LPARENTHESIS, SEQUENCE, RPARENTHESIS, BY, REF))),
+                                    // The datatype may be omitted; the guard keeps `path`
+                                    // from being taken for a type name.
+                                    b.optional(
+                                            b.nextNot(b.firstOf(PATH, DEFAULT)),
+                                            b.firstOf(
+                                                    DATATYPE,
+                                                    b.sequence(XMLTYPE, b.optional(LPARENTHESIS, SEQUENCE, RPARENTHESIS, BY, REF)))),
                                     b.optional(PATH, STRING_LITERAL),
                                     b.optional(DEFAULT, STRING_LITERAL))))
 
@@ -588,7 +597,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(XMLTABLE_EXPRESSION).define(
                     XMLTABLE, LPARENTHESIS,
-                    b.optional(XMLNAMESPACES_CLAUSE, COMMA), STRING_LITERAL, XMLTABLE_OPTIONS,
+                    // The XQuery expression is not always a literal.
+                    b.optional(XMLNAMESPACES_CLAUSE, COMMA), EXPRESSION, XMLTABLE_OPTIONS,
                     RPARENTHESIS)
         }
 
@@ -596,7 +606,19 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(JSON_CONSTRUCTOR).define(JSON, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
 
             b.rule(JSON_ARRAY_OPTIONS).define(
-                b.firstOf(JSON_ARRAY_ENUMERATION_CONTENT, JSON_ARRAY_QUERY_CONTENT)
+                b.firstOf(
+                    JSON_ARRAY_ENUMERATION_CONTENT,
+                    JSON_ARRAY_QUERY_CONTENT,
+                    // `json_array(returning clob)` — last, so that an empty enumeration
+                    // cannot shadow the query content.
+                    b.sequence(
+                        b.optional(JSON_ON_NULL_CLAUSE),
+                        b.optional(JSON_RETURNING_CLAUSE),
+                        b.optional(PRETTY),
+                        b.optional(ASCII),
+                        b.optional(STRICT)
+                    )
+                )
             ).skip()
 
             b.rule(JSON_ARRAY_EXPRESSION).define(
@@ -607,10 +629,15 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             )
 
             b.rule(JSON_ARRAY_ENUMERATION_CONTENT).define(
+                // `returning` is not reserved: without this guard it is taken as the
+                // first element and the alternative above is never reached.
+                b.nextNot(RETURNING),
                 JSON_ARRAY_ELEMENT,
                 b.zeroOrMore(COMMA, JSON_ARRAY_ELEMENT),
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(STRICT)
             )
 
@@ -664,6 +691,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
                 b.optional(JSON_ON_NULL_CLAUSE),
                 b.optional(JSON_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(STRICT)
             )
 
@@ -860,7 +889,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
                 b.optional(JSON_QUERY_WRAPPER_CLAUSE),
                 b.optional(PATH, JSON_PATH),
-                b.optional(JSON_QUERY_ON_ERROR_CLAUSE)
+                // Either order, neither clause twice — as for the value column.
+                b.optional(b.firstOf(
+                    b.sequence(JSON_QUERY_ON_ERROR_CLAUSE, b.optional(JSON_QUERY_ON_EMPTY_CLAUSE)),
+                    b.sequence(JSON_QUERY_ON_EMPTY_CLAUSE, b.optional(JSON_QUERY_ON_ERROR_CLAUSE))
+                ))
             )
 
             b.rule(JSON_VALUE_COLUMN).define(
@@ -1005,7 +1038,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 EXPRESSION,
                 b.optional(FORMAT, JSON),
                 COMMA,
-                STRING_LITERAL,
+                // The path is not always a literal.
+                EXPRESSION,
                 b.optional(JSON_PASSING_CLAUSE),
                 b.optional(JSON_VALUE_RETURNING_CLAUSE),
                 b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
@@ -1024,6 +1058,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 JSON_TRANSFORM_OPERATION,
                 b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
                 b.optional(JSON_TRANSFORM_RETURNING_CLAUSE),
+                b.optional(PRETTY),
+                b.optional(ASCII),
                 b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 b.optional(JSON_PASSING_CLAUSE),
                 RPARENTHESIS

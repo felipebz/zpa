@@ -87,4 +87,14 @@ class JsonValueTest : RuleTest() {
             type strict)""")
     }
 
+
+    @Test
+    fun matchesJsonValueWithPathExpression() {
+        assertThat(p).matches("json_value(doc, '$.a[' || i || '].b' returning clob null on error)")
+    }
+
+    @Test
+    fun doesNotMatchJsonValueWithoutPath() {
+        assertThat(p).notMatches("json_value(doc,)")
+    }
 }

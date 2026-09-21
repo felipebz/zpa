@@ -91,4 +91,15 @@ class JsonTableTest : RuleTest() {
             """)
     }
 
+
+    @Test
+    fun matchesJsonQueryColumnWithBothOnErrorAndOnEmpty() {
+        assertThat(p).matches("json_table(doc, '$' columns (c1 clob format json path '$.c1' null on error null on empty))")
+        assertThat(p).matches("json_table(doc, '$' columns (c1 clob format json path '$.c1' null on empty null on error))")
+    }
+
+    @Test
+    fun doesNotMatchJsonQueryColumnWithRepeatedOnError() {
+        assertThat(p).notMatches("json_table(doc, '$' columns (c1 clob format json path '$.c1' null on error error on error))")
+    }
 }

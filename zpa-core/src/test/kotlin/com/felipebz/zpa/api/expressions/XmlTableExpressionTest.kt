@@ -53,4 +53,24 @@ class XmlTableExpressionTest : RuleTest() {
         assertThat(p).matches("xmltable('/foo' passing bar columns \"foo\" varchar2(1) path 'bar' default 'a', \"foo2\" varchar2(1) path 'bar2', \"foo3\" for ordinality)")
     }
 
+
+    @Test
+    fun matchesXmlTableWithPathExpression() {
+        assertThat(p).matches("xmltable(l_path passing doc columns c1 varchar2(10) path 'a')")
+    }
+
+    @Test
+    fun matchesXmlTableColumnWithoutDatatype() {
+        assertThat(p).matches("xmltable('/a' passing doc columns c1 path 'text()')")
+    }
+
+    @Test
+    fun matchesXmlTablePassingSeveralExpressions() {
+        assertThat(p).matches("xmltable('/a' passing doc, to_number(x) + 1 as \"i\" columns c1 varchar2(10) path 'a')")
+    }
+
+    @Test
+    fun doesNotMatchXmlTableWithoutXQuery() {
+        assertThat(p).notMatches("xmltable(passing doc columns c1 path 'a')")
+    }
 }

@@ -72,4 +72,15 @@ class JsonArrayAggTest : RuleTest() {
         assertThat(p).matches("json_arrayagg(foo order by col null on null returning json strict)")
     }
 
+
+    @Test
+    fun matchesJsonArrayAggWithPrettyAndAscii() {
+        assertThat(p).matches("json_arrayagg(foo returning clob pretty)")
+        assertThat(p).matches("json_arrayagg(foo order by bar returning clob pretty ascii)")
+    }
+
+    @Test
+    fun doesNotMatchJsonArrayAggWithPrettyBeforeReturning() {
+        assertThat(p).notMatches("json_arrayagg(foo pretty returning clob)")
+    }
 }
