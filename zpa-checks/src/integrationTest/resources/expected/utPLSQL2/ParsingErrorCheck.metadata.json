@@ -1,0 +1,20 @@
+{
+  "examples/filepath1.pkg": {
+    "104": {
+      "classification": "INVALID_SOURCE",
+      "reason": "The NULL statement is terminated with ':' instead of ';'."
+    }
+  },
+  "examples/str2list.pkg": {
+    "62": {
+      "classification": "INVALID_SOURCE",
+      "reason": "The assignment immediately preceding END IF is missing its terminating semicolon."
+    }
+  },
+  "source/ut_config.pkb": {
+    "680": {
+      "classification": "INVALID_SOURCE",
+      "reason": "The second SQL*Plus substitution variable reference contains whitespace between '&' and the variable name: '& start_ge_8_1'."
+    }
+  }
+}
