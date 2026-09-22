@@ -1,0 +1,44 @@
+{
+  "examples-sql-script/e_in_out_parameters.pks": {
+    "4": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00103",
+      "reason": "NOCOPY is not valid for an IN-only parameter; Oracle accepts NOCOPY only with OUT and IN OUT parameters."
+    }
+  },
+  "examples/bindvar04.sql": {
+    "6": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00923",
+      "reason": "Oracle requires a quoted value after INTERVAL and integer values for DAY/SECOND precision; bind variables are not valid in these positions."
+    }
+  },
+  "examples/create_view.sql": {
+    "32": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "IF NOT EXISTS is placed after the view name; Oracle requires it before the name and reports a missing AS keyword here."
+    }
+  },
+  "examples/interval03.sql": {
+    "16": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00923",
+      "reason": "Oracle INTERVAL literal syntax requires a literal value after INTERVAL; a bind variable is not valid in this position."
+    }
+  },
+  "examples/materialized_views.sql": {
+    "81": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
+    }
+  },
+  "examples/views.sql": {
+    "59": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
+    }
+  }
+}
