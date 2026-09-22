@@ -1433,7 +1433,12 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(SEMICOLON))
 
             b.rule(CALL_COMMAND).define(
-                    CALL, OBJECT_REFERENCE, b.optional(INTO, EXPRESSION), b.optional(SEMICOLON))
+                CALL,
+                b.sequence(
+                    METHOD_CALL,
+                    b.zeroOrMore(DOT, METHOD_CALL)),
+                b.optional(INTO, HOST_AND_INDICATOR_VARIABLE),
+                b.optional(SEMICOLON))
 
             b.rule(COMPILE_CLAUSE).define(
                 COMPILE, b.optional(DEBUG),
