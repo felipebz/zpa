@@ -89,8 +89,17 @@ class AlterTableTest : RuleTest() {
 
     @Test
     fun matchesAlterTableMove() {
+        assertThat(p).matches("alter table tab move;")
         assertThat(p).matches("alter table tab move online;")
+        assertThat(p).matches("alter table tab move tablespace data;")
         assertThat(p).matches("alter table tab move tablespace data online;")
+        assertThat(p).matches("alter table tab move online tablespace data;")
+    }
+
+    @Test
+    fun doesNotMatchAlterTableMoveWithDuplicateOnline() {
+        assertThat(p).notMatches("alter table tab move online online;")
+        assertThat(p).notMatches("alter table tab move online tablespace data online;")
     }
 
     @Test

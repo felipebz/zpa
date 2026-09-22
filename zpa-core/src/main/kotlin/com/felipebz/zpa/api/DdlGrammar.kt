@@ -1413,8 +1413,12 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.sequence(ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF))))),
                             b.sequence(DROP, TABLE_RELATIONAL_PROPERTIES),
-                            b.sequence(MOVE, b.optional(ONLINE),
-                                    b.optional(TABLESPACE, IDENTIFIER_NAME), b.optional(ONLINE)),
+                            b.sequence(
+                                    MOVE,
+                                    b.optional(
+                                            b.firstOf(
+                                                    b.sequence(ONLINE, b.optional(TABLESPACE, IDENTIFIER_NAME)),
+                                                    b.sequence(TABLESPACE, IDENTIFIER_NAME, b.optional(ONLINE))))),
                             b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)),
                     b.optional(SEMICOLON))
 
