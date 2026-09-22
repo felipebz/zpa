@@ -23,6 +23,7 @@ import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_CLAUSE
+import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_ITEM
 import com.felipebz.zpa.api.PlSqlGrammar.EXPRESSION
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
@@ -73,10 +74,12 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(COLLECT_EXPRESSION).define(
                 COLLECT, LPARENTHESIS,
-                b.optional(b.firstOf(DISTINCT, UNIQUE)),
+                b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)),
                 EXPRESSION,
-                b.optional(ORDER, BY, EXPRESSION),
-                RPARENTHESIS
+                // COLLECT uses an ORDER BY list but does not allow ORDER SIBLINGS BY.
+                b.optional(ORDER, BY, ORDER_BY_ITEM, b.zeroOrMore(COMMA, ORDER_BY_ITEM)),
+                RPARENTHESIS,
+                b.optional(FILTER_CLAUSE)
             )
 
             b.rule(JSON_ARRAYAGG_EXPRESSION).define(

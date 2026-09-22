@@ -14,9 +14,6 @@
   "examples/administer_key_management.sql" : [
     1
   ],
-  "examples/aggregate_functions.sql" : [
-    1
-  ],
   "examples/alter_analytic_view.sql" : [
     1
   ],
