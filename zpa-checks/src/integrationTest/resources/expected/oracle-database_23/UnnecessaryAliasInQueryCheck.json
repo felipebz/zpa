@@ -227,6 +227,12 @@
   "sqlrf/CAST-9.sql" : [
     3
   ],
+  "sqlrf/CLUSTER_DETAILS-0.sql" : [
+    6
+  ],
+  "sqlrf/CLUSTER_SET-0.sql" : [
+    6
+  ],
   "sqlrf/COVAR_POP-2.sql" : [
     9
   ],

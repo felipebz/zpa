@@ -34,6 +34,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     LISTAGG_EXPRESSION,
     PERCENTILE_DISC_EXPRESSION,
     PERCENTILE_CONT_EXPRESSION,
+    CLUSTER_DETAILS_EXPRESSION,
     CLUSTER_SET_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
@@ -45,6 +46,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     companion object {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
             FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
+            FunctionAlternative(CLUSTER_DETAILS_EXPRESSION, CLUSTER_DETAILS),
             FunctionAlternative(CLUSTER_SET_EXPRESSION, CLUSTER_SET),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
@@ -81,8 +83,8 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(PERCENTILE_DISC_EXPRESSION).define(percentileSyntax(PERCENTILE_DISC))
             b.rule(PERCENTILE_CONT_EXPRESSION).define(percentileSyntax(PERCENTILE_CONT))
 
-            // The USING clause is shared mining syntax. Keep its helpers
-            // anonymous so CLUSTER_SET is the only new AST boundary.
+            // Keep mining syntax helpers anonymous so each function rule adds
+            // only its own AST boundary.
             val miningAttribute = b.firstOf(
                 b.sequence(
                     IDENTIFIER_NAME,
@@ -102,8 +104,15 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                     b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute))
                 )
             )
+            val miningArgumentExpressions =
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION))
             val miningArguments = b.sequence(
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                miningArgumentExpressions,
+                miningAttributeClause
+            )
+            val clusterDetailsArguments = b.sequence(
+                miningArgumentExpressions,
+                b.optional(b.firstOf(DESC, ASC, ABS)),
                 miningAttributeClause
             )
             val miningOrderByClause = b.sequence(
@@ -140,6 +149,25 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                         LPARENTHESIS,
                         INTO, EXPRESSION,
                         miningArguments,
+                        RPARENTHESIS,
+                        miningAnalyticClause
+                    )
+                )
+            )
+            b.rule(CLUSTER_DETAILS_EXPRESSION).define(
+                b.firstOf(
+                    b.sequence(
+                        CLUSTER_DETAILS,
+                        LPARENTHESIS,
+                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                        clusterDetailsArguments,
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        CLUSTER_DETAILS,
+                        LPARENTHESIS,
+                        INTO, EXPRESSION,
+                        clusterDetailsArguments,
                         RPARENTHESIS,
                         miningAnalyticClause
                     )

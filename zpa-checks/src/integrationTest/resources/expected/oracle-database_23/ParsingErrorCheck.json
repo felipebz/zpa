@@ -1235,9 +1235,6 @@
   "sqlrf/CHR-5.sql" : [
     2
   ],
-  "sqlrf/CLUSTER_DETAILS-0.sql" : [
-    3
-  ],
   "sqlrf/CLUSTER_DETAILS-1.sql" : [
     4
   ],
@@ -1252,9 +1249,6 @@
   ],
   "sqlrf/CLUSTER_PROBABILITY-0.sql" : [
     4
-  ],
-  "sqlrf/CLUSTER_SET-0.sql" : [
-    3
   ],
   "sqlrf/COLLATE-Operator-0.sql" : [
     4

@@ -357,6 +357,12 @@
   "sqlrf/BETWEEN-Condition-5.sql" : [
     2
   ],
+  "sqlrf/CLUSTER_DETAILS-0.sql" : [
+    5
+  ],
+  "sqlrf/CLUSTER_SET-0.sql" : [
+    5
+  ],
   "sqlrf/COLUMN_VALUE-Pseudocolumn-0.sql" : [
     2
   ],
