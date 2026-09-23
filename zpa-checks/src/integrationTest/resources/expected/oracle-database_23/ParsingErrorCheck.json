@@ -1235,17 +1235,8 @@
   "sqlrf/CHR-5.sql" : [
     2
   ],
-  "sqlrf/CLUSTER_DETAILS-1.sql" : [
-    4
-  ],
   "sqlrf/CLUSTER_DISTANCE-0.sql" : [
     6
-  ],
-  "sqlrf/CLUSTER_ID-0.sql" : [
-    2
-  ],
-  "sqlrf/CLUSTER_ID-1.sql" : [
-    4
   ],
   "sqlrf/CLUSTER_PROBABILITY-0.sql" : [
     4

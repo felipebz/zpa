@@ -35,6 +35,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     PERCENTILE_DISC_EXPRESSION,
     PERCENTILE_CONT_EXPRESSION,
     CLUSTER_DETAILS_EXPRESSION,
+    CLUSTER_ID_EXPRESSION,
     CLUSTER_SET_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
@@ -47,6 +48,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
             FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
             FunctionAlternative(CLUSTER_DETAILS_EXPRESSION, CLUSTER_DETAILS),
+            FunctionAlternative(CLUSTER_ID_EXPRESSION, CLUSTER_ID),
             FunctionAlternative(CLUSTER_SET_EXPRESSION, CLUSTER_SET),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
@@ -173,6 +175,26 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                     )
                 )
             )
+            b.rule(CLUSTER_ID_EXPRESSION).define(
+                b.firstOf(
+                    b.sequence(
+                        CLUSTER_ID,
+                        LPARENTHESIS,
+                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                        miningAttributeClause,
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        CLUSTER_ID,
+                        LPARENTHESIS,
+                        INTO, EXPRESSION,
+                        miningAttributeClause,
+                        RPARENTHESIS,
+                        miningAnalyticClause
+                    )
+                )
+            )
+
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,

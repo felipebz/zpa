@@ -942,6 +942,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(POSTFIX_EXPRESSION).define(
                 b.firstOf(
                     b.sequence(
+                        b.next(AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION),
+                        OBJECT_REFERENCE
+                    ),
+                    b.sequence(
                         b.next(AggregateSqlFunctionsGrammar.CLUSTER_DETAILS_EXPRESSION),
                         OBJECT_REFERENCE
                     ),
@@ -966,6 +970,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ),
                     b.sequence(
                         b.nextNot(b.firstOf(
+                            AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION,
                             AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION,
                             AggregateSqlFunctionsGrammar.CLUSTER_DETAILS_EXPRESSION
                         )),

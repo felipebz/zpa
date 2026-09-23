@@ -360,6 +360,12 @@
   "sqlrf/CLUSTER_DETAILS-0.sql" : [
     5
   ],
+  "sqlrf/CLUSTER_DETAILS-1.sql" : [
+    2
+  ],
+  "sqlrf/CLUSTER_ID-1.sql" : [
+    2
+  ],
   "sqlrf/CLUSTER_SET-0.sql" : [
     5
   ],
