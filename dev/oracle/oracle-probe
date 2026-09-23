@@ -6,6 +6,7 @@ CONFIG="${ZPA_ORACLE_PROBE_CONFIG:-$HOME/.config/zpa/oracle-probe.env}"
 ORACLE_CLIENT_DEFAULT="sqlplus"
 CONTAINER_RUNTIME_DEFAULT="podman"
 ORACLE_CONTAINER_CLIENT_DEFAULT="sqlplus"
+LOCK_FILE_DEFAULT="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/zpa-oracle-probe-${UID}.lock"
 
 usage() {
   cat <<'USAGE'
@@ -29,6 +30,9 @@ ORACLE_CONTAINER unset to use a local client.
 
 Override with:
   ZPA_ORACLE_PROBE_CONFIG=/path/to/oracle-probe.env
+
+Normal probe executions are serialized because they share and reset the same
+probe schema. --ping does not acquire the probe lock.
 USAGE
 }
 
@@ -71,6 +75,7 @@ ORACLE_CONTAINER="${ORACLE_CONTAINER:-}"
 ORACLE_CONTAINER_CLIENT="${ORACLE_CONTAINER_CLIENT:-$ORACLE_CONTAINER_CLIENT_DEFAULT}"
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-$CONTAINER_RUNTIME_DEFAULT}"
 ORACLE_CLIENT="${ORACLE_CLIENT:-${SQLPLUS_BIN:-${SQLCL_BIN:-$ORACLE_CLIENT_DEFAULT}}}"
+ZPA_ORACLE_PROBE_LOCK_FILE="${ZPA_ORACLE_PROBE_LOCK_FILE:-$LOCK_FILE_DEFAULT}"
 
 if [[ -n "$ORACLE_CONTAINER" ]]; then
   if ! command -v "$CONTAINER_RUNTIME" >/dev/null 2>&1; then
@@ -82,6 +87,11 @@ else
     echo "Oracle client executable not found: $ORACLE_CLIENT" >&2
     exit 2
   fi
+fi
+
+if ! $PING && ! command -v flock >/dev/null 2>&1; then
+  echo "Required executable not found for serialized probes: flock" >&2
+  exit 2
 fi
 
 oracle_client() {
@@ -235,6 +245,29 @@ fi
 TMP_SQL="$(mktemp)"
 trap 'rm -f "$TMP_SQL"' EXIT
 printf '%s\n' "$PROBE_SQL" > "$TMP_SQL"
+
+# Normal probes share a disposable schema and reset it before and after each
+# invocation. Hold an exclusive process lock for the entire mutable lifecycle
+# so concurrent callers cannot reset or clean up each other's fixtures. The
+# lock is intentionally acquired only after stdin has been read and the probe
+# has been validated; --ping returns earlier and never acquires it.
+LOCK_DIR="$(dirname "$ZPA_ORACLE_PROBE_LOCK_FILE")"
+if [[ ! -d "$LOCK_DIR" ]]; then
+  if ! mkdir -p "$LOCK_DIR" 2>/dev/null; then
+    echo "Unable to create Oracle probe lock directory: $LOCK_DIR" >&2
+    exit 2
+  fi
+fi
+
+if ! exec {ZPA_ORACLE_PROBE_LOCK_FD}>"$ZPA_ORACLE_PROBE_LOCK_FILE"; then
+  echo "Unable to open Oracle probe lock file: $ZPA_ORACLE_PROBE_LOCK_FILE" >&2
+  exit 2
+fi
+
+if ! flock -x "$ZPA_ORACLE_PROBE_LOCK_FD"; then
+  echo "Unable to acquire Oracle probe lock: $ZPA_ORACLE_PROBE_LOCK_FILE" >&2
+  exit 2
+fi
 
 # The normal path uses one SQL*Plus process for reset-before, version lookup,
 # probe execution, USER_ERRORS inspection, and reset-after. A hard SQL error
