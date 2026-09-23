@@ -51,6 +51,18 @@ class ListAggExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesListAggUniqueWithDelimiter() {
+        assertThat(p).matches("listagg(unique ename, ',') within group (order by hiredate)")
+    }
+
+    @Test
+    fun matchesListAggUniqueWithOverflowAndAnalyticPartition() {
+        assertThat(p).matches(
+            "listagg(unique ename, ',' on overflow truncate) within group (order by hiredate) over (partition by deptno)"
+        )
+    }
+
+    @Test
     fun matchesListAggWithDelimiter() {
         assertThat(p).matches("listagg(foo, ',') within group (order by bar)")
     }
@@ -58,6 +70,16 @@ class ListAggExpressionTest : RuleTest() {
     @Test
     fun matchesListAggWithDelimiter2() {
         assertThat(p).matches("listagg(foo, chr(10)) within group (order by bar)")
+    }
+
+    @Test
+    fun matchesMultipleOrderByItemsWithDirectionAndNullPlacement() {
+        assertThat(p).matches("listagg(foo, ',') within group (order by bar desc nulls last, baz asc nulls first)")
+    }
+
+    @Test
+    fun rejectsOrderSiblingsByWithinGroup() {
+        assertThat(p).notMatches("listagg(foo) within group (order siblings by bar)")
     }
 
     @Test
@@ -196,6 +218,7 @@ class ListAggExpressionTest : RuleTest() {
     @Test
     fun rejectsListAggAnalyticOrderBy() {
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (order by baz)")
+        assertThat(p).notMatches("listagg(unique ename, ',') within group (order by hiredate) over (partition by deptno order by hiredate)")
         assertThat(p).notMatches("listagg(foo, ';') over (order by foo)")
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (list_window order by baz)")
         assertThat(p).notMatches("listagg(foo) within group (order by bar) over (partition by baz order by qux)")

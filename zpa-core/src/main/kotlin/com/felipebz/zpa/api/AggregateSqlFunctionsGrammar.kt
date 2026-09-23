@@ -56,7 +56,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(LISTAGG_EXPRESSION).define(
                     LISTAGG,
-                    LPARENTHESIS, b.optional(b.firstOf(ALL, DISTINCT)), EXPRESSION, b.optional(COMMA, EXPRESSION),
+                    LPARENTHESIS, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), EXPRESSION, b.optional(COMMA, EXPRESSION),
                     b.optional(ON, OVERFLOW, b.firstOf(
                             ERROR,
                             b.sequence(
@@ -64,7 +64,8 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                                 b.optional(b.nextNot(b.firstOf(WITH, WITHOUT)), EXPRESSION),
                                 b.optional(b.firstOf(WITH, WITHOUT), COUNT)))),
                     RPARENTHESIS,
-                    b.optional(WITHIN, GROUP, LPARENTHESIS, DmlGrammar.ORDER_BY_CLAUSE, RPARENTHESIS))
+                    b.optional(WITHIN, GROUP, LPARENTHESIS,
+                        b.nextNot(b.sequence(ORDER, SIBLINGS)), ORDER_BY_CLAUSE, RPARENTHESIS))
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,
