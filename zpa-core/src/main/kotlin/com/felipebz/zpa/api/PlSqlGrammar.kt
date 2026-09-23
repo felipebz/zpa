@@ -906,8 +906,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         JsonArrayStepAdmissionExpression,
                         SingleRowSqlFunctionsGrammar.JSON_OBJECT_ACCESS_EXPRESSION
                     ),
-                    METHOD_CALL,
-                    QUALIFIED_EXPRESSION)).skipIfOneChild()
+                    // A percentile call must not fall back to a generic call when WITHIN GROUP is missing.
+                    b.sequence(
+                        b.nextNot(b.firstOf(PERCENTILE_DISC, PERCENTILE_CONT)),
+                        b.firstOf(METHOD_CALL, QUALIFIED_EXPRESSION)
+                    ))).skipIfOneChild()
 
             b.rule(OUTER_JOIN_PLUS_SIGN).define(LPARENTHESIS, PLUS, RPARENTHESIS)
 
@@ -923,32 +926,35 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
                     b.optional(OUTER_JOIN_PLUS_SIGN)).skipIfOneChild()
 
+            val partitionOnlyAnalyticClause = b.sequence(
+                b.next(b.firstOf(
+                    b.sequence(OVER, IDENTIFIER_NAME),
+                    b.sequence(
+                        OVER, LPARENTHESIS,
+                        b.firstOf(PARTITION_BY_CLAUSE, b.sequence(IDENTIFIER_NAME, PARTITION_BY_CLAUSE)),
+                        RPARENTHESIS
+                    ),
+                    b.sequence(OVER, LPARENTHESIS, RPARENTHESIS)
+                )),
+                ANALYTIC_CLAUSE
+            )
+
             b.rule(POSTFIX_EXPRESSION).define(
                     b.firstOf(
                         b.sequence(
                             b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),
                             OBJECT_REFERENCE,
-                            b.optional(
-                                b.sequence(
-                                    b.next(
-                                        b.firstOf(
-                                            b.sequence(OVER, IDENTIFIER_NAME),
-                                            b.sequence(
-                                                OVER,
-                                                LPARENTHESIS,
-                                                b.firstOf(
-                                                    PARTITION_BY_CLAUSE,
-                                                    b.sequence(IDENTIFIER_NAME, PARTITION_BY_CLAUSE)
-                                                ),
-                                                RPARENTHESIS
-                                            ),
-                                            b.sequence(OVER, LPARENTHESIS, RPARENTHESIS)
-                                        )
-                                    ),
-                                    ANALYTIC_CLAUSE
-                                )
-                            ),
+                            b.optional(partitionOnlyAnalyticClause),
                             b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE)
+                        ),
+                        b.sequence(
+                            b.next(b.firstOf(
+                                AggregateSqlFunctionsGrammar.PERCENTILE_DISC_EXPRESSION,
+                                AggregateSqlFunctionsGrammar.PERCENTILE_CONT_EXPRESSION
+                            )),
+                            OBJECT_REFERENCE,
+                            b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE),
+                            b.optional(partitionOnlyAnalyticClause)
                         ),
                         b.sequence(
                             OBJECT_REFERENCE,

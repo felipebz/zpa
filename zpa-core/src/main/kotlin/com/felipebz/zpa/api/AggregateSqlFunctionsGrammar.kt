@@ -31,6 +31,8 @@ import com.felipebz.zpa.api.PlSqlPunctuator.*
 enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
 
     LISTAGG_EXPRESSION,
+    PERCENTILE_DISC_EXPRESSION,
+    PERCENTILE_CONT_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
@@ -41,6 +43,8 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     companion object {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
             FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
+            FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
+            FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
             FunctionAlternative(XMLAGG_EXPRESSION, XMLAGG),
             FunctionAlternative(COLLECT_EXPRESSION, COLLECT),
             FunctionAlternative(JSON_ARRAYAGG_EXPRESSION, JSON_ARRAYAGG),
@@ -66,6 +70,13 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                     RPARENTHESIS,
                     b.optional(WITHIN, GROUP, LPARENTHESIS,
                         b.nextNot(b.sequence(ORDER, SIBLINGS)), ORDER_BY_CLAUSE, RPARENTHESIS))
+
+            fun percentileSyntax(function: TokenType) = b.sequence(
+                function, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                WITHIN, GROUP, LPARENTHESIS, ORDER, BY, ORDER_BY_ITEM, RPARENTHESIS
+            )
+            b.rule(PERCENTILE_DISC_EXPRESSION).define(percentileSyntax(PERCENTILE_DISC))
+            b.rule(PERCENTILE_CONT_EXPRESSION).define(percentileSyntax(PERCENTILE_CONT))
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,

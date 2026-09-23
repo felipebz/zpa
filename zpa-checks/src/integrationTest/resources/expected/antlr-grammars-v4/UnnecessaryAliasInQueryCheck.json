@@ -142,5 +142,12 @@
     69,
     71,
     98
+  ],
+  "long-running/query_factoring07.sql" : [
+    10,
+    11,
+    12,
+    13,
+    72
   ]
 }

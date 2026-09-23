@@ -1847,15 +1847,6 @@
   "sqlrf/ORA_DM_PARTITION_NAME-0.sql" : [
     2
   ],
-  "sqlrf/PERCENTILE_CONT-1.sql" : [
-    3
-  ],
-  "sqlrf/PERCENTILE_CONT-2.sql" : [
-    3
-  ],
-  "sqlrf/PERCENTILE_DISC-0.sql" : [
-    3
-  ],
   "sqlrf/PERCENT_RANK-0.sql" : [
     3
   ],

@@ -102,7 +102,7 @@
     1
   ],
   "examples/analytic_query.sql" : [
-    59
+    100
   ],
   "examples/analyze.sql" : [
     1
@@ -295,8 +295,5 @@
   ],
   "hw-examples/alter_outline.sql" : [
     1
-  ],
-  "long-running/query_factoring07.sql" : [
-    61
   ]
 }

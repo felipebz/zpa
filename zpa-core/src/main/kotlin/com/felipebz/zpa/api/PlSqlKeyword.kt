@@ -526,6 +526,8 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PCTUSED("pctused"),
     PCTVERSION("pctversion"),
     PERCENT("percent"),
+    PERCENTILE_CONT("percentile_cont"),
+    PERCENTILE_DISC("percentile_disc"),
     PERMUTE("permute"),
     PIPE("pipe"),
     PIPELINED("pipelined"),

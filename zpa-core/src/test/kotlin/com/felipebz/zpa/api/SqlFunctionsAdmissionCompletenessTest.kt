@@ -288,6 +288,8 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
 
         val testCases = listOf(
             AggregateTestCase(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION, PlSqlKeyword.LISTAGG, "listagg(x) within group (order by y)"),
+            AggregateTestCase(AggregateSqlFunctionsGrammar.PERCENTILE_DISC_EXPRESSION, PlSqlKeyword.PERCENTILE_DISC, "percentile_disc(0.5) within group (order by y)"),
+            AggregateTestCase(AggregateSqlFunctionsGrammar.PERCENTILE_CONT_EXPRESSION, PlSqlKeyword.PERCENTILE_CONT, "percentile_cont(0.5) within group (order by y)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.XMLAGG_EXPRESSION, PlSqlKeyword.XMLAGG, "xmlagg(x)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.COLLECT_EXPRESSION, PlSqlKeyword.COLLECT, "collect(x)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.JSON_ARRAYAGG_EXPRESSION, PlSqlKeyword.JSON_ARRAYAGG, "json_arrayagg(x)"),
