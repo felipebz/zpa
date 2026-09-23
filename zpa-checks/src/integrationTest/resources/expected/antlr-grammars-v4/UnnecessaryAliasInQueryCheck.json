@@ -3,6 +3,13 @@
     16,
     17
   ],
+  "examples/analytic_query.sql" : [
+    70,
+    87,
+    107,
+    109,
+    120
+  ],
   "examples/bindvar03.sql" : [
     5,
     13

@@ -8,6 +8,9 @@
   "examples-sql-script/with_clause_in_exists_block_in_procedure.sql" : [
     6
   ],
+  "examples/analytic_query.sql" : [
+    108
+  ],
   "examples/bindvar02.sql" : [
     1
   ],

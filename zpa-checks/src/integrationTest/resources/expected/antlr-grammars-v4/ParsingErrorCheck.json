@@ -101,9 +101,6 @@
   "examples/alter_view.sql" : [
     1
   ],
-  "examples/analytic_query.sql" : [
-    100
-  ],
   "examples/analyze.sql" : [
     1
   ],

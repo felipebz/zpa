@@ -1,4 +1,7 @@
 {
+  "examples/analytic_query.sql" : [
+    76
+  ],
   "examples/bindvar05.sql" : [
     1,
     1,

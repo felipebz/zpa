@@ -25,6 +25,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_CLAUSE
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_ITEM
 import com.felipebz.zpa.api.PlSqlGrammar.EXPRESSION
+import com.felipebz.zpa.api.PlSqlGrammar.IDENTIFIER_NAME
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 
@@ -33,6 +34,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     LISTAGG_EXPRESSION,
     PERCENTILE_DISC_EXPRESSION,
     PERCENTILE_CONT_EXPRESSION,
+    CLUSTER_SET_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
@@ -43,6 +45,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     companion object {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
             FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
+            FunctionAlternative(CLUSTER_SET_EXPRESSION, CLUSTER_SET),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
             FunctionAlternative(XMLAGG_EXPRESSION, XMLAGG),
@@ -77,6 +80,71 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             )
             b.rule(PERCENTILE_DISC_EXPRESSION).define(percentileSyntax(PERCENTILE_DISC))
             b.rule(PERCENTILE_CONT_EXPRESSION).define(percentileSyntax(PERCENTILE_CONT))
+
+            // The USING clause is shared mining syntax. Keep its helpers
+            // anonymous so CLUSTER_SET is the only new AST boundary.
+            val miningAttribute = b.firstOf(
+                b.sequence(
+                    IDENTIFIER_NAME,
+                    b.optional(DOT, IDENTIFIER_NAME),
+                    DOT,
+                    MULTIPLICATION
+                ),
+                b.sequence(
+                    EXPRESSION,
+                    b.optional(b.optional(AS), IDENTIFIER_NAME)
+                )
+            )
+            val miningAttributeClause = b.sequence(
+                USING,
+                b.firstOf(
+                    MULTIPLICATION,
+                    b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute))
+                )
+            )
+            val miningArguments = b.sequence(
+                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION)),
+                miningAttributeClause
+            )
+            val miningOrderByClause = b.sequence(
+                b.nextNot(b.sequence(ORDER, SIBLINGS)),
+                ORDER,
+                BY,
+                ORDER_BY_ITEM,
+                b.zeroOrMore(COMMA, ORDER_BY_ITEM)
+            )
+            val miningAnalyticClause = b.sequence(
+                OVER,
+                b.firstOf(
+                    IDENTIFIER_NAME,
+                    b.sequence(
+                        LPARENTHESIS,
+                        b.optional(b.nextNot(b.firstOf(PARTITION, ORDER)), IDENTIFIER_NAME),
+                        b.optional(DmlGrammar.PARTITION_BY_CLAUSE),
+                        b.optional(miningOrderByClause),
+                        RPARENTHESIS
+                    )
+                )
+            )
+            b.rule(CLUSTER_SET_EXPRESSION).define(
+                b.firstOf(
+                    b.sequence(
+                        CLUSTER_SET,
+                        LPARENTHESIS,
+                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                        miningArguments,
+                        RPARENTHESIS
+                    ),
+                    b.sequence(
+                        CLUSTER_SET,
+                        LPARENTHESIS,
+                        INTO, EXPRESSION,
+                        miningArguments,
+                        RPARENTHESIS,
+                        miningAnalyticClause
+                    )
+                )
+            )
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,

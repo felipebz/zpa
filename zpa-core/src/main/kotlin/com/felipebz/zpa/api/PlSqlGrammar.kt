@@ -940,31 +940,36 @@ enum class PlSqlGrammar : GrammarRuleKey {
             )
 
             b.rule(POSTFIX_EXPRESSION).define(
-                    b.firstOf(
-                        b.sequence(
-                            b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),
-                            OBJECT_REFERENCE,
-                            b.optional(partitionOnlyAnalyticClause),
-                            b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE)
-                        ),
-                        b.sequence(
-                            b.next(b.firstOf(
-                                AggregateSqlFunctionsGrammar.PERCENTILE_DISC_EXPRESSION,
-                                AggregateSqlFunctionsGrammar.PERCENTILE_CONT_EXPRESSION
-                            )),
-                            OBJECT_REFERENCE,
-                            b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE),
-                            b.optional(partitionOnlyAnalyticClause)
-                        ),
-                        b.sequence(
-                            OBJECT_REFERENCE,
-                            b.optional(b.firstOf(
-                                ANALYTIC_CLAUSE,
-                                b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
-                            ))
-                        )
+                b.firstOf(
+                    b.sequence(
+                        b.next(AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION),
+                        OBJECT_REFERENCE
+                    ),
+                    b.sequence(
+                        b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),
+                        OBJECT_REFERENCE,
+                        b.optional(partitionOnlyAnalyticClause),
+                        b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE)
+                    ),
+                    b.sequence(
+                        b.next(b.firstOf(
+                            AggregateSqlFunctionsGrammar.PERCENTILE_DISC_EXPRESSION,
+                            AggregateSqlFunctionsGrammar.PERCENTILE_CONT_EXPRESSION
+                        )),
+                        OBJECT_REFERENCE,
+                        b.optional(AggregateSqlFunctionsGrammar.FILTER_CLAUSE),
+                        b.optional(partitionOnlyAnalyticClause)
+                    ),
+                    b.sequence(
+                        b.nextNot(AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION),
+                        OBJECT_REFERENCE,
+                        b.optional(b.firstOf(
+                            ANALYTIC_CLAUSE,
+                            b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
+                        ))
                     )
-                ).skipIfOneChild()
+                )
+            ).skipIfOneChild()
 
             b.rule(IN_EXPRESSION).define(CONCATENATION_EXPRESSION,
                     b.optional(b.sequence(

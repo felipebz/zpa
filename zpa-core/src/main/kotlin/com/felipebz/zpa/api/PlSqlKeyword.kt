@@ -177,6 +177,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     CLONE("clone"),
     CLOSE("close"),
     CLUSTERS("clusters"),
+    CLUSTER_SET("cluster_set"),
     COALESCE("coalesce"),
     COLAUTH("colauth"),
     COLLATION("collation"),
