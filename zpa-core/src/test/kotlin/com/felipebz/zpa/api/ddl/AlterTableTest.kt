@@ -345,6 +345,7 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t drop (c1) add (c2 number)")
         assertThat(p).notMatches("alter table t set unused (c1) add (c2 number)")
         assertThat(p).notMatches("alter table t drop column c1 drop (c2)")
+        assertThat(p).notMatches("alter table t drop constraint ck add (c2 number)")
     }
 
     @Test
@@ -352,6 +353,56 @@ class AlterTableTest : RuleTest() {
         assertThat(p).matches("alter table t drop unique (email)")
         assertThat(p).matches("alter table t drop constraint pkc")
         assertThat(p).matches("alter table t drop partition p3")
+    }
+
+    @Test
+    fun matchesDropConstraintClause() {
+        assertThat(p).matches("alter table t drop primary key")
+        assertThat(p).matches("alter table t drop primary key cascade")
+        assertThat(p).matches("alter table t drop primary key keep index")
+        assertThat(p).matches("alter table t drop primary key drop index")
+        assertThat(p).matches("alter table t drop primary key online")
+        // Oracle parses CASCADE with ONLINE, then rejects the combination with ORA-14419.
+        assertThat(p).matches("alter table t drop primary key cascade keep index online")
+        assertThat(p).matches("alter table t drop primary key cascade drop index online")
+
+        assertThat(p).matches("alter table t drop unique (email)")
+        assertThat(p).matches("alter table t drop unique (first_name, last_name)")
+        assertThat(p).matches("alter table t drop unique (email) cascade")
+        assertThat(p).matches("alter table t drop unique (email) keep index")
+        assertThat(p).matches("alter table t drop unique (email) drop index")
+        assertThat(p).matches("alter table t drop unique (email) online")
+        assertThat(p).matches("alter table t drop unique (email) keep index online")
+
+        assertThat(p).matches("alter table t drop constraint ck")
+        assertThat(p).matches("alter table t drop constraint ck cascade")
+        assertThat(p).matches("alter table t drop constraint ck online")
+        assertThat(p).matches("alter table t drop constraint ck cascade online")
+        assertThat(p).matches("alter table t drop constraint pk keep index")
+        assertThat(p).matches("alter table t drop constraint pk drop index")
+    }
+
+    @Test
+    fun matchesRepeatedConstraintDrops() {
+        assertThat(p).matches("alter table t drop primary key drop constraint ck")
+        assertThat(p).matches("alter table t drop unique (c1) drop unique (c2)")
+    }
+
+    @Test
+    fun allowsConstraintDropFollowedByEnable() {
+        assertThat(p).matches("alter table t drop constraint ck enable constraint other_ck")
+    }
+
+    @Test
+    fun rejectsMalformedDropConstraintClause() {
+        assertThat(p).notMatches("alter table t drop primary")
+        assertThat(p).notMatches("alter table t drop unique ()")
+        assertThat(p).notMatches("alter table t drop unique (c1,)")
+        assertThat(p).notMatches("alter table t drop constraint")
+        assertThat(p).notMatches("alter table t drop primary key cascade constraints")
+        assertThat(p).notMatches("alter table t drop primary key online cascade")
+        assertThat(p).notMatches("alter table t drop constraint ck online cascade")
+        assertThat(p).notMatches("alter table t drop unique (c1) online keep index")
     }
 
     @Test

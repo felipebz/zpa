@@ -839,12 +839,6 @@
   "sqlrf/ALTER-TABLE-10.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-100.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-101.sql" : [
-    3
-  ],
   "sqlrf/ALTER-TABLE-103.sql" : [
     3
   ],

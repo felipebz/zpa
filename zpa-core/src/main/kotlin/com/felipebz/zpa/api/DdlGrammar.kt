@@ -53,6 +53,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_TABLE_CONSTRAINT_STATE,
     ENABLE_DISABLE_CLAUSE,
     DROP_COLUMN_CLAUSE,
+    DROP_CONSTRAINT_CLAUSE,
     ALTER_SYSTEM,
     CREATE_CONTEXT,
     CALL_COMMAND,
@@ -1465,6 +1466,16 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.sequence(COLUMN, IDENTIFIER_NAME),
                                             ONE_OR_MORE_IDENTIFIERS))))
 
+            b.rule(DROP_CONSTRAINT_CLAUSE).define(
+                    DROP,
+                    b.firstOf(
+                            b.sequence(PRIMARY, KEY),
+                            b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
+                            b.sequence(CONSTRAINT, IDENTIFIER_NAME)),
+                    b.optional(CASCADE),
+                    b.optional(b.firstOf(KEEP, DROP), INDEX),
+                    b.optional(ONLINE))
+
             b.rule(ALTER_TABLE_CONSTRAINT_STATE).define(
                     b.next(b.firstOf(INITIALLY, NOT, DEFERRABLE, RELY, NORELY, USING,
                             ENABLE, DISABLE, VALIDATE, NOVALIDATE, EXCEPTIONS)),
@@ -1524,7 +1535,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF, ENABLE_DISABLE_CLAUSE))))),
                             DROP_COLUMN_CLAUSE,
-                            b.sequence(DROP, b.next(b.firstOf(UNIQUE, CONSTRAINT, PARTITION)), TABLE_RELATIONAL_PROPERTIES),
+                            b.sequence(DROP, b.next(PARTITION), TABLE_RELATIONAL_PROPERTIES),
                             b.sequence(
                                     MOVE,
                                     b.optional(
@@ -1537,6 +1548,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
+                            b.sequence(
+                                    b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
+                                    b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
                             b.sequence(alterTableAction(), b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
                             b.oneOrMore(ENABLE_DISABLE_CLAUSE)),
                     b.optional(SEMICOLON))
