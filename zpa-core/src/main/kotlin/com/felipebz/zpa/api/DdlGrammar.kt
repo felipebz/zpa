@@ -51,6 +51,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_TABLE_COLUMN,
     ALTER_TABLE_MODIFY_CONSTRAINT,
     ALTER_TABLE_CONSTRAINT_STATE,
+    ENABLE_DISABLE_CLAUSE,
     DROP_COLUMN_CLAUSE,
     ALTER_SYSTEM,
     CREATE_CONTEXT,
@@ -333,7 +334,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                         b.sequence(LPARENTHESIS, CREATE_INDEX_FOR_CONSTRAINT, RPARENTHESIS),
                         usingIndexProperties(),
-                        UNIT_NAME
+                        b.sequence(b.nextNot(b.sequence(EXCEPTIONS, INTO)), UNIT_NAME)
                     )
                 )
             )
@@ -1455,9 +1456,25 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
                                     ALTER_TABLE_CONSTRAINT_STATE, b.optional(CASCADE))))
 
-            b.rule(ALTER_TABLE).define(
-                    ALTER, TABLE, UNIT_NAME,
+            fun enableDisableTarget() = b.firstOf(
+                    b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
+                    b.sequence(PRIMARY, KEY),
+                    b.sequence(CONSTRAINT, IDENTIFIER_NAME))
+
+            b.rule(ENABLE_DISABLE_CLAUSE).define(
                     b.firstOf(
+                            b.sequence(
+                                    ENABLE, b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                                    enableDisableTarget(),
+                                    b.optional(USING_INDEX_CLAUSE),
+                                    b.optional(EXCEPTIONS_CLAUSE)),
+                            b.sequence(
+                                    DISABLE, b.optional(b.firstOf(VALIDATE, NOVALIDATE)),
+                                    enableDisableTarget(),
+                                    b.optional(CASCADE),
+                                    b.optional(b.firstOf(KEEP, DROP), INDEX))))
+
+            fun alterTableAction() = b.firstOf(
                             b.sequence(
                                     ADD,
                                     b.firstOf(
@@ -1472,7 +1489,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.sequence(b.nextNot(b.firstOf(CONSTRAINT, b.sequence(PRIMARY, KEY),
                                                             b.sequence(UNIQUE, LPARENTHESIS))),
                                                     ALTER_TABLE_COLUMN,
-                                                    b.next(b.firstOf(SEMICOLON, DIVISION, EOF))))),
+                                                    b.next(b.firstOf(SEMICOLON, DIVISION, EOF, ENABLE_DISABLE_CLAUSE))))),
                             DROP_COLUMN_CLAUSE,
                             b.sequence(DROP, b.next(b.firstOf(UNIQUE, CONSTRAINT, PARTITION)), TABLE_RELATIONAL_PROPERTIES),
                             b.sequence(
@@ -1481,7 +1498,13 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.firstOf(
                                                     b.sequence(ONLINE, b.optional(TABLESPACE, IDENTIFIER_NAME)),
                                                     b.sequence(TABLESPACE, IDENTIFIER_NAME, b.optional(ONLINE))))),
-                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)),
+                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT))
+
+            b.rule(ALTER_TABLE).define(
+                    ALTER, TABLE, UNIT_NAME,
+                    b.firstOf(
+                            b.sequence(alterTableAction(), b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
+                            b.oneOrMore(ENABLE_DISABLE_CLAUSE)),
                     b.optional(SEMICOLON))
 
             b.rule(ALTER_SYSTEM).define(

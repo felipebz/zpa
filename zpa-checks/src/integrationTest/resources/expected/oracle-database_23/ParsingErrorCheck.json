@@ -59,9 +59,6 @@
   "adjsn/passing-clause-sql-functions-and-conditions-1.sql" : [
     4
   ],
-  "adjsn/persistent-data-guide-information-part-json-search-index-0.sql" : [
-    2
-  ],
   "adjsn/persistent-data-guide-information-part-json-search-index-1.sql" : [
     2
   ],
@@ -885,15 +882,6 @@
     2
   ],
   "sqlrf/ALTER-TABLE-21.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-22.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-24.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-27.sql" : [
     3
   ],
   "sqlrf/ALTER-TABLE-29.sql" : [
@@ -2126,12 +2114,6 @@
   "sqlrf/create-property-graph-1.sql" : [
     2
   ],
-  "sqlrf/create-property-graph-11.sql" : [
-    2
-  ],
-  "sqlrf/create-property-graph-12.sql" : [
-    2
-  ],
   "sqlrf/create-property-graph-14.sql" : [
     2
   ],
@@ -2157,12 +2139,6 @@
     2
   ],
   "sqlrf/create-property-graph-4.sql" : [
-    2
-  ],
-  "sqlrf/create-property-graph-8.sql" : [
-    2
-  ],
-  "sqlrf/create-property-graph-9.sql" : [
     2
   ],
   "sqlrf/create-vector-index-0.sql" : [

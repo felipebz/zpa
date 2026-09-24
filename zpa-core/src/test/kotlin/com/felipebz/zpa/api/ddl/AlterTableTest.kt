@@ -141,6 +141,67 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableEnableDisableConstraintTargets() {
+        assertThat(p).matches("alter table t enable validate constraint c")
+        assertThat(p).matches("alter table t enable novalidate constraint c")
+        assertThat(p).matches("alter table t enable constraint c")
+        assertThat(p).matches("alter table t disable constraint c")
+        assertThat(p).matches("alter table t disable validate constraint c")
+        assertThat(p).matches("alter table t disable novalidate constraint c")
+        assertThat(p).matches("alter table t enable primary key")
+        assertThat(p).matches("alter table t disable primary key cascade")
+        assertThat(p).matches("alter table t enable unique (c1)")
+        assertThat(p).matches("alter table t enable unique (c1, c2)")
+        assertThat(p).matches("alter table t disable unique (c1, c2)")
+    }
+
+    @Test
+    fun matchesAlterTableEnableDisableSuffixes() {
+        assertThat(p).matches("alter table t enable primary key using index")
+        assertThat(p).matches("alter table t enable constraint c using index existing_idx")
+        assertThat(p).matches("alter table t enable constraint c exceptions into exceptions")
+        assertThat(p).matches("alter table t enable primary key using index exceptions into owner.exceptions")
+        assertThat(p).matches("alter table t disable constraint c cascade")
+        assertThat(p).matches("alter table t disable primary key keep index")
+        assertThat(p).matches("alter table t disable primary key drop index")
+        assertThat(p).matches("alter table t disable primary key cascade keep index")
+    }
+
+    @Test
+    fun matchesRepeatedEnableDisableClausesAfterOptionalAction() {
+        assertThat(p).matches("alter table t enable novalidate primary key enable novalidate constraint c")
+        assertThat(p).matches("alter table t enable constraint c1 disable constraint c2")
+        assertThat(p).matches("alter table t disable constraint c1 enable constraint c2")
+        assertThat(p).matches("alter table t add (c2 number) enable constraint c")
+        assertThat(p).matches("alter table t add (c2 number) enable constraint c1 disable constraint c2")
+        assertThat(p).matches("alter table t modify c2 number enable constraint c")
+        assertThat(p).matches("alter table t modify (c2 number) enable constraint c")
+        assertThat(p).matches("alter table t enable row movement enable constraint c")
+        assertThat(p).matches("alter table t modify constraint c disable")
+    }
+
+    @Test
+    fun rejectsMalformedEnableDisableClauses() {
+        assertThat(p).notMatches("alter table t enable")
+        assertThat(p).notMatches("alter table t disable")
+        assertThat(p).notMatches("alter table t enable novalidate")
+        assertThat(p).notMatches("alter table t enable constraint")
+        assertThat(p).notMatches("alter table t enable primary")
+        assertThat(p).notMatches("alter table t enable unique ()")
+        assertThat(p).notMatches("alter table t enable unique (c1,)")
+        assertThat(p).notMatches("alter table t validate enable constraint c")
+        assertThat(p).notMatches("alter table t enable constraint c validate")
+        assertThat(p).notMatches("alter table t disable constraint c cascade exceptions into exceptions")
+        assertThat(p).notMatches("alter table t enable primary key cascade")
+        assertThat(p).notMatches("alter table t enable primary key keep index")
+        assertThat(p).notMatches("alter table t disable primary key using index")
+        assertThat(p).notMatches("alter table t disable constraint c exceptions into exceptions")
+        assertThat(p).notMatches("alter table t enable all triggers")
+        assertThat(p).notMatches("alter table t enable table lock")
+        assertThat(p).notMatches("alter table t enable constraint c add (c2 number)")
+    }
+
+    @Test
     fun matchesDropColumnClause() {
         assertThat(p).matches("alter table t drop (c1)")
         assertThat(p).matches("alter table t drop (c1, c2)")
