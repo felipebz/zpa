@@ -115,6 +115,32 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableModifyConstraintState() {
+        assertThat(p).matches("alter table product modify constraint tc2 precheck;")
+        assertThat(p).matches("alter table product modify constraint tc1 noprecheck;")
+        assertThat(p).matches("alter table product modify constraint tc2 enable novalidate precheck;")
+        assertThat(p).matches("alter table product modify constraint tc2 initially immediate;")
+        assertThat(p).matches("alter table product modify constraint tc2 disable cascade precheck;")
+        assertThat(p).matches("alter table locations modify primary key disable cascade;")
+        assertThat(p).matches("alter table locations modify primary key enable;")
+        assertThat(p).matches("alter table locations modify unique (country_id, location_id) disable cascade;")
+    }
+
+    @Test
+    fun rejectsIncompleteAlterTableModifyConstraint() {
+        assertThat(p).notMatches("alter table t modify constraint tc;")
+        assertThat(p).notMatches("alter table t modify primary key;")
+        assertThat(p).notMatches("alter table t modify unique (c);")
+        assertThat(p).notMatches("alter table t modify constraint tc cascade;")
+        assertThat(p).notMatches("alter table t modify unique () enable;")
+        assertThat(p).notMatches("alter table t modify unique (c,) enable;")
+        assertThat(p).notMatches("alter table t modify primary key precheck;")
+        assertThat(p).notMatches("alter table t modify unique (c) precheck;")
+        assertThat(p).notMatches("alter table t modify constraint tc precheck enable;")
+        assertThat(p).notMatches("alter table t modify constraint tc precheck cascade;")
+    }
+
+    @Test
     fun matchesDropColumnClause() {
         assertThat(p).matches("alter table t drop (c1)")
         assertThat(p).matches("alter table t drop (c1, c2)")

@@ -881,12 +881,6 @@
   "sqlrf/ALTER-TABLE-129.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-18.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-19.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-20.sql" : [
     2
   ],
@@ -897,9 +891,6 @@
     3
   ],
   "sqlrf/ALTER-TABLE-24.sql" : [
-    3
-  ],
-  "sqlrf/ALTER-TABLE-25.sql" : [
     3
   ],
   "sqlrf/ALTER-TABLE-27.sql" : [
@@ -2050,12 +2041,6 @@
   ],
   "sqlrf/annotations_clause-5.sql" : [
     4
-  ],
-  "sqlrf/constraint-16.sql" : [
-    2
-  ],
-  "sqlrf/constraint-17.sql" : [
-    2
   ],
   "sqlrf/constraint-27.sql" : [
     14

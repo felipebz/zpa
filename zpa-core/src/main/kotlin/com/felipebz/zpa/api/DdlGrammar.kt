@@ -49,6 +49,8 @@ enum class DdlGrammar : GrammarRuleKey {
     OBJECT_IDENTIFIER_CLAUSE,
     NESTED_TABLE_COL_PROPERTIES,
     ALTER_TABLE_COLUMN,
+    ALTER_TABLE_MODIFY_CONSTRAINT,
+    ALTER_TABLE_CONSTRAINT_STATE,
     DROP_COLUMN_CLAUSE,
     ALTER_SYSTEM,
     CREATE_CONTEXT,
@@ -1432,6 +1434,27 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.sequence(COLUMN, IDENTIFIER_NAME),
                                             ONE_OR_MORE_IDENTIFIERS))))
 
+            b.rule(ALTER_TABLE_CONSTRAINT_STATE).define(
+                    b.next(b.firstOf(INITIALLY, NOT, DEFERRABLE, RELY, NORELY, USING,
+                            ENABLE, DISABLE, VALIDATE, NOVALIDATE, EXCEPTIONS)),
+                    CONSTRAINT_STATE)
+
+            b.rule(ALTER_TABLE_MODIFY_CONSTRAINT).define(
+                    MODIFY,
+                    b.firstOf(
+                            b.sequence(
+                                    CONSTRAINT, IDENTIFIER_NAME,
+                                    b.firstOf(
+                                            b.sequence(ALTER_TABLE_CONSTRAINT_STATE,
+                                                    b.optional(CASCADE), b.optional(PRECHECK_STATE)),
+                                            PRECHECK_STATE)),
+                            b.sequence(
+                                    b.firstOf(
+                                            b.sequence(PRIMARY, KEY),
+                                            b.sequence(UNIQUE, LPARENTHESIS, IDENTIFIER_NAME,
+                                                    b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
+                                    ALTER_TABLE_CONSTRAINT_STATE, b.optional(CASCADE))))
+
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
@@ -1440,12 +1463,15 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.firstOf(
                                             b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
                                             TABLE_RELATIONAL_PROPERTIES)),
+                            ALTER_TABLE_MODIFY_CONSTRAINT,
                             b.sequence(
                                     MODIFY,
                                     b.firstOf(
                                             b.sequence(LPARENTHESIS, ALTER_TABLE_COLUMN,
                                                     b.zeroOrMore(COMMA, ALTER_TABLE_COLUMN), RPARENTHESIS),
-                                            b.sequence(ALTER_TABLE_COLUMN,
+                                            b.sequence(b.nextNot(b.firstOf(CONSTRAINT, b.sequence(PRIMARY, KEY),
+                                                            b.sequence(UNIQUE, LPARENTHESIS))),
+                                                    ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF))))),
                             DROP_COLUMN_CLAUSE,
                             b.sequence(DROP, b.next(b.firstOf(UNIQUE, CONSTRAINT, PARTITION)), TABLE_RELATIONAL_PROPERTIES),
