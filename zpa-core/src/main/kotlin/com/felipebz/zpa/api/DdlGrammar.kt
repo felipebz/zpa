@@ -243,6 +243,32 @@ enum class DdlGrammar : GrammarRuleKey {
                         VARRAY_COL_PROPERTIES))
             )
 
+            fun encryptionPassword() = b.firstOf(
+                IDENTIFIER_NAME,
+                CHARACTER_LITERAL,
+                NUMERIC_LITERAL,
+                NULL_LITERAL,
+                BOOLEAN_LITERAL
+            )
+
+            // Oracle 26 accepts SALT before or after the integrity literal; keep both forms bounded.
+            fun encryptionSpec() = b.sequence(
+                b.optional(USING, CHARACTER_LITERAL),
+                b.optional(IDENTIFIED, BY, encryptionPassword()),
+                b.optional(b.firstOf(
+                    b.sequence(
+                        CHARACTER_LITERAL,
+                        b.optional(b.optional(NO), SALT)
+                    ),
+                    b.sequence(
+                        b.optional(NO), SALT,
+                        b.optional(CHARACTER_LITERAL)
+                    )
+                ))
+            )
+
+            fun columnEncryptionClause() = b.sequence(ENCRYPT, encryptionSpec())
+
             fun indexOrganizedTableAttribute() = b.firstOf(
                 KEY_COMPRESSION,
                 b.sequence(PCTTHRESHOLD, INTEGER_LITERAL),
@@ -345,13 +371,12 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME, DATATYPE,
-                    
                     b.optional(SORT),
                     b.optional(DEFAULT, b.optional(
                         b.sequence(ON, NULL,
                             b.optional(FOR, INSERT,
                                 b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
-                    b.optional(ENCRYPT),
+                    b.optional(columnEncryptionClause()),
                     b.zeroOrMore(INLINE_CONSTRAINT))
 
             b.rule(OUT_OF_LINE_CONSTRAINT).define(
@@ -1414,10 +1439,12 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_TABLE_COLUMN).define(
                     IDENTIFIER_NAME,
                     b.optional(b.sequence(
-                            b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS)),
+                            b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS,
+                                    ENCRYPT, DECRYPT)),
                             DATATYPE)),
                     b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(DEFAULT, EXPRESSION),
+                    b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
                     b.zeroOrMore(INLINE_CONSTRAINT),
                     b.optional(ANNOTATIONS_CLAUSE))
 

@@ -237,6 +237,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     DEC("dec"),
     DECIMAL("decimal"),
     DECREMENT("decrement"),
+    DECRYPT("decrypt"),
     DEFAULTS("defaults"),
     DEFERRABLE("deferrable"),
     DEFERRED("deferred"),

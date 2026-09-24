@@ -156,6 +156,56 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableModifyEncryption() {
+        assertThat(p).matches("alter table t modify (c encrypt)")
+        assertThat(p).matches("alter table t modify (c encrypt using 'AES256')")
+        assertThat(p).matches("alter table t modify (c encrypt 'NOMAC')")
+        assertThat(p).matches("alter table t modify (c encrypt salt)")
+        assertThat(p).matches("alter table t modify (c encrypt no salt)")
+        assertThat(p).matches("alter table t modify (c encrypt using 'AES256' 'NOMAC')")
+        assertThat(p).matches("alter table t modify (c encrypt using 'AES256' 'NOMAC' no salt)")
+        assertThat(p).matches("alter table t modify (c encrypt no salt 'NOMAC')")
+        assertThat(p).matches("alter table t modify (c encrypt salt 'NOMAC')")
+        assertThat(p).matches("alter table t modify (c encrypt identified by secret)")
+        assertThat(p).matches("alter table t modify (c encrypt identified by 'secret')")
+        assertThat(p).matches("alter table t modify (c encrypt identified by 123)")
+        assertThat(p).matches("alter table t modify (c encrypt identified by null)")
+        assertThat(p).matches("alter table t modify (c encrypt using 'AES256' identified by secret 'NOMAC' no salt)")
+        assertThat(p).matches("alter table t modify (c varchar2(30) encrypt 'NOMAC' not null)")
+        assertThat(p).matches("alter table t modify (c encrypt annotations(label 'C'))")
+        assertThat(p).matches("alter table t modify (c decrypt)")
+    }
+
+    @Test
+    fun rejectsMalformedAlterTableModifyEncryption() {
+        assertThat(p).notMatches("alter table t modify (c encrypt using)")
+        assertThat(p).notMatches("alter table t modify (c encrypt using AES256)")
+        assertThat(p).notMatches("alter table t modify (c encrypt NOMAC)")
+        assertThat(p).notMatches("alter table t modify (c encrypt no)")
+        assertThat(p).notMatches("alter table t modify (c encrypt salt no)")
+        assertThat(p).notMatches("alter table t modify (c encrypt no no salt)")
+        assertThat(p).notMatches("alter table t modify (c encrypt 'NOMAC' using 'AES256')")
+        assertThat(p).notMatches("alter table t modify (c encrypt identified by)")
+        assertThat(p).notMatches("alter table t modify (c encrypt identified by 1 + 2)")
+        assertThat(p).notMatches("alter table t modify (c encrypt identified by lower('secret'))")
+        assertThat(p).notMatches("alter table t modify (c encrypt identified by secret using 'AES256')")
+    }
+
+    @Test
+    fun matchesAlterTableAddEncryptedColumns() {
+        assertThat(p).matches("alter table t add (c varchar2(30) encrypt)")
+        assertThat(p).matches("alter table t add (c varchar2(30) encrypt using 'AES256')")
+        assertThat(p).matches("alter table t add (c varchar2(30) encrypt 'NOMAC' no salt)")
+        assertThat(p).matches("alter table t add (c varchar2(30) encrypt using 'AES256' 'NOMAC' no salt)")
+    }
+
+    @Test
+    fun rejectsMalformedAlterTableAddEncryption() {
+        assertThat(p).notMatches("alter table t add (c varchar2(30) encrypt using)")
+        assertThat(p).notMatches("alter table t add (c varchar2(30) encrypt no)")
+    }
+
+    @Test
     fun matchesAlterTableModifyConstraintState() {
         assertThat(p).matches("alter table product modify constraint tc2 precheck;")
         assertThat(p).matches("alter table product modify constraint tc1 noprecheck;")

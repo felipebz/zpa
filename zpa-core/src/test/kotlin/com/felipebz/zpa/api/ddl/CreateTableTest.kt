@@ -43,6 +43,22 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesSharedColumnEncryptionSpec() {
+        assertThat(p).matches("create table t (c varchar2(30) encrypt)")
+        assertThat(p).matches("create table t (c varchar2(30) encrypt using 'AES256')")
+        assertThat(p).matches("create table t (c varchar2(30) encrypt 'NOMAC' no salt)")
+        assertThat(p).matches("create table t (c varchar2(30) encrypt using 'AES256' 'NOMAC' no salt)")
+        assertThat(p).matches("create table t (c varchar2(30) encrypt identified by password)")
+    }
+
+    @Test
+    fun rejectsMalformedSharedColumnEncryptionSpec() {
+        assertThat(p).notMatches("create table t (c varchar2(30) encrypt using)")
+        assertThat(p).notMatches("create table t (c varchar2(30) encrypt no)")
+        assertThat(p).notMatches("create table t (c varchar2(30) decrypt)")
+    }
+
+    @Test
     fun matchesSharedOutOfLineRefConstraints() {
         assertThat(p).matches("create table t (dept ref obj_type, scope for (dept) is schema_name.offices)")
         assertThat(p).matches("create table t (dept ref obj_type, ref(dept) with rowid)")
