@@ -183,6 +183,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     CLUSTER_SET("cluster_set"),
     COALESCE("coalesce"),
     COLAUTH("colauth"),
+    COLLATE("collate"),
     COLLATION("collation"),
     COLLECT("collect"),
     COLUMN("column"),

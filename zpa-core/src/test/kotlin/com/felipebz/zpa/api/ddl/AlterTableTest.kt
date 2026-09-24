@@ -115,6 +115,47 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableModifyColumnProperties() {
+        assertThat(p).matches("alter table t modify (c collate binary_ci)")
+        assertThat(p).matches("alter table t modify c collate using_nls_comp")
+        assertThat(p).matches("alter table t modify (c varchar2(100) collate binary_ci)")
+        assertThat(p).matches("alter table t modify (c collate binary_ci not null)")
+        assertThat(p).matches("alter table t modify c annotations(label 'C')")
+        assertThat(p).matches("alter table t modify (c annotations(label 'C'))")
+        assertThat(p).matches("alter table t modify c annotations(add hidden, drop identity)")
+        assertThat(p).matches("alter table t modify (c not null annotations(label 'C'))")
+        assertThat(p).matches("alter table t modify (c1 collate binary_ci, c2 annotations(label 'C2'))")
+    }
+
+    @Test
+    fun matchesAlterTableModifyColumnInlineConstraints() {
+        assertThat(p).matches("alter table locations_demo modify (country_id constraint country_nn not null)")
+        assertThat(p).matches("alter table t modify (c constraint c_nn not null)")
+        assertThat(p).matches("alter table t modify c constraint c_nn not null")
+        assertThat(p).matches("alter table t modify (c not null)")
+        assertThat(p).matches("alter table t modify (c null)")
+        assertThat(p).matches("alter table t modify (c number)")
+        assertThat(p).matches("alter table t modify c number")
+        assertThat(p).matches("alter table t modify (c default 1)")
+        assertThat(p).matches("alter table t modify (c default 'x' not null)")
+        assertThat(p).matches("alter table t modify (c number constraint c_nn not null)")
+        assertThat(p).matches("alter table t modify (c constraint c_nn not null, c2 annotations(label 'C2'))")
+        assertThat(p).matches("alter table t modify c number enable constraint c_nn")
+    }
+
+    @Test
+    fun rejectsMalformedAlterTableModifyColumnProperties() {
+        assertThat(p).notMatches("alter table t modify (c collate)")
+        assertThat(p).notMatches("alter table t modify (c collate binary_ci binary_ai)")
+        assertThat(p).notMatches("alter table t modify c annotations()")
+        assertThat(p).notMatches("alter table t modify c annotations(add)")
+        assertThat(p).notMatches("alter table t modify (c constraint)")
+        assertThat(p).notMatches("alter table t modify (c constraint c_nn)")
+        assertThat(p).notMatches("alter table t modify (c annotations(label 'C') not null)")
+        assertThat(p).notMatches("alter table t modify (c annotations(label 'C') default 'x')")
+    }
+
+    @Test
     fun matchesAlterTableModifyConstraintState() {
         assertThat(p).matches("alter table product modify constraint tc2 precheck;")
         assertThat(p).matches("alter table product modify constraint tc1 noprecheck;")

@@ -1411,12 +1411,15 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER_INDEX_ACTION),
                 b.optional(SEMICOLON))
 
-            // Only `modify` may leave the datatype out; `add` without one is ORA-02263.
             b.rule(ALTER_TABLE_COLUMN).define(
                     IDENTIFIER_NAME,
-                    b.optional(DATATYPE),
+                    b.optional(b.sequence(
+                            b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS)),
+                            DATATYPE)),
+                    b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(DEFAULT, EXPRESSION),
-                    b.zeroOrMore(INLINE_CONSTRAINT))
+                    b.zeroOrMore(INLINE_CONSTRAINT),
+                    b.optional(ANNOTATIONS_CLAUSE))
 
             b.rule(DROP_COLUMN_CLAUSE).define(
                     b.firstOf(
