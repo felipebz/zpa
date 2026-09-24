@@ -156,6 +156,25 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableRenameColumn() {
+        assertThat(p).matches("alter table t rename column c1 to c2")
+        assertThat(p).matches("alter table schema_name.t rename column c1 to c2")
+        assertThat(p).matches("alter table t rename column \"Old Name\" to \"New Name\"")
+    }
+
+    @Test
+    fun rejectsMalformedAlterTableRenameColumn() {
+        assertThat(p).notMatches("alter table t rename c1 to c2")
+        assertThat(p).notMatches("alter table t rename column c1 c2")
+        assertThat(p).notMatches("alter table t rename column to c2")
+        assertThat(p).notMatches("alter table t rename column c1 to")
+        assertThat(p).notMatches("alter table t rename column c1 to c2 to c3")
+        assertThat(p).notMatches("alter table t rename column c1 to c2 enable constraint c1")
+        assertThat(p).notMatches("alter table t rename constraint c1 to c2")
+        assertThat(p).notMatches("alter table t rename to new_table")
+    }
+
+    @Test
     fun matchesAlterTableModifyEncryption() {
         assertThat(p).matches("alter table t modify (c encrypt)")
         assertThat(p).matches("alter table t modify (c encrypt using 'AES256')")

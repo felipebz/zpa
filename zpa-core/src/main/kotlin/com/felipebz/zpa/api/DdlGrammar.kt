@@ -1504,6 +1504,9 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.optional(CASCADE),
                                     b.optional(b.firstOf(KEEP, DROP), INDEX))))
 
+            // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
+            fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
+
             fun alterTableAction() = b.firstOf(
                             b.sequence(
                                     ADD,
@@ -1533,6 +1536,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
+                            renameColumnClause(),
                             b.sequence(alterTableAction(), b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
                             b.oneOrMore(ENABLE_DISABLE_CLAUSE)),
                     b.optional(SEMICOLON))

@@ -884,9 +884,6 @@
   "sqlrf/ALTER-TABLE-30.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-35.sql" : [
-    3
-  ],
   "sqlrf/ALTER-TABLE-47.sql" : [
     2
   ],
@@ -973,9 +970,6 @@
   ],
   "sqlrf/ALTER-TABLE-8.sql" : [
     4
-  ],
-  "sqlrf/ALTER-TABLE-85.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-9.sql" : [
     2
