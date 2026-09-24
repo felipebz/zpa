@@ -37,6 +37,7 @@ enum class DdlGrammar : GrammarRuleKey {
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
     OUT_OF_LINE_CONSTRAINT,
+    OUT_OF_LINE_REF_CONSTRAINT,
     USING_INDEX_CLAUSE,
     ANNOTATIONS_CLAUSE,
     ANNOTATION,
@@ -371,8 +372,24 @@ enum class DdlGrammar : GrammarRuleKey {
                 )
             )
 
+            b.rule(OUT_OF_LINE_REF_CONSTRAINT).define(
+                b.firstOf(
+                    b.sequence(
+                        SCOPE, FOR, LPARENTHESIS, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                        RPARENTHESIS, IS, UNIT_NAME),
+                    b.sequence(
+                        REF, LPARENTHESIS, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                        RPARENTHESIS, WITH, ROWID)
+                )
+            )
+
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
-                    b.oneOrMore(b.firstOf(OUT_OF_LINE_CONSTRAINT, TABLE_COLUMN_DEFINITION), b.optional(COMMA)))
+                    b.oneOrMore(b.firstOf(
+                        OUT_OF_LINE_REF_CONSTRAINT,
+                        OUT_OF_LINE_CONSTRAINT,
+                        b.sequence(
+                            b.nextNot(b.firstOf(b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS))),
+                            TABLE_COLUMN_DEFINITION)), b.optional(COMMA)))
             b.rule(OBJECT_TABLE_PROPERTIES).define(
                 LPARENTHESIS,
                 objectTableProperty(),

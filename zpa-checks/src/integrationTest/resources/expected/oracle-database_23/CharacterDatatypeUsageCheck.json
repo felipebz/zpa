@@ -82,6 +82,9 @@
   "lnpls/user-defined-pl-sql-subtypes-9.sql" : [
     3
   ],
+  "sqlrf/ALTER-TABLE-109.sql" : [
+    2
+  ],
   "sqlrf/CAST-7.sql" : [
     12
   ],

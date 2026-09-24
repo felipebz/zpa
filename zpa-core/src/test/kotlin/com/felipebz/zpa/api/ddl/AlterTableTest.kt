@@ -48,6 +48,33 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesOutOfLineRefConstraints() {
+        assertThat(p).matches("alter table t add (scope for (ref_col) is scope_table)")
+        assertThat(p).matches("alter table t add (scope for (ref_col) is schema_name.scope_table)")
+        assertThat(p).matches("alter table t add (ref(ref_col) with rowid)")
+        assertThat(p).matches("alter table t add (scope for (holder.ref_attr) is scope_table)")
+        assertThat(p).matches("alter table t add (ref(holder.ref_attr) with rowid)")
+        assertThat(p).matches("alter table t add (scope for (ref_col) is scope_table, extra number)")
+    }
+
+    @Test
+    fun rejectsMalformedOutOfLineRefConstraints() {
+        assertThat(p).notMatches("alter table t add (scope for (ref_col))")
+        assertThat(p).notMatches("alter table t add (scope for ref_col is scope_table)")
+        assertThat(p).notMatches("alter table t add (scope for (ref_col) is)")
+        assertThat(p).notMatches("alter table t add (ref(ref_col))")
+        assertThat(p).notMatches("alter table t add (ref ref_col with rowid)")
+        assertThat(p).notMatches("alter table t add (ref(ref_col) with)")
+    }
+
+    @Test
+    fun retainsOrdinaryRelationalPropertiesNamedScopeOrRef() {
+        assertThat(p).matches("alter table t add (scope number, ref number)")
+        assertThat(p).matches("alter table t add (c1 number)")
+        assertThat(p).matches("alter table t add (constraint c unique (c1))")
+    }
+
+    @Test
     fun matchesAlterTableAddColumnWithDefaultOnNull() {
         assertThat(p).matches("alter table tab add col varchar2(100) default on null 'Default String';")
     }

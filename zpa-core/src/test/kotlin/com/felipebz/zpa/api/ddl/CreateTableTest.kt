@@ -43,6 +43,19 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesSharedOutOfLineRefConstraints() {
+        assertThat(p).matches("create table t (dept ref obj_type, scope for (dept) is schema_name.offices)")
+        assertThat(p).matches("create table t (dept ref obj_type, ref(dept) with rowid)")
+        assertThat(p).matches("create table t (scope number, ref number)")
+    }
+
+    @Test
+    fun rejectsIncompleteSharedRefConstraints() {
+        assertThat(p).notMatches("create table t (dept ref obj_type, scope for (dept))")
+        assertThat(p).notMatches("create table t (dept ref obj_type, ref(dept))")
+    }
+
+    @Test
     fun matchesObjectTables() {
         assertThat(p).matches("create table sch.tab of sch.obj_type;")
         assertThat(p).matches("create table t of obj_type substitutable at all levels;")
