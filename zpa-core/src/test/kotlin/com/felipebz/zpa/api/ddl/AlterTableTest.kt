@@ -88,6 +88,49 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesDropColumnClause() {
+        assertThat(p).matches("alter table t drop (c1)")
+        assertThat(p).matches("alter table t drop (c1, c2)")
+        assertThat(p).matches("alter table t drop (c1) cascade constraints")
+        assertThat(p).matches("alter table t drop (c1, c2) cascade constraints")
+        assertThat(p).matches("alter table t drop column c1")
+        assertThat(p).matches("alter table t drop column c1 cascade constraints")
+        assertThat(p).matches("alter table t drop unused columns")
+    }
+
+    @Test
+    fun matchesSetUnusedColumnClause() {
+        assertThat(p).matches("alter table t set unused (c1)")
+        assertThat(p).matches("alter table t set unused (c1, c2)")
+        assertThat(p).matches("alter table t set unused column c1")
+    }
+
+    @Test
+    fun rejectsMalformedDropColumnClause() {
+        assertThat(p).notMatches("alter table t drop ()")
+        assertThat(p).notMatches("alter table t drop (c1,)")
+        assertThat(p).notMatches("alter table t set unused ()")
+        assertThat(p).notMatches("alter table t drop (c1 + c2)")
+        assertThat(p).notMatches("alter table t drop cascade constraints (c1)")
+        assertThat(p).notMatches("alter table t drop (c1) checkpoint 1 cascade constraints")
+        assertThat(p).notMatches("alter table t drop unused columns cascade constraints")
+    }
+
+    @Test
+    fun doesNotCombineDropWithOtherAlterActions() {
+        assertThat(p).notMatches("alter table t drop (c1) add (c2 number)")
+        assertThat(p).notMatches("alter table t set unused (c1) add (c2 number)")
+        assertThat(p).notMatches("alter table t drop column c1 drop (c2)")
+    }
+
+    @Test
+    fun retainsExistingDropRoutes() {
+        assertThat(p).matches("alter table t drop unique (email)")
+        assertThat(p).matches("alter table t drop constraint pkc")
+        assertThat(p).matches("alter table t drop partition p3")
+    }
+
+    @Test
     fun matchesAlterTableMove() {
         assertThat(p).matches("alter table tab move;")
         assertThat(p).matches("alter table tab move online;")

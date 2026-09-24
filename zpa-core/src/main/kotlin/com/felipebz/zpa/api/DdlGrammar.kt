@@ -48,6 +48,7 @@ enum class DdlGrammar : GrammarRuleKey {
     OBJECT_IDENTIFIER_CLAUSE,
     NESTED_TABLE_COL_PROPERTIES,
     ALTER_TABLE_COLUMN,
+    DROP_COLUMN_CLAUSE,
     ALTER_SYSTEM,
     CREATE_CONTEXT,
     CALL_COMMAND,
@@ -1397,6 +1398,23 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(DEFAULT, EXPRESSION),
                     b.zeroOrMore(INLINE_CONSTRAINT))
 
+            b.rule(DROP_COLUMN_CLAUSE).define(
+                    b.firstOf(
+                            b.sequence(
+                                    DROP,
+                                    b.firstOf(
+                                            b.sequence(UNUSED, COLUMNS),
+                                            b.sequence(
+                                                    b.firstOf(
+                                                            b.sequence(COLUMN, IDENTIFIER_NAME),
+                                                            ONE_OR_MORE_IDENTIFIERS),
+                                                    b.optional(CASCADE, CONSTRAINTS)))),
+                            b.sequence(
+                                    SET, UNUSED,
+                                    b.firstOf(
+                                            b.sequence(COLUMN, IDENTIFIER_NAME),
+                                            ONE_OR_MORE_IDENTIFIERS))))
+
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
@@ -1412,7 +1430,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     b.zeroOrMore(COMMA, ALTER_TABLE_COLUMN), RPARENTHESIS),
                                             b.sequence(ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF))))),
-                            b.sequence(DROP, TABLE_RELATIONAL_PROPERTIES),
+                            DROP_COLUMN_CLAUSE,
+                            b.sequence(DROP, b.next(b.firstOf(UNIQUE, CONSTRAINT, PARTITION)), TABLE_RELATIONAL_PROPERTIES),
                             b.sequence(
                                     MOVE,
                                     b.optional(
