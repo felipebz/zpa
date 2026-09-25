@@ -53,6 +53,10 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_TABLE_CONSTRAINT_STATE,
     ENABLE_DISABLE_CLAUSE,
     DROP_COLUMN_CLAUSE,
+    PARTITION_EXTENDED_NAME,
+    SPLIT_TABLE_PARTITION,
+    SPLIT_NESTED_TABLE_PART,
+    UPDATE_INDEX_CLAUSES,
     DROP_CONSTRAINT_CLAUSE,
     ALTER_SYSTEM,
     CREATE_CONTEXT,
@@ -1515,6 +1519,84 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.optional(CASCADE),
                                     b.optional(b.firstOf(KEEP, DROP), INDEX))))
 
+            fun partitionSpec() = b.sequence(PARTITION, b.optional(IDENTIFIER_NAME),
+                b.optional(TABLE_PARTITION_DESCRIPTION))
+
+            fun splitListValues() = b.firstOf(
+                b.sequence(b.firstOf(LITERAL, NULL),
+                    b.zeroOrMore(COMMA, b.firstOf(LITERAL, NULL))),
+                b.sequence(LPARENTHESIS, b.firstOf(LITERAL, NULL),
+                    b.zeroOrMore(COMMA, b.firstOf(LITERAL, NULL)), RPARENTHESIS,
+                    b.zeroOrMore(COMMA, LPARENTHESIS, b.firstOf(LITERAL, NULL),
+                        b.zeroOrMore(COMMA, b.firstOf(LITERAL, NULL)), RPARENTHESIS)))
+
+            fun splitListValuesClause() = b.sequence(VALUES, LPARENTHESIS,
+                b.firstOf(DEFAULT, splitListValues()), RPARENTHESIS)
+
+            fun splitRangeValuesClause() = b.sequence(VALUES, LESS, THAN, LPARENTHESIS,
+                b.firstOf(MAXVALUE, EXPRESSION),
+                b.zeroOrMore(COMMA, b.firstOf(MAXVALUE, EXPRESSION)), RPARENTHESIS)
+
+            fun rangeSplitDescription() = b.sequence(PARTITION, b.optional(IDENTIFIER_NAME),
+                splitRangeValuesClause(), TABLE_PARTITION_DESCRIPTION)
+
+            fun listSplitDescription() = b.sequence(PARTITION, b.optional(IDENTIFIER_NAME),
+                splitListValuesClause(), TABLE_PARTITION_DESCRIPTION)
+
+            fun directorySplitDescription() = b.sequence(PARTITION, IDENTIFIER_NAME,
+                TABLESPACE, IDENTIFIER_NAME)
+            b.rule(SPLIT_NESTED_TABLE_PART).define(
+                NESTED, TABLE, IDENTIFIER_NAME, INTO, LPARENTHESIS,
+                PARTITION, IDENTIFIER_NAME, b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
+                COMMA, PARTITION, IDENTIFIER_NAME, b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
+                b.optional(SPLIT_NESTED_TABLE_PART), RPARENTHESIS,
+                b.optional(SPLIT_NESTED_TABLE_PART))
+
+            fun indexPartitionUpdates() = b.sequence(
+                IDENTIFIER_NAME, LPARENTHESIS,
+                INDEX_PARTITION_DESCRIPTION,
+                b.zeroOrMore(COMMA, INDEX_PARTITION_DESCRIPTION),
+                RPARENTHESIS)
+
+            b.rule(UPDATE_INDEX_CLAUSES).define(
+                b.firstOf(
+                    b.sequence(b.firstOf(UPDATE, "INVALIDATE"), GLOBAL, INDEXES),
+                    b.sequence(UPDATE, INDEXES,
+                        b.optional(LPARENTHESIS, indexPartitionUpdates(),
+                            b.zeroOrMore(COMMA, indexPartitionUpdates()), RPARENTHESIS))))
+
+
+            b.rule(PARTITION_EXTENDED_NAME).define(PARTITION,
+                b.firstOf(IDENTIFIER_NAME,
+                    b.sequence(FOR, LPARENTHESIS, EXPRESSION,
+                        b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)))
+
+            b.rule(SPLIT_TABLE_PARTITION).define(
+                SPLIT, PARTITION_EXTENDED_NAME,
+                b.firstOf(
+                    b.sequence(AT, LPARENTHESIS, EXPRESSION,
+                        b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                        b.optional(INTO, LPARENTHESIS, partitionSpec(), COMMA,
+                            partitionSpec(), RPARENTHESIS)),
+                    b.sequence(VALUES, LPARENTHESIS, splitListValues(), RPARENTHESIS,
+                        b.optional(INTO, LPARENTHESIS, partitionSpec(), COMMA,
+                            partitionSpec(), RPARENTHESIS)),
+                    b.sequence(INTO, LPARENTHESIS,
+                        b.firstOf(
+                            b.sequence(rangeSplitDescription(),
+                                b.zeroOrMore(COMMA, rangeSplitDescription()),
+                                COMMA, partitionSpec()),
+                            b.sequence(listSplitDescription(),
+                                b.zeroOrMore(COMMA, listSplitDescription()),
+                                COMMA, partitionSpec()),
+                            b.sequence(directorySplitDescription(), COMMA,
+                                directorySplitDescription())),
+                        RPARENTHESIS)),
+                b.optional(SPLIT_NESTED_TABLE_PART),
+                b.optional(UPDATE_INDEX_CLAUSES),
+                b.optional(b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))),
+                b.optional(ONLINE))
+
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
             fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
 
@@ -1548,6 +1630,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
+                            SPLIT_TABLE_PARTITION,
                             b.sequence(
                                     b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
                                     b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),

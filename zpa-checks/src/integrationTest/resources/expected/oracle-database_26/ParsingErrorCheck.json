@@ -863,9 +863,6 @@
   "sqlrf/ALTER-TABLE-127.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-129.sql" : [
-    3
-  ],
   "sqlrf/ALTER-TABLE-20.sql" : [
     2
   ],
@@ -890,17 +887,8 @@
   "sqlrf/ALTER-TABLE-5.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-50.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-51.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-52.sql" : [
     15
-  ],
-  "sqlrf/ALTER-TABLE-53.sql" : [
-    3
   ],
   "sqlrf/ALTER-TABLE-54.sql" : [
     3
@@ -917,14 +905,8 @@
   "sqlrf/ALTER-TABLE-58.sql" : [
     3
   ],
-  "sqlrf/ALTER-TABLE-59.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-60.sql" : [
     3
-  ],
-  "sqlrf/ALTER-TABLE-61.sql" : [
-    2
   ],
   "sqlrf/ALTER-TABLE-63.sql" : [
     10
@@ -943,12 +925,6 @@
   ],
   "sqlrf/ALTER-TABLE-68.sql" : [
     3
-  ],
-  "sqlrf/ALTER-TABLE-69.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-70.sql" : [
-    4
   ],
   "sqlrf/ALTER-TABLE-71.sql" : [
     8

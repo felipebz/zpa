@@ -427,6 +427,61 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesSplitTablePartitionPayloads() {
+        assertThat(p).matches("alter table t split partition p1 at (100) into (partition p1a, partition p1b)")
+        assertThat(p).matches("alter table t split partition p1 at (to_date('2026-01-01', 'yyyy-mm-dd')) into (partition p1a, partition p1b)")
+        assertThat(p).matches("alter table t split partition p1 at (100, 200) into (partition p1a, partition p1b)")
+        assertThat(p).matches("alter table t split partition p1 values ('A', 'B') into (partition p_a, partition p1)")
+        assertThat(p).matches("alter table t split partition p1 values (('A', 1), ('B', 2)) into (partition p_a, partition p1)")
+        assertThat(p).matches("alter table t split partition p1 into (partition p_a values less than (100), partition p_b values less than (200), partition p_c)")
+        assertThat(p).matches("alter table t split partition p1 into (partition p_a values ('A'), partition p_b values ('B'), partition p_c)")
+        assertThat(p).matches("alter table t split partition p1 into (partition p1a tablespace tbs1, partition p1b tablespace tbs2)")
+        assertThat(p).matches("alter table t split partition for (1) at (100) into (partition p1a, partition p1b)")
+        assertThat(p).matches("alter table t split partition for (to_date('2026-01-01', 'yyyy-mm-dd')) at (100)")
+    }
+
+    @Test
+    fun matchesSplitPartitionStorageAndIndexSuffixes() {
+        assertThat(p).matches("alter table t split partition p1 at (150) into (partition p1a tablespace ts1 lob (photo, text) store as (tablespace ts2), partition p1b lob (photo, text) store as (tablespace ts2)) nested table docs into (partition np1, partition np2)")
+        assertThat(p).matches("alter table t split partition p1 at (100) into (partition p1a, partition p1b) update global indexes")
+        assertThat(p).matches("alter table t split partition p1 at (100) into (partition p1a, partition p1b) invalidate global indexes")
+        assertThat(p).matches("alter table t split partition p1 at (100) into (partition p1a, partition p1b) update indexes (ix (partition p1a tablespace ts1, partition p1b tablespace ts2))")
+        assertThat(p).matches("alter table t split partition p1 into (partition p1a tablespace ts1, partition p1b tablespace ts2) update indexes")
+        assertThat(p).matches("alter table t split partition p1 at (100) update indexes noparallel online")
+    }
+
+    @Test
+    fun rejectsMalformedSplitPartitionSuffixes() {
+        assertThat(p).notMatches("alter table t split partition p1 at (100) update indexes ()")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) update global indexes update indexes")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) noparallel update indexes")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) online update indexes")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) nested table docs into (partition np1)")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) into (partition p1a, partition p1b) enable constraint ck")
+        assertThat(p).notMatches("alter table t split partition p1 at (100) enable constraint ck")
+    }
+
+    @Test
+    fun rejectsMalformedSplitTablePartition() {
+        assertThat(p).notMatches("alter table t split")
+        assertThat(p).notMatches("alter table t split partition")
+        assertThat(p).notMatches("alter table t split partition p1")
+        assertThat(p).notMatches("alter table t split partition p1 at ()")
+        assertThat(p).notMatches("alter table t split partition p1 values ()")
+        assertThat(p).notMatches("alter table t split partition p1 at (1,)")
+        assertThat(p).notMatches("alter table t split partition p1 values ('A',)")
+        assertThat(p).notMatches("alter table t split partition p1 values (('A', 1),)")
+        assertThat(p).notMatches("alter table t split partition for () at (1)")
+        assertThat(p).notMatches("alter table t split partition p1 at (1) into (partition p1a)")
+        assertThat(p).notMatches("alter table t split partition p1 values ('A') into (partition p1a)")
+        assertThat(p).notMatches("alter table t split partition p1 at (1) into (partition p1a, partition p1b, partition p1c)")
+        assertThat(p).notMatches("alter table t split partition p1 values ('A') into (partition p1a, partition p1b, partition p1c)")
+        assertThat(p).notMatches("alter table t split partition p1 into (partition p_a values less than (100), partition p_b values less than (200),)")
+        assertThat(p).notMatches("alter table t split partition p1 into (partition p_a, partition p_b)")
+        assertThat(p).notMatches("alter table t split partition p1 into (partition p_a tablespace ts1, partition p_b tablespace ts2, partition p_c tablespace ts3)")
+    }
+
+    @Test
     fun doesNotMatchAlterTableAddWithoutADatatype() {
         assertThat(p).notMatches("alter table tab add (col);")
     }
