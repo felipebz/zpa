@@ -1,0 +1,9 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/adjsn/sql-json-function-json_table.html
+SELECT jt.*
+  FROM j_purchaseorder po,
+       json_table(po.data
+         COLUMNS ("Special Instructions",
+                  NESTED LineItems[*]
+                    COLUMNS (ItemNumber NUMBER,
+                             Description PATH Part.Description))
+       ) AS "JT";

@@ -1,0 +1,991 @@
+{
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
+    19
+  ],
+  "adjsn/using-online-redefinition-migrate-json-data-type-4.sql" : [
+    10
+  ],
+  "adjsn/using-pl-sql-object-types-json-0.sql" : [
+    11
+  ],
+  "adjsn/using-pl-sql-object-types-json-1.sql" : [
+    17
+  ],
+  "lnpls/ALTER-TYPE-statement-6.sql" : [
+    13
+  ],
+  "lnpls/CONTINUE-statement-0.sql" : [
+    6,
+    11,
+    16
+  ],
+  "lnpls/CONTINUE-statement-2.sql" : [
+    6,
+    9,
+    13
+  ],
+  "lnpls/COVERAGE-pragma-3.sql" : [
+    15,
+    17
+  ],
+  "lnpls/CREATE-FUNCTION-statement-6.sql" : [
+    3
+  ],
+  "lnpls/CREATE-FUNCTION-statement-8.sql" : [
+    3
+  ],
+  "lnpls/DEPRECATE-pragma-27.sql" : [
+    12
+  ],
+  "lnpls/DEPRECATE-pragma-28.sql" : [
+    3,
+    6
+  ],
+  "lnpls/EXIT-statement-0.sql" : [
+    6,
+    13
+  ],
+  "lnpls/EXIT-statement-2.sql" : [
+    6,
+    11
+  ],
+  "lnpls/GOTO-statement-0.sql" : [
+    16
+  ],
+  "lnpls/GOTO-statement-5.sql" : [
+    12
+  ],
+  "lnpls/SQLERRM-function-1.sql" : [
+    3
+  ],
+  "lnpls/SQLERRM-function-4.sql" : [
+    3
+  ],
+  "lnpls/Supresses-warning-pragma-6009-11.sql" : [
+    7
+  ],
+  "lnpls/Supresses-warning-pragma-6009-2.sql" : [
+    6
+  ],
+  "lnpls/Supresses-warning-pragma-6009-6.sql" : [
+    5,
+    10
+  ],
+  "lnpls/Supresses-warning-pragma-6009-9.sql" : [
+    8
+  ],
+  "lnpls/WHILE-LOOP-statement-0.sql" : [
+    6,
+    11
+  ],
+  "lnpls/assigning-values-variables-3.sql" : [
+    9
+  ],
+  "lnpls/assigning-values-variables-5.sql" : [
+    19,
+    24
+  ],
+  "lnpls/basic-LOOP-statement-0.sql" : [
+    19
+  ],
+  "lnpls/basic-LOOP-statement-2.sql" : [
+    9,
+    13,
+    17,
+    22
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-15.sql" : [
+    30
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-22.sql" : [
+    31,
+    34,
+    37,
+    41,
+    47
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-28.sql" : [
+    12,
+    18
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-3.sql" : [
+    42,
+    43,
+    44,
+    45
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-30.sql" : [
+    23,
+    28
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-32.sql" : [
+    12,
+    14,
+    17
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-34.sql" : [
+    23
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-37.sql" : [
+    8,
+    9,
+    12,
+    23,
+    24
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-42.sql" : [
+    14,
+    15,
+    18,
+    25,
+    26,
+    30
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-47.sql" : [
+    10,
+    12,
+    15,
+    18,
+    21,
+    30,
+    31,
+    35,
+    39,
+    43
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-53.sql" : [
+    25,
+    27,
+    30,
+    36,
+    41,
+    49,
+    55
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-55.sql" : [
+    28
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-57.sql" : [
+    16,
+    18
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-59.sql" : [
+    17,
+    20
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-6.sql" : [
+    44,
+    47,
+    63,
+    67
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-63.sql" : [
+    23,
+    27
+  ],
+  "lnpls/bulk-sql-and-bulk-binding-65.sql" : [
+    24,
+    28
+  ],
+  "lnpls/column-name-precedence-0.sql" : [
+    9
+  ],
+  "lnpls/column-name-precedence-2.sql" : [
+    9
+  ],
+  "lnpls/column-name-precedence-4.sql" : [
+    10
+  ],
+  "lnpls/column-name-precedence-6.sql" : [
+    21
+  ],
+  "lnpls/compile-time-warnings-7.sql" : [
+    6,
+    8
+  ],
+  "lnpls/conditional-compilation1-10.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "lnpls/conditional-compilation1-14.sql" : [
+    6,
+    7
+  ],
+  "lnpls/conditional-compilation1-18.sql" : [
+    32,
+    41
+  ],
+  "lnpls/conditional-selection-statements-10.sql" : [
+    21
+  ],
+  "lnpls/conditional-selection-statements-14.sql" : [
+    15
+  ],
+  "lnpls/conditional-selection-statements-16.sql" : [
+    8,
+    10,
+    12,
+    14,
+    16,
+    18
+  ],
+  "lnpls/conditional-selection-statements-19.sql" : [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "lnpls/conditional-selection-statements-24.sql" : [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "lnpls/conditional-selection-statements-26.sql" : [
+    8,
+    9,
+    10,
+    11,
+    12,
+    16
+  ],
+  "lnpls/conditional-selection-statements-5.sql" : [
+    22
+  ],
+  "lnpls/conditional-selection-statements-8.sql" : [
+    17
+  ],
+  "lnpls/continuing-execution-handling-exceptions-0.sql" : [
+    17,
+    20
+  ],
+  "lnpls/continuing-execution-handling-exceptions-2.sql" : [
+    14,
+    19,
+    22
+  ],
+  "lnpls/correlation-names-and-pseudorecords-15.sql" : [
+    9,
+    10,
+    14
+  ],
+  "lnpls/correlation-names-and-pseudorecords-22.sql" : [
+    4
+  ],
+  "lnpls/correlation-names-and-pseudorecords-8.sql" : [
+    10,
+    11,
+    12,
+    13
+  ],
+  "lnpls/cursor-expressions-1.sql" : [
+    24,
+    29
+  ],
+  "lnpls/cursor-variables-10.sql" : [
+    10,
+    20,
+    21,
+    26,
+    36,
+    37
+  ],
+  "lnpls/cursor-variables-12.sql" : [
+    17
+  ],
+  "lnpls/cursor-variables-3.sql" : [
+    24,
+    27,
+    34
+  ],
+  "lnpls/cursor-variables-5.sql" : [
+    20
+  ],
+  "lnpls/cursor-variables-8.sql" : [
+    18,
+    19,
+    20
+  ],
+  "lnpls/cursors-overview-0.sql" : [
+    13,
+    17
+  ],
+  "lnpls/cursors-overview-10.sql" : [
+    26,
+    27,
+    28,
+    29,
+    30
+  ],
+  "lnpls/cursors-overview-12.sql" : [
+    17,
+    18,
+    19
+  ],
+  "lnpls/cursors-overview-14.sql" : [
+    12,
+    17,
+    18,
+    24,
+    29,
+    30
+  ],
+  "lnpls/cursors-overview-16.sql" : [
+    15
+  ],
+  "lnpls/cursors-overview-18.sql" : [
+    18,
+    24,
+    25,
+    26,
+    31,
+    32,
+    33
+  ],
+  "lnpls/cursors-overview-2.sql" : [
+    9
+  ],
+  "lnpls/cursors-overview-20.sql" : [
+    21,
+    26,
+    27,
+    30,
+    33,
+    34
+  ],
+  "lnpls/cursors-overview-22.sql" : [
+    20,
+    26,
+    27,
+    28,
+    33,
+    34,
+    35
+  ],
+  "lnpls/cursors-overview-25.sql" : [
+    15
+  ],
+  "lnpls/cursors-overview-27.sql" : [
+    17
+  ],
+  "lnpls/cursors-overview-29.sql" : [
+    14,
+    16
+  ],
+  "lnpls/cursors-overview-8.sql" : [
+    23,
+    26,
+    32
+  ],
+  "lnpls/dbms_sql-package-4.sql" : [
+    49,
+    50,
+    51,
+    55,
+    60
+  ],
+  "lnpls/declarations-11.sql" : [
+    6,
+    7
+  ],
+  "lnpls/declarations-5.sql" : [
+    8
+  ],
+  "lnpls/declarations-9.sql" : [
+    5
+  ],
+  "lnpls/description-static-sql-0.sql" : [
+    24
+  ],
+  "lnpls/description-static-sql-2.sql" : [
+    19,
+    56
+  ],
+  "lnpls/dml-triggers-0.sql" : [
+    11,
+    13,
+    15,
+    17
+  ],
+  "lnpls/dml-triggers-24.sql" : [
+    30
+  ],
+  "lnpls/exception-propagation-11.sql" : [
+    6,
+    9,
+    10,
+    15,
+    16
+  ],
+  "lnpls/exception-propagation-13.sql" : [
+    12,
+    19,
+    20,
+    24,
+    25
+  ],
+  "lnpls/exception-propagation-15.sql" : [
+    14,
+    21,
+    22,
+    26,
+    27,
+    32,
+    33
+  ],
+  "lnpls/exception-propagation-3.sql" : [
+    8
+  ],
+  "lnpls/exception-propagation-5.sql" : [
+    12
+  ],
+  "lnpls/exception-propagation-7.sql" : [
+    4,
+    7,
+    8
+  ],
+  "lnpls/exception-propagation-9.sql" : [
+    4,
+    7,
+    8,
+    15
+  ],
+  "lnpls/expressions-0.sql" : [
+    6
+  ],
+  "lnpls/expressions-10.sql" : [
+    8,
+    9,
+    13,
+    14,
+    18,
+    23,
+    27
+  ],
+  "lnpls/expressions-12.sql" : [
+    8,
+    10,
+    12
+  ],
+  "lnpls/expressions-19.sql" : [
+    7,
+    9,
+    11
+  ],
+  "lnpls/expressions-2.sql" : [
+    3
+  ],
+  "lnpls/expressions-21.sql" : [
+    7,
+    9,
+    11
+  ],
+  "lnpls/expressions-26.sql" : [
+    10
+  ],
+  "lnpls/expressions-35.sql" : [
+    9,
+    11
+  ],
+  "lnpls/expressions-37.sql" : [
+    6,
+    8
+  ],
+  "lnpls/expressions-4.sql" : [
+    6,
+    7
+  ],
+  "lnpls/expressions-48.sql" : [
+    15
+  ],
+  "lnpls/expressions-50.sql" : [
+    16
+  ],
+  "lnpls/expressions-57.sql" : [
+    27
+  ],
+  "lnpls/expressions-59.sql" : [
+    16
+  ],
+  "lnpls/expressions-6.sql" : [
+    5
+  ],
+  "lnpls/expressions-62.sql" : [
+    10,
+    19
+  ],
+  "lnpls/expressions-8.sql" : [
+    6,
+    7
+  ],
+  "lnpls/external-subprograms-2.sql" : [
+    10,
+    12
+  ],
+  "lnpls/external-subprograms-5.sql" : [
+    13,
+    21
+  ],
+  "lnpls/invokers-rights-and-definers-rights-authid-property-3.sql" : [
+    7
+  ],
+  "lnpls/lexical-units-12.sql" : [
+    6,
+    7
+  ],
+  "lnpls/lexical-units-15.sql" : [
+    3
+  ],
+  "lnpls/lexical-units-17.sql" : [
+    3
+  ],
+  "lnpls/lexical-units-23.sql" : [
+    20
+  ],
+  "lnpls/lexical-units-4.sql" : [
+    5
+  ],
+  "lnpls/lexical-units-6.sql" : [
+    5
+  ],
+  "lnpls/lexical-units-8.sql" : [
+    7,
+    8,
+    9
+  ],
+  "lnpls/loop-statements-0.sql" : [
+    5
+  ],
+  "lnpls/loop-statements-10.sql" : [
+    6
+  ],
+  "lnpls/loop-statements-13.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-15.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-17.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-19.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-2.sql" : [
+    4,
+    7
+  ],
+  "lnpls/loop-statements-25.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-27.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-33.sql" : [
+    8
+  ],
+  "lnpls/loop-statements-37.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-39.sql" : [
+    4
+  ],
+  "lnpls/loop-statements-4.sql" : [
+    6,
+    9
+  ],
+  "lnpls/loop-statements-6.sql" : [
+    7
+  ],
+  "lnpls/loop-statements-8.sql" : [
+    8
+  ],
+  "lnpls/main-features-pl-sql-1.sql" : [
+    9
+  ],
+  "lnpls/minimizing-cpu-overhead-0.sql" : [
+    16,
+    21,
+    34,
+    40
+  ],
+  "lnpls/minimizing-cpu-overhead-2.sql" : [
+    35,
+    36,
+    37,
+    38
+  ],
+  "lnpls/native-dynamic-sql-1.sql" : [
+    5
+  ],
+  "lnpls/native-dynamic-sql-13.sql" : [
+    15
+  ],
+  "lnpls/native-dynamic-sql-19.sql" : [
+    9
+  ],
+  "lnpls/native-dynamic-sql-3.sql" : [
+    26,
+    27
+  ],
+  "lnpls/native-dynamic-sql-5.sql" : [
+    14
+  ],
+  "lnpls/native-dynamic-sql-7.sql" : [
+    13
+  ],
+  "lnpls/native-dynamic-sql-9.sql" : [
+    13,
+    16
+  ],
+  "lnpls/overloaded-subprograms-0.sql" : [
+    11,
+    19
+  ],
+  "lnpls/overloaded-subprograms-13.sql" : [
+    11,
+    15
+  ],
+  "lnpls/overview-exception-handling-1.sql" : [
+    29,
+    31
+  ],
+  "lnpls/overview-exception-handling-6.sql" : [
+    19
+  ],
+  "lnpls/package-body-0.sql" : [
+    10
+  ],
+  "lnpls/package-body-4.sql" : [
+    6
+  ],
+  "lnpls/package-example-0.sql" : [
+    90,
+    144,
+    181,
+    184
+  ],
+  "lnpls/package-specification-2.sql" : [
+    14
+  ],
+  "lnpls/pls_integer-and-binary_integer-data-types-6.sql" : [
+    7,
+    11
+  ],
+  "lnpls/predefined-exceptions-0.sql" : [
+    8,
+    11
+  ],
+  "lnpls/predefined-exceptions-4.sql" : [
+    9,
+    10,
+    14,
+    17,
+    18
+  ],
+  "lnpls/processing-query-result-sets-0.sql" : [
+    11
+  ],
+  "lnpls/processing-query-result-sets-10.sql" : [
+    14
+  ],
+  "lnpls/processing-query-result-sets-2.sql" : [
+    10
+  ],
+  "lnpls/processing-query-result-sets-4.sql" : [
+    11
+  ],
+  "lnpls/processing-query-result-sets-6.sql" : [
+    10
+  ],
+  "lnpls/processing-query-result-sets-8.sql" : [
+    16
+  ],
+  "lnpls/raising-exceptions-explicitly-0.sql" : [
+    14
+  ],
+  "lnpls/raising-exceptions-explicitly-2.sql" : [
+    14
+  ],
+  "lnpls/raising-exceptions-explicitly-5.sql" : [
+    16,
+    17,
+    25
+  ],
+  "lnpls/raising-exceptions-explicitly-9.sql" : [
+    22
+  ],
+  "lnpls/recursive-subprograms-1.sql" : [
+    17
+  ],
+  "lnpls/recursive-subprograms-3.sql" : [
+    21,
+    23,
+    27
+  ],
+  "lnpls/redeclared-predefined-exceptions-1.sql" : [
+    8
+  ],
+  "lnpls/redeclared-predefined-exceptions-3.sql" : [
+    10
+  ],
+  "lnpls/redeclared-predefined-exceptions-5.sql" : [
+    10
+  ],
+  "lnpls/release-changes-0.sql" : [
+    16
+  ],
+  "lnpls/retrieving-error-code-and-error-message-0.sql" : [
+    19
+  ],
+  "lnpls/retrying-transactions-handling-exceptions-0.sql" : [
+    17,
+    34,
+    39
+  ],
+  "lnpls/scope-and-visibility-identifiers-1.sql" : [
+    10,
+    12
+  ],
+  "lnpls/scope-and-visibility-identifiers-3.sql" : [
+    19,
+    23
+  ],
+  "lnpls/scope-and-visibility-identifiers-7.sql" : [
+    8,
+    16
+  ],
+  "lnpls/scope-and-visibility-identifiers-9.sql" : [
+    9,
+    10
+  ],
+  "lnpls/sequential-control-statements-2.sql" : [
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "lnpls/serially_reusable-packages-1.sql" : [
+    17,
+    18
+  ],
+  "lnpls/serially_reusable-packages-3.sql" : [
+    17,
+    19,
+    24,
+    27
+  ],
+  "lnpls/sql-data-types-1.sql" : [
+    6,
+    7
+  ],
+  "lnpls/sql-data-types-12.sql" : [
+    8
+  ],
+  "lnpls/sql-data-types-14.sql" : [
+    9
+  ],
+  "lnpls/sql-data-types-22.sql" : [
+    8
+  ],
+  "lnpls/sql-data-types-26.sql" : [
+    8
+  ],
+  "lnpls/sql-data-types-3.sql" : [
+    8
+  ],
+  "lnpls/sql-data-types-32.sql" : [
+    12
+  ],
+  "lnpls/sql-data-types-34.sql" : [
+    13
+  ],
+  "lnpls/sql-data-types-38.sql" : [
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35
+  ],
+  "lnpls/sql-data-types-42.sql" : [
+    6,
+    7,
+    8
+  ],
+  "lnpls/sql-data-types-52.sql" : [
+    9,
+    10
+  ],
+  "lnpls/sql-data-types-6.sql" : [
+    8
+  ],
+  "lnpls/sql-injection-1.sql" : [
+    17,
+    19
+  ],
+  "lnpls/sql-injection-18.sql" : [
+    22,
+    24
+  ],
+  "lnpls/sql-injection-23.sql" : [
+    14,
+    18
+  ],
+  "lnpls/sql-injection-28.sql" : [
+    23,
+    30
+  ],
+  "lnpls/sql-injection-30.sql" : [
+    21,
+    23
+  ],
+  "lnpls/sql-injection-6.sql" : [
+    17
+  ],
+  "lnpls/subprogram-parameters-13.sql" : [
+    11,
+    13,
+    14,
+    16,
+    17,
+    19,
+    20,
+    22,
+    39,
+    41,
+    42,
+    44,
+    45,
+    47,
+    48,
+    50,
+    58,
+    60,
+    61,
+    63,
+    64,
+    66,
+    67,
+    69,
+    71,
+    73,
+    74,
+    76,
+    84,
+    86,
+    87,
+    89
+  ],
+  "lnpls/subprogram-parameters-15.sql" : [
+    6,
+    8,
+    9,
+    11,
+    17,
+    19,
+    20,
+    22
+  ],
+  "lnpls/subprogram-parameters-17.sql" : [
+    13,
+    14,
+    15
+  ],
+  "lnpls/subprogram-parameters-19.sql" : [
+    23
+  ],
+  "lnpls/subprogram-parameters-21.sql" : [
+    12,
+    14,
+    19
+  ],
+  "lnpls/subprogram-parameters-27.sql" : [
+    7,
+    16,
+    21,
+    26,
+    29
+  ],
+  "lnpls/subprogram-parameters-29.sql" : [
+    7
+  ],
+  "lnpls/subprogram-parameters-32.sql" : [
+    9,
+    11
+  ],
+  "lnpls/subprogram-parameters-4.sql" : [
+    8
+  ],
+  "lnpls/subprogram-parameters-6.sql" : [
+    5,
+    10
+  ],
+  "lnpls/subprogram-parameters-8.sql" : [
+    6,
+    11
+  ],
+  "lnpls/subprogram-parts-0.sql" : [
+    22,
+    30,
+    33
+  ],
+  "lnpls/subprogram-parts-11.sql" : [
+    4,
+    6,
+    8
+  ],
+  "lnpls/subprogram-parts-2.sql" : [
+    15
+  ],
+  "lnpls/subprogram-parts-4.sql" : [
+    13,
+    18
+  ],
+  "lnpls/subprogram-parts-7.sql" : [
+    18
+  ],
+  "lnpls/subprogram-parts-9.sql" : [
+    5,
+    7,
+    11
+  ],
+  "lnpls/transaction-processing-and-control-5.sql" : [
+    43
+  ],
+  "lnpls/transaction-processing-and-control-6.sql" : [
+    34
+  ],
+  "lnpls/transaction-processing-and-control-7.sql" : [
+    36
+  ],
+  "lnpls/transaction-processing-and-control-9.sql" : [
+    16
+  ],
+  "lnpls/trigger-restrictions-0.sql" : [
+    21
+  ],
+  "lnpls/views-information-triggers-0.sql" : [
+    8
+  ],
+  "lnpls/views-information-triggers-5.sql" : [
+    6
+  ],
+  "lnpls/wrapping-pl-sql-source-text-dbms_ddl-subprograms-3.sql" : [
+    6,
+    9
+  ],
+  "lnpls/wrapping-pl-sql-source-text-pl-sql-wrapper-utility-4.sql" : [
+    10
+  ]
+}

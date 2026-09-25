@@ -171,8 +171,8 @@ class PlSqlRulingTest {
     }
 
     @Test
-    fun oracleDatabase23() {
-        val project = "oracle-database_23"
+    fun oracleDatabase26() {
+        val project = "oracle-database_26"
         if (!File("src/integrationTest/resources/sources/$project").exists()) {
             OracleDocsExtractor().extract()
         }

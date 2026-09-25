@@ -1,0 +1,5 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/adjsn/columns-clause-sql-json-function-json_table.html
+SELECT jt.ponumb
+  FROM j_purchaseorder,
+       json_table(data, '$'
+         COLUMNS (ponumb NUMBER PATH '$.PONumber.numberOnly()')) jt

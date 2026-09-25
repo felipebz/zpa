@@ -1,0 +1,9 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+SELECT * FROM pivot_table
+  UNPIVOT (yearly_total FOR order_mode IN (store AS 'direct',
+           internet AS 'online'))
+  ORDER BY year, order_mode;
+SELECT * FROM pivot_table
+  UNPIVOT INCLUDE NULLS 
+    (yearly_total FOR order_mode IN (store AS 'direct', internet AS 'online'))
+  ORDER BY year, order_mode;

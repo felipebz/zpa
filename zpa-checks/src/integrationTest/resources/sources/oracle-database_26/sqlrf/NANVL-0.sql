@@ -1,0 +1,5 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NANVL.html
+INSERT INTO float_point_demo
+  VALUES (0,'NaN','NaN');
+SELECT *
+  FROM float_point_demo;

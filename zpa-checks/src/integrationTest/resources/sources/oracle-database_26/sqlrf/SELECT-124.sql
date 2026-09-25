@@ -1,0 +1,8 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+  SELECT ENAME, SAL, DNAME, LOC,
+           AVG(SAL) OVER W AS AVG_SAL
+    FROM EMP, DEPT
+    WHERE EMP.DEPTNO = DEPT.DEPTNO
+    WINDOW W AS (PARTITION BY LOC)
+    QUALIFY AVG_SAL > 2000
+    ORDER BY ENAME;

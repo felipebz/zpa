@@ -1,0 +1,473 @@
+{
+  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
+    5
+  ],
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
+    27
+  ],
+  "adjsn/creating-multivalue-function-based-indexes-json_exists-0.sql" : [
+    3,
+    6
+  ],
+  "adjsn/json-schema-14.sql" : [
+    6
+  ],
+  "adjsn/multiple-data-guides-document-set-0.sql" : [
+    2
+  ],
+  "adjsn/multiple-data-guides-document-set-1.sql" : [
+    2
+  ],
+  "adjsn/sql-json-function-json_object-19.sql" : [
+    10
+  ],
+  "adjsn/sql-json-path-expression-item-methods-4.sql" : [
+    3
+  ],
+  "adjsn/tables-json-columns-2.sql" : [
+    2,
+    33
+  ],
+  "adjsn/using-geojson-geographic-data-0.sql" : [
+    5
+  ],
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
+    14,
+    29
+  ],
+  "lnpls/CREATE-TYPE-statement-10.sql" : [
+    5
+  ],
+  "lnpls/CREATE-TYPE-statement-12.sql" : [
+    3
+  ],
+  "lnpls/CREATE-TYPE-statement-17.sql" : [
+    3
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-5.sql" : [
+    3,
+    4,
+    5
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-8.sql" : [
+    7,
+    8,
+    9
+  ],
+  "lnpls/continuing-execution-handling-exceptions-0.sql" : [
+    16
+  ],
+  "lnpls/continuing-execution-handling-exceptions-2.sql" : [
+    18
+  ],
+  "lnpls/correlation-names-and-pseudorecords-15.sql" : [
+    4
+  ],
+  "lnpls/correlation-names-and-pseudorecords-17.sql" : [
+    8
+  ],
+  "lnpls/description-static-sql-2.sql" : [
+    30
+  ],
+  "lnpls/dml-triggers-17.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-23.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-4.sql" : [
+    2
+  ],
+  "lnpls/dml-triggers-51.sql" : [
+    10
+  ],
+  "lnpls/native-dynamic-sql-16.sql" : [
+    2
+  ],
+  "lnpls/native-dynamic-sql-18.sql" : [
+    2
+  ],
+  "lnpls/raising-exceptions-explicitly-2.sql" : [
+    10,
+    15
+  ],
+  "lnpls/redeclared-predefined-exceptions-1.sql" : [
+    5,
+    9
+  ],
+  "lnpls/redeclared-predefined-exceptions-3.sql" : [
+    7,
+    11
+  ],
+  "lnpls/redeclared-predefined-exceptions-5.sql" : [
+    7,
+    11
+  ],
+  "lnpls/sql-data-types-32.sql" : [
+    4,
+    5,
+    6
+  ],
+  "lnpls/sql-data-types-36.sql" : [
+    11,
+    13
+  ],
+  "lnpls/trigger-restrictions-0.sql" : [
+    14
+  ],
+  "lnpls/trigger-restrictions-6.sql" : [
+    4,
+    5,
+    6,
+    9,
+    10,
+    11
+  ],
+  "lnpls/triggers-publishing-events-12.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-16.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-20.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-24.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-28.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-38.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-42.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-48.sql" : [
+    14
+  ],
+  "lnpls/triggers-publishing-events-50.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-52.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-6.sql" : [
+    2
+  ],
+  "lnpls/triggers-publishing-events-8.sql" : [
+    2
+  ],
+  "sqlrf/ALTER-SESSION-14.sql" : [
+    4
+  ],
+  "sqlrf/ALTER-TABLE-118.sql" : [
+    2,
+    4
+  ],
+  "sqlrf/ALTER-TABLE-31.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "sqlrf/ALTER-TABLE-95.sql" : [
+    4,
+    5,
+    6
+  ],
+  "sqlrf/COLLATION-0.sql" : [
+    5
+  ],
+  "sqlrf/COMMIT-0.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-TABLE-51.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-VIEW-14.sql" : [
+    13
+  ],
+  "sqlrf/CREATE-VIEW-8.sql" : [
+    2
+  ],
+  "sqlrf/CURRENT_TIMESTAMP-2.sql" : [
+    2
+  ],
+  "sqlrf/CURRENT_TIMESTAMP-3.sql" : [
+    2
+  ],
+  "sqlrf/Comments-48.sql" : [
+    3
+  ],
+  "sqlrf/DEREF-0.sql" : [
+    2,
+    4
+  ],
+  "sqlrf/Data-Types-19.sql" : [
+    2
+  ],
+  "sqlrf/Data-Types-20.sql" : [
+    2
+  ],
+  "sqlrf/Data-Types-22.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "sqlrf/Data-Types-3.sql" : [
+    3,
+    4,
+    5,
+    6
+  ],
+  "sqlrf/HEXTORAW-0.sql" : [
+    3
+  ],
+  "sqlrf/INSERT-11.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-12.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-13.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-15.sql" : [
+    2,
+    3,
+    4
+  ],
+  "sqlrf/INSERT-16.sql" : [
+    2,
+    4,
+    6
+  ],
+  "sqlrf/INSERT-19.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-32.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-33.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-5.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-6.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-8.sql" : [
+    2
+  ],
+  "sqlrf/INSERT-9.sql" : [
+    2
+  ],
+  "sqlrf/JSON_ARRAYAGG-0.sql" : [
+    3,
+    4,
+    5,
+    6
+  ],
+  "sqlrf/JSON_TABLE-5.sql" : [
+    2
+  ],
+  "sqlrf/LOCALTIMESTAMP-2.sql" : [
+    2
+  ],
+  "sqlrf/LOCALTIMESTAMP-3.sql" : [
+    2
+  ],
+  "sqlrf/Literals-15.sql" : [
+    2,
+    3
+  ],
+  "sqlrf/Literals-18.sql" : [
+    2
+  ],
+  "sqlrf/Literals-19.sql" : [
+    2
+  ],
+  "sqlrf/Literals-20.sql" : [
+    2
+  ],
+  "sqlrf/MERGE-1.sql" : [
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "sqlrf/NANVL-0.sql" : [
+    2
+  ],
+  "sqlrf/NLSSORT-1.sql" : [
+    3,
+    4,
+    5
+  ],
+  "sqlrf/Pattern-matching-Conditions-10.sql" : [
+    3
+  ],
+  "sqlrf/REF-1.sql" : [
+    3
+  ],
+  "sqlrf/SELECT-115.sql" : [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22
+  ],
+  "sqlrf/SELECT-73.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-90.sql" : [
+    5,
+    6,
+    7,
+    8
+  ],
+  "sqlrf/SELECT-98.sql" : [
+    15
+  ],
+  "sqlrf/SELECT-99.sql" : [
+    2
+  ],
+  "sqlrf/SQL-JSON-Conditions-15.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "sqlrf/SQL-JSON-Conditions-20.sql" : [
+    2,
+    3,
+    4
+  ],
+  "sqlrf/SQL-JSON-Conditions-29.sql" : [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "sqlrf/SQL-JSON-Conditions-37.sql" : [
+    2,
+    4,
+    6
+  ],
+  "sqlrf/Sequence-Pseudocolumns-4.sql" : [
+    2
+  ],
+  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-0.sql" : [
+    2
+  ],
+  "sqlrf/TO_BINARY_DOUBLE-0.sql" : [
+    4
+  ],
+  "sqlrf/TO_CHAR-character-2.sql" : [
+    12,
+    14,
+    16,
+    18
+  ],
+  "sqlrf/TO_CHAR-datetime-10.sql" : [
+    12,
+    14,
+    16,
+    18
+  ],
+  "sqlrf/TO_CHAR-datetime-2.sql" : [
+    3,
+    7
+  ],
+  "sqlrf/TO_CHAR-number-5.sql" : [
+    12,
+    14,
+    16,
+    18
+  ],
+  "sqlrf/TRANSLATE-USING-0.sql" : [
+    4
+  ],
+  "sqlrf/Type-Constructor-Expressions-0.sql" : [
+    8
+  ],
+  "sqlrf/Type-Constructor-Expressions-1.sql" : [
+    3
+  ],
+  "sqlrf/Using-XML-in-SQL-Statements-1.sql" : [
+    2
+  ],
+  "sqlrf/Using-XML-in-SQL-Statements-5.sql" : [
+    2
+  ],
+  "sqlrf/XMLTRANSFORM-0.sql" : [
+    3
+  ],
+  "sqlrf/create-domain-18.sql" : [
+    2
+  ],
+  "sqlrf/create-domain-19.sql" : [
+    2
+  ],
+  "sqlrf/create-property-graph-25.sql" : [
+    10,
+    11,
+    12,
+    13,
+    14,
+    20,
+    21,
+    31,
+    32,
+    33,
+    34
+  ],
+  "sqlrf/domain_name-2.sql" : [
+    2
+  ],
+  "sqlrf/domain_name-6.sql" : [
+    2
+  ],
+  "sqlrf/sys_row_etag-0.sql" : [
+    3
+  ],
+  "sqlrf/to_vector-1.sql" : [
+    2
+  ],
+  "sqlrf/to_vector-2.sql" : [
+    2
+  ],
+  "sqlrf/vector-0.sql" : [
+    2
+  ]
+}

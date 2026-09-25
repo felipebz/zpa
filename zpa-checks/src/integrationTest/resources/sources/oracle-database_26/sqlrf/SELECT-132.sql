@@ -1,0 +1,8 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+  SELECT DNAME, MGR, AVG(SAL), AVG(AVG(SAL)) OVER W AS AVG_SAL_WF 
+    FROM EMP, DEPT WHERE EMP.DEPTNO = DEPT.DEPTNO 
+    GROUP BY DNAME, MGR 
+    HAVING DNAME NOT LIKE 'SALES' 
+    WINDOW W AS (PARTITION BY DNAME)
+    QUALIFY AVG_SAL_WF > 2000
+    ORDER BY DNAME;

@@ -1,0 +1,626 @@
+{
+  "adjsn/creating-view-json-data-using-json_table-0.sql" : [
+    4
+  ],
+  "adjsn/creating-view-json-data-using-json_table-1.sql" : [
+    6
+  ],
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-0.sql" : [
+    2
+  ],
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-1.sql" : [
+    2
+  ],
+  "adjsn/data-type-considerations-json_value-indexing-and-querying-2.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-2.sql" : [
+    11
+  ],
+  "adjsn/json-data-type-3.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-4.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-6.sql" : [
+    3
+  ],
+  "adjsn/json-data-type-7.sql" : [
+    3
+  ],
+  "adjsn/json-data-type-8.sql" : [
+    2
+  ],
+  "adjsn/json-data-type-9.sql" : [
+    2
+  ],
+  "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
+    6
+  ],
+  "adjsn/json-schema-18.sql" : [
+    2
+  ],
+  "adjsn/oracle-sql-condition-json_textcontains-1.sql" : [
+    3
+  ],
+  "adjsn/overview-json-oracle-ai-database-0.sql" : [
+    2
+  ],
+  "adjsn/partitioning-json-data-1.sql" : [
+    2
+  ],
+  "adjsn/performing-migration-check-1.sql" : [
+    4
+  ],
+  "adjsn/simple-dot-notation-access-json-data-0.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-1.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-2.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-3.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-5.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-6.sql" : [
+    2
+  ],
+  "adjsn/simple-dot-notation-access-json-data-7.sql" : [
+    3
+  ],
+  "adjsn/simple-dot-notation-access-json-data-8.sql" : [
+    3
+  ],
+  "adjsn/sql-json-condition-json_exists-1.sql" : [
+    2
+  ],
+  "adjsn/sql-json-function-json_arrayagg-1.sql" : [
+    7,
+    9
+  ],
+  "adjsn/sql-json-function-json_table-2.sql" : [
+    3
+  ],
+  "adjsn/sql-json-function-json_table-3.sql" : [
+    3
+  ],
+  "adjsn/sql-json-path-expression-item-methods-4.sql" : [
+    4
+  ],
+  "adjsn/sql-json-path-expression-syntax-4.sql" : [
+    2
+  ],
+  "adjsn/types-filter-condition-comparisons-0.sql" : [
+    3
+  ],
+  "adjsn/using-filters-json_exists-0.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-1.sql" : [
+    2,
+    5,
+    8
+  ],
+  "adjsn/using-filters-json_exists-2.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-3.sql" : [
+    2
+  ],
+  "adjsn/using-filters-json_exists-4.sql" : [
+    2
+  ],
+  "adjsn/using-json_table-json-arrays-4.sql" : [
+    3
+  ],
+  "adjsn/using-json_value-function-based-index-json_table-queries-0.sql" : [
+    3
+  ],
+  "adjsn/using-multivalue-function-based-index-1.sql" : [
+    2,
+    4
+  ],
+  "adjsn/using-pl-sql-object-types-json-2.sql" : [
+    27
+  ],
+  "lnpls/CREATE-TYPE-statement-13.sql" : [
+    8,
+    13
+  ],
+  "lnpls/SQL_MACRO-clause-7.sql" : [
+    4
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-0.sql" : [
+    10
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-10.sql" : [
+    6,
+    12,
+    18
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-7.sql" : [
+    6
+  ],
+  "lnpls/compiling-pl-sql-units-native-execution-1.sql" : [
+    4,
+    4
+  ],
+  "lnpls/cursor-expressions-1.sql" : [
+    12,
+    16
+  ],
+  "lnpls/cursors-overview-10.sql" : [
+    5,
+    5
+  ],
+  "lnpls/cursors-overview-20.sql" : [
+    7,
+    7,
+    7
+  ],
+  "lnpls/dbms_sql-package-4.sql" : [
+    15,
+    15
+  ],
+  "lnpls/dml-triggers-1.sql" : [
+    5,
+    5
+  ],
+  "lnpls/dml-triggers-12.sql" : [
+    18,
+    23
+  ],
+  "lnpls/dml-triggers-17.sql" : [
+    4
+  ],
+  "lnpls/dml-triggers-32.sql" : [
+    21
+  ],
+  "lnpls/dml-triggers-50.sql" : [
+    6,
+    10
+  ],
+  "lnpls/pl-sql-function-result-cache-4.sql" : [
+    31,
+    31
+  ],
+  "lnpls/processing-query-result-sets-8.sql" : [
+    5
+  ],
+  "sqlrf/ALTER-TABLE-23.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/ANY_VALUE-0.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/APPROX_COUNT_DISTINCT_DETAIL-0.sql" : [
+    7,
+    7
+  ],
+  "sqlrf/APPROX_PERCENTILE_DETAIL-0.sql" : [
+    8,
+    8
+  ],
+  "sqlrf/APPROX_PERCENTILE_DETAIL-7.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/CASE-Expressions-1.sql" : [
+    3
+  ],
+  "sqlrf/CAST-11.sql" : [
+    4,
+    8
+  ],
+  "sqlrf/CAST-8.sql" : [
+    8,
+    11
+  ],
+  "sqlrf/CAST-9.sql" : [
+    3
+  ],
+  "sqlrf/CLUSTER_DETAILS-0.sql" : [
+    6
+  ],
+  "sqlrf/CLUSTER_SET-0.sql" : [
+    6
+  ],
+  "sqlrf/COVAR_POP-2.sql" : [
+    9
+  ],
+  "sqlrf/CREATE-INDEX-11.sql" : [
+    3
+  ],
+  "sqlrf/CREATE-INDEX-18.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-10.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-2.sql" : [
+    13,
+    13,
+    13
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-3.sql" : [
+    10,
+    10,
+    10
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-4.sql" : [
+    10,
+    10,
+    10
+  ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-9.sql" : [
+    5,
+    7
+  ],
+  "sqlrf/CREATE-TABLE-48.sql" : [
+    2,
+    2
+  ],
+  "sqlrf/CREATE-VIEW-12.sql" : [
+    4
+  ],
+  "sqlrf/CREATE-VIEW-13.sql" : [
+    3
+  ],
+  "sqlrf/CREATE-VIEW-15.sql" : [
+    2
+  ],
+  "sqlrf/CREATE-VIEW-7.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/CURSOR-Expressions-0.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/Comments-0.sql" : [
+    6
+  ],
+  "sqlrf/Comments-1.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/Comments-10.sql" : [
+    3
+  ],
+  "sqlrf/Comments-13.sql" : [
+    3
+  ],
+  "sqlrf/Comments-16.sql" : [
+    3
+  ],
+  "sqlrf/Comments-17.sql" : [
+    3
+  ],
+  "sqlrf/Comments-18.sql" : [
+    3
+  ],
+  "sqlrf/Comments-19.sql" : [
+    3
+  ],
+  "sqlrf/Comments-20.sql" : [
+    3
+  ],
+  "sqlrf/Comments-21.sql" : [
+    3
+  ],
+  "sqlrf/Comments-22.sql" : [
+    3,
+    3,
+    3
+  ],
+  "sqlrf/Comments-25.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-28.sql" : [
+    3
+  ],
+  "sqlrf/Comments-31.sql" : [
+    3
+  ],
+  "sqlrf/Comments-32.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-35.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-36.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-37.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-41.sql" : [
+    3,
+    3,
+    3
+  ],
+  "sqlrf/Comments-53.sql" : [
+    3
+  ],
+  "sqlrf/Comments-56.sql" : [
+    3,
+    3,
+    3,
+    3
+  ],
+  "sqlrf/Comments-59.sql" : [
+    3
+  ],
+  "sqlrf/Comments-60.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-62.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Comments-64.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/DEREF-0.sql" : [
+    5
+  ],
+  "sqlrf/EXISTS-Condition-1.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/EXTRACTVALUE-0.sql" : [
+    3
+  ],
+  "sqlrf/GROUPING-0.sql" : [
+    8,
+    8
+  ],
+  "sqlrf/GROUP_ID-0.sql" : [
+    4,
+    4,
+    4
+  ],
+  "sqlrf/INSERT-29.sql" : [
+    16,
+    16
+  ],
+  "sqlrf/INSERT-30.sql" : [
+    16,
+    16
+  ],
+  "sqlrf/IS-OF-type-Condition-0.sql" : [
+    2,
+    4
+  ],
+  "sqlrf/JSON-Object-Access-Expressions-0.sql" : [
+    3
+  ],
+  "sqlrf/JSON-Object-Access-Expressions-1.sql" : [
+    3
+  ],
+  "sqlrf/JSON-Object-Access-Expressions-2.sql" : [
+    3
+  ],
+  "sqlrf/JSON_OBJECT-3.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/JSON_OBJECT-9.sql" : [
+    6
+  ],
+  "sqlrf/JSON_TABLE-0.sql" : [
+    4
+  ],
+  "sqlrf/JSON_TABLE-15.sql" : [
+    3
+  ],
+  "sqlrf/JSON_TABLE-16.sql" : [
+    3
+  ],
+  "sqlrf/MERGE-0.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/Multiset-Operators-3.sql" : [
+    5,
+    11
+  ],
+  "sqlrf/NULLIF-1.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/Object-Access-Expressions-0.sql" : [
+    5
+  ],
+  "sqlrf/REF-1.sql" : [
+    5
+  ],
+  "sqlrf/SELECT-100.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-101.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-102.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-103.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/SELECT-116.sql" : [
+    15
+  ],
+  "sqlrf/SELECT-24.sql" : [
+    5,
+    5
+  ],
+  "sqlrf/SELECT-25.sql" : [
+    10,
+    10
+  ],
+  "sqlrf/SELECT-26.sql" : [
+    12,
+    12
+  ],
+  "sqlrf/SELECT-27.sql" : [
+    10,
+    10
+  ],
+  "sqlrf/SELECT-28.sql" : [
+    11,
+    11
+  ],
+  "sqlrf/SELECT-29.sql" : [
+    11,
+    11
+  ],
+  "sqlrf/SELECT-30.sql" : [
+    10,
+    10
+  ],
+  "sqlrf/SELECT-42.sql" : [
+    2
+  ],
+  "sqlrf/SELECT-55.sql" : [
+    6,
+    6
+  ],
+  "sqlrf/SELECT-56.sql" : [
+    4
+  ],
+  "sqlrf/SELECT-71.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-72.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-85.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-86.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-88.sql" : [
+    4,
+    4
+  ],
+  "sqlrf/SELECT-89.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-94.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-95.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/SELECT-99.sql" : [
+    2
+  ],
+  "sqlrf/SYS_TYPEID-0.sql" : [
+    2
+  ],
+  "sqlrf/SYS_TYPEID-1.sql" : [
+    3
+  ],
+  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-5.sql" : [
+    3
+  ],
+  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-6.sql" : [
+    3
+  ],
+  "sqlrf/TREAT-0.sql" : [
+    3
+  ],
+  "sqlrf/UPDATE-4.sql" : [
+    9
+  ],
+  "sqlrf/UPDATE-6.sql" : [
+    5
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-0.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-1.sql" : [
+    3,
+    5
+  ],
+  "sqlrf/Unnesting-of-Nested-Subqueries-2.sql" : [
+    3,
+    5,
+    5
+  ],
+  "sqlrf/Using-XML-in-SQL-Statements-2.sql" : [
+    2
+  ],
+  "sqlrf/Using-XML-in-SQL-Statements-7.sql" : [
+    2,
+    5
+  ],
+  "sqlrf/VALUE-0.sql" : [
+    2
+  ],
+  "sqlrf/VAR_POP-2.sql" : [
+    7,
+    7
+  ],
+  "sqlrf/XMLAGG-0.sql" : [
+    7
+  ],
+  "sqlrf/XMLAGG-1.sql" : [
+    5
+  ],
+  "sqlrf/XMLCOLATTVAL-0.sql" : [
+    4
+  ],
+  "sqlrf/XMLCONCAT-0.sql" : [
+    4
+  ],
+  "sqlrf/XMLELEMENT-0.sql" : [
+    5
+  ],
+  "sqlrf/XMLELEMENT-1.sql" : [
+    6
+  ],
+  "sqlrf/XMLELEMENT-2.sql" : [
+    4,
+    8
+  ],
+  "sqlrf/XMLFOREST-0.sql" : [
+    5
+  ],
+  "sqlrf/XMLSEQUENCE-0.sql" : [
+    5
+  ],
+  "sqlrf/XMLTRANSFORM-1.sql" : [
+    3,
+    3
+  ],
+  "sqlrf/create-domain-22.sql" : [
+    2
+  ]
+}

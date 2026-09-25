@@ -1,0 +1,8 @@
+-- https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+SELECT ENAME, SAL,
+       AVG(SAL) OVER WJ AS A1,
+       AVG(SAL) OVER WD AS A2
+FROM SCOTT.EMP
+WINDOW WJ AS (PARTITION BY JOB), WD AS (PARTITION BY DEPTNO)
+QUALIFY A1 > 2073.21429 AND A2 > 2073.21429
+ORDER BY ENAME;

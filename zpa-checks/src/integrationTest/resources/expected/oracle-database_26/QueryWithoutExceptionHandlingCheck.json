@@ -1,0 +1,93 @@
+{
+  "adjsn/adding-and-dropping-virtual-columns-json-fields-based-data-guide-information-0.sql" : [
+    5
+  ],
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
+    11,
+    26,
+    50,
+    63
+  ],
+  "lnpls/CREATE-TYPE-statement-13.sql" : [
+    7
+  ],
+  "lnpls/GOTO-statement-5.sql" : [
+    6
+  ],
+  "lnpls/assigning-values-variables-3.sql" : [
+    5
+  ],
+  "lnpls/assigning-values-variables-5.sql" : [
+    15
+  ],
+  "lnpls/autonomous-transactions-1.sql" : [
+    17
+  ],
+  "lnpls/autonomous-transactions-9.sql" : [
+    25
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-10.sql" : [
+    6,
+    12,
+    18
+  ],
+  "lnpls/avoiding-inner-capture-select-and-dml-statements-7.sql" : [
+    6
+  ],
+  "lnpls/column-name-precedence-6.sql" : [
+    8
+  ],
+  "lnpls/conditional-compilation1-18.sql" : [
+    36
+  ],
+  "lnpls/external-subprograms-5.sql" : [
+    8
+  ],
+  "lnpls/minimizing-cpu-overhead-0.sql" : [
+    8,
+    19,
+    25,
+    38
+  ],
+  "lnpls/minimizing-cpu-overhead-2.sql" : [
+    25
+  ],
+  "lnpls/pl-sql-function-result-cache-10.sql" : [
+    9
+  ],
+  "lnpls/pl-sql-function-result-cache-13.sql" : [
+    11
+  ],
+  "lnpls/pl-sql-function-result-cache-15.sql" : [
+    12
+  ],
+  "lnpls/pl-sql-function-result-cache-4.sql" : [
+    26,
+    30
+  ],
+  "lnpls/pl-sql-function-result-cache-6.sql" : [
+    36
+  ],
+  "lnpls/pl-sql-function-result-cache-9.sql" : [
+    9
+  ],
+  "lnpls/release-changes-0.sql" : [
+    15
+  ],
+  "lnpls/sequential-control-statements-0.sql" : [
+    6
+  ],
+  "lnpls/sql-data-types-32.sql" : [
+    11
+  ],
+  "lnpls/subprogram-parameters-37.sql" : [
+    10
+  ],
+  "lnpls/wrapping-pl-sql-source-text-dbms_ddl-subprograms-3.sql" : [
+    5,
+    8
+  ],
+  "sqlrf/BIN_TO_NUM-1.sql" : [
+    11
+  ]
+}
