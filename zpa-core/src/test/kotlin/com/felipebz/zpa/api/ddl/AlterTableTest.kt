@@ -108,6 +108,39 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAddRangePartitions() {
+        assertThat(p).matches("alter table t add partition p2 values less than (200)")
+        assertThat(p).matches("alter table t add partition values less than (200)")
+        assertThat(p).matches("alter table t add partition p2 values less than (200), partition p3 values less than (300), partition p4 values less than (maxvalue);")
+        assertThat(p).matches("alter table t add partition p2 values less than (100, 'Z')")
+        assertThat(p).matches("alter table t add partition p2 values less than (to_date('2026-02-01', 'YYYY-MM-DD'))")
+        assertThat(p).matches("alter table t add partition p2 values less than (200) update global indexes")
+        assertThat(p).matches("alter table t add partition p2 values less than (200) tablespace ts1 lob (photo, text) store as (tablespace ts2) nested table docs store as np2")
+        assertThat(p).matches("alter table t add partition p2 values less than (200), partition p3 values less than (300) tablespace ts1")
+    }
+
+    @Test
+    fun rejectsMalformedAddRangePartitions() {
+        assertThat(p).notMatches("alter table t add partition p2 values")
+        assertThat(p).notMatches("alter table t add partition p2 values less than")
+        assertThat(p).notMatches("alter table t add partition p2 values less than ()")
+        assertThat(p).notMatches("alter table t add partition p2 update global indexes")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200,)")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200),")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200), p3 values less than (300)")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200), partition p3")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200) update global indexes update indexes")
+        assertThat(p).notMatches("alter table t add partition p2 values less than (200) enable constraint ck")
+    }
+
+    @Test
+    fun retainsColumnsNamedPartitionWithAdd() {
+        assertThat(p).matches("alter table t add partition number")
+        assertThat(p).matches("alter table t add (partition number)")
+        assertThat(p).matches("alter table t add \"partition\" number")
+    }
+
+    @Test
     fun matchesAlterTableModify() {
         assertThat(p).matches("alter table tab modify (col varchar2(350), other varchar2(4000));")
         assertThat(p).matches("alter table tab modify col varchar2(500);")
