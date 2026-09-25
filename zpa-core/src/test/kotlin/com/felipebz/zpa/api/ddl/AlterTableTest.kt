@@ -482,6 +482,50 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesMergeTablePartitionInputFamilies() {
+        assertThat(p).matches("alter table t merge partitions p1, p2 into partition p12")
+        assertThat(p).matches("alter table t merge partitions p1, p2, p3 into partition p123")
+        assertThat(p).matches("alter table t merge partitions p1 to p4 into partition p_all")
+        assertThat(p).matches("alter table t merge partitions p1, p2")
+        assertThat(p).matches("alter table t merge partitions for (1), for (11) into partition p12")
+        assertThat(p).matches("alter table t merge partitions p1, for (11) into partition p12")
+        assertThat(p).matches("alter table t merge partitions for (to_date('2026-01-15','yyyy-mm-dd')), for (date '2026-02-15') into partition p12")
+        // Oracle generates the result name when the optional partition_spec name is omitted.
+        assertThat(p).matches("alter table t merge partitions p1, p2 into partition")
+    }
+
+    @Test
+    fun matchesMergeTablePartitionSuffixes() {
+        assertThat(p).matches("alter table t merge partitions p1, p2 into partition p12 tablespace ts1")
+        assertThat(p).matches("alter table t merge partitions p2a, p2b into partition p2ab tablespace example nested table docs store as nt_p2ab")
+        assertThat(p).matches("alter table t merge partitions p1, p2 update global indexes")
+        assertThat(p).matches("alter table t merge partitions p1, p2 invalidate global indexes")
+        assertThat(p).matches("alter table t merge partitions p1, p2 update indexes (ix (partition p12 tablespace ts1)) parallel 2 online")
+        assertThat(p).matches("alter table t merge partitions p1 to p4 into partition p_all noparallel")
+    }
+
+    @Test
+    fun rejectsMalformedMergeTablePartitions() {
+        assertThat(p).notMatches("alter table t merge")
+        assertThat(p).notMatches("alter table t merge partitions")
+        assertThat(p).notMatches("alter table t merge partitions p1")
+        assertThat(p).notMatches("alter table t merge partitions p1,")
+        assertThat(p).notMatches("alter table t merge partitions p1, into partition p_new")
+        assertThat(p).notMatches("alter table t merge partitions p1 to")
+        assertThat(p).notMatches("alter table t merge partitions to p4")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2,")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2 to p3")
+        assertThat(p).notMatches("alter table t merge partitions p1 to p3, p4")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2 into")
+        assertThat(p).notMatches("alter table t merge partitions p1, for ()")
+        assertThat(p).notMatches("alter table t merge partitions p1, for (1,)")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2 into partition p12 enable constraint ck")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2 online update indexes")
+        assertThat(p).notMatches("alter table t merge partitions p1, p2 noparallel update indexes")
+        assertThat(p).notMatches("alter table t merge partitions p2a, p2b into partition p2ab nested table docs store as")
+    }
+
+    @Test
     fun doesNotMatchAlterTableAddWithoutADatatype() {
         assertThat(p).notMatches("alter table tab add (col);")
     }

@@ -55,6 +55,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_COLUMN_CLAUSE,
     PARTITION_EXTENDED_NAME,
     SPLIT_TABLE_PARTITION,
+    MERGE_TABLE_PARTITIONS,
     SPLIT_NESTED_TABLE_PART,
     UPDATE_INDEX_CLAUSES,
     DROP_CONSTRAINT_CLAUSE,
@@ -747,7 +748,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.oneOrMore(
                                             b.firstOf(
                                                     LOB_STORAGE_CLAUSE,
-                                                    VARRAY_COL_PROPERTIES))),
+                                                    VARRAY_COL_PROPERTIES,
+                                                    NESTED_TABLE_COL_PROPERTIES))),
                             b.optional(PARTITION_LEVEL_SUBPARTITION)))
 
             b.rule(INDIVIDUAL_HASH_PARTITIONS).define(
@@ -1565,6 +1567,13 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(LPARENTHESIS, indexPartitionUpdates(),
                             b.zeroOrMore(COMMA, indexPartitionUpdates()), RPARENTHESIS))))
 
+            fun parallelClause() = b.firstOf(NOPARALLEL,
+                b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))
+
+            fun partitionOrKeyValue() = b.firstOf(
+                b.sequence(FOR, LPARENTHESIS, b.firstOf(LITERAL, METHOD_CALL),
+                    b.zeroOrMore(COMMA, b.firstOf(LITERAL, METHOD_CALL)), RPARENTHESIS),
+                IDENTIFIER_NAME)
 
             b.rule(PARTITION_EXTENDED_NAME).define(PARTITION,
                 b.firstOf(IDENTIFIER_NAME,
@@ -1594,7 +1603,19 @@ enum class DdlGrammar : GrammarRuleKey {
                         RPARENTHESIS)),
                 b.optional(SPLIT_NESTED_TABLE_PART),
                 b.optional(UPDATE_INDEX_CLAUSES),
-                b.optional(b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))),
+                b.optional(parallelClause()),
+                b.optional(ONLINE))
+
+            b.rule(MERGE_TABLE_PARTITIONS).define(
+                MERGE, PARTITIONS, partitionOrKeyValue(),
+                b.firstOf(
+                    b.sequence(COMMA, partitionOrKeyValue(),
+                        b.zeroOrMore(COMMA, partitionOrKeyValue())),
+                    b.sequence(TO, partitionOrKeyValue())),
+                b.optional(INTO, partitionSpec()),
+                b.optional(UPDATE_INDEX_CLAUSES),
+                b.optional(parallelClause()),
+                // Oracle 26 documents ONLINE in the merge prose although its syntax image omits it.
                 b.optional(ONLINE))
 
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
@@ -1631,6 +1652,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                             renameColumnClause(),
                             SPLIT_TABLE_PARTITION,
+                            MERGE_TABLE_PARTITIONS,
                             b.sequence(
                                     b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
                                     b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
