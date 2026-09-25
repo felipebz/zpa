@@ -56,6 +56,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PARTITION_EXTENDED_NAME,
     SUBPARTITION_EXTENDED_NAME,
     RENAME_PARTITION_SUBPART,
+    EXCHANGE_PARTITION_SUBPART,
     ADD_RANGE_TABLE_PARTITIONS,
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
@@ -1593,6 +1594,21 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(PARTITION_EXTENDED_NAME, SUBPARTITION_EXTENDED_NAME),
                 TO, IDENTIFIER_NAME)
 
+            // Oracle 26 runtime accepts CASCADE before index updates, opposite the SQLRF syntax diagram.
+            // Exchange cannot specify the index partition descriptions accepted by SPLIT and MERGE.
+            fun exchangeUpdateIndexes() = b.firstOf(
+                b.sequence(b.firstOf(UPDATE, "INVALIDATE"), GLOBAL, INDEXES),
+                b.sequence(UPDATE, INDEXES))
+
+            b.rule(EXCHANGE_PARTITION_SUBPART).define(
+                "EXCHANGE", b.firstOf(PARTITION_EXTENDED_NAME, SUBPARTITION_EXTENDED_NAME),
+                WITH, TABLE, UNIT_NAME,
+                b.optional(b.firstOf(INCLUDING, EXCLUDING), INDEXES),
+                b.optional(b.firstOf(WITH, WITHOUT), "VALIDATION"),
+                b.optional(EXCEPTIONS_CLAUSE),
+                b.optional(CASCADE),
+                b.optional(exchangeUpdateIndexes(), b.optional(parallelClause())))
+
             b.rule(SPLIT_TABLE_PARTITION).define(
                 SPLIT, PARTITION_EXTENDED_NAME,
                 b.firstOf(
@@ -1680,6 +1696,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                             renameColumnClause(),
                             RENAME_PARTITION_SUBPART,
+                            EXCHANGE_PARTITION_SUBPART,
                             ADD_RANGE_TABLE_PARTITIONS,
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,

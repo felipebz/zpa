@@ -238,6 +238,56 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesExchangePartitionAndSubpartition() {
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t")
+        assertThat(p).matches("alter table t exchange partition p1 with table owner.exchange_t without validation")
+        assertThat(p).matches("alter table t exchange partition for (1) with table exchange_t")
+        assertThat(p).matches("alter table t exchange subpartition sp1 with table exchange_t")
+        assertThat(p).matches("alter table t exchange subpartition for (1, 'A') with table exchange_t")
+        assertThat(p).matches("alter table t exchange partition \"Old Partition\" with table \"Exchange Table\"")
+    }
+
+    @Test
+    fun matchesExchangeOptionsInOrder() {
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t including indexes with validation")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t excluding indexes without validation")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t exceptions into exceptions")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t exceptions into owner.exceptions")
+        assertThat(p).matches("alter table t exchange subpartition sp1 with table exchange_t exceptions into exceptions")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t update global indexes parallel")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t without validation cascade update global indexes")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t invalidate global indexes")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t update indexes noparallel")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t cascade")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t cascade update global indexes")
+        assertThat(p).matches("alter table t exchange partition p1 with table exchange_t cascade update global indexes parallel 2")
+        assertThat(p).matches("alter table t exchange subpartition sp1 with table exchange_t without validation cascade")
+    }
+
+    @Test
+    fun rejectsMalformedExchangePartitionAndSubpartition() {
+        assertThat(p).notMatches("alter table t exchange")
+        assertThat(p).notMatches("alter table t exchange partition")
+        assertThat(p).notMatches("alter table t exchange partition p1")
+        assertThat(p).notMatches("alter table t exchange partition p1 with")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table")
+        assertThat(p).notMatches("alter table t exchange partition for () with table exchange_t")
+        assertThat(p).notMatches("alter table t exchange subpartition for () with table exchange_t")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t including")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t indexes including")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t without")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t validation")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t without validation including indexes")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t update global indexes without validation")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t parallel 2")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t update indexes (ix (partition p1))")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t update global indexes cascade")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t update global indexes parallel 2 cascade")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t cascade including indexes")
+        assertThat(p).notMatches("alter table t exchange partition p1 with table exchange_t enable constraint ck")
+    }
+
+    @Test
     fun matchesAlterTableModifyEncryption() {
         assertThat(p).matches("alter table t modify (c encrypt)")
         assertThat(p).matches("alter table t modify (c encrypt using 'AES256')")
