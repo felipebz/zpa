@@ -208,6 +208,36 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableRenamePartitionOrSubpartition() {
+        assertThat(p).matches("alter table t rename partition p1 to p2")
+        assertThat(p).matches("alter table t rename partition \"Old Partition\" to \"New Partition\"")
+        assertThat(p).matches("alter table t rename partition for (1) to p_new")
+        assertThat(p).matches("alter table t rename partition for (1, 2) to p_new")
+        assertThat(p).matches("alter table t rename subpartition sp1 to sp2")
+        assertThat(p).matches("alter table t rename subpartition \"Old Subpartition\" to \"New Subpartition\"")
+        assertThat(p).matches("alter table t rename subpartition for (1, 'A') to sp_new")
+    }
+
+    @Test
+    fun rejectsMalformedAlterTableRenamePartitionOrSubpartition() {
+        assertThat(p).notMatches("alter table t rename partition")
+        assertThat(p).notMatches("alter table t rename partition p1")
+        assertThat(p).notMatches("alter table t rename partition p1 to")
+        assertThat(p).notMatches("alter table t rename partition to p2")
+        assertThat(p).notMatches("alter table t rename partition for () to p2")
+        assertThat(p).notMatches("alter table t rename partition for (1,) to p2")
+        assertThat(p).notMatches("alter table t rename partition p1 to p2 to p3")
+        assertThat(p).notMatches("alter table t rename partition p1 to p2 enable constraint ck")
+        assertThat(p).notMatches("alter table t rename subpartition")
+        assertThat(p).notMatches("alter table t rename subpartition sp1")
+        assertThat(p).notMatches("alter table t rename subpartition sp1 to")
+        assertThat(p).notMatches("alter table t rename subpartition to sp2")
+        assertThat(p).notMatches("alter table t rename subpartition for () to sp2")
+        assertThat(p).notMatches("alter table t rename subpartition for (1,) to sp2")
+        assertThat(p).notMatches("alter table t rename subpartition sp1 to sp2 enable constraint ck")
+    }
+
+    @Test
     fun matchesAlterTableModifyEncryption() {
         assertThat(p).matches("alter table t modify (c encrypt)")
         assertThat(p).matches("alter table t modify (c encrypt using 'AES256')")

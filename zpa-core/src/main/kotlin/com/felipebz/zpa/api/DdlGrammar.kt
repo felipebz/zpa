@@ -54,6 +54,8 @@ enum class DdlGrammar : GrammarRuleKey {
     ENABLE_DISABLE_CLAUSE,
     DROP_COLUMN_CLAUSE,
     PARTITION_EXTENDED_NAME,
+    SUBPARTITION_EXTENDED_NAME,
+    RENAME_PARTITION_SUBPART,
     ADD_RANGE_TABLE_PARTITIONS,
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
@@ -1582,6 +1584,15 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(FOR, LPARENTHESIS, EXPRESSION,
                         b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)))
 
+            b.rule(SUBPARTITION_EXTENDED_NAME).define(SUBPARTITION,
+                b.firstOf(IDENTIFIER_NAME,
+                    b.sequence(FOR, LPARENTHESIS, EXPRESSION,
+                        b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)))
+
+            b.rule(RENAME_PARTITION_SUBPART).define(RENAME,
+                b.firstOf(PARTITION_EXTENDED_NAME, SUBPARTITION_EXTENDED_NAME),
+                TO, IDENTIFIER_NAME)
+
             b.rule(SPLIT_TABLE_PARTITION).define(
                 SPLIT, PARTITION_EXTENDED_NAME,
                 b.firstOf(
@@ -1668,6 +1679,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
+                            RENAME_PARTITION_SUBPART,
                             ADD_RANGE_TABLE_PARTITIONS,
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,
