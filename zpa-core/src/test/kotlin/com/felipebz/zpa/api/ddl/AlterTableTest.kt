@@ -526,6 +526,35 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesModifyPartitionLocalIndexes() {
+        assertThat(p).matches("alter table t modify partition p1 unusable local indexes")
+        assertThat(p).matches("alter table t modify partition p1 rebuild unusable local indexes")
+        assertThat(p).matches("alter table t modify partition for (1) unusable local indexes")
+        assertThat(p).matches("alter table t modify partition for (1) rebuild unusable local indexes")
+        assertThat(p).matches("alter table t modify (partition number)")
+        assertThat(p).matches("alter table t modify \"partition\" number")
+    }
+
+    @Test
+    fun rejectsMalformedModifyPartitionLocalIndexes() {
+        assertThat(p).notMatches("alter table t modify partition")
+        assertThat(p).notMatches("alter table t modify partition p1")
+        assertThat(p).notMatches("alter table t modify partition p1 rebuild")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable local")
+        assertThat(p).notMatches("alter table t modify partition p1 rebuild unusable")
+        assertThat(p).notMatches("alter table t modify partition p1 rebuild local indexes")
+        assertThat(p).notMatches("alter table t modify partition p1 rebuild rebuild unusable local indexes")
+        assertThat(p).notMatches("alter table t modify partition p1 local indexes unusable")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable indexes local")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable rebuild local indexes")
+        assertThat(p).notMatches("alter table t modify partition for () unusable local indexes")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable local indexes tablespace users")
+        assertThat(p).notMatches("alter table t modify partition p1 rebuild unusable local indexes indexing on")
+        assertThat(p).notMatches("alter table t modify partition p1 unusable local indexes enable constraint ck")
+    }
+
+    @Test
     fun doesNotMatchAlterTableAddWithoutADatatype() {
         assertThat(p).notMatches("alter table tab add (col);")
     }

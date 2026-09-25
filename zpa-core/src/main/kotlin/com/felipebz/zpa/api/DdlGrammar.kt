@@ -56,6 +56,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PARTITION_EXTENDED_NAME,
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
+    MODIFY_PARTITION_LOCAL_INDEXES,
     SPLIT_NESTED_TABLE_PART,
     UPDATE_INDEX_CLAUSES,
     DROP_CONSTRAINT_CLAUSE,
@@ -1618,6 +1619,12 @@ enum class DdlGrammar : GrammarRuleKey {
                 // Oracle 26 documents ONLINE in the merge prose although its syntax image omits it.
                 b.optional(ONLINE))
 
+            fun unusableLocalIndexesClause() = b.sequence(
+                b.optional(REBUILD), UNUSABLE, LOCAL, INDEXES)
+
+            b.rule(MODIFY_PARTITION_LOCAL_INDEXES).define(
+                MODIFY, PARTITION_EXTENDED_NAME, unusableLocalIndexesClause())
+
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
             fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
 
@@ -1633,7 +1640,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.firstOf(
                                             b.sequence(LPARENTHESIS, ALTER_TABLE_COLUMN,
                                                     b.zeroOrMore(COMMA, ALTER_TABLE_COLUMN), RPARENTHESIS),
-                                            b.sequence(b.nextNot(b.firstOf(CONSTRAINT, b.sequence(PRIMARY, KEY),
+                                            b.sequence(b.nextNot(b.firstOf(CONSTRAINT, PARTITION, b.sequence(PRIMARY, KEY),
                                                             b.sequence(UNIQUE, LPARENTHESIS))),
                                                     ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF, ENABLE_DISABLE_CLAUSE))))),
@@ -1653,6 +1660,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             renameColumnClause(),
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,
+                            MODIFY_PARTITION_LOCAL_INDEXES,
                             b.sequence(
                                     b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
                                     b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
