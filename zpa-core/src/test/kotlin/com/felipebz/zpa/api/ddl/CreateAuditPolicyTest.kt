@@ -81,6 +81,7 @@ class CreateAuditPolicyTest : RuleTest() {
             "create audit policy p actions select on t when 'UID = 1' evaluate per instance " +
                 "only toplevel container = current")
         assertThat(p).matches("create audit policy p roles dba only toplevel")
+        assertThat(p).matches("create audit policy p roles connect, resource")
     }
 
     @Test

@@ -6,7 +6,6 @@
   "examples/administer_key_management.sql" : [ 1 ],
   "examples/alter_analytic_view.sql" : [ 1 ],
   "examples/alter_attribute_dimension.sql" : [ 1 ],
-  "examples/alter_audit_policy.sql" : [ 1 ],
   "examples/alter_database.sql" : [ 1 ],
   "examples/alter_dimension.sql" : [ 1 ],
   "examples/alter_diskgroup.sql" : [ 1 ],

@@ -204,6 +204,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     COMPOUND("compound"),
     COMPUTATION("computation"),
     CONCURRENT("concurrent"),
+    CONDITION("condition"),
     CONDITIONAL("conditional"),
     CONNECT_BY_ROOT("connect_by_root"),
     CONSTANT("constant"),

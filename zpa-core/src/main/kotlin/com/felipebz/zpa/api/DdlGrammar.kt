@@ -83,6 +83,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_DOMAIN,
     DOMAIN_CONSTRAINT,
     CREATE_AUDIT_POLICY,
+    ALTER_AUDIT_POLICY,
     AUDIT_PRIVILEGE_CLAUSE,
     AUDIT_ACTION_CLAUSE,
     AUDIT_ROLE_CLAUSE,
@@ -2047,6 +2048,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
                 CREATE_AUDIT_POLICY,
+                ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
@@ -2129,7 +2131,11 @@ enum class DdlGrammar : GrammarRuleKey {
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing.html
         private fun createAuditPolicy(b: PlSqlGrammarBuilder) {
-            val clauseStart = b.firstOf(PRIVILEGES, ACTIONS, ROLES, WHEN, ONLY, CONTAINER)
+            // In ALTER AUDIT POLICY, DROP is also a privilege/action word (DROP ANY TABLE), so it only
+            // ends a list when it starts the DROP clause.
+            val clauseStart = b.firstOf(
+                PRIVILEGES, ACTIONS, ROLES, WHEN, ONLY, CONTAINER, CONDITION,
+                b.sequence(DROP, b.firstOf(PRIVILEGES, ACTIONS, ROLES, ONLY)))
             val privilegeWords = b.oneOrMore(b.nextNot(clauseStart), DclGrammar.IDENTIFIER_OR_KEYWORD)
             val actionWords = b.oneOrMore(b.nextNot(b.firstOf(clauseStart, ON)), DclGrammar.IDENTIFIER_OR_KEYWORD)
             val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
@@ -2166,7 +2172,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(componentActions, b.sequence(standardAction, b.zeroOrMore(COMMA, standardAction))))
 
             b.rule(AUDIT_ROLE_CLAUSE).define(
-                ROLES, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
+                ROLES, DclGrammar.IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, DclGrammar.IDENTIFIER_OR_KEYWORD))
 
             // Oracle 26 requires at least one option and this order (ORA-46373/ORA-46383); only ACTIONS repeats.
             b.rule(CREATE_AUDIT_POLICY).define(
@@ -2180,6 +2186,25 @@ enum class DdlGrammar : GrammarRuleKey {
                     EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)),
                 b.optional(ONLY, TOPLEVEL),
                 b.optional(CONTAINER, EQUALS, b.firstOf(ALL, CURRENT)),
+                b.optional(SEMICOLON))
+
+            val policyChanges = b.sequence(
+                b.optional(AUDIT_PRIVILEGE_CLAUSE),
+                b.zeroOrMore(AUDIT_ACTION_CLAUSE),
+                b.optional(AUDIT_ROLE_CLAUSE),
+                b.optional(ONLY, TOPLEVEL))
+
+            // Oracle 26 requires ADD, DROP and CONDITION in this order (ORA-46384) and rejects the
+            // documented `ACTIONS ADD ...` example at ACTIONS (ORA-03049).
+            b.rule(ALTER_AUDIT_POLICY).define(
+                ALTER, AUDIT, POLICY, IDENTIFIER_NAME,
+                b.optional(ADD, policyChanges),
+                b.optional(DROP, policyChanges),
+                b.optional(
+                    CONDITION,
+                    b.firstOf(
+                        DROP,
+                        b.sequence(CHARACTER_LITERAL, EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)))),
                 b.optional(SEMICOLON))
         }
 

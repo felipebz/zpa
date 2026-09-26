@@ -1,4 +1,11 @@
 {
+  "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-14.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-03049",
+      "reason": "The documented example writes ACTIONS ADD; Oracle only accepts ADD ACTIONS and rejects ACTIONS after the policy name."
+    }
+  },
   "sqlrf/create-property-graph-23.sql": {
     "3": {
       "classification": "INVALID_SOURCE",
