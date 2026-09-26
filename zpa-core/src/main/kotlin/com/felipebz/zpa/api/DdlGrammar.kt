@@ -111,6 +111,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_CLUSTER,
     ALTER_CLUSTER,
     TABLE_CLUSTER_CLAUSE,
+    ANALYZE_STATEMENT,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -1874,6 +1875,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createRole(b)
             createRollbackSegment(b)
             createCluster(b)
+            createAnalyze(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2112,6 +2114,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_ROLLBACK_SEGMENT,
                 CREATE_CLUSTER,
                 ALTER_CLUSTER,
+                ANALYZE_STATEMENT,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2288,6 +2291,42 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ANALYZE.html
+        private fun createAnalyze(b: PlSqlGrammarBuilder) {
+            val objectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val intoClause = b.sequence(INTO, objectName)
+
+            // Oracle 26 rejects the FOR forms of the partition extension here (ORA-00906 at FOR), and any
+            // partition after a cluster name (ORA-14052).
+            val target = b.firstOf(
+                b.sequence(
+                    b.firstOf(TABLE, INDEX), objectName,
+                    b.optional(b.firstOf(PARTITION, SUBPARTITION), LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS)),
+                b.sequence(CLUSTER, objectName))
+
+            // The diagram requires FAST or COMPLETE after CASCADE and ties ONLINE/OFFLINE to COMPLETE, but Oracle 26
+            // parses a bare CASCADE and ONLINE/OFFLINE without CASCADE. CASCADE FAST ends the clause (ORA-03048).
+            val validateStructure = b.sequence(
+                STRUCTURE,
+                b.firstOf(
+                    b.sequence(CASCADE, FAST),
+                    b.sequence(
+                        b.optional(CASCADE, b.optional(COMPLETE)),
+                        b.optional(b.firstOf(ONLINE, OFFLINE)),
+                        b.optional(intoClause))))
+
+            // LIST CHAINED ROWS on an index fails at parse time (ORA-01492), but is not singled out here.
+            b.rule(ANALYZE_STATEMENT).define(
+                ANALYZE, target,
+                b.firstOf(
+                    b.sequence(
+                        VALIDATE,
+                        b.firstOf(b.sequence(REF, UPDATE, b.optional(SET, DANGLING, TO, NULL)), validateStructure)),
+                    b.sequence(LIST, CHAINED, ROWS, b.optional(intoClause)),
+                    b.sequence(DELETE, b.optional(SYSTEM), STATISTICS)),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CLUSTER.html
