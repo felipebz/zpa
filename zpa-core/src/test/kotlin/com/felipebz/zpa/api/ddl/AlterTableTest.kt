@@ -534,6 +534,57 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesMoveTablePartition() {
+        assertThat(p).matches("alter table t move partition p1")
+        assertThat(p).matches("alter table t move partition p1 tablespace ts2")
+        assertThat(p).matches("alter table t move partition for (1) tablespace ts2")
+        assertThat(p).matches("alter table t move partition p1 mapping table")
+        assertThat(p).matches("alter table t move partition p1 mapping table tablespace ts2")
+        assertThat(p).matches("alter table t move partition p1 lob (photo) store as (tablespace ts2) nested table docs store as nt_p1")
+        assertThat(p).matches("alter table t move partition p1 tablespace ts2 update indexes")
+        assertThat(p).matches("alter table t move partition p1 tablespace ts2 update global indexes")
+        assertThat(p).matches("alter table t move partition p1 update indexes (ix (partition p1 tablespace ts2))")
+        assertThat(p).matches("alter table t move partition p1 parallel")
+        assertThat(p).matches("alter table t move partition p1 parallel 2")
+        assertThat(p).matches("alter table t move partition p1 noparallel")
+        assertThat(p).matches("alter table t move partition p1 online")
+        assertThat(p).matches("alter table t move partition p1 tablespace ts2 online")
+        assertThat(p).matches("alter table t move partition p1 update indexes parallel 2 online")
+        assertThat(p).matches("alter table t move partition p1 update indexes tablespace ts2")
+        assertThat(p).matches("alter table t move partition p1 parallel 2 tablespace ts2")
+        assertThat(p).matches("alter table t move partition p1 online tablespace ts2")
+        assertThat(p).matches("alter table t move partition p1 parallel 2 update indexes")
+        assertThat(p).matches("alter table t move partition p1 online update indexes")
+        assertThat(p).matches("alter table t move partition p1 online parallel 2")
+        assertThat(p).matches("alter table t move partition p1 online tablespace ts2 parallel 2 update indexes")
+        assertThat(p).matches("alter table t move partition p1 tablespace ts2 pctfree 10 online")
+        assertThat(p).matches("alter table t move partition p1 update indexes parallel 2 tablespace ts2 online")
+        assertThat(p).matches("alter table t move partition p1 online lob (photo) store as (tablespace ts2)")
+        assertThat(p).matches("alter table t move partition p1 online update indexes (ix (partition p1 tablespace ts2))")
+        assertThat(p).matches("alter table t move partition p1 update indexes (ix (partition p1 tablespace ts2)) tablespace ts2")
+    }
+
+    @Test
+    fun rejectsMalformedMoveTablePartition() {
+        assertThat(p).notMatches("alter table t move partition")
+        assertThat(p).notMatches("alter table t move partition for ()")
+        assertThat(p).notMatches("alter table t move partition for (1,)")
+        assertThat(p).notMatches("alter table t move partition p1 tablespace")
+        assertThat(p).notMatches("alter table t move partition p1 mapping")
+        assertThat(p).notMatches("alter table t move partition p1 update")
+        assertThat(p).notMatches("alter table t move partition p1 parallel 2 online online")
+        assertThat(p).notMatches("alter table t move partition p1 online online")
+        assertThat(p).notMatches("alter table t move partition p1 parallel 2 parallel 4")
+        assertThat(p).notMatches("alter table t move partition p1 update indexes update indexes")
+        assertThat(p).notMatches("alter table t move partition p1 tablespace ts2 tablespace ts2")
+        assertThat(p).notMatches("alter table t move partition p1 tablespace ts2 pctfree 10 tablespace ts2")
+        assertThat(p).notMatches("alter table t move partition p1 online update indexes online")
+        assertThat(p).notMatches("alter table t move partition p1 parallel 2 update indexes noparallel")
+        assertThat(p).notMatches("alter table t move partition p1 enable constraint ck")
+        assertThat(p).notMatches("alter table t move subpartition sp1")
+    }
+
+    @Test
     fun matchesAlterTableRowMovement() {
         assertThat(p).matches("alter table tab enable row movement;")
         assertThat(p).matches("alter table tab disable row movement;")

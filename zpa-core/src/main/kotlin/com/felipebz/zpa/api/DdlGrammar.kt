@@ -57,6 +57,7 @@ enum class DdlGrammar : GrammarRuleKey {
     SUBPARTITION_EXTENDED_NAME,
     RENAME_PARTITION_SUBPART,
     EXCHANGE_PARTITION_SUBPART,
+    MOVE_TABLE_PARTITION,
     ADD_RANGE_TABLE_PARTITIONS,
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
@@ -1662,6 +1663,50 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(MODIFY_PARTITION_LOCAL_INDEXES).define(
                 MODIFY, PARTITION_EXTENDED_NAME, unusableLocalIndexesClause())
 
+            // The shared description permits repeated segment attributes; a partition MOVE
+            // must not specify TABLESPACE twice, including around physical/logging attributes.
+            val otherSegmentAttribute = b.firstOf(PHISICAL_ATRIBUTES_CLAUSE, LOGGING_CLAUSE)
+            fun movePartitionDescription() = b.sequence(
+                b.nextNot(b.sequence(b.zeroOrMore(otherSegmentAttribute),
+                    TABLESPACE, IDENTIFIER_NAME, b.zeroOrMore(otherSegmentAttribute), TABLESPACE)),
+                b.next(b.firstOf(SEGMENT_ATTRIBUTES_CLAUSE, TABLE_COMPRESSION,
+                    KEY_COMPRESSION, OVERFLOW, LOB_STORAGE_CLAUSE,
+                    VARRAY_COL_PROPERTIES, NESTED_TABLE_COL_PROPERTIES,
+                    PARTITION_LEVEL_SUBPARTITION)),
+                TABLE_PARTITION_DESCRIPTION)
+
+            // Oracle 26 accepts these MOVE PARTITION suffixes in orders absent from its SQLRF diagram.
+            // Track remaining families so each can occur at most once.
+            val moveSuffixes = arrayOfNulls<Any>(16)
+            fun movePartitionSuffixes(remaining: Int): Any {
+                moveSuffixes[remaining]?.let { return it }
+                fun thenRemaining(clause: Any, next: Int) =
+                    if (next == 0) clause else b.sequence(clause, movePartitionSuffixes(next))
+
+                val choices = ArrayList<Any>(4)
+                if (remaining and 1 != 0) {
+                    choices.add(thenRemaining(movePartitionDescription(), remaining xor 1))
+                }
+                if (remaining and 2 != 0) {
+                    choices.add(thenRemaining(UPDATE_INDEX_CLAUSES, remaining xor 2))
+                }
+                if (remaining and 4 != 0) {
+                    choices.add(thenRemaining(parallelClause(), remaining xor 4))
+                }
+                if (remaining and 8 != 0) {
+                    choices.add(thenRemaining(ONLINE, remaining xor 8))
+                }
+                val result = b.optional(if (choices.size == 1) choices[0]
+                    else b.firstOf(choices[0], choices[1], *choices.drop(2).toTypedArray()))
+                moveSuffixes[remaining] = result
+                return result
+            }
+
+            b.rule(MOVE_TABLE_PARTITION).define(
+                MOVE, PARTITION_EXTENDED_NAME,
+                b.optional(MAPPING, TABLE),
+                movePartitionSuffixes(15))
+
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
             fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
 
@@ -1696,6 +1741,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                             renameColumnClause(),
                             RENAME_PARTITION_SUBPART,
+                            MOVE_TABLE_PARTITION,
                             EXCHANGE_PARTITION_SUBPART,
                             ADD_RANGE_TABLE_PARTITIONS,
                             SPLIT_TABLE_PARTITION,
