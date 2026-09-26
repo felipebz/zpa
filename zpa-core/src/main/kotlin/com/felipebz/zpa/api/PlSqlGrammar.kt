@@ -328,6 +328,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             DdlGrammar.buildOn(b)
             DmlGrammar.buildOn(b)
             RowPatternGrammar.buildOn(b)
+            GraphTableGrammar.buildOn(b)
             DclGrammar.buildOn(b)
             TclGrammar.buildOn(b)
             SqlPlusGrammar.buildOn(b)
@@ -1065,6 +1066,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ConditionsGrammar.CONDITION,
                     // IS PRESENT is defined by Oracle only for MODEL expressions.
                     MODEL_PRESENT_CONDITION,
+                    // IS [NOT] SOURCE OF / DESTINATION OF / LABELED exist only inside GRAPH_TABLE.
+                    GraphTableGrammar.GRAPH_ELEMENT_PREDICATE,
                     IN_EXPRESSION)).skipIfOneChild()
 
             b.rule(NOT_EXPRESSION).define(b.optional(NOT), COMPARISON_EXPRESSION).skipIfOneChild()

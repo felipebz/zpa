@@ -121,5 +121,11 @@
   ],
   "sqlrf/domain_order-5.sql" : [
     6
+  ],
+  "sqlrf/graph-pattern-38.sql" : [
+    7
+  ],
+  "sqlrf/value-expressions-graph_table-16.sql" : [
+    7
   ]
 }

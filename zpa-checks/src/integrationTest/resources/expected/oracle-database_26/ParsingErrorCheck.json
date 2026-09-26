@@ -2124,7 +2124,7 @@
     6
   ],
   "sqlrf/create-property-graph-28.sql" : [
-    4
+    6
   ],
   "sqlrf/create-property-graph-29.sql" : [
     8
@@ -2243,111 +2243,6 @@
   "sqlrf/from_vector-5.sql" : [
     2
   ],
-  "sqlrf/graph-pattern-0.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-10.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-11.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-13.sql" : [
-    5
-  ],
-  "sqlrf/graph-pattern-15.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-17.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-19.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-2.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-21.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-23.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-25.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-27.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-29.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-3.sql" : [
-    5
-  ],
-  "sqlrf/graph-pattern-31.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-33.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-35.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-37.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-38.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-40.sql" : [
-    5
-  ],
-  "sqlrf/graph-pattern-42.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-44.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-5.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-7.sql" : [
-    4
-  ],
-  "sqlrf/graph-pattern-9.sql" : [
-    4
-  ],
-  "sqlrf/graph-reference-0.sql" : [
-    4
-  ],
-  "sqlrf/graph-reference-3.sql" : [
-    5
-  ],
-  "sqlrf/graph-reference-4.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-0.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-10.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-12.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-2.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-4.sql" : [
-    5
-  ],
-  "sqlrf/graph-table-shape-6.sql" : [
-    4
-  ],
-  "sqlrf/graph-table-shape-8.sql" : [
-    4
-  ],
   "sqlrf/graph_table-operator-0.sql" : [
     3
   ],
@@ -2363,74 +2258,14 @@
   "sqlrf/graph_table-operator-4.sql" : [
     2
   ],
-  "sqlrf/graph_table-operator-5.sql" : [
-    4
-  ],
   "sqlrf/graphql-table-function-0.sql" : [
     2
   ],
   "sqlrf/storage_clause-0.sql" : [
     6
   ],
-  "sqlrf/value-expressions-graph_table-0.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-10.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-12.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-13.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-14.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-16.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-17.sql" : [
-    4
-  ],
   "sqlrf/value-expressions-graph_table-19.sql" : [
     2
-  ],
-  "sqlrf/value-expressions-graph_table-2.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-20.sql" : [
-    5
-  ],
-  "sqlrf/value-expressions-graph_table-21.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-23.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-25.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-27.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-29.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-31.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-33.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-4.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-6.sql" : [
-    4
-  ],
-  "sqlrf/value-expressions-graph_table-8.sql" : [
-    5
   ],
   "sqlrf/vector_chunks-1.sql" : [
     7

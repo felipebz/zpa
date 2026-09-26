@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.api
 
+import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
@@ -27,6 +28,13 @@ import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
 import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar.*
+
+/**
+ * Set while parsing a row source: query FROM/JOIN items and MERGE USING. Oracle 26 accepts
+ * GRAPH_TABLE there but rejects it as a DELETE/UPDATE target at parse time (ORA-40968 is
+ * raised before a malformed body or trailing garbage is diagnosed).
+ */
+internal val ROW_SOURCE_CONTEXT: ContextKey<Boolean> = ContextKey()
 
 enum class DmlGrammar : GrammarRuleKey {
 
@@ -317,11 +325,15 @@ enum class DmlGrammar : GrammarRuleKey {
                                 b.optional(LPARENTHESIS, PLUS, RPARENTHESIS)),
                             // `from ((select …) alias)`
                             b.sequence(LPARENTHESIS, b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE), RPARENTHESIS),
+                            // Oracle always treats `graph_table(` here as the operator (ORA-03054 for
+                            // `graph_table(1)` even with such a function; ORA-40968 as a DELETE/UPDATE
+                            // target), so it never falls back to a function call.
+                            b.sequence(b.requireContext(ROW_SOURCE_CONTEXT, true), GraphTableGrammar.GRAPH_TABLE),
                             // A table function called without `table(…)`. It comes first:
                             // `apps.pkg.fn()` matches TABLE_REFERENCE on its first two parts.
-                            METHOD_CALL,
+                            b.sequence(b.nextNot(GRAPH_TABLE, LPARENTHESIS), METHOD_CALL),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
-                            OBJECT_REFERENCE
+                            b.sequence(b.nextNot(GRAPH_TABLE, LPARENTHESIS), OBJECT_REFERENCE)
                         ),
                         b.optional(NESTED_CLAUSE),
                         b.optional(
@@ -358,19 +370,22 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(FROM_CLAUSE).define(
                     FROM,
-                    b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
-                    b.optional(
-                        b.firstOf(
-                            PIVOT_CLAUSE,
-                            UNPIVOT_CLAUSE
-                        )
-                    ),
-                    b.zeroOrMore(COMMA,
+                    b.withContext(
+                        ROW_SOURCE_CONTEXT, true,
                         b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
                         b.optional(
                             b.firstOf(
                                 PIVOT_CLAUSE,
                                 UNPIVOT_CLAUSE
+                            )
+                        ),
+                        b.zeroOrMore(COMMA,
+                            b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                            b.optional(
+                                b.firstOf(
+                                    PIVOT_CLAUSE,
+                                    UNPIVOT_CLAUSE
+                                )
                             )
                         )
                     )
@@ -895,9 +910,13 @@ enum class DmlGrammar : GrammarRuleKey {
                     MERGE, INTO,
                     b.firstOf(
                             b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                            // Undocumented, but Oracle 26ai parses and executes MERGE INTO GRAPH_TABLE
+                            // (both branches change the vertex table); it rejects AS and PARTITION here.
+                            GraphTableGrammar.GRAPH_TABLE,
                             b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),
                     b.optional(b.nextNot(USING), IDENTIFIER_NAME),
-                    USING, DML_TABLE_EXPRESSION_CLAUSE, ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
+                    USING, b.withContext(ROW_SOURCE_CONTEXT, true, DML_TABLE_EXPRESSION_CLAUSE),
+                    ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(
                             b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
                             b.sequence(MERGE_INSERT_CLAUSE, b.optional(MERGE_UPDATE_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE))))
