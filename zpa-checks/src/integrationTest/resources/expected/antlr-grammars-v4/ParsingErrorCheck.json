@@ -12,7 +12,6 @@
   "examples/alter_inmemory_join_group.sql" : [ 1 ],
   "examples/alter_java.sql" : [ 1 ],
   "examples/alter_library.sql" : [ 1 ],
-  "examples/alter_mv_log.sql" : [ 1 ],
   "examples/alter_operator.sql" : [ 1 ],
   "examples/alter_outline.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],

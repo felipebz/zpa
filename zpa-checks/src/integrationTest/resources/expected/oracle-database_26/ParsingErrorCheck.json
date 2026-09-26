@@ -171,8 +171,6 @@
   "sqlrf/ALTER-INMEMORY-JOIN-GROUP-1.sql" : [ 2 ],
   "sqlrf/ALTER-JAVA-0.sql" : [ 2 ],
   "sqlrf/ALTER-LOCKDOWN-PROFILE-2.sql" : [ 2 ],
-  "sqlrf/ALTER-MATERIALIZED-VIEW-LOG-0.sql" : [ 2 ],
-  "sqlrf/ALTER-MATERIALIZED-VIEW-LOG-1.sql" : [ 2 ],
   "sqlrf/ALTER-OPERATOR-0.sql" : [ 2 ],
   "sqlrf/ALTER-OUTLINE-0.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-0.sql" : [ 2 ],

@@ -252,6 +252,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_MATERIALIZED_VIEW,
     ALTER_MATERIALIZED_VIEW,
     CREATE_MATERIALIZED_VIEW_LOG,
+    ALTER_MATERIALIZED_VIEW_LOG,
     MATERIALIZED_VIEW_LOG_ATTRIBUTE,
     MATERIALIZED_VIEW_LOG_WITH_CLAUSE,
     MATERIALIZED_VIEW_LOG_PURGE_CLAUSE,
@@ -1698,19 +1699,19 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 PURGE,
                 b.firstOf(
                     b.sequence(IMMEDIATE, b.optional(b.firstOf(SYNCHRONOUS, ASYNCHRONOUS))),
+                    // START WITH may stand alone (Oracle 26 parses `PURGE START WITH SYSDATE`, as documented).
                     b.sequence(
-                        b.optional(START, WITH, EXPRESSION),
-                        b.firstOf(
-                            b.sequence(NEXT, EXPRESSION),
-                            b.sequence(REPEAT, EXPRESSION)
-                        )
-                    )
+                        START, WITH, EXPRESSION,
+                        b.optional(b.firstOf(b.sequence(NEXT, EXPRESSION), b.sequence(REPEAT, EXPRESSION)))),
+                    b.sequence(NEXT, EXPRESSION),
+                    b.sequence(REPEAT, EXPRESSION)
                 )
             )
 
+            val synchronousRefresh = b.sequence(FOR, SYNCHRONOUS, REFRESH, USING, UNIT_NAME)
             b.rule(MATERIALIZED_VIEW_LOG_REFRESH_CLAUSE).define(
                 b.firstOf(
-                    b.sequence(FOR, SYNCHRONOUS, REFRESH, USING, UNIT_NAME),
+                    synchronousRefresh,
                     b.sequence(FOR, FAST, REFRESH)
                 )
             )
@@ -1724,6 +1725,46 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.optional(MATERIALIZED_VIEW_LOG_WITH_CLAUSE),
                 b.optional(MATERIALIZED_VIEW_LOG_PURGE_CLAUSE),
                 b.optional(MATERIALIZED_VIEW_LOG_REFRESH_CLAUSE),
+                b.optional(SEMICOLON)
+            )
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MATERIALIZED-VIEW-LOG.html
+            // Every group is optional (a bare `ALTER MATERIALIZED VIEW LOG ON t` succeeds) and they keep this order
+            // (ORA-03048/ORA-03049 otherwise). The maintenance group repeats in any order; TABLESPACE is rejected
+            // (ORA-12045). The ADD list is the CREATE WITH shape (keyword items, then one optional column list)
+            // without COMMIT SCN (ORA-32418). A list ending in a bare keyword item may only be followed by NEW
+            // VALUES (ORA-02000 at PURGE or FOR). FOR FAST REFRESH is rejected here (ORA-00922).
+            val logItem = b.firstOf(
+                b.sequence(OBJECT, IDENTIFIER), b.sequence(PRIMARY, KEY), ROWID, SEQUENCE)
+            val logColumns = b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+            val newValues = b.sequence(b.firstOf(INCLUDING, EXCLUDING), NEW, VALUES)
+            b.rule(ALTER_MATERIALIZED_VIEW_LOG).define(
+                ALTER, MATERIALIZED, VIEW, LOG, b.optional(IF, EXISTS), b.optional(FORCE),
+                ON, UNIT_NAME,
+                b.zeroOrMore(b.firstOf(
+                    PHYSICAL_ATRIBUTES_CLAUSE,
+                    INDEX_PARALLEL_CLAUSE,
+                    LOGGING_CLAUSE,
+                    INDEX_ALLOCATE_EXTENT_CLAUSE,
+                    INDEX_DEALLOCATE_UNUSED_CLAUSE,
+                    INDEX_SHRINK_CLAUSE,
+                    b.sequence(MOVE, SEGMENT_ATTRIBUTES_CLAUSE, b.optional(INDEX_PARALLEL_CLAUSE)),
+                    CACHE,
+                    NOCACHE)),
+                b.optional(b.firstOf(
+                    b.sequence(
+                        ADD,
+                        b.firstOf(
+                            b.sequence(
+                                logItem, b.zeroOrMore(COMMA, logItem),
+                                b.firstOf(
+                                    b.sequence(b.optional(COMMA), logColumns, b.optional(newValues)),
+                                    newValues,
+                                    b.nextNot(b.firstOf(PURGE, FOR)))),
+                            b.sequence(logColumns, b.optional(newValues)))),
+                    newValues)),
+                b.optional(MATERIALIZED_VIEW_LOG_PURGE_CLAUSE),
+                b.optional(synchronousRefresh),
                 b.optional(SEMICOLON)
             )
 

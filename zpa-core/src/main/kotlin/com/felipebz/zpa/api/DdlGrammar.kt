@@ -2121,6 +2121,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_MATERIALIZED_ZONEMAP,
                 ALTER_MATERIALIZED_ZONEMAP,
                 ALTER_MATERIALIZED_VIEW,
+                ALTER_MATERIALIZED_VIEW_LOG,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,

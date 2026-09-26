@@ -68,6 +68,9 @@ class CreateMaterializedViewLogTest : RuleTest() {
             "create materialized view log on orders purge start with sysdate next sysdate + 1;"
         )
         assertThat(p).matches(
+            "create materialized view log on orders purge start with sysdate;"
+        )
+        assertThat(p).matches(
             "create materialized view log on orders purge immediate asynchronous for fast refresh;"
         )
         assertThat(p).matches(
