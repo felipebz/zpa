@@ -106,6 +106,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_ROLE,
     ALTER_ROLE,
     ROLE_IDENTIFICATION_CLAUSE,
+    CREATE_ROLLBACK_SEGMENT,
+    ALTER_ROLLBACK_SEGMENT,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -1885,6 +1887,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createProfile(b)
             createTablespace(b)
             createRole(b)
+            createRollbackSegment(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2119,6 +2122,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_TABLESPACE,
                 CREATE_ROLE,
                 ALTER_ROLE,
+                CREATE_ROLLBACK_SEGMENT,
+                ALTER_ROLLBACK_SEGMENT,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2295,6 +2300,28 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ROLLBACK-SEGMENT.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ROLLBACK-SEGMENT.html
+        private fun createRollbackSegment(b: PlSqlGrammarBuilder) {
+            // TABLESPACE and STORAGE may come in any order; a second TABLESPACE fails with ORA-02215, which is
+            // not tracked.
+            b.rule(CREATE_ROLLBACK_SEGMENT).define(
+                CREATE, b.optional(PUBLIC), ROLLBACK, SEGMENT, IDENTIFIER_NAME,
+                b.zeroOrMore(b.firstOf(b.sequence(TABLESPACE, IDENTIFIER_NAME), INDEX_STORAGE_CLAUSE)),
+                b.optional(SEMICOLON))
+
+            // Oracle 26 accepts a single option (ORA-03049 at a second one) and also parses the undocumented
+            // ALTER PUBLIC ROLLBACK SEGMENT.
+            b.rule(ALTER_ROLLBACK_SEGMENT).define(
+                ALTER, b.optional(PUBLIC), ROLLBACK, SEGMENT, IDENTIFIER_NAME,
+                b.firstOf(
+                    ONLINE,
+                    OFFLINE,
+                    INDEX_STORAGE_CLAUSE,
+                    b.sequence(SHRINK, b.optional(TO, INDEX_SIZE_CLAUSE))),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ROLE.html
