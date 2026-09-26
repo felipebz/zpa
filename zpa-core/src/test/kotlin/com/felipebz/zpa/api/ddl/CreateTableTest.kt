@@ -431,12 +431,12 @@ class CreateTableTest : RuleTest() {
 
     @Test
     fun matchesPartitionByRange_TPD_LSC_LPAR_SNE() {
-        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (enable storage in now));")
+        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (enable storage in row));")
     }
 
     @Test
     fun matchesPartitionByRange_TPD_LSC_LPAR_SND() {
-        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (disable storage in now));")
+        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (disable storage in row));")
     }
 
     @Test

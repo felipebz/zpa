@@ -52,6 +52,10 @@ enum class DdlGrammar : GrammarRuleKey {
     TABLE_COLUMN_DEFINITION,
     TABLE_RELATIONAL_PROPERTIES,
     OBJECT_TABLE_CLAUSE,
+    XMLTYPE_TABLE,
+    XMLTYPE_COLUMN_PROPERTIES,
+    XMLTYPE_STORAGE,
+    XMLSCHEMA_SPEC,
     OBJECT_TABLE_SUBSTITUTION,
     OBJECT_TABLE_PROPERTIES,
     OBJECT_IDENTIFIER_CLAUSE,
@@ -284,7 +288,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.zeroOrMore(
                     b.firstOf(
                         LOB_STORAGE_CLAUSE,
-                        VARRAY_COL_PROPERTIES))
+                        VARRAY_COL_PROPERTIES,
+                        XMLTYPE_COLUMN_PROPERTIES))
             )
 
             fun encryptionPassword() = b.firstOf(
@@ -597,6 +602,40 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     LOB_PARAMETERS,
                                                     RPARENTHESIS))))))
 
+            // Oracle 26 rejects `STORE ALL VARRAYS` after `OF XMLTYPE XMLTYPE` (ORA-00905) and a string-literal
+            // schema URL (ORA-19002), so neither is modeled. Any other word after the storage type is read as the
+            // LOB segment name, even TABLESPACE, PCTFREE, LOB or PARTITION (errors land on the following token).
+            b.rule(XMLTYPE_STORAGE).define(
+                STORE, AS,
+                b.firstOf(
+                    b.sequence(OBJECT, RELATIONAL),
+                    b.sequence(
+                        b.optional(b.firstOf(SECUREFILE, BASICFILE)),
+                        b.firstOf(CLOB, b.sequence(b.optional(b.optional(NOT), TRANSPORTABLE), BINARY, XML)),
+                        b.optional(b.firstOf(
+                            b.sequence(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS),
+                            b.sequence(
+                                b.nextNot(b.firstOf(XMLSCHEMA, ELEMENT, XMLTYPE)),
+                                IDENTIFIER_NAME,
+                                b.optional(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS)))))))
+
+            b.rule(XMLSCHEMA_SPEC).define(
+                b.optional(XMLSCHEMA, IDENTIFIER_NAME), ELEMENT, IDENTIFIER_NAME,
+                b.optional(STORE, ALL, VARRAYS, AS, b.firstOf(LOBS, TABLES)),
+                b.optional(b.firstOf(ALLOW, DISALLOW), NONSCHEMA),
+                b.optional(b.firstOf(ALLOW, DISALLOW), ANYSCHEMA))
+
+            b.rule(XMLTYPE_COLUMN_PROPERTIES).define(
+                XMLTYPE, b.optional(COLUMN), IDENTIFIER_NAME, b.optional(XMLTYPE_STORAGE), b.optional(XMLSCHEMA_SPEC))
+
+            b.rule(XMLTYPE_TABLE).define(
+                OF, XMLTYPE, b.nextNot(DOT),
+                b.optional(OBJECT_TABLE_PROPERTIES),
+                b.optional(XMLTYPE, XMLTYPE_STORAGE),
+                b.optional(XMLSCHEMA_SPEC),
+                b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
+                b.optional(OBJECT_IDENTIFIER_CLAUSE))
+
             b.rule(SUBSTITUTABLE_COLUMN_CLAUSE).define(
                     b.firstOf(
                             b.sequence(
@@ -642,8 +681,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                             DISABLE),
                                     STORAGE,
                                     IN,
-                                    NOW),
-                            STORAGE_CLAUSE,
+                                    ROW),
+                            INDEX_STORAGE_CLAUSE,
                             b.sequence(
                                     CHUNK,
                                     INTEGER_LITERAL),
@@ -976,7 +1015,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     UNIT_NAME,
                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.firstOf(
                             b.sequence(
-                                    OBJECT_TABLE_CLAUSE,
+                                    b.firstOf(XMLTYPE_TABLE, OBJECT_TABLE_CLAUSE),
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                                     tableSuffixesWithAnnotations()),
@@ -1779,7 +1818,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                     ADD,
                                     b.firstOf(
                                             b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
-                                            TABLE_RELATIONAL_PROPERTIES)),
+                                            TABLE_RELATIONAL_PROPERTIES),
+                                    tablePropertyClauses()),
                             ALTER_TABLE_MODIFY_CONSTRAINT,
                             b.sequence(
                                     MODIFY,
