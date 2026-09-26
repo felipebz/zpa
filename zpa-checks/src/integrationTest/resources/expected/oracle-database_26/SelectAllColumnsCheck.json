@@ -253,6 +253,7 @@
   "sqlrf/create-domain-22.sql" : [ 2 ],
   "sqlrf/create-domain-25.sql" : [ 2 ],
   "sqlrf/create-domain-30.sql" : [ 2 ],
+  "sqlrf/create-property-graph-33.sql" : [ 2, 3 ],
   "sqlrf/graph-pattern-0.sql" : [ 2 ],
   "sqlrf/graph-pattern-10.sql" : [ 2 ],
   "sqlrf/graph-pattern-11.sql" : [ 2 ],

@@ -1,0 +1,9 @@
+{
+  "sqlrf/create-property-graph-23.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00911",
+      "reason": "The label names use typographic quotation marks instead of SQL double quotes; Oracle rejects the character after LABEL."
+    }
+  }
+}

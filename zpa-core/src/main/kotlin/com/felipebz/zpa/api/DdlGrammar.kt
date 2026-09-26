@@ -86,6 +86,10 @@ enum class DdlGrammar : GrammarRuleKey {
     AUDIT_PRIVILEGE_CLAUSE,
     AUDIT_ACTION_CLAUSE,
     AUDIT_ROLE_CLAUSE,
+    CREATE_PROPERTY_GRAPH,
+    PROPERTY_GRAPH_VERTEX_TABLE,
+    PROPERTY_GRAPH_EDGE_TABLE,
+    PROPERTY_GRAPH_PROPERTIES,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -1818,6 +1822,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createLockdownProfile(b)
             createDomain(b)
             createAuditPolicy(b)
+            createPropertyGraph(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2042,6 +2047,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
                 CREATE_AUDIT_POLICY,
+                CREATE_PROPERTY_GRAPH,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2174,6 +2180,61 @@ enum class DdlGrammar : GrammarRuleKey {
                     EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)),
                 b.optional(ONLY, TOPLEVEL),
                 b.optional(CONTAINER, EQUALS, b.firstOf(ALL, CURRENT)),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-property-graph.html
+        private fun createPropertyGraph(b: PlSqlGrammarBuilder) {
+            val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val columnList = b.sequence(
+                LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+            val elementNameAndKey = b.sequence(
+                schemaObjectName, b.optional(AS, IDENTIFIER_NAME), b.optional(KEY, columnList))
+
+            // An expression needs AS (ORA-42424 before trailing tokens are read).
+            val property = b.firstOf(b.sequence(EXPRESSION, AS, IDENTIFIER_NAME), IDENTIFIER_NAME)
+            b.rule(PROPERTY_GRAPH_PROPERTIES).define(
+                b.firstOf(
+                    b.sequence(NO, PROPERTIES),
+                    b.sequence(
+                        PROPERTIES,
+                        b.firstOf(
+                            b.sequence(b.optional(ARE), ALL, COLUMNS, b.optional(EXCEPT, columnList)),
+                            b.sequence(LPARENTHESIS, property, b.zeroOrMore(COMMA, property), RPARENTHESIS)))))
+
+            // Only one properties clause may belong to the default label (ORA-42408 for a second one).
+            val label = b.sequence(
+                b.firstOf(b.sequence(PlSqlKeyword.LABEL, IDENTIFIER_NAME), b.sequence(DEFAULT, PlSqlKeyword.LABEL)),
+                b.optional(PROPERTY_GRAPH_PROPERTIES))
+            val labelsAndProperties = b.sequence(
+                b.zeroOrMore(label), b.optional(PROPERTY_GRAPH_PROPERTIES), b.zeroOrMore(label))
+
+            b.rule(PROPERTY_GRAPH_VERTEX_TABLE).define(elementNameAndKey, labelsAndProperties)
+
+            val vertexReference = b.firstOf(
+                b.sequence(KEY, columnList, REFERENCES, IDENTIFIER_NAME, columnList),
+                IDENTIFIER_NAME)
+            b.rule(PROPERTY_GRAPH_EDGE_TABLE).define(
+                elementNameAndKey,
+                SOURCE, vertexReference,
+                DESTINATION, vertexReference,
+                labelsAndProperties)
+
+            val graphOption = b.firstOf(
+                b.sequence(b.firstOf(ENFORCED, TRUSTED), MODE),
+                b.sequence(b.firstOf(ALLOW, DISALLOW), MIXED, PROPERTY, TYPES))
+
+            b.rule(CREATE_PROPERTY_GRAPH).define(
+                CREATE, b.optional(OR, REPLACE), PROPERTY, GRAPH, b.optional(IF, NOT, EXISTS),
+                schemaObjectName,
+                VERTEX, TABLES, LPARENTHESIS,
+                PROPERTY_GRAPH_VERTEX_TABLE, b.zeroOrMore(COMMA, PROPERTY_GRAPH_VERTEX_TABLE),
+                RPARENTHESIS,
+                b.optional(
+                    EDGE, TABLES, LPARENTHESIS,
+                    PROPERTY_GRAPH_EDGE_TABLE, b.zeroOrMore(COMMA, PROPERTY_GRAPH_EDGE_TABLE),
+                    RPARENTHESIS),
+                b.optional(OPTIONS, LPARENTHESIS, graphOption, b.zeroOrMore(COMMA, graphOption), RPARENTHESIS),
                 b.optional(SEMICOLON))
         }
 
