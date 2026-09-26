@@ -94,6 +94,9 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_USER,
     USER_AUTHENTICATION_CLAUSE,
     ALTER_USER,
+    CREATE_PROFILE,
+    ALTER_PROFILE,
+    PROFILE_LIMIT_CLAUSE,
     USER_PROXY_CLAUSE,
     CREATE_CONTEXT,
     CALL_COMMAND,
@@ -1829,6 +1832,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createAuditPolicy(b)
             createPropertyGraph(b)
             createUser(b)
+            createProfile(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2057,6 +2061,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_PROPERTY_GRAPH,
                 CREATE_USER,
                 ALTER_USER,
+                CREATE_PROFILE,
+                ALTER_PROFILE,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2199,6 +2205,40 @@ enum class DdlGrammar : GrammarRuleKey {
                         DROP,
                         b.sequence(CHARACTER_LITERAL, EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)))),
                 b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PROFILE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PROFILE.html
+        private fun createProfile(b: PlSqlGrammarBuilder) {
+            val unlimitedOrDefault = b.firstOf(UNLIMITED, DEFAULT)
+            // Resource limits take a plain integer: Oracle 26 rejects `CPU_PER_CALL 1+1` at the operator.
+            val resourceParameter = b.firstOf(
+                b.sequence(
+                    b.firstOf(
+                        SESSIONS_PER_USER, CPU_PER_SESSION, CPU_PER_CALL, CONNECT_TIME, IDLE_TIME,
+                        LOGICAL_READS_PER_SESSION, LOGICAL_READS_PER_CALL, COMPOSITE_LIMIT),
+                    b.firstOf(INTEGER_LITERAL, unlimitedOrDefault)),
+                b.sequence(PRIVATE_SGA, b.firstOf(INDEX_SIZE_CLAUSE, unlimitedOrDefault)))
+            // Oracle 26 also accepts UNLIMITED for PASSWORD_ROLLOVER_TIME, which the diagram omits.
+            val passwordParameter = b.firstOf(
+                b.sequence(
+                    b.firstOf(
+                        FAILED_LOGIN_ATTEMPTS, PASSWORD_LIFE_TIME, PASSWORD_REUSE_TIME, PASSWORD_REUSE_MAX,
+                        PASSWORD_LOCK_TIME, PASSWORD_GRACE_TIME, INACTIVE_ACCOUNT_TIME, PASSWORD_ROLLOVER_TIME),
+                    b.firstOf(unlimitedOrDefault, EXPRESSION)),
+                b.sequence(
+                    PASSWORD_VERIFY_FUNCTION,
+                    b.firstOf(NULL, DEFAULT, b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)))))
+
+            b.rule(PROFILE_LIMIT_CLAUSE).define(
+                LIMIT, b.oneOrMore(b.firstOf(resourceParameter, passwordParameter)),
+                b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))
+
+            b.rule(CREATE_PROFILE).define(
+                CREATE, b.optional(MANDATORY), PROFILE, IDENTIFIER_NAME, PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+
+            b.rule(ALTER_PROFILE).define(
+                ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-USER.html

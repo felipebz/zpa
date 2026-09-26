@@ -55,7 +55,6 @@
   "examples/create_package03.sql" : [ 8 ],
   "examples/create_pmem_filestore.sql" : [ 1 ],
   "examples/create_procedure02.sql" : [ 2 ],
-  "examples/create_profile.sql" : [ 1 ],
   "examples/create_restore_point.sql" : [ 1 ],
   "examples/create_role.sql" : [ 1 ],
   "examples/create_rollback_segment.sql" : [ 1 ],
