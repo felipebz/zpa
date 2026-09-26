@@ -1,20 +1,5 @@
 {
-  "src/addons/pljson_table_impl.type.impl.sql" : [
-    127,
-    366,
-    374,
-    398
-  ],
-  "src/pljson_parser.impl.sql" : [
-    277,
-    303,
-    306,
-    691
-  ],
-  "src/pljson_printer.package.sql" : [
-    74,
-    148,
-    206,
-    419
-  ]
+  "src/addons/pljson_table_impl.type.impl.sql" : [ 127, 366, 374, 398 ],
+  "src/pljson_parser.impl.sql" : [ 277, 303, 306, 691 ],
+  "src/pljson_printer.package.sql" : [ 74, 148, 206, 419 ]
 }

@@ -1,11 +1,5 @@
 {
-  "source/core/types/ut_executable_test.tpb" : [
-    151
-  ],
-  "test/ut3_tester/core/test_ut_utils.pkb" : [
-    290
-  ],
-  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [
-    673
-  ]
+  "source/core/types/ut_executable_test.tpb" : [ 151 ],
+  "test/ut3_tester/core/test_ut_utils.pkb" : [ 290 ],
+  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 673 ]
 }

@@ -1,8 +1,4 @@
 {
-  "testsuite-utplsql/utplsql_pljson_table_test.sql" : [
-    132
-  ],
-  "testsuite/pljson_ut.package.sql" : [
-    155
-  ]
+  "testsuite-utplsql/utplsql_pljson_table_test.sql" : [ 132 ],
+  "testsuite/pljson_ut.package.sql" : [ 155 ]
 }

@@ -1,12 +1,5 @@
 {
-  "source/core/types/ut_executable.tpb" : [
-    89
-  ],
-  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [
-    174,
-    320
-  ],
-  "test/ut3_user/reporters/test_realtime_reporter.pkb" : [
-    487
-  ]
+  "source/core/types/ut_executable.tpb" : [ 89 ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 174, 320 ],
+  "test/ut3_user/reporters/test_realtime_reporter.pkb" : [ 487 ]
 }

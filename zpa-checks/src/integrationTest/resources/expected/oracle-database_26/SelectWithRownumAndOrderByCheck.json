@@ -1,17 +1,7 @@
 {
-  "lnpls/cursors-overview-25.sql" : [
-    5
-  ],
-  "lnpls/cursors-overview-27.sql" : [
-    5
-  ],
-  "lnpls/cursors-overview-29.sql" : [
-    5
-  ],
-  "lnpls/processing-query-result-sets-6.sql" : [
-    7
-  ],
-  "sqlrf/ROWNUM-Pseudocolumn-1.sql" : [
-    4
-  ]
+  "lnpls/cursors-overview-25.sql" : [ 5 ],
+  "lnpls/cursors-overview-27.sql" : [ 5 ],
+  "lnpls/cursors-overview-29.sql" : [ 5 ],
+  "lnpls/processing-query-result-sets-6.sql" : [ 7 ],
+  "sqlrf/ROWNUM-Pseudocolumn-1.sql" : [ 4 ]
 }

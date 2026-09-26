@@ -1,69 +1,16 @@
 {
-  "examples/award_bonus/award_bonus.sql" : [
-    8
-  ],
-  "source/api/ut.pkb" : [
-    810
-  ],
-  "source/core/ut_utils.pkb" : [
-    654
-  ],
-  "source/expectations/data_values/ut_cursor_details.tpb" : [
-    231,
-    243
-  ],
-  "source/reporters/ut_debug_reporter.tpb" : [
-    74
-  ],
-  "test/ut3_tester/core/test_output_buffer.pkb" : [
-    23,
-    85,
-    177,
-    195
-  ],
-  "test/ut3_tester/core/test_suite_builder.pkb" : [
-    33
-  ],
-  "test/ut3_tester/core/test_ut_utils.pkb" : [
-    10,
-    271
-  ],
-  "test/ut3_tester_helper/run_helper.pkb" : [
-    164
-  ],
-  "test/ut3_user/api/test_ut_run.pkb" : [
-    829
-  ],
-  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [
-    1972,
-    1975,
-    1996,
-    1999,
-    2020,
-    2023,
-    2046,
-    2049,
-    2081,
-    2084
-  ],
-  "test/ut3_user/reporters/test_junit_reporter.pkb" : [
-    142
-  ],
-  "test/ut3_user/reporters/test_realtime_reporter.pkb" : [
-    254,
-    264,
-    275,
-    336,
-    371,
-    388,
-    406,
-    423,
-    440,
-    456,
-    495,
-    513
-  ],
-  "test/ut3_user/reporters/test_tfs_junit_reporter.pkb" : [
-    198
-  ]
+  "examples/award_bonus/award_bonus.sql" : [ 8 ],
+  "source/api/ut.pkb" : [ 810 ],
+  "source/core/ut_utils.pkb" : [ 654 ],
+  "source/expectations/data_values/ut_cursor_details.tpb" : [ 231, 243 ],
+  "source/reporters/ut_debug_reporter.tpb" : [ 74 ],
+  "test/ut3_tester/core/test_output_buffer.pkb" : [ 23, 85, 177, 195 ],
+  "test/ut3_tester/core/test_suite_builder.pkb" : [ 33 ],
+  "test/ut3_tester/core/test_ut_utils.pkb" : [ 10, 271 ],
+  "test/ut3_tester_helper/run_helper.pkb" : [ 164 ],
+  "test/ut3_user/api/test_ut_run.pkb" : [ 829 ],
+  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 1972, 1975, 1996, 1999, 2020, 2023, 2046, 2049, 2081, 2084 ],
+  "test/ut3_user/reporters/test_junit_reporter.pkb" : [ 142 ],
+  "test/ut3_user/reporters/test_realtime_reporter.pkb" : [ 254, 264, 275, 336, 371, 388, 406, 423, 440, 456, 495, 513 ],
+  "test/ut3_user/reporters/test_tfs_junit_reporter.pkb" : [ 198 ]
 }

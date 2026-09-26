@@ -1,137 +1,31 @@
 {
-  "lnpls/CREATE-FUNCTION-statement-2.sql" : [
-    2
-  ],
-  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
-    6,
-    6,
-    7,
-    7,
-    8,
-    8,
-    22,
-    22
-  ],
-  "lnpls/CREATE-PROCEDURE-statement-1.sql" : [
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-1.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-16.sql" : [
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-19.sql" : [
-    2,
-    2
-  ],
-  "lnpls/SQL_MACRO-clause-2.sql" : [
-    2,
-    3
-  ],
-  "lnpls/SQL_MACRO-clause-3.sql" : [
-    2,
-    3,
-    4
-  ],
-  "lnpls/SQL_MACRO-clause-4.sql" : [
-    2,
-    3,
-    4,
-    5
-  ],
-  "lnpls/SQL_MACRO-clause-5.sql" : [
-    2,
-    3,
-    4,
-    5
-  ],
-  "lnpls/SQL_MACRO-clause-6.sql" : [
-    2,
-    3,
-    4,
-    5,
-    6
-  ],
-  "lnpls/Supresses-warning-pragma-6009-6.sql" : [
-    3
-  ],
-  "lnpls/assigning-values-variables-5.sql" : [
-    6
-  ],
-  "lnpls/conditional-compilation1-25.sql" : [
-    3
-  ],
-  "lnpls/expressions-57.sql" : [
-    9
-  ],
-  "lnpls/external-subprograms-1.sql" : [
-    3,
-    4
-  ],
-  "lnpls/external-subprograms-2.sql" : [
-    3
-  ],
-  "lnpls/minimizing-cpu-overhead-2.sql" : [
-    14,
-    19
-  ],
-  "lnpls/overloaded-subprograms-12.sql" : [
-    8,
-    8,
-    9,
-    9
-  ],
-  "lnpls/overloaded-subprograms-13.sql" : [
-    9,
-    13
-  ],
-  "lnpls/pl-sql-function-result-cache-13.sql" : [
-    4
-  ],
-  "lnpls/sequential-control-statements-1.sql" : [
-    3,
-    4
-  ],
-  "lnpls/subprogram-invocation-resolution-0.sql" : [
-    4,
-    5,
-    12,
-    18,
-    19,
-    26,
-    27
-  ],
-  "lnpls/subprogram-parameters-10.sql" : [
-    3
-  ],
-  "sqlrf/SELECT-17.sql" : [
-    2
-  ],
-  "sqlrf/SELECT-20.sql" : [
-    2,
-    3,
-    4
-  ],
-  "sqlrf/SELECT-21.sql" : [
-    2
-  ],
-  "sqlrf/Using-Extensible-Indexing-1.sql" : [
-    41,
-    41,
-    55,
-    65,
-    75,
-    87,
-    98,
-    99,
-    110,
-    110,
-    112,
-    175,
-    202
-  ],
-  "sqlrf/Using-Extensible-Indexing-2.sql" : [
-    3
-  ]
+  "lnpls/CREATE-FUNCTION-statement-2.sql" : [ 2 ],
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [ 6, 6, 7, 7, 8, 8, 22, 22 ],
+  "lnpls/CREATE-PROCEDURE-statement-1.sql" : [ 3 ],
+  "lnpls/SQL_MACRO-clause-1.sql" : [ 2 ],
+  "lnpls/SQL_MACRO-clause-16.sql" : [ 2 ],
+  "lnpls/SQL_MACRO-clause-19.sql" : [ 2, 2 ],
+  "lnpls/SQL_MACRO-clause-2.sql" : [ 2, 3 ],
+  "lnpls/SQL_MACRO-clause-3.sql" : [ 2, 3, 4 ],
+  "lnpls/SQL_MACRO-clause-4.sql" : [ 2, 3, 4, 5 ],
+  "lnpls/SQL_MACRO-clause-5.sql" : [ 2, 3, 4, 5 ],
+  "lnpls/SQL_MACRO-clause-6.sql" : [ 2, 3, 4, 5, 6 ],
+  "lnpls/Supresses-warning-pragma-6009-6.sql" : [ 3 ],
+  "lnpls/assigning-values-variables-5.sql" : [ 6 ],
+  "lnpls/conditional-compilation1-25.sql" : [ 3 ],
+  "lnpls/expressions-57.sql" : [ 9 ],
+  "lnpls/external-subprograms-1.sql" : [ 3, 4 ],
+  "lnpls/external-subprograms-2.sql" : [ 3 ],
+  "lnpls/minimizing-cpu-overhead-2.sql" : [ 14, 19 ],
+  "lnpls/overloaded-subprograms-12.sql" : [ 8, 8, 9, 9 ],
+  "lnpls/overloaded-subprograms-13.sql" : [ 9, 13 ],
+  "lnpls/pl-sql-function-result-cache-13.sql" : [ 4 ],
+  "lnpls/sequential-control-statements-1.sql" : [ 3, 4 ],
+  "lnpls/subprogram-invocation-resolution-0.sql" : [ 4, 5, 12, 18, 19, 26, 27 ],
+  "lnpls/subprogram-parameters-10.sql" : [ 3 ],
+  "sqlrf/SELECT-17.sql" : [ 2 ],
+  "sqlrf/SELECT-20.sql" : [ 2, 3, 4 ],
+  "sqlrf/SELECT-21.sql" : [ 2 ],
+  "sqlrf/Using-Extensible-Indexing-1.sql" : [ 41, 41, 55, 65, 75, 87, 98, 99, 110, 110, 112, 175, 202 ],
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [ 3 ]
 }

@@ -1,8 +1,4 @@
 {
-  "source/expectations/json_objects_specs.sql" : [
-    2
-  ],
-  "source/uninstall_objects.sql" : [
-    257
-  ]
+  "source/expectations/json_objects_specs.sql" : [ 2 ],
+  "source/uninstall_objects.sql" : [ 257 ]
 }

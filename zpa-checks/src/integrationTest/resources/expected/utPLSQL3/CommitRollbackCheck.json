@@ -1,8 +1,4 @@
 {
-  "source/api/ut_runner.pkb" : [
-    32
-  ],
-  "test/ut3_tester_helper/ut_example_tests.pkb" : [
-    32
-  ]
+  "source/api/ut_runner.pkb" : [ 32 ],
+  "test/ut3_tester_helper/ut_example_tests.pkb" : [ 32 ]
 }

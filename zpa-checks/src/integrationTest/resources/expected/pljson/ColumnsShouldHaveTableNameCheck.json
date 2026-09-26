@@ -1,7 +1,3 @@
 {
-  "examples/ex_pljson_table.sql" : [
-    151,
-    165,
-    189
-  ]
+  "examples/ex_pljson_table.sql" : [ 151, 165, 189 ]
 }

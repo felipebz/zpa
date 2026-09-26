@@ -1,127 +1,26 @@
 {
-  "source/core/types/ut_logical_suite.tpb" : [
-    40,
-    41
-  ],
-  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [
-    32
-  ],
-  "source/expectations/matchers/ut_be_empty.tpb" : [
-    31
-  ],
-  "source/expectations/matchers/ut_contain.tpb" : [
-    68
-  ],
-  "source/expectations/matchers/ut_equal.tpb" : [
-    39,
-    325
-  ],
-  "source/reporters/ut_coverage_cobertura_reporter.tpb" : [
-    29,
-    86,
-    92
-  ],
-  "source/reporters/ut_coverage_report_html_helper.pkb" : [
-    27
-  ],
-  "source/reporters/ut_tfs_junit_reporter.tpb" : [
-    97
-  ],
-  "test/ut3_tester/core/annotations/test_annotation_cache.pkb" : [
-    19,
-    32,
-    45,
-    60,
-    78,
-    99,
-    112,
-    128,
-    145
-  ],
-  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [
-    100,
-    118,
-    217,
-    218
-  ],
-  "test/ut3_tester/core/expectations/test_expectation_processor.pkb" : [
-    7,
-    45,
-    72
-  ],
-  "test/ut3_tester/core/test_output_buffer.pkb" : [
-    46,
-    62,
-    63
-  ],
-  "test/ut3_tester/core/test_suite_manager.pkb" : [
-    730,
-    822,
-    852,
-    1840,
-    2193
-  ],
-  "test/ut3_tester/core/test_ut_test.pkb" : [
-    10
-  ],
-  "test/ut3_tester/core/test_ut_utils.pkb" : [
-    220
-  ],
-  "test/ut3_tester_helper/run_helper.pkb" : [
-    184
-  ],
-  "test/ut3_user/api/test_ut_run.pkb" : [
-    582,
-    1000
-  ],
-  "test/ut3_user/api/test_ut_runner.pkb" : [
-    418
-  ],
-  "test/ut3_user/expectations/test_expectation_anydata.pkb" : [
-    220,
-    221,
-    367,
-    368,
-    693,
-    813,
-    832,
-    833,
-    1193,
-    1194
-  ],
-  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [
-    761,
-    762,
-    1129,
-    1130,
-    1727,
-    1728,
-    1794,
-    1795,
-    1901,
-    1902
-  ],
-  "test/ut3_user/expectations/test_expectations_json.pkb" : [
-    10,
-    232,
-    233,
-    268,
-    269,
-    301,
-    302,
-    1720,
-    1721,
-    1756,
-    1757
-  ],
-  "test/ut3_user/reporters/test_coverage/test_extended_coverage.pkb" : [
-    302
-  ],
-  "test/ut3_user/reporters/test_coverage/test_html_coverage_reporter.pkb" : [
-    80
-  ],
-  "test/ut3_user/reporters/test_junit_reporter.pkb" : [
-    282,
-    283
-  ]
+  "source/core/types/ut_logical_suite.tpb" : [ 40, 41 ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 32 ],
+  "source/expectations/matchers/ut_be_empty.tpb" : [ 31 ],
+  "source/expectations/matchers/ut_contain.tpb" : [ 68 ],
+  "source/expectations/matchers/ut_equal.tpb" : [ 39, 325 ],
+  "source/reporters/ut_coverage_cobertura_reporter.tpb" : [ 29, 86, 92 ],
+  "source/reporters/ut_coverage_report_html_helper.pkb" : [ 27 ],
+  "source/reporters/ut_tfs_junit_reporter.tpb" : [ 97 ],
+  "test/ut3_tester/core/annotations/test_annotation_cache.pkb" : [ 19, 32, 45, 60, 78, 99, 112, 128, 145 ],
+  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [ 100, 118, 217, 218 ],
+  "test/ut3_tester/core/expectations/test_expectation_processor.pkb" : [ 7, 45, 72 ],
+  "test/ut3_tester/core/test_output_buffer.pkb" : [ 46, 62, 63 ],
+  "test/ut3_tester/core/test_suite_manager.pkb" : [ 730, 822, 852, 1840, 2193 ],
+  "test/ut3_tester/core/test_ut_test.pkb" : [ 10 ],
+  "test/ut3_tester/core/test_ut_utils.pkb" : [ 220 ],
+  "test/ut3_tester_helper/run_helper.pkb" : [ 184 ],
+  "test/ut3_user/api/test_ut_run.pkb" : [ 582, 1000 ],
+  "test/ut3_user/api/test_ut_runner.pkb" : [ 418 ],
+  "test/ut3_user/expectations/test_expectation_anydata.pkb" : [ 220, 221, 367, 368, 693, 813, 832, 833, 1193, 1194 ],
+  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 761, 762, 1129, 1130, 1727, 1728, 1794, 1795, 1901, 1902 ],
+  "test/ut3_user/expectations/test_expectations_json.pkb" : [ 10, 232, 233, 268, 269, 301, 302, 1720, 1721, 1756, 1757 ],
+  "test/ut3_user/reporters/test_coverage/test_extended_coverage.pkb" : [ 302 ],
+  "test/ut3_user/reporters/test_coverage/test_html_coverage_reporter.pkb" : [ 80 ],
+  "test/ut3_user/reporters/test_junit_reporter.pkb" : [ 282, 283 ]
 }

@@ -1,21 +1,7 @@
 {
-  "lnpls/declarations-1.sql" : [
-    3,
-    5
-  ],
-  "lnpls/dml-triggers-24.sql" : [
-    24
-  ],
-  "lnpls/exception-propagation-0.sql" : [
-    9
-  ],
-  "lnpls/exception-propagation-1.sql" : [
-    7
-  ],
-  "lnpls/sql-data-types-38.sql" : [
-    3,
-    4,
-    5,
-    6
-  ]
+  "lnpls/declarations-1.sql" : [ 3, 5 ],
+  "lnpls/dml-triggers-24.sql" : [ 24 ],
+  "lnpls/exception-propagation-0.sql" : [ 9 ],
+  "lnpls/exception-propagation-1.sql" : [ 7 ],
+  "lnpls/sql-data-types-38.sql" : [ 3, 4, 5, 6 ]
 }

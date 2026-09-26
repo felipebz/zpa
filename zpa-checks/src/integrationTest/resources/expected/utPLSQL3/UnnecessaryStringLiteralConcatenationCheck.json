@@ -1,44 +1,8 @@
 {
-  "source/expectations/data_values/ut_compound_data_helper.pkb" : [
-    148,
-    166,
-    177
-  ],
-  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [
-    164,
-    166
-  ],
-  "source/expectations/matchers/ut_matcher.tpb" : [
-    21
-  ],
-  "source/reporters/ut_coverage_report_html_helper.pkb" : [
-    125,
-    240,
-    241,
-    242,
-    247,
-    247,
-    248,
-    250,
-    253,
-    264,
-    265,
-    266,
-    266,
-    267,
-    315,
-    316,
-    321,
-    322,
-    326
-  ],
-  "source/reporters/ut_junit_reporter.tpb" : [
-    41,
-    89,
-    89
-  ],
-  "source/reporters/ut_tfs_junit_reporter.tpb" : [
-    125,
-    125
-  ]
+  "source/expectations/data_values/ut_compound_data_helper.pkb" : [ 148, 166, 177 ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 164, 166 ],
+  "source/expectations/matchers/ut_matcher.tpb" : [ 21 ],
+  "source/reporters/ut_coverage_report_html_helper.pkb" : [ 125, 240, 241, 242, 247, 247, 248, 250, 253, 264, 265, 266, 266, 267, 315, 316, 321, 322, 326 ],
+  "source/reporters/ut_junit_reporter.tpb" : [ 41, 89, 89 ],
+  "source/reporters/ut_tfs_junit_reporter.tpb" : [ 125, 125 ]
 }

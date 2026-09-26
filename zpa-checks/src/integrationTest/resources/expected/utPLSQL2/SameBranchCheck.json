@@ -1,8 +1,4 @@
 {
-  "source/ut_outputreporter.pkb" : [
-    90
-  ],
-  "source/ut_plsql_util.pkb" : [
-    233
-  ]
+  "source/ut_outputreporter.pkb" : [ 90 ],
+  "source/ut_plsql_util.pkb" : [ 233 ]
 }

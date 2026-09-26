@@ -41,9 +41,7 @@ import kotlin.io.path.exists
 class PlSqlRulingTest {
 
     private val mapper = ObjectMapper()
-    private val prettyPrinter = DefaultPrettyPrinter().apply {
-        indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
-    }
+    private val prettyPrinter = DefaultPrettyPrinter()
 
     @Test
     fun alexandria_plsql_utils() {

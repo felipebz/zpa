@@ -1,55 +1,13 @@
 {
-  "src/addons/pljson_helper.package.sql" : [
-    243
-  ],
-  "src/addons/pljson_object_cache.impl.sql" : [
-    21,
-    77
-  ],
-  "src/addons/pljson_table_impl.type.impl.sql" : [
-    380,
-    656
-  ],
-  "src/pljson.type.impl.sql" : [
-    555
-  ],
-  "src/pljson_bool.type.sql" : [
-    31
-  ],
-  "src/pljson_element.type.impl.sql" : [
-    124
-  ],
-  "src/pljson_ext.impl.sql" : [
-    87,
-    398,
-    409,
-    420,
-    431,
-    442,
-    453,
-    464,
-    531,
-    542,
-    554,
-    565,
-    576,
-    587,
-    598,
-    935
-  ],
-  "src/pljson_list.type.impl.sql" : [
-    368
-  ],
-  "src/pljson_number.type.sql" : [
-    161
-  ],
-  "src/pljson_printer.package.sql" : [
-    67,
-    139,
-    168,
-    175
-  ],
-  "src/pljson_string.type.sql" : [
-    98
-  ]
+  "src/addons/pljson_helper.package.sql" : [ 243 ],
+  "src/addons/pljson_object_cache.impl.sql" : [ 21, 77 ],
+  "src/addons/pljson_table_impl.type.impl.sql" : [ 380, 656 ],
+  "src/pljson.type.impl.sql" : [ 555 ],
+  "src/pljson_bool.type.sql" : [ 31 ],
+  "src/pljson_element.type.impl.sql" : [ 124 ],
+  "src/pljson_ext.impl.sql" : [ 87, 398, 409, 420, 431, 442, 453, 464, 531, 542, 554, 565, 576, 587, 598, 935 ],
+  "src/pljson_list.type.impl.sql" : [ 368 ],
+  "src/pljson_number.type.sql" : [ 161 ],
+  "src/pljson_printer.package.sql" : [ 67, 139, 168, 175 ],
+  "src/pljson_string.type.sql" : [ 98 ]
 }

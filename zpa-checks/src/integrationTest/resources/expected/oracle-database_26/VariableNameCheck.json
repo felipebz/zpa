@@ -1,33 +1,10 @@
 {
-  "lnpls/cursors-overview-18.sql" : [
-    11,
-    12,
-    13
-  ],
-  "lnpls/cursors-overview-22.sql" : [
-    13,
-    14,
-    15
-  ],
-  "lnpls/lexical-units-12.sql" : [
-    3,
-    4
-  ],
-  "lnpls/lexical-units-4.sql" : [
-    3
-  ],
-  "lnpls/lexical-units-6.sql" : [
-    3
-  ],
-  "lnpls/lexical-units-8.sql" : [
-    3,
-    4,
-    5
-  ],
-  "lnpls/overview-exception-handling-6.sql" : [
-    4
-  ],
-  "lnpls/pl-sql-function-result-cache-15.sql" : [
-    10
-  ]
+  "lnpls/cursors-overview-18.sql" : [ 11, 12, 13 ],
+  "lnpls/cursors-overview-22.sql" : [ 13, 14, 15 ],
+  "lnpls/lexical-units-12.sql" : [ 3, 4 ],
+  "lnpls/lexical-units-4.sql" : [ 3 ],
+  "lnpls/lexical-units-6.sql" : [ 3 ],
+  "lnpls/lexical-units-8.sql" : [ 3, 4, 5 ],
+  "lnpls/overview-exception-handling-6.sql" : [ 4 ],
+  "lnpls/pl-sql-function-result-cache-15.sql" : [ 10 ]
 }

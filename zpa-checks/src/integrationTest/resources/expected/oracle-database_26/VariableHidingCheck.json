@@ -1,17 +1,7 @@
 {
-  "lnpls/scope-and-visibility-identifiers-0.sql" : [
-    10
-  ],
-  "lnpls/scope-and-visibility-identifiers-1.sql" : [
-    7
-  ],
-  "lnpls/scope-and-visibility-identifiers-3.sql" : [
-    6
-  ],
-  "lnpls/scope-and-visibility-identifiers-5.sql" : [
-    3
-  ],
-  "lnpls/scope-and-visibility-identifiers-9.sql" : [
-    7
-  ]
+  "lnpls/scope-and-visibility-identifiers-0.sql" : [ 10 ],
+  "lnpls/scope-and-visibility-identifiers-1.sql" : [ 7 ],
+  "lnpls/scope-and-visibility-identifiers-3.sql" : [ 6 ],
+  "lnpls/scope-and-visibility-identifiers-5.sql" : [ 3 ],
+  "lnpls/scope-and-visibility-identifiers-9.sql" : [ 7 ]
 }

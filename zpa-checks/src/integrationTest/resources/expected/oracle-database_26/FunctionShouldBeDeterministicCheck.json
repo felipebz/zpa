@@ -1,8 +1,4 @@
 {
-  "lnpls/release-changes-0.sql" : [
-    2
-  ],
-  "lnpls/subprogram-parts-7.sql" : [
-    2
-  ]
+  "lnpls/release-changes-0.sql" : [ 2 ],
+  "lnpls/subprogram-parts-7.sql" : [ 2 ]
 }

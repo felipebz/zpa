@@ -1,8 +1,4 @@
 {
-  "ora/pdf_builder_pkg.pkb" : [
-    995
-  ],
-  "ora/string_util_pkg.pkb" : [
-    584
-  ]
+  "ora/pdf_builder_pkg.pkb" : [ 995 ],
+  "ora/string_util_pkg.pkb" : [ 584 ]
 }

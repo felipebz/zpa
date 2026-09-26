@@ -1,22 +1,4 @@
 {
-  "src/addons/pljson_table_impl.type.impl.sql" : [
-    45,
-    46
-  ],
-  "src/pljson_element.type.impl.sql" : [
-    56,
-    56,
-    64,
-    64,
-    104,
-    109,
-    114,
-    114,
-    157,
-    157,
-    157,
-    163,
-    163,
-    163
-  ]
+  "src/addons/pljson_table_impl.type.impl.sql" : [ 45, 46 ],
+  "src/pljson_element.type.impl.sql" : [ 56, 56, 64, 64, 104, 109, 114, 114, 157, 157, 157, 163, 163, 163 ]
 }

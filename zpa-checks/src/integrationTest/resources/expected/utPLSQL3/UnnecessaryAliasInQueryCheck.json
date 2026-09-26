@@ -1,179 +1,20 @@
 {
-  "source/check_sys_grants.sql" : [
-    29,
-    30,
-    34
-  ],
-  "source/core/annotations/ut_annotation_cache_manager.pkb" : [
-    24,
-    37,
-    51,
-    73,
-    76,
-    84,
-    131,
-    144,
-    156,
-    167,
-    192,
-    193
-  ],
-  "source/core/coverage/ut_coverage_helper.pkb" : [
-    67,
-    78
-  ],
-  "source/core/coverage/ut_coverage_helper_profiler.pkb" : [
-    65,
-    66,
-    69
-  ],
-  "source/core/output_buffers/ut_output_buffer_base.tpb" : [
-    61,
-    150
-  ],
-  "source/core/output_buffers/ut_output_bulk_buffer.tpb" : [
-    107,
-    127
-  ],
-  "source/core/output_buffers/ut_output_clob_table_buffer.tpb" : [
-    82,
-    89
-  ],
-  "source/core/ut_metadata.pkb" : [
-    162
-  ],
-  "source/core/ut_suite_cache_manager.pkb" : [
-    31,
-    42,
-    43,
-    52,
-    54,
-    65,
-    79,
-    138,
-    138,
-    148,
-    148,
-    157,
-    157,
-    165,
-    207,
-    248,
-    253,
-    259,
-    293,
-    311,
-    315,
-    323,
-    329,
-    339,
-    350,
-    378,
-    404,
-    418,
-    422,
-    459,
-    476,
-    485,
-    493
-  ],
-  "source/core/ut_suite_manager.pkb" : [
-    318,
-    615,
-    618
-  ],
-  "source/core/ut_utils.pkb" : [
-    356,
-    770
-  ],
-  "source/expectations/data_values/ut_compound_data_helper.pkb" : [
-    768
-  ],
-  "source/expectations/data_values/ut_cursor_details.tpb" : [
-    190,
-    203
-  ],
-  "source/uninstall_synonyms.sql" : [
-    13,
-    15,
-    42
-  ],
-  "test/install_ut3_tester_helper.sql" : [
-    66
-  ],
-  "test/install_ut3_user_tests.sql" : [
-    128
-  ],
-  "test/ut3_tester/core/test_ut_utils.pkb" : [
-    10
-  ],
-  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [
-    455,
-    456,
-    469,
-    470,
-    482,
-    483,
-    495,
-    496,
-    511,
-    512,
-    550,
-    551,
-    564,
-    565,
-    578,
-    579,
-    606,
-    607,
-    1042,
-    1267,
-    1268,
-    1290,
-    1291,
-    1315,
-    1316,
-    1338,
-    1339,
-    1361,
-    1362,
-    1383,
-    1384,
-    1508,
-    1509,
-    1522,
-    1523,
-    1536,
-    1537,
-    1550,
-    1551,
-    1564,
-    1565,
-    1578,
-    1579,
-    1592,
-    1593,
-    2265,
-    2266,
-    2279,
-    2280,
-    2293,
-    2294,
-    2307,
-    2308,
-    2443,
-    2444,
-    2456,
-    2457,
-    2469,
-    2470,
-    2482,
-    2483,
-    2495,
-    2497,
-    2498,
-    2513,
-    2514,
-    2515
-  ]
+  "source/check_sys_grants.sql" : [ 29, 30, 34 ],
+  "source/core/annotations/ut_annotation_cache_manager.pkb" : [ 24, 37, 51, 73, 76, 84, 131, 144, 156, 167, 192, 193 ],
+  "source/core/coverage/ut_coverage_helper.pkb" : [ 67, 78 ],
+  "source/core/coverage/ut_coverage_helper_profiler.pkb" : [ 65, 66, 69 ],
+  "source/core/output_buffers/ut_output_buffer_base.tpb" : [ 61, 150 ],
+  "source/core/output_buffers/ut_output_bulk_buffer.tpb" : [ 107, 127 ],
+  "source/core/output_buffers/ut_output_clob_table_buffer.tpb" : [ 82, 89 ],
+  "source/core/ut_metadata.pkb" : [ 162 ],
+  "source/core/ut_suite_cache_manager.pkb" : [ 31, 42, 43, 52, 54, 65, 79, 138, 138, 148, 148, 157, 157, 165, 207, 248, 253, 259, 293, 311, 315, 323, 329, 339, 350, 378, 404, 418, 422, 459, 476, 485, 493 ],
+  "source/core/ut_suite_manager.pkb" : [ 318, 615, 618 ],
+  "source/core/ut_utils.pkb" : [ 356, 770 ],
+  "source/expectations/data_values/ut_compound_data_helper.pkb" : [ 768 ],
+  "source/expectations/data_values/ut_cursor_details.tpb" : [ 190, 203 ],
+  "source/uninstall_synonyms.sql" : [ 13, 15, 42 ],
+  "test/install_ut3_tester_helper.sql" : [ 66 ],
+  "test/install_ut3_user_tests.sql" : [ 128 ],
+  "test/ut3_tester/core/test_ut_utils.pkb" : [ 10 ],
+  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 455, 456, 469, 470, 482, 483, 495, 496, 511, 512, 550, 551, 564, 565, 578, 579, 606, 607, 1042, 1267, 1268, 1290, 1291, 1315, 1316, 1338, 1339, 1361, 1362, 1383, 1384, 1508, 1509, 1522, 1523, 1536, 1537, 1550, 1551, 1564, 1565, 1578, 1579, 1592, 1593, 2265, 2266, 2279, 2280, 2293, 2294, 2307, 2308, 2443, 2444, 2456, 2457, 2469, 2470, 2482, 2483, 2495, 2497, 2498, 2513, 2514, 2515 ]
 }

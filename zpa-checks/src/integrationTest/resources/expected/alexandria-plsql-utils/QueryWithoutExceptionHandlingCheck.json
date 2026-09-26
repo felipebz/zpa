@@ -1,10 +1,4 @@
 {
-  "demos/owa_util_pkg_demo.sql" : [
-    29
-  ],
-  "ora/flex_ws_api.pkb" : [
-    98,
-    267,
-    443
-  ]
+  "demos/owa_util_pkg_demo.sql" : [ 29 ],
+  "ora/flex_ws_api.pkb" : [ 98, 267, 443 ]
 }

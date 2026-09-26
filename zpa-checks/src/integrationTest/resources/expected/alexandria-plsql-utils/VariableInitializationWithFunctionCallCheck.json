@@ -1,163 +1,22 @@
 {
-  "demos/datapump_cloud_pkg.pkb" : [
-    21,
-    22
-  ],
-  "demos/plsql_status_web_pkg.pkb" : [
-    17
-  ],
-  "extras/as_pdf3.pkb" : [
-    350,
-    2284
-  ],
-  "extras/hash_util_pkg.pkb" : [
-    19,
-    20,
-    192,
-    193,
-    194,
-    195,
-    196,
-    472,
-    473,
-    474,
-    475,
-    476,
-    477,
-    478,
-    479,
-    860,
-    861,
-    862,
-    863,
-    864,
-    865,
-    866,
-    867
-  ],
-  "extras/pdfgen_pkg.pkb" : [
-    796,
-    965,
-    1635
-  ],
-  "extras/utl_file_nonstandard.pkb" : [
-    23
-  ],
-  "ora/amazon_aws_s3_pkg.pkb" : [
-    717,
-    754,
-    830,
-    1153
-  ],
-  "ora/csv_util_pkg.pkb" : [
-    22
-  ],
-  "ora/datapump_util_pkg.pkb" : [
-    25,
-    86,
-    87,
-    89
-  ],
-  "ora/date_util_pkg.pkb" : [
-    635,
-    636
-  ],
-  "ora/encode_util_pkg.pkb" : [
-    45,
-    84,
-    145,
-    185
-  ],
-  "ora/flex_ws_api.pkb" : [
-    23,
-    49,
-    425
-  ],
-  "ora/ntlm_util_pkg.pkb" : [
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
-    23,
-    24,
-    25,
-    26,
-    27,
-    28,
-    29,
-    30,
-    31,
-    32,
-    33,
-    34,
-    35,
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    494
-  ],
-  "ora/pdf_builder_pkg.pkb" : [
-    1077,
-    1078,
-    1079,
-    1080,
-    1081
-  ],
-  "ora/random_util_pkg.pkb" : [
-    24,
-    25,
-    85,
-    86,
-    393,
-    800
-  ],
-  "ora/rss_util_pkg.pkb" : [
-    103
-  ],
-  "ora/string_util_pkg.pkb" : [
-    433
-  ],
-  "ora/string_util_pkg.pks" : [
-    30,
-    31,
-    32,
-    34,
-    35
-  ],
-  "ora/xlsx_builder_pkg.pkb" : [
-    4,
-    5,
-    187,
-    258,
-    422,
-    665,
-    720,
-    750,
-    775,
-    801,
-    821,
-    842,
-    924,
-    952,
-    971,
-    985,
-    996,
-    1008,
-    1023
-  ],
-  "ora/zip_util_pkg.pkb" : [
-    425
-  ]
+  "demos/datapump_cloud_pkg.pkb" : [ 21, 22 ],
+  "demos/plsql_status_web_pkg.pkb" : [ 17 ],
+  "extras/as_pdf3.pkb" : [ 350, 2284 ],
+  "extras/hash_util_pkg.pkb" : [ 19, 20, 192, 193, 194, 195, 196, 472, 473, 474, 475, 476, 477, 478, 479, 860, 861, 862, 863, 864, 865, 866, 867 ],
+  "extras/pdfgen_pkg.pkb" : [ 796, 965, 1635 ],
+  "extras/utl_file_nonstandard.pkb" : [ 23 ],
+  "ora/amazon_aws_s3_pkg.pkb" : [ 717, 754, 830, 1153 ],
+  "ora/csv_util_pkg.pkb" : [ 22 ],
+  "ora/datapump_util_pkg.pkb" : [ 25, 86, 87, 89 ],
+  "ora/date_util_pkg.pkb" : [ 635, 636 ],
+  "ora/encode_util_pkg.pkb" : [ 45, 84, 145, 185 ],
+  "ora/flex_ws_api.pkb" : [ 23, 49, 425 ],
+  "ora/ntlm_util_pkg.pkb" : [ 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 494 ],
+  "ora/pdf_builder_pkg.pkb" : [ 1077, 1078, 1079, 1080, 1081 ],
+  "ora/random_util_pkg.pkb" : [ 24, 25, 85, 86, 393, 800 ],
+  "ora/rss_util_pkg.pkb" : [ 103 ],
+  "ora/string_util_pkg.pkb" : [ 433 ],
+  "ora/string_util_pkg.pks" : [ 30, 31, 32, 34, 35 ],
+  "ora/xlsx_builder_pkg.pkb" : [ 4, 5, 187, 258, 422, 665, 720, 750, 775, 801, 821, 842, 924, 952, 971, 985, 996, 1008, 1023 ],
+  "ora/zip_util_pkg.pkb" : [ 425 ]
 }

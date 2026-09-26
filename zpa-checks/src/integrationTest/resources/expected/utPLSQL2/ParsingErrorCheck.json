@@ -1,23 +1,9 @@
 {
-  "examples/filepath1.pkg" : [
-    104
-  ],
-  "examples/str2list.pkg" : [
-    62
-  ],
-  "source/ut_config.pkb" : [
-    680
-  ],
-  "source/ut_gen.pkb" : [
-    222
-  ],
-  "source/ut_i_preprocess.sql" : [
-    23
-  ],
-  "source/ut_i_synonyms.sql" : [
-    24
-  ],
-  "source/ut_plsql.pkb" : [
-    778
-  ]
+  "examples/filepath1.pkg" : [ 104 ],
+  "examples/str2list.pkg" : [ 62 ],
+  "source/ut_config.pkb" : [ 680 ],
+  "source/ut_gen.pkb" : [ 222 ],
+  "source/ut_i_preprocess.sql" : [ 23 ],
+  "source/ut_i_synonyms.sql" : [ 24 ],
+  "source/ut_plsql.pkb" : [ 778 ]
 }

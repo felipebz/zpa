@@ -1,5 +1,3 @@
 {
-  "examples-sql-script/package_with_cursor.sql" : [
-    3
-  ]
+  "examples-sql-script/package_with_cursor.sql" : [ 3 ]
 }

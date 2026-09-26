@@ -1,46 +1,16 @@
 {
-  "examples/remove_rooms_by_name/remove_rooms_by_name.sql" : [
-    4
-  ],
-  "source/api/ut.pkb" : [
-    223
-  ],
-  "source/expectations/data_values/ut_data_value.tpb" : [
-    30
-  ],
-  "source/expectations/data_values/ut_data_value_anydata.tpb" : [
-    127,
-    138
-  ],
-  "source/expectations/data_values/ut_data_value_boolean.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_date.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_json.tpb" : [
-    101
-  ],
-  "source/expectations/data_values/ut_data_value_number.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [
-    206,
-    361
-  ],
-  "source/expectations/data_values/ut_data_value_timestamp.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_timestamp_ltz.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_timestamp_tz.tpb" : [
-    52
-  ],
-  "source/expectations/data_values/ut_data_value_varchar2.tpb" : [
-    52
-  ],
-  "test/ut3_tester/core/test_ut_executable.pkb" : [
-    74
-  ]
+  "examples/remove_rooms_by_name/remove_rooms_by_name.sql" : [ 4 ],
+  "source/api/ut.pkb" : [ 223 ],
+  "source/expectations/data_values/ut_data_value.tpb" : [ 30 ],
+  "source/expectations/data_values/ut_data_value_anydata.tpb" : [ 127, 138 ],
+  "source/expectations/data_values/ut_data_value_boolean.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_date.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_json.tpb" : [ 101 ],
+  "source/expectations/data_values/ut_data_value_number.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 206, 361 ],
+  "source/expectations/data_values/ut_data_value_timestamp.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_timestamp_ltz.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_timestamp_tz.tpb" : [ 52 ],
+  "source/expectations/data_values/ut_data_value_varchar2.tpb" : [ 52 ],
+  "test/ut3_tester/core/test_ut_executable.pkb" : [ 74 ]
 }

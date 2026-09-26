@@ -1,8 +1,3 @@
 {
-  "test/ut3_user/expectations/unary/test_expect_to_be_true_false.pkb" : [
-    12,
-    44,
-    77,
-    109
-  ]
+  "test/ut3_user/expectations/unary/test_expect_to_be_true_false.pkb" : [ 12, 44, 77, 109 ]
 }

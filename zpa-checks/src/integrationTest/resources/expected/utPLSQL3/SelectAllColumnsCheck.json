@@ -1,209 +1,33 @@
 {
-  "examples/award_bonus/test_award_bonus.pkg" : [
-    40,
-    53
-  ],
-  "examples/remove_rooms_by_name/test_remove_rooms_by_name.pkg" : [
-    52,
-    56,
-    64,
-    74,
-    83,
-    93
-  ],
-  "source/core/annotations/ut_annotation_cache_manager.pkb" : [
-    142
-  ],
-  "source/core/output_buffers/ut_output_clob_table_buffer.tpb" : [
-    80
-  ],
-  "source/core/output_buffers/ut_output_table_buffer.tpb" : [
-    115
-  ],
-  "source/core/ut_suite_cache_manager.pkb" : [
-    133,
-    172,
-    174,
-    176,
-    178
-  ],
-  "source/core/ut_suite_manager.pkb" : [
-    20,
-    372
-  ],
-  "source/core/ut_utils.pkb" : [
-    771
-  ],
-  "test/ut3_tester/core/annotations/test_annot_disabled_reason.pkb" : [
-    350,
-    373,
-    397,
-    422,
-    441,
-    466
-  ],
-  "test/ut3_tester/core/annotations/test_annot_throws_exception.pkb" : [
-    254
-  ],
-  "test/ut3_tester/core/annotations/test_annotation_cache.pkb" : [
-    8
-  ],
-  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [
-    199,
-    209,
-    235
-  ],
-  "test/ut3_tester/core/annotations/test_before_after_annotations.pkb" : [
-    203,
-    218,
-    229,
-    242,
-    254,
-    267,
-    275,
-    294
-  ],
-  "test/ut3_tester/core/test_output_buffer.pkb" : [
-    53
-  ],
-  "test/ut3_tester/core/test_suite_manager.pkb" : [
-    1214,
-    1220,
-    1257,
-    1728,
-    1734,
-    1747
-  ],
-  "test/ut3_tester/core/test_ut_test.pkb" : [
-    305,
-    717
-  ],
-  "test/ut3_tester_helper/main_helper.pkb" : [
-    34
-  ],
-  "test/ut3_tester_helper/run_helper.pkb" : [
-    716,
-    723,
-    736,
-    744,
-    752,
-    778,
-    786,
-    794,
-    875,
-    896,
-    910
-  ],
-  "test/ut3_user/api/test_ut_run.pkb" : [
-    401,
-    416,
-    426,
-    470,
-    532,
-    558,
-    584,
-    630,
-    689,
-    754,
-    836,
-    856,
-    861,
-    876,
-    887,
-    889,
-    1085,
-    1431
-  ],
-  "test/ut3_user/api/test_ut_runner.pkb" : [
-    145,
-    151,
-    186,
-    288,
-    320,
-    342,
-    374,
-    399,
-    508,
-    521,
-    534,
-    547,
-    560,
-    574,
-    593
-  ],
-  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [
-    113,
-    114,
-    157,
-    169,
-    181,
-    193,
-    205,
-    227,
-    239,
-    252,
-    1014,
-    2849,
-    2932
-  ],
-  "test/ut3_user/expectations/unary/test_expect_to_be_empty.pkb" : [
-    11,
-    22,
-    35,
-    52,
-    63
-  ],
-  "test/ut3_user/expectations/unary/test_expect_to_have_count.pkb" : [
-    12,
-    23,
-    36,
-    51,
-    62
-  ],
-  "test/ut3_user/reporters.pkb" : [
-    168,
-    183
-  ],
-  "test/ut3_user/reporters/test_coverage/test_coverage_standalone.pkb" : [
-    53
-  ],
-  "test/ut3_user/reporters/test_debug_reporter.pkb" : [
-    8
-  ],
-  "test/ut3_user/reporters/test_documentation_reporter.pkb" : [
-    47
-  ],
-  "test/ut3_user/reporters/test_junit_reporter.pkb" : [
-    84,
-    100,
-    114,
-    128,
-    147,
-    162,
-    189,
-    211,
-    274,
-    303
-  ],
-  "test/ut3_user/reporters/test_sonar_test_reporter.pkb" : [
-    18
-  ],
-  "test/ut3_user/reporters/test_teamcity_reporter.pkb" : [
-    102,
-    120,
-    138,
-    158,
-    180
-  ],
-  "test/ut3_user/reporters/test_tfs_junit_reporter.pkb" : [
-    137,
-    151,
-    165,
-    178,
-    203,
-    223,
-    248,
-    270,
-    292
-  ]
+  "examples/award_bonus/test_award_bonus.pkg" : [ 40, 53 ],
+  "examples/remove_rooms_by_name/test_remove_rooms_by_name.pkg" : [ 52, 56, 64, 74, 83, 93 ],
+  "source/core/annotations/ut_annotation_cache_manager.pkb" : [ 142 ],
+  "source/core/output_buffers/ut_output_clob_table_buffer.tpb" : [ 80 ],
+  "source/core/output_buffers/ut_output_table_buffer.tpb" : [ 115 ],
+  "source/core/ut_suite_cache_manager.pkb" : [ 133, 172, 174, 176, 178 ],
+  "source/core/ut_suite_manager.pkb" : [ 20, 372 ],
+  "source/core/ut_utils.pkb" : [ 771 ],
+  "test/ut3_tester/core/annotations/test_annot_disabled_reason.pkb" : [ 350, 373, 397, 422, 441, 466 ],
+  "test/ut3_tester/core/annotations/test_annot_throws_exception.pkb" : [ 254 ],
+  "test/ut3_tester/core/annotations/test_annotation_cache.pkb" : [ 8 ],
+  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [ 199, 209, 235 ],
+  "test/ut3_tester/core/annotations/test_before_after_annotations.pkb" : [ 203, 218, 229, 242, 254, 267, 275, 294 ],
+  "test/ut3_tester/core/test_output_buffer.pkb" : [ 53 ],
+  "test/ut3_tester/core/test_suite_manager.pkb" : [ 1214, 1220, 1257, 1728, 1734, 1747 ],
+  "test/ut3_tester/core/test_ut_test.pkb" : [ 305, 717 ],
+  "test/ut3_tester_helper/main_helper.pkb" : [ 34 ],
+  "test/ut3_tester_helper/run_helper.pkb" : [ 716, 723, 736, 744, 752, 778, 786, 794, 875, 896, 910 ],
+  "test/ut3_user/api/test_ut_run.pkb" : [ 401, 416, 426, 470, 532, 558, 584, 630, 689, 754, 836, 856, 861, 876, 887, 889, 1085, 1431 ],
+  "test/ut3_user/api/test_ut_runner.pkb" : [ 145, 151, 186, 288, 320, 342, 374, 399, 508, 521, 534, 547, 560, 574, 593 ],
+  "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 113, 114, 157, 169, 181, 193, 205, 227, 239, 252, 1014, 2849, 2932 ],
+  "test/ut3_user/expectations/unary/test_expect_to_be_empty.pkb" : [ 11, 22, 35, 52, 63 ],
+  "test/ut3_user/expectations/unary/test_expect_to_have_count.pkb" : [ 12, 23, 36, 51, 62 ],
+  "test/ut3_user/reporters.pkb" : [ 168, 183 ],
+  "test/ut3_user/reporters/test_coverage/test_coverage_standalone.pkb" : [ 53 ],
+  "test/ut3_user/reporters/test_debug_reporter.pkb" : [ 8 ],
+  "test/ut3_user/reporters/test_documentation_reporter.pkb" : [ 47 ],
+  "test/ut3_user/reporters/test_junit_reporter.pkb" : [ 84, 100, 114, 128, 147, 162, 189, 211, 274, 303 ],
+  "test/ut3_user/reporters/test_sonar_test_reporter.pkb" : [ 18 ],
+  "test/ut3_user/reporters/test_teamcity_reporter.pkb" : [ 102, 120, 138, 158, 180 ],
+  "test/ut3_user/reporters/test_tfs_junit_reporter.pkb" : [ 137, 151, 165, 178, 203, 223, 248, 270, 292 ]
 }

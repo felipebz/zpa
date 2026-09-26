@@ -1,25 +1,9 @@
 {
-  "examples/mybooks_setup.sql" : [
-    48
-  ],
-  "examples/te_employee.pkb" : [
-    967
-  ],
-  "examples/test_te_employee.pkb" : [
-    369
-  ],
-  "examples/ut_te_employee.pkb" : [
-    369
-  ],
-  "source/ut_plsql2.pkb" : [
-    57
-  ],
-  "source/ut_plsql_util.pkb" : [
-    615,
-    959,
-    963
-  ],
-  "source/ut_receq.pkb" : [
-    151
-  ]
+  "examples/mybooks_setup.sql" : [ 48 ],
+  "examples/te_employee.pkb" : [ 967 ],
+  "examples/test_te_employee.pkb" : [ 369 ],
+  "examples/ut_te_employee.pkb" : [ 369 ],
+  "source/ut_plsql2.pkb" : [ 57 ],
+  "source/ut_plsql_util.pkb" : [ 615, 959, 963 ],
+  "source/ut_receq.pkb" : [ 151 ]
 }

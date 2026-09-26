@@ -1,20 +1,8 @@
 {
-  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
-    57
-  ],
-  "lnpls/column-name-precedence-0.sql" : [
-    8
-  ],
-  "lnpls/expressions-28.sql" : [
-    16
-  ],
-  "sqlrf/CREATE-MATERIALIZED-VIEW-10.sql" : [
-    5
-  ],
-  "sqlrf/INSERT-42.sql" : [
-    4
-  ],
-  "sqlrf/JSON_TABLE-1.sql" : [
-    4
-  ]
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [ 57 ],
+  "lnpls/column-name-precedence-0.sql" : [ 8 ],
+  "lnpls/expressions-28.sql" : [ 16 ],
+  "sqlrf/CREATE-MATERIALIZED-VIEW-10.sql" : [ 5 ],
+  "sqlrf/INSERT-42.sql" : [ 4 ],
+  "sqlrf/JSON_TABLE-1.sql" : [ 4 ]
 }

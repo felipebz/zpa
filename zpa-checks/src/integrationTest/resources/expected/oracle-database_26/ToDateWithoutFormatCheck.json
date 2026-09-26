@@ -1,27 +1,10 @@
 {
-  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [
-    8
-  ],
-  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [
-    30
-  ],
-  "adjsn/multiple-data-guides-document-set-0.sql" : [
-    5
-  ],
-  "adjsn/multiple-data-guides-document-set-1.sql" : [
-    5
-  ],
-  "adjsn/tables-json-columns-2.sql" : [
-    5,
-    36
-  ],
-  "sqlrf/ROUND-date-0.sql" : [
-    2
-  ],
-  "sqlrf/Sequence-Pseudocolumns-4.sql" : [
-    4
-  ],
-  "sqlrf/Sequence-Pseudocolumns-5.sql" : [
-    3
-  ]
+  "adjsn/change-triggers-data-guide-enabled-search-index-0.sql" : [ 8 ],
+  "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [ 30 ],
+  "adjsn/multiple-data-guides-document-set-0.sql" : [ 5 ],
+  "adjsn/multiple-data-guides-document-set-1.sql" : [ 5 ],
+  "adjsn/tables-json-columns-2.sql" : [ 5, 36 ],
+  "sqlrf/ROUND-date-0.sql" : [ 2 ],
+  "sqlrf/Sequence-Pseudocolumns-4.sql" : [ 4 ],
+  "sqlrf/Sequence-Pseudocolumns-5.sql" : [ 3 ]
 }

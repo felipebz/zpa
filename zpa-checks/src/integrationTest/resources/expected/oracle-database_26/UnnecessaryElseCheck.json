@@ -1,39 +1,14 @@
 {
-  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [
-    54,
-    69
-  ],
-  "lnpls/cursors-overview-27.sql" : [
-    16
-  ],
-  "lnpls/dml-triggers-34.sql" : [
-    37
-  ],
-  "lnpls/dml-triggers-35.sql" : [
-    31
-  ],
-  "lnpls/exception-propagation-13.sql" : [
-    11
-  ],
-  "lnpls/exception-propagation-15.sql" : [
-    13
-  ],
-  "lnpls/pl-sql-function-result-cache-7.sql" : [
-    10
-  ],
-  "lnpls/raising-exceptions-explicitly-2.sql" : [
-    9
-  ],
-  "lnpls/recursive-subprograms-1.sql" : [
-    10
-  ],
-  "lnpls/release-changes-0.sql" : [
-    5
-  ],
-  "sqlrf/CURSOR-Expressions-1.sql" : [
-    20
-  ],
-  "sqlrf/Using-Extensible-Indexing-2.sql" : [
-    68
-  ]
+  "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [ 54, 69 ],
+  "lnpls/cursors-overview-27.sql" : [ 16 ],
+  "lnpls/dml-triggers-34.sql" : [ 37 ],
+  "lnpls/dml-triggers-35.sql" : [ 31 ],
+  "lnpls/exception-propagation-13.sql" : [ 11 ],
+  "lnpls/exception-propagation-15.sql" : [ 13 ],
+  "lnpls/pl-sql-function-result-cache-7.sql" : [ 10 ],
+  "lnpls/raising-exceptions-explicitly-2.sql" : [ 9 ],
+  "lnpls/recursive-subprograms-1.sql" : [ 10 ],
+  "lnpls/release-changes-0.sql" : [ 5 ],
+  "sqlrf/CURSOR-Expressions-1.sql" : [ 20 ],
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [ 68 ]
 }

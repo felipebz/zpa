@@ -1,20 +1,8 @@
 {
-  "development/mystats/mystats.sql" : [
-    425
-  ],
-  "source/create_grants.sql" : [
-    56
-  ],
-  "source/create_synonyms.sql" : [
-    72
-  ],
-  "source/create_utplsql_owner.sql" : [
-    30
-  ],
-  "source/install.sql" : [
-    37
-  ],
-  "source/install_ddl_trigger.sql" : [
-    22
-  ]
+  "development/mystats/mystats.sql" : [ 425 ],
+  "source/create_grants.sql" : [ 56 ],
+  "source/create_synonyms.sql" : [ 72 ],
+  "source/create_utplsql_owner.sql" : [ 30 ],
+  "source/install.sql" : [ 37 ],
+  "source/install_ddl_trigger.sql" : [ 22 ]
 }

@@ -1,13 +1,4 @@
 {
-  "examples/ex8.sql" : [
-    62,
-    66,
-    73
-  ],
-  "src/addons/pljson_helper.package.sql" : [
-    394,
-    397,
-    417,
-    420
-  ]
+  "examples/ex8.sql" : [ 62, 66, 73 ],
+  "src/addons/pljson_helper.package.sql" : [ 394, 397, 417, 420 ]
 }

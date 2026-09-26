@@ -1,8 +1,4 @@
 {
-  "src/addons/pljson_util_pkg.package.sql" : [
-    260
-  ],
-  "src/pljson_parser.impl.sql" : [
-    70
-  ]
+  "src/addons/pljson_util_pkg.package.sql" : [ 260 ],
+  "src/pljson_parser.impl.sql" : [ 70 ]
 }

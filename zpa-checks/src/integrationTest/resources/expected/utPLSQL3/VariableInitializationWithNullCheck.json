@@ -1,11 +1,3 @@
 {
-  "source/core/coverage/ut_coverage.pks" : [
-    41,
-    42,
-    43,
-    56,
-    57,
-    58,
-    59
-  ]
+  "source/core/coverage/ut_coverage.pks" : [ 41, 42, 43, 56, 57, 58, 59 ]
 }

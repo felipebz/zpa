@@ -1,121 +1,32 @@
 {
-  "adjsn/using-pl-sql-object-types-json-2.sql" : [
-    5
-  ],
-  "lnpls/autonomous-transactions-9.sql" : [
-    21
-  ],
-  "lnpls/cursor-variables-1.sql" : [
-    6,
-    7,
-    8,
-    11
-  ],
-  "lnpls/cursor-variables-2.sql" : [
-    9
-  ],
-  "lnpls/dbms_sql-package-6.sql" : [
-    19
-  ],
-  "lnpls/declarations-0.sql" : [
-    3,
-    4,
-    5,
-    6
-  ],
-  "lnpls/declarations-1.sql" : [
-    3,
-    5,
-    7
-  ],
-  "lnpls/declarations-2.sql" : [
-    3,
-    4,
-    5,
-    6,
-    7
-  ],
-  "lnpls/declarations-3.sql" : [
-    3,
-    4,
-    5
-  ],
-  "lnpls/declarations-4.sql" : [
-    3,
-    4,
-    8
-  ],
-  "lnpls/dml-triggers-42.sql" : [
-    5
-  ],
-  "lnpls/dml-triggers-51.sql" : [
-    8
-  ],
-  "lnpls/exception-propagation-3.sql" : [
-    3
-  ],
-  "lnpls/exception-propagation-5.sql" : [
-    5
-  ],
-  "lnpls/lexical-units-12.sql" : [
-    4
-  ],
-  "lnpls/lexical-units-6.sql" : [
-    3
-  ],
-  "lnpls/loop-statements-10.sql" : [
-    3
-  ],
-  "lnpls/loop-statements-6.sql" : [
-    4
-  ],
-  "lnpls/native-dynamic-sql-12.sql" : [
-    7
-  ],
-  "lnpls/redeclared-predefined-exceptions-3.sql" : [
-    4
-  ],
-  "lnpls/redeclared-predefined-exceptions-5.sql" : [
-    4,
-    5
-  ],
-  "lnpls/scope-and-visibility-identifiers-0.sql" : [
-    3,
-    4,
-    10,
-    11,
-    19
-  ],
-  "lnpls/scope-and-visibility-identifiers-1.sql" : [
-    4
-  ],
-  "lnpls/scope-and-visibility-identifiers-5.sql" : [
-    4
-  ],
-  "lnpls/scope-and-visibility-identifiers-9.sql" : [
-    4
-  ],
-  "lnpls/subprogram-parameters-4.sql" : [
-    4
-  ],
-  "lnpls/user-defined-pl-sql-subtypes-2.sql" : [
-    5,
-    6,
-    7,
-    8,
-    12,
-    14,
-    15
-  ],
-  "sqlrf/Type-Constructor-Expressions-0.sql" : [
-    6
-  ],
-  "sqlrf/Using-Extensible-Indexing-1.sql" : [
-    113,
-    121,
-    180
-  ],
-  "sqlrf/Using-Extensible-Indexing-2.sql" : [
-    8
-  ]
+  "adjsn/using-pl-sql-object-types-json-2.sql" : [ 5 ],
+  "lnpls/autonomous-transactions-9.sql" : [ 21 ],
+  "lnpls/cursor-variables-1.sql" : [ 6, 7, 8, 11 ],
+  "lnpls/cursor-variables-2.sql" : [ 9 ],
+  "lnpls/dbms_sql-package-6.sql" : [ 19 ],
+  "lnpls/declarations-0.sql" : [ 3, 4, 5, 6 ],
+  "lnpls/declarations-1.sql" : [ 3, 5, 7 ],
+  "lnpls/declarations-2.sql" : [ 3, 4, 5, 6, 7 ],
+  "lnpls/declarations-3.sql" : [ 3, 4, 5 ],
+  "lnpls/declarations-4.sql" : [ 3, 4, 8 ],
+  "lnpls/dml-triggers-42.sql" : [ 5 ],
+  "lnpls/dml-triggers-51.sql" : [ 8 ],
+  "lnpls/exception-propagation-3.sql" : [ 3 ],
+  "lnpls/exception-propagation-5.sql" : [ 5 ],
+  "lnpls/lexical-units-12.sql" : [ 4 ],
+  "lnpls/lexical-units-6.sql" : [ 3 ],
+  "lnpls/loop-statements-10.sql" : [ 3 ],
+  "lnpls/loop-statements-6.sql" : [ 4 ],
+  "lnpls/native-dynamic-sql-12.sql" : [ 7 ],
+  "lnpls/redeclared-predefined-exceptions-3.sql" : [ 4 ],
+  "lnpls/redeclared-predefined-exceptions-5.sql" : [ 4, 5 ],
+  "lnpls/scope-and-visibility-identifiers-0.sql" : [ 3, 4, 10, 11, 19 ],
+  "lnpls/scope-and-visibility-identifiers-1.sql" : [ 4 ],
+  "lnpls/scope-and-visibility-identifiers-5.sql" : [ 4 ],
+  "lnpls/scope-and-visibility-identifiers-9.sql" : [ 4 ],
+  "lnpls/subprogram-parameters-4.sql" : [ 4 ],
+  "lnpls/user-defined-pl-sql-subtypes-2.sql" : [ 5, 6, 7, 8, 12, 14, 15 ],
+  "sqlrf/Type-Constructor-Expressions-0.sql" : [ 6 ],
+  "sqlrf/Using-Extensible-Indexing-1.sql" : [ 113, 121, 180 ],
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [ 8 ]
 }

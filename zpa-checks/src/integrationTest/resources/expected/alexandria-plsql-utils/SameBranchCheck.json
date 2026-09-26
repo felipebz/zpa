@@ -1,8 +1,4 @@
 {
-  "ora/rss_util_pkg.pkb" : [
-    84
-  ],
-  "ora/string_util_pkg.pkb" : [
-    585
-  ]
+  "ora/rss_util_pkg.pkb" : [ 84 ],
+  "ora/string_util_pkg.pkb" : [ 585 ]
 }

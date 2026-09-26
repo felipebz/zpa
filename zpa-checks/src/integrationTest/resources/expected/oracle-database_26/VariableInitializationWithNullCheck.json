@@ -1,12 +1,5 @@
 {
-  "lnpls/expressions-19.sql" : [
-    4
-  ],
-  "lnpls/expressions-21.sql" : [
-    3,
-    4
-  ],
-  "lnpls/pls_integer-and-binary_integer-data-types-4.sql" : [
-    4
-  ]
+  "lnpls/expressions-19.sql" : [ 4 ],
+  "lnpls/expressions-21.sql" : [ 3, 4 ],
+  "lnpls/pls_integer-and-binary_integer-data-types-4.sql" : [ 4 ]
 }

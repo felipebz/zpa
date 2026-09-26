@@ -1,8 +1,4 @@
 {
-  "src/addons/pljson_helper.package.sql" : [
-    366
-  ],
-  "src/pljson_ext.impl.sql" : [
-    503
-  ]
+  "src/addons/pljson_helper.package.sql" : [ 366 ],
+  "src/pljson_ext.impl.sql" : [ 503 ]
 }

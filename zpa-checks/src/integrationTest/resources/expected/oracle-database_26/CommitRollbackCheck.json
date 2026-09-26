@@ -1,16 +1,6 @@
 {
-  "lnpls/bulk-sql-and-bulk-binding-15.sql" : [
-    19,
-    32
-  ],
-  "lnpls/bulk-sql-and-bulk-binding-22.sql" : [
-    19,
-    44
-  ],
-  "lnpls/exception-propagation-0.sql" : [
-    18
-  ],
-  "lnpls/transaction-processing-and-control-0.sql" : [
-    25
-  ]
+  "lnpls/bulk-sql-and-bulk-binding-15.sql" : [ 19, 32 ],
+  "lnpls/bulk-sql-and-bulk-binding-22.sql" : [ 19, 44 ],
+  "lnpls/exception-propagation-0.sql" : [ 18 ],
+  "lnpls/transaction-processing-and-control-0.sql" : [ 25 ]
 }

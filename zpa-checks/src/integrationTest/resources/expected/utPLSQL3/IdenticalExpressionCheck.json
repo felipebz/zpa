@@ -1,14 +1,5 @@
 {
-  "source/uninstall_objects.sql" : [
-    407
-  ],
-  "source/uninstall_synonyms.sql" : [
-    43
-  ],
-  "test/ut3_user/expectations/unary/test_expect_to_be_true_false.pkb" : [
-    20,
-    60,
-    93,
-    117
-  ]
+  "source/uninstall_objects.sql" : [ 407 ],
+  "source/uninstall_synonyms.sql" : [ 43 ],
+  "test/ut3_user/expectations/unary/test_expect_to_be_true_false.pkb" : [ 20, 60, 93, 117 ]
 }

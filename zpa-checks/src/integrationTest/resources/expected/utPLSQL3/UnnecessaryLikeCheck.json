@@ -1,6 +1,3 @@
 {
-  "development/utplsql_style_check.sql" : [
-    41,
-    58
-  ]
+  "development/utplsql_style_check.sql" : [ 41, 58 ]
 }
