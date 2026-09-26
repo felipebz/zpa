@@ -851,15 +851,6 @@
   "sqlrf/ALTER-TABLE-117.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-122.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-123.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-TABLE-124.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-127.sql" : [
     2
   ],
@@ -1436,15 +1427,6 @@
   "sqlrf/CREATE-TABLE-64.sql" : [
     17
   ],
-  "sqlrf/CREATE-TABLE-65.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-TABLE-66.sql" : [
-    2
-  ],
-  "sqlrf/CREATE-TABLE-67.sql" : [
-    2
-  ],
   "sqlrf/CREATE-TABLE-69.sql" : [
     2
   ],
@@ -1969,21 +1951,6 @@
   ],
   "sqlrf/analytic-view-measure-expressions-5.sql" : [
     5
-  ],
-  "sqlrf/annotations_clause-0.sql" : [
-    2
-  ],
-  "sqlrf/annotations_clause-1.sql" : [
-    2
-  ],
-  "sqlrf/annotations_clause-2.sql" : [
-    2
-  ],
-  "sqlrf/annotations_clause-3.sql" : [
-    2
-  ],
-  "sqlrf/annotations_clause-4.sql" : [
-    4
   ],
   "sqlrf/constraint-27.sql" : [
     14

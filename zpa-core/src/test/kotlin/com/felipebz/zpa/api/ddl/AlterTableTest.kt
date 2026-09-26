@@ -320,6 +320,27 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesTableAnnotations() {
+        assertThat(p).matches("alter table t annotations(drop Operations, drop Hidden)")
+        assertThat(p).matches("alter table t annotations(add Operations '[\"Sort\", \"Group\"]')")
+        assertThat(p).matches("alter table t annotations(replace Display 'New value')")
+        assertThat(p).matches("alter table t annotations(add or replace A 'x', drop if exists B, add if not exists C)")
+        assertThat(p).matches("alter table t annotations(Hidden);")
+        // ALTER TABLE ADD column is not a CREATE statement: Oracle parses these directives there.
+        assertThat(p).matches("alter table t add (d number annotations(drop Foo))")
+        assertThat(p).matches("alter table t add (e number annotations(add or replace Foo 'x'))")
+    }
+
+    @Test
+    fun rejectsMalformedTableAnnotations() {
+        assertThat(p).notMatches("alter table t annotations")
+        assertThat(p).notMatches("alter table t annotations()")
+        assertThat(p).notMatches("alter table t annotations(drop)")
+        assertThat(p).notMatches("alter table t annotations(replace)")
+        assertThat(p).notMatches("alter table t annotations(Display 'x',)")
+    }
+
+    @Test
     fun rejectsMalformedTruncatePartitionAndSubpartition() {
         assertThat(p).notMatches("alter table t truncate")
         assertThat(p).notMatches("alter table t truncate partition")

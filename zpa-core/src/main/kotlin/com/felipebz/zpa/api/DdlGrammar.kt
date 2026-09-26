@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api
 
 import com.felipebz.flr.api.GenericTokenType.EOF
+import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.api.PlSqlGrammar.*
 import com.felipebz.zpa.api.PlSqlKeyword.*
@@ -28,6 +29,13 @@ import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
 import com.felipebz.zpa.grammar.JavaSourceTextExpression
 import com.felipebz.zpa.grammar.JavaResolverMatchStringExpression
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
+
+/**
+ * Set while parsing a CREATE TABLE statement. Oracle 26 rejects DROP, REPLACE and ADD OR REPLACE
+ * annotation directives there at parse time (ORA-11555/ORA-11556 win over trailing garbage), while
+ * ALTER TABLE, including ALTER TABLE ADD column, accepts them.
+ */
+internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
 
 enum class DdlGrammar : GrammarRuleKey {
 
@@ -390,7 +398,9 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.optional(FOR, INSERT,
                                 b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
                     b.optional(columnEncryptionClause()),
-                    b.zeroOrMore(INLINE_CONSTRAINT))
+                    b.zeroOrMore(INLINE_CONSTRAINT),
+                    // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
+                    b.optional(ANNOTATIONS_CLAUSE))
 
             b.rule(OUT_OF_LINE_CONSTRAINT).define(
                 b.optional(b.firstOf(CONSTRAINT, CONSTRAINTS), IDENTIFIER_NAME),
@@ -917,6 +927,23 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.optional(COMMA))),
                             RPARENTHESIS))
 
+            fun tablePartitioning() = b.optional(b.firstOf(
+                    PARTITION_BY_RANGE,
+                    PARTITION_BY_HASH,
+                    PARTITION_BY_LIST,
+                    PARTITION_COMPOSITE))
+
+            // Oracle 26 accepts table annotations after the IOT clause, around partitioning and
+            // TABLESPACE, and repeats them (`ANNOTATIONS(A '1') ANNOTATIONS(B '2')` executes). They
+            // must not precede ORGANIZATION INDEX (ORA-64303) or ON COMMIT (ORA-00922).
+            fun tableAnnotations() = b.zeroOrMore(ANNOTATIONS_CLAUSE)
+
+            fun tableSuffixesWithAnnotations() = b.sequence(
+                    tableAnnotations(),
+                    tablePartitioning(),
+                    tableAnnotations(),
+                    b.optional(TABLESPACE, IDENTIFIER_NAME, tableAnnotations()))
+
             b.rule(CREATE_TABLE).define(
                     CREATE,
                     b.optional(
@@ -924,19 +951,12 @@ enum class DdlGrammar : GrammarRuleKey {
                             TEMPORARY),
                     TABLE,
                     UNIT_NAME,
-                    b.firstOf(
+                    b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.firstOf(
                             b.sequence(
                                     OBJECT_TABLE_CLAUSE,
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                                    b.optional(b.firstOf(
-                                            PARTITION_BY_RANGE,
-                                            PARTITION_BY_HASH,
-                                            PARTITION_BY_LIST,
-                                            PARTITION_COMPOSITE)),
-                                    b.optional(
-                                            TABLESPACE,
-                                            IDENTIFIER_NAME)),
+                                    tableSuffixesWithAnnotations()),
                             b.sequence(
                                     b.optional(
                                             LPARENTHESIS,
@@ -944,21 +964,20 @@ enum class DdlGrammar : GrammarRuleKey {
                                             RPARENTHESIS),
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                                    b.optional(b.firstOf(
-                                            PARTITION_BY_RANGE,
-                                            PARTITION_BY_HASH,
-                                            PARTITION_BY_LIST,
-                                            PARTITION_COMPOSITE)),
-                                    b.optional(
-                                            TABLESPACE,
-                                            IDENTIFIER_NAME),
-                                    b.optional(
-                                            ON,
-                                            COMMIT,
-                                            b.firstOf(
-                                                    DELETE,
-                                                    PRESERVE),
-                                            ROWS))),
+                                    b.firstOf(
+                                            b.sequence(
+                                                    tablePartitioning(),
+                                                    b.optional(
+                                                            TABLESPACE,
+                                                            IDENTIFIER_NAME),
+                                                    ON,
+                                                    COMMIT,
+                                                    b.firstOf(
+                                                            DELETE,
+                                                            PRESERVE),
+                                                    ROWS,
+                                                    tableAnnotations()),
+                                            tableSuffixesWithAnnotations())))),
                     b.optional(AS, DmlGrammar.SELECT_EXPRESSION),
                     b.optional(SEMICOLON))
 
@@ -1062,13 +1081,15 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(LPARENTHESIS, INDEX_ILM_ACTION, RPARENTHESIS),
                     INDEX_ILM_ACTION))
 
+            val notInCreate = b.nextNot(b.requireContext(CREATE_ANNOTATIONS_CONTEXT, true))
+
             b.rule(ANNOTATION).define(
                 b.optional(b.firstOf(
                     b.sequence(ADD, b.optional(b.firstOf(
                         b.sequence(IF, NOT, EXISTS),
-                        b.sequence(OR, REPLACE)))),
-                    b.sequence(DROP, b.optional(IF, EXISTS)),
-                    REPLACE)),
+                        b.sequence(notInCreate, OR, REPLACE)))),
+                    b.sequence(notInCreate, DROP, b.optional(IF, EXISTS)),
+                    b.sequence(notInCreate, REPLACE))),
                 IDENTIFIER_NAME,
                 b.optional(CHARACTER_LITERAL))
 
@@ -1768,6 +1789,9 @@ enum class DdlGrammar : GrammarRuleKey {
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,
                             MODIFY_PARTITION_LOCAL_INDEXES,
+                            // alter_table_properties annotations_clause. Kept standalone: combining it with
+                            // ENABLE CONSTRAINT raises ORA-00600 in Oracle 26ai, so composition is unverified.
+                            ANNOTATIONS_CLAUSE,
                             b.sequence(
                                     b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
                                     b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),

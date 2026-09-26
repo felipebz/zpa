@@ -754,4 +754,83 @@ class CreateTableTest : RuleTest() {
     fun doesNotMatchCreateTableAsWithoutASubquery() {
         assertThat(p).notMatches("create table tab_bkp as;")
     }
+
+    @Test
+    fun matchesColumnAndTableAnnotations() {
+        assertThat(p).matches("create table t (c number annotations(Display 'Value', Hidden))")
+        assertThat(p).matches("create table t (c number) annotations(Display 'Table')")
+        assertThat(p).matches("create table t (c number annotations(Display 'Column')) annotations(Display 'Table')")
+        assertThat(p).matches("create table t (c number) annotations(add Hidden)")
+        assertThat(p).matches("create table t (c number) annotations(add if not exists Foo 'x')")
+        assertThat(p).matches("create table t (c number) annotations(Operations '[\"Sort\", \"Group\"]', Hidden)")
+        assertThat(p).matches("create table t (c number) annotations(Operations 'Sort', Operations 'Group', Hidden)")
+        assertThat(p).matches("create table t (id number(5) annotations(Identity, Display 'ID', \"Group\" 'Emp_Info'))")
+        assertThat(p).matches("create table t (c number default 1 not null annotations(Display 'C'))")
+        assertThat(p).matches("create table t (c number) tablespace users annotations(Display 'T')")
+        assertThat(p).matches("create table t (c number) partition by hash (c) partitions 2 annotations(Display 'T')")
+        assertThat(p).matches(
+            "create global temporary table t (c number) on commit preserve rows annotations(Display 'T')")
+        assertThat(p).matches("create table t annotations(Display 'T') as select 1 c from dual")
+        assertThat(p).matches("create table t of person_t annotations(Display 'O')")
+    }
+
+    @Test
+    fun rejectsMalformedAnnotations() {
+        assertThat(p).notMatches("create table t (c number) annotations")
+        assertThat(p).notMatches("create table t (c number) annotations()")
+        assertThat(p).notMatches("create table t (c number) annotations(Display,)")
+        assertThat(p).notMatches("create table t (c number) annotations(add)")
+        assertThat(p).notMatches("create table t (c number annotations())")
+        // Oracle 26 requires the column annotations after DEFAULT and inline constraints (ORA-03099/ORA-03076).
+        assertThat(p).notMatches("create table t (c number annotations(Display 'C') not null)")
+        assertThat(p).notMatches("create table t (c number annotations(Display 'C') default 1)")
+        // Annotations may not precede ON COMMIT (ORA-00922).
+        assertThat(p).notMatches(
+            "create global temporary table t (c number) annotations(Display 'T') on commit preserve rows")
+    }
+
+    @Test
+    fun rejectsAlterOnlyAnnotationDirectives() {
+        // Oracle 26 raises ORA-11555/ORA-11556 at the directive, before diagnosing trailing tokens.
+        assertThat(p).notMatches("create table t (c number) annotations(drop Foo)")
+        assertThat(p).notMatches("create table t (c number) annotations(drop if exists Foo)")
+        assertThat(p).notMatches("create table t (c number) annotations(replace Foo 'x')")
+        assertThat(p).notMatches("create table t (c number) annotations(add or replace Foo 'x')")
+        assertThat(p).notMatches("create table t (c number annotations(drop Foo))")
+        assertThat(p).notMatches("create table t (c number annotations(replace Foo 'x'))")
+    }
+
+    @Test
+    fun matchesTableAnnotationsAroundPartitioningAndTablespace() {
+        // Orders and repetition executed by Oracle 26ai.
+        assertThat(p).matches("create table t (c number) annotations(Display 'T') tablespace users")
+        assertThat(p).matches("create table t (c number) annotations(Display 'T') partition by hash (c) partitions 2")
+        assertThat(p).matches(
+            "create table t (c number) annotations(Display 'T') partition by hash (c) partitions 2 tablespace users")
+        assertThat(p).matches(
+            "create table t (c number) partition by hash (c) partitions 2 annotations(Display 'T') tablespace users")
+        assertThat(p).matches(
+            "create table t (c number) partition by hash (c) partitions 2 tablespace users annotations(Display 'T')")
+        assertThat(p).matches("create table t (c number) annotations(A '1') tablespace users annotations(B '2')")
+        assertThat(p).matches("create table t (c number) annotations(A '1') annotations(B '2')")
+        assertThat(p).matches(
+            "create table t (c number) annotations(A '1') partition by hash (c) partitions 2 annotations(B '2')")
+        assertThat(p).matches("create table t annotations(Display 'T') tablespace users as select 1 c from dual")
+        assertThat(p).matches("create table t tablespace users annotations(Display 'T') as select 1 c from dual")
+        assertThat(p).matches("create table t (c number primary key) organization index annotations(Display 'T')")
+        assertThat(p).matches(
+            "create table t (c number primary key) organization index tablespace users annotations(Display 'T')")
+    }
+
+    @Test
+    fun rejectsMisplacedTableAnnotations() {
+        // ORA-64303 before ORGANIZATION INDEX; ORA-03048 after the defining query.
+        assertThat(p).notMatches("create table t (c number primary key) annotations(Display 'T') organization index")
+        assertThat(p).notMatches("create table t as select 1 c from dual annotations(Display 'T')")
+        // ORA-00922: annotations may not precede ON COMMIT, even after partitioning or TABLESPACE.
+        assertThat(p).notMatches(
+            "create global temporary table t (c number) tablespace users annotations(Display 'T') on commit preserve rows")
+        assertThat(p).matches(
+            "create global temporary table t (c number) on commit preserve rows annotations(A '1') annotations(B '2')")
+    }
 }
