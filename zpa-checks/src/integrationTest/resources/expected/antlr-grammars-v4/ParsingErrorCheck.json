@@ -68,7 +68,6 @@
   "examples/interval03.sql" : [ 16 ],
   "examples/materialized_views.sql" : [ 81 ],
   "examples/max_001.sql" : [ 4 ],
-  "examples/noaudit_statement.sql" : [ 1 ],
   "examples/order_by04.sql" : [ 1 ],
   "examples/partitioned_tables.sql" : [ 32 ],
   "examples/purge_statement.sql" : [ 1 ],
@@ -79,7 +78,6 @@
   "examples/select_flashback_query.sql" : [ 2 ],
   "examples/select_time.sql" : [ 1 ],
   "examples/truncate_cluster.sql" : [ 1 ],
-  "examples/unified.sql" : [ 1 ],
   "examples/views.sql" : [ 59 ],
   "hw-examples/alter_operator.sql" : [ 1 ],
   "hw-examples/alter_outline.sql" : [ 1 ]

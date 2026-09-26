@@ -112,6 +112,10 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_CLUSTER,
     TABLE_CLUSTER_CLAUSE,
     ANALYZE_STATEMENT,
+    AUDIT_STATEMENT,
+    NOAUDIT_STATEMENT,
+    AUDIT_POLICY_CLAUSE,
+    AUDIT_CONTEXT_CLAUSE,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -1876,6 +1880,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createRollbackSegment(b)
             createCluster(b)
             createAnalyze(b)
+            createAudit(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2115,6 +2120,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_CLUSTER,
                 ALTER_CLUSTER,
                 ANALYZE_STATEMENT,
+                AUDIT_STATEMENT,
+                NOAUDIT_STATEMENT,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2291,6 +2298,58 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Unified-Auditing.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Unified-Auditing.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Traditional-Auditing.html
+        private fun createAudit(b: PlSqlGrammarBuilder) {
+            val name = DclGrammar.IDENTIFIER_OR_KEYWORD
+            val users = b.sequence(name, b.zeroOrMore(COMMA, name))
+            val whenever = b.sequence(WHENEVER, b.optional(NOT), SUCCESSFUL)
+
+            // Shared by AUDIT and NOAUDIT: Oracle 26 also accepts EXCEPT and WHENEVER in NOAUDIT POLICY, which its
+            // diagram omits. The policy name cannot be schema-qualified (ORA-03048 at the dot).
+            b.rule(AUDIT_POLICY_CLAUSE).define(
+                POLICY, IDENTIFIER_NAME,
+                b.optional(b.firstOf(
+                    b.sequence(BY, USERS, WITH, GRANTED, AUDIT_ROLE_CLAUSE),
+                    b.sequence(BY, users),
+                    b.sequence(EXCEPT, users))),
+                b.optional(whenever))
+
+            // WHENEVER and role lists are rejected here in both statements (ORA-03048), unlike the NOAUDIT diagram.
+            val namespace = b.sequence(
+                CONTEXT, NAMESPACE, name,
+                ATTRIBUTES, name, b.zeroOrMore(COMMA, b.nextNot(CONTEXT), name))
+            b.rule(AUDIT_CONTEXT_CLAUSE).define(
+                namespace, b.zeroOrMore(COMMA, namespace), b.optional(BY, users))
+
+            b.rule(AUDIT_STATEMENT).define(
+                AUDIT, b.firstOf(AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE), b.optional(SEMICOLON))
+
+            // Traditional auditing: each option is a run of words such as SELECT TABLE, DELETE ANY TABLE, ROLE,
+            // ALL STATEMENTS or DIRECT_PATH LOAD. Oracle 26 rejects BY after ON object (ORA-01708/ORA-01718).
+            // Traditional AUDIT itself is desupported (ORA-46401 at its first option), so only NOAUDIT has it.
+            val operation = b.oneOrMore(b.nextNot(b.firstOf(ON, BY, WHENEVER, CONTAINER)), name)
+            val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val traditional = b.sequence(
+                operation, b.zeroOrMore(COMMA, operation),
+                b.firstOf(
+                    b.sequence(
+                        ON,
+                        b.firstOf(
+                            b.sequence(DIRECTORY, IDENTIFIER_NAME),
+                            b.sequence(MINING, MODEL, schemaObjectName),
+                            b.sequence(SQL, TRANSLATION, PROFILE, schemaObjectName),
+                            DEFAULT,
+                            schemaObjectName)),
+                    b.optional(BY, users)),
+                b.optional(whenever),
+                b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))
+
+            b.rule(NOAUDIT_STATEMENT).define(
+                NOAUDIT, b.firstOf(AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE, traditional), b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ANALYZE.html
