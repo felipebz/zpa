@@ -31,8 +31,8 @@ import com.felipebz.zpa.grammar.JavaResolverMatchStringExpression
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 
 /**
- * Set while parsing a CREATE TABLE statement. Oracle 26 rejects DROP, REPLACE and ADD OR REPLACE
- * annotation directives there at parse time (ORA-11555/ORA-11556 win over trailing garbage), while
+ * Set while parsing CREATE TABLE and CREATE DOMAIN. Oracle 26 rejects DROP, REPLACE and ADD OR REPLACE
+ * annotation directives in both at parse time (ORA-11555/ORA-11556 at the directive), while
  * ALTER TABLE, including ALTER TABLE ADD column, accepts them.
  */
 internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
@@ -80,6 +80,8 @@ enum class DdlGrammar : GrammarRuleKey {
     LOCKDOWN_OPTIONS,
     LOCKDOWN_STATEMENTS,
     LOCKDOWN_OPTION_VALUES,
+    CREATE_DOMAIN,
+    DOMAIN_CONSTRAINT,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -1810,6 +1812,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(SEMICOLON))
 
             createLockdownProfile(b)
+            createDomain(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2032,6 +2035,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_INDEX,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
+                CREATE_DOMAIN,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2047,6 +2051,68 @@ enum class DdlGrammar : GrammarRuleKey {
                 DROP_DIRECTORY,
                 DROP_COMMAND,
                 TRUNCATE_TABLE))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-domain.html
+        // Only the single-column `AS datatype` branch; ENUM, multi-column and flexible domains are not modeled.
+        private fun createDomain(b: PlSqlGrammarBuilder) {
+            // Oracle 26 accepts only these states after a domain CHECK: USING INDEX, PRECHECK and
+            // EXCEPTIONS INTO fail with ORA-03049.
+            val domainConstraintState = b.sequence(
+                b.optional(b.firstOf(
+                    b.sequence(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE), b.optional(b.optional(NOT), DEFERRABLE)),
+                    b.sequence(b.optional(NOT), DEFERRABLE, b.optional(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE))))),
+                b.optional(b.firstOf(RELY, NORELY)),
+                b.optional(b.firstOf(ENABLE, DISABLE)),
+                b.optional(b.firstOf(VALIDATE, NOVALIDATE)))
+
+            // A name is allowed only on CHECK: `CONSTRAINT c NOT NULL` fails with ORA-02253.
+            b.rule(DOMAIN_CONSTRAINT).define(
+                b.optional(CONSTRAINT, b.optional(IDENTIFIER_NAME)),
+                CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                domainConstraintState)
+
+            // Oracle 26 accepts these properties in any order after the datatype and STRICT, each at most
+            // once (ORA-00139 or ORA-02258 on a repeat), with CHECK constraints repeatable anywhere.
+            val properties = arrayOf<Any>(
+                b.sequence(
+                    DEFAULT,
+                    b.optional(ON, NULL, b.optional(FOR, INSERT, b.firstOf(ONLY, b.sequence(AND, UPDATE)))),
+                    EXPRESSION),
+                b.sequence(b.optional(NOT), NULL),
+                b.sequence(VALIDATE, b.optional(CAST), b.optional(USING), CHARACTER_LITERAL),
+                b.sequence(COLLATE, IDENTIFIER_NAME),
+                b.sequence(DISPLAY, EXPRESSION),
+                b.sequence(ORDER, EXPRESSION),
+                b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, ANNOTATIONS_CLAUSE))
+            val allProperties = (1 shl properties.size) - 1
+            val propertyStates = arrayOfNulls<Any>(allProperties + 1)
+            fun domainProperties(remaining: Int): Any {
+                propertyStates[remaining]?.let { return it }
+                val choices = properties.indices.filter { remaining and (1 shl it) != 0 }.map { index ->
+                    b.sequence(properties[index], domainProperties(remaining xor (1 shl index)))
+                }
+                val next = when (choices.size) {
+                    0 -> null
+                    1 -> b.optional(choices[0])
+                    else -> b.optional(b.firstOf(choices[0], choices[1], *choices.drop(2).toTypedArray()))
+                }
+                val result = if (next == null) b.zeroOrMore(DOMAIN_CONSTRAINT)
+                    else b.sequence(b.zeroOrMore(DOMAIN_CONSTRAINT), next)
+                propertyStates[remaining] = result
+                return result
+            }
+
+            b.rule(CREATE_DOMAIN).define(
+                CREATE, b.optional(USECASE), DOMAIN, b.optional(IF, NOT, EXISTS),
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                // Unquoted ENUM always starts the (not yet modeled) enum branch: Oracle 26 reports
+                // ORA-00904 right after a bare ENUM, while "ENUM" or other names reach ORA-11531.
+                AS, b.nextNot(ENUM), DATATYPE,
+                // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
+                b.optional(STRICT),
+                domainProperties(allProperties),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-LOCKDOWN-PROFILE.html

@@ -43,5 +43,8 @@
   ],
   "sqlrf/Using-Extensible-Indexing-2.sql" : [
     39
+  ],
+  "sqlrf/create-domain-8.sql" : [
+    3
   ]
 }

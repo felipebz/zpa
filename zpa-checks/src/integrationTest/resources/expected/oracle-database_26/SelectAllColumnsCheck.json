@@ -11,6 +11,9 @@
   "adjsn/json-query-rewrite-use-materialized-view-json_table-0.sql" : [
     5
   ],
+  "adjsn/json-schema-11.sql" : [
+    6
+  ],
   "adjsn/querying-data-guide-0.sql" : [
     4
   ],

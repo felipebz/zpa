@@ -5,17 +5,8 @@
   "adjsn/json-collections-3.sql" : [
     2
   ],
-  "adjsn/json-schema-11.sql" : [
-    5
-  ],
   "adjsn/json-schema-16.sql" : [
     4
-  ],
-  "adjsn/json-schema-3.sql" : [
-    2
-  ],
-  "adjsn/json-schema-5.sql" : [
-    2
   ],
   "adjsn/json-schema-9.sql" : [
     2
@@ -806,9 +797,6 @@
   "sqlrf/ALTER-TABLE-49.sql" : [
     2
   ],
-  "sqlrf/ALTER-TABLE-5.sql" : [
-    2
-  ],
   "sqlrf/ALTER-TABLE-52.sql" : [
     15
   ],
@@ -1011,12 +999,6 @@
     2
   ],
   "sqlrf/CALL-3.sql" : [
-    2
-  ],
-  "sqlrf/CAST-13.sql" : [
-    2
-  ],
-  "sqlrf/CAST-16.sql" : [
     2
   ],
   "sqlrf/CHR-5.sql" : [
@@ -1358,9 +1340,6 @@
   "sqlrf/CREATE-TABLE-64.sql" : [
     17
   ],
-  "sqlrf/CREATE-TABLE-69.sql" : [
-    2
-  ],
   "sqlrf/CREATE-TABLE-7.sql" : [
     2
   ],
@@ -1368,7 +1347,7 @@
     2
   ],
   "sqlrf/CREATE-TABLE-71.sql" : [
-    2
+    3
   ],
   "sqlrf/CREATE-TABLE-72.sql" : [
     3
@@ -1923,16 +1902,16 @@
     2
   ],
   "sqlrf/create-domain-10.sql" : [
-    2
+    4
   ],
   "sqlrf/create-domain-11.sql" : [
-    2
+    4
   ],
   "sqlrf/create-domain-12.sql" : [
-    2
+    4
   ],
   "sqlrf/create-domain-13.sql" : [
-    2
+    4
   ],
   "sqlrf/create-domain-14.sql" : [
     2
@@ -1940,46 +1919,16 @@
   "sqlrf/create-domain-15.sql" : [
     2
   ],
-  "sqlrf/create-domain-16.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-20.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-21.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-24.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-27.sql" : [
-    2
-  ],
   "sqlrf/create-domain-29.sql" : [
-    2
+    3
   ],
   "sqlrf/create-domain-35.sql" : [
     3
   ],
-  "sqlrf/create-domain-4.sql" : [
-    2
-  ],
   "sqlrf/create-domain-43.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-5.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-6.sql" : [
-    2
+    3
   ],
   "sqlrf/create-domain-7.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-8.sql" : [
-    2
-  ],
-  "sqlrf/create-domain-9.sql" : [
     2
   ],
   "sqlrf/create-mle-env-0.sql" : [
@@ -2060,50 +2009,35 @@
   "sqlrf/domain_check-0.sql" : [
     2
   ],
-  "sqlrf/domain_check-1.sql" : [
-    2
-  ],
   "sqlrf/domain_check-3.sql" : [
-    2
+    3
   ],
   "sqlrf/domain_check-6.sql" : [
-    2
+    8
   ],
   "sqlrf/domain_check-7.sql" : [
-    2
+    10
   ],
   "sqlrf/domain_check-9.sql" : [
     10
   ],
-  "sqlrf/domain_check_type-0.sql" : [
-    2
-  ],
   "sqlrf/domain_check_type-2.sql" : [
-    2
+    3
   ],
   "sqlrf/domain_check_type-5.sql" : [
-    2
+    8
   ],
   "sqlrf/domain_check_type-6.sql" : [
-    2
+    10
   ],
   "sqlrf/domain_check_type-8.sql" : [
     10
-  ],
-  "sqlrf/domain_display-0.sql" : [
-    2
   ],
   "sqlrf/domain_display-2.sql" : [
     3
   ],
   "sqlrf/domain_display-6.sql" : [
     3
-  ],
-  "sqlrf/domain_name-0.sql" : [
-    2
-  ],
-  "sqlrf/domain_order-0.sql" : [
-    2
   ],
   "sqlrf/domain_order-2.sql" : [
     3

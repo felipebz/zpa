@@ -113,11 +113,32 @@
   "sqlrf/constraint-4.sql" : [
     8
   ],
+  "sqlrf/create-domain-4.sql" : [
+    2
+  ],
+  "sqlrf/create-domain-6.sql" : [
+    2
+  ],
+  "sqlrf/domain_check-1.sql" : [
+    2
+  ],
+  "sqlrf/domain_check_type-0.sql" : [
+    2
+  ],
+  "sqlrf/domain_display-0.sql" : [
+    2
+  ],
   "sqlrf/domain_display-5.sql" : [
     6
   ],
+  "sqlrf/domain_name-0.sql" : [
+    2
+  ],
   "sqlrf/domain_name-5.sql" : [
     6
+  ],
+  "sqlrf/domain_order-0.sql" : [
+    2
   ],
   "sqlrf/domain_order-5.sql" : [
     6
