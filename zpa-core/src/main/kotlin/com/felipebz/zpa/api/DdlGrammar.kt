@@ -103,6 +103,9 @@ enum class DdlGrammar : GrammarRuleKey {
     PROFILE_LIMIT_CLAUSE,
     CREATE_TABLESPACE,
     ALTER_TABLESPACE,
+    CREATE_ROLE,
+    ALTER_ROLE,
+    ROLE_IDENTIFICATION_CLAUSE,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -1881,6 +1884,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createUser(b)
             createProfile(b)
             createTablespace(b)
+            createRole(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2113,6 +2117,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_PROFILE,
                 CREATE_TABLESPACE,
                 ALTER_TABLESPACE,
+                CREATE_ROLE,
+                ALTER_ROLE,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2289,6 +2295,35 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ROLE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ROLE.html
+        private fun createRole(b: PlSqlGrammarBuilder) {
+            // Unlike USER_AUTHENTICATION_CLAUSE there is no NO AUTHENTICATION, AND FACTOR, DIGEST or
+            // EXTERNALLY AS here (ORA-00922), so the user rule is not reused.
+            b.rule(ROLE_IDENTIFICATION_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(NOT, IDENTIFIED),
+                    b.sequence(
+                        IDENTIFIED,
+                        b.firstOf(
+                            b.sequence(BY, IDENTIFIER_NAME),
+                            b.sequence(USING, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                            EXTERNALLY,
+                            b.sequence(GLOBALLY, b.optional(AS, CHARACTER_LITERAL))))))
+
+            // Oracle 26 accepts CONTAINER before or after the identification clause. A second clause of
+            // either kind fails after parsing (ORA-01944/ORA-65022), so repeats are not tracked.
+            val roleOption = b.firstOf(ROLE_IDENTIFICATION_CLAUSE, b.sequence(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))
+
+            b.rule(CREATE_ROLE).define(
+                CREATE, ROLE, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME, b.zeroOrMore(roleOption),
+                b.optional(SEMICOLON))
+
+            b.rule(ALTER_ROLE).define(
+                ALTER, ROLE, b.optional(IF, EXISTS), IDENTIFIER_NAME, b.oneOrMore(roleOption),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLESPACE.html
