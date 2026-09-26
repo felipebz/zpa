@@ -40,7 +40,6 @@
   "examples/commit.sql" : [ 4 ],
   "examples/create_analytic_view.sql" : [ 1 ],
   "examples/create_attribute_dimension.sql" : [ 1 ],
-  "examples/create_audit_policy.sql" : [ 1 ],
   "examples/create_controlfile.sql" : [ 1 ],
   "examples/create_database.sql" : [ 1 ],
   "examples/create_dimension.sql" : [ 1 ],

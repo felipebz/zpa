@@ -82,6 +82,10 @@ enum class DdlGrammar : GrammarRuleKey {
     LOCKDOWN_OPTION_VALUES,
     CREATE_DOMAIN,
     DOMAIN_CONSTRAINT,
+    CREATE_AUDIT_POLICY,
+    AUDIT_PRIVILEGE_CLAUSE,
+    AUDIT_ACTION_CLAUSE,
+    AUDIT_ROLE_CLAUSE,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -1813,6 +1817,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             createLockdownProfile(b)
             createDomain(b)
+            createAuditPolicy(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2036,6 +2041,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
+                CREATE_AUDIT_POLICY,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2112,6 +2118,62 @@ enum class DdlGrammar : GrammarRuleKey {
                 // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
                 b.optional(STRICT),
                 domainProperties(allProperties),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing.html
+        private fun createAuditPolicy(b: PlSqlGrammarBuilder) {
+            val clauseStart = b.firstOf(PRIVILEGES, ACTIONS, ROLES, WHEN, ONLY, CONTAINER)
+            val privilegeWords = b.oneOrMore(b.nextNot(clauseStart), DclGrammar.IDENTIFIER_OR_KEYWORD)
+            val actionWords = b.oneOrMore(b.nextNot(b.firstOf(clauseStart, ON)), DclGrammar.IDENTIFIER_OR_KEYWORD)
+            val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+
+            b.rule(AUDIT_PRIVILEGE_CLAUSE).define(PRIVILEGES, privilegeWords, b.zeroOrMore(COMMA, privilegeWords))
+
+            val objectAction = b.sequence(
+                actionWords,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                ON,
+                b.firstOf(
+                    b.sequence(DIRECTORY, schemaObjectName),
+                    b.sequence(MINING, MODEL, schemaObjectName),
+                    schemaObjectName))
+            val standardAction = b.firstOf(objectAction, actionWords)
+
+            val firewallAction = b.sequence(
+                b.firstOf(b.sequence(SQL, VIOLATION), b.sequence(CONTEXT, VIOLATION), ALL), ON, IDENTIFIER_NAME)
+            val componentActions = b.sequence(
+                COMPONENT, EQUALS,
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(DATAPUMP, DIRECT_LOAD, OLS, XS),
+                        actionWords, b.zeroOrMore(COMMA, actionWords)),
+                    b.sequence(
+                        DV,
+                        actionWords, ON, IDENTIFIER_NAME,
+                        b.zeroOrMore(COMMA, actionWords, ON, IDENTIFIER_NAME)),
+                    b.sequence(SQL_FIREWALL, firewallAction, b.zeroOrMore(COMMA, firewallAction)),
+                    b.sequence(PROTOCOL, b.firstOf(FTP, HTTP, AUTHENTICATION))))
+
+            b.rule(AUDIT_ACTION_CLAUSE).define(
+                ACTIONS,
+                b.firstOf(componentActions, b.sequence(standardAction, b.zeroOrMore(COMMA, standardAction))))
+
+            b.rule(AUDIT_ROLE_CLAUSE).define(
+                ROLES, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
+
+            // Oracle 26 requires at least one option and this order (ORA-46373/ORA-46383); only ACTIONS repeats.
+            b.rule(CREATE_AUDIT_POLICY).define(
+                CREATE, AUDIT, POLICY, IDENTIFIER_NAME,
+                b.firstOf(
+                    b.sequence(AUDIT_PRIVILEGE_CLAUSE, b.zeroOrMore(AUDIT_ACTION_CLAUSE), b.optional(AUDIT_ROLE_CLAUSE)),
+                    b.sequence(b.oneOrMore(AUDIT_ACTION_CLAUSE), b.optional(AUDIT_ROLE_CLAUSE)),
+                    AUDIT_ROLE_CLAUSE),
+                b.optional(
+                    WHEN, CHARACTER_LITERAL,
+                    EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)),
+                b.optional(ONLY, TOPLEVEL),
+                b.optional(CONTAINER, EQUALS, b.firstOf(ALL, CURRENT)),
                 b.optional(SEMICOLON))
         }
 
