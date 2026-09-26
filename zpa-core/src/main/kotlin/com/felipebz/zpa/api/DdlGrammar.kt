@@ -93,6 +93,8 @@ enum class DdlGrammar : GrammarRuleKey {
     PROPERTY_GRAPH_PROPERTIES,
     CREATE_USER,
     USER_AUTHENTICATION_CLAUSE,
+    ALTER_USER,
+    USER_PROXY_CLAUSE,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -2054,6 +2056,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
                 CREATE_USER,
+                ALTER_USER,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2199,9 +2202,17 @@ enum class DdlGrammar : GrammarRuleKey {
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-USER.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-USER.html
         private fun createUser(b: PlSqlGrammarBuilder) {
             // Oracle 26 rejects a literal password (ORA-00988) and a quoted-identifier external name
             // (ORA-28025); only the documented forms are modeled.
+            val externallyOrGlobally = b.firstOf(
+                b.sequence(
+                    EXTERNALLY,
+                    b.optional(AS, CHARACTER_LITERAL, b.optional(WITH, THUMBPRINT, CHARACTER_LITERAL))),
+                b.sequence(GLOBALLY, b.optional(AS, CHARACTER_LITERAL)))
+            val digest = b.sequence(b.optional(HTTP), DIGEST, b.firstOf(ENABLE, DISABLE))
+
             b.rule(USER_AUTHENTICATION_CLAUSE).define(
                 b.firstOf(
                     b.sequence(
@@ -2209,18 +2220,15 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.firstOf(
                             b.sequence(
                                 BY, IDENTIFIER_NAME,
-                                b.optional(b.optional(HTTP), DIGEST, b.firstOf(ENABLE, DISABLE)),
+                                b.optional(digest),
                                 b.optional(AND, FACTOR, CHARACTER_LITERAL, AS, CHARACTER_LITERAL)),
-                            b.sequence(
-                                EXTERNALLY,
-                                b.optional(AS, CHARACTER_LITERAL, b.optional(WITH, THUMBPRINT, CHARACTER_LITERAL))),
-                            b.sequence(GLOBALLY, b.optional(AS, CHARACTER_LITERAL)))),
+                            externallyOrGlobally)),
                     b.sequence(NO, AUTHENTICATION)))
 
-            // Oracle 26 accepts the options in any order. Repeats of most of them are rejected, but tracking
-            // that per option makes the compiled grammar grow factorially, so the parser accepts them.
-            val userOption = b.firstOf(
-                USER_AUTHENTICATION_CLAUSE,
+            val nameOrKeyword = DclGrammar.IDENTIFIER_OR_KEYWORD
+            fun roleList() = b.sequence(nameOrKeyword, b.zeroOrMore(COMMA, nameOrKeyword))
+
+            val sharedOptions = arrayOf<Any>(
                 b.sequence(DEFAULT, COLLATION, IDENTIFIER_NAME),
                 b.sequence(DEFAULT, TABLESPACE, IDENTIFIER_NAME),
                 b.sequence(b.optional(LOCAL), TEMPORARY, TABLESPACE, IDENTIFIER_NAME),
@@ -2228,13 +2236,66 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME)),
                 b.sequence(PASSWORD, EXPIRE),
                 b.sequence(ACCOUNT, b.firstOf(LOCK, UNLOCK)),
-                b.sequence(ENABLE, EDITIONS),
                 b.sequence(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)),
                 b.sequence(READ, b.firstOf(ONLY, WRITE)))
 
+            // Oracle 26 accepts the options in any order. Repeats of most of them are rejected, but tracking
+            // that per option makes the compiled grammar grow factorially, so the parser accepts them.
             b.rule(CREATE_USER).define(
                 CREATE, USER, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
-                b.zeroOrMore(userOption),
+                b.zeroOrMore(b.firstOf(USER_AUTHENTICATION_CLAUSE, b.sequence(ENABLE, EDITIONS), *sharedOptions)),
+                b.optional(SEMICOLON))
+
+            val nameList = b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+            val alterUserOption = b.firstOf(
+                // ALTER has REPLACE instead of CREATE's DIGEST/AND FACTOR suffixes (ORA-00922 at AND).
+                b.sequence(
+                    IDENTIFIED,
+                    b.firstOf(b.sequence(BY, IDENTIFIER_NAME, b.optional(REPLACE, IDENTIFIER_NAME)), externallyOrGlobally)),
+                b.sequence(NO, AUTHENTICATION),
+                b.sequence(b.firstOf(ADD, UPDATE), FACTOR, CHARACTER_LITERAL, AS, CHARACTER_LITERAL),
+                b.sequence(DROP, FACTOR, CHARACTER_LITERAL),
+                b.sequence(DEFAULT, ROLE, b.firstOf(b.sequence(ALL, b.optional(EXCEPT, roleList())), NONE, roleList())),
+                b.sequence(EXPIRE, PASSWORD, ROLLOVER, PERIOD),
+                b.sequence(
+                    ENABLE, EDITIONS,
+                    b.optional(FOR, nameOrKeyword, b.zeroOrMore(COMMA, nameOrKeyword)),
+                    b.optional(FORCE)),
+                digest,
+                b.sequence(b.firstOf(ENABLE, DISABLE), DICTIONARY, PROTECTION),
+                b.sequence(
+                    b.firstOf(
+                        b.sequence(SET, CONTAINER_DATA, EQUALS, b.firstOf(ALL, DEFAULT, nameList)),
+                        b.sequence(b.firstOf(ADD, REMOVE), CONTAINER_DATA, EQUALS, nameList)),
+                    b.optional(FOR, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))),
+                *sharedOptions)
+
+            // Oracle 26 also accepts the older AUTHENTICATED USING PASSWORD after a proxy user.
+            b.rule(USER_PROXY_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(
+                        GRANT, CONNECT, THROUGH,
+                        b.firstOf(
+                            b.sequence(ENTERPRISE, USERS),
+                            b.sequence(
+                                IDENTIFIER_NAME,
+                                b.optional(
+                                    WITH,
+                                    b.firstOf(
+                                        b.sequence(ROLE, b.firstOf(b.sequence(ALL, EXCEPT, roleList()), roleList())),
+                                        b.sequence(NO, ROLES))),
+                                b.optional(b.firstOf(
+                                    b.sequence(AUTHENTICATION, REQUIRED),
+                                    b.sequence(AUTHENTICATED, USING, PASSWORD)))))),
+                    b.sequence(REVOKE, CONNECT, THROUGH, b.firstOf(b.sequence(ENTERPRISE, USERS), IDENTIFIER_NAME))))
+
+            // A user list is only valid with a proxy clause (ORA-28151); options may precede the proxy clause
+            // but not follow it.
+            b.rule(ALTER_USER).define(
+                ALTER, USER, b.optional(IF, EXISTS),
+                b.firstOf(
+                    b.sequence(IDENTIFIER_NAME, b.oneOrMore(COMMA, IDENTIFIER_NAME), USER_PROXY_CLAUSE),
+                    b.sequence(IDENTIFIER_NAME, b.zeroOrMore(alterUserOption), b.optional(USER_PROXY_CLAUSE))),
                 b.optional(SEMICOLON))
         }
 
