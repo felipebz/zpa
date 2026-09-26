@@ -6,6 +6,20 @@
       "reason": "The documented example writes ACTIONS ADD; Oracle only accepts ADD ACTIONS and rejects ACTIONS after the policy name."
     }
   },
+  "sqlrf/CREATE-USER-0.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-28025",
+      "reason": "The certificate DN is written as a double-quoted identifier; Oracle requires a character literal after IDENTIFIED EXTERNALLY AS."
+    }
+  },
+  "sqlrf/CREATE-USER-1.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-28025",
+      "reason": "The certificate DN is written as a double-quoted identifier; Oracle requires a character literal after IDENTIFIED EXTERNALLY AS."
+    }
+  },
   "sqlrf/create-property-graph-23.sql": {
     "3": {
       "classification": "INVALID_SOURCE",

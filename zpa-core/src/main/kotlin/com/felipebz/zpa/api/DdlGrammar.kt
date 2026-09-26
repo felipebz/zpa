@@ -91,6 +91,8 @@ enum class DdlGrammar : GrammarRuleKey {
     PROPERTY_GRAPH_VERTEX_TABLE,
     PROPERTY_GRAPH_EDGE_TABLE,
     PROPERTY_GRAPH_PROPERTIES,
+    CREATE_USER,
+    USER_AUTHENTICATION_CLAUSE,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -1824,6 +1826,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDomain(b)
             createAuditPolicy(b)
             createPropertyGraph(b)
+            createUser(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2050,6 +2053,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
+                CREATE_USER,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2205,6 +2209,46 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                         DROP,
                         b.sequence(CHARACTER_LITERAL, EVALUATE, PER, b.firstOf(STATEMENT_KEYWORD, SESSION, INSTANCE)))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-USER.html
+        private fun createUser(b: PlSqlGrammarBuilder) {
+            // Oracle 26 rejects a literal password (ORA-00988) and a quoted-identifier external name
+            // (ORA-28025); only the documented forms are modeled.
+            b.rule(USER_AUTHENTICATION_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(
+                        IDENTIFIED,
+                        b.firstOf(
+                            b.sequence(
+                                BY, IDENTIFIER_NAME,
+                                b.optional(b.optional(HTTP), DIGEST, b.firstOf(ENABLE, DISABLE)),
+                                b.optional(AND, FACTOR, CHARACTER_LITERAL, AS, CHARACTER_LITERAL)),
+                            b.sequence(
+                                EXTERNALLY,
+                                b.optional(AS, CHARACTER_LITERAL, b.optional(WITH, THUMBPRINT, CHARACTER_LITERAL))),
+                            b.sequence(GLOBALLY, b.optional(AS, CHARACTER_LITERAL)))),
+                    b.sequence(NO, AUTHENTICATION)))
+
+            // Oracle 26 accepts the options in any order. Repeats of most of them are rejected, but tracking
+            // that per option makes the compiled grammar grow factorially, so the parser accepts them.
+            val userOption = b.firstOf(
+                USER_AUTHENTICATION_CLAUSE,
+                b.sequence(DEFAULT, COLLATION, IDENTIFIER_NAME),
+                b.sequence(DEFAULT, TABLESPACE, IDENTIFIER_NAME),
+                b.sequence(b.optional(LOCAL), TEMPORARY, TABLESPACE, IDENTIFIER_NAME),
+                b.sequence(QUOTA, b.firstOf(UNLIMITED, INDEX_SIZE_CLAUSE), ON, IDENTIFIER_NAME),
+                b.sequence(PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME)),
+                b.sequence(PASSWORD, EXPIRE),
+                b.sequence(ACCOUNT, b.firstOf(LOCK, UNLOCK)),
+                b.sequence(ENABLE, EDITIONS),
+                b.sequence(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)),
+                b.sequence(READ, b.firstOf(ONLY, WRITE)))
+
+            b.rule(CREATE_USER).define(
+                CREATE, USER, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
+                b.zeroOrMore(userOption),
                 b.optional(SEMICOLON))
         }
 

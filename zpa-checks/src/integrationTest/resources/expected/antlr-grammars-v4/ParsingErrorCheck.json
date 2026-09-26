@@ -2,7 +2,7 @@
   "examples-sql-script/e_in_out_parameters.pks" : [ 4 ],
   "examples-sql-script/grants.sql" : [ 5 ],
   "examples-sql-script/logical_expressions.sql" : [ 13 ],
-  "examples-sql-script/user.sql" : [ 1 ],
+  "examples-sql-script/user.sql" : [ 9 ],
   "examples/administer_key_management.sql" : [ 1 ],
   "examples/alter_analytic_view.sql" : [ 1 ],
   "examples/alter_attribute_dimension.sql" : [ 1 ],
