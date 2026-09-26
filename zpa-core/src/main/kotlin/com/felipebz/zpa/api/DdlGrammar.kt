@@ -58,6 +58,7 @@ enum class DdlGrammar : GrammarRuleKey {
     RENAME_PARTITION_SUBPART,
     EXCHANGE_PARTITION_SUBPART,
     MOVE_TABLE_PARTITION,
+    TRUNCATE_PARTITION_SUBPART,
     ADD_RANGE_TABLE_PARTITIONS,
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
@@ -1595,12 +1596,13 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(PARTITION_EXTENDED_NAME, SUBPARTITION_EXTENDED_NAME),
                 TO, IDENTIFIER_NAME)
 
-            // Oracle 26 runtime accepts CASCADE before index updates, opposite the SQLRF syntax diagram.
-            // Exchange cannot specify the index partition descriptions accepted by SPLIT and MERGE.
-            fun exchangeUpdateIndexes() = b.firstOf(
+            // EXCHANGE and TRUNCATE cannot specify the index partition descriptions
+            // accepted by SPLIT and MERGE.
+            fun restrictedIndexUpdates() = b.firstOf(
                 b.sequence(b.firstOf(UPDATE, "INVALIDATE"), GLOBAL, INDEXES),
                 b.sequence(UPDATE, INDEXES))
 
+            // Oracle 26 runtime accepts CASCADE before index updates, opposite the SQLRF syntax diagram.
             b.rule(EXCHANGE_PARTITION_SUBPART).define(
                 "EXCHANGE", b.firstOf(PARTITION_EXTENDED_NAME, SUBPARTITION_EXTENDED_NAME),
                 WITH, TABLE, UNIT_NAME,
@@ -1608,7 +1610,25 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(b.firstOf(WITH, WITHOUT), "VALIDATION"),
                 b.optional(EXCEPTIONS_CLAUSE),
                 b.optional(CASCADE),
-                b.optional(exchangeUpdateIndexes(), b.optional(parallelClause())))
+                b.optional(restrictedIndexUpdates(), b.optional(parallelClause())))
+
+            val truncateForKeyValues = b.sequence(FOR, LPARENTHESIS, EXPRESSION,
+                b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+            fun truncateExtendedNames(singular: PlSqlKeyword, plural: PlSqlKeyword) = b.sequence(
+                b.firstOf(singular, plural),
+                b.firstOf(
+                    b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
+                    b.sequence(truncateForKeyValues,
+                        b.zeroOrMore(COMMA, truncateForKeyValues))))
+
+            // Oracle 26 requires CASCADE before index updates, despite the SQLRF diagram.
+            b.rule(TRUNCATE_PARTITION_SUBPART).define(
+                TRUNCATE,
+                b.firstOf(truncateExtendedNames(PARTITION, PARTITIONS),
+                    truncateExtendedNames(SUBPARTITION, SUBPARTITIONS)),
+                b.optional(b.firstOf(b.sequence(DROP, b.optional(ALL)), REUSE), STORAGE),
+                b.optional(CASCADE),
+                b.optional(restrictedIndexUpdates(), b.optional(parallelClause())))
 
             b.rule(SPLIT_TABLE_PARTITION).define(
                 SPLIT, PARTITION_EXTENDED_NAME,
@@ -1742,6 +1762,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             renameColumnClause(),
                             RENAME_PARTITION_SUBPART,
                             MOVE_TABLE_PARTITION,
+                            TRUNCATE_PARTITION_SUBPART,
                             EXCHANGE_PARTITION_SUBPART,
                             ADD_RANGE_TABLE_PARTITIONS,
                             SPLIT_TABLE_PARTITION,

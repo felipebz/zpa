@@ -288,6 +288,66 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesTruncatePartitionAndSubpartitionSelectors() {
+        assertThat(p).matches("alter table t truncate partition p1")
+        assertThat(p).matches("alter table t truncate partition \"Old Partition\"")
+        assertThat(p).matches("alter table t truncate partition p1, p2")
+        assertThat(p).matches("alter table t truncate partitions p1")
+        assertThat(p).matches("alter table t truncate partitions p1, p2, p3")
+        assertThat(p).matches("alter table t truncate partition for (1)")
+        assertThat(p).matches("alter table t truncate partitions for (1 + 1), for (101)")
+        assertThat(p).matches("alter table t truncate subpartition sp1")
+        assertThat(p).matches("alter table t truncate subpartition sp1, sp2")
+        assertThat(p).matches("alter table t truncate subpartitions sp1")
+        assertThat(p).matches("alter table t truncate subpartitions sp1, sp2")
+        assertThat(p).matches("alter table t truncate subpartition for (1, 'A')")
+        assertThat(p).matches("alter table t truncate subpartitions for (1, 'A'), for (1, 'B')")
+    }
+
+    @Test
+    fun matchesTruncatePartitionSuffixes() {
+        assertThat(p).matches("alter table t truncate partition p1 drop storage")
+        assertThat(p).matches("alter table t truncate partition p1 drop all storage")
+        assertThat(p).matches("alter table t truncate partition p1 reuse storage")
+        assertThat(p).matches("alter table t truncate partition p1 update global indexes")
+        assertThat(p).matches("alter table t truncate partition p1 invalidate global indexes")
+        assertThat(p).matches("alter table t truncate partition p1 update indexes")
+        assertThat(p).matches("alter table t truncate partition p1 update global indexes parallel 2")
+        assertThat(p).matches("alter table t truncate partition p1 update indexes noparallel")
+        assertThat(p).matches("alter table t truncate partition p1 cascade")
+        assertThat(p).matches("alter table t truncate subpartition sp1 cascade")
+        assertThat(p).matches("alter table t truncate partition p1 drop storage cascade update global indexes parallel 2")
+    }
+
+    @Test
+    fun rejectsMalformedTruncatePartitionAndSubpartition() {
+        assertThat(p).notMatches("alter table t truncate")
+        assertThat(p).notMatches("alter table t truncate partition")
+        assertThat(p).notMatches("alter table t truncate partitions")
+        assertThat(p).notMatches("alter table t truncate partition for ()")
+        assertThat(p).notMatches("alter table t truncate partition for (1,)")
+        assertThat(p).notMatches("alter table t truncate partitions p1,")
+        assertThat(p).notMatches("alter table t truncate partitions p1, for (2)")
+        assertThat(p).notMatches("alter table t truncate partitions for (1), p2")
+        assertThat(p).notMatches("alter table t truncate partitions partition p1, partition p2")
+        assertThat(p).notMatches("alter table t truncate subpartition")
+        assertThat(p).notMatches("alter table t truncate subpartitions")
+        assertThat(p).notMatches("alter table t truncate subpartition for ()")
+        assertThat(p).notMatches("alter table t truncate subpartitions sp1,")
+        assertThat(p).notMatches("alter table t truncate subpartitions sp1, for (1, 'B')")
+        assertThat(p).notMatches("alter table t truncate subpartitions for (1, 'A'), sp2")
+        assertThat(p).notMatches("alter table t truncate partition p1 drop")
+        assertThat(p).notMatches("alter table t truncate partition p1 drop all")
+        assertThat(p).notMatches("alter table t truncate partition p1 reuse")
+        assertThat(p).notMatches("alter table t truncate partition p1 all storage")
+        assertThat(p).notMatches("alter table t truncate partition p1 parallel 2")
+        assertThat(p).notMatches("alter table t truncate partition p1 update indexes (ix (partition p1))")
+        assertThat(p).notMatches("alter table t truncate partition p1 drop storage update global indexes cascade")
+        assertThat(p).notMatches("alter table t truncate partition p1 cascade drop storage")
+        assertThat(p).notMatches("alter table t truncate partition p1 enable constraint ck")
+    }
+
+    @Test
     fun matchesAlterTableModifyEncryption() {
         assertThat(p).matches("alter table t modify (c encrypt)")
         assertThat(p).matches("alter table t modify (c encrypt using 'AES256')")
