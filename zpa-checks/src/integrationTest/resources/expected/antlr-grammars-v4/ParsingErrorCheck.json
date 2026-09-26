@@ -85,7 +85,6 @@
   "examples/partitioned_tables.sql" : [ 32 ],
   "examples/purge_statement.sql" : [ 1 ],
   "examples/rename_objects.sql" : [ 2 ],
-  "examples/revoke_statement.sql" : [ 1 ],
   "examples/sample01.sql" : [ 3 ],
   "examples/select_analytic_view.sql" : [ 2 ],
   "examples/select_dense_rank.sql" : [ 2 ],

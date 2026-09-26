@@ -36,6 +36,12 @@ enum class DclGrammar : GrammarRuleKey {
     GRANT_SYSTEM_PRIVILEGES,
     GRANT_OBJECT_PRIVILEGES,
     GRANT_ROLES_TO_PROGRAMS,
+    REVOKE_STATEMENT,
+    REVOKE_SYSTEM_PRIVILEGES,
+    REVOKE_SCHEMA_PRIVILEGES,
+    REVOKE_OBJECT_PRIVILEGES,
+    REVOKE_ON_OBJECT_CLAUSE,
+    REVOKE_ROLES_FROM_PROGRAMS,
     DCL_COMMAND;
 
     companion object {
@@ -77,7 +83,57 @@ enum class DclGrammar : GrammarRuleKey {
 
             b.rule(GRANT_STATEMENT).define(GRANT, b.firstOf(GRANT_ROLES_TO_PROGRAMS, GRANT_SYSTEM_PRIVILEGES, GRANT_OBJECT_PRIVILEGES), b.optional(SEMICOLON))
 
-            b.rule(DCL_COMMAND).define(GRANT_STATEMENT)
+            createRevoke(b)
+
+            b.rule(DCL_COMMAND).define(b.firstOf(GRANT_STATEMENT, REVOKE_STATEMENT))
+        }
+
+        private fun createRevoke(b: PlSqlGrammarBuilder) {
+            val privilegeItem = b.oneOrMore(b.nextNot(b.firstOf(FROM, ON)), IDENTIFIER_OR_KEYWORD)
+            fun privilegeList(item: Any) = b.sequence(item, b.zeroOrMore(COMMA, item))
+            val revokees = b.sequence(
+                FROM, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD))
+            val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+
+            b.rule(REVOKE_SYSTEM_PRIVILEGES).define(privilegeList(privilegeItem), revokees)
+
+            b.rule(REVOKE_SCHEMA_PRIVILEGES).define(
+                privilegeList(b.firstOf(b.sequence(ALL, PRIVILEGES), b.sequence(b.nextNot(ALL), privilegeItem))),
+                ON, SCHEMA, IDENTIFIER_NAME,
+                revokees)
+
+            b.rule(REVOKE_OBJECT_PRIVILEGES).define(privilegeList(privilegeItem), REVOKE_ON_OBJECT_CLAUSE, revokees)
+
+            // ON SCHEMA always starts the schema branch in Oracle 26 (ORA-00987 for `ON SCHEMA FROM`), and an
+            // unquoted USER is never an object or schema name here (ORA-00903/ORA-00990).
+            b.rule(REVOKE_ON_OBJECT_CLAUSE).define(
+                ON,
+                b.firstOf(
+                    b.sequence(USER, IDENTIFIER_NAME),
+                    b.sequence(DIRECTORY, schemaObjectName),
+                    b.sequence(EDITION, IDENTIFIER_NAME),
+                    b.sequence(MINING, MODEL, schemaObjectName),
+                    b.sequence(JAVA, b.firstOf(SOURCE, RESOURCE), schemaObjectName),
+                    b.sequence(SQL, TRANSLATION, PROFILE, schemaObjectName),
+                    b.sequence(
+                        b.nextNot(b.firstOf(SCHEMA, USER)), IDENTIFIER_NAME,
+                        b.optional(DOT, b.nextNot(USER), IDENTIFIER_NAME))))
+
+            val programUnit = b.sequence(b.firstOf(FUNCTION, PROCEDURE, PACKAGE), schemaObjectName)
+            b.rule(REVOKE_ROLES_FROM_PROGRAMS).define(
+                IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD),
+                FROM, programUnit, b.zeroOrMore(COMMA, programUnit))
+
+            // Oracle 26 accepts CASCADE CONSTRAINTS/FORCE after system and schema privileges too.
+            b.rule(REVOKE_STATEMENT).define(
+                REVOKE,
+                b.firstOf(
+                    REVOKE_ROLES_FROM_PROGRAMS,
+                    b.sequence(
+                        b.firstOf(REVOKE_SCHEMA_PRIVILEGES, REVOKE_OBJECT_PRIVILEGES, REVOKE_SYSTEM_PRIVILEGES),
+                        b.optional(b.firstOf(b.sequence(CASCADE, CONSTRAINTS), FORCE)),
+                        b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))),
+                b.optional(SEMICOLON))
         }
     }
 
