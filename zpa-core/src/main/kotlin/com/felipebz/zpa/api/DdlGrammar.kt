@@ -88,6 +88,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DOMAIN_CONSTRAINT,
     DOMAIN_COLUMN,
     DOMAIN_ENUM,
+    CREATE_FLEXIBLE_DOMAIN,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -2112,6 +2113,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
                 ALTER_DOMAIN,
+                CREATE_FLEXIBLE_DOMAIN,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2149,8 +2151,7 @@ enum class DdlGrammar : GrammarRuleKey {
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-domain.html
-        // The single-column (`AS datatype` or `AS ENUM (...)`) and multi-column `AS (...)` branches; flexible domains
-        // are not modeled.
+        // The single-column (`AS datatype` or `AS ENUM (...)`), multi-column `AS (...)` and flexible branches.
         private fun createDomain(b: PlSqlGrammarBuilder) {
             // Oracle 26 accepts only these states after a domain CHECK: USING INDEX, PRECHECK and
             // EXCEPTIONS INTO fail with ORA-03049.
@@ -2229,6 +2230,24 @@ enum class DdlGrammar : GrammarRuleKey {
                         // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
                         b.optional(STRICT),
                         b.zeroOrMore(domainProperty))),
+                b.optional(SEMICOLON))
+
+            // The flexible domain is a separate statement shape: bare column names (ORA-03050 for `v1 NUMBER`),
+            // then `name datatype` discriminants (ORA-00902 without a datatype). Oracle 26 accepts any expression
+            // after FROM while parsing (a plain call, NVL, `|| 'x'`); the documented DECODE/CASE restriction is
+            // semantic. Nothing may follow it (ORA-03049 for DISPLAY or ANNOTATIONS). Both lists may be empty,
+            // and the column list accepts a trailing comma.
+            b.rule(CREATE_FLEXIBLE_DOMAIN).define(
+                CREATE, b.optional(USECASE), FLEXIBLE, DOMAIN, b.optional(IF, NOT, EXISTS),
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                LPARENTHESIS,
+                b.optional(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), b.optional(COMMA)),
+                RPARENTHESIS,
+                CHOOSE, DOMAIN, USING,
+                LPARENTHESIS,
+                b.optional(IDENTIFIER_NAME, DATATYPE, b.zeroOrMore(COMMA, IDENTIFIER_NAME, DATATYPE)),
+                RPARENTHESIS,
+                FROM, EXPRESSION,
                 b.optional(SEMICOLON))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-domain.html

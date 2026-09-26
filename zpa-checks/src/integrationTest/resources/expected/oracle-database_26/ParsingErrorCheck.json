@@ -435,8 +435,6 @@
   "sqlrf/constraint-27.sql" : [ 14 ],
   "sqlrf/constraint-29.sql" : [ 5 ],
   "sqlrf/constraint-8.sql" : [ 10 ],
-  "sqlrf/create-domain-14.sql" : [ 2 ],
-  "sqlrf/create-domain-15.sql" : [ 2 ],
   "sqlrf/create-domain-35.sql" : [ 3 ],
   "sqlrf/create-domain-7.sql" : [ 2 ],
   "sqlrf/create-mle-env-0.sql" : [ 2 ],
