@@ -626,6 +626,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PLS_INTEGER("pls_integer"),
     PLUGGABLE("pluggable"),
     POLICY("policy"),
+    POSITION("position"),
     POSITIVE("positive"),
     POSITIVEN("positiven"),
     PRAGMA("pragma"),

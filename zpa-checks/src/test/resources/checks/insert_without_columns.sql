@@ -26,4 +26,14 @@ begin
 
   insert into tab values v_my_type;
 
+  insert into tab values (1), (2); -- Noncompliant {{Specify the columns in this INSERT.}}
+
+  insert into tab set col = 1;
+
+  insert into tab set (col = 1), (col = 2);
+
+  insert into tab by name select 1 col from dual;
+
+  insert into tab by position select 1 from dual; -- Noncompliant {{Specify the columns in this INSERT.}}
+
 end;

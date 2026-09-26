@@ -89,6 +89,7 @@ enum class DmlGrammar : GrammarRuleKey {
     SINGLE_TABLE_INSERT,
     INSERT_INTO_CLAUSE,
     VALUES_CLAUSE,
+    INSERT_SET_CLAUSE,
     MULTI_TABLE_INSERT,
     CONDITIONAL_INSERT_CLAUSE,
     MERGE_EXPRESSION,
@@ -867,24 +868,42 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(INSERT_EXPRESSION).define(INSERT, b.firstOf(SINGLE_TABLE_INSERT, MULTI_TABLE_INSERT))
 
+            val valuesRow = b.sequence(
+                LPARENTHESIS, b.firstOf(EXPRESSION, DEFAULT), b.zeroOrMore(b.sequence(COMMA, b.firstOf(EXPRESSION, DEFAULT))),
+                RPARENTHESIS)
+
+            // Only a single-table insert takes further VALUES rows after the first (multi-table inserts fail with
+            // ORA-00928), so they follow VALUES_CLAUSE here instead of widening the shared rule.
+            // Oracle 26 rejects RETURNING after several VALUES or SET rows (ORA-63809/ORA-63853), but only with
+            // dedicated messages, so it is not tracked. BY NAME/POSITION only modify a subquery (ORA-63878 before
+            // VALUES), and a subquery takes no RETURNING clause (ORA-03049).
             b.rule(SINGLE_TABLE_INSERT).define(
                 INSERT_INTO_CLAUSE,
                 b.firstOf(
-                    b.sequence(VALUES_CLAUSE, b.optional(RETURNING_INTO_CLAUSE)),
-                    SELECT_EXPRESSION),
+                    b.sequence(
+                        b.firstOf(b.sequence(VALUES_CLAUSE, b.zeroOrMore(COMMA, valuesRow)), INSERT_SET_CLAUSE),
+                        b.optional(RETURNING_INTO_CLAUSE)),
+                    b.sequence(b.optional(BY, b.firstOf(NAME, POSITION)), SELECT_EXPRESSION)),
                 b.optional(ERROR_LOGGING_CLAUSE))
 
+            // SET always starts the SET clause: Oracle 26 never reads it as a table alias here (ORA-01747 for
+            // `INTO t set VALUES`).
             b.rule(INSERT_INTO_CLAUSE).define(INTO,
                 b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), b.firstOf(
                     TABLE_EXPRESSION, THE_EXPRESSION, TABLE_REFERENCE)),
                 b.optional(PARTITION_EXTENSION_CLAUSE),
-                b.optional(IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
+                b.optional(b.nextNot(SET), IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
 
-            b.rule(VALUES_CLAUSE).define(
-                VALUES,
+            // Either one bare assignment list or one or more parenthesized rows; mixing them fails (ORA-63855), as
+            // does a missing comma between rows (ORA-03048). Assignments are the UPDATE ones, DEFAULT included.
+            val insertSetRow = b.sequence(LPARENTHESIS, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN), RPARENTHESIS)
+            b.rule(INSERT_SET_CLAUSE).define(
+                SET,
                 b.firstOf(
-                    b.sequence(LPARENTHESIS, b.firstOf(EXPRESSION, DEFAULT), b.zeroOrMore(b.sequence(COMMA, b.firstOf(EXPRESSION, DEFAULT))), RPARENTHESIS),
-                    EXPRESSION))
+                    b.sequence(insertSetRow, b.zeroOrMore(COMMA, insertSetRow)),
+                    b.sequence(UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN))))
+
+            b.rule(VALUES_CLAUSE).define(VALUES, b.firstOf(valuesRow, EXPRESSION))
 
             b.rule(MULTI_TABLE_INSERT).define(
                 b.firstOf(

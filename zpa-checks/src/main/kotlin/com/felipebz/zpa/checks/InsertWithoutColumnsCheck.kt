@@ -22,6 +22,7 @@ package com.felipebz.zpa.checks
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.symbols.PlSqlType
 
@@ -36,6 +37,11 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        // SET assigns each column by name and BY NAME maps the subquery columns by alias.
+        if (node.hasDirectChildren(DmlGrammar.INSERT_SET_CLAUSE) || node.hasDirectChildren(PlSqlKeyword.NAME)) {
+            return
+        }
+
         if (!node.hasDescendant(DmlGrammar.INSERT_COLUMNS)) {
             val valuesClause = node.getFirstChildOrNull(DmlGrammar.VALUES_CLAUSE);
 

@@ -123,4 +123,44 @@ class InsertStatementTest : RuleTest() {
         assertThat(p).matches("insert into the(select x from tab) values (1);")
     }
 
+    @Test
+    fun matchesMultiRowValues() {
+        assertThat(p).matches("insert into orders values (1, 'Costco', order_status.open), (2, 'BMW', default), (3, 'N', 1);")
+        assertThat(p).matches("insert into t (a) values (1), ((select 2 from dual)) log errors into err;")
+        assertThat(p).notMatches("insert into t (a) values (1),, (2);")
+        assertThat(p).notMatches("insert into t (a) values (1), ;")
+        assertThat(p).notMatches("insert into t (a) values (1) (2);")
+    }
+
+    @Test
+    fun matchesInsertSet() {
+        assertThat(p).matches("insert into employees set employee_id = 210, last_name = 'Smith', hire_date = sysdate;")
+        assertThat(p).matches("insert into employees set (employee_id = 210, last_name = 'Smith');")
+        assertThat(p).matches("insert into employees set (employee_id = 210, job_id = default), (employee_id = 211);")
+        assertThat(p).matches("insert into t e set e.a = 1 returning a into x log errors into err reject limit 1;")
+        // ORA-63855 / ORA-03048 / ORA-03048 / ORA-00927.
+        assertThat(p).notMatches("insert into t set a = 1, (b = 2);")
+        assertThat(p).notMatches("insert into t set (a = 1) (a = 2);")
+        assertThat(p).notMatches("insert into t set a = 1 where a = 1;")
+        assertThat(p).notMatches("insert into t set;")
+    }
+
+    @Test
+    fun matchesInsertByNameOrPosition() {
+        assertThat(p).matches("insert into job_history by name select employee_id, hire_date as start_date from employees;")
+        assertThat(p).matches("insert into t (a, b) by position select 1, 2 from dual log errors into err;")
+        assertThat(p).matches("insert into t by name with q as (select 1 a from dual) select a from q;")
+        // ORA-63878: only before a subquery.
+        assertThat(p).notMatches("insert into t by name values (1);")
+    }
+
+    @Test
+    fun rejectsMultipleValuesRowsInMultiTableInsert() {
+        // Each multi-table INTO takes a single row (ORA-00928 at the second one).
+        assertThat(p).matches("insert all into t (a) values (1) into t2 (b) values (2) select * from dual;")
+        assertThat(p).notMatches("insert all into t (a) values (1), (2) select * from dual;")
+        assertThat(p).matches("insert first when x > 0 then into t (a) values (1) else into t2 (b) values (2) select 1 x from dual;")
+        assertThat(p).notMatches("insert first when x > 0 then into t (a) values (1), (2) select 1 x from dual;")
+        assertThat(p).notMatches("insert all when x > 0 then into t (a) values (1) else into t2 (b) values (2), (3) select 1 x from dual;")
+    }
 }
