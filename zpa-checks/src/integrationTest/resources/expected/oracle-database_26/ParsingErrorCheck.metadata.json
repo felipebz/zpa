@@ -6,6 +6,13 @@
       "reason": "The documented example writes ACTIONS ADD; Oracle only accepts ADD ACTIONS and rejects ACTIONS after the policy name."
     }
   },
+  "sqlrf/CREATE-TABLESPACE-0.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02236",
+      "reason": "The data file name sh_lwp1.df is not quoted; Oracle requires a character literal after DATAFILE and rejects the file name."
+    }
+  },
   "sqlrf/CREATE-USER-0.sql": {
     "2": {
       "classification": "INVALID_SOURCE",

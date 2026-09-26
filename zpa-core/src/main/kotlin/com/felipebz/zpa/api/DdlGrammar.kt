@@ -101,6 +101,13 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_PROFILE,
     ALTER_PROFILE,
     PROFILE_LIMIT_CLAUSE,
+    CREATE_TABLESPACE,
+    ALTER_TABLESPACE,
+    DATAFILE_TEMPFILE_SPEC,
+    AUTOEXTEND_CLAUSE,
+    EXTENT_MANAGEMENT_CLAUSE,
+    TABLESPACE_ENCRYPTION_CLAUSE,
+    DEFAULT_TABLESPACE_PARAMS,
     USER_PROXY_CLAUSE,
     CREATE_CONTEXT,
     CALL_COMMAND,
@@ -1873,6 +1880,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createPropertyGraph(b)
             createUser(b)
             createProfile(b)
+            createTablespace(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2103,6 +2111,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_USER,
                 CREATE_PROFILE,
                 ALTER_PROFILE,
+                CREATE_TABLESPACE,
+                ALTER_TABLESPACE,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2279,6 +2289,174 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLESPACE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/file_specification.html
+        private fun createTablespace(b: PlSqlGrammarBuilder) {
+            val fileNameOrNumber = b.firstOf(CHARACTER_LITERAL, INTEGER_LITERAL)
+            val keepSize = b.optional(KEEP, INDEX_SIZE_CLAUSE)
+
+            // Oracle 26 keeps these parts in the documented order (ORA-02180 for REUSE before SIZE, or NEXT after
+            // MAXSIZE). The file name is optional for Oracle Managed Files.
+            b.rule(AUTOEXTEND_CLAUSE).define(
+                AUTOEXTEND,
+                b.firstOf(
+                    OFF,
+                    b.sequence(
+                        ON,
+                        b.optional(NEXT, INDEX_SIZE_CLAUSE),
+                        b.optional(MAXSIZE, b.firstOf(UNLIMITED, INDEX_SIZE_CLAUSE)))))
+
+            b.rule(DATAFILE_TEMPFILE_SPEC).define(
+                b.optional(CHARACTER_LITERAL),
+                b.optional(SIZE, INDEX_SIZE_CLAUSE),
+                b.optional(REUSE),
+                b.optional(AUTOEXTEND_CLAUSE))
+
+            val fileSpecifications = b.sequence(DATAFILE_TEMPFILE_SPEC, b.zeroOrMore(COMMA, DATAFILE_TEMPFILE_SPEC))
+
+            // Oracle 26 also parses EXTENT MANAGEMENT DICTIONARY, which the diagram omits.
+            b.rule(EXTENT_MANAGEMENT_CLAUSE).define(
+                EXTENT, MANAGEMENT,
+                b.firstOf(
+                    b.sequence(LOCAL, b.optional(b.firstOf(
+                        AUTOALLOCATE,
+                        b.sequence(UNIFORM, b.optional(SIZE, INDEX_SIZE_CLAUSE))))),
+                    DICTIONARY))
+
+            // Oracle 26 accepts the encryption spec without MODE, and a bare ENCRYPTION.
+            val encryptionSpec = b.sequence(USING, CHARACTER_LITERAL, b.optional(MODE, CHARACTER_LITERAL))
+
+            b.rule(TABLESPACE_ENCRYPTION_CLAUSE).define(
+                ENCRYPTION, b.optional(encryptionSpec), b.optional(b.firstOf(ENCRYPT, DECRYPT)))
+
+            // The TABLE keyword is optional: Oracle 26 still accepts `DEFAULT COMPRESS FOR OLTP`.
+            val tableCompression = b.sequence(
+                b.optional(TABLE),
+                b.firstOf(
+                    b.sequence(COMPRESS, b.optional(FOR, b.firstOf(
+                        OLTP,
+                        b.sequence(b.firstOf(QUERY, ARCHIVE), b.firstOf(LOW, HIGH))))),
+                    NOCOMPRESS))
+
+            // STORAGE must come last (ORA-02180 for `DEFAULT STORAGE (...) TABLE ...`).
+            b.rule(DEFAULT_TABLESPACE_PARAMS).define(
+                DEFAULT,
+                b.firstOf(
+                    b.sequence(
+                        b.oneOrMore(b.firstOf(b.sequence(INDEX, INDEX_COMPRESSION_CLAUSE), tableCompression)),
+                        b.optional(INDEX_STORAGE_CLAUSE)),
+                    INDEX_STORAGE_CLAUSE))
+
+            val retentionClause = b.sequence(RETENTION, b.firstOf(GUARANTEE, NOGUARANTEE))
+            val groupClause = b.sequence(TABLESPACE, GROUP, b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME))
+            val flashbackClause = b.sequence(FLASHBACK, b.firstOf(ON, OFF))
+            val shardspace = b.sequence(IN, SHARDSPACE, IDENTIFIER_NAME)
+
+            // Each kind of tablespace has its own option set; Oracle 26 rejects the others at parse time
+            // (ORA-30044, ORA-30024, ORA-25139). Repeated options are rejected too (ORA-02197/ORA-02198), but are
+            // not tracked here.
+            val permanentOption = b.firstOf(
+                b.sequence(DATAFILE, fileSpecifications),
+                b.sequence(MINIMUM, EXTENT, INDEX_SIZE_CLAUSE),
+                b.sequence(BLOCKSIZE, INTEGER_LITERAL, b.optional("K")),
+                LOGGING_CLAUSE,
+                b.sequence(FORCE, LOGGING),
+                TABLESPACE_ENCRYPTION_CLAUSE,
+                DEFAULT_TABLESPACE_PARAMS,
+                ONLINE,
+                OFFLINE,
+                EXTENT_MANAGEMENT_CLAUSE,
+                b.sequence(SEGMENT, SPACE, MANAGEMENT, b.firstOf(AUTO, MANUAL)),
+                flashbackClause,
+                shardspace)
+            val undoOption = b.firstOf(
+                b.sequence(DATAFILE, fileSpecifications),
+                EXTENT_MANAGEMENT_CLAUSE,
+                retentionClause,
+                TABLESPACE_ENCRYPTION_CLAUSE)
+            val temporaryOption = b.firstOf(
+                b.sequence(TEMPFILE, fileSpecifications),
+                groupClause,
+                EXTENT_MANAGEMENT_CLAUSE,
+                TABLESPACE_ENCRYPTION_CLAUSE)
+            val nameClause = b.sequence(b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME)
+
+            b.rule(CREATE_TABLESPACE).define(
+                CREATE,
+                b.optional(b.firstOf(BIGFILE, SMALLFILE)),
+                b.firstOf(
+                    b.sequence(UNDO, TABLESPACE, nameClause, b.zeroOrMore(undoOption)),
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(TEMPORARY, TABLESPACE),
+                            b.sequence(LOCAL, TEMPORARY, TABLESPACE, FOR, b.firstOf(ALL, LEAF))),
+                        nameClause,
+                        b.zeroOrMore(temporaryOption)),
+                    // Only a bare LOST WRITE PROTECTION is accepted, after every other option except
+                    // IN SHARDSPACE (ORA-65480 for an option after it, ORA-02180 for ENABLE).
+                    b.sequence(
+                        TABLESPACE, b.nextNot(SET), nameClause,
+                        b.zeroOrMore(permanentOption),
+                        b.optional(LOST, WRITE, PROTECTION),
+                        b.optional(shardspace))),
+                b.optional(SEMICOLON))
+
+            val fileNameConvert = b.sequence(
+                FILE_NAME_CONVERT, EQUALS,
+                LPARENTHESIS,
+                CHARACTER_LITERAL, COMMA, CHARACTER_LITERAL,
+                b.zeroOrMore(COMMA, CHARACTER_LITERAL, COMMA, CHARACTER_LITERAL),
+                RPARENTHESIS,
+                b.optional(KEEP))
+            val alterEncryption = b.sequence(
+                ENCRYPTION,
+                b.firstOf(
+                    b.sequence(
+                        ONLINE,
+                        b.firstOf(b.sequence(b.optional(encryptionSpec), b.firstOf(ENCRYPT, REKEY)), DECRYPT),
+                        b.optional(fileNameConvert)),
+                    b.sequence(FINISH, b.firstOf(ENCRYPT, REKEY, DECRYPT), b.optional(fileNameConvert)),
+                    b.sequence(OFFLINE, b.optional(encryptionSpec), b.firstOf(ENCRYPT, DECRYPT)),
+                    b.sequence(b.optional(encryptionSpec), b.firstOf(ENCRYPT, DECRYPT))))
+
+            // Oracle 26 accepts a single attribute per statement (ORA-03049 at a second one), and requires
+            // ENABLE, REMOVE or SUSPEND before LOST WRITE PROTECTION here (ORA-02142).
+            val alterAttribute = b.firstOf(
+                DEFAULT_TABLESPACE_PARAMS,
+                b.sequence(MINIMUM, EXTENT, INDEX_SIZE_CLAUSE),
+                b.sequence(RESIZE, INDEX_SIZE_CLAUSE),
+                COALESCE,
+                b.sequence(SHRINK, SPACE, keepSize),
+                b.sequence(SHRINK, TEMPFILE, fileNameOrNumber, keepSize),
+                b.sequence(RENAME, TO, IDENTIFIER_NAME),
+                b.sequence(
+                    RENAME, DATAFILE,
+                    CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL),
+                    TO, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)),
+                b.sequence(b.firstOf(BEGIN, END), BACKUP),
+                b.sequence(ADD, b.firstOf(DATAFILE, TEMPFILE), fileSpecifications),
+                b.sequence(DROP, b.firstOf(DATAFILE, TEMPFILE), fileNameOrNumber),
+                b.sequence(b.firstOf(DATAFILE, TEMPFILE), b.firstOf(ONLINE, OFFLINE)),
+                LOGGING_CLAUSE,
+                b.sequence(b.optional(NO), FORCE, LOGGING),
+                groupClause,
+                ONLINE,
+                b.sequence(OFFLINE, b.optional(b.firstOf(NORMAL, TEMPORARY, IMMEDIATE))),
+                b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                PERMANENT,
+                TEMPORARY,
+                AUTOEXTEND_CLAUSE,
+                flashbackClause,
+                retentionClause,
+                alterEncryption,
+                b.sequence(b.firstOf(ENABLE, REMOVE, SUSPEND), LOST, WRITE, PROTECTION))
+
+            b.rule(ALTER_TABLESPACE).define(
+                ALTER, TABLESPACE, b.nextNot(SET), b.optional(IF, EXISTS), IDENTIFIER_NAME, alterAttribute,
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-USER.html
