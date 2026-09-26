@@ -86,6 +86,7 @@ enum class DdlGrammar : GrammarRuleKey {
     LOCKDOWN_OPTION_VALUES,
     CREATE_DOMAIN,
     DOMAIN_CONSTRAINT,
+    ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
     AUDIT_PRIVILEGE_CLAUSE,
@@ -2108,6 +2109,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
+                ALTER_DOMAIN,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2189,6 +2191,18 @@ enum class DdlGrammar : GrammarRuleKey {
                 // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
                 b.optional(STRICT),
                 b.zeroOrMore(domainProperty),
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-domain.html
+            // A single action per statement (ORA-03048/ORA-03049 at a second one). Outside CREATE, the
+            // annotations clause keeps its ADD/DROP/REPLACE directives.
+            b.rule(ALTER_DOMAIN).define(
+                ALTER, b.optional(USECASE), DOMAIN, b.optional(IF, EXISTS),
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(b.firstOf(ADD, MODIFY), b.firstOf(DISPLAY, ORDER), EXPRESSION),
+                    b.sequence(DROP, b.firstOf(DISPLAY, ORDER)),
+                    ANNOTATIONS_CLAUSE),
                 b.optional(SEMICOLON))
         }
 
