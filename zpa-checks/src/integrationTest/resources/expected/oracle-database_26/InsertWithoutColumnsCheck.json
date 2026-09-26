@@ -58,6 +58,7 @@
   "sqlrf/CURRENT_TIMESTAMP-2.sql" : [ 2 ],
   "sqlrf/CURRENT_TIMESTAMP-3.sql" : [ 2 ],
   "sqlrf/Comments-48.sql" : [ 3 ],
+  "sqlrf/DELETE-7.sql" : [ 15 ],
   "sqlrf/DEREF-0.sql" : [ 2, 4 ],
   "sqlrf/Data-Types-19.sql" : [ 2 ],
   "sqlrf/Data-Types-20.sql" : [ 2 ],

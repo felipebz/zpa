@@ -108,6 +108,9 @@ enum class DdlGrammar : GrammarRuleKey {
     ROLE_IDENTIFICATION_CLAUSE,
     CREATE_ROLLBACK_SEGMENT,
     ALTER_ROLLBACK_SEGMENT,
+    CREATE_CLUSTER,
+    ALTER_CLUSTER,
+    TABLE_CLUSTER_CLAUSE,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -218,9 +221,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PARTITIONING_STORAGE_CLAUSE,
     SUBSTITUTABLE_COLUMN_CLAUSE,
     LOB_PARAMETERS,
-    STORAGE_CLAUSE,
     LOGGING_CLAUSE,
-    SIZE_CLAUSE,
     INDIVIDUAL_HASH_PARTITIONS,
     HASH_PARTITIONS_BY_QUANTITY,
     PARTITION_BY_LIST,
@@ -550,7 +551,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(PCTFREE, INTEGER_LITERAL),
                             b.sequence(PCTUSED, INTEGER_LITERAL),
                             b.sequence(INITRANS, INTEGER_LITERAL),
-                            STORAGE_CLAUSE)))
+                            INDEX_STORAGE_CLAUSE)))
 
             b.rule(SEGMENT_ATTRIBUTES_CLAUSE).define(
                     b.oneOrMore(b.firstOf(
@@ -660,24 +661,6 @@ enum class DdlGrammar : GrammarRuleKey {
                                     DATATYPE,
                                     RPARENTHESIS),
                             OBJECT_TABLE_SUBSTITUTION))
-
-            b.rule(SIZE_CLAUSE).define(
-                    b.sequence(INTEGER_LITERAL, b.firstOf("K", "M", "G", "T", "P", "E")))
-
-            b.rule(STORAGE_CLAUSE).define(
-                    b.sequence(STORAGE,
-                            LPARENTHESIS,
-                            b.firstOf(
-                                    b.sequence(INITIAL, SIZE_CLAUSE),
-                                    b.sequence(NEXT, SIZE_CLAUSE),
-                                    b.sequence(MINEXTENTS, INTEGER_LITERAL),
-                                    b.sequence(MAXEXTENTS, b.firstOf(INTEGER_LITERAL, UNLIMITED)),
-                                    b.sequence(PCTINCREASE, INTEGER_LITERAL),
-                                    b.sequence(FREELISTS, INTEGER_LITERAL),
-                                    b.sequence(FREELIST, GROUPS, INTEGER_LITERAL),
-                                    b.sequence(OPTIMAL, b.optional(b.firstOf(SIZE_CLAUSE, NULL))),
-                                    b.sequence(BUFFER_POOL, b.firstOf(KEEP, RECYCLE, DEFAULT))),
-                            RPARENTHESIS))
 
             b.rule(LOGGING_CLAUSE).define(
                     b.firstOf(LOGGING, NOLOGGING))
@@ -819,6 +802,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.oneOrMore(
                                             b.firstOf(
                                                     METHOD_CALL,
+                                                    LITERAL,
                                                     IDENTIFIER_NAME,
                                                     MAXVALUE),
                                             b.optional(COMMA)),
@@ -1036,6 +1020,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                             LPARENTHESIS,
                                             TABLE_RELATIONAL_PROPERTIES,
                                             RPARENTHESIS),
+                                    b.optional(TABLE_CLUSTER_CLAUSE),
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                                     b.firstOf(
@@ -1888,6 +1873,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createTablespace(b)
             createRole(b)
             createRollbackSegment(b)
+            createCluster(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2124,6 +2110,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_ROLE,
                 CREATE_ROLLBACK_SEGMENT,
                 ALTER_ROLLBACK_SEGMENT,
+                CREATE_CLUSTER,
+                ALTER_CLUSTER,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2300,6 +2288,54 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CLUSTER.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-CLUSTER.html
+        private fun createCluster(b: PlSqlGrammarBuilder) {
+            val clusterName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val clusterColumn = b.sequence(
+                IDENTIFIER_NAME, DATATYPE, b.optional(COLLATE, IDENTIFIER_NAME), b.optional(SORT))
+            val cacheClause = b.firstOf(CACHE, NOCACHE)
+
+            // Oracle 26 accepts these options in any order, including the parallel, row dependency and cache
+            // clauses the diagram places last, and HASH IS before HASHKEYS. Repeats and INDEX with HASHKEYS fail
+            // later (ORA-02228/ORA-02464) and are not tracked. SHARING is rejected at parse time (ORA-00922).
+            val createOption = b.firstOf(
+                PHISICAL_ATRIBUTES_CLAUSE,
+                b.sequence(SIZE, INDEX_SIZE_CLAUSE),
+                b.sequence(TABLESPACE, IDENTIFIER_NAME),
+                INDEX,
+                b.sequence(SINGLE, TABLE),
+                b.sequence(HASHKEYS, INTEGER_LITERAL),
+                b.sequence(PlSqlKeyword.HASH, IS, EXPRESSION),
+                INDEX_PARALLEL_CLAUSE,
+                b.firstOf(ROWDEPENDENCIES, NOROWDEPENDENCIES),
+                cacheClause)
+
+            b.rule(CREATE_CLUSTER).define(
+                CREATE, CLUSTER, b.optional(IF, NOT, EXISTS), clusterName,
+                LPARENTHESIS, clusterColumn, b.zeroOrMore(COMMA, clusterColumn), RPARENTHESIS,
+                b.zeroOrMore(createOption),
+                b.optional(PARTITION_BY_RANGE),
+                b.optional(SEMICOLON))
+
+            // The parallel clause may also appear between the other options (ORA-02144 without any option).
+            b.rule(ALTER_CLUSTER).define(
+                ALTER, CLUSTER, b.optional(IF, EXISTS), clusterName,
+                b.oneOrMore(b.firstOf(
+                    PHISICAL_ATRIBUTES_CLAUSE,
+                    b.sequence(SIZE, INDEX_SIZE_CLAUSE),
+                    b.sequence(b.optional(MODIFY, PARTITION, IDENTIFIER_NAME), INDEX_ALLOCATE_EXTENT_CLAUSE),
+                    INDEX_DEALLOCATE_UNUSED_CLAUSE,
+                    cacheClause,
+                    INDEX_PARALLEL_CLAUSE)),
+                b.optional(SEMICOLON))
+
+            // A clustered table rejects TABLESPACE, CACHE, PARALLEL and partitioning afterwards
+            // (ORA-01771/ORA-14026) but keeps its column properties such as LOB storage.
+            b.rule(TABLE_CLUSTER_CLAUSE).define(
+                CLUSTER, clusterName, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ROLLBACK-SEGMENT.html

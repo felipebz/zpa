@@ -27,6 +27,7 @@
   "lnpls/user-defined-pl-sql-subtypes-9.sql" : [ 3 ],
   "sqlrf/ALTER-TABLE-109.sql" : [ 2 ],
   "sqlrf/CAST-7.sql" : [ 12 ],
+  "sqlrf/CREATE-CLUSTER-4.sql" : [ 3 ],
   "sqlrf/CREATE-TABLE-35.sql" : [ 3 ],
   "sqlrf/CREATE-TABLE-42.sql" : [ 6 ],
   "sqlrf/CREATE-TABLE-57.sql" : [ 6 ],

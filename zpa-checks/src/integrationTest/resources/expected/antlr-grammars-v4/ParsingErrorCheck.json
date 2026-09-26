@@ -30,7 +30,6 @@
   "examples/associate_statistics.sql" : [ 1 ],
   "examples/audit.sql" : [ 1 ],
   "examples/bindvar04.sql" : [ 6 ],
-  "examples/cluster.sql" : [ 1 ],
   "examples/commit.sql" : [ 4 ],
   "examples/create_analytic_view.sql" : [ 1 ],
   "examples/create_attribute_dimension.sql" : [ 1 ],
