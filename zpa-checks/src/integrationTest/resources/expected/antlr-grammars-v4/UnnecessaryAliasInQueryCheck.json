@@ -11,6 +11,7 @@
   "examples/condition09.sql" : [ 4, 5, 6 ],
   "examples/condition10.sql" : [ 2 ],
   "examples/condition16.sql" : [ 1 ],
+  "examples/create_materialized_zonemap.sql" : [ 15, 16, 26, 27, 28, 38, 38, 38 ],
   "examples/for_update08.sql" : [ 2 ],
   "examples/join01.sql" : [ 2, 2 ],
   "examples/join02.sql" : [ 2, 2 ],

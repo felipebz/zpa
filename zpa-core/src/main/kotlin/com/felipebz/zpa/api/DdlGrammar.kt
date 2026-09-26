@@ -89,6 +89,9 @@ enum class DdlGrammar : GrammarRuleKey {
     DOMAIN_COLUMN,
     DOMAIN_ENUM,
     CREATE_FLEXIBLE_DOMAIN,
+    CREATE_MATERIALIZED_ZONEMAP,
+    ALTER_MATERIALIZED_ZONEMAP,
+    ZONEMAP_REFRESH_CLAUSE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1889,6 +1892,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createAnalyze(b)
             createAudit(b)
             createAssertion(b)
+            createZonemap(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2114,6 +2118,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_DOMAIN,
                 ALTER_DOMAIN,
                 CREATE_FLEXIBLE_DOMAIN,
+                CREATE_MATERIALIZED_ZONEMAP,
+                ALTER_MATERIALIZED_ZONEMAP,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2374,6 +2380,54 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-ZONEMAP.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MATERIALIZED-ZONEMAP.html
+        private fun createZonemap(b: PlSqlGrammarBuilder) {
+            val schemaName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val cacheClause = b.firstOf(CACHE, NOCACHE)
+            val pruningClause = b.sequence(b.firstOf(ENABLE, DISABLE), PRUNING)
+
+            // Unlike the materialized view refresh clause, this one has LOAD / DATA MOVEMENT triggers and no
+            // START WITH / NEXT. A bare REFRESH fails with ORA-00905, so a method or an ON trigger is required.
+            val refreshTrigger = b.sequence(
+                ON,
+                b.firstOf(DEMAND, COMMIT, b.sequence(LOAD, b.optional(DATA, MOVEMENT)), b.sequence(DATA, MOVEMENT)))
+            b.rule(ZONEMAP_REFRESH_CLAUSE).define(
+                REFRESH,
+                b.firstOf(
+                    b.sequence(b.firstOf(FAST, COMPLETE, FORCE), b.optional(refreshTrigger)),
+                    refreshTrigger))
+
+            // The attributes, refresh and pruning clauses keep this order (ORA-02000 otherwise). Repeated
+            // attributes fail after parsing (ORA-12814/ORA-12990) and are not tracked. The AS query is a single
+            // query block, optionally with a WITH clause: ORDER BY fails with ORA-00922 and set operators with
+            // ORA-31956.
+            b.rule(CREATE_MATERIALIZED_ZONEMAP).define(
+                CREATE, MATERIALIZED, ZONEMAP, b.optional(IF, NOT, EXISTS), schemaName,
+                b.zeroOrMore(b.firstOf(b.sequence(TABLESPACE, IDENTIFIER_NAME), b.sequence(SCALE, INTEGER_LITERAL), cacheClause)),
+                b.optional(ZONEMAP_REFRESH_CLAUSE),
+                b.optional(pruningClause),
+                b.firstOf(
+                    b.sequence(
+                        ON, schemaName,
+                        LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                    b.sequence(AS, b.optional(DmlGrammar.WITH_CLAUSE), DmlGrammar.QUERY_BLOCK)),
+                b.optional(SEMICOLON))
+
+            // A single action per statement (ORA-00922 for `COMPILE REBUILD`); only the attributes repeat.
+            b.rule(ALTER_MATERIALIZED_ZONEMAP).define(
+                ALTER, MATERIALIZED, ZONEMAP, b.optional(IF, EXISTS), schemaName,
+                b.firstOf(
+                    b.oneOrMore(b.firstOf(
+                        b.sequence(PCTFREE, INTEGER_LITERAL), b.sequence(PCTUSED, INTEGER_LITERAL), cacheClause)),
+                    ZONEMAP_REFRESH_CLAUSE,
+                    pruningClause,
+                    COMPILE,
+                    REBUILD,
+                    UNUSABLE),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-assertion.html

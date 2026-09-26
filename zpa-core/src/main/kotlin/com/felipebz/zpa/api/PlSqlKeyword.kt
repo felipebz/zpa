@@ -454,6 +454,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     LIMIT("limit"),
     LIST("list"),
     LISTAGG("listagg"),
+    LOAD("load"),
     LOB("lob"),
     LOBS("lobs"),
     LOCAL("local"),
@@ -648,6 +649,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PROPERTY("property"),
     PROTECTION("protection"),
     PROTOCOL("protocol"),
+    PRUNING("pruning"),
     QUALIFY("qualify"),
     QUERY("query"),
     PURGE("purge"),
@@ -897,7 +899,8 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     YEAR("year"),
     YEARS("years"),
     YES("yes"),
-    ZONE("zone");
+    ZONE("zone"),
+    ZONEMAP("zonemap");
 
     override fun hasToBeSkippedFromAst(node: AstNode?) = false
 
