@@ -92,6 +92,10 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_MATERIALIZED_ZONEMAP,
     ALTER_MATERIALIZED_ZONEMAP,
     ZONEMAP_REFRESH_CLAUSE,
+    CREATE_ATTRIBUTE_DIMENSION,
+    ATTRIBUTE_DIMENSION_LEVEL_CLAUSE,
+    CREATE_HIERARCHY,
+    AV_CLASSIFICATION_CLAUSE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1893,6 +1897,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createAudit(b)
             createAssertion(b)
             createZonemap(b)
+            createAttributeDimension(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2122,6 +2127,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_MATERIALIZED_ZONEMAP,
                 ALTER_MATERIALIZED_VIEW,
                 ALTER_MATERIALIZED_VIEW_LOG,
+                CREATE_ATTRIBUTE_DIMENSION,
+                CREATE_HIERARCHY,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2382,6 +2389,103 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ATTRIBUTE-DIMENSION.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-HIERARCHY.html
+        private fun createAttributeDimension(b: PlSqlGrammarBuilder) {
+            val schemaName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val attribute = IDENTIFIER_NAME
+            val attributeList = b.sequence(LPARENTHESIS, attribute, b.zeroOrMore(COMMA, attribute), RPARENTHESIS)
+            val header = b.sequence(
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(FORCE, NOFORCE)))
+            val sharing = b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE))
+
+            val classification = b.sequence(
+                CLASSIFICATION, IDENTIFIER_NAME,
+                b.optional(VALUE, CHARACTER_LITERAL), b.optional(LANGUAGE, CHARACTER_LITERAL))
+
+            // Shared by both statements. The parts keep this order (ORA-02000 for DESCRIPTION before CAPTION or
+            // LANGUAGE before VALUE), and every value is a string literal (ORA-01780).
+            b.rule(AV_CLASSIFICATION_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(
+                        CAPTION, CHARACTER_LITERAL, b.optional(DESCRIPTION, CHARACTER_LITERAL),
+                        b.zeroOrMore(classification)),
+                    b.sequence(DESCRIPTION, CHARACTER_LITERAL, b.zeroOrMore(classification)),
+                    b.oneOrMore(classification)))
+
+            // Tables with an optional alias, joined only by `col = col` equalities (ORA-02000 for other operators);
+            // Oracle 26 rejects a parenthesized source despite the diagram (ORA-00931).
+            val column = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val source = b.sequence(
+                schemaName, b.optional("REMOTE"),
+                b.optional(b.optional(AS), b.nextNot(b.firstOf(ATTRIBUTES, JOIN)), IDENTIFIER_NAME))
+            val usingClause = b.sequence(
+                USING, source, b.zeroOrMore(COMMA, source),
+                b.zeroOrMore(
+                    JOIN, PATH, IDENTIFIER_NAME, ON,
+                    column, EQUALS, column, b.zeroOrMore(AND, column, EQUALS, column)))
+
+            val attributeItem = b.sequence(
+                column, b.optional(b.optional(AS), b.nextNot(b.firstOf(CAPTION, DESCRIPTION, CLASSIFICATION)), IDENTIFIER_NAME),
+                b.optional(AV_CLASSIFICATION_CLAUSE))
+
+            // Member values are value expressions: a full condition would read `b MEMBER CAPTION` as a
+            // `MEMBER [OF]` membership test.
+            val memberValue = PlSqlGrammar.CONCATENATION_EXPRESSION
+
+            val orderItem = b.sequence(
+                b.optional(b.firstOf(MIN, MAX)), attribute, b.optional(b.firstOf(ASC, DESC)),
+                b.optional(NULLS, b.firstOf(FIRST, LAST)))
+
+            // Every part keeps this order (ORA-02000/ORA-03048/ORA-03049 otherwise), and KEY is required.
+            b.rule(ATTRIBUTE_DIMENSION_LEVEL_CLAUSE).define(
+                LEVEL, IDENTIFIER_NAME,
+                b.optional(b.firstOf(b.sequence(NOT, NULL), b.sequence(SKIP, WHEN, NULL))),
+                b.optional(
+                    LEVEL, TYPE,
+                    b.firstOf(STANDARD, YEARS, HALF_YEARS, QUARTERS, MONTHS, WEEKS, DAYS, HOURS, MINUTES, SECONDS)),
+                b.optional(AV_CLASSIFICATION_CLAUSE),
+                KEY, b.firstOf(attributeList, attribute),
+                b.optional(ALTERNATE, KEY, b.firstOf(attributeList, attribute)),
+                b.optional(MEMBER, NAME, memberValue),
+                b.optional(MEMBER, CAPTION, memberValue),
+                b.optional(MEMBER, DESCRIPTION, memberValue),
+                b.optional(ORDER, BY, orderItem, b.zeroOrMore(COMMA, orderItem)),
+                b.optional(DETERMINES, attributeList))
+
+            // At least one level is required, also before ALL MEMBER (ORA-02000).
+            b.rule(CREATE_ATTRIBUTE_DIMENSION).define(
+                header, ATTRIBUTE, DIMENSION, b.optional(IF, NOT, EXISTS), schemaName, sharing,
+                b.optional(AV_CLASSIFICATION_CLAUSE),
+                b.optional(DIMENSION, TYPE, b.firstOf(STANDARD, TIME)),
+                usingClause,
+                ATTRIBUTES, LPARENTHESIS, attributeItem, b.zeroOrMore(COMMA, attributeItem), RPARENTHESIS,
+                b.oneOrMore(ATTRIBUTE_DIMENSION_LEVEL_CLAUSE),
+                b.optional(
+                    ALL, MEMBER,
+                    b.firstOf(
+                        b.sequence(
+                            NAME, memberValue,
+                            b.optional(MEMBER, CAPTION, memberValue), b.optional(MEMBER, DESCRIPTION, memberValue)),
+                        b.sequence(CAPTION, memberValue, b.optional(MEMBER, DESCRIPTION, memberValue)),
+                        b.sequence(DESCRIPTION, memberValue))),
+                b.optional(SEMICOLON))
+
+            // Levels form a parenthesized CHILD OF chain (ORA-02000 for a comma or a missing OF). Hierarchical
+            // attribute names are checked semantically, so any name parses.
+            b.rule(CREATE_HIERARCHY).define(
+                header, HIERARCHY, b.optional(IF, NOT, EXISTS), schemaName, sharing,
+                b.optional(AV_CLASSIFICATION_CLAUSE),
+                USING, schemaName,
+                LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(CHILD, OF, IDENTIFIER_NAME), RPARENTHESIS,
+                b.optional(
+                    HIERARCHICAL, ATTRIBUTES, LPARENTHESIS,
+                    IDENTIFIER_NAME, b.optional(AV_CLASSIFICATION_CLAUSE),
+                    b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(AV_CLASSIFICATION_CLAUSE)),
+                    RPARENTHESIS),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-ZONEMAP.html
