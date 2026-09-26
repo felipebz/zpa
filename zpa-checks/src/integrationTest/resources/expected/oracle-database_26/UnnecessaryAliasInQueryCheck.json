@@ -177,5 +177,10 @@
   "sqlrf/XMLFOREST-0.sql" : [ 5 ],
   "sqlrf/XMLSEQUENCE-0.sql" : [ 5 ],
   "sqlrf/XMLTRANSFORM-1.sql" : [ 3, 3 ],
+  "sqlrf/create-assertion-0.sql" : [ 5, 8 ],
+  "sqlrf/create-assertion-1.sql" : [ 4, 8 ],
+  "sqlrf/create-assertion-7.sql" : [ 6, 10 ],
+  "sqlrf/create-assertion-8.sql" : [ 6, 10, 15 ],
+  "sqlrf/create-assertion-9.sql" : [ 6, 8, 13 ],
   "sqlrf/create-domain-22.sql" : [ 2 ]
 }

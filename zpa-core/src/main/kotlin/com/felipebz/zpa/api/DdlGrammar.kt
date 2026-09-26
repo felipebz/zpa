@@ -116,6 +116,9 @@ enum class DdlGrammar : GrammarRuleKey {
     NOAUDIT_STATEMENT,
     AUDIT_POLICY_CLAUSE,
     AUDIT_CONTEXT_CLAUSE,
+    CREATE_ASSERTION,
+    ASSERTION_CONDITION,
+    ASSERTION_UNIVERSAL_EXPRESSION,
     DATAFILE_TEMPFILE_SPEC,
     AUTOEXTEND_CLAUSE,
     EXTENT_MANAGEMENT_CLAUSE,
@@ -1881,6 +1884,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createCluster(b)
             createAnalyze(b)
             createAudit(b)
+            createAssertion(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2122,6 +2126,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ANALYZE_STATEMENT,
                 AUDIT_STATEMENT,
                 NOAUDIT_STATEMENT,
+                CREATE_ASSERTION,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -2298,6 +2303,37 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-assertion.html
+        private fun createAssertion(b: PlSqlGrammarBuilder) {
+            // ALL ... SATISFY exists only here: Oracle 26 rejects it in WHERE, CASE, after NOT and inside SATISFY
+            // (ORA-00936). The alias is optional and may follow AS.
+            b.rule(ASSERTION_UNIVERSAL_EXPRESSION).define(
+                ALL, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS,
+                b.optional(b.optional(AS), b.nextNot(SATISFY), IDENTIFIER_NAME),
+                SATISFY, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
+
+            // The existential form is a condition that must start with [NOT] EXISTS or a parenthesis (`1 = 1`
+            // fails, `EXISTS (...) AND 1 = 1` parses). The universal form can only be parenthesized, not combined.
+            b.rule(ASSERTION_CONDITION).define(
+                b.firstOf(
+                    ASSERTION_UNIVERSAL_EXPRESSION,
+                    b.sequence(b.next(b.firstOf(NOT, EXISTS, LPARENTHESIS)), EXPRESSION),
+                    b.sequence(LPARENTHESIS, ASSERTION_CONDITION, RPARENTHESIS)))
+
+            // Unlike table constraints, RELY, USING INDEX and EXCEPTIONS are rejected here (ORA-00911), and the
+            // states may come in any order.
+            val assertionState = b.firstOf(
+                b.sequence(b.optional(NOT), DEFERRABLE),
+                b.sequence(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE)),
+                ENABLE, DISABLE, VALIDATE, NOVALIDATE)
+
+            b.rule(CREATE_ASSERTION).define(
+                CREATE, ASSERTION, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                CHECK, LPARENTHESIS, ASSERTION_CONDITION, RPARENTHESIS,
+                b.zeroOrMore(assertionState),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Unified-Auditing.html
