@@ -168,4 +168,35 @@ class CreateDomainTest : RuleTest() {
         assertThat(p).notMatches("create domain d as enum strict")
         assertThat(p).notMatches("create domain d as enum (a, b)")
     }
+
+    @Test
+    fun matchesMultiColumnDomain() {
+        assertThat(p).matches("create domain dgreater as (c1 as number, c2 as number) check (c1 > c2);")
+        assertThat(p).matches("create usecase domain if not exists hr.d as (c1 as number strict, c2 as char(2) strict,)")
+        assertThat(p).matches("create domain us_city as (" +
+            "name as varchar2(30) annotations (Address), " +
+            "state as varchar2(2) not null constraint st_c check (length(state) = 2) deferrable initially deferred, " +
+            "zip as number default on null for insert only 1 collate binary) " +
+            "constraint city_ck check (zip < 100000) " +
+            "display name || ', ' || state " +
+            "order state || name " +
+            "annotations (Title 'Domain Annotation')")
+        assertThat(p).matches("create domain d as (c1 as number check (c1 > 0) not null, c2 as json validate '{}') " +
+            "order c1 display c1 constraint check (c1 < c2) rely annotations (a) check (c2 > 0)")
+    }
+
+    @Test
+    fun rejectsMultiColumnPropertiesOutOfPlace() {
+        // Columns reject DISPLAY and ORDER (ORA-00904/ORA-03050) and need AS (ORA-00904).
+        assertThat(p).notMatches("create domain d as (c1 as number display c1)")
+        assertThat(p).notMatches("create domain d as (c1 as number order c1)")
+        assertThat(p).notMatches("create domain d as (c1 number)")
+        assertThat(p).notMatches("create domain d as ()")
+        // The domain as a whole rejects column-level properties (ORA-03048/ORA-03049).
+        assertThat(p).notMatches("create domain d as (c1 as number) not null")
+        assertThat(p).notMatches("create domain d as (c1 as number) default 1")
+        assertThat(p).notMatches("create domain d as (c1 as number) strict")
+        assertThat(p).notMatches("create domain d as (c1 as number) validate '{}'")
+        assertThat(p).notMatches("create domain d as (c1 as number) collate binary")
+    }
 }
