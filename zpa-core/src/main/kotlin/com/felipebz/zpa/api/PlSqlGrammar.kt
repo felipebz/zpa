@@ -1638,7 +1638,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(MATERIALIZED_VIEW_LOG_ATTRIBUTE).define(
                 b.firstOf(
-                    PHISICAL_ATRIBUTES_CLAUSE,
+                    PHYSICAL_ATRIBUTES_CLAUSE,
                     b.sequence(TABLESPACE, IDENTIFIER_NAME),
                     LOGGING_CLAUSE,
                     b.firstOf(CACHE, NOCACHE),

@@ -209,7 +209,7 @@ enum class DdlGrammar : GrammarRuleKey {
     RANGE_VALUES_CLAUSE,
     TABLE_PARTITION_DESCRIPTION,
     SEGMENT_ATTRIBUTES_CLAUSE,
-    PHISICAL_ATRIBUTES_CLAUSE,
+    PHYSICAL_ATRIBUTES_CLAUSE,
     TABLE_COMPRESSION,
     KEY_COMPRESSION,
     LOB_STORAGE_CLAUSE,
@@ -546,7 +546,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 )
             )
 
-            b.rule(PHISICAL_ATRIBUTES_CLAUSE).define(
+            b.rule(PHYSICAL_ATRIBUTES_CLAUSE).define(
                     b.oneOrMore(b.firstOf(
                             b.sequence(PCTFREE, INTEGER_LITERAL),
                             b.sequence(PCTUSED, INTEGER_LITERAL),
@@ -555,7 +555,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(SEGMENT_ATTRIBUTES_CLAUSE).define(
                     b.oneOrMore(b.firstOf(
-                            PHISICAL_ATRIBUTES_CLAUSE,
+                            PHYSICAL_ATRIBUTES_CLAUSE,
                             b.sequence(TABLESPACE, IDENTIFIER_NAME),
                             LOGGING_CLAUSE)))
 
@@ -1765,7 +1765,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             // The shared description permits repeated segment attributes; a partition MOVE
             // must not specify TABLESPACE twice, including around physical/logging attributes.
-            val otherSegmentAttribute = b.firstOf(PHISICAL_ATRIBUTES_CLAUSE, LOGGING_CLAUSE)
+            val otherSegmentAttribute = b.firstOf(PHYSICAL_ATRIBUTES_CLAUSE, LOGGING_CLAUSE)
             fun movePartitionDescription() = b.sequence(
                 b.nextNot(b.sequence(b.zeroOrMore(otherSegmentAttribute),
                     TABLESPACE, IDENTIFIER_NAME, b.zeroOrMore(otherSegmentAttribute), TABLESPACE)),
@@ -2302,7 +2302,7 @@ enum class DdlGrammar : GrammarRuleKey {
             // clauses the diagram places last, and HASH IS before HASHKEYS. Repeats and INDEX with HASHKEYS fail
             // later (ORA-02228/ORA-02464) and are not tracked. SHARING is rejected at parse time (ORA-00922).
             val createOption = b.firstOf(
-                PHISICAL_ATRIBUTES_CLAUSE,
+                PHYSICAL_ATRIBUTES_CLAUSE,
                 b.sequence(SIZE, INDEX_SIZE_CLAUSE),
                 b.sequence(TABLESPACE, IDENTIFIER_NAME),
                 INDEX,
@@ -2324,7 +2324,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_CLUSTER).define(
                 ALTER, CLUSTER, b.optional(IF, EXISTS), clusterName,
                 b.oneOrMore(b.firstOf(
-                    PHISICAL_ATRIBUTES_CLAUSE,
+                    PHYSICAL_ATRIBUTES_CLAUSE,
                     b.sequence(SIZE, INDEX_SIZE_CLAUSE),
                     b.sequence(b.optional(MODIFY, PARTITION, IDENTIFIER_NAME), INDEX_ALLOCATE_EXTENT_CLAUSE),
                     INDEX_DEALLOCATE_UNUSED_CLAUSE,
