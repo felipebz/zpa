@@ -49,6 +49,8 @@ enum class DmlGrammar : GrammarRuleKey {
     KEEP_CLAUSE,
     NULL_TREATMENT_CLAUSE,
     ANALYTIC_CLAUSE,
+    WINDOW_CLAUSE,
+    QUALIFY_CLAUSE,
     ON_OR_USING_EXPRESSION,
     INNER_CROSS_JOIN_CLAUSE,
     CROSS_OUTER_APPLY_CLAUSE,
@@ -194,22 +196,35 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(NULL_TREATMENT_CLAUSE).define(b.firstOf(IGNORE, RESPECT), NULLS)
 
+            // The parenthesized analytic body is Oracle's window_specification: an optional existing window name,
+            // PARTITION BY, then ORDER BY with an optional windowing clause (ORA-00907 for ORDER BY first,
+            // ORA-30485 for a windowing clause without ORDER BY). Named windows share it.
+            val windowSpecification = b.sequence(
+                    LPARENTHESIS,
+                    b.optional(
+                            b.firstOf(
+                                    PARTITION_BY_CLAUSE,
+                                    b.sequence(IDENTIFIER_NAME, b.optional(PARTITION_BY_CLAUSE))
+                            )
+                    ),
+                    b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
+                    RPARENTHESIS
+            )
+
             b.rule(ANALYTIC_CLAUSE).define(
                     OVER,
                     b.firstOf(
                             IDENTIFIER_NAME,
-                            b.sequence(
-                                    LPARENTHESIS,
-                                    b.optional(
-                                            b.firstOf(
-                                                    PARTITION_BY_CLAUSE,
-                                                    b.sequence(IDENTIFIER_NAME, b.optional(PARTITION_BY_CLAUSE))
-                                            )
-                                    ),
-                                    b.optional(ORDER_BY_CLAUSE, b.optional(WINDOWING_CLAUSE)),
-                                    RPARENTHESIS
-                            )
+                            windowSpecification
                     ))
+
+            // A single WINDOW keyword with a comma list (ORA-03049 for a second WINDOW, ORA-02000 after a
+            // trailing comma).
+            b.rule(WINDOW_CLAUSE).define(
+                    WINDOW, IDENTIFIER_NAME, AS, windowSpecification,
+                    b.zeroOrMore(COMMA, IDENTIFIER_NAME, AS, windowSpecification))
+
+            b.rule(QUALIFY_CLAUSE).define(QUALIFY, EXPRESSION)
 
             b.rule(ON_OR_USING_EXPRESSION).define(
                     b.firstOf(
@@ -304,6 +319,9 @@ enum class DmlGrammar : GrammarRuleKey {
                         EXCEPT,
                         SET,
                         MODEL,
+                        // `from emp window` keeps WINDOW as an alias; Oracle 26 reads a named window only when
+                        // `name AS` follows. A bare QUALIFY stays an alias, as in Oracle (`from emp qualify ...`).
+                        b.sequence(WINDOW, IDENTIFIER_NAME, AS),
                         b.sequence(MATCH_RECOGNIZE, LPARENTHESIS)
                     )
                 ),
@@ -798,7 +816,11 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(HAVING_CLAUSE, b.optional(GROUP_BY_CLAUSE)))),
                         b.optional(HAVING_CLAUSE),
                         b.optional(HIERARCHICAL_QUERY_CLAUSE),
-                        b.optional(MODEL_CLAUSE)),
+                        // MODEL excludes both WINDOW and QUALIFY (ORA-03049/ORA-03035), and nothing but ORDER BY
+                        // and row limiting may follow them (ORA-03048 for HAVING or CONNECT BY).
+                        b.optional(b.firstOf(
+                            MODEL_CLAUSE,
+                            b.sequence(b.optional(WINDOW_CLAUSE), b.optional(QUALIFY_CLAUSE))))),
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS)))
 
             b.rule(SELECT_EXPRESSION).define(
