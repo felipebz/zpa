@@ -158,15 +158,27 @@ class CreateDomainTest : RuleTest() {
     }
 
     @Test
-    fun keepsEnumOutOfTheDatatypeBranch() {
-        // Oracle 26 parses other names as datatypes (ORA-11531 afterwards) but always treats unquoted
-        // ENUM as the enum branch (ORA-00904 right after a bare ENUM); that branch is not modeled yet.
+    fun matchesEnumDomain() {
+        assertThat(p).matches("create domain order_status as enum (New, Open, Shipped, Closed, Cancelled);")
+        assertThat(p).matches("create domain days_of_week as enum (Sunday = Su = 0, Monday = Mo, Tuesday = Tu);")
+        assertThat(p).matches("create domain d as enum (a = 1 + 1, b = -3, c = 'x', e = date '2020-01-01', " +
+            "f = to_number('1'), g = null, \"New\" = 5,)")
+        assertThat(p).matches("create domain d as enum ()")
+        assertThat(p).matches("create domain d as enum (a) strict not null default 1 display d order d annotations (x 'y')")
+        assertThat(p).matches("create domain d as (c1 as enum (a = 1, b = 2) strict not null, c2 as number) check (c1 > 0)")
+    }
+
+    @Test
+    fun rejectsMalformedEnum() {
+        // Unquoted ENUM always starts the enum branch (ORA-00904 after a bare ENUM); "ENUM" is a datatype name.
         assertThat(p).matches("create domain d as some_unknown_type")
         assertThat(p).matches("create domain d as strict")
         assertThat(p).matches("create domain d as \"ENUM\"")
         assertThat(p).notMatches("create domain d as enum")
         assertThat(p).notMatches("create domain d as enum strict")
-        assertThat(p).notMatches("create domain d as enum (a, b)")
+        // ORA-00917: items need commas, and the value must come after every alias.
+        assertThat(p).notMatches("create domain d as enum (a b)")
+        assertThat(p).notMatches("create domain d as enum (a = 1 = b)")
     }
 
     @Test

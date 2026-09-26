@@ -87,6 +87,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_DOMAIN,
     DOMAIN_CONSTRAINT,
     DOMAIN_COLUMN,
+    DOMAIN_ENUM,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -2148,8 +2149,8 @@ enum class DdlGrammar : GrammarRuleKey {
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-domain.html
-        // The single-column `AS datatype` and multi-column `AS (...)` branches; ENUM and flexible domains are not
-        // modeled.
+        // The single-column (`AS datatype` or `AS ENUM (...)`) and multi-column `AS (...)` branches; flexible domains
+        // are not modeled.
         private fun createDomain(b: PlSqlGrammarBuilder) {
             // Oracle 26 accepts only these states after a domain CHECK: USING INDEX, PRECHECK and
             // EXCEPTIONS INTO fail with ORA-03049.
@@ -2186,12 +2187,29 @@ enum class DdlGrammar : GrammarRuleKey {
                 DOMAIN_CONSTRAINT, defaultProperty, nullProperty, validateProperty, collateProperty,
                 displayProperty, orderProperty, annotationsProperty)
 
+            // ENUM (name [= alias]... [= value], ...) exists only in domains: a table column typed ENUM fails with
+            // ORA-03060, so it stays out of DATATYPE. An alias is a bare name followed by `=`, `,` or `)`; anything
+            // else after `=` is the constant value, which must come last (ORA-00917 for `a = 1 = b`), hence a
+            // non-boolean expression. Oracle 26 also accepts an empty list and a trailing comma.
+            val enumItem = b.sequence(
+                IDENTIFIER_NAME,
+                b.zeroOrMore(EQUALS, IDENTIFIER_NAME, b.next(b.firstOf(EQUALS, COMMA, RPARENTHESIS))),
+                b.optional(EQUALS, PlSqlGrammar.CONCATENATION_EXPRESSION))
+            b.rule(DOMAIN_ENUM).define(
+                ENUM, LPARENTHESIS,
+                b.optional(enumItem, b.zeroOrMore(COMMA, enumItem), b.optional(COMMA)),
+                RPARENTHESIS)
+
+            // Unquoted ENUM always starts the enum branch: Oracle 26 reports ORA-00904 right after a bare ENUM,
+            // while "ENUM" or other names are datatypes (ORA-11531 afterwards).
+            val domainType = b.firstOf(DOMAIN_ENUM, b.sequence(b.nextNot(ENUM), DATATYPE))
+
             // In a multi-column domain each column takes the column-level properties (plus annotations, which the
             // diagram omits) but not DISPLAY or ORDER (ORA-00904/ORA-03050); the domain as a whole takes only
             // CHECK constraints, DISPLAY, ORDER and annotations (ORA-03048/ORA-03049 for the others). Both lists
             // accept any order.
             b.rule(DOMAIN_COLUMN).define(
-                IDENTIFIER_NAME, AS, b.nextNot(ENUM), DATATYPE, b.optional(STRICT),
+                IDENTIFIER_NAME, AS, domainType, b.optional(STRICT),
                 b.zeroOrMore(b.firstOf(
                     DOMAIN_CONSTRAINT, defaultProperty, nullProperty, validateProperty, collateProperty,
                     annotationsProperty)))
@@ -2207,9 +2225,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         LPARENTHESIS, DOMAIN_COLUMN, b.zeroOrMore(COMMA, DOMAIN_COLUMN), b.optional(COMMA), RPARENTHESIS,
                         b.zeroOrMore(multiColumnProperty)),
                     b.sequence(
-                        // Unquoted ENUM always starts the (not yet modeled) enum branch: Oracle 26 reports
-                        // ORA-00904 right after a bare ENUM, while "ENUM" or other names reach ORA-11531.
-                        b.nextNot(ENUM), DATATYPE,
+                        domainType,
                         // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
                         b.optional(STRICT),
                         b.zeroOrMore(domainProperty))),
