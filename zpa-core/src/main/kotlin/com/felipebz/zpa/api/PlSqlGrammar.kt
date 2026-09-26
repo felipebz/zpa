@@ -250,6 +250,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_PACKAGE_BODY,
     VIEW_RESTRICTION_CLAUSE,
     CREATE_MATERIALIZED_VIEW,
+    ALTER_MATERIALIZED_VIEW,
     CREATE_MATERIALIZED_VIEW_LOG,
     MATERIALIZED_VIEW_LOG_ATTRIBUTE,
     MATERIALIZED_VIEW_LOG_WITH_CLAUSE,
@@ -1741,6 +1742,33 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.zeroOrMore(MATERIALIZED_VIEW_ATTRIBUTE),
                 AS,
                 SELECT_EXPRESSION,
+                b.optional(SEMICOLON)
+            )
+
+            b.rule(ALTER_MATERIALIZED_VIEW).define(
+                ALTER, MATERIALIZED, VIEW, b.optional(IF, EXISTS),
+                b.nextNot(LOG, b.firstOf(ON, FORCE)), UNIT_NAME,
+                b.nextNot(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.zeroOrMore(b.firstOf(
+                    PHYSICAL_ATRIBUTES_CLAUSE,
+                    TABLE_COMPRESSION,
+                    INDEX_PARALLEL_CLAUSE,
+                    LOGGING_CLAUSE,
+                    INDEX_ALLOCATE_EXTENT_CLAUSE,
+                    INDEX_DEALLOCATE_UNUSED_CLAUSE,
+                    INDEX_SHRINK_CLAUSE,
+                    CACHE,
+                    NOCACHE)),
+                b.optional(USING, INDEX, b.oneOrMore(b.firstOf(b.sequence(INITRANS, INTEGER_LITERAL), INDEX_STORAGE_CLAUSE))),
+                b.optional(MATERIALIZED_VIEW_REFRESH),
+                b.optional(MATERIALIZED_VIEW_EVALUATION_EDITION_CLAUSE),
+                b.optional(b.firstOf(ENABLE, DISABLE), ON, QUERY, COMPUTATION),
+                b.optional(b.firstOf(
+                    MATERIALIZED_VIEW_QUERY_REWRITE_CLAUSE,
+                    b.sequence(b.firstOf(ENABLE, DISABLE), CONCURRENT, REFRESH),
+                    COMPILE,
+                    b.sequence(CONSIDER, FRESH))),
+                b.optional(ANNOTATIONS_CLAUSE),
                 b.optional(SEMICOLON)
             )
 

@@ -2120,6 +2120,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_FLEXIBLE_DOMAIN,
                 CREATE_MATERIALIZED_ZONEMAP,
                 ALTER_MATERIALIZED_ZONEMAP,
+                ALTER_MATERIALIZED_VIEW,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
