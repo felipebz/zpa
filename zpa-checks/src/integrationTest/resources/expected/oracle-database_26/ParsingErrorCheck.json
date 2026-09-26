@@ -581,76 +581,7 @@
   "sqlrf/ALTER-JAVA-0.sql" : [
     2
   ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-10.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-11.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-12.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-13.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-14.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-15.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-16.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-17.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-18.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-19.sql" : [
-    2
-  ],
   "sqlrf/ALTER-LOCKDOWN-PROFILE-2.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-20.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-21.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-22.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-23.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-24.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-25.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-3.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-4.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-5.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-6.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-7.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-8.sql" : [
-    2
-  ],
-  "sqlrf/ALTER-LOCKDOWN-PROFILE-9.sql" : [
     2
   ],
   "sqlrf/ALTER-MATERIALIZED-VIEW-0.sql" : [

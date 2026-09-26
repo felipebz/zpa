@@ -47,9 +47,6 @@
   "examples/alter_library.sql" : [
     1
   ],
-  "examples/alter_lockdown_profile.sql" : [
-    1
-  ],
   "examples/alter_materialized_zonemap.sql" : [
     1
   ],

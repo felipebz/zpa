@@ -75,6 +75,11 @@ enum class DdlGrammar : GrammarRuleKey {
     UPDATE_INDEX_CLAUSES,
     DROP_CONSTRAINT_CLAUSE,
     ALTER_SYSTEM,
+    ALTER_LOCKDOWN_PROFILE,
+    LOCKDOWN_FEATURES,
+    LOCKDOWN_OPTIONS,
+    LOCKDOWN_STATEMENTS,
+    LOCKDOWN_OPTION_VALUES,
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
@@ -1804,6 +1809,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))),
                     b.optional(SEMICOLON))
 
+            createLockdownProfile(b)
+
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
                     CREATE, b.optional(OR, REPLACE), CONTEXT, UNIT_NAME,
@@ -2027,6 +2034,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_CONTEXT,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
+                ALTER_LOCKDOWN_PROFILE,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,
@@ -2039,6 +2047,79 @@ enum class DdlGrammar : GrammarRuleKey {
                 DROP_DIRECTORY,
                 DROP_COMMAND,
                 TRUNCATE_TABLE))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-LOCKDOWN-PROFILE.html
+        private fun createLockdownProfile(b: PlSqlGrammarBuilder) {
+            // Values are opaque string literals: Oracle rejects `= (NAME)` and `= ()` (ORA-01780).
+            fun quotedList() = b.sequence(
+                EQUALS, LPARENTHESIS, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS)
+
+            // Oracle 26 rejects the root USERS suffix after any `ALL EXCEPT = (...)` (ORA-00922 at USERS),
+            // although it accepts it after a bare ALL or a plain list.
+            fun allExcept() = b.sequence(ALL, b.optional(EXCEPT, quotedList(), b.nextNot(USERS)))
+
+            // Only a single selected value may be refined further; Oracle 26 rejects a refinement
+            // after a list (ORA-00922) and after ALL. Without a refinement this is `= (...) | ALL ...`.
+            fun singleOrList(refinement: Any? = null): Any =
+                if (refinement == null) b.firstOf(quotedList(), allExcept())
+                else b.firstOf(
+                    allExcept(),
+                    b.sequence(
+                        EQUALS, LPARENTHESIS, CHARACTER_LITERAL,
+                        b.firstOf(
+                            b.sequence(b.oneOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS),
+                            b.sequence(RPARENTHESIS, b.optional(refinement)))))
+
+            fun clauseOptions(optionValues: Any?) = b.sequence(OPTION, singleOrList(optionValues))
+
+            fun statementClauses(optionValues: Any?) = b.sequence(CLAUSE, singleOrList(clauseOptions(optionValues)))
+
+            b.rule(ALTER_LOCKDOWN_PROFILE).define(
+                ALTER, LOCKDOWN, PROFILE, IDENTIFIER_NAME,
+                b.firstOf(LOCKDOWN_FEATURES, LOCKDOWN_OPTIONS, LOCKDOWN_STATEMENTS),
+                b.optional(USERS, EQUALS, b.firstOf(ALL, COMMON, LOCAL)),
+                b.optional(SEMICOLON))
+
+            b.rule(LOCKDOWN_FEATURES).define(b.firstOf(DISABLE, ENABLE), FEATURE, singleOrList())
+
+            b.rule(LOCKDOWN_OPTIONS).define(b.firstOf(DISABLE, ENABLE), OPTION, singleOrList())
+
+            // Option values exist only under DISABLE: Oracle 26 rejects them after ENABLE at MINVALUE,
+            // before trailing tokens (ORA-00922).
+            b.rule(LOCKDOWN_STATEMENTS).define(
+                b.firstOf(
+                    b.sequence(DISABLE, STATEMENT_KEYWORD, singleOrList(statementClauses(LOCKDOWN_OPTION_VALUES))),
+                    b.sequence(ENABLE, STATEMENT_KEYWORD, singleOrList(statementClauses(null)))))
+
+            // VALUE, MINVALUE and MAXVALUE may appear in any order, each at most once (a repeated
+            // one fails with ORA-00922 in Oracle 26).
+            val valueClauses = arrayOf<Any>(
+                b.sequence(VALUE, quotedList()),
+                b.sequence(MINVALUE, EQUALS, CHARACTER_LITERAL),
+                b.sequence(MAXVALUE, EQUALS, CHARACTER_LITERAL))
+            // Oracle 26 also rejects USERS once MINVALUE or MAXVALUE was given (VALUE alone allows it).
+            fun valuesEnd(remaining: Int): Any? = if ((7 xor remaining) and 6 != 0) b.nextNot(USERS) else null
+            val optionValues = arrayOfNulls<Any>(8)
+            fun optionValues(remaining: Int): Any {
+                optionValues[remaining]?.let { return it }
+                val choices = valueClauses.indices.filter { remaining and (1 shl it) != 0 }.map { index ->
+                    val next = remaining xor (1 shl index)
+                    val end = valuesEnd(next)
+                    val rest = when {
+                        next == 0 -> end
+                        end == null -> b.optional(optionValues(next))
+                        else -> b.firstOf(optionValues(next), end)
+                    }
+                    if (rest == null) valueClauses[index] else b.sequence(valueClauses[index], rest)
+                }
+                val result = if (choices.size == 1) choices[0]
+                    else b.firstOf(choices[0], choices[1], *choices.drop(2).toTypedArray())
+                optionValues[remaining] = result
+                return result
+            }
+
+            b.rule(LOCKDOWN_OPTION_VALUES).define(optionValues(7))
         }
     }
 
