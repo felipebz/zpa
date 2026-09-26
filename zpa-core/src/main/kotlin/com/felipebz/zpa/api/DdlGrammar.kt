@@ -96,6 +96,10 @@ enum class DdlGrammar : GrammarRuleKey {
     ATTRIBUTE_DIMENSION_LEVEL_CLAUSE,
     CREATE_HIERARCHY,
     AV_CLASSIFICATION_CLAUSE,
+    CREATE_DIMENSION,
+    DIMENSION_LEVEL_CLAUSE,
+    DIMENSION_HIERARCHY_CLAUSE,
+    DIMENSION_ATTRIBUTE_CLAUSE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1898,6 +1902,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createAssertion(b)
             createZonemap(b)
             createAttributeDimension(b)
+            createDimension(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2129,6 +2134,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_MATERIALIZED_VIEW_LOG,
                 CREATE_ATTRIBUTE_DIMENSION,
                 CREATE_HIERARCHY,
+                CREATE_DIMENSION,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2389,6 +2395,43 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html
+        // Legacy dimensions: unrelated to ATTRIBUTE DIMENSION apart from the shared words.
+        private fun createDimension(b: PlSqlGrammarBuilder) {
+            val column = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), b.optional(DOT, IDENTIFIER_NAME))
+            // A single column may drop its parentheses everywhere.
+            fun columns(item: Any) =
+                b.firstOf(b.sequence(LPARENTHESIS, item, b.zeroOrMore(COMMA, item), RPARENTHESIS), item)
+
+            // Level columns need a table qualifier (ORA-30347 for a bare column).
+            val levelColumn = b.sequence(
+                IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            b.rule(DIMENSION_LEVEL_CLAUSE).define(
+                LEVEL, IDENTIFIER_NAME, IS, columns(levelColumn), b.optional(SKIP, WHEN, NULL))
+
+            // At least one CHILD OF is required (ORA-02000). JOIN KEY columns and repetition are only checked
+            // semantically (ORA-30365/ORA-30344).
+            b.rule(DIMENSION_HIERARCHY_CLAUSE).define(
+                HIERARCHY, IDENTIFIER_NAME, LPARENTHESIS,
+                IDENTIFIER_NAME, b.oneOrMore(CHILD, OF, IDENTIFIER_NAME),
+                b.zeroOrMore(JOIN, KEY, columns(column), REFERENCES, IDENTIFIER_NAME),
+                RPARENTHESIS)
+
+            // `ATTRIBUTE level DETERMINES ...`, or the extended `ATTRIBUTE name {LEVEL level DETERMINES ...}...`.
+            val determines = b.sequence(DETERMINES, columns(column))
+            b.rule(DIMENSION_ATTRIBUTE_CLAUSE).define(
+                ATTRIBUTE, IDENTIFIER_NAME,
+                b.firstOf(determines, b.oneOrMore(LEVEL, IDENTIFIER_NAME, determines)))
+
+            // Levels come first (ORA-03048 for a later LEVEL); hierarchies and attributes then interleave and may
+            // be absent (a levels-only dimension is created). OR REPLACE and IF NOT EXISTS are rejected.
+            b.rule(CREATE_DIMENSION).define(
+                CREATE, DIMENSION, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                b.oneOrMore(DIMENSION_LEVEL_CLAUSE),
+                b.zeroOrMore(b.firstOf(DIMENSION_HIERARCHY_CLAUSE, DIMENSION_ATTRIBUTE_CLAUSE)),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ATTRIBUTE-DIMENSION.html
