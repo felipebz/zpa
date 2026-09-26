@@ -137,18 +137,24 @@ class CreateDomainTest : RuleTest() {
         assertThat(p).notMatches("create domain d as number constraint check (value >= 0) using index")
         assertThat(p).notMatches("create domain d as number constraint check (value >= 0) precheck")
         assertThat(p).notMatches("create domain d as number constraint check (value >= 0) exceptions into ex")
-        // A repeated property fails with ORA-00139/ORA-02258.
-        assertThat(p).notMatches("create domain d as number display value display value")
-        assertThat(p).notMatches("create domain d as number order value order value")
-        assertThat(p).notMatches("create domain d as number default 1 default 2")
-        assertThat(p).notMatches("create domain d as number annotations (A 'x') annotations (B 'y')")
-        assertThat(p).notMatches("create domain d as number not null null")
-        assertThat(p).notMatches("create domain d as json validate '{}' validate '{}'")
         // VALIDATE after a CHECK is its constraint state, so USING cannot follow (ORA-03049).
         assertThat(p).notMatches("create domain d as json constraint check (value is json) validate using '{}'")
         // CREATE-only annotation directives (ORA-11555/ORA-11556).
         assertThat(p).notMatches("create domain d as number annotations (drop A)")
         assertThat(p).notMatches("create domain d as number annotations (add or replace A 'x')")
+    }
+
+    @Test
+    fun acceptsRepeatedSingletonProperties() {
+        // Oracle rejects these (ORA-00139/ORA-02258), but uniqueness is not tracked:
+        // tracking that per property makes the compiled grammar grow factorially, so the parser
+        // accepts repeats.
+        assertThat(p).matches("create domain d as number display value display value")
+        assertThat(p).matches("create domain d as number order value order value")
+        assertThat(p).matches("create domain d as number default 1 default 2")
+        assertThat(p).matches("create domain d as number annotations (A 'x') annotations (B 'y')")
+        assertThat(p).matches("create domain d as number not null null")
+        assertThat(p).matches("create domain d as json validate '{}' validate '{}'")
     }
 
     @Test

@@ -2090,9 +2090,12 @@ enum class DdlGrammar : GrammarRuleKey {
                 CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
                 domainConstraintState)
 
-            // Oracle 26 accepts these properties in any order after the datatype and STRICT, each at most
-            // once (ORA-00139 or ORA-02258 on a repeat), with CHECK constraints repeatable anywhere.
-            val properties = arrayOf<Any>(
+            // Oracle 26 accepts these properties in any order after the datatype and STRICT, with CHECK
+            // constraints repeatable. Oracle rejects a repeated singleton property (ORA-00139/ORA-02258),
+            // but tracking that per property makes the compiled grammar grow factorially, so the parser
+            // accepts repeats.
+            val domainProperty = b.firstOf(
+                DOMAIN_CONSTRAINT,
                 b.sequence(
                     DEFAULT,
                     b.optional(ON, NULL, b.optional(FOR, INSERT, b.firstOf(ONLY, b.sequence(AND, UPDATE)))),
@@ -2103,23 +2106,6 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(DISPLAY, EXPRESSION),
                 b.sequence(ORDER, EXPRESSION),
                 b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, ANNOTATIONS_CLAUSE))
-            val allProperties = (1 shl properties.size) - 1
-            val propertyStates = arrayOfNulls<Any>(allProperties + 1)
-            fun domainProperties(remaining: Int): Any {
-                propertyStates[remaining]?.let { return it }
-                val choices = properties.indices.filter { remaining and (1 shl it) != 0 }.map { index ->
-                    b.sequence(properties[index], domainProperties(remaining xor (1 shl index)))
-                }
-                val next = when (choices.size) {
-                    0 -> null
-                    1 -> b.optional(choices[0])
-                    else -> b.optional(b.firstOf(choices[0], choices[1], *choices.drop(2).toTypedArray()))
-                }
-                val result = if (next == null) b.zeroOrMore(DOMAIN_CONSTRAINT)
-                    else b.sequence(b.zeroOrMore(DOMAIN_CONSTRAINT), next)
-                propertyStates[remaining] = result
-                return result
-            }
 
             b.rule(CREATE_DOMAIN).define(
                 CREATE, b.optional(USECASE), DOMAIN, b.optional(IF, NOT, EXISTS),
@@ -2129,7 +2115,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 AS, b.nextNot(ENUM), DATATYPE,
                 // STRICT must follow the datatype immediately (ORA-03049 elsewhere).
                 b.optional(STRICT),
-                domainProperties(allProperties),
+                b.zeroOrMore(domainProperty),
                 b.optional(SEMICOLON))
         }
 
