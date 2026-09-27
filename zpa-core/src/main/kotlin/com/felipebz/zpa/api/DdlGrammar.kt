@@ -249,6 +249,7 @@ enum class DdlGrammar : GrammarRuleKey {
     JAVA_USING_CLAUSE,
     JAVA_SOURCE_TEXT,
     CREATE_SEQUENCE,
+    ALTER_SEQUENCE,
     PARTITION_BY_RANGE,
     PARTITION_BY_HASH,
     RANGE_VALUES_CLAUSE,
@@ -2290,28 +2291,47 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.next(INTEGER_LITERAL),
                     NUMERIC_LITERAL)
 
+            // Options shared by CREATE and ALTER SEQUENCE. Oracle 26 accepts them in any order and parses SCALE
+            // without EXTEND/NOEXTEND; duplicate or conflicting options fail after parsing (ORA-02279..ORA-02281).
+            val sequenceOption = b.firstOf(
+                    b.sequence(INCREMENT, BY, sequenceInteger),
+                    b.sequence(START, WITH, sequenceInteger),
+                    b.sequence(MAXVALUE, sequenceInteger),
+                    NOMAXVALUE,
+                    b.sequence(MINVALUE, sequenceInteger),
+                    NOMINVALUE,
+                    CYCLE,
+                    NOCYCLE,
+                    b.sequence(CACHE, sequenceInteger),
+                    NOCACHE,
+                    ORDER,
+                    NOORDER,
+                    KEEP,
+                    NOKEEP,
+                    b.sequence(SCALE, b.optional(b.firstOf(EXTEND, NOEXTEND))),
+                    NOSCALE,
+                    SESSION,
+                    GLOBAL)
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SEQUENCE.html
+            // RESTART (ORA-64602), SHARD, OR REPLACE and EDITIONABLE are not CREATE SEQUENCE syntax.
             b.rule(CREATE_SEQUENCE).define(
-                    CREATE, SEQUENCE, UNIT_NAME,
+                    CREATE, SEQUENCE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, DATA, NONE)),
-                    b.zeroOrMore(b.firstOf(
-                            b.sequence(INCREMENT, BY, sequenceInteger),
-                            b.sequence(START, WITH, sequenceInteger),
-                            b.sequence(MAXVALUE, sequenceInteger),
-                            NOMAXVALUE,
-                            b.sequence(MINVALUE, sequenceInteger),
-                            NOMINVALUE,
-                            CYCLE,
-                            NOCYCLE,
-                            b.sequence(CACHE, sequenceInteger),
-                            NOCACHE,
-                            ORDER,
-                            NOORDER,
-                            KEEP,
-                            NOKEEP,
-                            b.sequence(SCALE, b.firstOf(EXTEND, NOEXTEND)),
-                            NOSCALE,
-                            SESSION,
-                            GLOBAL)),
+                    b.zeroOrMore(sequenceOption),
+                    b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SEQUENCE.html
+            // At least one option is required (ORA-02286), and SHARING is not an ALTER option. START WITH without
+            // RESTART (ORA-02283) and a repeated RESTART (ORA-64601) fail only after parsing. The probe instance
+            // rejects SHARD before parsing (ORA-02511), so SHARD follows the documented diagram.
+            b.rule(ALTER_SEQUENCE).define(
+                    ALTER, SEQUENCE, b.optional(IF, EXISTS), UNIT_NAME,
+                    b.oneOrMore(b.firstOf(
+                            sequenceOption,
+                            RESTART,
+                            b.sequence(SHARD, b.firstOf(EXTEND, NOEXTEND)),
+                            NOSHARD)),
                     b.optional(SEMICOLON))
 
             b.rule(CREATE_DIRECTORY).define(
@@ -2406,6 +2426,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_PACKAGE,
                 CREATE_SYNONYM,
                 CREATE_SEQUENCE,
+                ALTER_SEQUENCE,
                 CREATE_DIRECTORY,
                 DROP_DIRECTORY,
                 DROP_COMMAND,

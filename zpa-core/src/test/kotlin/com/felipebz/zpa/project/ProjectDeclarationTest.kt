@@ -57,6 +57,21 @@ class ProjectDeclarationTest {
     }
 
     @Test
+    fun extractsSequenceDeclaredWithIfNotExists() {
+        val declarations = extractor.extract(fileId, """
+            CREATE SEQUENCE IF NOT EXISTS email_seq;
+            CREATE SEQUENCE IF NOT EXISTS app.order_seq START WITH 1;
+        """.trimIndent())
+
+        val sequences = declarations.filterIsInstance<SequenceDeclaration>()
+        assertThat(sequences.map { it.name }).containsExactly(
+            QualifiedName(OracleIdentifier.fromSource("email_seq")),
+            QualifiedName(listOf(OracleIdentifier.fromSource("app"), OracleIdentifier.fromSource("order_seq")))
+        )
+        assertThat(sequences.map { it.sourceRange.startLine }).containsExactly(1, 2)
+    }
+
+    @Test
     fun extractsPackageDeclarationsAndBodySubprograms() {
         val declarations = extractor.extract(fileId, """
             CREATE OR REPLACE PACKAGE "Pack" AS

@@ -126,6 +126,25 @@ class CreateSequenceTest : RuleTest() {
         assertThat(p).matches("create sequence seq_name scale extend;")
         assertThat(p).matches("create sequence seq_name scale noextend;")
         assertThat(p).matches("create sequence seq_name noscale;")
+        // Oracle 26 parses SCALE without EXTEND/NOEXTEND.
+        assertThat(p).matches("create sequence seq_name scale;")
+        assertThat(p).matches("create sequence seq_name scale nocache;")
+    }
+
+    @Test
+    fun matchesCreateSequenceIfNotExists() {
+        assertThat(p).matches("create sequence if not exists email_seq;")
+        assertThat(p).matches("create sequence if not exists app.seq start with 1 cache 20;")
+    }
+
+    @Test
+    fun rejectsNonCreateSequenceSyntax() {
+        // ORA-11543 / ORA-00922 / ORA-64602
+        assertThat(p).notMatches("create sequence if exists seq_name;")
+        assertThat(p).notMatches("create or replace sequence seq_name;")
+        assertThat(p).notMatches("create editionable sequence seq_name;")
+        assertThat(p).notMatches("create sequence seq_name restart;")
+        assertThat(p).notMatches("create sequence seq_name noshard;")
     }
 
     @Test
@@ -166,7 +185,7 @@ class CreateSequenceTest : RuleTest() {
         assertThat(p).notMatches("create sequence seq_name sharing;")
         assertThat(p).notMatches("create sequence seq_name sharing =;")
         assertThat(p).notMatches("create sequence seq_name start with 1 sharing = metadata;")
-        assertThat(p).notMatches("create sequence seq_name scale;")
+        assertThat(p).notMatches("create sequence seq_name scale unexpected;")
         assertThat(p).notMatches("create sequence seq_name cache 20 unexpected;")
     }
 

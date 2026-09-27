@@ -93,7 +93,10 @@ class ProjectDeclarationExtractor(
             // handles those prefixes for other schema objects.
             if (sequenceIndex != create + 1) return null
 
-            val parsedName = qualifiedName(sequenceIndex + 1) ?: return null
+            val ifNotExists = valueAt(sequenceIndex + 1) == "IF" &&
+                valueAt(sequenceIndex + 2) == "NOT" && valueAt(sequenceIndex + 3) == "EXISTS"
+            val nameIndex = if (ifNotExists) sequenceIndex + 4 else sequenceIndex + 1
+            val parsedName = qualifiedName(nameIndex) ?: return null
             if (parsedName.first.segments.size !in 1..2) return null
 
             val end = semicolonAfter(parsedName.second)
