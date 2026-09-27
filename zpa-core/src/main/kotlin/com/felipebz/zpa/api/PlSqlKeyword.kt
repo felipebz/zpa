@@ -419,6 +419,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     INITRANS("initrans"),
     INLINE("inline"),
     INNER("inner"),
+    INMEMORY("inmemory"),
     INSTANCE("instance"),
     INSTANTIABLE("instantiable"),
     INSTEAD("instead"),

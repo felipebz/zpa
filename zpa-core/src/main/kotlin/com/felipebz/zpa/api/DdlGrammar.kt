@@ -108,6 +108,8 @@ enum class DdlGrammar : GrammarRuleKey {
     DATABASE_LINK_NAME,
     CREATE_OUTLINE,
     ALTER_OUTLINE,
+    CREATE_INMEMORY_JOIN_GROUP,
+    ALTER_INMEMORY_JOIN_GROUP,
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
     PURGE_STATEMENT,
@@ -1927,6 +1929,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDimension(b)
             createDatabaseLink(b)
             createOutline(b)
+            createInmemoryJoinGroup(b)
             createFlashbackArchive(b)
             createPurge(b)
             createParameterFile(b)
@@ -2168,6 +2171,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_DATABASE_LINK,
                 CREATE_OUTLINE,
                 ALTER_OUTLINE,
+                CREATE_INMEMORY_JOIN_GROUP,
+                ALTER_INMEMORY_JOIN_GROUP,
                 CREATE_FLASHBACK_ARCHIVE,
                 ALTER_FLASHBACK_ARCHIVE,
                 PURGE_STATEMENT,
@@ -2597,6 +2602,22 @@ enum class DdlGrammar : GrammarRuleKey {
                 FROM, b.firstOf(b.sequence(PFILE, optionalFilename), MEMORY),
                 b.optional(AS, COPY),
                 b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INMEMORY-JOIN-GROUP.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-INMEMORY-JOIN-GROUP.html
+        // Oracle 26 accepts one CREATE member and comma-separated ALTER members despite the narrower diagrams.
+        private fun createInmemoryJoinGroup(b: PlSqlGrammarBuilder) {
+            val member = b.sequence(UNIT_NAME, LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS)
+            val members = b.sequence(LPARENTHESIS, member, b.zeroOrMore(COMMA, member), RPARENTHESIS)
+
+            b.rule(CREATE_INMEMORY_JOIN_GROUP).define(
+                CREATE, INMEMORY, JOIN, GROUP, b.optional(IF, NOT, EXISTS), UNIT_NAME,
+                members, b.optional(SEMICOLON))
+
+            b.rule(ALTER_INMEMORY_JOIN_GROUP).define(
+                ALTER, INMEMORY, JOIN, GROUP, b.optional(IF, EXISTS), UNIT_NAME,
+                b.firstOf(ADD, REMOVE), members, b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html
