@@ -111,6 +111,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
     PURGE_STATEMENT,
+    CREATE_PFILE,
+    CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1927,6 +1929,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createOutline(b)
             createFlashbackArchive(b)
             createPurge(b)
+            createParameterFile(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2168,6 +2171,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_FLASHBACK_ARCHIVE,
                 ALTER_FLASHBACK_ARCHIVE,
                 PURGE_STATEMENT,
+                CREATE_PFILE,
+                CREATE_SPFILE,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2572,6 +2577,25 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(TABLESPACE, b.optional(SET), IDENTIFIER_NAME, b.optional(USER, IDENTIFIER_NAME)),
                     RECYCLEBIN,
                     DBA_RECYCLEBIN),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PFILE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SPFILE.html
+        private fun createParameterFile(b: PlSqlGrammarBuilder) {
+            val optionalFilename = b.optional(EQUALS, CHARACTER_LITERAL)
+            // AS COPY is rejected on CREATE PFILE (ORA-03048).
+            b.rule(CREATE_PFILE).define(
+                CREATE, PFILE, optionalFilename,
+                FROM, b.firstOf(b.sequence(SPFILE, optionalFilename), MEMORY),
+                b.optional(SEMICOLON))
+
+            // Oracle 26 parses AS COPY after both FROM PFILE and FROM MEMORY (ORA-01031 vs ORA-00922 for
+            // AS GARBAGE), even though the syntax diagram places it only on the PFILE branch.
+            b.rule(CREATE_SPFILE).define(
+                CREATE, SPFILE, optionalFilename,
+                FROM, b.firstOf(b.sequence(PFILE, optionalFilename), MEMORY),
+                b.optional(AS, COPY),
                 b.optional(SEMICOLON))
         }
 

@@ -38,7 +38,6 @@
   "examples/create_pmem_filestore.sql" : [ 1 ],
   "examples/create_procedure02.sql" : [ 2 ],
   "examples/create_restore_point.sql" : [ 1 ],
-  "examples/create_spfile.sql" : [ 1 ],
   "examples/create_table.sql" : [ 16 ],
   "examples/create_tablespace.sql" : [ 58 ],
   "examples/create_tablespace_set.sql" : [ 1 ],
