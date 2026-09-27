@@ -33,7 +33,6 @@
   "examples/create_trigger02.sql" : [ 2 ],
   "examples/create_view.sql" : [ 32 ],
   "examples/flashback01.sql" : [ 1 ],
-  "examples/flashback_table.sql" : [ 1 ],
   "examples/forall_indices_of.sql" : [ 12 ],
   "examples/interval01.sql" : [ 1 ],
   "examples/interval03.sql" : [ 16 ],

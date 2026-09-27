@@ -122,6 +122,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PURGE_STATEMENT,
     CREATE_PFILE,
     CREATE_RESTORE_POINT,
+    FLASHBACK_TABLE,
     CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
@@ -2231,6 +2232,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createPurge(b)
             createParameterFile(b)
             createRestorePoint(b)
+            createFlashbackTable(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2574,6 +2576,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_PFILE,
                 CREATE_SPFILE,
                 CREATE_RESTORE_POINT,
+                FLASHBACK_TABLE,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -3017,6 +3020,29 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(FOR, PLUGGABLE, DATABASE, IDENTIFIER_NAME),
                 b.optional(AS, OF, b.firstOf(SCN, TIMESTAMP), EXPRESSION),
                 b.optional(b.firstOf(PRESERVE, b.sequence(GUARANTEE, FLASHBACK, DATABASE))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/FLASHBACK-TABLE.html
+        // Oracle 26 parses database links on the flashed-back table (ORA-02021 afterwards) and accepts
+        // TRIGGER as well as TRIGGERS. TO BEFORE DROP takes one table, no trigger clause, and an
+        // unqualified RENAME target (ORA-03048/ORA-03049). The SCN/TIMESTAMP value, including binds and
+        // scalar subqueries, is validated after parsing.
+        private fun createFlashbackTable(b: PlSqlGrammarBuilder) {
+            val triggersClause = b.sequence(b.firstOf(ENABLE, DISABLE), b.firstOf(TRIGGERS, TRIGGER))
+            b.rule(FLASHBACK_TABLE).define(
+                FLASHBACK, TABLE,
+                b.firstOf(
+                    b.sequence(
+                        DmlGrammar.TABLE_REFERENCE, TO, BEFORE, DROP,
+                        b.optional(RENAME, TO, IDENTIFIER_NAME)),
+                    b.sequence(
+                        DmlGrammar.TABLE_REFERENCE, b.zeroOrMore(COMMA, DmlGrammar.TABLE_REFERENCE),
+                        TO,
+                        b.firstOf(
+                            b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                            b.sequence(RESTORE, POINT, IDENTIFIER_NAME)),
+                        b.optional(triggersClause))),
                 b.optional(SEMICOLON))
         }
 
