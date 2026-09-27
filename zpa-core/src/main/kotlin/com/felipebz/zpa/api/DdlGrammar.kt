@@ -102,6 +102,9 @@ enum class DdlGrammar : GrammarRuleKey {
     DIMENSION_ATTRIBUTE_CLAUSE,
     ALTER_DIMENSION,
     ALTER_ATTRIBUTE_DIMENSION,
+    CREATE_DATABASE_LINK,
+    ALTER_DATABASE_LINK,
+    DATABASE_LINK_NAME,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1905,6 +1908,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createZonemap(b)
             createAttributeDimension(b)
             createDimension(b)
+            createDatabaseLink(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2139,6 +2143,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_DIMENSION,
                 ALTER_DIMENSION,
                 ALTER_ATTRIBUTE_DIMENSION,
+                CREATE_DATABASE_LINK,
+                ALTER_DATABASE_LINK,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2399,6 +2405,59 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PROFILE).define(
                 ALTER, PROFILE, b.firstOf(DEFAULT, IDENTIFIER_NAME), PROFILE_LIMIT_CLAUSE, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DATABASE-LINK.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE-LINK.html
+        private fun createDatabaseLink(b: PlSqlGrammarBuilder) {
+            // A link name is any number of dot-separated components (a global name such as remote.us.example.com,
+            // not schema.object) with an optional @connection_qualifier.
+            b.rule(DATABASE_LINK_NAME).define(
+                IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME), b.optional(REMOTE, IDENTIFIER_NAME))
+
+            // Passwords are identifiers (ORA-00988 for a literal); VALUES takes the hashed string.
+            val password = b.firstOf(b.sequence(VALUES, CHARACTER_LITERAL), IDENTIFIER_NAME)
+            val credential = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val connectAs = b.sequence(IDENTIFIER_NAME, IDENTIFIED, BY, password)
+            val authentication = b.sequence(
+                AUTHENTICATED, b.firstOf(b.sequence(BY, connectAs), b.sequence(WITH, CREDENTIAL)))
+            // The connect string must be a literal (ORA-02010) and comes last (ORA-03048 for CONNECT after it).
+            val usingClause = b.optional(USING, CHARACTER_LITERAL)
+            // The lookahead keeps these rules from consuming the prefix of CREATE/ALTER DATABASE statements.
+            fun header(start: Any, shared: Boolean) = b.sequence(
+                b.next(start, b.optional(SHARED), b.optional(PUBLIC), DATABASE, LINK),
+                start, if (shared) SHARED else b.nextNot(SHARED), b.optional(PUBLIC), DATABASE, LINK)
+
+            // At most one CONNECT, before AUTHENTICATED (ORA-03048). AUTHENTICATED is required for a shared link
+            // and rejected otherwise (ORA-00922/ORA-00905). Everything else is optional: `CREATE DATABASE LINK l`
+            // parses. PUBLIC must follow SHARED (ORA-00901), and OR REPLACE is rejected.
+            val createConnect = b.optional(
+                CONNECT,
+                b.firstOf(b.sequence(TO, b.firstOf(CURRENT_USER, connectAs)), b.sequence(WITH, credential)))
+            val createName = b.sequence(b.optional(IF, NOT, EXISTS), DATABASE_LINK_NAME)
+            b.rule(CREATE_DATABASE_LINK).define(
+                b.firstOf(
+                    b.sequence(header(CREATE, true), createName, createConnect, authentication, usingClause),
+                    b.sequence(header(CREATE, false), createName, createConnect, usingClause)),
+                b.optional(SEMICOLON))
+
+            // ALTER cannot switch to CURRENT_USER (ORA-00987) and needs at least one clause (ORA-03048). It also
+            // accepts the undocumented trailing USING. AUTHENTICATED stays shared-only (ORA-03049) but is optional.
+            val alterConnect = b.sequence(
+                CONNECT, b.firstOf(b.sequence(TO, connectAs), b.sequence(WITH, credential)))
+            val alterName = b.sequence(b.optional(IF, EXISTS), DATABASE_LINK_NAME)
+            b.rule(ALTER_DATABASE_LINK).define(
+                b.firstOf(
+                    b.sequence(
+                        header(ALTER, true), alterName,
+                        b.firstOf(
+                            b.sequence(alterConnect, b.optional(authentication), usingClause),
+                            b.sequence(authentication, usingClause),
+                            b.sequence(USING, CHARACTER_LITERAL))),
+                    b.sequence(
+                        header(ALTER, false), alterName,
+                        b.firstOf(b.sequence(alterConnect, usingClause), b.sequence(USING, CHARACTER_LITERAL)))),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html
