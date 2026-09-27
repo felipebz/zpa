@@ -110,6 +110,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_OUTLINE,
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
+    PURGE_STATEMENT,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1925,6 +1926,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDatabaseLink(b)
             createOutline(b)
             createFlashbackArchive(b)
+            createPurge(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2165,6 +2167,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_OUTLINE,
                 CREATE_FLASHBACK_ARCHIVE,
                 ALTER_FLASHBACK_ARCHIVE,
+                PURGE_STATEMENT,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2554,6 +2557,21 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_FLASHBACK_ARCHIVE).define(
                 ALTER, FLASHBACK, ARCHIVE, IDENTIFIER_NAME,
                 alterAction,
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/PURGE.html
+        private fun createPurge(b: PlSqlGrammarBuilder) {
+            // TABLE and INDEX accept schema-qualified names (ORA-01435 for missing user) and
+            // system-generated recycle-bin names containing $. TABLESPACE and USER are unqualified
+            // (ORA-38303 for dot-qualified).
+            b.rule(PURGE_STATEMENT).define(
+                PURGE,
+                b.firstOf(
+                    b.sequence(b.firstOf(TABLE, INDEX), UNIT_NAME),
+                    b.sequence(TABLESPACE, b.optional(SET), IDENTIFIER_NAME, b.optional(USER, IDENTIFIER_NAME)),
+                    RECYCLEBIN,
+                    DBA_RECYCLEBIN),
                 b.optional(SEMICOLON))
         }
 
