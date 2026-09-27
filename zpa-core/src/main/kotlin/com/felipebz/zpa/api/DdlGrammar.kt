@@ -153,6 +153,9 @@ enum class DdlGrammar : GrammarRuleKey {
     NOAUDIT_STATEMENT,
     AUDIT_POLICY_CLAUSE,
     AUDIT_CONTEXT_CLAUSE,
+    STATISTICS_ASSOCIATION_TARGET,
+    ASSOCIATE_STATISTICS,
+    DISASSOCIATE_STATISTICS,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -1138,6 +1141,45 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true)),
                                     b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                     b.optional(SEMICOLON))
+
+            // Oracle parses three-part object names for every non-column family; resolution rejects
+            // nonexistent objects. Columns require table.column, optionally prefixed by a schema.
+            val statisticsColumnName = b.sequence(
+                IDENTIFIER_NAME, DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val statisticsObjectName = b.sequence(
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), b.optional(DOT, IDENTIFIER_NAME))
+            b.rule(STATISTICS_ASSOCIATION_TARGET).define(b.firstOf(
+                b.sequence(COLUMNS, statisticsColumnName, b.zeroOrMore(COMMA, statisticsColumnName)),
+                b.sequence(b.firstOf(FUNCTIONS, PACKAGES, TYPES, INDEXES, INDEXTYPES),
+                    statisticsObjectName, b.zeroOrMore(COMMA, statisticsObjectName))))
+
+            val statisticsType = b.sequence(
+                USING, b.firstOf(NULL, b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))))
+            // Oracle checks whether numeric costs are integral; keep that validation out of the parser.
+            val statisticsCostValue = b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)
+            val defaultCost = b.sequence(
+                DEFAULT, COST, LPARENTHESIS, statisticsCostValue,
+                COMMA, statisticsCostValue,
+                COMMA, statisticsCostValue, RPARENTHESIS)
+            val defaultSelectivity = b.sequence(DEFAULT, SELECTIVITY, b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL))
+            val statisticsDefaults = b.firstOf(
+                b.sequence(defaultCost, b.zeroOrMore(b.optional(COMMA), defaultSelectivity)),
+                b.sequence(defaultSelectivity, b.zeroOrMore(b.optional(COMMA), defaultSelectivity),
+                    b.optional(b.optional(COMMA), defaultCost)))
+            val statisticsStorage = b.sequence(
+                WITH, b.firstOf(SYSTEM, USER), MANAGED, STORAGE, TABLES)
+            b.rule(ASSOCIATE_STATISTICS).define(
+                ASSOCIATE, STATISTICS, WITH,
+                b.firstOf(
+                    b.sequence(b.next(INDEXTYPES), STATISTICS_ASSOCIATION_TARGET,
+                        statisticsType, b.optional(statisticsStorage)),
+                    b.sequence(STATISTICS_ASSOCIATION_TARGET,
+                        b.firstOf(statisticsType, statisticsDefaults))),
+                b.optional(SEMICOLON))
+
+            b.rule(DISASSOCIATE_STATISTICS).define(
+                DISASSOCIATE, STATISTICS, FROM, STATISTICS_ASSOCIATION_TARGET,
+                b.optional(FORCE), b.optional(SEMICOLON))
 
             // XMLIndex parameter syntax is carried inside the same quoted parameter string.
             b.rule(INDEX_PARAMETERS_CLAUSE).define(
@@ -2480,6 +2522,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_INDEX,
                 CREATE_SEARCH_INDEX,
                 CREATE_VECTOR_INDEX,
+                ASSOCIATE_STATISTICS,
+                DISASSOCIATE_STATISTICS,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
