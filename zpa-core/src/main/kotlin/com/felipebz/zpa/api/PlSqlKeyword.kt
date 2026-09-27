@@ -695,6 +695,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     REQUIRED("required"),
     RESIZE("resize"),
     RESPECT("respect"),
+    RESTRICT("restrict"),
     REWRITE("rewrite"),
     RESOLVER("resolver"),
     RESOLVE("resolve"),

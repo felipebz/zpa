@@ -100,6 +100,8 @@ enum class DdlGrammar : GrammarRuleKey {
     DIMENSION_LEVEL_CLAUSE,
     DIMENSION_HIERARCHY_CLAUSE,
     DIMENSION_ATTRIBUTE_CLAUSE,
+    ALTER_DIMENSION,
+    ALTER_ATTRIBUTE_DIMENSION,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -2135,6 +2137,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_ATTRIBUTE_DIMENSION,
                 CREATE_HIERARCHY,
                 CREATE_DIMENSION,
+                ALTER_DIMENSION,
+                ALTER_ATTRIBUTE_DIMENSION,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2432,6 +2436,29 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.oneOrMore(DIMENSION_LEVEL_CLAUSE),
                 b.zeroOrMore(b.firstOf(DIMENSION_HIERARCHY_CLAUSE, DIMENSION_ATTRIBUTE_CLAUSE)),
                 b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DIMENSION.html
+            // ADD reuses the CREATE clauses. ADD and DROP actions cannot be mixed (ORA-30348 at the first action of
+            // the other kind), while COMPILE may appear anywhere and repeat. DROP ATTRIBUTE takes at most one LEVEL
+            // and one COLUMN (ORA-03048 at a second one). IF EXISTS and RENAME are rejected (ORA-11600/ORA-02000).
+            val compile = b.zeroOrMore(COMPILE)
+            val addAction = b.sequence(
+                ADD, b.firstOf(DIMENSION_LEVEL_CLAUSE, DIMENSION_HIERARCHY_CLAUSE, DIMENSION_ATTRIBUTE_CLAUSE))
+            val dropAction = b.sequence(
+                DROP,
+                b.firstOf(
+                    b.sequence(LEVEL, IDENTIFIER_NAME, b.optional(b.firstOf(RESTRICT, CASCADE))),
+                    b.sequence(HIERARCHY, IDENTIFIER_NAME),
+                    b.sequence(
+                        ATTRIBUTE, IDENTIFIER_NAME,
+                        b.optional(LEVEL, IDENTIFIER_NAME, b.optional(COLUMN, column)))))
+            b.rule(ALTER_DIMENSION).define(
+                ALTER, DIMENSION, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(compile, b.oneOrMore(addAction, compile)),
+                    b.sequence(compile, b.oneOrMore(dropAction, compile)),
+                    b.oneOrMore(COMPILE)),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ATTRIBUTE-DIMENSION.html
@@ -2528,6 +2555,13 @@ enum class DdlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME, b.optional(AV_CLASSIFICATION_CLAUSE),
                     b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(AV_CLASSIFICATION_CLAUSE)),
                     RPARENTHESIS),
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ATTRIBUTE-DIMENSION.html
+            // One action; the new name cannot be schema-qualified (ORA-03048 at the dot).
+            b.rule(ALTER_ATTRIBUTE_DIMENSION).define(
+                ALTER, ATTRIBUTE, DIMENSION, b.optional(IF, EXISTS), schemaName,
+                b.firstOf(b.sequence(RENAME, TO, IDENTIFIER_NAME), COMPILE),
                 b.optional(SEMICOLON))
         }
 

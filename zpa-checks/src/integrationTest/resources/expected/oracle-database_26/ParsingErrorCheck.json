@@ -148,7 +148,6 @@
   "sqlrf/ALTER-DATABASE-8.sql" : [ 2 ],
   "sqlrf/ALTER-DATABASE-9.sql" : [ 2 ],
   "sqlrf/ALTER-DATABASE-LINK-0.sql" : [ 2 ],
-  "sqlrf/ALTER-DIMENSION-0.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-1.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-10.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-11.sql" : [ 2 ],
