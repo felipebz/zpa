@@ -23,6 +23,7 @@ import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_CLAUSE
+import com.felipebz.zpa.api.DmlGrammar.PARTITION_BY_CLAUSE
 import com.felipebz.zpa.api.DmlGrammar.ORDER_BY_ITEM
 import com.felipebz.zpa.api.PlSqlGrammar.EXPRESSION
 import com.felipebz.zpa.api.PlSqlGrammar.IDENTIFIER_NAME
@@ -34,6 +35,15 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     LISTAGG_EXPRESSION,
     PERCENTILE_DISC_EXPRESSION,
     PERCENTILE_CONT_EXPRESSION,
+    RANK_AGGREGATE_EXPRESSION,
+    DENSE_RANK_AGGREGATE_EXPRESSION,
+    CUME_DIST_AGGREGATE_EXPRESSION,
+    PERCENT_RANK_AGGREGATE_EXPRESSION,
+    APPROX_COUNT_EXPRESSION,
+    APPROX_SUM_EXPRESSION,
+    APPROX_MEDIAN_EXPRESSION,
+    APPROX_PERCENTILE_EXPRESSION,
+    APPROX_RANK_EXPRESSION,
     CLUSTER_DETAILS_EXPRESSION,
     CLUSTER_DISTANCE_EXPRESSION,
     CLUSTER_ID_EXPRESSION,
@@ -80,6 +90,15 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(PREDICTION_SET_EXPRESSION, PREDICTION_SET),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
+            FunctionAlternative(RANK_AGGREGATE_EXPRESSION, RANK),
+            FunctionAlternative(DENSE_RANK_AGGREGATE_EXPRESSION, DENSE_RANK),
+            FunctionAlternative(CUME_DIST_AGGREGATE_EXPRESSION, CUME_DIST),
+            FunctionAlternative(PERCENT_RANK_AGGREGATE_EXPRESSION, PERCENT_RANK),
+            FunctionAlternative(APPROX_COUNT_EXPRESSION, APPROX_COUNT),
+            FunctionAlternative(APPROX_SUM_EXPRESSION, APPROX_SUM),
+            FunctionAlternative(APPROX_MEDIAN_EXPRESSION, APPROX_MEDIAN),
+            FunctionAlternative(APPROX_PERCENTILE_EXPRESSION, APPROX_PERCENTILE),
+            FunctionAlternative(APPROX_RANK_EXPRESSION, APPROX_RANK),
             FunctionAlternative(XMLAGG_EXPRESSION, XMLAGG),
             FunctionAlternative(COLLECT_EXPRESSION, COLLECT),
             FunctionAlternative(JSON_ARRAYAGG_EXPRESSION, JSON_ARRAYAGG),
@@ -97,6 +116,18 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             FEATURE_VALUE_EXPRESSION, ORA_DM_PARTITION_NAME_EXPRESSION, PREDICTION_EXPRESSION,
             PREDICTION_BOUNDS_EXPRESSION, PREDICTION_COST_EXPRESSION, PREDICTION_DETAILS_EXPRESSION,
             PREDICTION_PROBABILITY_EXPRESSION, PREDICTION_SET_EXPRESSION
+        )
+
+        /**
+         * Functions whose own syntax ends the call: Oracle rejects an OVER or KEEP suffix after
+         * them (ORA-00923), so the generic analytic suffix must not be applied either. Their
+         * optional FILTER clause is part of the function rule.
+         */
+        val functionsWithoutAnalyticSuffix: Array<GrammarRuleKey> = miningFunctions + arrayOf(
+            RANK_AGGREGATE_EXPRESSION, DENSE_RANK_AGGREGATE_EXPRESSION,
+            CUME_DIST_AGGREGATE_EXPRESSION, PERCENT_RANK_AGGREGATE_EXPRESSION,
+            APPROX_COUNT_EXPRESSION, APPROX_SUM_EXPRESSION, APPROX_MEDIAN_EXPRESSION,
+            APPROX_PERCENTILE_EXPRESSION, APPROX_RANK_EXPRESSION
         )
 
         val admissionTokens: Array<TokenType> =
@@ -125,6 +156,9 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             )
             b.rule(PERCENTILE_DISC_EXPRESSION).define(percentileSyntax(PERCENTILE_DISC))
             b.rule(PERCENTILE_CONT_EXPRESSION).define(percentileSyntax(PERCENTILE_CONT))
+
+            buildHypotheticalSetFunctions(b)
+            buildApproximateFunctions(b)
 
             buildMiningFunctions(b)
 
@@ -173,6 +207,69 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 b.firstOf(ALTERNATIVES.map { it.ruleKey })
             )
         }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/RANK.html (and DENSE_RANK,
+        // CUME_DIST, PERCENT_RANK). The analytic forms, such as RANK() OVER (...), stay generic calls: a
+        // hypothetical-set call needs at least one argument and WITHIN GROUP. Oracle compares argument and
+        // ORDER BY item counts only after parsing (ORA-00909). FILTER is accepted after RANK and DENSE_RANK
+        // only (ORA-00923 for the others).
+        private fun buildHypotheticalSetFunctions(b: PlSqlGrammarBuilder) {
+            fun hypotheticalSet(function: TokenType, vararg suffix: Any) = b.sequence(
+                function, LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                withinGroupOrderBy(b), *suffix
+            )
+            b.rule(RANK_AGGREGATE_EXPRESSION).define(hypotheticalSet(RANK, b.optional(FILTER_CLAUSE)))
+            b.rule(DENSE_RANK_AGGREGATE_EXPRESSION).define(hypotheticalSet(DENSE_RANK, b.optional(FILTER_CLAUSE)))
+            b.rule(CUME_DIST_AGGREGATE_EXPRESSION).define(hypotheticalSet(CUME_DIST))
+            b.rule(PERCENT_RANK_AGGREGATE_EXPRESSION).define(hypotheticalSet(PERCENT_RANK))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Aggregate-Functions.html
+        // The optional second argument ('MAX_ERROR', 'ERROR_RATE', 'CONFIDENCE') is an expression:
+        // Oracle validates its value only after parsing (ORA-01760).
+        private fun buildApproximateFunctions(b: PlSqlGrammarBuilder) {
+            val optionalSecondArgument = b.optional(COMMA, EXPRESSION)
+
+            b.rule(APPROX_COUNT_EXPRESSION).define(
+                APPROX_COUNT, LPARENTHESIS, b.firstOf(MULTIPLICATION, EXPRESSION), optionalSecondArgument, RPARENTHESIS,
+                b.optional(FILTER_CLAUSE)
+            )
+
+            // Unlike APPROX_COUNT, APPROX_SUM(*) is a syntax error (ORA-00936) despite the diagram.
+            b.rule(APPROX_SUM_EXPRESSION).define(
+                APPROX_SUM, LPARENTHESIS, b.nextNot(MULTIPLICATION), EXPRESSION, optionalSecondArgument, RPARENTHESIS,
+                b.optional(FILTER_CLAUSE)
+            )
+
+            val deterministicArguments = b.sequence(
+                LPARENTHESIS, EXPRESSION, b.optional(DETERMINISTIC), optionalSecondArgument, RPARENTHESIS
+            )
+
+            b.rule(APPROX_MEDIAN_EXPRESSION).define(
+                APPROX_MEDIAN, deterministicArguments, b.optional(FILTER_CLAUSE)
+            )
+
+            // A single ORDER BY item: a second one is a syntax error (ORA-00909).
+            b.rule(APPROX_PERCENTILE_EXPRESSION).define(
+                APPROX_PERCENTILE, deterministicArguments,
+                WITHIN, GROUP, LPARENTHESIS, ORDER, BY, ORDER_BY_ITEM, RPARENTHESIS,
+                b.optional(FILTER_CLAUSE)
+            )
+
+            // Oracle 26 rejects the documented leading expr (ORA-00907) and requires ORDER BY after an
+            // optional PARTITION BY. A single DESC item is checked after parsing (ORA-62231/ORA-62233).
+            b.rule(APPROX_RANK_EXPRESSION).define(
+                APPROX_RANK, LPARENTHESIS,
+                b.optional(PARTITION_BY_CLAUSE),
+                b.nextNot(ORDER, SIBLINGS), ORDER_BY_CLAUSE,
+                RPARENTHESIS,
+                b.optional(FILTER_CLAUSE)
+            )
+        }
+
+        private fun withinGroupOrderBy(b: PlSqlGrammarBuilder) = b.sequence(
+            WITHIN, GROUP, LPARENTHESIS, b.nextNot(ORDER, SIBLINGS), ORDER_BY_CLAUSE, RPARENTHESIS
+        )
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Mining-Functions.html
         // Keep the shared mining helpers anonymous so each function rule adds only its own AST boundary.

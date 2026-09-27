@@ -48,7 +48,6 @@
   "examples/rename_objects.sql" : [ 2 ],
   "examples/sample01.sql" : [ 3 ],
   "examples/select_analytic_view.sql" : [ 2 ],
-  "examples/select_dense_rank.sql" : [ 2 ],
   "examples/select_flashback_query.sql" : [ 2 ],
   "examples/select_time.sql" : [ 1 ],
   "examples/views.sql" : [ 59 ],

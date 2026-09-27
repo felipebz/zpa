@@ -217,9 +217,11 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(BETWEEN, WINDOWING_LIMIT, AND, WINDOWING_LIMIT),
                             WINDOWING_LIMIT))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/FIRST.html
+            // Oracle 26 also parses an undocumented PARTITION BY list instead of ORDER BY, but not both.
             b.rule(KEEP_CLAUSE).define(
                     KEEP, LPARENTHESIS,
-                    DENSE_RANK, b.firstOf(FIRST, LAST), ORDER_BY_CLAUSE,
+                    DENSE_RANK, b.firstOf(FIRST, LAST), b.firstOf(ORDER_BY_CLAUSE, PARTITION_BY_CLAUSE),
                     RPARENTHESIS)
 
             b.rule(NULL_TREATMENT_CLAUSE).define(b.firstOf(IGNORE, RESPECT), NULLS)
