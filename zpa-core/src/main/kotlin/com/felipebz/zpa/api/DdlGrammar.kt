@@ -250,6 +250,7 @@ enum class DdlGrammar : GrammarRuleKey {
     JAVA_SOURCE_TEXT,
     CREATE_SEQUENCE,
     ALTER_SEQUENCE,
+    ALTER_SYNONYM,
     PARTITION_BY_RANGE,
     PARTITION_BY_HASH,
     RANGE_VALUES_CLAUSE,
@@ -2286,6 +2287,17 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                     FOR, DmlGrammar.TABLE_REFERENCE, b.optional(SEMICOLON))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYNONYM.html
+            // Oracle 26 accepts exactly one action (ORA-03049 for a second) and rejects a schema-qualified
+            // public synonym at the dot (ORA-00922).
+            b.rule(ALTER_SYNONYM).define(
+                    ALTER,
+                    b.firstOf(
+                            b.sequence(PUBLIC, SYNONYM, b.optional(IF, EXISTS), IDENTIFIER_NAME),
+                            b.sequence(SYNONYM, b.optional(IF, EXISTS), IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))),
+                    b.firstOf(EDITIONABLE, NONEDITIONABLE, COMPILE),
+                    b.optional(SEMICOLON))
+
             val sequenceInteger = b.sequence(
                     b.optional(b.firstOf(PLUS, MINUS)),
                     b.next(INTEGER_LITERAL),
@@ -2425,6 +2437,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_FUNCTION,
                 ALTER_PACKAGE,
                 CREATE_SYNONYM,
+                ALTER_SYNONYM,
                 CREATE_SEQUENCE,
                 ALTER_SEQUENCE,
                 CREATE_DIRECTORY,
