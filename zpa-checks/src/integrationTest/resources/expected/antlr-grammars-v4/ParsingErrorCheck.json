@@ -17,7 +17,6 @@
   "examples/alter_table_modify_partition_by_range.sql" : [ 3 ],
   "examples/alter_table_modify_partition_shrink.sql" : [ 1 ],
   "examples/alter_tablespace_set.sql" : [ 1 ],
-  "examples/alter_view.sql" : [ 1 ],
   "examples/associate_statistics.sql" : [ 1 ],
   "examples/audit.sql" : [ 1 ],
   "examples/bindvar04.sql" : [ 6 ],

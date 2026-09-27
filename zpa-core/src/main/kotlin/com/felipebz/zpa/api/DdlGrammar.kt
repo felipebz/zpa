@@ -37,6 +37,11 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
  */
 internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val OUTLINE_CREATE_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
+/**
+ * Enables view-specific restrictions in shared constraint productions.
+ * Callers remain responsible for restricting unsupported constraint kinds.
+ */
+internal val VIEW_CONSTRAINT_CONTEXT: ContextKey<Boolean> = ContextKey()
 
 enum class DdlGrammar : GrammarRuleKey {
 
@@ -110,6 +115,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_OUTLINE,
     CREATE_INMEMORY_JOIN_GROUP,
     ALTER_INMEMORY_JOIN_GROUP,
+    ALTER_VIEW,
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
     PURGE_STATEMENT,
@@ -405,7 +411,8 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(REFERENCES_CLAUSE).define(
                     REFERENCES, MEMBER_EXPRESSION,
                     b.optional(ONE_OR_MORE_IDENTIFIERS),
-                    b.optional(ON, DELETE, b.firstOf(CASCADE, b.sequence(SET, NULL)))
+                    b.optional(b.nextNot(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true)),
+                        ON, DELETE, b.firstOf(CASCADE, b.sequence(SET, NULL)))
             )
 
             b.rule(INLINE_CONSTRAINT).define(
@@ -481,6 +488,13 @@ enum class DdlGrammar : GrammarRuleKey {
                     // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
                     b.optional(ANNOTATIONS_CLAUSE))
 
+            // View constraints in this context only permit
+            // [RELY | NORELY] DISABLE [NOVALIDATE] after the column list.
+            val viewConstraintState = b.sequence(b.optional(b.firstOf(RELY, NORELY)), DISABLE, b.optional(NOVALIDATE))
+            fun outOfLineConstraintState(normalState: Any) = b.firstOf(
+                b.sequence(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true), viewConstraintState),
+                b.sequence(b.nextNot(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true)), normalState))
+
             b.rule(OUT_OF_LINE_CONSTRAINT).define(
                 b.optional(b.firstOf(CONSTRAINT, CONSTRAINTS), IDENTIFIER_NAME),
                 b.firstOf(
@@ -488,11 +502,11 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.firstOf(
                             b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
                             b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS),
-                        ), b.optional(CONSTRAINT_STATE)
+                        ), outOfLineConstraintState(b.optional(CONSTRAINT_STATE))
                     ),
                     b.sequence(
                         FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE,
-                        b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX)
+                        outOfLineConstraintState(b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX))
                     ),
                     b.sequence(
                         CHECK, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
@@ -1930,6 +1944,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDatabaseLink(b)
             createOutline(b)
             createInmemoryJoinGroup(b)
+            createAlterView(b)
             createFlashbackArchive(b)
             createPurge(b)
             createParameterFile(b)
@@ -2173,6 +2188,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_OUTLINE,
                 CREATE_INMEMORY_JOIN_GROUP,
                 ALTER_INMEMORY_JOIN_GROUP,
+                ALTER_VIEW,
                 CREATE_FLASHBACK_ARCHIVE,
                 ALTER_FLASHBACK_ARCHIVE,
                 PURGE_STATEMENT,
@@ -2618,6 +2634,41 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_INMEMORY_JOIN_GROUP).define(
                 ALTER, INMEMORY, JOIN, GROUP, b.optional(IF, EXISTS), UNIT_NAME,
                 b.firstOf(ADD, REMOVE), members, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-VIEW.html
+        private fun createAlterView(b: PlSqlGrammarBuilder) {
+            // A view does not accept CHECK constraints, although the shared out-of-line
+            // constraint rule also serves tables. Keep its AST and restrict only this use.
+            val viewConstraint = b.sequence(
+                b.nextNot(b.sequence(b.optional(b.firstOf(CONSTRAINT, CONSTRAINTS), IDENTIFIER_NAME), CHECK)),
+                b.withContext(VIEW_CONSTRAINT_CONTEXT, true, OUT_OF_LINE_CONSTRAINT))
+            val addConstraint = b.sequence(ADD, b.firstOf(
+                b.sequence(LPARENTHESIS, viewConstraint, b.zeroOrMore(COMMA, viewConstraint), RPARENTHESIS),
+                viewConstraint))
+            val columnAnnotations = b.sequence(IDENTIFIER_NAME, ANNOTATIONS_CLAUSE)
+            val modify = b.sequence(MODIFY, b.firstOf(
+                b.sequence(LPARENTHESIS, columnAnnotations, b.zeroOrMore(COMMA, columnAnnotations), RPARENTHESIS),
+                b.sequence(b.firstOf(
+                    b.sequence(CONSTRAINT, IDENTIFIER_NAME),
+                    b.sequence(PRIMARY, KEY)),
+                    b.firstOf(RELY, NORELY))))
+            val drop = b.sequence(DROP, b.firstOf(
+                b.sequence(CONSTRAINT, IDENTIFIER_NAME),
+                b.sequence(PRIMARY, KEY),
+                b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS)))
+            val action = b.firstOf(
+                addConstraint, modify, drop,
+                COMPILE, RECOMPILE,
+                b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                EDITIONABLE, NONEDITIONABLE,
+                ANNOTATIONS_CLAUSE)
+
+            // Oracle 26 accepts repeated COMPILE, toggled EDITIONABLE, repeated ANNOTATIONS,
+            // and mixed ADD/COMPILE/MODIFY actions despite its single-action diagram.
+            b.rule(ALTER_VIEW).define(
+                ALTER, VIEW, b.optional(IF, EXISTS), UNIT_NAME,
+                b.oneOrMore(action), b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html

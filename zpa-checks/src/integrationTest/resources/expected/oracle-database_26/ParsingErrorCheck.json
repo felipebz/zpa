@@ -216,8 +216,6 @@
   "sqlrf/ALTER-TABLE-91.sql" : [ 3 ],
   "sqlrf/ALTER-TABLE-99.sql" : [ 2 ],
   "sqlrf/ALTER-TABLESPACE-SET-0.sql" : [ 2 ],
-  "sqlrf/ALTER-VIEW-0.sql" : [ 2 ],
-  "sqlrf/ALTER-VIEW-1.sql" : [ 2 ],
   "sqlrf/APPROX_COUNT-0.sql" : [ 8 ],
   "sqlrf/APPROX_MEDIAN-0.sql" : [ 3 ],
   "sqlrf/APPROX_MEDIAN-1.sql" : [ 3 ],

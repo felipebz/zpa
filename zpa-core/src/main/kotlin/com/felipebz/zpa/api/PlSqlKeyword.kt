@@ -687,6 +687,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     READS("reads"),
     REAL("real"),
     REBUILD("rebuild"),
+    RECOMPILE("recompile"),
     RECORD("record"),
     RECYCLE("recycle"),
     RECYCLEBIN("recyclebin"),
