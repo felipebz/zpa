@@ -156,6 +156,7 @@ enum class DdlGrammar : GrammarRuleKey {
     STATISTICS_ASSOCIATION_TARGET,
     ASSOCIATE_STATISTICS,
     DISASSOCIATE_STATISTICS,
+    RENAME_STATEMENT,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -2516,6 +2517,14 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(clusterMaterializedViewLogClause, b.optional(clusterStorageClause)))),
                 b.optional(SEMICOLON))
 
+            // Oracle 26 rejects owners only after parsing (ORA-01765), even for deeper dotted names.
+            // A source @dblink is accepted and renames the local object; the destination rejects @.
+            val renameObjectName = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME))
+            b.rule(RENAME_STATEMENT).define(
+                RENAME, renameObjectName,
+                b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)),
+                TO, renameObjectName, b.optional(SEMICOLON))
+
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
@@ -2524,6 +2533,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_VECTOR_INDEX,
                 ASSOCIATE_STATISTICS,
                 DISASSOCIATE_STATISTICS,
+                RENAME_STATEMENT,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
