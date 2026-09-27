@@ -127,6 +127,7 @@
   "lnpls/wrapping-pl-sql-source-text-dbms_ddl-subprograms-2.sql" : [ 2, 2, 3 ],
   "lnpls/wrapping-pl-sql-source-text-pl-sql-wrapper-utility-4.sql" : [ 15 ],
   "sqlrf/CALL-4.sql" : [ 2 ],
+  "sqlrf/CREATE-OPERATOR-0.sql" : [ 2, 2 ],
   "sqlrf/CURSOR-Expressions-1.sql" : [ 2, 2 ],
   "sqlrf/SELECT-17.sql" : [ 2 ],
   "sqlrf/SELECT-20.sql" : [ 2, 3, 4 ],

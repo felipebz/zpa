@@ -9,6 +9,7 @@
   "lnpls/raising-exceptions-explicitly-2.sql" : [ 9 ],
   "lnpls/recursive-subprograms-1.sql" : [ 10 ],
   "lnpls/release-changes-0.sql" : [ 5 ],
+  "sqlrf/CREATE-OPERATOR-0.sql" : [ 5 ],
   "sqlrf/CURSOR-Expressions-1.sql" : [ 20 ],
   "sqlrf/Using-Extensible-Indexing-2.sql" : [ 68 ]
 }

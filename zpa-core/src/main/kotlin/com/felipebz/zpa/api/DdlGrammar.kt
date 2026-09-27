@@ -124,6 +124,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_RESTORE_POINT,
     FLASHBACK_TABLE,
     CREATE_EDITION,
+    CREATE_OPERATOR,
+    ALTER_OPERATOR,
     CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
@@ -2235,6 +2237,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createRestorePoint(b)
             createFlashbackTable(b)
             createEdition(b)
+            createOperator(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2580,6 +2583,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_RESTORE_POINT,
                 FLASHBACK_TABLE,
                 CREATE_EDITION,
+                CREATE_OPERATOR,
+                ALTER_OPERATOR,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -3056,6 +3061,63 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(CREATE_EDITION).define(
                 CREATE, EDITION, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
                 b.optional(AS, CHILD, OF, IDENTIFIER_NAME),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OPERATOR.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-OPERATOR.html
+        private fun createOperator(b: PlSqlGrammarBuilder) {
+            // Binding types are bare names: sizes/modifiers are rejected (ORA-00907), REF always fails
+            // during parsing (ORA-29834), and INTERVAL/NATIONAL are invalid datatypes (ORA-00902). Unknown
+            // names, LONG and LONG RAW parse and are only rejected against the implementation signature.
+            val operatorType = b.firstOf(
+                b.sequence(DOUBLE, PRECISION),
+                b.sequence(LONG, RAW),
+                b.sequence(b.nextNot(b.firstOf(REF, INTERVAL, NATIONAL)), UNIT_NAME))
+            val parameterTypes = b.sequence(
+                LPARENTHESIS, operatorType, b.zeroOrMore(COMMA, operatorType), RPARENTHESIS)
+
+            // Oracle 26 also accepts WITH COLUMN CONTEXT before ANCILLARY TO (the diagram makes them
+            // exclusive), but not after it (ORA-00922). COMPUTE ANCILLARY DATA requires the index context.
+            val columnContext = b.sequence(WITH, COLUMN, CONTEXT)
+            val implementationClause = b.firstOf(
+                b.sequence(
+                    WITH, INDEX, CONTEXT, COMMA, SCAN, CONTEXT, UNIT_NAME,
+                    b.optional(COMPUTE, ANCILLARY, DATA),
+                    b.optional(columnContext)),
+                b.sequence(
+                    b.optional(columnContext),
+                    ANCILLARY, TO, UNIT_NAME, parameterTypes,
+                    b.zeroOrMore(COMMA, UNIT_NAME, parameterTypes)),
+                columnContext)
+
+            // Standalone, packaged or type-method functions: up to three components (four fail, ORA-00922).
+            val usingFunctionClause = b.sequence(
+                USING, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)))
+
+            // ADD BINDING takes an unparenthesized RETURN type (ORA-00902), unlike its diagram.
+            val binding = b.sequence(
+                parameterTypes, RETURN, operatorType, b.optional(implementationClause), usingFunctionClause)
+
+            // BINDING appears once before the comma-separated list (ORA-00906 when repeated). SHARING
+            // precedes BINDING and accepts DATA as well (ORA-65021 afterwards, ORA-65014 for invalid values).
+            b.rule(CREATE_OPERATOR).define(
+                CREATE,
+                b.firstOf(
+                    b.sequence(OR, REPLACE, OPERATOR),
+                    b.sequence(OPERATOR, b.optional(IF, NOT, EXISTS))),
+                UNIT_NAME,
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, DATA, NONE)),
+                BINDING, binding, b.zeroOrMore(COMMA, binding),
+                b.optional(SEMICOLON))
+
+            // Exactly one action; ADD BINDING takes a single binding.
+            b.rule(ALTER_OPERATOR).define(
+                ALTER, OPERATOR, b.optional(IF, EXISTS), UNIT_NAME,
+                b.firstOf(
+                    b.sequence(ADD, BINDING, binding),
+                    b.sequence(DROP, BINDING, parameterTypes, b.optional(FORCE)),
+                    COMPILE),
                 b.optional(SEMICOLON))
         }
 

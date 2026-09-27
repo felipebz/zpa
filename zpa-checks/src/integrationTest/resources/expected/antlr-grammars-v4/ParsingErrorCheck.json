@@ -7,7 +7,6 @@
   "examples/alter_diskgroup.sql" : [ 1 ],
   "examples/alter_hierarchy.sql" : [ 1 ],
   "examples/alter_java.sql" : [ 1 ],
-  "examples/alter_operator.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 4 ],
   "examples/alter_table.sql" : [ 62 ],
@@ -24,7 +23,6 @@
   "examples/create_function01.sql" : [ 1 ],
   "examples/create_index.sql" : [ 3 ],
   "examples/create_lockdown_profile.sql" : [ 1 ],
-  "examples/create_operator.sql" : [ 1 ],
   "examples/create_pmem_filestore.sql" : [ 1 ],
   "examples/create_table.sql" : [ 16 ],
   "examples/create_tablespace.sql" : [ 58 ],
@@ -43,6 +41,5 @@
   "examples/select_analytic_view.sql" : [ 2 ],
   "examples/select_flashback_query.sql" : [ 2 ],
   "examples/select_time.sql" : [ 1 ],
-  "examples/views.sql" : [ 59 ],
-  "hw-examples/alter_operator.sql" : [ 1 ]
+  "examples/views.sql" : [ 59 ]
 }
