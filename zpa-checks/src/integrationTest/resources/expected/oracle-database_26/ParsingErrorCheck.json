@@ -174,7 +174,7 @@
   "sqlrf/CREATE-PLUGGABLE-DATABASE-3.sql" : [ 2 ],
   "sqlrf/CREATE-PLUGGABLE-DATABASE-4.sql" : [ 2 ],
   "sqlrf/CREATE-PLUGGABLE-DATABASE-9.sql" : [ 2 ],
-  "sqlrf/CREATE-RESTORE-POINT-0.sql" : [ 2 ],
+  "sqlrf/CREATE-RESTORE-POINT-0.sql" : [ 9 ],
   "sqlrf/CREATE-SCHEMA-0.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-1.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-11.sql" : [ 2 ],

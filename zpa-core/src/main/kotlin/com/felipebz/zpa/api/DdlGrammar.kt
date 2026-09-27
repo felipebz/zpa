@@ -121,6 +121,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_FLASHBACK_ARCHIVE,
     PURGE_STATEMENT,
     CREATE_PFILE,
+    CREATE_RESTORE_POINT,
     CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
@@ -2229,6 +2230,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createFlashbackArchive(b)
             createPurge(b)
             createParameterFile(b)
+            createRestorePoint(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2571,6 +2573,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 PURGE_STATEMENT,
                 CREATE_PFILE,
                 CREATE_SPFILE,
+                CREATE_RESTORE_POINT,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -3000,6 +3003,20 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE, SPFILE, optionalFilename,
                 FROM, b.firstOf(b.sequence(PFILE, optionalFilename), MEMORY),
                 b.optional(AS, COPY),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-RESTORE-POINT.html
+        // Oracle 26 enforces clause order FOR PLUGGABLE DATABASE, AS OF, then PRESERVE or GUARANTEE
+        // (ORA-03048/ORA-03049 otherwise); PRESERVE and GUARANTEE are mutually exclusive and no clause
+        // repeats. Names are unqualified (ORA-03048 for dotted or @dblink). CLEAN without a PDB,
+        // non-scalar AS OF expressions (ORA-38730) and GUARANTEE with AS OF (ORA-38864) fail after parsing.
+        private fun createRestorePoint(b: PlSqlGrammarBuilder) {
+            b.rule(CREATE_RESTORE_POINT).define(
+                CREATE, b.optional(CLEAN), RESTORE, POINT, IDENTIFIER_NAME,
+                b.optional(FOR, PLUGGABLE, DATABASE, IDENTIFIER_NAME),
+                b.optional(AS, OF, b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                b.optional(b.firstOf(PRESERVE, b.sequence(GUARANTEE, FLASHBACK, DATABASE))),
                 b.optional(SEMICOLON))
         }
 
