@@ -108,6 +108,8 @@ enum class DdlGrammar : GrammarRuleKey {
     DATABASE_LINK_NAME,
     CREATE_OUTLINE,
     ALTER_OUTLINE,
+    CREATE_FLASHBACK_ARCHIVE,
+    ALTER_FLASHBACK_ARCHIVE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1873,7 +1875,9 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.firstOf(
                                                     b.sequence(ONLINE, b.optional(TABLESPACE, IDENTIFIER_NAME)),
                                                     b.sequence(TABLESPACE, IDENTIFIER_NAME, b.optional(ONLINE))))),
-                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT))
+                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT),
+                            b.sequence(FLASHBACK, ARCHIVE, b.optional(IDENTIFIER_NAME)),
+                            b.sequence(NO, FLASHBACK, ARCHIVE))
 
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME,
@@ -1920,6 +1924,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDimension(b)
             createDatabaseLink(b)
             createOutline(b)
+            createFlashbackArchive(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2158,6 +2163,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_DATABASE_LINK,
                 CREATE_OUTLINE,
                 ALTER_OUTLINE,
+                CREATE_FLASHBACK_ARCHIVE,
+                ALTER_FLASHBACK_ARCHIVE,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2512,6 +2519,41 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_OUTLINE).define(
                 ALTER, b.optional(b.firstOf(PUBLIC, PRIVATE)), OUTLINE, IDENTIFIER_NAME,
                 b.oneOrMore(alterAction),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-FLASHBACK-ARCHIVE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-FLASHBACK-ARCHIVE.html
+        private fun createFlashbackArchive(b: PlSqlGrammarBuilder) {
+            val quotaClause = b.sequence(QUOTA, INDEX_SIZE_CLAUSE)
+            val retentionClause = b.sequence(RETENTION, INTEGER_LITERAL, b.firstOf(YEAR, MONTH, DAY))
+            val optimizeClause = b.firstOf(b.sequence(OPTIMIZE, DATA), b.sequence(NO, OPTIMIZE, DATA))
+
+            // Oracle 26 enforces strict ordering: TABLESPACE, QUOTA, [NO] OPTIMIZE DATA, RETENTION.
+            // Reordering produces ORA-55603. TABLESPACE and RETENTION are mandatory per the production.
+            b.rule(CREATE_FLASHBACK_ARCHIVE).define(
+                CREATE, FLASHBACK, ARCHIVE, b.optional(DEFAULT), IDENTIFIER_NAME,
+                TABLESPACE, IDENTIFIER_NAME,
+                b.optional(quotaClause),
+                b.optional(optimizeClause),
+                retentionClause,
+                b.optional(SEMICOLON))
+
+            // ALTER allows exactly one action per statement (ORA-03048 for two). No schema qualification.
+            val alterAction = b.firstOf(
+                b.sequence(SET, DEFAULT),
+                b.sequence(b.firstOf(ADD, MODIFY), TABLESPACE, IDENTIFIER_NAME, b.optional(quotaClause)),
+                b.sequence(REMOVE, TABLESPACE, IDENTIFIER_NAME),
+                b.sequence(MODIFY, RETENTION, INTEGER_LITERAL, b.firstOf(YEAR, MONTH, DAY)),
+                b.sequence(PURGE, b.firstOf(
+                    ALL,
+                    b.sequence(BEFORE, b.firstOf(
+                        b.sequence(SCN, EXPRESSION),
+                        b.sequence(TIMESTAMP, EXPRESSION))))),
+                optimizeClause)
+            b.rule(ALTER_FLASHBACK_ARCHIVE).define(
+                ALTER, FLASHBACK, ARCHIVE, IDENTIFIER_NAME,
+                alterAction,
                 b.optional(SEMICOLON))
         }
 
