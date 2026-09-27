@@ -26,6 +26,7 @@ import com.felipebz.zpa.api.PlSqlGrammar.*
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
+import com.felipebz.zpa.api.PlSqlTokenType.NUMBER_LITERAL
 import com.felipebz.zpa.grammar.JavaSourceTextExpression
 import com.felipebz.zpa.grammar.JavaResolverMatchStringExpression
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
@@ -168,6 +169,7 @@ enum class DdlGrammar : GrammarRuleKey {
     INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
     CREATE_INDEX,
     CREATE_SEARCH_INDEX,
+    CREATE_VECTOR_INDEX,
     CREATE_INDEX_FOR_CONSTRAINT,
     CREATE_INDEX_SCHEMA_OBJECT_NAME,
     CREATE_INDEX_ON_CLAUSE,
@@ -1518,6 +1520,54 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(INDEX_PARAMETERS_CLAUSE, b.zeroOrMore(searchIndexOption)),
                 b.optional(SEMICOLON))
 
+            // VECTOR indexes have structured parameters, unlike the quoted payload of ordinary/domain indexes.
+            // Oracle validates duplicate keys, incompatible organizations and numeric ranges after parsing.
+            val vectorParameterName = b.firstOf(
+                b.sequence(NEIGHBOR, b.firstOf(
+                    b.sequence(PARTITION, GROUPING), PARTITIONS)),
+                b.sequence(RESCORE, FACTOR),
+                OFFLOAD_CREDENTIAL_NAME, OFFLOAD_URL,
+                TYPE, NEIGHBORS, M, EFCONSTRUCTION, SAMPLES_PER_PARTITION,
+                MIN_VECTORS_PER_PARTITION, ALGORITHM)
+            val vectorParameterValue = b.firstOf(
+                b.sequence(b.optional(b.firstOf(PLUS, MINUS)), b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)),
+                ON, IDENTIFIER_NAME, CHARACTER_LITERAL)
+            val vectorParameter = b.sequence(vectorParameterName, b.optional(vectorParameterValue))
+            val vectorOrganization = b.sequence(
+                ORGANIZATION,
+                b.firstOf(
+                    b.sequence(INMEMORY, b.optional(NEIGHBOR), GRAPH),
+                    b.sequence(b.optional(NEIGHBOR), PARTITIONS)))
+            val vectorOption = b.firstOf(
+                vectorOrganization,
+                b.sequence(b.optional(WITH), DISTANCE, b.firstOf(
+                    b.sequence(CUSTOM, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)),
+                    IDENTIFIER_NAME)),
+                b.sequence(WITH, TARGET, ACCURACY, b.firstOf(
+                    b.sequence(b.optional(b.firstOf(PLUS, MINUS)), b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)),
+                    b.sequence(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS),
+                    IDENTIFIER_NAME)),
+                b.sequence(PARAMETERS, LPARENTHESIS,
+                    b.optional(vectorParameter, b.zeroOrMore(COMMA, vectorParameter)), RPARENTHESIS),
+                b.sequence(QUANTIZATION, SCALAR, COMPRESSION, RATIO, INTEGER_LITERAL),
+                b.sequence(DUPLICATE, ALL),
+                b.sequence(DISTRIBUTE, b.optional(b.firstOf(
+                    AUTO, b.sequence(BY, b.firstOf(
+                        b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION))))),
+                b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)),
+                ONLINE, LOCAL,
+                b.sequence(TABLESPACE, IDENTIFIER_NAME))
+            b.rule(CREATE_VECTOR_INDEX).define(
+                CREATE, VECTOR, INDEX, b.optional(IF, NOT, EXISTS), CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                ON, CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                b.optional(INCLUDE, LPARENTHESIS, IDENTIFIER_NAME,
+                    b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                b.optional(GLOBAL),
+                vectorOrganization,
+                b.zeroOrMore(vectorOption),
+                b.optional(SEMICOLON))
+
             b.rule(CREATE_INDEX_FOR_CONSTRAINT).define(
                 createIndexHeader(),
                 b.firstOf(
@@ -2429,6 +2479,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_TABLE,
                 CREATE_INDEX,
                 CREATE_SEARCH_INDEX,
+                CREATE_VECTOR_INDEX,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
