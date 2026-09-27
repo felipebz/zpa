@@ -32,7 +32,11 @@ private val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
     "PIPELINED",
     "PARALLEL_ENABLE",
     "RESULT_CACHE",
-    "SQL_MACRO"
+    "SQL_MACRO",
+    "SHARD_ENABLE",
+    "ACCESSIBLE",
+    "AUTHID",
+    "DEFAULT"
 )
 
 /**
@@ -77,10 +81,11 @@ class ProjectDeclarationExtractor(
 
         private fun parseCreate(create: Int): ParsedUnit? {
             var index = create + 1
-            if (valueAt(index) == "OR" && valueAt(index + 1) == "REPLACE") index += 2
+            val orReplace = valueAt(index) == "OR" && valueAt(index + 1) == "REPLACE"
+            if (orReplace) index += 2
             if (valueAt(index) == "EDITIONABLE" || valueAt(index) == "NONEDITIONABLE") index++
             return when (valueAt(index)) {
-                "PACKAGE" -> parsePackage(create, index)
+                "PACKAGE" -> parsePackage(create, index, orReplace)
                 "SEQUENCE" -> parseSequence(create, index)
                 "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(index) else parseStandaloneType(create, index)
                 else -> null
@@ -106,9 +111,13 @@ class ProjectDeclarationExtractor(
             )
         }
 
-        private fun parsePackage(create: Int, packageIndex: Int): ParsedUnit? {
+        private fun parsePackage(create: Int, packageIndex: Int, orReplace: Boolean): ParsedUnit? {
             val body = valueAt(packageIndex + 1) == "BODY"
-            val nameIndex = if (body) packageIndex + 2 else packageIndex + 1
+            val kindEnd = if (body) packageIndex + 2 else packageIndex + 1
+            // IF NOT EXISTS follows PACKAGE [BODY] and cannot be combined with OR REPLACE (ORA-11541).
+            val ifNotExists = valueAt(kindEnd) == "IF" && valueAt(kindEnd + 1) == "NOT" && valueAt(kindEnd + 2) == "EXISTS"
+            if (ifNotExists && orReplace) return null
+            val nameIndex = if (ifNotExists) kindEnd + 3 else kindEnd
             val name = qualifiedName(nameIndex) ?: return null
             if (body) {
                 return parsePackageBody(name.first, name.second)

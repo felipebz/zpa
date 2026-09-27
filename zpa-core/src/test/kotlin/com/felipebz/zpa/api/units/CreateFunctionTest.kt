@@ -80,7 +80,7 @@ class CreateFunctionTest : RuleTest() {
     @Test
     fun matchesFunctionWithSharingMetadata() {
         assertThat(p).matches(""
-                + "create function test return number sharing = metadata is\n"
+                + "create function test sharing = metadata return number is\n"
                 + "begin\n"
                 + "return 0;\n"
                 + "end;")
@@ -89,7 +89,7 @@ class CreateFunctionTest : RuleTest() {
     @Test
     fun matchesFunctionWithSharingNone() {
         assertThat(p).matches(""
-                + "create editionable function test return number sharing = none is\n"
+                + "create editionable function test sharing = none (x number) return number is\n"
                 + "begin\n"
                 + "return 0;\n"
                 + "end;")

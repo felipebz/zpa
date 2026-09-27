@@ -96,6 +96,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     SQL_MACRO_CLAUSE,
     PARALLEL_ENABLE_CLAUSE,
     STREAMING_CLAUSE,
+    ACCESSIBLE_BY_CLAUSE,
     MULTIPLE_VALUE_EXPRESSION,
     MEMBER_EXPRESSION,
     OUTER_JOIN_PLUS_SIGN,
@@ -499,7 +500,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ANCHORED_DATATYPE,
                     REF_DATATYPE,
                     JSON_DATATYPE,
-                    CUSTOM_DATATYPE))
+                    CUSTOM_DATATYPE,
+                    // Polymorphic table function parameters and results. Oracle 26 parses a bare TABLE in every
+                    // datatype position: PL/SQL reports PLS-00765 only on compile, and SQL columns, clusters,
+                    // domains and CAST accept it (stored as RAW(16)). TABLE(n) and TABLE OF stay rejected.
+                    TABLE))
 
             b.rule(DATATYPE_NULL_CONSTRAINT).define(
                 b.firstOf(
@@ -786,6 +791,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
                                     b.firstOf(ORDER, CLUSTER), IDENTIFIER_NAME, BY,
                                     LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                             RPARENTHESIS))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ACCESSIBLE-BY-clause.html
+            // The unit kind is optional; ACCESSIBLE BY (package) is rejected because PACKAGE is taken as the kind.
+            b.rule(ACCESSIBLE_BY_CLAUSE).define(
+                    ACCESSIBLE, BY, LPARENTHESIS,
+                    accessor(b), b.zeroOrMore(COMMA, accessor(b)),
+                    RPARENTHESIS)
 
             b.rule(BRACKED_EXPRESSION).define(b.firstOf(
                     PRIMARY_EXPRESSION,
@@ -1114,8 +1126,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(PROCEDURE_DECLARATION).define(
                     PROCEDURE, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
-                    // Rejected on a standalone procedure, accepted on a packaged one.
-                    b.zeroOrMore(b.firstOf(DETERMINISTIC, PARALLEL_ENABLE_CLAUSE)),
+                    b.zeroOrMore(subprogramProperty(b)),
                     b.optional(b.firstOf(
                             SEMICOLON,
                             b.sequence(b.firstOf(IS, AS),
@@ -1128,8 +1139,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(FUNCTION_DECLARATION).define(
                     FUNCTION, IDENTIFIER_NAME,
                     b.optional(PARAMETER_DECLARATIONS),
-                    RETURN, DATATYPE, b.zeroOrMore(b.firstOf(DETERMINISTIC, PIPELINED, SQL_MACRO_CLAUSE, PARALLEL_ENABLE_CLAUSE, STREAMING_CLAUSE)),
-                    b.optional(RESULT_CACHE, b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
+                    RETURN, DATATYPE, b.zeroOrMore(subprogramProperty(b)),
                     b.optional(b.firstOf(
                             SEMICOLON,
                             b.sequence(b.firstOf(IS, AS),
@@ -1398,82 +1408,101 @@ enum class PlSqlGrammar : GrammarRuleKey {
             )
         }
 
+        private fun accessor(b: PlSqlGrammarBuilder) = b.sequence(
+                b.optional(b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE)), UNIT_NAME)
+
+        // Oracle 26 parses one property list for standalone and packaged subprograms, in any order.
+        // Properties that do not apply to a procedure (PIPELINED, RESULT_CACHE) or to a packaged
+        // subprogram (AUTHID) fail only when the unit is compiled (PLS-00655, PLS-00999, PLS-00157).
+        private fun subprogramProperty(b: PlSqlGrammarBuilder) = b.firstOf(
+                DETERMINISTIC,
+                // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/PIPELINED-clause.html
+                // PIPELINED ... USING ends the declaration, so only a semicolon may follow it.
+                b.sequence(
+                        PIPELINED,
+                        b.optional(b.firstOf(ROW, TABLE), POLYMORPHIC),
+                        b.optional(USING, OBJECT_REFERENCE, b.next(SEMICOLON))),
+                SQL_MACRO_CLAUSE,
+                PARALLEL_ENABLE_CLAUSE,
+                STREAMING_CLAUSE,
+                SHARD_ENABLE,
+                b.sequence(
+                        RESULT_CACHE,
+                        b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
+                b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                ACCESSIBLE_BY_CLAUSE)
+
+        // OR REPLACE and IF NOT EXISTS cannot be combined (ORA-11541).
+        private fun createUnitHeader(b: PlSqlGrammarBuilder, kind: Any): Any {
+            val editionability = b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE))
+            return b.firstOf(
+                    b.sequence(OR, REPLACE, editionability, kind),
+                    b.sequence(editionability, kind, b.optional(IF, NOT, EXISTS)))
+        }
+
         private fun createProgramUnits(b: PlSqlGrammarBuilder) {
             b.rule(EXECUTE_PLSQL_BUFFER).define(ExecuteBufferExpression, b.next(b.firstOf(VALID_INPUT, EOF)))
 
             b.rule(UNIT_NAME).define(b.optional(IDENTIFIER_NAME, DOT), IDENTIFIER_NAME)
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PROCEDURE-statement.html
+            val sharingClause = b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PROCEDURE-statement.html
             b.rule(CREATE_PROCEDURE).define(
-                    CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
-                    PROCEDURE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    CREATE, createUnitHeader(b, PROCEDURE),
+                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    sharingClause,
                     b.optional(PARAMETER_DECLARATIONS),
-                    b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
-                    b.zeroOrMore(b.firstOf(
-                            b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                            b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
-                                    b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
-                                    UNIT_NAME,
-                                    RPARENTHESIS))
-                    ),
+                    b.zeroOrMore(subprogramProperty(b)),
                     b.firstOf(IS, AS),
                     b.firstOf(
                             b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
                             CALL_SPECIFICATION)
             )
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-FUNCTION-statement.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-FUNCTION-statement.html
             b.rule(CREATE_FUNCTION).define(
-                    CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
-                    FUNCTION, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    CREATE, createUnitHeader(b, FUNCTION),
+                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    sharingClause,
                     b.optional(PARAMETER_DECLARATIONS),
                     RETURN, DATATYPE,
-                    b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
-                    b.zeroOrMore(b.firstOf(
-                            DETERMINISTIC,
-                            PIPELINED,
-                            SQL_MACRO_CLAUSE,
-                            PARALLEL_ENABLE_CLAUSE,
-                            STREAMING_CLAUSE,
-                            b.sequence(
-                                    RESULT_CACHE,
-                                    b.optional(RELIES_ON, LPARENTHESIS, b.oneOrMore(OBJECT_REFERENCE, b.optional(COMMA)), RPARENTHESIS)),
-                            b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                            b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
-                                    b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
-                                    UNIT_NAME,
-                                    RPARENTHESIS))),
+                    b.zeroOrMore(subprogramProperty(b)),
                     b.firstOf(
                             b.sequence(
                                     b.firstOf(IS, AS),
                                     b.firstOf(
                                             b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
                                             CALL_SPECIFICATION)),
-                            b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON))
+                            b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON),
+                            // PIPELINED ... USING; a declaration without a body fails only at compile time (PLS-00378).
+                            SEMICOLON)
             )
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-statement.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PACKAGE-statement.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/RESETTABLE-clause.html
+            // SHARING must come first (PLS-00103); a second RESETTABLE fails at compile time (PLS-00371).
             b.rule(CREATE_PACKAGE).define(
-                    b.optional(CREATE), b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
-                    PACKAGE, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
-                    b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                    b.optional(CREATE), createUnitHeader(b, PACKAGE),
+                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    sharingClause,
                     b.zeroOrMore(b.firstOf(
                             b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                             b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
-                                    b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
-                                    UNIT_NAME,
-                                    RPARENTHESIS))),
+                            ACCESSIBLE_BY_CLAUSE,
+                            RESETTABLE)),
                     b.firstOf(IS, AS),
                     b.optional(DECLARE_SECTION),
                     END, b.optional(IDENTIFIER_NAME), SEMICOLON)
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/18/lnpls/CREATE-PACKAGE-BODY-statement.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PACKAGE-BODY-statement.html
+            // A body accepts only SHARING and then a single RESETTABLE (PLS-00103 otherwise).
             b.rule(CREATE_PACKAGE_BODY).define(
-                    b.optional(CREATE), b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
-                    PACKAGE, BODY, UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    b.optional(CREATE), createUnitHeader(b, b.sequence(PACKAGE, BODY)),
+                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    sharingClause,
+                    b.optional(RESETTABLE),
                     b.firstOf(IS, AS),
                     b.optional(DECLARE_SECTION),
                     b.firstOf(
@@ -1974,10 +2003,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(b.firstOf(
                             b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                             b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            b.sequence(ACCESSIBLE, BY, LPARENTHESIS,
-                                    b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE),
-                                    UNIT_NAME,
-                                    RPARENTHESIS))),
+                            ACCESSIBLE_BY_CLAUSE)),
                     b.optional(b.firstOf(
                             OBJECT_TYPE_DEFINITION,
                             b.sequence(

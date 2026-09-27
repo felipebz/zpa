@@ -1,5 +1,6 @@
 {
   "adjsn/using-pl-sql-object-types-json-2.sql" : [ 5 ],
+  "lnpls/RESETTABLE-clause-0.sql" : [ 9, 10, 11 ],
   "lnpls/autonomous-transactions-9.sql" : [ 21 ],
   "lnpls/cursor-variables-1.sql" : [ 6, 7, 8, 11 ],
   "lnpls/cursor-variables-2.sql" : [ 9 ],

@@ -72,6 +72,32 @@ class ProjectDeclarationTest {
     }
 
     @Test
+    fun extractsPackagesDeclaredWithIfNotExistsAndAccessorProperties() {
+        val declarations = extractor.extract(fileId, """
+            CREATE PACKAGE IF NOT EXISTS app.api RESETTABLE AS
+              FUNCTION f RETURN NUMBER ACCESSIBLE BY (PACKAGE caller) DETERMINISTIC;
+            END;
+            /
+            CREATE PACKAGE BODY IF NOT EXISTS app.api AS
+              FUNCTION f RETURN NUMBER ACCESSIBLE BY (PACKAGE caller) DETERMINISTIC IS BEGIN RETURN 1; END;
+            END;
+            /
+            CREATE OR REPLACE PACKAGE IF NOT EXISTS invalid AS END;
+            /
+        """.trimIndent())
+
+        val appApi = QualifiedName(listOf(OracleIdentifier.fromSource("app"), OracleIdentifier.fromSource("api")))
+        assertThat(declarations.filterIsInstance<PackageDeclaration>().map { it.name }).containsExactly(appApi)
+        val functions = declarations.filterIsInstance<PackageFunctionDeclaration>()
+        assertThat(functions.map { it.role }).containsExactly(DeclarationRole.SPECIFICATION, DeclarationRole.BODY)
+        assertThat(functions).allSatisfy { function ->
+            assertThat(function.owner).isEqualTo(appApi)
+            assertThat(function.returnType.name).isEqualTo(QualifiedName(OracleIdentifier.fromSource("NUMBER")))
+        }
+        assertThat(functions.first().deterministic).isTrue
+    }
+
+    @Test
     fun extractsPackageDeclarationsAndBodySubprograms() {
         val declarations = extractor.extract(fileId, """
             CREATE OR REPLACE PACKAGE "Pack" AS

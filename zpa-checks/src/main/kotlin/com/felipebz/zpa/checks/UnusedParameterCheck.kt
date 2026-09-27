@@ -60,6 +60,12 @@ class UnusedParameterCheck : AbstractBaseCheck() {
                 }
             }
 
+            // standalone function implemented elsewhere (AGGREGATE USING or PIPELINED ... USING)
+            if (scope.type == PlSqlGrammar.CREATE_FUNCTION &&
+                !scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.CALL_SPECIFICATION)) {
+                continue
+            }
+
             // cursor declaration (without implementation)
             if (scope.type == PlSqlGrammar.CURSOR_DECLARATION && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
                 continue

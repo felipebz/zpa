@@ -1,11 +1,11 @@
 {
-  "lnpls/CREATE-FUNCTION-statement-2.sql" : [ 2 ],
   "lnpls/CREATE-PACKAGE-BODY-statement-0.sql" : [ 6, 6, 7, 7, 8, 8, 22, 22 ],
   "lnpls/CREATE-PROCEDURE-statement-1.sql" : [ 3 ],
   "lnpls/SQL_MACRO-clause-1.sql" : [ 2 ],
   "lnpls/SQL_MACRO-clause-16.sql" : [ 2 ],
   "lnpls/SQL_MACRO-clause-19.sql" : [ 2, 2 ],
   "lnpls/SQL_MACRO-clause-2.sql" : [ 2, 3 ],
+  "lnpls/SQL_MACRO-clause-24.sql" : [ 19, 25, 25, 25, 33, 33 ],
   "lnpls/SQL_MACRO-clause-3.sql" : [ 2, 3, 4 ],
   "lnpls/SQL_MACRO-clause-4.sql" : [ 2, 3, 4, 5 ],
   "lnpls/SQL_MACRO-clause-5.sql" : [ 2, 3, 4, 5 ],
@@ -27,5 +27,6 @@
   "sqlrf/SELECT-20.sql" : [ 2, 3, 4 ],
   "sqlrf/SELECT-21.sql" : [ 2 ],
   "sqlrf/Using-Extensible-Indexing-1.sql" : [ 41, 41, 55, 65, 75, 87, 98, 99, 110, 110, 112, 175, 202 ],
-  "sqlrf/Using-Extensible-Indexing-2.sql" : [ 3 ]
+  "sqlrf/Using-Extensible-Indexing-2.sql" : [ 3 ],
+  "sqlrf/create-property-graph-32.sql" : [ 8 ]
 }

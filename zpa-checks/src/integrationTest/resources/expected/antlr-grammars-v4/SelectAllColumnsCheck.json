@@ -19,6 +19,7 @@
   "examples/condition14.sql" : [ 1 ],
   "examples/condition16.sql" : [ 1 ],
   "examples/create_package02.sql" : [ 14 ],
+  "examples/create_procedure02.sql" : [ 8 ],
   "examples/dblink01.sql" : [ 5, 7 ],
   "examples/fetch_clause01.sql" : [ 1 ],
   "examples/fetch_clause02.sql" : [ 1 ],

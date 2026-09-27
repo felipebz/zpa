@@ -61,3 +61,9 @@ begin
   null;
 end;
 /
+create function process_table(tab table) -- don't report violation, the implementation package owns the parameters
+return table pipelined row polymorphic using process_table_pkg;
+/
+create function second_max(input number) return number -- don't report violation, the implementation type owns the parameters
+    parallel_enable aggregate using second_max_impl;
+/

@@ -7,6 +7,7 @@
   "examples/collection_method_invocation.sql" : [ 7, 8, 9, 13 ],
   "examples/concatenation-double_asterisk.sql" : [ 21 ],
   "examples/concatenation-mod.sql" : [ 21 ],
+  "examples/create_package03.sql" : [ 25 ],
   "examples/create_package04.sql" : [ 10, 13 ],
   "examples/create_procedure03.sql" : [ 4, 13 ],
   "examples/fetch_statement.sql" : [ 40, 50 ],
