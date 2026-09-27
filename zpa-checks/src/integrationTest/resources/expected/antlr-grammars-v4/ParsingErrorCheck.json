@@ -11,7 +11,6 @@
   "examples/alter_java.sql" : [ 1 ],
   "examples/alter_library.sql" : [ 1 ],
   "examples/alter_operator.sql" : [ 1 ],
-  "examples/alter_outline.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
   "examples/alter_resource_cost.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 1 ],
@@ -37,7 +36,6 @@
   "examples/create_library.sql" : [ 1 ],
   "examples/create_lockdown_profile.sql" : [ 1 ],
   "examples/create_operator.sql" : [ 1 ],
-  "examples/create_outline.sql" : [ 1 ],
   "examples/create_package03.sql" : [ 8 ],
   "examples/create_pmem_filestore.sql" : [ 1 ],
   "examples/create_procedure02.sql" : [ 2 ],
@@ -69,6 +67,5 @@
   "examples/select_time.sql" : [ 1 ],
   "examples/truncate_cluster.sql" : [ 1 ],
   "examples/views.sql" : [ 59 ],
-  "hw-examples/alter_operator.sql" : [ 1 ],
-  "hw-examples/alter_outline.sql" : [ 1 ]
+  "hw-examples/alter_operator.sql" : [ 1 ]
 }

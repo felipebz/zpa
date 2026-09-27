@@ -36,6 +36,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
  * ALTER TABLE, including ALTER TABLE ADD column, accepts them.
  */
 internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
+internal val OUTLINE_CREATE_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 
 enum class DdlGrammar : GrammarRuleKey {
 
@@ -105,6 +106,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_DATABASE_LINK,
     ALTER_DATABASE_LINK,
     DATABASE_LINK_NAME,
+    CREATE_OUTLINE,
+    ALTER_OUTLINE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
     ALTER_AUDIT_POLICY,
@@ -1065,7 +1068,14 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     ROWS,
                                                     tableAnnotations()),
                                             tableSuffixesWithAnnotations())))),
-                    b.optional(AS, DmlGrammar.SELECT_EXPRESSION),
+                    b.firstOf(
+                            b.sequence(
+                                    b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
+                                    AS,
+                                    DmlGrammar.SELECT_EXPRESSION),
+                            b.sequence(
+                                    b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true)),
+                                    b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                     b.optional(SEMICOLON))
 
             // XMLIndex parameter syntax is carried inside the same quoted parameter string.
@@ -1909,6 +1919,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createAttributeDimension(b)
             createDimension(b)
             createDatabaseLink(b)
+            createOutline(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2145,6 +2156,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_ATTRIBUTE_DIMENSION,
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
+                CREATE_OUTLINE,
+                ALTER_OUTLINE,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -2457,6 +2470,48 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                         header(ALTER, false), alterName,
                         b.firstOf(b.sequence(alterConnect, usingClause), b.sequence(USING, CHARACTER_LITERAL)))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OUTLINE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-OUTLINE.html
+        private fun createOutline(b: PlSqlGrammarBuilder) {
+            val categoryClause = b.sequence(FOR, CATEGORY, IDENTIFIER_NAME)
+            // Oracle permits only query/DML and CREATE TABLE AS SELECT here. Keep INSERT restricted to its
+            // single-table subquery form; VALUES and multitable INSERT are not valid outline statements.
+            val insertSelect = b.sequence(
+                INSERT,
+                DmlGrammar.INSERT_INTO_CLAUSE,
+                b.optional(BY, b.firstOf(NAME, POSITION)),
+                DmlGrammar.SELECT_EXPRESSION,
+                b.optional(DmlGrammar.ERROR_LOGGING_CLAUSE))
+            val outlinedStatement = b.firstOf(
+                DmlGrammar.SELECT_EXPRESSION,
+                DmlGrammar.DELETE_EXPRESSION,
+                DmlGrammar.UPDATE_EXPRESSION,
+                insertSelect,
+                b.withContext(OUTLINE_CREATE_TABLE_CONTEXT, true, CREATE_TABLE))
+
+            b.rule(CREATE_OUTLINE).define(
+                CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(PUBLIC, PRIVATE)), OUTLINE,
+                b.optional(IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(
+                        FROM, b.optional(b.firstOf(PUBLIC, PRIVATE)), IDENTIFIER_NAME,
+                        b.optional(categoryClause)),
+                    b.sequence(b.optional(categoryClause), ON, outlinedStatement)),
+                b.optional(SEMICOLON))
+
+            val alterAction = b.firstOf(
+                REBUILD,
+                b.sequence(RENAME, TO, IDENTIFIER_NAME),
+                b.sequence(CHANGE, CATEGORY, TO, IDENTIFIER_NAME),
+                ENABLE,
+                DISABLE)
+            // Oracle 26 accepts PUBLIC/PRIVATE before OUTLINE, despite the generated syntax text placing it after.
+            b.rule(ALTER_OUTLINE).define(
+                ALTER, b.optional(b.firstOf(PUBLIC, PRIVATE)), OUTLINE, IDENTIFIER_NAME,
+                b.oneOrMore(alterAction),
                 b.optional(SEMICOLON))
         }
 
