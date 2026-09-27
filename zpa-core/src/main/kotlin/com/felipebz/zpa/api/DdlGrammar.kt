@@ -252,6 +252,8 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_SEQUENCE,
     ALTER_SYNONYM,
     TRUNCATE_CLUSTER,
+    CREATE_LIBRARY,
+    ALTER_LIBRARY,
     PARTITION_BY_RANGE,
     PARTITION_BY_HASH,
     RANGE_VALUES_CLAUSE,
@@ -2194,6 +2196,30 @@ enum class DdlGrammar : GrammarRuleKey {
                         PACKAGE_COMPILE_CLAUSE),
                     b.optional(SEMICOLON))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-LIBRARY-statement.html
+            val libraryName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val libraryEditionability = b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE))
+            b.rule(CREATE_LIBRARY).define(
+                    CREATE,
+                    b.firstOf(
+                            b.sequence(OR, REPLACE, libraryEditionability, LIBRARY),
+                            b.sequence(libraryEditionability, LIBRARY, b.optional(IF, NOT, EXISTS))),
+                    libraryName,
+                    b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                    b.firstOf(IS, AS),
+                    CHARACTER_LITERAL,
+                    b.optional(IN, IDENTIFIER_NAME),
+                    b.optional(AGENT, CHARACTER_LITERAL),
+                    b.optional(CREDENTIAL, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                    b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-LIBRARY-statement.html
+            // One action only (ORA-03049 for a second); at most one name qualifier (ORA-00922).
+            b.rule(ALTER_LIBRARY).define(
+                    ALTER, LIBRARY, b.optional(IF, EXISTS), libraryName,
+                    b.firstOf(EDITIONABLE, NONEDITIONABLE, COMPILE_CLAUSE),
+                    b.optional(SEMICOLON))
+
             b.rule(PACKAGE_COMPILE_CLAUSE).define(
                     COMPILE, b.optional(DEBUG),
                     b.optional(b.firstOf(PACKAGE, SPECIFICATION, BODY)),
@@ -2452,6 +2478,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_PROCEDURE,
                 ALTER_FUNCTION,
                 ALTER_PACKAGE,
+                CREATE_LIBRARY,
+                ALTER_LIBRARY,
                 CREATE_SYNONYM,
                 ALTER_SYNONYM,
                 CREATE_SEQUENCE,
