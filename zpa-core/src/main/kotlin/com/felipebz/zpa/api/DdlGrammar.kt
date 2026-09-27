@@ -167,6 +167,7 @@ enum class DdlGrammar : GrammarRuleKey {
     INDEX_ORGANIZED_TABLE_CLAUSE,
     INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
     CREATE_INDEX,
+    CREATE_SEARCH_INDEX,
     CREATE_INDEX_FOR_CONSTRAINT,
     CREATE_INDEX_SCHEMA_OBJECT_NAME,
     CREATE_INDEX_ON_CLAUSE,
@@ -1476,6 +1477,41 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(b.firstOf(DEFERRED, IMMEDIATE), INVALIDATION),
                 b.optional(SEMICOLON))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/ccref/create-search-index.html
+            // The PARAMETERS payload stays an opaque string literal. Oracle 26 accepts the options below in
+            // any order, except that FILTER BY must precede ORDER BY, both must precede PARAMETERS, and
+            // neither may be split by another option or repeated (ORA-29850); PARAMETERS may appear once
+            // (ORA-29850). Duplicate ONLINE, LOCAL or PARALLEL options (ORA-02158/ORA-14000/ORA-12812)
+            // are not encoded. Oracle rejects TABLESPACE and STORAGE here (ORA-29850).
+            val searchIndexLocalPartition = b.sequence(PARTITION, b.optional(IDENTIFIER_NAME), b.optional(INDEX_PARAMETERS_CLAUSE))
+            val searchIndexOption = b.firstOf(
+                ONLINE,
+                b.sequence(LOCAL, b.optional(LPARENTHESIS, searchIndexLocalPartition,
+                    b.zeroOrMore(COMMA, searchIndexLocalPartition), RPARENTHESIS)),
+                INDEX_PARALLEL_CLAUSE,
+                UNUSABLE)
+            // Oracle 26 parses qualified FILTER BY and ORDER BY columns and only fails to resolve them (ORA-00904),
+            // but rejects expressions, NULLS and ASC/DESC after a FILTER BY column (ORA-02158).
+            val searchIndexColumn = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), b.optional(DOT, IDENTIFIER_NAME))
+            val searchIndexOrderItem = b.sequence(searchIndexColumn, b.optional(b.firstOf(ASC, DESC)))
+            val searchIndexOrderBy = b.sequence(ORDER, BY, searchIndexOrderItem, b.zeroOrMore(COMMA, searchIndexOrderItem))
+            val searchIndexFilterBy = b.sequence(FILTER, BY, searchIndexColumn, b.zeroOrMore(COMMA, searchIndexColumn))
+
+            // Several targets (ORA-29851), expressions (ORA-29958) and qualified columns (ORA-00904) fail only after
+            // parsing, so the target list accepts expressions. ASC/DESC after a target is rejected (ORA-29850), which
+            // is why CREATE_INDEX_EXPR is not reused.
+            b.rule(CREATE_SEARCH_INDEX).define(
+                CREATE, SEARCH, INDEX, b.optional(IF, NOT, EXISTS), CREATE_INDEX_SCHEMA_OBJECT_NAME,
+                ON, CREATE_INDEX_SCHEMA_OBJECT_NAME, b.optional(IDENTIFIER_NAME),
+                LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS,
+                b.optional(FOR, b.firstOf(TEXT, JSON, XML)),
+                b.zeroOrMore(searchIndexOption),
+                b.optional(
+                    b.firstOf(b.sequence(searchIndexFilterBy, b.optional(searchIndexOrderBy)), searchIndexOrderBy),
+                    b.zeroOrMore(searchIndexOption)),
+                b.optional(INDEX_PARAMETERS_CLAUSE, b.zeroOrMore(searchIndexOption)),
+                b.optional(SEMICOLON))
+
             b.rule(CREATE_INDEX_FOR_CONSTRAINT).define(
                 createIndexHeader(),
                 b.firstOf(
@@ -2313,6 +2349,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 DDL_COMMENT,
                 CREATE_TABLE,
                 CREATE_INDEX,
+                CREATE_SEARCH_INDEX,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,

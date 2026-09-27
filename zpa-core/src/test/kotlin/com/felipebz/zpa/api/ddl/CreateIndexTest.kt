@@ -143,7 +143,6 @@ class CreateIndexTest : RuleTest() {
     @Test
     fun rejectsOutOfScopeAndInvalidForms() {
         assertThat(p).notMatches("create index if exists employee_ix on employees(employee_id);")
-        assertThat(p).notMatches("create search index search_ix on documents(content);")
         assertThat(p).notMatches("create indextype custom_index_type using implementation_type;")
     }
 }
