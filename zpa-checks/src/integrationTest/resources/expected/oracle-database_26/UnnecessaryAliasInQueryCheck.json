@@ -114,6 +114,8 @@
   "sqlrf/DEREF-0.sql" : [ 5 ],
   "sqlrf/EXISTS-Condition-1.sql" : [ 3, 5 ],
   "sqlrf/EXTRACTVALUE-0.sql" : [ 3 ],
+  "sqlrf/FEATURE_DETAILS-0.sql" : [ 6 ],
+  "sqlrf/FEATURE_SET-0.sql" : [ 28, 30 ],
   "sqlrf/GROUPING-0.sql" : [ 8, 8 ],
   "sqlrf/GROUP_ID-0.sql" : [ 4, 4, 4 ],
   "sqlrf/INSERT-29.sql" : [ 16, 16 ],

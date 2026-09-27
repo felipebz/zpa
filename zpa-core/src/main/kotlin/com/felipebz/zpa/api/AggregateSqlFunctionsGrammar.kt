@@ -35,8 +35,22 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     PERCENTILE_DISC_EXPRESSION,
     PERCENTILE_CONT_EXPRESSION,
     CLUSTER_DETAILS_EXPRESSION,
+    CLUSTER_DISTANCE_EXPRESSION,
     CLUSTER_ID_EXPRESSION,
+    CLUSTER_PROBABILITY_EXPRESSION,
     CLUSTER_SET_EXPRESSION,
+    FEATURE_COMPARE_EXPRESSION,
+    FEATURE_DETAILS_EXPRESSION,
+    FEATURE_ID_EXPRESSION,
+    FEATURE_SET_EXPRESSION,
+    FEATURE_VALUE_EXPRESSION,
+    ORA_DM_PARTITION_NAME_EXPRESSION,
+    PREDICTION_EXPRESSION,
+    PREDICTION_BOUNDS_EXPRESSION,
+    PREDICTION_COST_EXPRESSION,
+    PREDICTION_DETAILS_EXPRESSION,
+    PREDICTION_PROBABILITY_EXPRESSION,
+    PREDICTION_SET_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
@@ -48,14 +62,41 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
         internal val ALTERNATIVES: List<FunctionAlternative> = listOf(
             FunctionAlternative(LISTAGG_EXPRESSION, LISTAGG),
             FunctionAlternative(CLUSTER_DETAILS_EXPRESSION, CLUSTER_DETAILS),
+            FunctionAlternative(CLUSTER_DISTANCE_EXPRESSION, CLUSTER_DISTANCE),
             FunctionAlternative(CLUSTER_ID_EXPRESSION, CLUSTER_ID),
+            FunctionAlternative(CLUSTER_PROBABILITY_EXPRESSION, CLUSTER_PROBABILITY),
             FunctionAlternative(CLUSTER_SET_EXPRESSION, CLUSTER_SET),
+            FunctionAlternative(FEATURE_COMPARE_EXPRESSION, FEATURE_COMPARE),
+            FunctionAlternative(FEATURE_DETAILS_EXPRESSION, FEATURE_DETAILS),
+            FunctionAlternative(FEATURE_ID_EXPRESSION, FEATURE_ID),
+            FunctionAlternative(FEATURE_SET_EXPRESSION, FEATURE_SET),
+            FunctionAlternative(FEATURE_VALUE_EXPRESSION, FEATURE_VALUE),
+            FunctionAlternative(ORA_DM_PARTITION_NAME_EXPRESSION, ORA_DM_PARTITION_NAME),
+            FunctionAlternative(PREDICTION_EXPRESSION, PREDICTION),
+            FunctionAlternative(PREDICTION_BOUNDS_EXPRESSION, PREDICTION_BOUNDS),
+            FunctionAlternative(PREDICTION_COST_EXPRESSION, PREDICTION_COST),
+            FunctionAlternative(PREDICTION_DETAILS_EXPRESSION, PREDICTION_DETAILS),
+            FunctionAlternative(PREDICTION_PROBABILITY_EXPRESSION, PREDICTION_PROBABILITY),
+            FunctionAlternative(PREDICTION_SET_EXPRESSION, PREDICTION_SET),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
             FunctionAlternative(XMLAGG_EXPRESSION, XMLAGG),
             FunctionAlternative(COLLECT_EXPRESSION, COLLECT),
             FunctionAlternative(JSON_ARRAYAGG_EXPRESSION, JSON_ARRAYAGG),
             FunctionAlternative(JSON_OBJECTAGG_EXPRESSION, JSON_OBJECTAGG),
+        )
+
+        /**
+         * Data mining functions carry their own OVER clause, so the generic
+         * analytic clause must not be applied after them.
+         */
+        val miningFunctions: Array<GrammarRuleKey> = arrayOf(
+            CLUSTER_DETAILS_EXPRESSION, CLUSTER_DISTANCE_EXPRESSION, CLUSTER_ID_EXPRESSION,
+            CLUSTER_PROBABILITY_EXPRESSION, CLUSTER_SET_EXPRESSION, FEATURE_COMPARE_EXPRESSION,
+            FEATURE_DETAILS_EXPRESSION, FEATURE_ID_EXPRESSION, FEATURE_SET_EXPRESSION,
+            FEATURE_VALUE_EXPRESSION, ORA_DM_PARTITION_NAME_EXPRESSION, PREDICTION_EXPRESSION,
+            PREDICTION_BOUNDS_EXPRESSION, PREDICTION_COST_EXPRESSION, PREDICTION_DETAILS_EXPRESSION,
+            PREDICTION_PROBABILITY_EXPRESSION, PREDICTION_SET_EXPRESSION
         )
 
         val admissionTokens: Array<TokenType> =
@@ -85,116 +126,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(PERCENTILE_DISC_EXPRESSION).define(percentileSyntax(PERCENTILE_DISC))
             b.rule(PERCENTILE_CONT_EXPRESSION).define(percentileSyntax(PERCENTILE_CONT))
 
-            // Keep mining syntax helpers anonymous so each function rule adds
-            // only its own AST boundary.
-            val miningAttribute = b.firstOf(
-                b.sequence(
-                    IDENTIFIER_NAME,
-                    b.optional(DOT, IDENTIFIER_NAME),
-                    DOT,
-                    MULTIPLICATION
-                ),
-                b.sequence(
-                    EXPRESSION,
-                    b.optional(b.optional(AS), IDENTIFIER_NAME)
-                )
-            )
-            val miningAttributeClause = b.sequence(
-                USING,
-                b.firstOf(
-                    MULTIPLICATION,
-                    b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute))
-                )
-            )
-            val miningArgumentExpressions =
-                b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION))
-            val miningArguments = b.sequence(
-                miningArgumentExpressions,
-                miningAttributeClause
-            )
-            val clusterDetailsArguments = b.sequence(
-                miningArgumentExpressions,
-                b.optional(b.firstOf(DESC, ASC, ABS)),
-                miningAttributeClause
-            )
-            val miningOrderByClause = b.sequence(
-                b.nextNot(b.sequence(ORDER, SIBLINGS)),
-                ORDER,
-                BY,
-                ORDER_BY_ITEM,
-                b.zeroOrMore(COMMA, ORDER_BY_ITEM)
-            )
-            val miningAnalyticClause = b.sequence(
-                OVER,
-                b.firstOf(
-                    IDENTIFIER_NAME,
-                    b.sequence(
-                        LPARENTHESIS,
-                        b.optional(b.nextNot(b.firstOf(PARTITION, ORDER)), IDENTIFIER_NAME),
-                        b.optional(DmlGrammar.PARTITION_BY_CLAUSE),
-                        b.optional(miningOrderByClause),
-                        RPARENTHESIS
-                    )
-                )
-            )
-            b.rule(CLUSTER_SET_EXPRESSION).define(
-                b.firstOf(
-                    b.sequence(
-                        CLUSTER_SET,
-                        LPARENTHESIS,
-                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
-                        miningArguments,
-                        RPARENTHESIS
-                    ),
-                    b.sequence(
-                        CLUSTER_SET,
-                        LPARENTHESIS,
-                        INTO, EXPRESSION,
-                        miningArguments,
-                        RPARENTHESIS,
-                        miningAnalyticClause
-                    )
-                )
-            )
-            b.rule(CLUSTER_DETAILS_EXPRESSION).define(
-                b.firstOf(
-                    b.sequence(
-                        CLUSTER_DETAILS,
-                        LPARENTHESIS,
-                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
-                        clusterDetailsArguments,
-                        RPARENTHESIS
-                    ),
-                    b.sequence(
-                        CLUSTER_DETAILS,
-                        LPARENTHESIS,
-                        INTO, EXPRESSION,
-                        clusterDetailsArguments,
-                        RPARENTHESIS,
-                        miningAnalyticClause
-                    )
-                )
-            )
-            b.rule(CLUSTER_ID_EXPRESSION).define(
-                b.firstOf(
-                    b.sequence(
-                        CLUSTER_ID,
-                        LPARENTHESIS,
-                        IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
-                        miningAttributeClause,
-                        RPARENTHESIS
-                    ),
-                    b.sequence(
-                        CLUSTER_ID,
-                        LPARENTHESIS,
-                        INTO, EXPRESSION,
-                        miningAttributeClause,
-                        RPARENTHESIS,
-                        miningAnalyticClause
-                    )
-                )
-            )
-
+            buildMiningFunctions(b)
 
             b.rule(XMLAGG_EXPRESSION).define(
                 XMLAGG, LPARENTHESIS,
@@ -240,6 +172,108 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             b.rule(AGGREGATE_SQL_FUNCTION).define(
                 b.firstOf(ALTERNATIVES.map { it.ruleKey })
             )
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Mining-Functions.html
+        // Keep the shared mining helpers anonymous so each function rule adds only its own AST boundary.
+        private fun buildMiningFunctions(b: PlSqlGrammarBuilder) {
+            val modelName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val miningAttribute = b.firstOf(
+                b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), DOT, MULTIPLICATION),
+                b.sequence(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME))
+            )
+            val miningAttributeClause = b.sequence(
+                USING,
+                b.firstOf(MULTIPLICATION, b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute)))
+            )
+            val oneOptionalArgument = b.optional(COMMA, EXPRESSION)
+            val twoOptionalArguments = b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION))
+            val detailsOrder = b.optional(b.firstOf(DESC, ASC, ABS))
+
+            // Oracle 26 requires at least two classes, two rows and two costs per row (ORA-02000).
+            fun atLeastTwo(item: Any) = b.sequence(item, b.oneOrMore(COMMA, item))
+            val costRow = b.sequence(LPARENTHESIS, atLeastTwo(EXPRESSION), RPARENTHESIS)
+            val costMatrixClause = b.sequence(
+                COST,
+                b.firstOf(
+                    b.sequence(MODEL, b.optional(AUTO)),
+                    b.sequence(
+                        LPARENTHESIS, atLeastTwo(EXPRESSION), RPARENTHESIS,
+                        VALUES, LPARENTHESIS, atLeastTwo(costRow), RPARENTHESIS)))
+
+            // Model forms accept only OVER (ORDER BY ...): Oracle 26 rejects OVER (), PARTITION BY, window
+            // names and frames there (ORA-02000). The SQLRF diagrams show this only for PREDICTION*, but
+            // Oracle 26 parses it for every model form except ORA_DM_PARTITION_NAME.
+            val miningOrderByClause = b.sequence(
+                b.nextNot(b.sequence(ORDER, SIBLINGS)),
+                ORDER, BY, ORDER_BY_ITEM, b.zeroOrMore(COMMA, ORDER_BY_ITEM)
+            )
+            val miningOrderedClause = b.sequence(OVER, LPARENTHESIS, miningOrderByClause, RPARENTHESIS)
+            val miningAnalyticClause = b.sequence(
+                OVER,
+                b.firstOf(
+                    IDENTIFIER_NAME,
+                    b.sequence(
+                        LPARENTHESIS,
+                        b.optional(b.nextNot(b.firstOf(PARTITION, ORDER)), IDENTIFIER_NAME),
+                        b.optional(DmlGrammar.PARTITION_BY_CLAUSE),
+                        b.optional(miningOrderByClause),
+                        RPARENTHESIS
+                    )
+                )
+            )
+
+            fun modelForm(function: TokenType, vararg arguments: Any) = b.sequence(
+                function, LPARENTHESIS, modelName, *arguments, RPARENTHESIS, b.optional(miningOrderedClause))
+
+            // The analytic forms build a transient model and always require OVER (ORA-30484).
+            fun analyticForm(function: TokenType, head: Any, vararg arguments: Any) = b.sequence(
+                function, LPARENTHESIS, head, *arguments, RPARENTHESIS, miningAnalyticClause)
+
+            val into = b.sequence(INTO, EXPRESSION)
+            val predictionTarget = b.firstOf(b.sequence(OF, ANOMALY), b.sequence(FOR, EXPRESSION))
+
+            fun clusterOrFeature(rule: AggregateSqlFunctionsGrammar, function: TokenType, vararg arguments: Any) =
+                b.rule(rule).define(b.firstOf(
+                    modelForm(function, *arguments),
+                    analyticForm(function, into, *arguments)))
+
+            fun prediction(rule: AggregateSqlFunctionsGrammar, function: TokenType, vararg arguments: Any) =
+                b.rule(rule).define(b.firstOf(
+                    modelForm(function, *arguments),
+                    analyticForm(function, predictionTarget, *arguments)))
+
+            clusterOrFeature(CLUSTER_DETAILS_EXPRESSION, CLUSTER_DETAILS,
+                twoOptionalArguments, detailsOrder, miningAttributeClause)
+            clusterOrFeature(CLUSTER_DISTANCE_EXPRESSION, CLUSTER_DISTANCE, oneOptionalArgument, miningAttributeClause)
+            clusterOrFeature(CLUSTER_ID_EXPRESSION, CLUSTER_ID, miningAttributeClause)
+            clusterOrFeature(CLUSTER_PROBABILITY_EXPRESSION, CLUSTER_PROBABILITY, oneOptionalArgument, miningAttributeClause)
+            clusterOrFeature(CLUSTER_SET_EXPRESSION, CLUSTER_SET, twoOptionalArguments, miningAttributeClause)
+            clusterOrFeature(FEATURE_DETAILS_EXPRESSION, FEATURE_DETAILS,
+                twoOptionalArguments, detailsOrder, miningAttributeClause)
+            clusterOrFeature(FEATURE_ID_EXPRESSION, FEATURE_ID, miningAttributeClause)
+            clusterOrFeature(FEATURE_SET_EXPRESSION, FEATURE_SET, twoOptionalArguments, miningAttributeClause)
+            clusterOrFeature(FEATURE_VALUE_EXPRESSION, FEATURE_VALUE, oneOptionalArgument, miningAttributeClause)
+
+            // Oracle 26 rejects an analytic FEATURE_COMPARE (ORA-30483) and any OVER after
+            // ORA_DM_PARTITION_NAME (ORA-00923).
+            b.rule(FEATURE_COMPARE_EXPRESSION).define(
+                modelForm(FEATURE_COMPARE, miningAttributeClause, AND, miningAttributeClause))
+            b.rule(ORA_DM_PARTITION_NAME_EXPRESSION).define(
+                ORA_DM_PARTITION_NAME, LPARENTHESIS, modelName, miningAttributeClause, RPARENTHESIS)
+
+            prediction(PREDICTION_EXPRESSION, PREDICTION, b.optional(costMatrixClause), miningAttributeClause)
+            // The analytic PREDICTION_BOUNDS form is undocumented, but Oracle 26 parses it and requires OVER.
+            prediction(PREDICTION_BOUNDS_EXPRESSION, PREDICTION_BOUNDS, twoOptionalArguments, miningAttributeClause)
+            // PREDICTION_COST without a cost matrix fails with ORA-40283.
+            prediction(PREDICTION_COST_EXPRESSION, PREDICTION_COST,
+                oneOptionalArgument, costMatrixClause, miningAttributeClause)
+            prediction(PREDICTION_DETAILS_EXPRESSION, PREDICTION_DETAILS,
+                twoOptionalArguments, detailsOrder, miningAttributeClause)
+            prediction(PREDICTION_PROBABILITY_EXPRESSION, PREDICTION_PROBABILITY,
+                oneOptionalArgument, miningAttributeClause)
+            prediction(PREDICTION_SET_EXPRESSION, PREDICTION_SET,
+                twoOptionalArguments, b.optional(costMatrixClause), miningAttributeClause)
         }
     }
 

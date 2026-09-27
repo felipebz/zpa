@@ -942,20 +942,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 ANALYTIC_CLAUSE
             )
 
+            val miningFunctions = AggregateSqlFunctionsGrammar.miningFunctions
+            val miningFunction = b.firstOf(miningFunctions[0], miningFunctions[1], *miningFunctions.drop(2).toTypedArray())
+
             b.rule(POSTFIX_EXPRESSION).define(
                 b.firstOf(
-                    b.sequence(
-                        b.next(AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION),
-                        OBJECT_REFERENCE
-                    ),
-                    b.sequence(
-                        b.next(AggregateSqlFunctionsGrammar.CLUSTER_DETAILS_EXPRESSION),
-                        OBJECT_REFERENCE
-                    ),
-                    b.sequence(
-                        b.next(AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION),
-                        OBJECT_REFERENCE
-                    ),
+                    b.sequence(b.next(miningFunction), OBJECT_REFERENCE),
                     b.sequence(
                         b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),
                         OBJECT_REFERENCE,
@@ -972,11 +964,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         b.optional(partitionOnlyAnalyticClause)
                     ),
                     b.sequence(
-                        b.nextNot(b.firstOf(
-                            AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION,
-                            AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION,
-                            AggregateSqlFunctionsGrammar.CLUSTER_DETAILS_EXPRESSION
-                        )),
+                        b.nextNot(miningFunction),
                         OBJECT_REFERENCE,
                         b.optional(b.firstOf(
                             ANALYTIC_CLAUSE,
