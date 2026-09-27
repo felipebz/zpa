@@ -288,7 +288,6 @@
   "sqlrf/SELECT-87.sql" : [ 7 ],
   "sqlrf/SET-CONSTRAINTS-1.sql" : [ 3 ],
   "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql" : [ 3 ],
-  "sqlrf/TRUNCATE-CLUSTER-0.sql" : [ 2 ],
   "sqlrf/UPDATE-0.sql" : [ 4 ],
   "sqlrf/UPDATE-9.sql" : [ 4 ],
   "sqlrf/Using-Extensible-Indexing-3.sql" : [ 2 ],

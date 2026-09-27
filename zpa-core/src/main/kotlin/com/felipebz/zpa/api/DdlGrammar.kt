@@ -251,6 +251,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_SEQUENCE,
     ALTER_SEQUENCE,
     ALTER_SYNONYM,
+    TRUNCATE_CLUSTER,
     PARTITION_BY_RANGE,
     PARTITION_BY_HASH,
     RANGE_VALUES_CLAUSE,
@@ -2377,6 +2378,21 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SEMICOLON)
             )
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/TRUNCATE-CLUSTER.html
+            // Oracle 26 rejects DROP ALL STORAGE, CASCADE and a second storage clause (ORA-03291). It also
+            // parses the undocumented TRUNCATE TABLE materialized view log clause, before or after the
+            // storage clause. A database link (dblink[.domain][@connection]) parses and fails later with
+            // ORA-02021; a missing or numeric link name is ORA-01729.
+            val clusterStorageClause = b.sequence(b.firstOf(DROP, REUSE), STORAGE)
+            val clusterMaterializedViewLogClause = b.sequence(b.firstOf(PRESERVE, PURGE), MATERIALIZED, VIEW, LOG)
+            b.rule(TRUNCATE_CLUSTER).define(
+                TRUNCATE, CLUSTER, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                b.optional(REMOTE, DATABASE_LINK_NAME),
+                b.optional(b.firstOf(
+                    b.sequence(clusterStorageClause, b.optional(clusterMaterializedViewLogClause)),
+                    b.sequence(clusterMaterializedViewLogClause, b.optional(clusterStorageClause)))),
+                b.optional(SEMICOLON))
+
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
@@ -2443,6 +2459,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_DIRECTORY,
                 DROP_DIRECTORY,
                 DROP_COMMAND,
+                TRUNCATE_CLUSTER,
                 TRUNCATE_TABLE))
         }
 
