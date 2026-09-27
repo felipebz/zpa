@@ -614,7 +614,14 @@ enum class DdlGrammar : GrammarRuleKey {
                             LOGGING_CLAUSE)))
 
             b.rule(TABLE_COMPRESSION).define(
-                    b.firstOf(COMPRESS, NOCOMPRESS))
+                    b.firstOf(
+                            COMPRESS,
+                            NOCOMPRESS,
+                            b.sequence(ROW, STORE, COMPRESS, b.optional(b.firstOf(BASIC, ADVANCED))),
+                            b.sequence(COLUMN, STORE, COMPRESS,
+                                    b.optional(FOR, b.optional(MEMSPEED), b.firstOf(QUERY, ARCHIVE),
+                                            b.optional(b.firstOf(LOW, HIGH))),
+                                    b.optional(b.optional(NO), ROW, LEVEL, LOCKING))))
 
             b.rule(KEY_COMPRESSION).define(
                     b.firstOf(
@@ -1051,7 +1058,11 @@ enum class DdlGrammar : GrammarRuleKey {
             // PCTFREE, TABLESPACE or PARALLEL options fail with duplicate-option errors (ORA-02212/ORA-02215/
             // ORA-12812), which the shared SEGMENT_ATTRIBUTES_CLAUSE does not encode either. Annotations must
             // not precede ORGANIZATION INDEX (ORA-64303) or ON COMMIT (ORA-00922).
-            fun tableLevelProperty() = b.firstOf(ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE)
+            fun rowMovementClause() = b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)
+
+            // Oracle 26 also accepts ROW MOVEMENT anywhere among these properties, but only once (ORA-14190).
+            fun tableLevelProperty() = b.firstOf(
+                    ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause())
 
             fun tableSuffixesWithAnnotations() = b.sequence(
                     b.zeroOrMore(b.firstOf(
@@ -1892,6 +1903,116 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
             fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
 
+            // RENAME CONSTRAINT (ORA-23290) and RENAME TO (ORA-14047) are also standalone operations.
+            fun renameConstraintClause() = b.sequence(RENAME, CONSTRAINT, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
+            fun renameTableClause() = b.sequence(RENAME, TO, IDENTIFIER_NAME)
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLE.html
+            // Oracle 26 rejects MEMCOMPRESS AUTO, ALL in the column clause and TEXT after other attributes.
+            val memcompress = b.firstOf(
+                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
+                            DML,
+                            b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
+                            b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
+                    b.sequence(NO, MEMCOMPRESS))
+            val inmemoryAttribute = b.firstOf(
+                    memcompress,
+                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
+                    b.sequence(DISTRIBUTE,
+                            b.optional(b.firstOf(
+                                    AUTO,
+                                    b.sequence(BY, b.firstOf(b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION)))),
+                            b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
+                    b.sequence(DUPLICATE, b.optional(ALL)),
+                    b.sequence(NO, DUPLICATE))
+            val inmemoryColumnClause = b.firstOf(
+                    b.sequence(INMEMORY, b.optional(memcompress), ONE_OR_MORE_IDENTIFIERS),
+                    b.sequence(NO, INMEMORY, ONE_OR_MORE_IDENTIFIERS))
+            val inmemoryTableClause = b.firstOf(
+                    b.oneOrMore(inmemoryColumnClause),
+                    b.sequence(
+                            b.firstOf(
+                                    b.sequence(INMEMORY, b.firstOf(
+                                            b.sequence(TEXT, ONE_OR_MORE_IDENTIFIERS),
+                                            b.zeroOrMore(inmemoryAttribute))),
+                                    b.sequence(NO, INMEMORY)),
+                            b.zeroOrMore(inmemoryColumnClause)))
+
+            val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
+            val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
+
+            // Oracle 26 accepts these properties in any order, together with the READ ONLY, ROW ARCHIVAL,
+            // FOR STAGING, DEFAULT COLLATION and annotation clauses that the SQLRF diagram lists separately,
+            // and the immutable-table retention clauses. Repeated PARALLEL, LOGGING or CACHE options fail with
+            // duplicate-option errors (ORA-12812/ORA-14102/ORA-12814) that are not encoded here.
+            // ANNOTATIONS followed by ENABLE CONSTRAINT parses but raises ORA-00600 when executed.
+            val alterTableProperty = b.firstOf(
+                    PHYSICAL_ATRIBUTES_CLAUSE,
+                    LOGGING_CLAUSE,
+                    TABLE_COMPRESSION,
+                    inmemoryTableClause,
+                    INDEX_ALLOCATE_EXTENT_CLAUSE,
+                    INDEX_DEALLOCATE_UNUSED_CLAUSE,
+                    b.firstOf(CACHE, NOCACHE),
+                    b.sequence(RESULT_CACHE, LPARENTHESIS, b.firstOf(
+                            b.sequence(resultCacheMode, b.optional(COMMA, resultCacheStandby)),
+                            b.sequence(resultCacheStandby, b.optional(COMMA, resultCacheMode))), RPARENTHESIS),
+                    b.sequence(UPGRADE, b.optional(b.optional(NOT), INCLUDING, DATA)),
+                    b.sequence(b.firstOf(MINIMIZE, NOMINIMIZE), RECORDS_PER_BLOCK),
+                    INDEX_PARALLEL_CLAUSE,
+                    rowMovementClause(),
+                    b.sequence(DISABLE, LOGICAL, REPLICATION),
+                    b.sequence(ENABLE, LOGICAL, REPLICATION, b.zeroOrMore(b.firstOf(
+                            b.sequence(ALL, KEYS),
+                            b.sequence(ALLOW, NOVALIDATE, KEYS),
+                            b.sequence(b.optional(NO), PARTIAL, JSON)))),
+                    b.sequence(b.optional(BLOCKCHAIN), FLASHBACK, ARCHIVE, b.optional(IDENTIFIER_NAME)),
+                    b.sequence(NO, FLASHBACK, ARCHIVE),
+                    b.sequence(NO, DROP, b.optional(UNTIL, INTEGER_LITERAL, DAYS, IDLE)),
+                    b.sequence(NO, DELETE, b.optional(UNTIL, INTEGER_LITERAL, DAYS, AFTER, INSERT), b.optional(LOCKED)),
+                    b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                    b.sequence(b.optional(NO), ROW, ARCHIVAL),
+                    b.sequence(b.optional(NOT), FOR, STAGING),
+                    b.sequence(DEFAULT, COLLATION, IDENTIFIER_NAME),
+                    ANNOTATIONS_CLAUSE)
+
+            // alter_iot_clauses that may follow the properties. ADD OVERFLOW and COALESCE are standalone
+            // (ORA-14048 when combined with a property).
+            val alterIotClause = b.firstOf(
+                    b.sequence(OVERFLOW, b.oneOrMore(b.firstOf(SEGMENT_ATTRIBUTES_CLAUSE,
+                            INDEX_ALLOCATE_EXTENT_CLAUSE, INDEX_SHRINK_CLAUSE, INDEX_DEALLOCATE_UNUSED_CLAUSE))),
+                    b.sequence(MAPPING, TABLE, b.firstOf(INDEX_ALLOCATE_EXTENT_CLAUSE, INDEX_DEALLOCATE_UNUSED_CLAUSE)),
+                    b.oneOrMore(b.firstOf(b.sequence(PCTTHRESHOLD, INTEGER_LITERAL), KEY_COMPRESSION)))
+            val addOverflowPartition = b.sequence(PARTITION, b.optional(SEGMENT_ATTRIBUTES_CLAUSE))
+            val addOverflowClause = b.sequence(ADD, OVERFLOW, b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
+                    b.optional(LPARENTHESIS, addOverflowPartition, b.zeroOrMore(COMMA, addOverflowPartition), RPARENTHESIS))
+
+            // SHRINK must be the last operation (ORA-10630), and MOVE cannot be combined (ORA-14133).
+            val shrinkTableClause = b.sequence(b.zeroOrMore(alterTableProperty), INDEX_SHRINK_CLAUSE)
+            // Oracle 26 accepts the MOVE options, including the row filter and UPDATE INDEXES, in any order.
+            // A second ONLINE is a syntax error (ORA-01735); other repeats fail as duplicate options
+            // (ORA-02215/ORA-12812/ORA-14460).
+            val moveTableOption = b.firstOf(
+                    b.sequence(INCLUDING, ROWS, DmlGrammar.WHERE_CLAUSE),
+                    SEGMENT_ATTRIBUTES_CLAUSE,
+                    TABLE_COMPRESSION,
+                    LOB_STORAGE_CLAUSE,
+                    VARRAY_COL_PROPERTIES,
+                    INDEX_PARALLEL_CLAUSE,
+                    b.sequence(UPDATE, INDEXES, b.optional(
+                            LPARENTHESIS, IDENTIFIER_NAME, SEGMENT_ATTRIBUTES_CLAUSE,
+                            b.zeroOrMore(COMMA, IDENTIFIER_NAME, SEGMENT_ATTRIBUTES_CLAUSE), RPARENTHESIS)))
+            val moveTableClause = b.sequence(
+                    MOVE,
+                    b.zeroOrMore(moveTableOption),
+                    b.optional(ONLINE, b.zeroOrMore(moveTableOption)))
+
+            val alterTableTrailingClause = b.firstOf(
+                    ENABLE_DISABLE_CLAUSE,
+                    b.sequence(b.firstOf(ENABLE, DISABLE), b.firstOf(
+                            b.sequence(TABLE, LOCK), b.sequence(ALL, TRIGGERS), CONTAINER_MAP, CONTAINERS_DEFAULT)))
+            val statementEnd = b.next(b.firstOf(SEMICOLON, DIVISION, EOF))
+
             fun alterTableAction() = b.firstOf(
                             b.sequence(
                                     ADD,
@@ -1910,21 +2031,14 @@ enum class DdlGrammar : GrammarRuleKey {
                                                     ALTER_TABLE_COLUMN,
                                                     b.next(b.firstOf(SEMICOLON, DIVISION, EOF, ENABLE_DISABLE_CLAUSE))))),
                             DROP_COLUMN_CLAUSE,
-                            b.sequence(DROP, b.next(PARTITION), TABLE_RELATIONAL_PROPERTIES),
-                            b.sequence(
-                                    MOVE,
-                                    b.optional(
-                                            b.firstOf(
-                                                    b.sequence(ONLINE, b.optional(TABLESPACE, IDENTIFIER_NAME)),
-                                                    b.sequence(TABLESPACE, IDENTIFIER_NAME, b.optional(ONLINE))))),
-                            b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT),
-                            b.sequence(FLASHBACK, ARCHIVE, b.optional(IDENTIFIER_NAME)),
-                            b.sequence(NO, FLASHBACK, ARCHIVE))
+                            b.sequence(DROP, b.next(PARTITION), TABLE_RELATIONAL_PROPERTIES))
 
             b.rule(ALTER_TABLE).define(
                     ALTER, TABLE, UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
+                            renameConstraintClause(),
+                            renameTableClause(),
                             RENAME_PARTITION_SUBPART,
                             MOVE_TABLE_PARTITION,
                             TRUNCATE_PARTITION_SUBPART,
@@ -1933,14 +2047,22 @@ enum class DdlGrammar : GrammarRuleKey {
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,
                             MODIFY_PARTITION_LOCAL_INDEXES,
-                            // alter_table_properties annotations_clause. Kept standalone: combining it with
-                            // ENABLE CONSTRAINT raises ORA-00600 in Oracle 26ai, so composition is unverified.
-                            ANNOTATIONS_CLAUSE,
+                            moveTableClause,
+                            shrinkTableClause,
+                            // Tried before ADD column; the end-of-statement lookahead keeps a column named OVERFLOW
+                            // (ADD overflow NUMBER) parsing as a column.
+                            b.sequence(addOverflowClause, b.zeroOrMore(alterTableTrailingClause), statementEnd),
+                            COALESCE,
                             b.sequence(
                                     b.oneOrMore(DROP_CONSTRAINT_CLAUSE),
-                                    b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
-                            b.sequence(alterTableAction(), b.zeroOrMore(ENABLE_DISABLE_CLAUSE)),
-                            b.oneOrMore(ENABLE_DISABLE_CLAUSE)),
+                                    b.zeroOrMore(alterTableTrailingClause)),
+                            b.sequence(alterTableAction(), b.zeroOrMore(alterTableTrailingClause)),
+                            b.sequence(
+                                    b.firstOf(
+                                            b.sequence(b.oneOrMore(alterTableProperty), b.optional(alterIotClause)),
+                                            alterIotClause),
+                                    b.zeroOrMore(alterTableTrailingClause)),
+                            b.oneOrMore(alterTableTrailingClause)),
                     b.optional(SEMICOLON))
 
             b.rule(ALTER_SYSTEM).define(

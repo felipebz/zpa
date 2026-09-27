@@ -203,8 +203,9 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t rename column c1 to")
         assertThat(p).notMatches("alter table t rename column c1 to c2 to c3")
         assertThat(p).notMatches("alter table t rename column c1 to c2 enable constraint c1")
-        assertThat(p).notMatches("alter table t rename constraint c1 to c2")
-        assertThat(p).notMatches("alter table t rename to new_table")
+        assertThat(p).notMatches("alter table t rename constraint c1")
+        assertThat(p).notMatches("alter table t rename constraint c1 to")
+        assertThat(p).notMatches("alter table t rename to")
     }
 
     @Test
@@ -500,8 +501,8 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t enable primary key keep index")
         assertThat(p).notMatches("alter table t disable primary key using index")
         assertThat(p).notMatches("alter table t disable constraint c exceptions into exceptions")
-        assertThat(p).notMatches("alter table t enable all triggers")
-        assertThat(p).notMatches("alter table t enable table lock")
+        assertThat(p).notMatches("alter table t enable all")
+        assertThat(p).notMatches("alter table t enable table")
         assertThat(p).notMatches("alter table t enable constraint c add (c2 number)")
     }
 
@@ -669,6 +670,143 @@ class AlterTableTest : RuleTest() {
     fun matchesAlterTableRowMovement() {
         assertThat(p).matches("alter table tab enable row movement;")
         assertThat(p).matches("alter table tab disable row movement;")
+    }
+
+    @Test
+    fun matchesAlterTablePhysicalAndStorageProperties() {
+        assertThat(p).matches("alter table employees pctfree 30 pctused 60;")
+        assertThat(p).matches("alter table countries_demo initrans 4 maxtrans 10 storage (next 1m);")
+        assertThat(p).matches("alter table customers parallel;")
+        assertThat(p).matches("alter table employees parallel 8;")
+        assertThat(p).matches("alter table employees noparallel nologging;")
+        assertThat(p).matches("alter table employees allocate extent (size 5k instance 4);")
+        assertThat(p).matches("alter table employees deallocate unused keep 1m;")
+        assertThat(p).matches("alter table t row store compress advanced;")
+        assertThat(p).matches("alter table t column store compress for query high no row level locking;")
+        assertThat(p).matches("alter table t cache minimize records_per_block;")
+        // Oracle 26 accepts the properties in any order and together.
+        assertThat(p).matches(
+            "alter table t pctfree 10 parallel 4 nologging cache result_cache (mode default) enable row movement;")
+        assertThat(p).matches("alter table t enable row movement nologging pctfree 10;")
+    }
+
+    @Test
+    fun matchesAlterTableResultCacheAndReplication() {
+        assertThat(p).matches("alter table employee result_cache (mode default)")
+        assertThat(p).matches("alter table employee result_cache (standby enable)")
+        assertThat(p).matches("alter table employee result_cache (mode default, standby enable)")
+        assertThat(p).matches("alter table employee result_cache (standby enable, mode force)")
+        assertThat(p).matches("alter table t enable logical replication allow novalidate keys no partial json")
+        assertThat(p).matches("alter table t disable logical replication")
+        assertThat(p).matches("alter table t upgrade not including data")
+    }
+
+    @Test
+    fun matchesAlterTableInMemoryClauses() {
+        assertThat(p).matches("alter table customer inmemory;")
+        assertThat(p).matches("alter table customer no inmemory;")
+        assertThat(p).matches("alter table customer inmemory memcompress for query low priority high " +
+            "distribute by rowid range for service default duplicate all;")
+        assertThat(p).matches("alter table customer inmemory priority high memcompress for dml;")
+        assertThat(p).matches("alter table customer inmemory no memcompress no duplicate distribute for service svc;")
+        assertThat(p).matches("alter table customer inmemory inmemory (customer_name);")
+        assertThat(p).matches("alter table customer inmemory (customer_name, customer_id);")
+        assertThat(p).matches("alter table customer inmemory memcompress for query low (name) no inmemory (customer_id);")
+        assertThat(p).matches("alter table j_purchaseorder inmemory text (data);")
+        assertThat(p).matches("alter table customer inmemory parallel;")
+    }
+
+    @Test
+    fun matchesAlterTableStateAndImmutableClauses() {
+        assertThat(p).matches("alter table t read only;")
+        assertThat(p).matches("alter table t read write pctfree 10;")
+        assertThat(p).matches("alter table t nologging row archival;")
+        assertThat(p).matches("alter table t no row archival;")
+        assertThat(p).matches("alter table t parallel for staging;")
+        assertThat(p).matches("alter table t not for staging;")
+        assertThat(p).matches("alter table t default collation binary_ci;")
+        assertThat(p).matches("alter table t pctfree 10 annotations(add a);")
+        assertThat(p).matches("alter table t no flashback archive;")
+        assertThat(p).matches("alter table imm_tab no drop until 50 days idle;")
+        assertThat(p).matches("alter table imm_tab no drop;")
+        assertThat(p).matches("alter table imm_tab no delete until 120 days after insert;")
+        assertThat(p).matches("alter table imm_tab no delete locked;")
+        assertThat(p).matches("alter table imm_tab no delete until 120 days after insert no drop until 5 days idle;")
+    }
+
+    @Test
+    fun matchesAlterTableTrailingEnableDisableClauses() {
+        assertThat(p).matches("alter table employees enable all triggers;")
+        assertThat(p).matches("alter table employees disable all triggers enable table lock;")
+        assertThat(p).matches("alter table employees parallel enable all triggers;")
+        assertThat(p).matches("alter table employees enable all triggers enable constraint c;")
+        assertThat(p).matches("alter table employees enable container_map;")
+        assertThat(p).matches("alter table employees disable containers_default;")
+    }
+
+    @Test
+    fun matchesStandaloneAlterTableOperations() {
+        assertThat(p).matches("alter table j_purchaseorder_new rename to j_purchaseorder;")
+        assertThat(p).matches("alter table customers rename constraint cust_fname_nn to cust_firstname_nn;")
+        assertThat(p).matches("alter table t shrink space compact cascade;")
+        assertThat(p).matches("alter table t read only shrink space;")
+        assertThat(p).matches("alter table jobs_temp move storage (initial 20k next 40k minextents 2 maxextents 20 pctincrease 0);")
+        assertThat(p).matches("alter table t move online tablespace users pctfree 10 nologging parallel 2 update indexes;")
+        assertThat(p).matches("alter table t move parallel storage (initial 20k) online;")
+        assertThat(p).matches("alter table t move update indexes online including rows where c > 0;")
+        assertThat(p).matches("alter table t move compress lob (l) store as (tablespace users);")
+        assertThat(p).matches("alter table t move update indexes (ix tablespace users);")
+    }
+
+    @Test
+    fun matchesAlterTableIndexOrganizedClauses() {
+        assertThat(p).matches("alter table countries_demo add overflow;")
+        assertThat(p).matches("alter table countries_demo add overflow tablespace users initrans 4;")
+        assertThat(p).matches("alter table t add overflow tablespace users (partition tablespace users, partition);")
+        assertThat(p).matches("alter table t add overflow enable all triggers;")
+        assertThat(p).matches("alter table countries_demo overflow initrans 4;")
+        assertThat(p).matches("alter table t overflow initrans 4 pctfree 10;")
+        assertThat(p).matches("alter table t pctfree 10 overflow initrans 4;")
+        assertThat(p).matches("alter table t overflow allocate extent;")
+        assertThat(p).matches("alter table t pctthreshold 20;")
+        assertThat(p).matches("alter table t mapping table allocate extent;")
+        assertThat(p).matches("alter table t coalesce;")
+        // A column named OVERFLOW is still added as a column.
+        assertThat(p).matches("alter table t add overflow number;")
+    }
+
+    @Test
+    fun rejectsInvalidAlterTablePropertyCombinations() {
+        // ORA-14047 / ORA-23290: RENAME TO and RENAME CONSTRAINT cannot be combined.
+        assertThat(p).notMatches("alter table t pctfree 10 rename to u;")
+        assertThat(p).notMatches("alter table t rename to u pctfree 10;")
+        assertThat(p).notMatches("alter table t rename to u enable all triggers;")
+        assertThat(p).notMatches("alter table t rename constraint a to b parallel;")
+        // ORA-03049 / ORA-00905: table-level ENABLE/DISABLE clauses come last.
+        assertThat(p).notMatches("alter table t enable all triggers parallel;")
+        assertThat(p).notMatches("alter table t enable constraint c enable row movement;")
+        // ORA-10630: SHRINK must be the final operation.
+        assertThat(p).notMatches("alter table t shrink space parallel;")
+        assertThat(p).notMatches("alter table t shrink space read only;")
+        assertThat(p).notMatches("alter table t shrink space enable all triggers;")
+        // ORA-14133 / ORA-01735: MOVE cannot be combined, and ONLINE may appear only once.
+        assertThat(p).notMatches("alter table t pctfree 10 move;")
+        assertThat(p).notMatches("alter table t move storage (initial 20k) enable all triggers;")
+        assertThat(p).notMatches("alter table t move online online;")
+        // ORA-14048 / ORA-01735: ADD OVERFLOW and COALESCE are standalone.
+        assertThat(p).notMatches("alter table t pctfree 10 add overflow;")
+        assertThat(p).notMatches("alter table t pctfree 10 coalesce;")
+        assertThat(p).notMatches("alter table t coalesce pctfree 10;")
+        // ORA-00922 / ORA-01735: malformed RESULT_CACHE, INMEMORY and NO DELETE forms.
+        assertThat(p).notMatches("alter table t result_cache ();")
+        assertThat(p).notMatches("alter table t result_cache (mode default, mode force);")
+        assertThat(p).notMatches("alter table t inmemory memcompress auto;")
+        assertThat(p).notMatches("alter table t inmemory all (c);")
+        assertThat(p).notMatches("alter table t inmemory priority high text (c);")
+        assertThat(p).notMatches("alter table t inmemory text (c), (d);")
+        assertThat(p).notMatches("alter table t no delete (locked);")
+        assertThat(p).notMatches("alter table t pctfree;")
+        assertThat(p).notMatches("alter table t allocate;")
     }
 
     @Test

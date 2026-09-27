@@ -914,4 +914,15 @@ class CreateTableTest : RuleTest() {
         assertThat(p).notMatches("create table t (c number) maxtrans;")
         assertThat(p).notMatches("create table t (c number) storage ();")
     }
+
+    @Test
+    fun matchesRowMovementAmongTableProperties() {
+        assertThat(p).matches("create table t (c number) enable row movement partition by hash (c) partitions 2;")
+        assertThat(p).matches("create table t (c number) partition by hash (c) partitions 2 enable row movement parallel;")
+        assertThat(p).matches("create table t (c number) disable row movement tablespace users;")
+        assertThat(p).matches(
+            "create table sales (c number) storage (initial 100k next 50k) logging " +
+                "partition by range (c) (partition p1 values less than (10) tablespace tsa) enable row movement;")
+        assertThat(p).notMatches("create table t (c number) enable row;")
+    }
 }
