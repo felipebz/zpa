@@ -231,6 +231,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_TRIGGER,
     ALTER_PACKAGE,
     PACKAGE_COMPILE_CLAUSE,
+    TYPE_COMPILE_CLAUSE,
     DROP_COMMAND,
     CREATE_SYNONYM,
     CREATE_JAVA,
@@ -2220,11 +2221,15 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(EDITIONABLE, NONEDITIONABLE, COMPILE_CLAUSE),
                     b.optional(SEMICOLON))
 
-            b.rule(PACKAGE_COMPILE_CLAUSE).define(
+            // Package and type units name the part to compile; a type has no PACKAGE option (ORA-03049).
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-TYPE-statement.html
+            fun unitCompileClause(vararg parts: Any) = b.sequence(
                     COMPILE, b.optional(DEBUG),
-                    b.optional(b.firstOf(PACKAGE, SPECIFICATION, BODY)),
+                    b.optional(b.firstOf(parts[0], parts[1], *parts.drop(2).toTypedArray())),
                     b.zeroOrMore(COMPILER_PARAMETERS_CLAUSE),
                     b.optional(REUSE, SETTINGS))
+            b.rule(PACKAGE_COMPILE_CLAUSE).define(unitCompileClause(PACKAGE, SPECIFICATION, BODY))
+            b.rule(TYPE_COMPILE_CLAUSE).define(unitCompileClause(SPECIFICATION, BODY))
 
             b.rule(DROP_COMMAND).define(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
 
@@ -2478,6 +2483,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_PROCEDURE,
                 ALTER_FUNCTION,
                 ALTER_PACKAGE,
+                ALTER_TYPE,
                 CREATE_LIBRARY,
                 ALTER_LIBRARY,
                 CREATE_SYNONYM,

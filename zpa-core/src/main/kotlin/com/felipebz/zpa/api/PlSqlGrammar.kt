@@ -281,6 +281,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CREATE_TRIGGER,
     CREATE_TYPE,
     CREATE_TYPE_BODY,
+    ALTER_TYPE,
 
     // Top-level components
     VALID_INPUT,
@@ -1999,22 +2000,71 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE))
             )
 
+            val typeProperties = b.zeroOrMore(b.firstOf(
+                    b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                    b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                    ACCESSIBLE_BY_CLAUSE))
+            val typeDefinition = b.firstOf(
+                    OBJECT_TYPE_DEFINITION,
+                    b.sequence(
+                            b.firstOf(IS, AS),
+                            b.firstOf(
+                                    VARRAY_TYPE_DEFINITION,
+                                    NESTED_TABLE_DEFINITION)))
+
             b.rule(CREATE_TYPE).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     TYPE, UNIT_NAME,
                     b.optional(FORCE),
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
-                    b.zeroOrMore(b.firstOf(
-                            b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                            b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            ACCESSIBLE_BY_CLAUSE)),
-                    b.optional(b.firstOf(
-                            OBJECT_TYPE_DEFINITION,
+                    typeProperties,
+                    b.optional(typeDefinition),
+                    b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-TYPE-statement.html
+            // Oracle 26 parses the evolution clauses as a type specification, so object existence,
+            // type kind (MODIFY LIMIT on an object type), duplicate or conflicting options and
+            // invalid evolutions fail only afterwards (ORA-04043, ORA-22324, ORA-02342, ORA-22344).
+            val typeFinality = b.oneOrMore(b.optional(NOT), b.firstOf(INSTANTIABLE, FINAL))
+            // ADD/MODIFY need a datatype and DROP rejects one (PLS-00103), despite the diagram.
+            val attributeDefinition = b.firstOf(
+                    b.sequence(b.firstOf(ADD, MODIFY), ATTRIBUTE, b.firstOf(
+                            b.sequence(LPARENTHESIS, TYPE_ATTRIBUTE, b.zeroOrMore(COMMA, TYPE_ATTRIBUTE), RPARENTHESIS),
+                            TYPE_ATTRIBUTE)),
+                    b.sequence(DROP, ATTRIBUTE, b.firstOf(
+                            b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                            IDENTIFIER_NAME)))
+            // Constructors are accepted too, and pragmas may follow a method as in CREATE TYPE.
+            val methodSpec = b.sequence(b.firstOf(ADD, DROP), TYPE_ELEMENT_SPEC)
+            val collectionClause = b.sequence(MODIFY, b.firstOf(
+                    b.sequence(LIMIT, EXPRESSION),
+                    b.sequence(ELEMENT, TYPE, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT))))
+            val dependentHandling = b.firstOf(
+                    INVALIDATE,
+                    b.sequence(
+                            CASCADE,
+                            b.optional(b.firstOf(
+                                    b.sequence(b.optional(NOT), INCLUDING, TABLE, DATA),
+                                    b.sequence(CONVERT, TO, SUBSTITUTABLE))),
+                            b.optional(b.optional(FORCE), EXCEPTIONS_CLAUSE)))
+
+            // Attribute and method changes are comma-separated lists that cannot be mixed (PLS-00103).
+            b.rule(ALTER_TYPE).define(
+                    ALTER, TYPE, b.optional(IF, EXISTS), UNIT_NAME,
+                    b.firstOf(
+                            EDITIONABLE,
+                            NONEDITIONABLE,
+                            TYPE_COMPILE_CLAUSE,
+                            b.sequence(REPLACE, b.optional(FORCE), typeProperties, typeDefinition),
+                            RESET,
                             b.sequence(
-                                    b.firstOf(IS, AS),
                                     b.firstOf(
-                                            VARRAY_TYPE_DEFINITION,
-                                            NESTED_TABLE_DEFINITION)))),
+                                            typeFinality,
+                                            b.sequence(attributeDefinition, b.zeroOrMore(COMMA, attributeDefinition)),
+                                            b.sequence(methodSpec, b.zeroOrMore(COMMA, b.firstOf(
+                                                    methodSpec, DEPRECATE_PRAGMA, SUPPRESSES_WARNING_6009_PRAGMA))),
+                                            collectionClause),
+                                    b.optional(dependentHandling))),
                     b.optional(SEMICOLON))
 
             b.rule(CREATE_TYPE_BODY).define(

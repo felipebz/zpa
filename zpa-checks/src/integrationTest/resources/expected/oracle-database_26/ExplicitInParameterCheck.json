@@ -1,6 +1,7 @@
 {
   "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [ 3, 4, 5, 6, 7 ],
   "adjsn/handling-input-values-sql-json-generation-functions-0.sql" : [ 2 ],
+  "lnpls/ALTER-TYPE-statement-1.sql" : [ 3, 6, 10 ],
   "lnpls/ALTER-TYPE-statement-6.sql" : [ 8, 11 ],
   "lnpls/CREATE-FUNCTION-statement-2.sql" : [ 2 ],
   "lnpls/CREATE-FUNCTION-statement-4.sql" : [ 2 ],

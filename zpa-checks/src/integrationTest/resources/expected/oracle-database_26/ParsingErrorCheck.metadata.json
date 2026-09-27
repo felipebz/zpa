@@ -1,4 +1,25 @@
 {
+  "lnpls/ALTER-TYPE-statement-11.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "SP2-0734",
+      "reason": "The line is DBA_TYPE_VERSIONS.TEXT query output from the documentation, not a statement; SQL*Plus reports an unknown command beginning with TYPE."
+    }
+  },
+  "lnpls/ALTER-TYPE-statement-12.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "SP2-0734",
+      "reason": "The line is DBA_TYPE_VERSIONS.TEXT query output from the documentation, not a statement; SQL*Plus reports an unknown command beginning with TYPE."
+    }
+  },
+  "lnpls/ALTER-TYPE-statement-14.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "SP2-0734",
+      "reason": "The line is DBA_TYPE_VERSIONS.TEXT query output from the documentation, not a statement; SQL*Plus reports an unknown command beginning with TYPE."
+    }
+  },
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-14.sql": {
     "2": {
       "classification": "INVALID_SOURCE",

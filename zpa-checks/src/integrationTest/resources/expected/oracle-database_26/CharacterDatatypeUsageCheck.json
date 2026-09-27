@@ -1,6 +1,8 @@
 {
   "adjsn/sql-json-function-json_object-19.sql" : [ 5 ],
   "adjsn/sql-json-function-json_table-3.sql" : [ 12 ],
+  "lnpls/ALTER-TYPE-statement-1.sql" : [ 4, 10 ],
+  "lnpls/ALTER-TYPE-statement-4.sql" : [ 3 ],
   "lnpls/CREATE-TYPE-statement-15.sql" : [ 4, 8 ],
   "lnpls/CREATE-TYPE-statement-9.sql" : [ 7 ],
   "lnpls/conditional-selection-statements-16.sql" : [ 3 ],
