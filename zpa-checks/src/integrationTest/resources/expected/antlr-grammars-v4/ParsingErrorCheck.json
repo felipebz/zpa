@@ -45,7 +45,6 @@
   "examples/create_view.sql" : [ 32 ],
   "examples/ctas.sql" : [ 3 ],
   "examples/disassociate_statistics.sql" : [ 1 ],
-  "examples/explain01.sql" : [ 1 ],
   "examples/flashback01.sql" : [ 1 ],
   "examples/flashback_table.sql" : [ 1 ],
   "examples/forall_indices_of.sql" : [ 12 ],

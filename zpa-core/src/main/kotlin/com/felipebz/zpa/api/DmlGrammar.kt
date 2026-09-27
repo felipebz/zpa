@@ -97,6 +97,7 @@ enum class DmlGrammar : GrammarRuleKey {
     MERGE_INSERT_CLAUSE,
     ERROR_LOGGING_CLAUSE,
     DML_COMMAND,
+    EXPLAIN_PLAN,
     GROUPING_EXPRESSION_LIST,
     ROLLUP_CUBE_CLAUSE,
     GROUPING_SETS_CLAUSE,
@@ -139,6 +140,7 @@ enum class DmlGrammar : GrammarRuleKey {
             createUpdateExpression(b)
             createInsertExpression(b)
             createMergeExpression(b)
+            createExplainPlan(b)
 
             b.rule(DML_COMMAND).define(
                     b.firstOf(
@@ -146,8 +148,33 @@ enum class DmlGrammar : GrammarRuleKey {
                             DELETE_EXPRESSION,
                             UPDATE_EXPRESSION,
                             INSERT_EXPRESSION,
-                            MERGE_EXPRESSION),
+                            MERGE_EXPRESSION,
+                            EXPLAIN_PLAN),
                     b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/EXPLAIN-PLAN.html
+        private fun createExplainPlan(b: PlSqlGrammarBuilder) {
+            // DDL rules may consume their own semicolon. Do not let DML_COMMAND consume another one.
+            fun explainedDdl(rule: Any) = b.sequence(rule, b.nextNot(SEMICOLON))
+            // ALTER INDEX is explainable only with REBUILD; keep the existing ALTER_INDEX AST for that branch.
+            val rebuildIndex = b.sequence(
+                b.next(ALTER, INDEX, UNIT_NAME, REBUILD),
+                explainedDdl(DdlGrammar.ALTER_INDEX))
+            b.rule(EXPLAIN_PLAN).define(
+                EXPLAIN, PLAN,
+                b.optional(SET, STATEMENT_ID, EQUALS, CHARACTER_LITERAL),
+                b.optional(INTO, TABLE_REFERENCE),
+                FOR,
+                b.firstOf(
+                    SELECT_EXPRESSION,
+                    INSERT_EXPRESSION,
+                    UPDATE_EXPRESSION,
+                    DELETE_EXPRESSION,
+                    MERGE_EXPRESSION,
+                    explainedDdl(DdlGrammar.CREATE_TABLE),
+                    explainedDdl(DdlGrammar.CREATE_INDEX),
+                    rebuildIndex))
         }
 
         private fun createSelectExpression(b: PlSqlGrammarBuilder) {
