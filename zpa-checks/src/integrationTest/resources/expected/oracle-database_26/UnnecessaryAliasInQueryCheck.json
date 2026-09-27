@@ -188,5 +188,6 @@
   "sqlrf/create-assertion-7.sql" : [ 6, 10 ],
   "sqlrf/create-assertion-8.sql" : [ 6, 10, 15 ],
   "sqlrf/create-assertion-9.sql" : [ 6, 8, 13 ],
-  "sqlrf/create-domain-22.sql" : [ 2 ]
+  "sqlrf/create-domain-22.sql" : [ 2 ],
+  "sqlrf/vector_chunks-2.sql" : [ 15 ]
 }

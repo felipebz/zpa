@@ -94,7 +94,6 @@ class ClusterSetExpressionTest : RuleTest() {
     @Test
     fun rejectsMalformedMiningAttributeAndAnalyticSyntax() {
         for (source in listOf(
-            "cluster_set(model using)",
             "cluster_set(model, using *)",
             "cluster_set(model, 1, using *)",
             "cluster_set(model using *, value)",

@@ -177,8 +177,8 @@
   "sqlrf/Data-Types-3.sql" : [ 7 ],
   "sqlrf/Data-Types-30.sql" : [ 2, 3, 4, 5 ],
   "sqlrf/Data-Types-31.sql" : [ 2 ],
-  "sqlrf/Expression-Lists-1.sql" : [ 2 ],
   "sqlrf/EXPLAIN-PLAN-3.sql" : [ 3 ],
+  "sqlrf/Expression-Lists-1.sql" : [ 2 ],
   "sqlrf/FEATURE_DETAILS-0.sql" : [ 5 ],
   "sqlrf/FEATURE_SET-0.sql" : [ 29 ],
   "sqlrf/FEATURE_VALUE-0.sql" : [ 2 ],
@@ -300,5 +300,6 @@
   "sqlrf/value-expressions-graph_table-27.sql" : [ 2 ],
   "sqlrf/value-expressions-graph_table-29.sql" : [ 2 ],
   "sqlrf/value-expressions-graph_table-31.sql" : [ 2 ],
-  "sqlrf/value-expressions-graph_table-33.sql" : [ 2 ]
+  "sqlrf/value-expressions-graph_table-33.sql" : [ 2 ],
+  "sqlrf/vector_chunks-1.sql" : [ 7, 8 ]
 }

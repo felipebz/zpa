@@ -269,20 +269,9 @@
   "sqlrf/file_specification-1.sql" : [ 2 ],
   "sqlrf/file_specification-2.sql" : [ 2 ],
   "sqlrf/file_specification-5.sql" : [ 2 ],
-  "sqlrf/from_vector-2.sql" : [ 2 ],
-  "sqlrf/from_vector-3.sql" : [ 2 ],
-  "sqlrf/from_vector-4.sql" : [ 2 ],
-  "sqlrf/from_vector-5.sql" : [ 2 ],
   "sqlrf/graph_table-operator-0.sql" : [ 3 ],
   "sqlrf/graph_table-operator-1.sql" : [ 3 ],
   "sqlrf/graph_table-operator-2.sql" : [ 3 ],
   "sqlrf/graph_table-operator-3.sql" : [ 3 ],
-  "sqlrf/graphql-table-function-0.sql" : [ 2 ],
-  "sqlrf/vector_chunks-1.sql" : [ 7 ],
-  "sqlrf/vector_chunks-2.sql" : [ 16 ],
-  "sqlrf/vector_embedding-0.sql" : [ 2 ],
-  "sqlrf/vector_serialize-1.sql" : [ 2 ],
-  "sqlrf/vector_serialize-2.sql" : [ 2 ],
-  "sqlrf/vector_serialize-3.sql" : [ 2 ],
-  "sqlrf/vector_serialize-4.sql" : [ 2 ]
+  "sqlrf/graphql-table-function-0.sql" : [ 2 ]
 }

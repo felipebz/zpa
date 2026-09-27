@@ -41,6 +41,7 @@ enum class DmlGrammar : GrammarRuleKey {
     TABLE_REFERENCE,
     PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
+    VECTOR_CHUNKS_TABLE,
     ALIAS,
     VALUES_EXPRESSION_CLAUSE,
     PARTITION_BY_CLAUSE,
@@ -359,6 +360,30 @@ enum class DmlGrammar : GrammarRuleKey {
                 ALIAS
             )
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/vector_chunks.html
+            // A row source only: in an expression VECTOR_CHUNKS is an ordinary identifier (ORA-00904).
+            // Options appear at most once and in this order (ORA-02000). Oracle 26 rejects the
+            // documented CHUNKER mode while parsing (ORA-30583), as it does any other unknown mode,
+            // split, normalization or a MAX/OVERLAP that is not an integer or bind (ORA-30583..30589).
+            val chunkSize = b.firstOf(INTEGER_LITERAL, HOST_AND_INDICATOR_VARIABLE)
+            val normalizationMode = b.firstOf(WHITESPACE, PUNCTUATION, WIDECHAR)
+            b.rule(VECTOR_CHUNKS_TABLE).define(
+                VECTOR_CHUNKS, LPARENTHESIS, EXPRESSION,
+                b.optional(BY, b.firstOf(
+                    WORDS, CHARS, CHARACTERS,
+                    b.sequence(VOCABULARY, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)))),
+                b.optional(MAX, chunkSize),
+                b.optional(OVERLAP, chunkSize),
+                b.optional(SPLIT, b.optional(BY), b.firstOf(
+                    NONE, BLANKLINE, NEWLINE, SPACE, RECURSIVELY, SENTENCE,
+                    b.sequence(CUSTOM, LPARENTHESIS, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS))),
+                b.optional(LANGUAGE, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                b.optional(NORMALIZE, b.firstOf(
+                    NONE, ALL,
+                    b.sequence(LPARENTHESIS, normalizationMode, b.zeroOrMore(COMMA, normalizationMode), RPARENTHESIS))),
+                b.optional(EXTENDED),
+                RPARENTHESIS)
+
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
                     b.sequence(
@@ -377,11 +402,14 @@ enum class DmlGrammar : GrammarRuleKey {
                             // `graph_table(1)` even with such a function; ORA-40968 as a DELETE/UPDATE
                             // target), so it never falls back to a function call.
                             b.sequence(b.requireContext(ROW_SOURCE_CONTEXT, true), GraphTableGrammar.GRAPH_TABLE),
+                            // Also parsed as an UPDATE/INSERT target and MERGE source; Oracle never falls
+                            // back to a function call for an unqualified `vector_chunks(` (ORA-02000).
+                            VECTOR_CHUNKS_TABLE,
                             // A table function called without `table(…)`. It comes first:
                             // `apps.pkg.fn()` matches TABLE_REFERENCE on its first two parts.
-                            b.sequence(b.nextNot(GRAPH_TABLE, LPARENTHESIS), METHOD_CALL),
+                            b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), METHOD_CALL),
                             b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
-                            b.sequence(b.nextNot(GRAPH_TABLE, LPARENTHESIS), OBJECT_REFERENCE)
+                            b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), OBJECT_REFERENCE)
                         ),
                         b.optional(NESTED_CLAUSE),
                         b.optional(

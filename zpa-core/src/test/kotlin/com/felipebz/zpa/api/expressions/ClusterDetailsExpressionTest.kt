@@ -115,7 +115,6 @@ class ClusterDetailsExpressionTest : RuleTest() {
     @Test
     fun rejectsOracleInvalidArgumentAndAnalyticBoundaries() {
         for (source in listOf(
-            "cluster_details(model using)",
             "cluster_details(model, , 5 using *)",
             "cluster_details(model, 1, 5, 7 using *)",
             "cluster_details(model, 1, 5 desc asc using *)",

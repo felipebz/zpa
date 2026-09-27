@@ -131,5 +131,6 @@
   "sqlrf/sys_row_etag-0.sql" : [ 3 ],
   "sqlrf/to_vector-1.sql" : [ 2 ],
   "sqlrf/to_vector-2.sql" : [ 2 ],
-  "sqlrf/vector-0.sql" : [ 2 ]
+  "sqlrf/vector-0.sql" : [ 2 ],
+  "sqlrf/vector_chunks-2.sql" : [ 5 ]
 }

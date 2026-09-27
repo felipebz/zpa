@@ -118,7 +118,6 @@ class DataMiningFunctionsTest : RuleTest() {
             "prediction(model cost ('a', 'b') values ((0, 1)) using *)",
             "prediction(model cost ('a', 'b') values ((0), (1)) using *)",
             "prediction(model cost model model using *)",
-            "prediction(model using)",
             // ORA-40281: INTO is not a PREDICTION form.
             "prediction(into 2 using a) over ()"
         )
@@ -218,5 +217,54 @@ class DataMiningFunctionsTest : RuleTest() {
                 assertThatAst(node.getDescendants(rule)).describedAs(source).isEmpty()
             }
         }
+    }
+
+    @Test
+    fun parsesEmptyAttributeListOnlyWhenUsingEndsTheCall() {
+        val emptyForms = mapOf(
+            "cluster_id(model using)" to AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION,
+            "cluster_details(model using)" to AggregateSqlFunctionsGrammar.CLUSTER_DETAILS_EXPRESSION,
+            "cluster_distance(model using)" to AggregateSqlFunctionsGrammar.CLUSTER_DISTANCE_EXPRESSION,
+            "cluster_probability(model, 1 using)" to AggregateSqlFunctionsGrammar.CLUSTER_PROBABILITY_EXPRESSION,
+            "cluster_set(model using)" to AggregateSqlFunctionsGrammar.CLUSTER_SET_EXPRESSION,
+            "feature_id(model using)" to AggregateSqlFunctionsGrammar.FEATURE_ID_EXPRESSION,
+            "feature_details(model using)" to AggregateSqlFunctionsGrammar.FEATURE_DETAILS_EXPRESSION,
+            "feature_set(model using)" to AggregateSqlFunctionsGrammar.FEATURE_SET_EXPRESSION,
+            "feature_value(model using)" to AggregateSqlFunctionsGrammar.FEATURE_VALUE_EXPRESSION,
+            "feature_compare(model using 'a' text and using)" to AggregateSqlFunctionsGrammar.FEATURE_COMPARE_EXPRESSION,
+            "prediction(model using)" to AggregateSqlFunctionsGrammar.PREDICTION_EXPRESSION,
+            "prediction(model cost model using)" to AggregateSqlFunctionsGrammar.PREDICTION_EXPRESSION,
+            "prediction_bounds(model using)" to AggregateSqlFunctionsGrammar.PREDICTION_BOUNDS_EXPRESSION,
+            "prediction_cost(model cost model using)" to AggregateSqlFunctionsGrammar.PREDICTION_COST_EXPRESSION,
+            "prediction_details(model using)" to AggregateSqlFunctionsGrammar.PREDICTION_DETAILS_EXPRESSION,
+            "prediction_probability(model using)" to AggregateSqlFunctionsGrammar.PREDICTION_PROBABILITY_EXPRESSION,
+            "prediction_set(model cost model using)" to AggregateSqlFunctionsGrammar.PREDICTION_SET_EXPRESSION,
+            "ora_dm_partition_name(model using)" to AggregateSqlFunctionsGrammar.ORA_DM_PARTITION_NAME_EXPRESSION,
+            "vector_embedding(model using)" to AggregateSqlFunctionsGrammar.VECTOR_EMBEDDING_EXPRESSION,
+            "cluster_id(into 2 using) over ()" to AggregateSqlFunctionsGrammar.CLUSTER_ID_EXPRESSION,
+            "feature_value(into 2 using) over ()" to AggregateSqlFunctionsGrammar.FEATURE_VALUE_EXPRESSION,
+            "prediction(for a using) over ()" to AggregateSqlFunctionsGrammar.PREDICTION_EXPRESSION,
+            "prediction_probability(of anomaly using) over ()" to AggregateSqlFunctionsGrammar.PREDICTION_PROBABILITY_EXPRESSION
+        )
+        for ((source, rule) in emptyForms) {
+            assertThatAst(p.parse(source).getDescendants(rule)).describedAs(source).hasSize(1)
+        }
+        assertMatches(
+            "cluster_id(model using *)",
+            "cluster_id(model using t.*)",
+            "cluster_id(model using a)",
+            "cluster_id(model using a as x, b y, s.t.*)",
+            "vector_embedding(model using 'hello' as data, 2 b)"
+        )
+        assertNotMatches(
+            // ORA-00936
+            "cluster_id(model using a,)",
+            "cluster_id(into 2 using a,) over ()",
+            "feature_compare(model using and using a)",
+            "vector_embedding(model using ,)",
+            // ORA-00907
+            "cluster_id(model using a foo bar)",
+            "vector_embedding(model using foo bar baz)"
+        )
     }
 }

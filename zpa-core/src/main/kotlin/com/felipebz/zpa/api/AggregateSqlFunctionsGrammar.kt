@@ -61,6 +61,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
     PREDICTION_DETAILS_EXPRESSION,
     PREDICTION_PROBABILITY_EXPRESSION,
     PREDICTION_SET_EXPRESSION,
+    VECTOR_EMBEDDING_EXPRESSION,
     FILTER_CLAUSE,
     XMLAGG_EXPRESSION,
     COLLECT_EXPRESSION,
@@ -88,6 +89,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(PREDICTION_DETAILS_EXPRESSION, PREDICTION_DETAILS),
             FunctionAlternative(PREDICTION_PROBABILITY_EXPRESSION, PREDICTION_PROBABILITY),
             FunctionAlternative(PREDICTION_SET_EXPRESSION, PREDICTION_SET),
+            FunctionAlternative(VECTOR_EMBEDDING_EXPRESSION, VECTOR_EMBEDDING),
             FunctionAlternative(PERCENTILE_DISC_EXPRESSION, PERCENTILE_DISC),
             FunctionAlternative(PERCENTILE_CONT_EXPRESSION, PERCENTILE_CONT),
             FunctionAlternative(RANK_AGGREGATE_EXPRESSION, RANK),
@@ -127,7 +129,7 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
             RANK_AGGREGATE_EXPRESSION, DENSE_RANK_AGGREGATE_EXPRESSION,
             CUME_DIST_AGGREGATE_EXPRESSION, PERCENT_RANK_AGGREGATE_EXPRESSION,
             APPROX_COUNT_EXPRESSION, APPROX_SUM_EXPRESSION, APPROX_MEDIAN_EXPRESSION,
-            APPROX_PERCENTILE_EXPRESSION, APPROX_RANK_EXPRESSION
+            APPROX_PERCENTILE_EXPRESSION, APPROX_RANK_EXPRESSION, VECTOR_EMBEDDING_EXPRESSION
         )
 
         val admissionTokens: Array<TokenType> =
@@ -279,9 +281,14 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), DOT, MULTIPLICATION),
                 b.sequence(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME))
             )
+            // Oracle 26 parses an empty attribute list when USING ends the call, for every model and
+            // analytic form, but not before FEATURE_COMPARE's AND (ORA-00936).
             val miningAttributeClause = b.sequence(
                 USING,
-                b.firstOf(MULTIPLICATION, b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute)))
+                b.firstOf(
+                    MULTIPLICATION,
+                    b.sequence(miningAttribute, b.zeroOrMore(COMMA, miningAttribute)),
+                    b.next(RPARENTHESIS))
             )
             val oneOptionalArgument = b.optional(COMMA, EXPRESSION)
             val twoOptionalArguments = b.optional(COMMA, EXPRESSION, b.optional(COMMA, EXPRESSION))
@@ -371,6 +378,12 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
                 oneOptionalArgument, miningAttributeClause)
             prediction(PREDICTION_SET_EXPRESSION, PREDICTION_SET,
                 twoOptionalArguments, b.optional(costMatrixClause), miningAttributeClause)
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/vector_embedding.html
+            // Only the model form; OVER and FILTER are rejected after it (ORA-00923). Without USING the
+            // call stays generic, as Oracle then resolves VECTOR_EMBEDDING as an identifier (ORA-00904).
+            b.rule(VECTOR_EMBEDDING_EXPRESSION).define(
+                VECTOR_EMBEDDING, LPARENTHESIS, modelName, miningAttributeClause, RPARENTHESIS)
         }
     }
 

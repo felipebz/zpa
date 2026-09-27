@@ -152,6 +152,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TABLE_EXPRESSION,
     THE_EXPRESSION,
     CURSOR_EXPRESSION,
+    FROM_VECTOR_EXPRESSION,
+    VECTOR_SERIALIZE_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
 
     companion object {
@@ -209,6 +211,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(TABLE_EXPRESSION, TABLE),
             FunctionAlternative(THE_EXPRESSION, THE),
             FunctionAlternative(CURSOR_EXPRESSION, CURSOR),
+            FunctionAlternative(FROM_VECTOR_EXPRESSION, FROM_VECTOR),
+            FunctionAlternative(VECTOR_SERIALIZE_EXPRESSION, VECTOR_SERIALIZE),
         )
 
         val admissionTokens: Array<TokenType> =
@@ -221,10 +225,31 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             createDateFunctions(b)
             createXmlFunctions(b)
             createJsonFunctions(b)
+            createVectorFunctions(b)
 
             b.rule(SINGLE_ROW_SQL_FUNCTION).define(
                 b.firstOf(ALTERNATIVES.map { it.ruleKey })
             )
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/from_vector.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/vector_serialize.html
+        // Oracle 26 parses VARCHAR and BLOB besides the documented VARCHAR2 and CLOB, allows FORMAT
+        // without RETURNING and rejects any other type or format while parsing (ORA-51809, ORA-51818).
+        // The size is an integer literal (ORA-00907 for an expression); its range is checked later.
+        private fun createVectorFunctions(b: PlSqlGrammarBuilder) {
+            fun vectorSerialization(function: TokenType) = b.sequence(
+                function, LPARENTHESIS, EXPRESSION,
+                b.optional(RETURNING, b.firstOf(
+                    b.sequence(
+                        b.firstOf(VARCHAR2, VARCHAR),
+                        b.optional(LPARENTHESIS, PlSqlTokenType.INTEGER_LITERAL, b.optional(b.firstOf(BYTE, CHAR)), RPARENTHESIS)),
+                    CLOB,
+                    BLOB)),
+                b.optional(FORMAT, b.firstOf(SPARSE, DENSE)),
+                RPARENTHESIS)
+            b.rule(FROM_VECTOR_EXPRESSION).define(vectorSerialization(FROM_VECTOR))
+            b.rule(VECTOR_SERIALIZE_EXPRESSION).define(vectorSerialization(VECTOR_SERIALIZE))
         }
 
         private fun createAnalyticFunctions(b: PlSqlGrammarBuilder) {

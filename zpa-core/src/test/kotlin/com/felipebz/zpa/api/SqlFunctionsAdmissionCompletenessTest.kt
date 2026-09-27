@@ -250,7 +250,9 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION, PlSqlKeyword.TRIM, "trim(' abc ')"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TABLE_EXPRESSION, PlSqlKeyword.TABLE, "table(my_collection)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.THE_EXPRESSION, PlSqlKeyword.THE, "the(select col from tab)"),
-            SingleRowTestCase(SingleRowSqlFunctionsGrammar.CURSOR_EXPRESSION, PlSqlKeyword.CURSOR, "cursor(select 1 from dual)")
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.CURSOR_EXPRESSION, PlSqlKeyword.CURSOR, "cursor(select 1 from dual)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.FROM_VECTOR_EXPRESSION, PlSqlKeyword.FROM_VECTOR, "from_vector(v returning clob)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.VECTOR_SERIALIZE_EXPRESSION, PlSqlKeyword.VECTOR_SERIALIZE, "vector_serialize(v format dense)")
         )
 
         // Ensure every alternative and every token is represented in test cases
@@ -305,6 +307,7 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
             AggregateTestCase(AggregateSqlFunctionsGrammar.PREDICTION_DETAILS_EXPRESSION, PlSqlKeyword.PREDICTION_DETAILS, "prediction_details(for age abs using *) over ()"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.PREDICTION_PROBABILITY_EXPRESSION, PlSqlKeyword.PREDICTION_PROBABILITY, "prediction_probability(of anomaly, 0 using *) over (partition by grp)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.PREDICTION_SET_EXPRESSION, PlSqlKeyword.PREDICTION_SET, "prediction_set(dt_model cost model using *)"),
+            AggregateTestCase(AggregateSqlFunctionsGrammar.VECTOR_EMBEDDING_EXPRESSION, PlSqlKeyword.VECTOR_EMBEDDING, "vector_embedding(model using 'x' as data)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.PERCENTILE_DISC_EXPRESSION, PlSqlKeyword.PERCENTILE_DISC, "percentile_disc(0.5) within group (order by y)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.PERCENTILE_CONT_EXPRESSION, PlSqlKeyword.PERCENTILE_CONT, "percentile_cont(0.5) within group (order by y)"),
             AggregateTestCase(AggregateSqlFunctionsGrammar.RANK_AGGREGATE_EXPRESSION, PlSqlKeyword.RANK, "rank(1) within group (order by y)"),
