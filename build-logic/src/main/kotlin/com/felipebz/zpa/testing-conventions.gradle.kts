@@ -22,7 +22,7 @@ configurations {
 
 testing {
     suites {
-        val test by getting(JvmTestSuite::class) {
+        getByName<JvmTestSuite>("test") {
             useJUnitJupiter(libs.findVersion("junit").get().requiredVersion)
         }
     }

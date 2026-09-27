@@ -3,7 +3,6 @@ package com.felipebz.zpa
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.get
-import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.register
 
 plugins {
@@ -12,7 +11,7 @@ plugins {
     id("signing")
 }
 
-val dokka by tasks.register<Jar>("dokka") {
+val dokka = tasks.register<Jar>("dokka") {
     dependsOn(tasks.dokkaGenerateModuleJavadoc)
     from(tasks.dokkaGenerateModuleJavadoc.flatMap { it.outputDirectory })
     archiveClassifier.set("javadoc")
@@ -22,8 +21,8 @@ signing {
     setRequired({
         gradle.taskGraph.hasTask("publish")
     })
-    val signingKey: String? by project
-    val signingPassword: String? by project
+    val signingKey = project.findProperty("signingKey") as String?
+    val signingPassword = project.findProperty("signingPassword") as String?
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign(publishing.publications)
 }

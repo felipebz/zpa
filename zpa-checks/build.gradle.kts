@@ -15,12 +15,12 @@ dependencies {
 testing {
     suites {
         register<JvmTestSuite>("integrationTest") {
-            val downloadZipFile by tasks.registering(Download::class, fun Download.() {
+            val downloadZipFile = tasks.register<Download>("downloadZipFile") {
                 val sqlclVersion = "26.2.2.233.1901"
                 src("https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-$sqlclVersion.zip")
                 overwrite(false)
                 dest(layout.projectDirectory.dir("tools").file("sqlcl-$sqlclVersion.zip"))
-            })
+            }
 
             val downloadAndUnzipFile = tasks.register<Copy>("downloadAndUnzipFile") {
                 dependsOn(downloadZipFile)
