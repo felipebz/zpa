@@ -277,9 +277,13 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
         // Keep the shared mining helpers anonymous so each function rule adds only its own AST boundary.
         private fun buildMiningFunctions(b: PlSqlGrammarBuilder) {
             val modelName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            // An attribute is a value expression, not a condition: Oracle 26 rejects a top-level
+            // comparison, IN, IS, LIKE, BETWEEN, NOT, AND or OR (ORA-00907/ORA-00936, and ORA-02012
+            // in FEATURE_COMPARE, where the first AND always separates the two USING lists).
+            // Parenthesized conditions and CASE are still accepted.
             val miningAttribute = b.firstOf(
                 b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), DOT, MULTIPLICATION),
-                b.sequence(EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME))
+                b.sequence(PlSqlGrammar.CONCATENATION_EXPRESSION, b.optional(b.optional(AS), IDENTIFIER_NAME))
             )
             // Oracle 26 parses an empty attribute list when USING ends the call, for every model and
             // analytic form, but not before FEATURE_COMPARE's AND (ORA-00936).

@@ -267,4 +267,63 @@ class DataMiningFunctionsTest : RuleTest() {
             "vector_embedding(model using foo bar baz)"
         )
     }
+
+    @Test
+    fun separatesFeatureCompareAttributeListsAtTheFirstAnd() {
+        for (source in listOf(
+            "feature_compare(m using a and using b)",
+            "feature_compare(m using 'a' and using 'b')",
+            "feature_compare(m using a as x and using b as y)",
+            "feature_compare(m using a x and using b y)",
+            "feature_compare(m using * and using *)",
+            "feature_compare(m using t.* and using s.t.*)",
+            "feature_compare(m using a, b and using a, b)",
+            "feature_compare(m using a and using)",
+            "feature_compare(m using a || 'x' x and using b)",
+            // Parenthesized conditions and CASE may contain AND.
+            "feature_compare(m using (a = 1 and b = 2) and using b)",
+            "feature_compare(m using case when a > 1 and b > 1 then 1 end and using b)"
+        )) {
+            assertThatAst(p.parse(source).getDescendants(AggregateSqlFunctionsGrammar.FEATURE_COMPARE_EXPRESSION))
+                .describedAs(source).hasSize(1)
+            assertThat(p).describedAs(source).matches(source)
+        }
+        assertNotMatches(
+            // ORA-00936
+            "feature_compare(m using and using b)",
+            "feature_compare(m using a, and using b)",
+            "feature_compare(m using a and using b,)",
+            // ORA-02012: the first AND ends the first list, even inside a condition.
+            "feature_compare(m using a and b and using b)",
+            "feature_compare(m using a = 1 and using b)",
+            "feature_compare(m using a between 1 and 2 x and using b)",
+            "feature_compare(m using a or b x and using b)",
+            // ORA-00923 / ORA-03048
+            "feature_compare(m using a and using b and using a)",
+            "feature_compare(m using a and using b or c)"
+        )
+    }
+
+    @Test
+    fun rejectsConditionsAsMiningAttributes() {
+        assertMatches(
+            "feature_id(m using (a = 1) x)",
+            "feature_id(m using -a x, a * 2 y, case when a = 1 and b = 2 then 1 end z)",
+            "vector_embedding(m using a || 'x' x)"
+        )
+        assertNotMatches(
+            // ORA-00907
+            "feature_value(m, 1 using a = 1 x)",
+            "feature_value(m, 1 using a and b x)",
+            "feature_value(m, 1 using a between 1 and 2 x)",
+            "feature_value(m, 1 using a or b x)",
+            "feature_id(m using a in (1, 2) x)",
+            "feature_id(m using a is null x)",
+            "feature_id(m using a like 'x' x)",
+            "feature_id(into 2 using a = 1 x) over ()",
+            "vector_embedding(m using a = 1 x)",
+            // ORA-00936
+            "feature_value(m, 1 using not a x)"
+        )
+    }
 }
