@@ -9,7 +9,6 @@
   "examples/alter_java.sql" : [ 1 ],
   "examples/alter_operator.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
-  "examples/alter_resource_cost.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 4 ],
   "examples/alter_table.sql" : [ 62 ],
   "examples/alter_table_modify_partition_by_range.sql" : [ 3 ],

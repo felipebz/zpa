@@ -157,6 +157,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ASSOCIATE_STATISTICS,
     DISASSOCIATE_STATISTICS,
     RENAME_STATEMENT,
+    ALTER_RESOURCE_COST,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -2517,6 +2518,15 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(clusterMaterializedViewLogClause, b.optional(clusterStorageClause)))),
                 b.optional(SEMICOLON))
 
+            // Oracle accepts repeated resource names up to later validation (ORA-02376). Decimal
+            // and scientific numeric tokens are checked for integral values after parsing.
+            b.rule(ALTER_RESOURCE_COST).define(
+                ALTER, RESOURCE, COST,
+                b.oneOrMore(
+                    b.firstOf(CPU_PER_SESSION, CONNECT_TIME, LOGICAL_READS_PER_SESSION, PRIVATE_SGA),
+                    b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)),
+                b.optional(SEMICOLON))
+
             // Oracle 26 rejects owners only after parsing (ORA-01765), even for deeper dotted names.
             // A source @dblink is accepted and renames the local object; the destination rejects @.
             val renameObjectName = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME))
@@ -2534,6 +2544,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ASSOCIATE_STATISTICS,
                 DISASSOCIATE_STATISTICS,
                 RENAME_STATEMENT,
+                ALTER_RESOURCE_COST,
                 CREATE_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,

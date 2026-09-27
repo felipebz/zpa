@@ -149,8 +149,6 @@
   "sqlrf/ALTER-PLUGGABLE-DATABASE-7.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-8.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-9.sql" : [ 2 ],
-  "sqlrf/ALTER-RESOURCE-COST-0.sql" : [ 2 ],
-  "sqlrf/ALTER-RESOURCE-COST-2.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-105.sql" : [ 3 ],
   "sqlrf/ALTER-TABLE-117.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-127.sql" : [ 2 ],
