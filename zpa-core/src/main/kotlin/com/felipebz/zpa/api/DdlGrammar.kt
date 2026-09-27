@@ -123,6 +123,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_PFILE,
     CREATE_RESTORE_POINT,
     FLASHBACK_TABLE,
+    CREATE_EDITION,
     CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
@@ -2233,6 +2234,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createParameterFile(b)
             createRestorePoint(b)
             createFlashbackTable(b)
+            createEdition(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2577,6 +2579,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_SPFILE,
                 CREATE_RESTORE_POINT,
                 FLASHBACK_TABLE,
+                CREATE_EDITION,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -3043,6 +3046,16 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
                             b.sequence(RESTORE, POINT, IDENTIFIER_NAME)),
                         b.optional(triggersClause))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-EDITION.html
+        // Oracle 26 rejects qualified or @dblink edition and parent names during parsing
+        // (ORA-02000/ORA-03048). Parent existence and single-child rules are checked afterwards.
+        private fun createEdition(b: PlSqlGrammarBuilder) {
+            b.rule(CREATE_EDITION).define(
+                CREATE, EDITION, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
+                b.optional(AS, CHILD, OF, IDENTIFIER_NAME),
                 b.optional(SEMICOLON))
         }
 

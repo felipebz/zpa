@@ -165,7 +165,6 @@
   "sqlrf/CREATE-DATABASE-0.sql" : [ 2 ],
   "sqlrf/CREATE-DATABASE-1.sql" : [ 2 ],
   "sqlrf/CREATE-DISKGROUP-0.sql" : [ 2 ],
-  "sqlrf/CREATE-EDITION-1.sql" : [ 2 ],
   "sqlrf/CREATE-INDEXTYPE-0.sql" : [ 2 ],
   "sqlrf/CREATE-LOCKDOWN-PROFILE-0.sql" : [ 2 ],
   "sqlrf/CREATE-OPERATOR-0.sql" : [ 9 ],
