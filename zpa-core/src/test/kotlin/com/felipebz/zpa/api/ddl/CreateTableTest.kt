@@ -833,4 +833,85 @@ class CreateTableTest : RuleTest() {
         assertThat(p).matches(
             "create global temporary table t (c number) on commit preserve rows annotations(A '1') annotations(B '2')")
     }
+
+    @Test
+    fun matchesTableSegmentAttributesAndParallelClause() {
+        assertThat(p).matches("create table t (c number) tablespace users storage (initial 8m);")
+        assertThat(p).matches("create table t (c number) storage (initial 8m maxsize 1g);")
+        assertThat(p).matches("create table t (c number) storage (initial 8m) tablespace users pctfree 10 nologging;")
+        assertThat(p).matches("create table t (c number) pctused 40 initrans 2 maxtrans 255 logging;")
+        assertThat(p).matches("create table t (c number) parallel 5;")
+        assertThat(p).matches("create table t (c number) noparallel;")
+        // Oracle 26 interleaves PARALLEL, segment attributes and annotations in any order.
+        assertThat(p).matches("create table t (c number) parallel 2 tablespace users;")
+        assertThat(p).matches("create table t (c number) tablespace users parallel 2 annotations(Display 'T');")
+        assertThat(p).matches("create table t (c number) annotations(Display 'T') storage (initial 8m) parallel;")
+    }
+
+    @Test
+    fun matchesTablePropertiesAroundPartitioningAndColumnProperties() {
+        assertThat(p).matches("create table t (c number) nologging pctfree 5 partition by hash (c) partitions 2;")
+        assertThat(p).matches("create table t (c number) nologging parallel 16 partition by hash (c) partitions 2;")
+        assertThat(p).matches("create table t (c number) partition by hash (c) partitions 2 storage (initial 8m) parallel 4;")
+        assertThat(p).matches(
+            "create table t (c number) storage (initial 100k next 50k) logging " +
+                "partition by range (c) (partition p1 values less than (10) tablespace tsa storage (initial 20k));")
+        assertThat(p).matches("create table t (c number, l clob) tablespace users lob (l) store as (tablespace users);")
+        assertThat(p).matches("create table t (c number, l clob) lob (l) store as (tablespace users) tablespace users parallel;")
+        assertThat(p).matches("create table t (c number, l clob) parallel lob (l) store as (tablespace users);")
+        assertThat(p).matches("create table t (c number primary key) organization index parallel;")
+    }
+
+    @Test
+    fun matchesDeferredSegmentCreation() {
+        assertThat(p).matches("create table t (c number, d varchar2(20)) segment creation deferred;")
+        assertThat(p).matches("create table t (c number) segment creation immediate tablespace users parallel;")
+        assertThat(p).matches("create table t (c number) segment creation deferred partition by hash (c) partitions 2;")
+        assertThat(p).matches(
+            "create table t (c number, l clob) segment creation deferred lob (l) store as (tablespace users) tablespace users;")
+        assertThat(p).matches("create table t (c number primary key) segment creation deferred organization index;")
+    }
+
+    @Test
+    fun matchesTablePropertiesInCreateTableAsSelect() {
+        assertThat(p).matches("create table t parallel as select * from employees where department_id = 80;")
+        assertThat(p).matches("create table t initrans 10 as select sysdate from dual;")
+        assertThat(p).matches("create table t parallel nologging as select 1 c from dual;")
+        assertThat(p).matches("create table t segment creation deferred as select 1 c from dual;")
+        assertThat(p).matches(
+            "create table t nologging parallel 16 partition by hash (c) partitions 512 as select * from source_table;")
+    }
+
+    @Test
+    fun matchesTablePropertiesAfterOnCommit() {
+        assertThat(p).matches(
+            "create global temporary table t (c number) on commit preserve rows tablespace temp annotations(A) parallel;")
+        assertThat(p).matches("create global temporary table t (c number) tablespace temp on commit delete rows;")
+    }
+
+    @Test
+    fun rejectsMisplacedOrIncompleteTableProperties() {
+        // ORA-00922: SEGMENT CREATION must precede every other physical property and may not repeat.
+        assertThat(p).notMatches("create table t (c number) tablespace users segment creation immediate;")
+        assertThat(p).notMatches("create table t (c number) parallel segment creation deferred;")
+        assertThat(p).notMatches("create table t (c number) segment creation immediate segment creation deferred;")
+        assertThat(p).notMatches("create table t (c number) partition by hash (c) partitions 2 segment creation deferred;")
+        assertThat(p).notMatches("create table t (c number, l clob) lob (l) store as (tablespace users) segment creation deferred;")
+        // ORA-64303: physical properties may not precede ORGANIZATION INDEX.
+        assertThat(p).notMatches("create table t (c number primary key) pctfree 10 organization index;")
+        assertThat(p).notMatches("create table t (c number primary key) parallel organization index;")
+        // ORA-00922: only partitioning and TABLESPACE may precede ON COMMIT.
+        assertThat(p).notMatches("create global temporary table t (c number) parallel on commit preserve rows;")
+        assertThat(p).notMatches("create global temporary table t (c number) pctfree 10 on commit preserve rows;")
+        assertThat(p).notMatches("create global temporary table t (c number) segment creation deferred on commit preserve rows;")
+        // ORA-14301: table-level column properties may not follow partitioning.
+        assertThat(p).notMatches(
+            "create table t (c number, l clob) partition by hash (c) partitions 2 lob (l) store as (tablespace users);")
+        // ORA-00922: FILESYSTEM_LIKE_LOGGING is not a table logging option.
+        assertThat(p).notMatches("create table t (c number) filesystem_like_logging;")
+        assertThat(p).notMatches("create table t (c number) segment creation;")
+        assertThat(p).notMatches("create table t (c number) pctfree;")
+        assertThat(p).notMatches("create table t (c number) maxtrans;")
+        assertThat(p).notMatches("create table t (c number) storage ();")
+    }
 }

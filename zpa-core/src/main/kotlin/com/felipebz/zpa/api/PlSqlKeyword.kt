@@ -506,6 +506,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     MAXEXTENTS("maxextents"),
     MAXLEN("maxlen"),
     MAXSIZE("maxsize"),
+    MAXTRANS("maxtrans"),
     MAXVALUE("maxvalue"),
     MEASURES("measures"),
     MEMBER("member"),

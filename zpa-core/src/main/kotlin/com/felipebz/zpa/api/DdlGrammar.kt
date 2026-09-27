@@ -598,11 +598,13 @@ enum class DdlGrammar : GrammarRuleKey {
                 )
             )
 
+            // MAXTRANS is deprecated, but Oracle 26 still parses it for tables and indexes.
             b.rule(PHYSICAL_ATRIBUTES_CLAUSE).define(
                     b.oneOrMore(b.firstOf(
                             b.sequence(PCTFREE, INTEGER_LITERAL),
                             b.sequence(PCTUSED, INTEGER_LITERAL),
                             b.sequence(INITRANS, INTEGER_LITERAL),
+                            b.sequence(MAXTRANS, INTEGER_LITERAL),
                             INDEX_STORAGE_CLAUSE)))
 
             b.rule(SEGMENT_ATTRIBUTES_CLAUSE).define(
@@ -1043,16 +1045,27 @@ enum class DdlGrammar : GrammarRuleKey {
                     PARTITION_BY_LIST,
                     PARTITION_COMPOSITE))
 
-            // Oracle 26 accepts table annotations after the IOT clause, around partitioning and
-            // TABLESPACE, and repeats them (`ANNOTATIONS(A '1') ANNOTATIONS(B '2')` executes). They
-            // must not precede ORGANIZATION INDEX (ORA-64303) or ON COMMIT (ORA-00922).
-            fun tableAnnotations() = b.zeroOrMore(ANNOTATIONS_CLAUSE)
+            // Oracle 26 accepts the table-level segment attributes, PARALLEL/NOPARALLEL and annotations in any
+            // order, both before and after the partitioning clause. Column properties such as LOB storage may
+            // also follow the segment attributes, but not the partitioning clause (ORA-14301). Duplicate
+            // PCTFREE, TABLESPACE or PARALLEL options fail with duplicate-option errors (ORA-02212/ORA-02215/
+            // ORA-12812), which the shared SEGMENT_ATTRIBUTES_CLAUSE does not encode either. Annotations must
+            // not precede ORGANIZATION INDEX (ORA-64303) or ON COMMIT (ORA-00922).
+            fun tableLevelProperty() = b.firstOf(ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE)
 
             fun tableSuffixesWithAnnotations() = b.sequence(
-                    tableAnnotations(),
+                    b.zeroOrMore(b.firstOf(
+                            tableLevelProperty(),
+                            NESTED_TABLE_COL_PROPERTIES,
+                            LOB_STORAGE_CLAUSE,
+                            VARRAY_COL_PROPERTIES,
+                            XMLTYPE_COLUMN_PROPERTIES)),
                     tablePartitioning(),
-                    tableAnnotations(),
-                    b.optional(TABLESPACE, IDENTIFIER_NAME, tableAnnotations()))
+                    b.zeroOrMore(tableLevelProperty()))
+
+            // SEGMENT CREATION must come first: after relational properties but before column properties,
+            // ORGANIZATION INDEX and the other physical properties (ORA-00922), and never before ON COMMIT.
+            val deferredSegmentCreation = b.sequence(SEGMENT, CREATION, b.firstOf(IMMEDIATE, DEFERRED))
 
             b.rule(CREATE_TABLE).define(
                     CREATE,
@@ -1072,23 +1085,30 @@ enum class DdlGrammar : GrammarRuleKey {
                                             LPARENTHESIS,
                                             TABLE_RELATIONAL_PROPERTIES,
                                             RPARENTHESIS),
-                                    b.optional(TABLE_CLUSTER_CLAUSE),
-                                    tablePropertyClauses(),
-                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                                     b.firstOf(
                                             b.sequence(
-                                                    tablePartitioning(),
-                                                    b.optional(
-                                                            TABLESPACE,
-                                                            IDENTIFIER_NAME),
-                                                    ON,
-                                                    COMMIT,
+                                                    deferredSegmentCreation,
+                                                    tablePropertyClauses(),
+                                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                                    tableSuffixesWithAnnotations()),
+                                            b.sequence(
+                                                    b.optional(TABLE_CLUSTER_CLAUSE),
+                                                    tablePropertyClauses(),
+                                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                                                     b.firstOf(
-                                                            DELETE,
-                                                            PRESERVE),
-                                                    ROWS,
-                                                    tableAnnotations()),
-                                            tableSuffixesWithAnnotations())))),
+                                                            b.sequence(
+                                                                    tablePartitioning(),
+                                                                    b.optional(
+                                                                            TABLESPACE,
+                                                                            IDENTIFIER_NAME),
+                                                                    ON,
+                                                                    COMMIT,
+                                                                    b.firstOf(
+                                                                            DELETE,
+                                                                            PRESERVE),
+                                                                    ROWS,
+                                                                    b.zeroOrMore(tableLevelProperty())),
+                                                            tableSuffixesWithAnnotations())))))),
                     b.firstOf(
                             b.sequence(
                                     b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
@@ -1121,6 +1141,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(MAXSIZE, b.firstOf(UNLIMITED, INDEX_SIZE_CLAUSE)),
                     b.sequence(BUFFER_POOL, b.firstOf(KEEP, RECYCLE, DEFAULT)),
                     b.sequence(FLASH_CACHE, b.firstOf(KEEP, NONE, DEFAULT)),
+                    // Oracle 26 also parses CELL_FLASH_CACHE without the documented parentheses.
+                    b.sequence(CELL_FLASH_CACHE, b.firstOf(KEEP, NONE, DEFAULT)),
                     b.sequence(
                         LPARENTHESIS,
                         CELL_FLASH_CACHE,
@@ -1139,6 +1161,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.oneOrMore(b.firstOf(
                     b.sequence(PCTFREE, INTEGER_LITERAL),
                     b.sequence(INITRANS, INTEGER_LITERAL),
+                    b.sequence(MAXTRANS, INTEGER_LITERAL),
                     INDEX_STORAGE_CLAUSE)))
 
             b.rule(INDEX_PARALLEL_CLAUSE).define(

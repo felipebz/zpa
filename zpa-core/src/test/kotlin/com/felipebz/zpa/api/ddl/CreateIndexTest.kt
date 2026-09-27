@@ -59,6 +59,11 @@ class CreateIndexTest : RuleTest() {
     @Test
     fun matchesIndexAttributesAndIlm() {
         assertThat(p).matches("create index attrs_ix ilm add policy optimize (on should_optimize) on employees(id) pctfree 5 initrans 3 storage (initial 1m maxsize unlimited) logging online tablespace default compress advanced low nosort reverse invisible indexing partial parallel 2 annotations (add display_label 'Lookup');")
+        assertThat(p).matches("create index maxtrans_ix on customers (region) pctfree 10 initrans 2 maxtrans 255 tablespace users;")
+        assertThat(p).notMatches("create index maxtrans_ix on customers (region) maxtrans;")
+        assertThat(p).matches(
+            "create index cache_ix on customers (region) storage (initial 65536 maxextents 2147483645 " +
+                "buffer_pool default flash_cache default cell_flash_cache default) tablespace users;")
         assertThat(p).matches("create index pre_ilm_ix ilm add policy optimize after 7 days of no modification on employees(employee_id);")
         assertThat(p).matches("create index post_ilm_ix on employees(employee_id) ilm add policy optimize after 7 days of no modification;")
         assertThat(p).notMatches("create index duplicate_ilm_ix ilm add policy optimize after 7 days of no modification on employees(employee_id) ilm add policy optimize after 7 days of no modification;")
