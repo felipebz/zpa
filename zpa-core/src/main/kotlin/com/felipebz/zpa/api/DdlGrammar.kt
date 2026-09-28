@@ -433,9 +433,29 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ONE_OR_MORE_IDENTIFIERS).define(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS).skip()
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/constraint.html
+            // Table constraint column lists name columns or object attributes. The diagram shows plain columns,
+            // but Oracle 26 parses dotted attribute paths of any depth in UNIQUE, PRIMARY KEY, FOREIGN KEY and
+            // REFERENCES lists, resolving the components later (ORA-22809/ORA-00904/ORA-02337); empty or trailing
+            // components are rejected (ORA-03050/ORA-00936). Each column or path may also carry a database link,
+            // which Oracle 26 accepts and ignores when it records the constraint column. The link follows the
+            // dblink syntax `database[.domain…][@connection_qualifier]`, and the database may be omitted to give
+            // `column@@qualifier`. The qualifier is one undotted name, and a further `@` fails (ORA-02083); an
+            // empty link or qualifier fails too (ORA-01729/ORA-02084). View constraints keep plain column names.
+            val constraintColumn = b.sequence(
+                IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME),
+                b.optional(REMOTE, b.firstOf(
+                    b.sequence(IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME), b.optional(REMOTE, IDENTIFIER_NAME)),
+                    b.sequence(REMOTE, IDENTIFIER_NAME))))
+            val constraintColumns = b.firstOf(
+                b.sequence(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true), ONE_OR_MORE_IDENTIFIERS),
+                b.sequence(
+                    b.nextNot(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true)),
+                    LPARENTHESIS, constraintColumn, b.zeroOrMore(COMMA, constraintColumn), RPARENTHESIS))
+
             b.rule(REFERENCES_CLAUSE).define(
                     REFERENCES, MEMBER_EXPRESSION,
-                    b.optional(ONE_OR_MORE_IDENTIFIERS),
+                    b.optional(constraintColumns),
                     b.optional(b.nextNot(b.requireContext(VIEW_CONSTRAINT_CONTEXT, true)),
                         ON, DELETE, b.firstOf(CASCADE, b.sequence(SET, NULL)))
             )
@@ -536,12 +556,12 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(
-                            b.sequence(UNIQUE, ONE_OR_MORE_IDENTIFIERS),
-                            b.sequence(PRIMARY, KEY, ONE_OR_MORE_IDENTIFIERS),
+                            b.sequence(UNIQUE, constraintColumns),
+                            b.sequence(PRIMARY, KEY, constraintColumns),
                         ), outOfLineConstraintState(b.optional(CONSTRAINT_STATE))
                     ),
                     b.sequence(
-                        FOREIGN, KEY, ONE_OR_MORE_IDENTIFIERS, REFERENCES_CLAUSE,
+                        FOREIGN, KEY, constraintColumns, REFERENCES_CLAUSE,
                         outOfLineConstraintState(b.optional(CONSTRAINT_STATE_WITHOUT_USING_INDEX))
                     ),
                     b.sequence(

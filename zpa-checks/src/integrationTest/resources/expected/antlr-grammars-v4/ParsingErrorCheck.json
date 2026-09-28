@@ -22,7 +22,7 @@
   "examples/create_index.sql" : [ 3 ],
   "examples/create_lockdown_profile.sql" : [ 1 ],
   "examples/create_pmem_filestore.sql" : [ 1 ],
-  "examples/create_table.sql" : [ 16 ],
+  "examples/create_table.sql" : [ 31 ],
   "examples/create_tablespace.sql" : [ 58 ],
   "examples/create_tablespace_set.sql" : [ 1 ],
   "examples/create_trigger02.sql" : [ 2 ],
