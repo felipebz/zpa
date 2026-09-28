@@ -1132,6 +1132,13 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(INMEMORY, b.zeroOrMore(inmemoryAttribute)),
                     b.sequence(NO, INMEMORY))
 
+            // NO DROP and NO DELETE retention clauses, shared by CREATE of immutable/blockchain tables and ALTER.
+            // Oracle 26 reports a missing retention count as a value-range error (ORA-05741), not a syntax
+            // error, in both statements, so the count is optional here.
+            val noDropClause = b.sequence(NO, DROP, b.optional(UNTIL, b.optional(INTEGER_LITERAL), DAYS, IDLE))
+            val noDeleteClause = b.sequence(
+                    NO, DELETE, b.optional(UNTIL, b.optional(INTEGER_LITERAL), DAYS, AFTER, INSERT), b.optional(LOCKED))
+
             // Oracle 26 accepts the table-level segment attributes, PARALLEL/NOPARALLEL and annotations in any
             // order, both before and after the partitioning clause. Column properties such as LOB storage may
             // also follow the segment attributes, but not the partitioning clause (ORA-14301). Duplicate
@@ -1161,12 +1168,69 @@ enum class DdlGrammar : GrammarRuleKey {
             // ORGANIZATION INDEX and the other physical properties (ORA-00922), and never before ON COMMIT.
             val deferredSegmentCreation = b.sequence(SEGMENT, CREATION, b.firstOf(IMMEDIATE, DEFERRED))
 
-            b.rule(CREATE_TABLE).define(
-                    CREATE,
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
+            // Immutable and blockchain tables take their clauses right after the relational properties, or
+            // after the name for CTAS, before any other property (ORA-02000 otherwise). Oracle 26 requires them
+            // in this fixed order, each once (ORA-02000/ORA-00922), unlike the separately listed optional
+            // clauses of the diagrams:
+            //   NO DROP … NO DELETE … HASHING USING alg [WITH …] [CONFIGURE n SYSTEM CHAINS PER INSTANCE]
+            //   VERSION v                                                  (blockchain, all but WITH/CONFIGURE required)
+            //   NO DROP … NO DELETE … [WITH ROW VERSION name (…)] [VERSION v]   (immutable; row version first,
+            //                                                                  no HASHING, USER CHAIN or CONFIGURE)
+            // The hash algorithm and version are identifiers; unsupported values fail later (ORA-05716/ORA-05770)
+            // while literals fail during parsing (ORA-05700). Row-version columns may be parenthesized
+            // individually, as in the diagram. A missing CONFIGURE count is a range error (ORA-05804), so the
+            // count is optional. BLOCKCHAIN IMMUTABLE is not documented and Oracle 26 answers any
+            // CREATE BLOCKCHAIN not followed by TABLE with ORA-00439 before parsing further, so it stays out.
+            val rowVersionColumn = b.firstOf(b.sequence(LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS), IDENTIFIER_NAME)
+            val rowVersionColumns = b.sequence(
+                    LPARENTHESIS, rowVersionColumn, b.zeroOrMore(COMMA, rowVersionColumn), RPARENTHESIS)
+            val blockchainTableClauses = b.sequence(
+                    noDropClause, noDeleteClause,
+                    HASHING, USING, IDENTIFIER_NAME,
                     b.optional(
-                            GLOBAL,
-                            TEMPORARY),
-                    TABLE,
+                            WITH,
+                            b.firstOf(
+                                    b.sequence(USER, CHAIN),
+                                    b.sequence(ROW, VERSION, b.optional(AND, USER, CHAIN))),
+                            IDENTIFIER_NAME, rowVersionColumns),
+                    b.optional(CONFIGURE, b.optional(INTEGER_LITERAL), SYSTEM, CHAINS, PER, INSTANCE),
+                    VERSION, IDENTIFIER_NAME)
+            val immutableTableClauses = b.sequence(
+                    noDropClause, noDeleteClause,
+                    b.optional(WITH, ROW, VERSION, IDENTIFIER_NAME, rowVersionColumns),
+                    b.optional(VERSION, IDENTIFIER_NAME))
+
+            // The prefix selects the ledger clauses, so each branch of CREATE_TABLE builds the body with its
+            // own clause slot. FLR inlines anonymous expressions per reference, so the three branches compile
+            // three copies of the body whether or not a parser context is used to select the clauses.
+            fun createTableBody(ledgerTableClauses: Any?): Any {
+                val relationalTail = b.firstOf(
+                        b.sequence(
+                                deferredSegmentCreation,
+                                tablePropertyClauses(),
+                                b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                tableSuffixesWithAnnotations()),
+                        b.sequence(
+                                b.optional(TABLE_CLUSTER_CLAUSE),
+                                tablePropertyClauses(),
+                                b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                b.firstOf(
+                                        b.sequence(
+                                                tablePartitioning(),
+                                                b.optional(
+                                                        TABLESPACE,
+                                                        IDENTIFIER_NAME),
+                                                ON,
+                                                COMMIT,
+                                                b.firstOf(
+                                                        DELETE,
+                                                        PRESERVE),
+                                                ROWS,
+                                                b.zeroOrMore(tableLevelProperty())),
+                                        tableSuffixesWithAnnotations())))
+                val relationalProperties = b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS)
+                return b.sequence(
                     UNIT_NAME,
                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.firstOf(
                             b.sequence(
@@ -1174,35 +1238,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
                                     tableSuffixesWithAnnotations()),
-                            b.sequence(
-                                    b.optional(
-                                            LPARENTHESIS,
-                                            TABLE_RELATIONAL_PROPERTIES,
-                                            RPARENTHESIS),
-                                    b.firstOf(
-                                            b.sequence(
-                                                    deferredSegmentCreation,
-                                                    tablePropertyClauses(),
-                                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                                                    tableSuffixesWithAnnotations()),
-                                            b.sequence(
-                                                    b.optional(TABLE_CLUSTER_CLAUSE),
-                                                    tablePropertyClauses(),
-                                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                                                    b.firstOf(
-                                                            b.sequence(
-                                                                    tablePartitioning(),
-                                                                    b.optional(
-                                                                            TABLESPACE,
-                                                                            IDENTIFIER_NAME),
-                                                                    ON,
-                                                                    COMMIT,
-                                                                    b.firstOf(
-                                                                            DELETE,
-                                                                            PRESERVE),
-                                                                    ROWS,
-                                                                    b.zeroOrMore(tableLevelProperty())),
-                                                            tableSuffixesWithAnnotations())))))),
+                            if (ledgerTableClauses == null) b.sequence(relationalProperties, relationalTail)
+                            else b.sequence(relationalProperties, ledgerTableClauses, relationalTail))),
                     b.firstOf(
                             b.sequence(
                                     b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
@@ -1212,6 +1249,16 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true)),
                                     b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                     b.optional(SEMICOLON))
+            }
+
+            b.rule(CREATE_TABLE).define(
+                    CREATE,
+                    b.firstOf(
+                            b.sequence(b.optional(IMMUTABLE), BLOCKCHAIN, TABLE,
+                                    createTableBody(blockchainTableClauses)),
+                            b.sequence(IMMUTABLE, TABLE,
+                                    createTableBody(immutableTableClauses)),
+                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, createTableBody(null))))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
             // nonexistent objects. Columns require table.column, optionally prefixed by a schema.
@@ -2142,8 +2189,8 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(b.optional(NO), PARTIAL, JSON)))),
                     b.sequence(b.optional(BLOCKCHAIN), FLASHBACK, ARCHIVE, b.optional(IDENTIFIER_NAME)),
                     b.sequence(NO, FLASHBACK, ARCHIVE),
-                    b.sequence(NO, DROP, b.optional(UNTIL, INTEGER_LITERAL, DAYS, IDLE)),
-                    b.sequence(NO, DELETE, b.optional(UNTIL, INTEGER_LITERAL, DAYS, AFTER, INSERT), b.optional(LOCKED)),
+                    noDropClause,
+                    noDeleteClause,
                     b.sequence(READ, b.firstOf(ONLY, WRITE)),
                     b.sequence(b.optional(NO), ROW, ARCHIVAL),
                     b.sequence(b.optional(NOT), FOR, STAGING),
