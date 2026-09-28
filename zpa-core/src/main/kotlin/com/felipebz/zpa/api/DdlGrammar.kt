@@ -1096,6 +1096,42 @@ enum class DdlGrammar : GrammarRuleKey {
                     PARTITION_BY_LIST,
                     PARTITION_COMPOSITE))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLE.html
+            // CREATE and ALTER TABLE parse the In-Memory clauses identically. Each clause is one table property,
+            // repeatable in any order: TEXT must directly follow INMEMORY (ORA-00922 after other attributes,
+            // unlike the diagram), NO INMEMORY TEXT is also accepted, and the column clause has no ALL.
+            // A second table-level INMEMORY/NO INMEMORY fails with ORA-64350, a duplicate-option error that,
+            // like the other repeated table options, is not encoded. MEMCOMPRESS AUTO is rejected.
+            val memcompress = b.firstOf(
+                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
+                            DML,
+                            b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
+                            b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
+                    b.sequence(NO, MEMCOMPRESS))
+            val inmemoryAttribute = b.firstOf(
+                    memcompress,
+                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
+                    b.sequence(DISTRIBUTE,
+                            b.optional(b.firstOf(
+                                    AUTO,
+                                    b.sequence(BY, b.firstOf(b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION)))),
+                            b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
+                    b.sequence(DUPLICATE, b.optional(ALL)),
+                    b.sequence(NO, DUPLICATE))
+            // Text columns are names (expressions fail with ORA-00904) with an optional literal policy name
+            // (ORA-01780 for an identifier).
+            val inmemoryTextColumn = b.sequence(
+                    IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                    b.optional(USING, CHARACTER_LITERAL))
+            val inmemoryProperty = b.firstOf(
+                    b.sequence(b.optional(NO), INMEMORY, TEXT,
+                            LPARENTHESIS, inmemoryTextColumn, b.zeroOrMore(COMMA, inmemoryTextColumn), RPARENTHESIS),
+                    b.sequence(INMEMORY, b.optional(memcompress), ONE_OR_MORE_IDENTIFIERS),
+                    b.sequence(NO, INMEMORY, ONE_OR_MORE_IDENTIFIERS),
+                    b.sequence(INMEMORY, b.zeroOrMore(inmemoryAttribute)),
+                    b.sequence(NO, INMEMORY))
+
             // Oracle 26 accepts the table-level segment attributes, PARALLEL/NOPARALLEL and annotations in any
             // order, both before and after the partitioning clause. Column properties such as LOB storage may
             // also follow the segment attributes, but not the partitioning clause (ORA-14301). Duplicate
@@ -1105,8 +1141,11 @@ enum class DdlGrammar : GrammarRuleKey {
             fun rowMovementClause() = b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)
 
             // Oracle 26 also accepts ROW MOVEMENT anywhere among these properties, but only once (ORA-14190).
+            // The In-Memory clauses and FOR STAGING are equally position-free, before or after partitioning;
+            // CREATE rejects NOT FOR STAGING (ORA-00922), and a repeated FOR STAGING fails with ORA-12990.
             fun tableLevelProperty() = b.firstOf(
-                    ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause())
+                    ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause(),
+                    inmemoryProperty, b.sequence(FOR, STAGING))
 
             fun tableSuffixesWithAnnotations() = b.sequence(
                     b.zeroOrMore(b.firstOf(
@@ -2073,37 +2112,6 @@ enum class DdlGrammar : GrammarRuleKey {
             fun renameConstraintClause() = b.sequence(RENAME, CONSTRAINT, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
             fun renameTableClause() = b.sequence(RENAME, TO, IDENTIFIER_NAME)
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLE.html
-            // Oracle 26 rejects MEMCOMPRESS AUTO, ALL in the column clause and TEXT after other attributes.
-            val memcompress = b.firstOf(
-                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
-                            DML,
-                            b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
-                            b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
-                    b.sequence(NO, MEMCOMPRESS))
-            val inmemoryAttribute = b.firstOf(
-                    memcompress,
-                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
-                    b.sequence(DISTRIBUTE,
-                            b.optional(b.firstOf(
-                                    AUTO,
-                                    b.sequence(BY, b.firstOf(b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION)))),
-                            b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
-                    b.sequence(DUPLICATE, b.optional(ALL)),
-                    b.sequence(NO, DUPLICATE))
-            val inmemoryColumnClause = b.firstOf(
-                    b.sequence(INMEMORY, b.optional(memcompress), ONE_OR_MORE_IDENTIFIERS),
-                    b.sequence(NO, INMEMORY, ONE_OR_MORE_IDENTIFIERS))
-            val inmemoryTableClause = b.firstOf(
-                    b.oneOrMore(inmemoryColumnClause),
-                    b.sequence(
-                            b.firstOf(
-                                    b.sequence(INMEMORY, b.firstOf(
-                                            b.sequence(TEXT, ONE_OR_MORE_IDENTIFIERS),
-                                            b.zeroOrMore(inmemoryAttribute))),
-                                    b.sequence(NO, INMEMORY)),
-                            b.zeroOrMore(inmemoryColumnClause)))
-
             val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
             val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
 
@@ -2116,7 +2124,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     PHYSICAL_ATRIBUTES_CLAUSE,
                     LOGGING_CLAUSE,
                     TABLE_COMPRESSION,
-                    inmemoryTableClause,
+                    inmemoryProperty,
                     INDEX_ALLOCATE_EXTENT_CLAUSE,
                     INDEX_DEALLOCATE_UNUSED_CLAUSE,
                     b.firstOf(CACHE, NOCACHE),
