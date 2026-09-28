@@ -124,7 +124,6 @@
   "sqlrf/ALTER-DISKGROUP-7.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-8.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-9.sql" : [ 2 ],
-  "sqlrf/ALTER-HIERARCHY-0.sql" : [ 2 ],
   "sqlrf/ALTER-LOCKDOWN-PROFILE-2.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-0.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-1.sql" : [ 2 ],

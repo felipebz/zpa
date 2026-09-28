@@ -109,6 +109,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DIMENSION_ATTRIBUTE_CLAUSE,
     ALTER_DIMENSION,
     ALTER_ATTRIBUTE_DIMENSION,
+    ALTER_HIERARCHY,
     CREATE_DATABASE_LINK,
     ALTER_DATABASE_LINK,
     DATABASE_LINK_NAME,
@@ -2584,6 +2585,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_DIMENSION,
                 ALTER_DIMENSION,
                 ALTER_ATTRIBUTE_DIMENSION,
+                ALTER_HIERARCHY,
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
                 CREATE_OUTLINE,
@@ -3405,11 +3407,20 @@ enum class DdlGrammar : GrammarRuleKey {
                     RPARENTHESIS),
                 b.optional(SEMICOLON))
 
+            // Analytic view objects share the same header and action set: one action, the new name cannot be
+            // schema-qualified (ORA-03048 at the dot), and COMPILE takes no options (ORA-03049).
+            val renameOrCompile = b.firstOf(b.sequence(RENAME, TO, IDENTIFIER_NAME), COMPILE)
+
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ATTRIBUTE-DIMENSION.html
-            // One action; the new name cannot be schema-qualified (ORA-03048 at the dot).
             b.rule(ALTER_ATTRIBUTE_DIMENSION).define(
                 ALTER, ATTRIBUTE, DIMENSION, b.optional(IF, EXISTS), schemaName,
-                b.firstOf(b.sequence(RENAME, TO, IDENTIFIER_NAME), COMPILE),
+                renameOrCompile,
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-HIERARCHY.html
+            b.rule(ALTER_HIERARCHY).define(
+                ALTER, HIERARCHY, b.optional(IF, EXISTS), schemaName,
+                renameOrCompile,
                 b.optional(SEMICOLON))
         }
 
