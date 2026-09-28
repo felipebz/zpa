@@ -134,6 +134,7 @@
   "sqlrf/NULLIF-1.sql" : [ 3, 3 ],
   "sqlrf/Object-Access-Expressions-0.sql" : [ 5 ],
   "sqlrf/REF-1.sql" : [ 5 ],
+  "sqlrf/REFTOHEX-0.sql" : [ 8 ],
   "sqlrf/SELECT-100.sql" : [ 2 ],
   "sqlrf/SELECT-101.sql" : [ 2 ],
   "sqlrf/SELECT-102.sql" : [ 2 ],

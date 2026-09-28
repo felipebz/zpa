@@ -90,6 +90,7 @@
   "sqlrf/NLSSORT-1.sql" : [ 3, 4, 5 ],
   "sqlrf/Pattern-matching-Conditions-10.sql" : [ 3 ],
   "sqlrf/REF-1.sql" : [ 3 ],
+  "sqlrf/REFTOHEX-0.sql" : [ 7, 8 ],
   "sqlrf/SELECT-115.sql" : [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ],
   "sqlrf/SELECT-73.sql" : [ 2 ],
   "sqlrf/SELECT-90.sql" : [ 5, 6, 7, 8 ],

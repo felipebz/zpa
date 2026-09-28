@@ -63,7 +63,6 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t add (scope for ref_col is scope_table)")
         assertThat(p).notMatches("alter table t add (scope for (ref_col) is)")
         assertThat(p).notMatches("alter table t add (ref(ref_col))")
-        assertThat(p).notMatches("alter table t add (ref ref_col with rowid)")
         assertThat(p).notMatches("alter table t add (ref(ref_col) with)")
     }
 
@@ -72,6 +71,9 @@ class AlterTableTest : RuleTest() {
         assertThat(p).matches("alter table t add (scope number, ref number)")
         assertThat(p).matches("alter table t add (c1 number)")
         assertThat(p).matches("alter table t add (constraint c unique (c1))")
+        // A column named REF with an inline WITH ROWID parses; Oracle rejects it afterwards because the
+        // column is not a REF (ORA-22893).
+        assertThat(p).matches("alter table t add (ref ref_col with rowid)")
     }
 
     @Test

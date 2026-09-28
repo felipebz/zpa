@@ -51,6 +51,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ONE_OR_MORE_IDENTIFIERS,
     REFERENCES_CLAUSE,
     INLINE_CONSTRAINT,
+    INLINE_REF_CONSTRAINT,
     OUT_OF_LINE_CONSTRAINT,
     OUT_OF_LINE_REF_CONSTRAINT,
     USING_INDEX_CLAUSE,
@@ -355,7 +356,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             fun objectTableProperty() = b.firstOf(
                 OUT_OF_LINE_CONSTRAINT,
-                b.sequence(IDENTIFIER_NAME, b.zeroOrMore(INLINE_CONSTRAINT))
+                b.sequence(IDENTIFIER_NAME, b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)))
             )
 
             fun nestedTableStorageProperty() = b.firstOf(
@@ -500,6 +501,17 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(EXCEPTIONS_CLAUSE).define(EXCEPTIONS, INTO, UNIT_NAME)
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/constraint.html
+            // inline_ref_constraint without its references_clause branch, which INLINE_CONSTRAINT already
+            // covers. Oracle 26 parses these on any column and mixed with other inline constraints in any
+            // order or repetition; non-REF columns, duplicate SCOPE and SCOPE with REFERENCES fail later
+            // (ORA-22893/ORA-22888/ORA-22896). A constraint name (ORA-22890) or constraint state (ORA-03076)
+            // is rejected. The scope table also parses a database link, rejected later (ORA-25124).
+            b.rule(INLINE_REF_CONSTRAINT).define(
+                b.firstOf(
+                    b.sequence(SCOPE, IS, DmlGrammar.TABLE_REFERENCE),
+                    b.sequence(WITH, ROWID)))
+
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME, DATATYPE,
                     b.optional(SORT),
@@ -508,7 +520,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.optional(FOR, INSERT,
                                 b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
                     b.optional(columnEncryptionClause()),
-                    b.zeroOrMore(INLINE_CONSTRAINT),
+                    b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
                     b.optional(ANNOTATIONS_CLAUSE))
 
@@ -1773,12 +1785,12 @@ enum class DdlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(b.sequence(
                             b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS,
-                                    ENCRYPT, DECRYPT)),
+                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS))),
                             DATATYPE)),
                     b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(DEFAULT, EXPRESSION),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
-                    b.zeroOrMore(INLINE_CONSTRAINT),
+                    b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     b.optional(ANNOTATIONS_CLAUSE))
 
             b.rule(DROP_COLUMN_CLAUSE).define(
