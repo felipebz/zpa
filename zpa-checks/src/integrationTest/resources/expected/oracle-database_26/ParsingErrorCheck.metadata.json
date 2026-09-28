@@ -20,6 +20,13 @@
       "reason": "The line is DBA_TYPE_VERSIONS.TEXT query output from the documentation, not a statement; SQL*Plus reports an unknown command beginning with TYPE."
     }
   },
+  "sqlrf/ALTER-ANALYTIC-VIEW-1.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "The documented ADD CACHE example omits the cache type; Oracle 26 requires MATERIALIZED after the LEVELS clause and reports a missing MATERIALIZED keyword."
+    }
+  },
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-14.sql": {
     "2": {
       "classification": "INVALID_SOURCE",

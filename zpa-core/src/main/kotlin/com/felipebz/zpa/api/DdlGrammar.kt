@@ -110,6 +110,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_DIMENSION,
     ALTER_ATTRIBUTE_DIMENSION,
     ALTER_HIERARCHY,
+    ALTER_ANALYTIC_VIEW,
     CREATE_DATABASE_LINK,
     ALTER_DATABASE_LINK,
     DATABASE_LINK_NAME,
@@ -2586,6 +2587,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_DIMENSION,
                 ALTER_ATTRIBUTE_DIMENSION,
                 ALTER_HIERARCHY,
+                ALTER_ANALYTIC_VIEW,
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
                 CREATE_OUTLINE,
@@ -3421,6 +3423,32 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_HIERARCHY).define(
                 ALTER, HIERARCHY, b.optional(IF, EXISTS), schemaName,
                 renameOrCompile,
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ANALYTIC-VIEW.html
+            // The cache clause diagrams are empty in the Oracle 26 reference; this follows runtime behavior.
+            // Exactly one cache specification: MEASURE GROUP and LEVELS are both required, in that order.
+            // Measures are unqualified and at least one is needed (ORA-00931); ALL is not valid inside the
+            // list. Levels take up to dim.hier.level (ORA-02000 for four parts) and may be empty. Unlike
+            // CREATE ANALYTIC VIEW, level specifications are not individually parenthesized (ORA-00931).
+            val levelName = b.sequence(
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)))
+            val cacheSpecification = b.sequence(
+                MEASURE, GROUP,
+                b.firstOf(
+                    ALL,
+                    b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)),
+                LEVELS, LPARENTHESIS, b.optional(levelName, b.zeroOrMore(COMMA, levelName)), RPARENTHESIS)
+            // ADD requires MATERIALIZED (ORA-02000, even for the documented example without it) and may name
+            // the backing table; DROP accepts neither (ORA-03049).
+            b.rule(ALTER_ANALYTIC_VIEW).define(
+                ALTER, ANALYTIC, VIEW, b.optional(IF, EXISTS), schemaName,
+                b.firstOf(
+                    renameOrCompile,
+                    b.sequence(
+                        ADD, CACHE, cacheSpecification,
+                        MATERIALIZED, b.optional(USING, schemaName)),
+                    b.sequence(DROP, CACHE, cacheSpecification)),
                 b.optional(SEMICOLON))
         }
 

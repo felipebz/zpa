@@ -77,7 +77,6 @@
   "sqlrf/ADMINISTER-KEY-MANAGEMENT-7.sql" : [ 2 ],
   "sqlrf/ADMINISTER-KEY-MANAGEMENT-8.sql" : [ 2 ],
   "sqlrf/ADMINISTER-KEY-MANAGEMENT-9.sql" : [ 2 ],
-  "sqlrf/ALTER-ANALYTIC-VIEW-0.sql" : [ 2 ],
   "sqlrf/ALTER-ANALYTIC-VIEW-1.sql" : [ 2 ],
   "sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing-14.sql" : [ 2 ],
   "sqlrf/ALTER-DATABASE-1.sql" : [ 2 ],

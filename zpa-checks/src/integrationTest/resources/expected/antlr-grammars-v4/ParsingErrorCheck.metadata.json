@@ -6,6 +6,13 @@
       "reason": "NOCOPY is not valid for an IN-only parameter; Oracle accepts NOCOPY only with OUT and IN OUT parameters."
     }
   },
+  "examples/alter_analytic_view.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "The documented ADD CACHE example omits the cache type; Oracle 26 requires MATERIALIZED after the LEVELS clause and reports a missing MATERIALIZED keyword."
+    }
+  },
   "examples/alter_synonym01.sql": {
     "4": {
       "classification": "INVALID_SOURCE",
