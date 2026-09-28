@@ -126,6 +126,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_EDITION,
     CREATE_OPERATOR,
     ALTER_OPERATOR,
+    CREATE_INDEXTYPE,
+    ALTER_INDEXTYPE,
     CREATE_SPFILE,
     ALTER_DOMAIN,
     CREATE_AUDIT_POLICY,
@@ -2238,6 +2240,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createFlashbackTable(b)
             createEdition(b)
             createOperator(b)
+            createIndextype(b)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/CREATE-CONTEXT.html
             b.rule(CREATE_CONTEXT).define(
@@ -2585,6 +2588,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_EDITION,
                 CREATE_OPERATOR,
                 ALTER_OPERATOR,
+                CREATE_INDEXTYPE,
+                ALTER_INDEXTYPE,
                 CREATE_AUDIT_POLICY,
                 ALTER_AUDIT_POLICY,
                 CREATE_PROPERTY_GRAPH,
@@ -3064,18 +3069,25 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SEMICOLON))
         }
 
+        // Parameter type list shared by operator bindings and indextype operator signatures; Oracle 26
+        // parses both identically. Types are bare names: sizes/modifiers are rejected (ORA-00907), REF
+        // always fails during parsing (ORA-29834), and INTERVAL/NATIONAL are invalid datatypes (ORA-00902).
+        // Unknown names, LONG and LONG RAW parse and are only rejected by later signature checks.
+        private fun operatorType(b: PlSqlGrammarBuilder) = b.firstOf(
+            b.sequence(DOUBLE, PRECISION),
+            b.sequence(LONG, RAW),
+            b.sequence(b.nextNot(b.firstOf(REF, INTERVAL, NATIONAL)), UNIT_NAME))
+
+        private fun operatorParameterTypes(b: PlSqlGrammarBuilder): Any {
+            val type = operatorType(b)
+            return b.sequence(LPARENTHESIS, type, b.zeroOrMore(COMMA, type), RPARENTHESIS)
+        }
+
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OPERATOR.html
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-OPERATOR.html
         private fun createOperator(b: PlSqlGrammarBuilder) {
-            // Binding types are bare names: sizes/modifiers are rejected (ORA-00907), REF always fails
-            // during parsing (ORA-29834), and INTERVAL/NATIONAL are invalid datatypes (ORA-00902). Unknown
-            // names, LONG and LONG RAW parse and are only rejected against the implementation signature.
-            val operatorType = b.firstOf(
-                b.sequence(DOUBLE, PRECISION),
-                b.sequence(LONG, RAW),
-                b.sequence(b.nextNot(b.firstOf(REF, INTERVAL, NATIONAL)), UNIT_NAME))
-            val parameterTypes = b.sequence(
-                LPARENTHESIS, operatorType, b.zeroOrMore(COMMA, operatorType), RPARENTHESIS)
+            val operatorType = operatorType(b)
+            val parameterTypes = operatorParameterTypes(b)
 
             // Oracle 26 also accepts WITH COLUMN CONTEXT before ANCILLARY TO (the diagram makes them
             // exclusive), but not after it (ORA-00922). COMPUTE ANCILLARY DATA requires the index context.
@@ -3118,6 +3130,58 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(ADD, BINDING, binding),
                     b.sequence(DROP, BINDING, parameterTypes, b.optional(FORCE)),
                     COMPILE),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INDEXTYPE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-INDEXTYPE.html
+        private fun createIndextype(b: PlSqlGrammarBuilder) {
+            val operatorSignature = b.sequence(UNIT_NAME, operatorParameterTypes(b))
+
+            // The indexed type accepts a wider datatype language than operator signatures: INTERVAL and
+            // NATIONAL CHAR parse, while REF, LONG and LONG RAW fail at once (ORA-29892) and sizes are
+            // rejected. The varray type is a [schema.]name and cannot be omitted, despite the diagram.
+            val arrayDmlType = b.firstOf(
+                b.sequence(INTERVAL, b.firstOf(b.sequence(DAY, TO, SECOND), b.sequence(YEAR, TO, MONTH))),
+                b.sequence(NATIONAL, CHAR),
+                b.sequence(DOUBLE, PRECISION),
+                b.sequence(b.nextNot(b.firstOf(REF, LONG, INTERVAL, NATIONAL)), UNIT_NAME))
+            val arrayDmlMapping = b.sequence(LPARENTHESIS, arrayDmlType, COMMA, UNIT_NAME, RPARENTHESIS)
+            // WITH or WITHOUT is required, and WITHOUT takes no mappings (ORA-00922).
+            val arrayDmlClause = b.firstOf(
+                b.sequence(WITH, ARRAY, DML, b.optional(arrayDmlMapping, b.zeroOrMore(COMMA, arrayDmlMapping))),
+                b.sequence(WITHOUT, ARRAY, DML))
+            val localPartition = b.sequence(WITH, LOCAL, b.optional(RANGE_KEYWORD), PARTITION)
+            val storageTables = b.sequence(WITH, b.firstOf(SYSTEM, USER), MANAGED, STORAGE, TABLES)
+
+            // Unlike the diagrams, array DML, local partitioning and storage tables follow USING in any
+            // order, each at most once (ORA-00922 when repeated), and none of them is valid without USING.
+            val usingTypeClause = b.sequence(
+                USING, UNIT_NAME,
+                b.anyOrder(arrayDmlClause, localPartition, storageTables))
+
+            b.rule(CREATE_INDEXTYPE).define(
+                CREATE,
+                b.firstOf(
+                    b.sequence(OR, REPLACE, INDEXTYPE),
+                    b.sequence(INDEXTYPE, b.optional(IF, NOT, EXISTS))),
+                UNIT_NAME,
+                b.optional(SHARING, EQUALS, b.firstOf(METADATA, DATA, NONE)),
+                FOR, operatorSignature, b.zeroOrMore(COMMA, operatorSignature),
+                usingTypeClause,
+                b.optional(SEMICOLON))
+
+            // Every ADD/DROP repeats its keyword and may be followed by one comma, including a trailing one.
+            // ADDs must precede DROPs (ORA-29841), and DROP has no FORCE.
+            val addOperator = b.sequence(ADD, operatorSignature, b.optional(COMMA))
+            val dropOperator = b.sequence(DROP, operatorSignature, b.optional(COMMA))
+            b.rule(ALTER_INDEXTYPE).define(
+                ALTER, INDEXTYPE, b.optional(IF, EXISTS), UNIT_NAME,
+                b.firstOf(
+                    COMPILE,
+                    b.sequence(b.oneOrMore(addOperator), b.zeroOrMore(dropOperator), b.optional(usingTypeClause)),
+                    b.sequence(b.oneOrMore(dropOperator), b.optional(usingTypeClause)),
+                    usingTypeClause),
                 b.optional(SEMICOLON))
         }
 

@@ -85,6 +85,24 @@ class PlSqlGrammarBuilder(private val builder: LexerfulGrammarBuilder) {
 
     fun nextNot(e1: Any, vararg rest: Any): Any = builder.nextNot(e1, *rest)
 
+    /**
+     * Matches each expression at most once, in any order. Every branch consumes the expression it starts
+     * with, so the ordered choice always takes whichever expression comes next in the input.
+     *
+     * The expression tree grows factorially (n! paths), so this is only for small, closed sets; larger or
+     * open-ended sets must use a repetition with an explicit alternative list instead.
+     */
+    fun anyOrder(e1: Any, vararg rest: Any): Any {
+        require(rest.size <= 2) { "anyOrder is limited to three expressions; got ${rest.size + 1}" }
+        return anyOrder(listOf(e1, *rest))
+    }
+
+    private fun anyOrder(expressions: List<Any>): Any {
+        if (expressions.size == 1) return builder.optional(expressions.first())
+        val branches = expressions.map { e -> builder.sequence(e, anyOrder(expressions - e)) }
+        return builder.optional(builder.firstOf(branches[0], branches[1], *branches.drop(2).toTypedArray()))
+    }
+
     fun nothing(): Any = builder.nothing()
 
     fun buildWithMemoizationOfMatchesForAllRules(): Grammar = builder.buildWithMemoizationOfMatchesForAllRules()
