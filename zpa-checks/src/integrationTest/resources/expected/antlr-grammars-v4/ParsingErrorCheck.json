@@ -6,7 +6,6 @@
   "examples/alter_database.sql" : [ 1 ],
   "examples/alter_diskgroup.sql" : [ 1 ],
   "examples/alter_hierarchy.sql" : [ 1 ],
-  "examples/alter_java.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 4 ],
   "examples/alter_table.sql" : [ 62 ],

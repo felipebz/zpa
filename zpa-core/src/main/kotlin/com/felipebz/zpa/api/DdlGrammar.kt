@@ -249,6 +249,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_COMMAND,
     CREATE_SYNONYM,
     CREATE_JAVA,
+    ALTER_JAVA,
     CREATE_JAVA_OBJECT,
     CREATE_JAVA_SOURCE,
     CREATE_JAVA_CLASS,
@@ -2349,6 +2350,16 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_JAVA_OBJECT,
                 b.optional(SEMICOLON))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-JAVA.html
+            // Oracle 26 takes IF EXISTS after SOURCE/CLASS, not after JAVA as diagrammed (ORA-02000). Either
+            // kind accepts RESOLVE or COMPILE; exactly one of RESOLVE, COMPILE or AUTHID ends the statement
+            // (ORA-03049 for a second), and RESOLVER cannot stand alone (ORA-00922).
+            b.rule(ALTER_JAVA).define(
+                ALTER, JAVA, b.firstOf(SOURCE, CLASS), b.optional(IF, EXISTS), UNIT_NAME,
+                b.optional(JAVA_RESOLVER_CLAUSE),
+                b.firstOf(RESOLVE, COMPILE, JAVA_AUTHID_CLAUSE),
+                b.optional(SEMICOLON))
+
             b.rule(CREATE_JAVA_OBJECT).define(
                 b.firstOf(CREATE_JAVA_SOURCE, CREATE_JAVA_CLASS, CREATE_JAVA_RESOURCE))
 
@@ -2391,7 +2402,8 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(JAVA_RESOLVER_CLAUSE).define(
                 RESOLVER,
                 LPARENTHESIS,
-                b.oneOrMore(JAVA_RESOLVER_ENTRY),
+                // Oracle 26 accepts an empty RESOLVER () in both CREATE and ALTER JAVA.
+                b.zeroOrMore(JAVA_RESOLVER_ENTRY),
                 RPARENTHESIS)
 
             b.rule(JAVA_RESOLVER_ENTRY).define(
@@ -2558,6 +2570,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 RENAME_STATEMENT,
                 ALTER_RESOURCE_COST,
                 CREATE_JAVA,
+                ALTER_JAVA,
                 CREATE_CONTEXT,
                 CREATE_DOMAIN,
                 ALTER_DOMAIN,

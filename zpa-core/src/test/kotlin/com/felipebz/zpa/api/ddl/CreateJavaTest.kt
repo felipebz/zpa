@@ -93,8 +93,11 @@ class CreateJavaTest : RuleTest() {
             "create java source named Example resolver ((\"java/lang/*\", HR)) as public class Example {}")
         assertThat(p).matches(
             "create java source named Example resolver ((* PUBLIC)(* -)) as public class Example {}")
-
+        assertThat(p).matches(
+            "create java source named Example resolver () as public class Example {}")
+        assertThat(p).matches("create or replace java class resolver () using bfile (java_dir, 'Agent.class');")
     }
+
     @Test
     fun matchesUsingSubqueryWithDivision() {
         assertThat(p).matches(
