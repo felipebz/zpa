@@ -686,31 +686,39 @@ enum class DdlGrammar : GrammarRuleKey {
                 )
             )
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html (LOB_storage_clause)
+            // The diagram repeats {SECUREFILE | BASICFILE | LOB_segname | (params)} freely; Oracle 26 instead
+            // parses them once each in that order (ORA-00922 otherwise), rejects SECUREFILE with BASICFILE
+            // (ORA-43852) or a repeated type (ORA-22850) and a segment name for several columns (ORA-22855),
+            // all during parsing. After a storage type, the segment name is optional and Oracle reads the
+            // table properties below as the next clause instead; other words (PCTFREE, COMPRESS) become the
+            // segment name and fail on the following token.
+            val lobStorageType = b.firstOf(SECUREFILE, BASICFILE)
+            val lobParameters = b.sequence(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS)
+            val optionalLobSegname = b.optional(
+                b.nextNot(b.firstOf(
+                    TABLESPACE, LOGGING, NOLOGGING, PCTUSED, INITRANS, MAXTRANS, STORAGE,
+                    PARALLEL, NOPARALLEL, ENABLE, DISABLE, CACHE, NOCACHE,
+                    PARTITION, LOB, NESTED, VARRAY, ANNOTATIONS, SECUREFILE, BASICFILE)),
+                IDENTIFIER_NAME)
             b.rule(LOB_STORAGE_CLAUSE).define(
-                    b.sequence(LOB,
-                            b.firstOf(
-                                    b.sequence(
-                                            LPARENTHESIS,
-                                            b.oneOrMore(
-                                                    IDENTIFIER_NAME,
-                                                    b.optional(COMMA)),
-                                            RPARENTHESIS,
-                                            STORE,
-                                            AS,
-                                            LPARENTHESIS,
-                                            LOB_PARAMETERS,
-                                            RPARENTHESIS),
-                                    b.sequence(
-                                            LPARENTHESIS,
+                    LOB,
+                    b.firstOf(
+                            b.sequence(
+                                    LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS, STORE, AS,
+                                    b.firstOf(
+                                            b.sequence(lobStorageType, optionalLobSegname, b.optional(lobParameters)),
+                                            b.sequence(IDENTIFIER_NAME, b.optional(lobParameters)),
+                                            lobParameters)),
+                            b.sequence(
+                                    LPARENTHESIS,
+                                    b.oneOrMore(
                                             IDENTIFIER_NAME,
-                                            RPARENTHESIS,
-                                            STORE,
-                                            AS,
-                                            IDENTIFIER_NAME,
-                                            b.optional(b.sequence(
-                                                    LPARENTHESIS,
-                                                    LOB_PARAMETERS,
-                                                    RPARENTHESIS))))))
+                                            b.optional(COMMA)),
+                                    RPARENTHESIS, STORE, AS,
+                                    b.firstOf(
+                                            b.sequence(lobStorageType, b.optional(lobParameters)),
+                                            lobParameters))))
 
             // Oracle 26 rejects `STORE ALL VARRAYS` after `OF XMLTYPE XMLTYPE` (ORA-00905) and a string-literal
             // schema URL (ORA-19002), so neither is modeled. Any other word after the storage type is read as the

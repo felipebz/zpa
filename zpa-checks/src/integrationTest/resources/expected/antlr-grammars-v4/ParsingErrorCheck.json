@@ -7,7 +7,7 @@
   "examples/alter_diskgroup.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 4 ],
-  "examples/alter_table.sql" : [ 62 ],
+  "examples/alter_table.sql" : [ 71 ],
   "examples/alter_table_modify_partition_by_range.sql" : [ 3 ],
   "examples/alter_table_modify_partition_shrink.sql" : [ 1 ],
   "examples/alter_tablespace_set.sql" : [ 1 ],
