@@ -521,6 +521,42 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(EXCEPTIONS_CLAUSE).define(EXCEPTIONS, INTO, UNIT_NAME)
 
+            // Unlike CREATE SEQUENCE: no SESSION/GLOBAL, bare RESTART, and LIMIT VALUE only in MODIFY.
+            // The lexer reads 1d/1f as numbers, which Oracle rejects; not distinguished here.
+            val identityNumber = b.sequence(b.optional(b.firstOf(PLUS, MINUS)), NUMERIC_LITERAL)
+            fun identityClause(limitValue: Boolean): Any {
+                val startValue = if (limitValue) b.firstOf(identityNumber, b.sequence(LIMIT, VALUE)) else identityNumber
+                val identityOption = b.firstOf(
+                    b.sequence(START, WITH, startValue),
+                    b.sequence(INCREMENT, BY, identityNumber),
+                    b.sequence(MAXVALUE, identityNumber),
+                    NOMAXVALUE,
+                    b.sequence(MINVALUE, identityNumber),
+                    NOMINVALUE,
+                    CYCLE,
+                    NOCYCLE,
+                    b.sequence(CACHE, identityNumber),
+                    NOCACHE,
+                    ORDER,
+                    NOORDER,
+                    KEEP,
+                    NOKEEP,
+                    b.sequence(SCALE, b.optional(b.firstOf(EXTEND, NOEXTEND))),
+                    NOSCALE,
+                    RESTART)
+                return b.sequence(
+                    GENERATED,
+                    b.optional(b.firstOf(
+                        ALWAYS,
+                        b.sequence(BY, DEFAULT, b.optional(ON, NULL,
+                            b.optional(FOR, INSERT, b.firstOf(ONLY, b.sequence(AND, UPDATE))))))),
+                    AS, IDENTITY,
+                    b.optional(b.firstOf(
+                        b.sequence(LPARENTHESIS, b.zeroOrMore(identityOption), RPARENTHESIS),
+                        b.oneOrMore(identityOption))))
+            }
+            val identityStart = b.sequence(GENERATED, b.firstOf(ALWAYS, BY, AS))
+
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/constraint.html
             // inline_ref_constraint without its references_clause branch, which INLINE_CONSTRAINT already
             // covers. Oracle 26 parses these on any column and mixed with other inline constraints in any
@@ -533,12 +569,18 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(WITH, ROWID)))
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
-                    IDENTIFIER_NAME, DATATYPE,
+                    IDENTIFIER_NAME,
+                    // Oracle rejects a missing identity datatype only after parsing (ORA-02263).
+                    b.firstOf(
+                        b.sequence(b.nextNot(identityStart), DATATYPE),
+                        b.next(identityStart)),
                     b.optional(SORT),
-                    b.optional(DEFAULT, b.optional(
-                        b.sequence(ON, NULL,
-                            b.optional(FOR, INSERT,
-                                b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
+                    b.optional(b.firstOf(
+                        b.sequence(DEFAULT, b.optional(
+                            b.sequence(ON, NULL,
+                                b.optional(FOR, INSERT,
+                                    b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
+                        identityClause(false))),
                     b.optional(columnEncryptionClause()),
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
@@ -1899,10 +1941,10 @@ enum class DdlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(b.sequence(
                             b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS,
-                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS))),
+                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS), identityStart)),
                             DATATYPE)),
                     b.optional(COLLATE, IDENTIFIER_NAME),
-                    b.optional(DEFAULT, EXPRESSION),
+                    b.optional(b.firstOf(b.sequence(DEFAULT, EXPRESSION), identityClause(true))),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     b.optional(ANNOTATIONS_CLAUSE))
