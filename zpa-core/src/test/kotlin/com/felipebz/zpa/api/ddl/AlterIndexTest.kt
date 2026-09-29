@@ -50,6 +50,13 @@ class AlterIndexTest : RuleTest() {
     }
 
     @Test
+    fun rejectsLegacyComputeStatisticsInAlterIndex() {
+        assertThat(p).notMatches("alter index employee_ix rebuild compute statistics;")
+        assertThat(p).notMatches("alter index employee_ix rebuild pctfree 10 compute statistics;")
+        assertThat(p).notMatches("alter index employee_ix compute statistics;")
+    }
+
+    @Test
     fun matchesIndexStateAndMaintenanceActions() {
         assertThat(p).matches("alter index employee_ix parameters ('format=basic');")
         assertThat(p).matches("alter index xml_ix parameters ('PARAM my_registered_parameter');")

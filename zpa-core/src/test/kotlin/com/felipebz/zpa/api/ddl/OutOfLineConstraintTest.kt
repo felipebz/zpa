@@ -118,6 +118,26 @@ class OutOfLineConstraintTest : RuleTest() {
     }
 
     @Test
+    fun acceptsLegacyComputeStatisticsInUnnamedAndInlineIndexes() {
+        assertThat(p).matches("unique (foo) using index compute statistics")
+        assertThat(p).matches("primary key (foo) using index pctfree 10 compute statistics tablespace users")
+        assertThat(p).matches("primary key (foo) using index compute statistics pctfree 10")
+        assertThat(p).matches("primary key (foo) using index compute statistics compute statistics")
+        assertThat(p).matches("primary key (foo) using index (create unique index ix on tab(foo) compute statistics)")
+        assertThat(p).matches("primary key (foo) using index (create index ix on tab(foo) compute statistics pctfree 5)")
+    }
+
+    @Test
+    fun rejectsComputeStatisticsAfterNamedIndexAndMalformedClauses() {
+        assertThat(p).notMatches("primary key (foo) using index ix compute statistics")
+        assertThat(p).notMatches("primary key (foo) using index ix pctfree 10 compute statistics")
+        assertThat(p).notMatches("primary key (foo) using index compute")
+        assertThat(p).notMatches("primary key (foo) using index statistics")
+        assertThat(p).notMatches("primary key (foo) using index compute pctfree 10 statistics")
+        assertThat(p).notMatches("primary key (foo) using index (create index ix on tab(foo) compute)")
+    }
+
+    @Test
     fun rejectsUsingIndexOnUnsupportedConstraint() {
         assertThat(p).notMatches("foreign key (foo) references tab (foo) using index")
         assertThat(p).notMatches("check (foo > 1) using index")

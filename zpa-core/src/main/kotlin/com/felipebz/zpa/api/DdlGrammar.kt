@@ -329,6 +329,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(IF, NOT, EXISTS),
                 CREATE_INDEX_SCHEMA_OBJECT_NAME
             )
+            // Oracle 26 still accepts this among CREATE INDEX attributes and unnamed USING INDEX properties.
+            val computeStatistics = b.sequence(COMPUTE, STATISTICS)
 
             fun usingIndexProperties() = b.oneOrMore(b.firstOf(
                 CREATE_INDEX_GLOBAL_PARTITIONED,
@@ -342,7 +344,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 REVERSE,
                 b.firstOf(VISIBLE, INVISIBLE),
                 INDEX_PARTIAL_CLAUSE,
-                ANNOTATIONS_CLAUSE
+                ANNOTATIONS_CLAUSE,
+                computeStatistics
             ))
 
             fun createIndexTableClauseForConstraint() = b.sequence(
@@ -513,7 +516,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(
                         b.sequence(LPARENTHESIS, CREATE_INDEX_FOR_CONSTRAINT, RPARENTHESIS),
                         usingIndexProperties(),
-                        b.sequence(b.nextNot(b.sequence(EXCEPTIONS, INTO)), UNIT_NAME)
+                        b.sequence(b.nextNot(b.firstOf(COMPUTE, STATISTICS)), b.nextNot(b.sequence(EXCEPTIONS, INTO)), UNIT_NAME)
                     )
                 )
             )
@@ -1535,7 +1538,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.firstOf(VISIBLE, INVISIBLE),
                     INDEX_PARTIAL_CLAUSE,
                     INDEX_PARALLEL_CLAUSE,
-                    ANNOTATIONS_CLAUSE))
+                    ANNOTATIONS_CLAUSE,
+                    computeStatistics))
 
             b.rule(CREATE_INDEX_ATTRIBUTES).define(
                 b.oneOrMore(CREATE_INDEX_ATTRIBUTE))
@@ -1671,7 +1675,11 @@ enum class DdlGrammar : GrammarRuleKey {
                 UNIT_NAME,
                 b.optional(CREATE_INDEX_LOCAL_DOMAIN_CLAUSE),
                 b.optional(INDEX_PARALLEL_CLAUSE),
-                b.optional(INDEX_PARAMETERS_CLAUSE))
+                // COMPUTE STATISTICS is recognized for domain indexes, although Oracle rejects it
+                // semantically for supported indextypes (ORA-29850). Keep it separate from ordinary attributes.
+                b.zeroOrMore(computeStatistics),
+                b.optional(INDEX_PARAMETERS_CLAUSE),
+                b.zeroOrMore(computeStatistics))
 
             b.rule(CREATE_INDEX_LOCAL_XMLINDEX_CLAUSE).define(
                 LOCAL,

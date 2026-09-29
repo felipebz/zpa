@@ -141,6 +141,42 @@ class CreateIndexTest : RuleTest() {
     }
 
     @Test
+    fun acceptsLegacyComputeStatisticsAmongIndexProperties() {
+        assertThat(p).matches("create index ix on t(a) pctfree 10 compute statistics storage (initial 65536);")
+        assertThat(p).matches("create unique index ix on t(a) compute statistics pctfree 10;")
+        assertThat(p).matches("create bitmap index ix on t(a) compute statistics;")
+        assertThat(p).matches("create index ix on t(a) global partition by hash(a) partitions 2 compute statistics;")
+        assertThat(p).matches("create index ix on t(a) compute statistics local;")
+        assertThat(p).matches("create index ix on t(a) compute statistics compute statistics;")
+        assertThat(p).matches("create index ix on cluster c compute statistics;")
+        assertThat(p).matches("create bitmap index ix on t(a) from t x where x.a > 0 compute statistics;")
+    }
+
+    @Test
+    fun rejectsIncompleteAndMisplacedComputeStatistics() {
+        assertThat(p).notMatches("create index ix on t(a) compute;")
+        assertThat(p).notMatches("create index ix on t(a) statistics;")
+        assertThat(p).notMatches("create index ix on t(a) compute pctfree 10 statistics;")
+        assertThat(p).notMatches("create index ix on t(a) local (partition p1 compute statistics);")
+    }
+
+    @Test
+    fun acceptsComputeStatisticsForDomainIndexesOnly() {
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context compute statistics;")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context compute statistics parameters ('x');")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context parameters ('x') compute statistics;")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context compute statistics compute statistics;")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context local compute statistics;")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context local (partition p1) compute statistics;")
+        assertThat(p).matches("create index ix on t(a) indextype is ctxsys.context local (partition p1 parameters ('x')) parameters ('x') compute statistics;")
+        assertThat(p).notMatches("create index ix on t(a) indextype is ctxsys.context compute;")
+        assertThat(p).notMatches("create index ix on t(a) indextype is ctxsys.context statistics;")
+        assertThat(p).notMatches("create index ix on t(a) indextype is ctxsys.context compute x statistics;")
+        assertThat(p).notMatches("create index ix on t(a) indextype is ctxsys.context pctfree 10;")
+        assertThat(p).notMatches("create index ix on t(a) indextype is ctxsys.context compute statistics garbage;")
+    }
+
+    @Test
     fun rejectsOutOfScopeAndInvalidForms() {
         assertThat(p).notMatches("create index if exists employee_ix on employees(employee_id);")
         assertThat(p).notMatches("create indextype custom_index_type using implementation_type;")
