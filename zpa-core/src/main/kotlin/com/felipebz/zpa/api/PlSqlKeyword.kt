@@ -667,6 +667,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     ONLINE("online"),
     ONLY("only"),
     OPEN("open"),
+    OPERATIONS("operations"),
     OPERATOR("operator"),
     OPTIMAL("optimal"),
     OPTIMIZE("optimize"),

@@ -712,15 +712,39 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(TABLESPACE, IDENTIFIER_NAME),
                             LOGGING_CLAUSE)))
 
+            // Oracle 26 also parses the legacy COMPRESS FOR forms, COMPRESS BASIC (but not ADVANCED), a bare
+            // ROW STORE and a bare COLUMN STORE; FOR must be followed by a compression type (ORA-14463/ORA-14464).
+            // A store clause never splits into two properties: COMPRESS that does not fit its form, NOCOMPRESS or
+            // ROW STORE after COLUMN STORE fail with ORA-00922, while whole repeated clauses fail with ORA-14460.
+            val columnStoreLocking = b.sequence(b.optional(NO), ROW, LEVEL, LOCKING)
             b.rule(TABLE_COMPRESSION).define(
                     b.firstOf(
-                            COMPRESS,
+                            b.sequence(COMPRESS, b.firstOf(
+                                    BASIC,
+                                    b.sequence(FOR, b.firstOf(
+                                            OLTP,
+                                            b.sequence(b.firstOf(QUERY, ARCHIVE), b.optional(b.firstOf(LOW, HIGH))),
+                                            b.sequence(b.firstOf(ALL, DIRECT_LOAD), OPERATIONS))),
+                                    b.nextNot(FOR))),
                             NOCOMPRESS,
-                            b.sequence(ROW, STORE, COMPRESS, b.optional(b.firstOf(BASIC, ADVANCED))),
-                            b.sequence(COLUMN, STORE, COMPRESS,
-                                    b.optional(FOR, b.optional(MEMSPEED), b.firstOf(QUERY, ARCHIVE),
-                                            b.optional(b.firstOf(LOW, HIGH))),
-                                    b.optional(b.optional(NO), ROW, LEVEL, LOCKING))))
+                            b.sequence(ROW, STORE, b.firstOf(
+                                    b.sequence(COMPRESS, b.firstOf(
+                                            BASIC,
+                                            ADVANCED,
+                                            b.sequence(FOR, b.firstOf(OLTP, b.sequence(b.firstOf(ALL, DIRECT_LOAD), OPERATIONS))),
+                                            b.nextNot(FOR))),
+                                    NOCOMPRESS,
+                                    b.nextNot(COMPRESS))),
+                            b.sequence(COLUMN, STORE,
+                                    b.optional(columnStoreLocking),
+                                    b.firstOf(
+                                            b.sequence(COMPRESS, b.firstOf(
+                                                    b.sequence(FOR, b.optional(MEMSPEED), b.firstOf(QUERY, ARCHIVE),
+                                                            b.optional(b.firstOf(LOW, HIGH))),
+                                                    b.nextNot(FOR))),
+                                            b.nextNot(COMPRESS)),
+                                    b.optional(columnStoreLocking),
+                                    b.nextNot(b.firstOf(NOCOMPRESS, b.sequence(ROW, STORE))))))
 
             b.rule(KEY_COMPRESSION).define(
                     b.firstOf(
@@ -756,7 +780,8 @@ enum class DdlGrammar : GrammarRuleKey {
             // all during parsing. After a storage type, the segment name is optional and Oracle reads the
             // table properties below as the next clause instead; other words (PCTFREE, COMPRESS) become the
             // segment name and fail on the following token.
-            val lobStorageType = b.firstOf(SECUREFILE, BASICFILE)
+            // A bare COMPRESS or NOCOMPRESS directly after the storage type is read as the segment name (ORA-00906).
+            val lobStorageType = b.sequence(b.firstOf(SECUREFILE, BASICFILE), b.nextNot(b.firstOf(COMPRESS, NOCOMPRESS)))
             val lobParameters = b.sequence(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS)
             val optionalLobSegname = b.optional(
                 b.nextNot(b.firstOf(
@@ -771,7 +796,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS, STORE, AS,
                                     b.firstOf(
                                             b.sequence(lobStorageType, optionalLobSegname, b.optional(lobParameters)),
-                                            b.sequence(IDENTIFIER_NAME, b.optional(lobParameters)),
+                                            b.sequence(b.nextNot(b.firstOf(SECUREFILE, BASICFILE)), IDENTIFIER_NAME, b.optional(lobParameters)),
                                             lobParameters)),
                             b.sequence(
                                     LPARENTHESIS,
@@ -1231,7 +1256,7 @@ enum class DdlGrammar : GrammarRuleKey {
             // CREATE rejects NOT FOR STAGING (ORA-00922), and a repeated FOR STAGING fails with ORA-12990.
             fun tableLevelProperty() = b.firstOf(
                     ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause(),
-                    inmemoryProperty, b.sequence(FOR, STAGING))
+                    inmemoryProperty, b.sequence(FOR, STAGING), TABLE_COMPRESSION)
 
             fun tableSuffixesWithAnnotations() = b.sequence(
                     b.zeroOrMore(b.firstOf(
