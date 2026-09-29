@@ -69,6 +69,7 @@
   "examples/query_factoring05.sql" : [ 15 ],
   "examples/query_factoring06.sql" : [ 10 ],
   "examples/query_factoring08.sql" : [ 2, 3, 5 ],
+  "examples/sample01.sql" : [ 1 ],
   "examples/select_all_some_any.sql" : [ 2, 3, 4 ],
   "examples/simple04.sql" : [ 1, 4 ],
   "examples/simple05.sql" : [ 1, 3 ],

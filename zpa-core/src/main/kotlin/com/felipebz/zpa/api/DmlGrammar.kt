@@ -29,16 +29,20 @@ import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
 import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar.*
 
+/** The kind of row source being parsed; DELETE and UPDATE targets have none. */
+internal enum class RowSource { QUERY, MERGE }
+
 /**
- * Set while parsing a row source: query FROM/JOIN items and MERGE USING. Oracle 26 accepts
- * GRAPH_TABLE there but rejects it as a DELETE/UPDATE target at parse time (ORA-40968 is
- * raised before a malformed body or trailing garbage is diagnosed).
+ * Set while parsing a row source: query FROM/JOIN items (QUERY) and MERGE USING (MERGE). Oracle 26 accepts
+ * GRAPH_TABLE in both but rejects it as a DELETE/UPDATE target at parse time (ORA-40968 is raised before a
+ * malformed body or trailing garbage is diagnosed). SAMPLE is only valid in a query (ORA-30560).
  */
-internal val ROW_SOURCE_CONTEXT: ContextKey<Boolean> = ContextKey()
+internal val ROW_SOURCE_CONTEXT: ContextKey<RowSource> = ContextKey()
 
 enum class DmlGrammar : GrammarRuleKey {
 
     TABLE_REFERENCE,
+    SAMPLE_CLAUSE,
     PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
     VECTOR_CHUNKS_TABLE,
@@ -384,6 +388,15 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.optional(EXTENDED),
                 RPARENTHESIS)
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+            // Oracle 26 also takes a second value, a group size, inside the parentheses. Values are unsigned
+            // numbers or binds whose range is checked later (ORA-30562, ORA-30577, ORA-22053). SAMPLE and SEED
+            // stay legal aliases when no parenthesis follows.
+            val sampleValue = b.firstOf(NUMERIC_LITERAL, HOST_AND_INDICATOR_VARIABLE)
+            b.rule(SAMPLE_CLAUSE).define(
+                SAMPLE, b.optional(BLOCK), LPARENTHESIS, sampleValue, b.optional(COMMA, sampleValue), RPARENTHESIS,
+                b.optional(SEED, LPARENTHESIS, sampleValue, RPARENTHESIS))
+
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
                     b.sequence(
@@ -401,14 +414,17 @@ enum class DmlGrammar : GrammarRuleKey {
                             // Oracle always treats `graph_table(` here as the operator (ORA-03054 for
                             // `graph_table(1)` even with such a function; ORA-40968 as a DELETE/UPDATE
                             // target), so it never falls back to a function call.
-                            b.sequence(b.requireContext(ROW_SOURCE_CONTEXT, true), GraphTableGrammar.GRAPH_TABLE),
+                            b.sequence(b.requireContext(ROW_SOURCE_CONTEXT), GraphTableGrammar.GRAPH_TABLE),
                             // Also parsed as an UPDATE/INSERT target and MERGE source; Oracle never falls
                             // back to a function call for an unqualified `vector_chunks(` (ORA-02000).
                             VECTOR_CHUNKS_TABLE,
                             // A table function called without `table(…)`. It comes first:
                             // `apps.pkg.fn()` matches TABLE_REFERENCE on its first two parts.
                             b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), METHOD_CALL),
-                            b.sequence(TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE)),
+                            b.sequence(
+                                TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE),
+                                // The alias that follows a sample clause has no AS (ORA-03048).
+                                b.optional(b.requireContext(ROW_SOURCE_CONTEXT, RowSource.QUERY), SAMPLE_CLAUSE, b.nextNot(AS, ALIAS))),
                             b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), OBJECT_REFERENCE)
                         ),
                         b.optional(NESTED_CLAUSE),
@@ -447,7 +463,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(FROM_CLAUSE).define(
                     FROM,
                     b.withContext(
-                        ROW_SOURCE_CONTEXT, true,
+                        ROW_SOURCE_CONTEXT, RowSource.QUERY,
                         b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
                         b.optional(
                             b.firstOf(
@@ -1013,7 +1029,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             GraphTableGrammar.GRAPH_TABLE,
                             b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),
                     b.optional(b.nextNot(USING), IDENTIFIER_NAME),
-                    USING, b.withContext(ROW_SOURCE_CONTEXT, true, DML_TABLE_EXPRESSION_CLAUSE),
+                    USING, b.withContext(ROW_SOURCE_CONTEXT, RowSource.MERGE, DML_TABLE_EXPRESSION_CLAUSE),
                     ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(
                             b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
