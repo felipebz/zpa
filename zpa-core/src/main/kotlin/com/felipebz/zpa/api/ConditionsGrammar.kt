@@ -39,6 +39,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     // conditions
     RELATIONAL_CONDITION,
     BOOLEAN_TEST_CONDITION,
+    FLOATING_POINT_CONDITION,
     LIKE_CONDITION,
     BETWEEN_CONDITION,
     OVERLAPS_CONDITION,
@@ -74,6 +75,9 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
             b.rule(BOOLEAN_TEST_CONDITION).define(
                 CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)
+            )
+            b.rule(FLOATING_POINT_CONDITION).define(
+                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)
             )
 
             b.rule(LIKE_CONDITION).define(
@@ -267,6 +271,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     b.sequence(
                         b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
                         BOOLEAN_TEST_CONDITION
+                    ),
+                    b.sequence(
+                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
+                        FLOATING_POINT_CONDITION
                     ),
                     b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
                     b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),

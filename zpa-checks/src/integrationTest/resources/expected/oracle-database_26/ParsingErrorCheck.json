@@ -180,8 +180,6 @@
   "sqlrf/Data-Types-36.sql" : [ 4 ],
   "sqlrf/FLASHBACK-DATABASE-0.sql" : [ 3 ],
   "sqlrf/FLASHBACK-DATABASE-1.sql" : [ 4 ],
-  "sqlrf/Floating-Point-Conditions-1.sql" : [ 3 ],
-  "sqlrf/Floating-Point-Conditions-3.sql" : [ 3 ],
   "sqlrf/Interval-Expressions-0.sql" : [ 2 ],
   "sqlrf/JSON_SERIALIZE-0.sql" : [ 2 ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [ 2 ],
