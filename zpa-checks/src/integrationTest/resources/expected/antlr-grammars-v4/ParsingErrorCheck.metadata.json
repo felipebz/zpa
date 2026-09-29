@@ -34,6 +34,13 @@
       "reason": "The sharing clause must precede the parameter list and RETURN; Oracle rejects SHARING after the return type."
     }
   },
+  "examples/create_table.sql": {
+    "50": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
+    }
+  },
   "examples/create_view.sql": {
     "32": {
       "classification": "INVALID_SOURCE",
