@@ -1002,6 +1002,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     VERTEX("vertex"),
     VIEWS("views"),
     VIOLATION("violation"),
+    VIRTUAL("virtual"),
     VISIBLE("visible"),
     VOCABULARY("vocabulary"),
     WAIT("wait"),

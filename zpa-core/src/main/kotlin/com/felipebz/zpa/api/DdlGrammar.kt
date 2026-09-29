@@ -64,6 +64,7 @@ enum class DdlGrammar : GrammarRuleKey {
     XMLTYPE_COLUMN_PROPERTIES,
     XMLTYPE_STORAGE,
     XMLSCHEMA_SPEC,
+    XMLTYPE_VIRTUAL_COLUMNS,
     OBJECT_TABLE_SUBSTITUTION,
     OBJECT_TABLE_PROPERTIES,
     OBJECT_IDENTIFIER_CLAUSE,
@@ -784,20 +785,25 @@ enum class DdlGrammar : GrammarRuleKey {
 
             // Oracle 26 rejects `STORE ALL VARRAYS` after `OF XMLTYPE XMLTYPE` (ORA-00905) and a string-literal
             // schema URL (ORA-19002), so neither is modeled. Any other word after the storage type is read as the
-            // LOB segment name, even TABLESPACE, PCTFREE, LOB or PARTITION (errors land on the following token).
+            // LOB segment name, even TABLESPACE, PCTFREE, LOB or PARTITION (errors land on the following token),
+            // except VIRTUAL after BINARY XML, which starts VIRTUAL COLUMNS.
+            fun xmlLobSegment(vararg extraStops: Any) = b.optional(b.firstOf(
+                b.sequence(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS),
+                b.sequence(
+                    b.nextNot(b.firstOf(XMLSCHEMA, ELEMENT, XMLTYPE, *extraStops)),
+                    IDENTIFIER_NAME,
+                    b.optional(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS))))
             b.rule(XMLTYPE_STORAGE).define(
                 STORE, AS,
                 b.firstOf(
                     b.sequence(OBJECT, RELATIONAL),
                     b.sequence(
                         b.optional(b.firstOf(SECUREFILE, BASICFILE)),
-                        b.firstOf(CLOB, b.sequence(b.optional(b.optional(NOT), TRANSPORTABLE), BINARY, XML)),
-                        b.optional(b.firstOf(
-                            b.sequence(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS),
+                        b.firstOf(
+                            b.sequence(CLOB, xmlLobSegment()),
                             b.sequence(
-                                b.nextNot(b.firstOf(XMLSCHEMA, ELEMENT, XMLTYPE)),
-                                IDENTIFIER_NAME,
-                                b.optional(LPARENTHESIS, LOB_PARAMETERS, RPARENTHESIS)))))))
+                                b.optional(b.optional(NOT), TRANSPORTABLE), BINARY, XML,
+                                xmlLobSegment(VIRTUAL))))))
 
             b.rule(XMLSCHEMA_SPEC).define(
                 b.optional(XMLSCHEMA, IDENTIFIER_NAME), ELEMENT, IDENTIFIER_NAME,
@@ -808,13 +814,24 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(XMLTYPE_COLUMN_PROPERTIES).define(
                 XMLTYPE, b.optional(COLUMN), IDENTIFIER_NAME, b.optional(XMLTYPE_STORAGE), b.optional(XMLSCHEMA_SPEC))
 
+            // Unlike the diagram, Oracle 26 takes VIRTUAL COLUMNS after ON COMMIT and the OID clause, repeated,
+            // and interleaved with XMLSchema clauses. Datatypes, constraints and other column properties fail.
+            val xmlVirtualColumn = b.sequence(
+                IDENTIFIER_NAME,
+                b.optional(GENERATED, ALWAYS),
+                AS, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                b.optional(VIRTUAL), b.optional(VISIBLE))
+            b.rule(XMLTYPE_VIRTUAL_COLUMNS).define(
+                VIRTUAL, COLUMNS, LPARENTHESIS, xmlVirtualColumn, b.zeroOrMore(COMMA, xmlVirtualColumn), RPARENTHESIS)
+
             b.rule(XMLTYPE_TABLE).define(
                 OF, XMLTYPE, b.nextNot(DOT),
                 b.optional(OBJECT_TABLE_PROPERTIES),
                 b.optional(XMLTYPE, XMLTYPE_STORAGE),
                 b.optional(XMLSCHEMA_SPEC),
                 b.optional(ON, COMMIT, b.firstOf(DELETE, PRESERVE), ROWS),
-                b.optional(OBJECT_IDENTIFIER_CLAUSE))
+                b.optional(OBJECT_IDENTIFIER_CLAUSE),
+                b.zeroOrMore(b.firstOf(XMLTYPE_VIRTUAL_COLUMNS, XMLSCHEMA_SPEC)))
 
             b.rule(SUBSTITUTABLE_COLUMN_CLAUSE).define(
                     b.firstOf(
