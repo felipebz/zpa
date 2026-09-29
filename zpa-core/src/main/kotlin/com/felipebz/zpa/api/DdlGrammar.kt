@@ -960,10 +960,15 @@ enum class DdlGrammar : GrammarRuleKey {
                                     DEFAULT),
                             RPARENTHESIS))
 
+            val deferredSegmentCreation = b.sequence(SEGMENT, CREATION, b.firstOf(IMMEDIATE, DEFERRED))
+
+            // Oracle 26 accepts this option in subpartition storage descriptions and templates,
+            // even though the subpartition diagrams omit it.
             b.rule(PARTITIONING_STORAGE_CLAUSE).define(
                     b.optional(
                             b.oneOrMore(
                                     b.firstOf(
+                                            deferredSegmentCreation,
                                             b.sequence(
                                                     TABLESPACE,
                                                     IDENTIFIER_NAME),
@@ -1042,24 +1047,25 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.optional(COMMA)),
                                     RPARENTHESIS)))
 
+            // Keep compression, overflow, and column-storage stages in their prior order and cardinality.
+            // Oracle 26 accepts SEGMENT CREATION at every boundary. It also accepts physical attributes
+            // after compression (including NOCOMPRESS LOGGING STORAGE in the ECLAIMPROCESS fixture).
+            val segmentCreationWithAttributes = b.sequence(
+                    deferredSegmentCreation, b.optional(SEGMENT_ATTRIBUTES_CLAUSE))
             b.rule(TABLE_PARTITION_DESCRIPTION).define(
-                    b.sequence(
-                            b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
-                            b.optional(
-                                    b.firstOf(
-                                            TABLE_COMPRESSION,
-                                            KEY_COMPRESSION)),
-                            b.optional(
-                                    b.sequence(
-                                            OVERFLOW,
-                                            b.optional(SEGMENT_ATTRIBUTES_CLAUSE))),
-                            b.optional(
-                                    b.oneOrMore(
-                                            b.firstOf(
-                                                    LOB_STORAGE_CLAUSE,
-                                                    VARRAY_COL_PROPERTIES,
-                                                    NESTED_TABLE_COL_PROPERTIES))),
-                            b.optional(PARTITION_LEVEL_SUBPARTITION)))
+                    b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
+                    b.zeroOrMore(segmentCreationWithAttributes),
+                    b.optional(b.firstOf(TABLE_COMPRESSION, KEY_COMPRESSION)),
+                    b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
+                    b.zeroOrMore(segmentCreationWithAttributes),
+                    b.optional(OVERFLOW, b.optional(SEGMENT_ATTRIBUTES_CLAUSE)),
+                    b.zeroOrMore(segmentCreationWithAttributes),
+                    b.zeroOrMore(b.firstOf(
+                            LOB_STORAGE_CLAUSE,
+                            VARRAY_COL_PROPERTIES,
+                            NESTED_TABLE_COL_PROPERTIES,
+                            segmentCreationWithAttributes)),
+                    b.optional(PARTITION_LEVEL_SUBPARTITION))
 
             b.rule(INDIVIDUAL_HASH_PARTITIONS).define(
                     b.sequence(
@@ -1293,9 +1299,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     tablePartitioning(),
                     b.zeroOrMore(tableLevelProperty()))
 
-            // SEGMENT CREATION must come first: after relational properties but before column properties,
-            // ORGANIZATION INDEX and the other physical properties (ORA-00922), and never before ON COMMIT.
-            val deferredSegmentCreation = b.sequence(SEGMENT, CREATION, b.firstOf(IMMEDIATE, DEFERRED))
+            // Table-level SEGMENT CREATION must come first: after relational properties but before column
+            // properties, ORGANIZATION INDEX and other physical properties (ORA-00922), and not before ON COMMIT.
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
             // Immutable and blockchain tables take their clauses right after the relational properties, or

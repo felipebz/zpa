@@ -909,6 +909,130 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesPartitionSegmentCreationAroundPhysicalProperties() {
+        assertThat(p).matches(
+            "create table t (c number) partition by range (c) " +
+                "(partition p1 values less than (10) segment creation immediate, " +
+                "partition p2 values less than (maxvalue) segment creation deferred);"
+        )
+        assertThat(p).matches(
+            "create table t (c number) partition by list (c) " +
+                "(partition p1 values (1) segment creation immediate, partition p2 values (default) segment creation deferred);"
+        )
+        assertThat(p).matches(
+            "create table t (c number) partition by range (c) " +
+                "(partition p1 values less than (10) pctfree 10 segment creation immediate " +
+                "storage (initial 64k) tablespace users logging nocompress);"
+        )
+        assertThat(p).matches(
+            "create table t (c number) partition by range (c) " +
+                "(partition p1 values less than (10) compress segment creation deferred logging pctfree 10);"
+        )
+        assertThat(p).matches(
+            "create table t (c number) partition by list (c) " +
+                "(partition p1 values (default) segment creation immediate " +
+                "pctfree 10 nocompress logging storage (initial 64k) tablespace users);"
+        )
+        assertThat(p).matches(
+            "create table t (c number, l clob) partition by range (c) " +
+                "(partition p1 values less than (10) lob (l) store as (tablespace users) " +
+                "segment creation deferred tablespace users);"
+        )
+    }
+
+    @Test
+    fun matchesPartitionSegmentCreationAroundColumnAndOverflowProperties() {
+        assertThat(p).matches(
+            "create table t (c number, l clob, m clob) partition by range (c) " +
+                "(partition p1 values less than (10) segment creation immediate " +
+                "lob (l) store as (tablespace users) segment creation deferred " +
+                "lob (m) store as (tablespace users) segment creation immediate);"
+        )
+        assertThat(p).matches(
+            "create table t (c number, v sys.odcinumberlist, l clob) " +
+                "varray v store as lob v_lob partition by range (c) " +
+                "(partition p1 values less than (10) varray v store as lob v_p1 " +
+                "segment creation immediate lob (l) store as (tablespace users));"
+        )
+        assertThat(p).matches(
+            "create table t (c number, v sys.odcinumberlist) " +
+                "varray v store as lob v_lob partition by range (c) " +
+                "(partition p1 values less than (10) segment creation immediate varray v store as lob v_p1);"
+        )
+        assertThat(p).matches(
+            "create table t (c number, n nt_type) nested table n store as nstore " +
+                "partition by range (c) (partition p1 values less than (10) " +
+                "nested table n store as n_p1 segment creation deferred);"
+        )
+        assertThat(p).matches(
+            "create table t (c number, n nt_type) nested table n store as nstore " +
+                "partition by range (c) (partition p1 values less than (10) " +
+                "segment creation immediate nested table n store as n_p1);"
+        )
+        assertThat(p).matches(
+            "create table t (c number primary key, d varchar2(2000)) " +
+                "organization index including c overflow partition by range (c) " +
+                "(partition p1 values less than (10) segment creation immediate overflow tablespace users);"
+        )
+        assertThat(p).matches(
+            "create table t (c number primary key, d varchar2(2000)) " +
+                "organization index including c overflow partition by range (c) " +
+                "(partition p1 values less than (10) overflow tablespace users segment creation immediate);"
+        )
+        assertThat(p).matches(
+            "create table t (c number primary key, d varchar2(2000)) " +
+                "organization index including c overflow partition by range (c) " +
+                "(partition p1 values less than (10) overflow segment creation immediate tablespace users);"
+        )
+    }
+
+    @Test
+    fun matchesCompositeAndSubpartitionSegmentCreation() {
+        assertThat(p).matches(
+            "create table t (c number, d number) partition by range (c) subpartition by list (d) " +
+                "(partition p1 values less than (10) segment creation deferred " +
+                "(subpartition s1 values (default) tablespace users segment creation immediate));"
+        )
+        assertThat(p).matches(
+            "create table t (c number, d number) partition by range (c) subpartition by hash (d) " +
+                "subpartition template (subpartition s1 segment creation immediate) " +
+                "(partition p1 values less than (10) segment creation deferred);"
+        )
+        assertThat(p).matches(
+            "create table t (c number) partition by hash (c) " +
+                "(partition p1 segment creation immediate, partition p2 segment creation deferred);"
+        )
+    }
+
+    @Test
+    fun rejectsIncompleteOrMisplacedPartitionSegmentCreation() {
+        assertThat(p).notMatches(
+            "create table t (c number) partition by range (c) (partition p1 values less than (10) segment creation);"
+        )
+        assertThat(p).notMatches(
+            "create table t (c number) partition by list (c) (partition p1 values (default) segment creation unknown);"
+        )
+        assertThat(p).notMatches(
+            "create table t (c number, d number) partition by range (c) subpartition by list (d) " +
+                "(partition p1 values less than (10) (subpartition s1 values (default)) segment creation immediate);"
+        )
+        assertThat(p).notMatches(
+            "create table t (c number, d number) partition by range (c) subpartition by list (d) " +
+                "(partition p1 values less than (10) (subpartition s1 values (default) segment creation));"
+        )
+        // Preserve the previous cardinality for compression even when SEGMENT CREATION intervenes.
+        assertThat(p).notMatches(
+            "create table t (c number) partition by range (c) " +
+                "(partition p1 values less than (10) compress segment creation immediate nocompress);"
+        )
+        // Oracle reports ORA-12990 for duplicate complete clauses after parsing.
+        assertThat(p).matches(
+            "create table t (c number) partition by range (c) " +
+                "(partition p1 values less than (10) segment creation deferred segment creation immediate);"
+        )
+    }
+
+    @Test
     fun matchesTablePropertiesInCreateTableAsSelect() {
         assertThat(p).matches("create table t parallel as select * from employees where department_id = 80;")
         assertThat(p).matches("create table t initrans 10 as select sysdate from dual;")
