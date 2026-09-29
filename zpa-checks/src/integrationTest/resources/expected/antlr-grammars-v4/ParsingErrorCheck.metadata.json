@@ -20,6 +20,13 @@
       "reason": "A public synonym cannot be schema-qualified; Oracle rejects the dot after PUBLIC SYNONYM sch."
     }
   },
+  "examples/create_index.sql": {
+    "18": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00969",
+      "reason": "Oracle requires IF NOT EXISTS before the index name; this statement places it after the name."
+    }
+  },
   "examples/bindvar04.sql": {
     "6": {
       "classification": "INVALID_SOURCE",
