@@ -189,6 +189,42 @@ class CreateTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesSupplementalLoggingProperties() {
+        assertThat(p).matches("create table tab (a number, supplemental log data (all) columns);")
+        assertThat(p).matches(
+            "create table tab (a number, b number, supplemental log data (primary key, unique, foreign key, all) columns)"
+        )
+        assertThat(p).matches(
+            "create table tab (a number, b number, supplemental log group g1 (a no log, b) always)"
+        )
+        assertThat(p).matches(
+            "create table tab (a number, constraint pk primary key (a) using index enable, " +
+                "supplemental log data (all) columns);"
+        )
+        assertThat(p).matches(
+            "create table tab (a number, primary key (a) using index tablespace users enable, " +
+                "supplemental log data (all) columns) segment creation immediate;"
+        )
+        assertThat(p).matches(
+            "create table tab (a number, b number, primary key (a), supplemental log data (all) columns, " +
+                "supplemental log group g1 (b))"
+        )
+        assertThat(p).matches("create table tab (supplemental number)")
+    }
+
+    @Test
+    fun rejectsMalformedSupplementalLoggingProperties() {
+        assertThat(p).notMatches("create table tab (a number supplemental log data (all) columns)")
+        assertThat(p).notMatches("create table tab (a number, supplemental log data (all) columns b number)")
+        assertThat(p).notMatches("create table tab (a number, constraint supplemental log data (all) columns)")
+        assertThat(p).notMatches("create table tab (a number, supplemental log data () columns)")
+        assertThat(p).notMatches("create table tab (a number, supplemental log data (all,) columns)")
+        assertThat(p).notMatches("create table tab (a number, supplemental log data (all))")
+        assertThat(p).notMatches("create table tab (a number, supplemental log group g1 () )")
+        assertThat(p).notMatches("create table tab (a number, supplemental log group g1 (a) no log)")
+    }
+
+    @Test
     fun matchesCreateTableWithPrimaryKeyUsingIndex() {
         assertThat(p).matches("create table tab (id number, constraint tab_pk primary key (id) using index);")
     }

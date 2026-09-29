@@ -917,6 +917,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     SUBTYPE("subtype"),
     SUCCESSFUL("successful"),
     SUM("sum"),
+    SUPPLEMENTAL("supplemental"),
     SUPPRESSES_WARNING_6009("suppresses_warning_6009"),
     SUSPEND("suspend"),
     SYNCHRONOUS("synchronous"),

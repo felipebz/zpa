@@ -58,6 +58,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ANNOTATIONS_CLAUSE,
     ANNOTATION,
     TABLE_COLUMN_DEFINITION,
+    SUPPLEMENTAL_LOGGING_PROPS,
     TABLE_RELATIONAL_PROPERTIES,
     OBJECT_TABLE_CLAUSE,
     XMLTYPE_TABLE,
@@ -628,14 +629,35 @@ enum class DdlGrammar : GrammarRuleKey {
                         RPARENTHESIS, WITH, ROWID)
                 )
             )
+            val supplementalLogKey = b.firstOf(
+                ALL, b.sequence(PRIMARY, KEY), UNIQUE, b.sequence(FOREIGN, KEY))
+            val supplementalLogColumn = b.sequence(IDENTIFIER_NAME, b.optional(NO, LOG))
+            val supplementalLogGroup = b.sequence(
+                GROUP, IDENTIFIER_NAME, LPARENTHESIS, supplementalLogColumn,
+                b.zeroOrMore(COMMA, supplementalLogColumn), RPARENTHESIS, b.optional(ALWAYS))
+            val supplementalIdKey = b.sequence(
+                DATA, LPARENTHESIS, supplementalLogKey,
+                b.zeroOrMore(COMMA, supplementalLogKey), RPARENTHESIS, COLUMNS)
+            b.rule(SUPPLEMENTAL_LOGGING_PROPS).define(
+                SUPPLEMENTAL, LOG, b.firstOf(supplementalLogGroup, supplementalIdKey))
 
+            val relationalProperty = b.firstOf(
+                OUT_OF_LINE_REF_CONSTRAINT,
+                OUT_OF_LINE_CONSTRAINT,
+                b.sequence(
+                    b.nextNot(b.firstOf(
+                        b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG))),
+                    TABLE_COLUMN_DEFINITION))
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
-                    b.oneOrMore(b.firstOf(
-                        OUT_OF_LINE_REF_CONSTRAINT,
-                        OUT_OF_LINE_CONSTRAINT,
-                        b.sequence(
-                            b.nextNot(b.firstOf(b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS))),
-                            TABLE_COLUMN_DEFINITION)), b.optional(COMMA)))
+                b.oneOrMore(b.firstOf(
+                    b.sequence(
+                        relationalProperty,
+                        b.firstOf(COMMA, b.nextNot(b.sequence(SUPPLEMENTAL, LOG)))),
+                    b.sequence(
+                        SUPPLEMENTAL_LOGGING_PROPS,
+                        b.firstOf(
+                            b.sequence(COMMA, b.nextNot(RPARENTHESIS)),
+                            b.next(RPARENTHESIS))))))
             b.rule(OBJECT_TABLE_PROPERTIES).define(
                 LPARENTHESIS,
                 objectTableProperty(),
