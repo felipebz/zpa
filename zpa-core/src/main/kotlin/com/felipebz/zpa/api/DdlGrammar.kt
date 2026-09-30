@@ -201,6 +201,14 @@ enum class DdlGrammar : GrammarRuleKey {
     KEYSTORE_CONTAINER_CLAUSE,
     FORCE_KEYSTORE,
     KEYSTORE_WITH_BACKUP,
+    KEYSTORE_BACKUP_IDENTIFIER,
+    KEYSTORE_PASSWORD_IDENTIFIED_BY,
+    CREATE_KEYSTORE,
+    BACKUP_KEYSTORE,
+    ALTER_KEYSTORE_PASSWORD,
+    MERGE_KEYSTORE_SOURCE,
+    MERGE_INTO_NEW_KEYSTORE,
+    MERGE_INTO_EXISTING_KEYSTORE,
     SECRET_KEYSTORE_TARGET,
     SECRET_MANAGEMENT_CLAUSES,
     ADD_UPDATE_SECRET,
@@ -4038,6 +4046,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(KEYSTORE_IDENTIFIED_BY).define(
                 IDENTIFIED, BY,
                 b.firstOf(b.sequence(EXTERNAL, STORE), b.sequence(b.nextNot(EXTERNAL), IDENTIFIER_NAME))).skip()
+            b.rule(KEYSTORE_PASSWORD_IDENTIFIED_BY).define(IDENTIFIED, BY, IDENTIFIER_NAME).skip()
 
             // Oracle accepts an identifier token after CONTAINER = but reports ORA-65013
             // for values other than the documented ALL and CURRENT.
@@ -4045,13 +4054,14 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(FORCE_KEYSTORE).define(FORCE, KEYSTORE).skip()
 
             // Unlike the diagram, Oracle also accepts identifier-valued backup names.
+            b.rule(KEYSTORE_BACKUP_IDENTIFIER).define(b.firstOf(CHARACTER_LITERAL, IDENTIFIER)).skip()
             b.rule(KEYSTORE_WITH_BACKUP).define(
-                WITH, BACKUP, b.optional(USING, b.firstOf(CHARACTER_LITERAL, IDENTIFIER))).skip()
+                WITH, BACKUP, b.optional(USING, KEYSTORE_BACKUP_IDENTIFIER)).skip()
 
             b.rule(SECRET_KEYSTORE_TARGET).define(
                 b.firstOf(
                     b.sequence(b.optional(LOCAL), AUTO_LOGIN, KEYSTORE, CHARACTER_LITERAL),
-                    b.sequence(KEYSTORE, CHARACTER_LITERAL, IDENTIFIED, BY, IDENTIFIER_NAME))).skip()
+                    b.sequence(KEYSTORE, CHARACTER_LITERAL, KEYSTORE_PASSWORD_IDENTIFIED_BY))).skip()
 
             val tag = b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)
             val currentKeystore = b.sequence(b.optional(FORCE_KEYSTORE), KEYSTORE_IDENTIFIED_BY)
@@ -4081,9 +4091,49 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(KEYSTORE_IDENTIFIED_BY),
                 b.optional(KEYSTORE_CONTAINER_CLAUSE))
 
+            b.rule(CREATE_KEYSTORE).define(
+                CREATE,
+                b.firstOf(
+                    KEYSTORE,
+                    b.sequence(b.optional(LOCAL), AUTO_LOGIN, KEYSTORE, FROM, KEYSTORE)),
+                b.optional(CHARACTER_LITERAL),
+                KEYSTORE_PASSWORD_IDENTIFIED_BY)
+
+            b.rule(BACKUP_KEYSTORE).define(
+                BACKUP, KEYSTORE,
+                b.optional(USING, KEYSTORE_BACKUP_IDENTIFIER),
+                b.optional(FORCE_KEYSTORE),
+                KEYSTORE_IDENTIFIED_BY,
+                b.optional(TO, CHARACTER_LITERAL))
+
+            // WITH BACKUP is optional for ALTER PASSWORD and MERGE INTO EXISTING, despite their diagrams.
+            b.rule(ALTER_KEYSTORE_PASSWORD).define(
+                ALTER, KEYSTORE, PASSWORD,
+                b.optional(FORCE_KEYSTORE),
+                KEYSTORE_PASSWORD_IDENTIFIED_BY,
+                SET, IDENTIFIER_NAME,
+                b.optional(KEYSTORE_WITH_BACKUP))
+
+            b.rule(MERGE_KEYSTORE_SOURCE).define(
+                KEYSTORE, CHARACTER_LITERAL, b.optional(KEYSTORE_PASSWORD_IDENTIFIED_BY))
+
+            b.rule(MERGE_INTO_NEW_KEYSTORE).define(
+                MERGE, MERGE_KEYSTORE_SOURCE,
+                AND, MERGE_KEYSTORE_SOURCE,
+                INTO, NEW, KEYSTORE, CHARACTER_LITERAL,
+                KEYSTORE_IDENTIFIED_BY)
+
+            b.rule(MERGE_INTO_EXISTING_KEYSTORE).define(
+                MERGE, MERGE_KEYSTORE_SOURCE,
+                INTO, EXISTING, KEYSTORE, CHARACTER_LITERAL,
+                KEYSTORE_IDENTIFIED_BY,
+                b.optional(KEYSTORE_WITH_BACKUP))
+
             b.rule(ADMINISTER_KEY_MANAGEMENT).define(
                 ADMINISTER, KEY, MANAGEMENT,
-                b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE, SECRET_MANAGEMENT_CLAUSES),
+                b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE, SECRET_MANAGEMENT_CLAUSES,
+                    CREATE_KEYSTORE, BACKUP_KEYSTORE, ALTER_KEYSTORE_PASSWORD,
+                    MERGE_INTO_NEW_KEYSTORE, MERGE_INTO_EXISTING_KEYSTORE),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

@@ -306,10 +306,6 @@ class AdministerKeyManagementTest : RuleTest() {
             "set keystore reopen",
             "set keystore",
             "keystore open identified by password",
-            "create keystore '/wallet' identified by password",
-            "backup keystore identified by password",
-            "create auto_login keystore from keystore '/w' identified by pw",
-            "alter keystore password identified by pw set new_pw with backup",
             "merge keystore '/w' into new keystore '/n' identified by pw",
             "set key identified by pw with backup",
             "create key identified by pw with backup",
@@ -319,7 +315,9 @@ class AdministerKeyManagementTest : RuleTest() {
             "import keys with secret \"s\" from '/e' identified by pw with backup",
             "set encryption key identified by pw migrate using \"u:p\"",
             "set encryption key identified by pw reverse migrate using \"u:p\"",
-            "move keys to new keystore '/w' identified by pw from identified by pw"
+            "move keys to new keystore '/w' identified by pw from identified by pw",
+            "isolate keystore identified by pw from root keystore identified by pw with backup",
+            "unite keystore identified by pw with root keystore identified by pw with backup"
         )
         assertThat(p).notMatches("administer key set keystore close")
     }
@@ -333,6 +331,5 @@ class AdministerKeyManagementTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.OPEN_KEYSTORE)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.KEYSTORE_IDENTIFIED_BY)).isEmpty()
         assertThat(p).notMatches("administer key management set keystore close extra;")
-        assertThat(p).notMatches("administer key management create keystore '/w' identified by pw;")
     }
 }
