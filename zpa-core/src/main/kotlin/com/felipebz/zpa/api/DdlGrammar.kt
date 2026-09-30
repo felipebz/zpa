@@ -192,6 +192,11 @@ enum class DdlGrammar : GrammarRuleKey {
     DISASSOCIATE_STATISTICS,
     RENAME_STATEMENT,
     ALTER_RESOURCE_COST,
+    ADMINISTER_KEY_MANAGEMENT,
+    OPEN_KEYSTORE,
+    CLOSE_KEYSTORE,
+    KEYSTORE_IDENTIFIED_BY,
+    KEYSTORE_CONTAINER_CLAUSE,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -2514,6 +2519,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createTablespace(b)
             createRole(b)
             createRollbackSegment(b)
+            administerKeyManagement(b)
             createCluster(b)
             createAnalyze(b)
             createAudit(b)
@@ -2879,6 +2885,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 DISASSOCIATE_STATISTICS,
                 RENAME_STATEMENT,
                 ALTER_RESOURCE_COST,
+                ADMINISTER_KEY_MANAGEMENT,
                 CREATE_JAVA,
                 ALTER_JAVA,
                 CREATE_CONTEXT,
@@ -3998,6 +4005,35 @@ enum class DdlGrammar : GrammarRuleKey {
                     OFFLINE,
                     INDEX_STORAGE_CLAUSE,
                     b.sequence(SHRINK, b.optional(TO, INDEX_SIZE_CLAUSE))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ADMINISTER-KEY-MANAGEMENT.html
+        private fun administerKeyManagement(b: PlSqlGrammarBuilder) {
+            // The password is an identifier, not a literal (ORA-00988).
+            b.rule(KEYSTORE_IDENTIFIED_BY).define(
+                IDENTIFIED, BY,
+                b.firstOf(b.sequence(EXTERNAL, STORE), b.sequence(b.nextNot(EXTERNAL), IDENTIFIER_NAME))).skip()
+
+            // Oracle accepts an identifier token after CONTAINER = but reports ORA-65013
+            // for values other than the documented ALL and CURRENT.
+            b.rule(KEYSTORE_CONTAINER_CLAUSE).define(CONTAINER, EQUALS, b.firstOf(ALL, CURRENT)).skip()
+
+            b.rule(OPEN_KEYSTORE).define(
+                SET, KEYSTORE, OPEN,
+                b.optional(FORCE, KEYSTORE),
+                KEYSTORE_IDENTIFIED_BY,
+                b.optional(KEYSTORE_CONTAINER_CLAUSE))
+
+            b.rule(CLOSE_KEYSTORE).define(
+                SET, KEYSTORE, CLOSE,
+                b.optional(KEYSTORE_IDENTIFIED_BY),
+                b.optional(KEYSTORE_CONTAINER_CLAUSE))
+
+            b.rule(ADMINISTER_KEY_MANAGEMENT).define(
+                ADMINISTER, KEY, MANAGEMENT,
+                b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE),
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
 
