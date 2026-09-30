@@ -197,6 +197,11 @@ enum class DdlGrammar : GrammarRuleKey {
     CLOSE_KEYSTORE,
     KEYSTORE_IDENTIFIED_BY,
     KEYSTORE_CONTAINER_CLAUSE,
+    ALTER_PLUGGABLE_DATABASE,
+    PDB_CHANGE_STATE,
+    PDB_OPEN,
+    PDB_CLOSE,
+    PDB_INSTANCES_CLAUSE,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -2520,6 +2525,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createRole(b)
             createRollbackSegment(b)
             administerKeyManagement(b)
+            alterPluggableDatabase(b)
             createCluster(b)
             createAnalyze(b)
             createAudit(b)
@@ -2886,6 +2892,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 RENAME_STATEMENT,
                 ALTER_RESOURCE_COST,
                 ADMINISTER_KEY_MANAGEMENT,
+                ALTER_PLUGGABLE_DATABASE,
                 CREATE_JAVA,
                 ALTER_JAVA,
                 CREATE_CONTEXT,
@@ -4033,6 +4040,56 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ADMINISTER_KEY_MANAGEMENT).define(
                 ADMINISTER, KEY, MANAGEMENT,
                 b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE),
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html
+        private fun alterPluggableDatabase(b: PlSqlGrammarBuilder) {
+            fun literalList() = b.sequence(
+                LPARENTHESIS, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS)
+            fun allOrList(keyword: PlSqlKeyword) = b.sequence(
+                keyword, EQUALS, b.firstOf(literalList(), b.sequence(ALL, b.optional(EXCEPT, literalList()))))
+
+            b.rule(PDB_INSTANCES_CLAUSE).define(allOrList(INSTANCES)).skip()
+
+            // Oracle 26 accepts RESTRICTED and FORCE after every mode, although the diagram omits
+            // FORCE after UPGRADE and both after RESETLOGS.
+            b.rule(PDB_OPEN).define(
+                OPEN,
+                b.optional(b.firstOf(
+                    b.sequence(READ, WRITE, b.optional(UPGRADE)),
+                    b.sequence(READ, ONLY),
+                    b.sequence(HYBRID, READ, ONLY),
+                    UPGRADE,
+                    RESETLOGS)),
+                b.optional(RESTRICTED),
+                b.optional(FORCE),
+                b.optional(PDB_INSTANCES_CLAUSE),
+                b.optional(b.firstOf(b.sequence(SERVICES, EQUALS, NONE), allOrList(SERVICES))))
+
+            b.rule(PDB_CLOSE).define(
+                CLOSE,
+                b.firstOf(
+                    b.sequence(ABORT, b.optional(PDB_INSTANCES_CLAUSE)),
+                    b.sequence(
+                        b.optional(IMMEDIATE),
+                        b.optional(b.firstOf(
+                            PDB_INSTANCES_CLAUSE,
+                            b.sequence(RELOCATE, b.optional(TO, CHARACTER_LITERAL)),
+                            NORELOCATE)))))
+
+            val pdbNames = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
+            val state = b.firstOf(PDB_OPEN, PDB_CLOSE)
+            // The target is optional and may itself be named OPEN or CLOSE, so the named form is tried first.
+            b.rule(PDB_CHANGE_STATE).define(
+                b.firstOf(
+                    b.sequence(b.firstOf(b.sequence(ALL, b.optional(EXCEPT, pdbNames)), pdbNames), state),
+                    state))
+
+            b.rule(ALTER_PLUGGABLE_DATABASE).define(
+                ALTER, PLUGGABLE, DATABASE,
+                PDB_CHANGE_STATE,
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
