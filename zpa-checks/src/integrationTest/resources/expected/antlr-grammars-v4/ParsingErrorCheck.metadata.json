@@ -55,6 +55,13 @@
       "reason": "IF NOT EXISTS is placed after the view name; Oracle requires it before the name and reports a missing AS keyword here."
     }
   },
+  "examples/drop_tablespace.sql": {
+    "6": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02173",
+      "reason": "IF EXISTS must precede the tablespace name in DROP TABLESPACE; Oracle 26 rejects the postfix IF EXISTS in this fixture."
+    }
+  },
   "examples/interval03.sql": {
     "16": {
       "classification": "INVALID_SOURCE",

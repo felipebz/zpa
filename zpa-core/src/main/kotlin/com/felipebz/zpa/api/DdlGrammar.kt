@@ -156,6 +156,24 @@ enum class DdlGrammar : GrammarRuleKey {
     PROFILE_LIMIT_CLAUSE,
     CREATE_TABLESPACE,
     ALTER_TABLESPACE,
+    CREATE_TABLESPACE_SET,
+    ALTER_TABLESPACE_SET,
+    DROP_TABLESPACE,
+    DROP_TABLESPACE_SET,
+    TABLESPACE_DROP_OPTIONS,
+    TABLESPACE_SET_TEMPLATE,
+    TABLESPACE_SET_FILE_SPEC,
+    TABLESPACE_PERMANENT_ATTRS_COMMON,
+    ALTER_TABLESPACE_ATTRS_COMMON,
+    ALTER_TABLESPACE_ENCRYPTION,
+    TABLESPACE_STORAGE_CLAUSE,
+    TABLESPACE_MEMCOMPRESS,
+    TABLESPACE_INMEMORY_ATTRIBUTES,
+    TABLESPACE_INMEMORY_CLAUSE,
+    TABLESPACE_INMEMORY_TEXT_COLUMN,
+    TABLESPACE_ILM_CONDITION,
+    TABLESPACE_ILM_POLICY,
+    TABLESPACE_ILM_CLAUSE,
     CREATE_ROLE,
     ALTER_ROLE,
     ROLE_IDENTIFICATION_CLAUSE,
@@ -2611,7 +2629,26 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(PACKAGE_COMPILE_CLAUSE).define(unitCompileClause(PACKAGE, SPECIFICATION, BODY))
             b.rule(TYPE_COMPILE_CLAUSE).define(unitCompileClause(SPECIFICATION, BODY))
 
-            b.rule(DROP_COMMAND).define(DROP, b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
+            // Oracle 26 diagrams share the quota/contents suffix, but only ordinary DROP accepts IF EXISTS.
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-TABLESPACE-SET.html
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-TABLESPACE.html
+            b.rule(TABLESPACE_DROP_OPTIONS).define(
+                b.optional(b.firstOf(DROP, KEEP), QUOTA),
+                b.optional(INCLUDING, CONTENTS,
+                    b.optional(b.firstOf(AND, KEEP), DATAFILES),
+                    b.optional(CASCADE, CONSTRAINTS))).skip()
+
+            // Check the statement end so a malformed suffix cannot become another generic DROP in FILE_INPUT.
+            val tablespaceDropEnd = b.sequence(b.next(b.firstOf(SEMICOLON, DIVISION, EOF)), b.optional(SEMICOLON))
+            b.rule(DROP_TABLESPACE_SET).define(
+                DROP, TABLESPACE, SET, IDENTIFIER_NAME, TABLESPACE_DROP_OPTIONS, tablespaceDropEnd)
+            b.rule(DROP_TABLESPACE).define(
+                DROP, TABLESPACE, b.nextNot(SET), b.optional(IF, EXISTS), IDENTIFIER_NAME,
+                TABLESPACE_DROP_OPTIONS, tablespaceDropEnd)
+
+            // Tablespaces have explicit productions; never let an invalid one fall back to arbitrary tokens.
+            b.rule(DROP_COMMAND).define(DROP, b.nextNot(TABLESPACE),
+                b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
 
             b.rule(CREATE_JAVA).define(
                 CREATE,
@@ -2886,7 +2923,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_PROFILE,
                 ALTER_PROFILE,
                 CREATE_TABLESPACE,
+                CREATE_TABLESPACE_SET,
                 ALTER_TABLESPACE,
+                ALTER_TABLESPACE_SET,
                 CREATE_ROLE,
                 ALTER_ROLE,
                 CREATE_ROLLBACK_SEGMENT,
@@ -2915,6 +2954,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_SEQUENCE,
                 CREATE_DIRECTORY,
                 DROP_DIRECTORY,
+                DROP_TABLESPACE_SET,
+                DROP_TABLESPACE,
                 DROP_COMMAND,
                 TRUNCATE_CLUSTER,
                 TRUNCATE_TABLE))
@@ -3991,6 +4032,8 @@ enum class DdlGrammar : GrammarRuleKey {
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLESPACE.html
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLESPACE-SET.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE-SET.html
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/file_specification.html
         private fun createTablespace(b: PlSqlGrammarBuilder) {
             val fileNameOrNumber = b.firstOf(CHARACTER_LITERAL, INTEGER_LITERAL)
@@ -4039,14 +4082,96 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.sequence(b.firstOf(QUERY, ARCHIVE), b.firstOf(LOW, HIGH))))),
                     NOCOMPRESS))
 
-            // STORAGE must come last (ORA-02180 for `DEFAULT STORAGE (...) TABLE ...`).
+            // Tablespace defaults exclude index prefix counts and index-only storage options.
+            b.rule(TABLESPACE_STORAGE_CLAUSE).define(
+                STORAGE, LPARENTHESIS,
+                b.oneOrMore(b.firstOf(
+                    ENCRYPT,
+                    b.sequence(INITIAL, INDEX_SIZE_CLAUSE),
+                    b.sequence(NEXT, INDEX_SIZE_CLAUSE),
+                    b.sequence(MINEXTENTS, INTEGER_LITERAL),
+                    b.sequence(MAXEXTENTS, b.firstOf(INTEGER_LITERAL, UNLIMITED)),
+                    b.sequence(MAXSIZE, b.firstOf(UNLIMITED, INDEX_SIZE_CLAUSE)),
+                    b.sequence(PCTINCREASE, INTEGER_LITERAL))),
+                RPARENTHESIS).skip()
+
+            // The tablespace distribution variant has ROWID RANGE, not PARTITION/SUBPARTITION.
+            // Free 23.26.3 rejects MEMCOMPRESS AUTO, but the current Oracle 26 production includes it.
+            b.rule(TABLESPACE_MEMCOMPRESS).define(
+                b.firstOf(
+                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
+                        DML,
+                        b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
+                        b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
+                    b.sequence(MEMCOMPRESS, AUTO),
+                    b.sequence(NO, MEMCOMPRESS))).skip()
+            b.rule(TABLESPACE_INMEMORY_ATTRIBUTES).define(
+                b.zeroOrMore(b.firstOf(
+                    TABLESPACE_MEMCOMPRESS,
+                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
+                    b.sequence(DISTRIBUTE,
+                        b.optional(b.firstOf(AUTO, b.sequence(BY, ROWID, RANGE_KEYWORD))),
+                        b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
+                    b.sequence(DUPLICATE, b.optional(ALL)),
+                    b.sequence(NO, DUPLICATE),
+                    b.sequence(SPATIAL, IDENTIFIER_NAME)))).skip()
+            b.rule(TABLESPACE_INMEMORY_TEXT_COLUMN).define(
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                b.optional(USING, CHARACTER_LITERAL)).skip()
+            // Follow the Oracle 26 diagrams for TEXT/SPATIAL. Free 23.26.3 rejected SPATIAL with
+            // ORA-00922 and disconnected on a TEXT control; neither establishes Sharding execution.
+            b.rule(TABLESPACE_INMEMORY_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(INMEMORY, TABLESPACE_INMEMORY_ATTRIBUTES,
+                        b.optional(TEXT, LPARENTHESIS,
+                            TABLESPACE_INMEMORY_TEXT_COLUMN, b.zeroOrMore(COMMA, TABLESPACE_INMEMORY_TEXT_COLUMN),
+                            RPARENTHESIS)),
+                    b.sequence(NO, INMEMORY))).skip()
+
+            b.rule(TABLESPACE_ILM_CONDITION).define(
+                b.firstOf(
+                    b.sequence(AFTER, INTEGER_LITERAL, b.firstOf(DAY, DAYS, MONTH, MONTHS, YEAR, YEARS),
+                        OF, b.firstOf(b.sequence(NO, b.firstOf(ACCESS, MODIFICATION)), CREATION)),
+                    b.sequence(ON, UNIT_NAME))).skip()
+            b.rule(TABLESPACE_ILM_POLICY).define(
+                b.firstOf(
+                    b.sequence(TABLE_COMPRESSION, b.firstOf(SEGMENT, GROUP), TABLESPACE_ILM_CONDITION),
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(ROW, STORE, COMPRESS, ADVANCED),
+                            b.sequence(COLUMN, STORE, COMPRESS, FOR, QUERY)),
+                        ROW, AFTER, INTEGER_LITERAL, b.firstOf(DAY, DAYS, MONTH, MONTHS, YEAR, YEARS),
+                        OF, NO, MODIFICATION),
+                    b.sequence(TIER, TO, IDENTIFIER_NAME,
+                        b.firstOf(
+                            b.sequence(READ, ONLY, b.optional(b.firstOf(SEGMENT, GROUP)), TABLESPACE_ILM_CONDITION),
+                            b.sequence(b.optional(b.firstOf(SEGMENT, GROUP)), b.optional(ON, UNIT_NAME)))),
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(SET, INMEMORY, TABLESPACE_INMEMORY_ATTRIBUTES),
+                            b.sequence(MODIFY, INMEMORY, TABLESPACE_MEMCOMPRESS),
+                            b.sequence(NO, INMEMORY)),
+                        b.optional(SEGMENT), TABLESPACE_ILM_CONDITION))).skip()
+            b.rule(TABLESPACE_ILM_CLAUSE).define(
+                ILM, b.firstOf(
+                    b.sequence(ADD, POLICY, TABLESPACE_ILM_POLICY),
+                    b.sequence(b.firstOf(DELETE, ENABLE, DISABLE), POLICY, IDENTIFIER_NAME),
+                    DELETE_ALL, ENABLE_ALL, DISABLE_ALL)).skip()
+
+            // Oracle permits these defaults in any order before final STORAGE (ORA-02180 otherwise).
+            // DEFAULT still requires at least one parameter; an empty DEFAULT is ORA-00905.
             b.rule(DEFAULT_TABLESPACE_PARAMS).define(
                 DEFAULT,
                 b.firstOf(
                     b.sequence(
-                        b.oneOrMore(b.firstOf(b.sequence(INDEX, INDEX_COMPRESSION_CLAUSE), tableCompression)),
-                        b.optional(INDEX_STORAGE_CLAUSE)),
-                    INDEX_STORAGE_CLAUSE))
+                        b.oneOrMore(b.firstOf(
+                            tableCompression,
+                            b.sequence(INDEX, b.firstOf(
+                                b.sequence(COMPRESS, ADVANCED, b.firstOf(LOW, HIGH)), NOCOMPRESS)),
+                            TABLESPACE_INMEMORY_CLAUSE,
+                            TABLESPACE_ILM_CLAUSE)),
+                        b.optional(TABLESPACE_STORAGE_CLAUSE)),
+                    TABLESPACE_STORAGE_CLAUSE))
 
             val retentionClause = b.sequence(RETENTION, b.firstOf(GUARANTEE, NOGUARANTEE))
             val groupClause = b.sequence(TABLESPACE, GROUP, b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME))
@@ -4056,19 +4181,22 @@ enum class DdlGrammar : GrammarRuleKey {
             // Each kind of tablespace has its own option set; Oracle 26 rejects the others at parse time
             // (ORA-30044, ORA-30024, ORA-25139). Repeated options are rejected too (ORA-02197/ORA-02198), but are
             // not tracked here.
+            b.rule(TABLESPACE_PERMANENT_ATTRS_COMMON).define(
+                b.firstOf(
+                    b.sequence(BLOCKSIZE, INTEGER_LITERAL, b.optional("K")),
+                    LOGGING_CLAUSE,
+                    b.sequence(FORCE, LOGGING),
+                    TABLESPACE_ENCRYPTION_CLAUSE,
+                    DEFAULT_TABLESPACE_PARAMS,
+                    ONLINE,
+                    OFFLINE,
+                    EXTENT_MANAGEMENT_CLAUSE,
+                    flashbackClause)).skip()
             val permanentOption = b.firstOf(
                 b.sequence(DATAFILE, fileSpecifications),
                 b.sequence(MINIMUM, EXTENT, INDEX_SIZE_CLAUSE),
-                b.sequence(BLOCKSIZE, INTEGER_LITERAL, b.optional("K")),
-                LOGGING_CLAUSE,
-                b.sequence(FORCE, LOGGING),
-                TABLESPACE_ENCRYPTION_CLAUSE,
-                DEFAULT_TABLESPACE_PARAMS,
-                ONLINE,
-                OFFLINE,
-                EXTENT_MANAGEMENT_CLAUSE,
+                TABLESPACE_PERMANENT_ATTRS_COMMON,
                 b.sequence(SEGMENT, SPACE, MANAGEMENT, b.firstOf(AUTO, MANUAL)),
-                flashbackClause,
                 shardspace)
             val undoOption = b.firstOf(
                 b.sequence(DATAFILE, fileSpecifications),
@@ -4102,6 +4230,30 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(shardspace))),
                 b.optional(SEMICOLON))
 
+            // SET creates bigfile permanent tablespaces automatically: no filenames, REUSE, MINIMUM
+            // EXTENT, or MANUAL segment management. DATAFILE precedes the repeatable attribute subset.
+            // Keep comma-separated specs non-nullable so a trailing comma cannot stand for a file.
+            b.rule(TABLESPACE_SET_FILE_SPEC).define(
+                b.firstOf(
+                    b.sequence(SIZE, INDEX_SIZE_CLAUSE, b.optional(AUTOEXTEND_CLAUSE)),
+                    AUTOEXTEND_CLAUSE)).skip()
+            b.rule(TABLESPACE_SET_TEMPLATE).define(
+                LPARENTHESIS,
+                b.nextNot(RPARENTHESIS),
+                b.optional(DATAFILE,
+                    b.optional(TABLESPACE_SET_FILE_SPEC, b.zeroOrMore(COMMA, TABLESPACE_SET_FILE_SPEC))),
+                b.zeroOrMore(b.firstOf(
+                    TABLESPACE_PERMANENT_ATTRS_COMMON,
+                    b.sequence(SEGMENT, SPACE, MANAGEMENT, AUTO))),
+                b.optional(LOST, WRITE, PROTECTION),
+                RPARENTHESIS).skip()
+            b.rule(CREATE_TABLESPACE_SET).define(
+                CREATE, TABLESPACE, SET, IDENTIFIER_NAME,
+                b.optional(shardspace),
+                b.optional(USING, TEMPLATE, TABLESPACE_SET_TEMPLATE),
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.optional(SEMICOLON))
+
             val fileNameConvert = b.sequence(
                 FILE_NAME_CONVERT, EQUALS,
                 LPARENTHESIS,
@@ -4109,51 +4261,66 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.zeroOrMore(COMMA, CHARACTER_LITERAL, COMMA, CHARACTER_LITERAL),
                 RPARENTHESIS,
                 b.optional(KEEP))
-            val alterEncryption = b.sequence(
+            // ONLINE is the default. Oracle 26 rejects an encryption spec before DECRYPT (ORA-02142).
+            b.rule(ALTER_TABLESPACE_ENCRYPTION).define(
                 ENCRYPTION,
                 b.firstOf(
                     b.sequence(
-                        ONLINE,
-                        b.firstOf(b.sequence(b.optional(encryptionSpec), b.firstOf(ENCRYPT, REKEY)), DECRYPT),
-                        b.optional(fileNameConvert)),
+                        OFFLINE,
+                        b.firstOf(b.sequence(b.optional(encryptionSpec), ENCRYPT), DECRYPT)),
                     b.sequence(FINISH, b.firstOf(ENCRYPT, REKEY, DECRYPT), b.optional(fileNameConvert)),
-                    b.sequence(OFFLINE, b.optional(encryptionSpec), b.firstOf(ENCRYPT, DECRYPT)),
-                    b.sequence(b.optional(encryptionSpec), b.firstOf(ENCRYPT, DECRYPT))))
+                    b.sequence(
+                        b.optional(ONLINE),
+                        b.firstOf(b.sequence(b.optional(encryptionSpec), b.firstOf(ENCRYPT, REKEY)), DECRYPT),
+                        b.optional(fileNameConvert)))).skip()
+
+            // The SET production has one attribute, with the ordinary-only file and state branches excluded.
+            // Skipping the shared helpers keeps ordinary ALTER TABLESPACE's existing AST boundaries.
+            b.rule(ALTER_TABLESPACE_ATTRS_COMMON).define(
+                b.firstOf(
+                    DEFAULT_TABLESPACE_PARAMS,
+                    b.sequence(RESIZE, INDEX_SIZE_CLAUSE),
+                    COALESCE,
+                    b.sequence(RENAME, TO, IDENTIFIER_NAME),
+                    b.sequence(
+                        RENAME, DATAFILE,
+                        CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL),
+                        TO, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)),
+                    b.sequence(b.firstOf(BEGIN, END), BACKUP),
+                    b.sequence(DATAFILE, b.firstOf(ONLINE, OFFLINE)),
+                    LOGGING_CLAUSE,
+                    b.sequence(b.optional(NO), FORCE, LOGGING),
+                    ONLINE,
+                    // FOR RECOVER remains documented for backward compatibility in Oracle 26.
+                    b.sequence(OFFLINE, b.optional(b.firstOf(NORMAL, TEMPORARY, IMMEDIATE, b.sequence(FOR, RECOVER)))),
+                    b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                    AUTOEXTEND_CLAUSE,
+                    ALTER_TABLESPACE_ENCRYPTION,
+                    b.sequence(b.firstOf(ENABLE, REMOVE, SUSPEND), LOST, WRITE, PROTECTION))).skip()
 
             // Oracle 26 accepts a single attribute per statement (ORA-03049 at a second one), and requires
             // ENABLE, REMOVE or SUSPEND before LOST WRITE PROTECTION here (ORA-02142).
             val alterAttribute = b.firstOf(
-                DEFAULT_TABLESPACE_PARAMS,
+                ALTER_TABLESPACE_ATTRS_COMMON,
                 b.sequence(MINIMUM, EXTENT, INDEX_SIZE_CLAUSE),
-                b.sequence(RESIZE, INDEX_SIZE_CLAUSE),
-                COALESCE,
                 b.sequence(SHRINK, SPACE, keepSize),
                 b.sequence(SHRINK, TEMPFILE, fileNameOrNumber, keepSize),
-                b.sequence(RENAME, TO, IDENTIFIER_NAME),
-                b.sequence(
-                    RENAME, DATAFILE,
-                    CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL),
-                    TO, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)),
-                b.sequence(b.firstOf(BEGIN, END), BACKUP),
                 b.sequence(ADD, b.firstOf(DATAFILE, TEMPFILE), fileSpecifications),
                 b.sequence(DROP, b.firstOf(DATAFILE, TEMPFILE), fileNameOrNumber),
-                b.sequence(b.firstOf(DATAFILE, TEMPFILE), b.firstOf(ONLINE, OFFLINE)),
-                LOGGING_CLAUSE,
-                b.sequence(b.optional(NO), FORCE, LOGGING),
+                b.sequence(TEMPFILE, b.firstOf(ONLINE, OFFLINE)),
                 groupClause,
-                ONLINE,
-                b.sequence(OFFLINE, b.optional(b.firstOf(NORMAL, TEMPORARY, IMMEDIATE))),
-                b.sequence(READ, b.firstOf(ONLY, WRITE)),
                 PERMANENT,
                 TEMPORARY,
-                AUTOEXTEND_CLAUSE,
                 flashbackClause,
-                retentionClause,
-                alterEncryption,
-                b.sequence(b.firstOf(ENABLE, REMOVE, SUSPEND), LOST, WRITE, PROTECTION))
+                retentionClause)
 
             b.rule(ALTER_TABLESPACE).define(
                 ALTER, TABLESPACE, b.nextNot(SET), b.optional(IF, EXISTS), IDENTIFIER_NAME, alterAttribute,
+                b.optional(SEMICOLON))
+
+            b.rule(ALTER_TABLESPACE_SET).define(
+                ALTER, TABLESPACE, SET, IDENTIFIER_NAME, ALTER_TABLESPACE_ATTRS_COMMON,
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
 
