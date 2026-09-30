@@ -48,6 +48,13 @@
       "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
     }
   },
+  "examples/create_tablespace.sql": {
+    "58": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02180",
+      "reason": "IF NOT EXISTS must precede the tablespace name; Oracle rejects it after the name."
+    }
+  },
   "examples/create_view.sql": {
     "32": {
       "classification": "INVALID_SOURCE",

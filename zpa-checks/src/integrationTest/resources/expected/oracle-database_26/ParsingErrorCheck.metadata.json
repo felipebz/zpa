@@ -20,6 +20,48 @@
       "reason": "The line is DBA_TYPE_VERSIONS.TEXT query output from the documentation, not a statement; SQL*Plus reports an unknown command beginning with TYPE."
     }
   },
+  "lnpls/DEPRECATE-pragma-18.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00900",
+      "reason": "A bare TYPE ... AS OBJECT fragment without CREATE is not a SQL statement."
+    }
+  },
+  "lnpls/conditional-compilation1-21.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00160",
+      "reason": "AUTHID must be CURRENT_USER or DEFINER; DEFINERs is rejected."
+    }
+  },
+  "lnpls/cursors-overview-7.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00900",
+      "reason": "Syntax template with placeholders; FETCH is not a standalone SQL statement."
+    }
+  },
+  "lnpls/lexical-units-10.sql": {
+    "7": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00103",
+      "reason": "Unquoted reserved word BEGIN used as an identifier; the example demonstrates the error."
+    }
+  },
+  "lnpls/loop-statements-31.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00900",
+      "reason": "PL/SQL OPEN ... FOR fragment outside a block is not a SQL statement."
+    }
+  },
+  "lnpls/triggers-publishing-events-0.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00900",
+      "reason": "A bare TYPE ... IS TABLE OF fragment without CREATE is not a SQL statement."
+    }
+  },
   "sqlrf/ALTER-ANALYTIC-VIEW-1.sql": {
     "2": {
       "classification": "INVALID_SOURCE",
@@ -32,6 +74,41 @@
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-03049",
       "reason": "The documented example writes ACTIONS ADD; Oracle only accepts ADD ACTIONS and rejects ACTIONS after the policy name."
+    }
+  },
+  "sqlrf/ALTER-DATABASE-2.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02236",
+      "reason": "The data file name must be a quoted literal; unquoted td_file.df is rejected."
+    }
+  },
+  "sqlrf/ALTER-DATABASE-3.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02236",
+      "reason": "The data file name must be a quoted literal; unquoted td_file.df is rejected."
+    }
+  },
+  "sqlrf/ALTER-DATABASE-4.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02236",
+      "reason": "The data file name must be a quoted literal; unquoted td_file.df is rejected."
+    }
+  },
+  "sqlrf/ALTER-TABLE-8.sql": {
+    "4": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-03048",
+      "reason": "ADD cannot follow DROP (...) or SET UNUSED (...) in the same ALTER TABLE statement."
+    }
+  },
+  "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql": {
+    "4": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00900",
+      "reason": "EXPORT is extracted query output, not a SQL statement."
     }
   },
   "sqlrf/CREATE-TABLESPACE-0.sql": {
@@ -53,6 +130,27 @@
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-28025",
       "reason": "The certificate DN is written as a double-quoted identifier; Oracle requires a character literal after IDENTIFIED EXTERNALLY AS."
+    }
+  },
+  "sqlrf/JSON_TRANSFORM-1.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00911",
+      "reason": "The WHERE clause is an elided placeholder (…), an invalid character."
+    }
+  },
+  "sqlrf/SELECT-87.sql": {
+    "7": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00990",
+      "reason": "Extracted output text \"Grant Zeuss\" follows the query and parses as an invalid GRANT."
+    }
+  },
+  "sqlrf/create-property-graph-16.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-14155",
+      "reason": "RENAME requires COLUMN, CONSTRAINT or a partition keyword; RENAME c TO c2 is rejected."
     }
   },
   "sqlrf/create-property-graph-23.sql": {
