@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api
 
 import com.felipebz.flr.api.GenericTokenType.EOF
+import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.api.PlSqlGrammar.*
@@ -198,6 +199,12 @@ enum class DdlGrammar : GrammarRuleKey {
     CLOSE_KEYSTORE,
     KEYSTORE_IDENTIFIED_BY,
     KEYSTORE_CONTAINER_CLAUSE,
+    FORCE_KEYSTORE,
+    KEYSTORE_WITH_BACKUP,
+    SECRET_KEYSTORE_TARGET,
+    SECRET_MANAGEMENT_CLAUSES,
+    ADD_UPDATE_SECRET,
+    DELETE_SECRET,
     ALTER_PLUGGABLE_DATABASE,
     PDB_CHANGE_STATE,
     PDB_OPEN,
@@ -4035,10 +4042,37 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle accepts an identifier token after CONTAINER = but reports ORA-65013
             // for values other than the documented ALL and CURRENT.
             b.rule(KEYSTORE_CONTAINER_CLAUSE).define(CONTAINER, EQUALS, b.firstOf(ALL, CURRENT)).skip()
+            b.rule(FORCE_KEYSTORE).define(FORCE, KEYSTORE).skip()
+
+            // Unlike the diagram, Oracle also accepts identifier-valued backup names.
+            b.rule(KEYSTORE_WITH_BACKUP).define(
+                WITH, BACKUP, b.optional(USING, b.firstOf(CHARACTER_LITERAL, IDENTIFIER))).skip()
+
+            b.rule(SECRET_KEYSTORE_TARGET).define(
+                b.firstOf(
+                    b.sequence(b.optional(LOCAL), AUTO_LOGIN, KEYSTORE, CHARACTER_LITERAL),
+                    b.sequence(KEYSTORE, CHARACTER_LITERAL, IDENTIFIED, BY, IDENTIFIER_NAME))).skip()
+
+            val tag = b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)
+            val currentKeystore = b.sequence(b.optional(FORCE_KEYSTORE), KEYSTORE_IDENTIFIED_BY)
+            // WITH BACKUP is optional despite the diagram.
+            b.rule(ADD_UPDATE_SECRET).define(
+                b.firstOf(ADD, UPDATE), SECRET, CHARACTER_LITERAL, FOR, CLIENT, CHARACTER_LITERAL,
+                b.optional(USING, TAG, tag),
+                b.firstOf(b.sequence(TO, SECRET_KEYSTORE_TARGET), currentKeystore),
+                b.optional(KEYSTORE_WITH_BACKUP))
+
+            // SEPS DELETE's text wrongly includes 'secret'; its diagram and Oracle require FOR.
+            b.rule(DELETE_SECRET).define(
+                DELETE, SECRET, FOR, CLIENT, CHARACTER_LITERAL,
+                b.firstOf(b.sequence(FROM, SECRET_KEYSTORE_TARGET), currentKeystore),
+                b.optional(KEYSTORE_WITH_BACKUP))
+
+            b.rule(SECRET_MANAGEMENT_CLAUSES).define(b.firstOf(ADD_UPDATE_SECRET, DELETE_SECRET))
 
             b.rule(OPEN_KEYSTORE).define(
                 SET, KEYSTORE, OPEN,
-                b.optional(FORCE, KEYSTORE),
+                b.optional(FORCE_KEYSTORE),
                 KEYSTORE_IDENTIFIED_BY,
                 b.optional(KEYSTORE_CONTAINER_CLAUSE))
 
@@ -4049,7 +4083,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ADMINISTER_KEY_MANAGEMENT).define(
                 ADMINISTER, KEY, MANAGEMENT,
-                b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE),
+                b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE, SECRET_MANAGEMENT_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

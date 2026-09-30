@@ -113,13 +113,213 @@ class AdministerKeyManagementTest : RuleTest() {
     }
 
     @Test
+    fun matchesAddAndUpdateSecretsInCurrentKeystore() {
+        for (operation in listOf("add", "update")) {
+            matches(
+                "$operation secret 's' for client 'c' identified by pw",
+                "$operation secret 's' for client 'c' identified by \"user:pw\"",
+                "$operation secret 's' for client 'c' identified by external store",
+                "$operation secret 's' for client 'c' identified by pw with backup",
+                "$operation secret 's' for client 'c' using tag 't' identified by pw",
+                "$operation secret 's' for client 'c' force keystore identified by pw",
+                "$operation secret 's' for client 'c' using tag 't' force keystore " +
+                    "identified by external store with backup using 'b';"
+            )
+        }
+    }
+
+    @Test
+    fun matchesExplicitSecretKeystoreTargets() {
+        for (operation in listOf("add", "update")) {
+            for (target in listOf("keystore '/w' identified by pw",
+                "keystore '/w' identified by \"pw\"",
+                "auto_login keystore '/w'", "local auto_login keystore '/w'")) {
+                matches(
+                    "$operation secret 's' for client 'c' to $target",
+                    "$operation secret 's' for client 'c' using tag 't' to $target with backup",
+                    "$operation secret 's' for client 'c' using tag 't' to $target with backup using 'b'"
+                )
+            }
+        }
+        // On explicit targets EXTERNAL is an ordinary password, not EXTERNAL STORE.
+        matches("add secret 's' for client 'c' to keystore '/w' identified by external")
+    }
+
+    @Test
+    fun matchesDeleteSecrets() {
+        matches(
+            "delete secret for client 'c' identified by pw",
+            "delete secret for client 'c' identified by \"user:pw\" with backup",
+            "delete secret for client 'c' identified by external store",
+            "delete secret for client 'c' force keystore identified by external store with backup using 'b'"
+        )
+        for (target in listOf("keystore '/w' identified by pw",
+            "keystore '/w' identified by \"pw\"",
+            "auto_login keystore '/w'", "local auto_login keystore '/w'")) {
+            matches(
+                "delete secret for client 'c' from $target",
+                "delete secret for client 'c' from $target with backup",
+                "delete secret for client 'c' from $target with backup using 'b'"
+            )
+        }
+    }
+
+    @Test
+    fun matchesOracleLiteralAndIdentifierVariants() {
+        matches(
+            "add secret q'[s''s]' for client N'c' using tag \"TAG\" identified by pw",
+            "update secret N's' for client q'[c]' using tag N't' identified by pw",
+            "add secret 's' for client 'c' using tag \"tag\" identified by pw",
+            "add secret 's' for client 'c' using tag bare_tag identified by pw",
+            "delete secret for client 'c' identified by pw with backup using backup_name",
+            "delete secret for client 'c' identified by pw with backup using \"BACKUP_NAME\"",
+            "delete secret for client 'c' identified by pw with backup using q'[b]'",
+            "delete secret for client 'c' identified by pw with backup using N'b'",
+            "add secret 's' for client 'c' to auto_login keystore q'[/w]'",
+            "add secret 's' for client 'c' to auto_login keystore N'/w'",
+            "update secret 's' for client 'c' to keystore nq'[/w]' identified by pw",
+            "delete secret for client 'c' from local auto_login keystore N'/w'"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedSecretValues() {
+        notMatches(
+            "add secret for client 'c' identified by pw",
+            "update secret 's' for client identified by pw",
+            "delete secret for client",
+            "delete secret 's' for client 'c' identified by pw",
+            "delete secret 's' for client 'c' from auto_login keystore '/w'",
+            "add secret 's' client 'c' identified by pw"
+        )
+        for (value in listOf("bare", "\"quoted\"", "123", ":bind")) {
+            notMatches(
+                "add secret $value for client 'c' identified by pw",
+                "update secret 's' for client $value identified by pw",
+                "delete secret for client $value identified by pw",
+                "add secret 's' for client 'c' to auto_login keystore $value"
+            )
+        }
+        for (value in listOf("123", ":bind")) {
+            notMatches("add secret 's' for client 'c' using tag $value identified by pw")
+        }
+        for (value in listOf("'pw'", "123", ":bind")) {
+            notMatches(
+                "add secret 's' for client 'c' identified by $value",
+                "delete secret for client 'c' from keystore '/w' identified by $value"
+            )
+        }
+    }
+
+    @Test
+    fun rejectsSecretClausePermutationsAndDuplicates() {
+        for (suffix in listOf(
+            "using tag 't' using tag 'u' identified by pw",
+            "force keystore using tag 't' identified by pw",
+            "identified by pw using tag 't'",
+            "identified by pw force keystore",
+            "with backup identified by pw",
+            "force keystore force keystore identified by pw",
+            "identified by pw identified by pw",
+            "identified by pw with backup with backup",
+            "using 't' identified by pw",
+            "using tag identified by pw",
+            "identified by pw with backup using",
+            "identified by pw with backup using 123",
+            "identified by pw with backup using backup",
+            "identified by pw with backup using 'b' using 'c'",
+            "identified by pw to keystore '/w'",
+            "to keystore '/w' using tag 't' identified by pw",
+            "force keystore to keystore '/w' identified by pw",
+            "force identified by pw",
+            "identified by",
+            "identified by external",
+            "with",
+            "identified by pw with",
+            "identified by pw backup",
+            "identified by pw with backup extra"
+        )) {
+            for (operation in listOf("add", "update")) {
+                notMatches("$operation secret 's' for client 'c' $suffix")
+            }
+        }
+        notMatches(
+            "add secret 's' for client 'c'",
+            "add secret 's' for client 'c' force keystore",
+            "delete secret for client 'c'",
+            "delete secret for client 'c' using tag 't' identified by pw",
+            "delete secret for client 'c' identified by pw force keystore",
+            "delete secret for client 'c' with backup identified by pw",
+            "delete secret for client 'c' force keystore force keystore identified by pw",
+            "delete secret for client 'c' identified by pw identified by pw",
+            "delete secret for client 'c' identified by pw with backup with backup",
+            "delete secret for client 'c' identified by pw from keystore '/w'"
+        )
+    }
+
+    @Test
+    fun rejectsIncompleteAndConflictingSecretTargets() {
+        for (target in listOf(
+            "", "keystore", "keystore '/w'", "auto_login", "auto_login keystore",
+            "local keystore '/w' identified by pw", "local auto_login '/w'",
+            "keystore keystore '/w' identified by pw",
+            "auto_login keystore keystore '/w'",
+            "keystore '/w' force keystore identified by pw",
+            "keystore '/w' identified by external store",
+            "auto_login keystore '/w' identified by pw",
+            "auto_login keystore '/w' force keystore",
+            "auto_login local keystore '/w'"
+        )) {
+            notMatches(
+                "add secret 's' for client 'c' to $target",
+                "update secret 's' for client 'c' to $target",
+                "delete secret for client 'c' from $target"
+            )
+        }
+        notMatches(
+            "delete secret for client 'c' to auto_login keystore '/w'",
+            "add secret 's' for client 'c' from auto_login keystore '/w'"
+        )
+    }
+
+    @Test
+    fun preservesSecretAstBoundariesAndIdentifierCompatibility() {
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        val tree = p.parse("create table secret (client number, tag number, auto_login number); " +
+            "administer key management add secret 's' for client 'c' using tag \"TAG\" " +
+            "force keystore identified by pw with backup using 'b'; " +
+            "administer key management update secret 's' for client 'c' to auto_login keystore '/w'; " +
+            "administer key management delete secret for client 'c' from keystore '/w' identified by pw;")
+        assertThatAst(tree.getDescendants(DdlGrammar.ADMINISTER_KEY_MANAGEMENT)).hasSize(3)
+        assertThatAst(tree.getDescendants(DdlGrammar.SECRET_MANAGEMENT_CLAUSES)).hasSize(3)
+        assertThatAst(tree.getDescendants(DdlGrammar.ADD_UPDATE_SECRET)).hasSize(2)
+        assertThatAst(tree.getDescendants(DdlGrammar.DELETE_SECRET)).hasSize(1)
+        for (helper in listOf(DdlGrammar.FORCE_KEYSTORE, DdlGrammar.KEYSTORE_IDENTIFIED_BY,
+            DdlGrammar.KEYSTORE_WITH_BACKUP, DdlGrammar.SECRET_KEYSTORE_TARGET)) {
+            assertThatAst(tree.getDescendants(helper)).isEmpty()
+        }
+    }
+
+    @Test
     fun rejectsOtherOperationsAndHeaders() {
         notMatches(
             "set keystore reopen",
             "set keystore",
             "keystore open identified by password",
             "create keystore '/wallet' identified by password",
-            "backup keystore identified by password"
+            "backup keystore identified by password",
+            "create auto_login keystore from keystore '/w' identified by pw",
+            "alter keystore password identified by pw set new_pw with backup",
+            "merge keystore '/w' into new keystore '/n' identified by pw",
+            "set key identified by pw with backup",
+            "create key identified by pw with backup",
+            "use key 'k' identified by pw with backup",
+            "set tag 't' for 'k' identified by pw with backup",
+            "export keys with secret \"s\" to '/e' identified by pw",
+            "import keys with secret \"s\" from '/e' identified by pw with backup",
+            "set encryption key identified by pw migrate using \"u:p\"",
+            "set encryption key identified by pw reverse migrate using \"u:p\"",
+            "move keys to new keystore '/w' identified by pw from identified by pw"
         )
         assertThat(p).notMatches("administer key set keystore close")
     }
