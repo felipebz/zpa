@@ -38,6 +38,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
  */
 internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val OUTLINE_CREATE_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
+internal val PRIVATE_TEMPORARY_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 /**
  * Enables view-specific restrictions in shared constraint productions.
  * Callers remain responsible for restricting unsupported constraint kinds.
@@ -58,6 +59,9 @@ enum class DdlGrammar : GrammarRuleKey {
     ANNOTATIONS_CLAUSE,
     ANNOTATION,
     TABLE_COLUMN_DEFINITION,
+    CTAS_COLUMN_DEFINITION,
+    CTAS_RELATIONAL_PROPERTIES,
+    CREATE_TABLE_RELATIONAL_TAIL,
     SUPPLEMENTAL_LOGGING_PROPS,
     TABLE_RELATIONAL_PROPERTIES,
     OBJECT_TABLE_CLAUSE,
@@ -573,13 +577,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(SCOPE, IS, DmlGrammar.TABLE_REFERENCE),
                     b.sequence(WITH, ROWID)))
 
-            b.rule(TABLE_COLUMN_DEFINITION).define(
-                    IDENTIFIER_NAME,
-                    // Oracle rejects a missing identity datatype only after parsing (ORA-02263).
-                    b.firstOf(
-                        b.sequence(b.nextNot(identityStart), DATATYPE),
-                        b.next(identityStart)),
-                    b.optional(SORT),
+            fun columnValueAndConstraints() = b.sequence(
                     b.optional(b.firstOf(
                         b.sequence(DEFAULT, b.optional(
                             b.sequence(ON, NULL,
@@ -590,6 +588,30 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
                     b.optional(ANNOTATIONS_CLAUSE))
+
+            b.rule(TABLE_COLUMN_DEFINITION).define(
+                    IDENTIFIER_NAME,
+                    // Oracle rejects a missing identity datatype only after parsing (ORA-02263).
+                    b.firstOf(
+                        b.sequence(b.nextNot(identityStart), DATATYPE),
+                        b.next(identityStart)),
+                    b.optional(SORT),
+                    columnValueAndConstraints())
+
+            // CREATE TABLE ... AS subquery infers datatypes; keep this out of ordinary columns and ALTER.
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
+            // Oracle 26 also accepts repeated SORT and SORT after visibility. Column-count, identity,
+            // annotation, foreign-key, REF and reservable-column restrictions are database validation,
+            // not additional syntax restrictions here (ORA-01730/01773/11559/02440/22893/55773).
+            val visibility = b.firstOf(VISIBLE, INVISIBLE)
+            b.rule(CTAS_COLUMN_DEFINITION).define(
+                    IDENTIFIER_NAME,
+                    b.zeroOrMore(SORT),
+                    b.optional(b.firstOf(
+                        b.sequence(visibility, b.zeroOrMore(SORT), b.optional(RESERVABLE)),
+                        b.sequence(RESERVABLE, b.zeroOrMore(SORT), b.optional(visibility)))),
+                    b.zeroOrMore(SORT),
+                    columnValueAndConstraints())
 
             // View constraints in this context only permit
             // [RELY | NORELY] DISABLE [NOVALIDATE] after the column list.
@@ -658,6 +680,29 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.firstOf(
                             b.sequence(COMMA, b.nextNot(RPARENTHESIS)),
                             b.next(RPARENTHESIS))))))
+
+            val ctasNonColumnProperty = b.firstOf(
+                    OUT_OF_LINE_REF_CONSTRAINT, OUT_OF_LINE_CONSTRAINT, SUPPLEMENTAL_LOGGING_PROPS)
+            val ctasColumn = b.sequence(
+                    b.nextNot(b.firstOf(
+                        b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG))),
+                    CTAS_COLUMN_DEFINITION)
+            b.rule(CTAS_RELATIONAL_PROPERTIES).define(
+                    b.zeroOrMore(ctasNonColumnProperty, COMMA),
+                    ctasColumn,
+                    b.zeroOrMore(COMMA, b.firstOf(ctasNonColumnProperty, ctasColumn)))
+
+            // Discriminate at the first property, not by parsing a column list/tail to look for a distant AS.
+            // Constraint-first lists enter CTAS, but a typed first column fails locally, before the table tail.
+            val ctasPropertiesStart = b.sequence(
+                    LPARENTHESIS,
+                    b.firstOf(
+                        b.firstOf(CONSTRAINT, CONSTRAINTS, PRIMARY, UNIQUE, FOREIGN, CHECK),
+                        b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG),
+                        b.sequence(IDENTIFIER_NAME, b.firstOf(
+                            COMMA, RPARENTHESIS, SORT, visibility, RESERVABLE, DEFAULT, identityStart, ENCRYPT,
+                            CONSTRAINT, CONSTRAINTS, NOT, NULL, UNIQUE, PRIMARY, CHECK, REFERENCES,
+                            b.sequence(SCOPE, IS), b.sequence(WITH, ROWID), b.sequence(ANNOTATIONS, LPARENTHESIS)))))
             b.rule(OBJECT_TABLE_PROPERTIES).define(
                 LPARENTHESIS,
                 objectTableProperty(),
@@ -1335,11 +1380,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(WITH, ROW, VERSION, IDENTIFIER_NAME, rowVersionColumns),
                     b.optional(VERSION, IDENTIFIER_NAME))
 
-            // The prefix selects the ledger clauses, so each branch of CREATE_TABLE builds the body with its
-            // own clause slot. FLR inlines anonymous expressions per reference, so the three branches compile
-            // three copies of the body whether or not a parser context is used to select the clauses.
-            fun createTableBody(ledgerTableClauses: Any?): Any {
-                val relationalTail = b.firstOf(
+            // Share the physical-property parser across ordinary/CTAS and ledger branches without adding
+            // an AST boundary or compiling another copy of these large anonymous expressions per branch.
+            b.rule(CREATE_TABLE_RELATIONAL_TAIL).define(b.firstOf(
                         b.sequence(
                                 deferredSegmentCreation,
                                 tablePropertyClauses(),
@@ -1358,12 +1401,18 @@ enum class DdlGrammar : GrammarRuleKey {
                                                 ON,
                                                 COMMIT,
                                                 b.firstOf(
-                                                        DELETE,
-                                                        PRESERVE),
-                                                ROWS,
+                                                    b.sequence(
+                                                        b.requireContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true),
+                                                        b.firstOf(DROP, PRESERVE), DEFINITION),
+                                                    b.sequence(
+                                                        b.nextNot(b.requireContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true)),
+                                                        b.firstOf(DELETE, PRESERVE), ROWS)),
                                                 b.zeroOrMore(tableLevelProperty())),
-                                        tableSuffixesWithAnnotations())))
-                val relationalProperties = b.optional(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS)
+                                        tableSuffixesWithAnnotations())))).skip()
+
+            fun createTableBody(ledgerTableClauses: Any?): Any {
+                val relationalTail = if (ledgerTableClauses == null) CREATE_TABLE_RELATIONAL_TAIL
+                    else b.sequence(ledgerTableClauses, CREATE_TABLE_RELATIONAL_TAIL)
                 return b.sequence(
                     UNIT_NAME,
                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.firstOf(
@@ -1371,17 +1420,23 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.firstOf(XMLTYPE_TABLE, OBJECT_TABLE_CLAUSE),
                                     tablePropertyClauses(),
                                     b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
-                                    tableSuffixesWithAnnotations()),
-                            if (ledgerTableClauses == null) b.sequence(relationalProperties, relationalTail)
-                            else b.sequence(relationalProperties, ledgerTableClauses, relationalTail))),
-                    b.firstOf(
+                                    tableSuffixesWithAnnotations(),
+                                    b.firstOf(
+                                        b.sequence(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
+                                            AS, DmlGrammar.SELECT_EXPRESSION),
+                                        b.sequence(b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true)),
+                                            b.optional(AS, DmlGrammar.SELECT_EXPRESSION)))),
                             b.sequence(
-                                    b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
-                                    AS,
-                                    DmlGrammar.SELECT_EXPRESSION),
+                                    b.next(ctasPropertiesStart),
+                                    LPARENTHESIS, CTAS_RELATIONAL_PROPERTIES, RPARENTHESIS,
+                                    relationalTail, AS, DmlGrammar.SELECT_EXPRESSION),
                             b.sequence(
-                                    b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true)),
-                                    b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
+                                    LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS,
+                                    relationalTail,
+                                    b.nextNot(AS),
+                                    b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true))),
+                            b.sequence(
+                                    relationalTail, AS, DmlGrammar.SELECT_EXPRESSION))),
                     b.optional(SEMICOLON))
             }
 
@@ -1392,6 +1447,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                     createTableBody(blockchainTableClauses)),
                             b.sequence(IMMUTABLE, TABLE,
                                     createTableBody(immutableTableClauses)),
+                            b.sequence(PRIVATE, TEMPORARY, TABLE,
+                                    b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, createTableBody(null))),
                             b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, createTableBody(null))))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
