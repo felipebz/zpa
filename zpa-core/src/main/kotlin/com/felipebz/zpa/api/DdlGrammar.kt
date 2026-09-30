@@ -63,6 +63,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CTAS_RELATIONAL_PROPERTIES,
     CREATE_TABLE_RELATIONAL_TAIL,
     SUPPLEMENTAL_LOGGING_PROPS,
+    SUPPLEMENTAL_ID_KEY_CLAUSE,
     TABLE_RELATIONAL_PROPERTIES,
     OBJECT_TABLE_CLAUSE,
     XMLTYPE_TABLE,
@@ -202,6 +203,13 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_OPEN,
     PDB_CLOSE,
     PDB_INSTANCES_CLAUSE,
+    ALTER_DATABASE,
+    LOGFILE_CLAUSES,
+    ADD_LOGFILE_CLAUSES,
+    DROP_LOGFILE_CLAUSES,
+    REDO_LOG_FILE_SPEC,
+    LOGFILE_DESCRIPTOR,
+    SUPPLEMENTAL_DB_LOGGING,
     CREATE_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
@@ -685,11 +693,11 @@ enum class DdlGrammar : GrammarRuleKey {
             val supplementalLogGroup = b.sequence(
                 GROUP, IDENTIFIER_NAME, LPARENTHESIS, supplementalLogColumn,
                 b.zeroOrMore(COMMA, supplementalLogColumn), RPARENTHESIS, b.optional(ALWAYS))
-            val supplementalIdKey = b.sequence(
+            b.rule(SUPPLEMENTAL_ID_KEY_CLAUSE).define(
                 DATA, LPARENTHESIS, supplementalLogKey,
-                b.zeroOrMore(COMMA, supplementalLogKey), RPARENTHESIS, COLUMNS)
+                b.zeroOrMore(COMMA, supplementalLogKey), RPARENTHESIS, COLUMNS).skip()
             b.rule(SUPPLEMENTAL_LOGGING_PROPS).define(
-                SUPPLEMENTAL, LOG, b.firstOf(supplementalLogGroup, supplementalIdKey))
+                SUPPLEMENTAL, LOG, b.firstOf(supplementalLogGroup, SUPPLEMENTAL_ID_KEY_CLAUSE))
 
             val relationalProperty = b.firstOf(
                 OUT_OF_LINE_REF_CONSTRAINT,
@@ -2526,6 +2534,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createRollbackSegment(b)
             administerKeyManagement(b)
             alterPluggableDatabase(b)
+            alterDatabase(b)
             createCluster(b)
             createAnalyze(b)
             createAudit(b)
@@ -2912,6 +2921,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_ANALYTIC_VIEW,
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
+                ALTER_DATABASE,
                 CREATE_OUTLINE,
                 ALTER_OUTLINE,
                 CREATE_INMEMORY_JOIN_GROUP,
@@ -4090,6 +4100,77 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 PDB_CHANGE_STATE,
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
+        private fun alterDatabase(b: PlSqlGrammarBuilder) {
+            fun literals() = b.sequence(CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL))
+            val literalList = b.sequence(LPARENTHESIS, literals(), RPARENTHESIS)
+
+            b.rule(LOGFILE_DESCRIPTOR).define(
+                b.firstOf(b.sequence(GROUP, INTEGER_LITERAL), literalList, CHARACTER_LITERAL))
+            val descriptors = b.sequence(LOGFILE_DESCRIPTOR, b.zeroOrMore(COMMA, LOGFILE_DESCRIPTOR))
+
+            b.rule(REDO_LOG_FILE_SPEC).define(
+                b.optional(b.firstOf(CHARACTER_LITERAL, literalList)),
+                b.optional(SIZE, INDEX_SIZE_CLAUSE),
+                b.optional(BLOCKSIZE, INDEX_SIZE_CLAUSE),
+                b.optional(REUSE))
+
+            val group = b.sequence(b.optional(GROUP, INTEGER_LITERAL), REDO_LOG_FILE_SPEC)
+            // Oracle 26 rejects REUSE before a later member (ORA-00946) and a second TO descriptor
+            // (ORA-02236/ORA-00946), unlike the diagram.
+            b.rule(ADD_LOGFILE_CLAUSES).define(
+                ADD, b.optional(STANDBY), LOGFILE,
+                b.firstOf(
+                    b.sequence(MEMBER, literals(), b.optional(REUSE), TO, LOGFILE_DESCRIPTOR),
+                    b.sequence(
+                        b.optional(b.firstOf(
+                            b.sequence(INSTANCE, CHARACTER_LITERAL),
+                            b.sequence(THREAD, INTEGER_LITERAL))),
+                        group,
+                        b.zeroOrMore(
+                            COMMA, b.next(b.firstOf(GROUP, CHARACTER_LITERAL, LPARENTHESIS, SIZE, BLOCKSIZE, REUSE)),
+                            group))))
+
+            b.rule(DROP_LOGFILE_CLAUSES).define(
+                DROP, b.optional(STANDBY), LOGFILE,
+                b.firstOf(b.sequence(MEMBER, literals()), descriptors))
+
+            b.rule(SUPPLEMENTAL_DB_LOGGING).define(
+                b.firstOf(ADD, DROP), SUPPLEMENTAL, LOG,
+                b.firstOf(
+                    SUPPLEMENTAL_ID_KEY_CLAUSE,
+                    b.sequence(DATA, b.optional(b.firstOf(
+                        b.sequence(FOR, PROCEDURAL, REPLICATION),
+                        b.sequence(SUBSET, DATABASE, REPLICATION))))))
+
+            // Oracle 26 accepts a list of targets with the same count as the sources (ORA-02238 otherwise).
+            b.rule(LOGFILE_CLAUSES).define(
+                b.firstOf(
+                    b.sequence(ARCHIVELOG, b.optional(MANUAL)),
+                    NOARCHIVELOG,
+                    b.sequence(b.optional(NO), FORCE, LOGGING),
+                    b.sequence(
+                        SET, STANDBY, NOLOGGING, FOR,
+                        b.firstOf(b.sequence(DATA, AVAILABILITY), b.sequence(LOAD, PERFORMANCE))),
+                    b.sequence(RENAME, FILE, literals(), TO, literals()),
+                    b.sequence(
+                        CLEAR, b.optional(UNARCHIVED), LOGFILE, descriptors,
+                        b.optional(UNRECOVERABLE, DATAFILE)),
+                    ADD_LOGFILE_CLAUSES,
+                    DROP_LOGFILE_CLAUSES,
+                    b.sequence(SWITCH, ALL, LOGFILES, TO, BLOCKSIZE, INTEGER_LITERAL, b.optional("K")),
+                    SUPPLEMENTAL_DB_LOGGING))
+
+            // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
+            val notName = b.firstOf(ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK)
+            b.rule(ALTER_DATABASE).define(
+                ALTER, DATABASE,
+                b.optional(b.nextNot(notName), IDENTIFIER_NAME),
+                LOGFILE_CLAUSES,
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
