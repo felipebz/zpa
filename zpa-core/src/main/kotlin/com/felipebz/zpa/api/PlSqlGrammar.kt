@@ -490,7 +490,57 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(REF_DATATYPE).define(REF, MEMBER_EXPRESSION)
 
-            b.rule(JSON_DATATYPE).define(JSON)
+            // Oracle 26 JSON_type_specification. Keep this separate from IS JSON:
+            // datatype modifiers include typed arrays and LIMIT, but not VALUE or condition options.
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Types.html
+            val jsonScalarType = b.firstOf(
+                NUMBER, STRING, BINARY_DOUBLE, BINARY_FLOAT, DATE,
+                b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
+                NULL, BOOLEAN, BINARY,
+                b.sequence(INTERVAL, b.firstOf(b.sequence(YEAR, TO, MONTH), b.sequence(DAY, TO, SECOND)))
+            )
+            val jsonArrayType = b.sequence(
+                ARRAY,
+                b.optional(
+                    LPARENTHESIS,
+                    // Oracle 26 also accepts ARRAY(), omitted element types, and
+                    // ALLOW NULL followed by DISALLOW NULL (but not the reverse).
+                    b.optional(jsonScalarType),
+                    b.optional(ALLOW, NULL),
+                    b.optional(DISALLOW, NULL),
+                    b.optional(
+                        COMMA, b.firstOf(MULTIPLICATION, INTEGER_LITERAL),
+                        // Unlike documented [, SORT], Oracle 26 accepts a trailing comma
+                        // after the array size without SORT: ARRAY(NUMBER, *,).
+                        b.optional(COMMA, b.optional(SORT))
+                    ),
+                    RPARENTHESIS
+                )
+            )
+            val jsonTypeModifier = b.firstOf(
+                jsonArrayType, OBJECT, b.sequence(SCALAR, b.optional(jsonScalarType))
+            )
+            val jsonLimit = b.sequence(LIMIT, INTEGER_LITERAL)
+            b.rule(JSON_DATATYPE).define(
+                JSON,
+                b.optional(b.firstOf(
+                    b.sequence(
+                        LPARENTHESIS,
+                        b.firstOf(
+                            jsonLimit,
+                            b.sequence(
+                                jsonTypeModifier,
+                                // Runtime accepts trailing/repeated commas after a modifier.
+                                // The repeated sequence always consumes its comma.
+                                b.zeroOrMore(COMMA, b.optional(jsonTypeModifier)),
+                                b.optional(jsonLimit)
+                            )
+                        ),
+                        RPARENTHESIS
+                    ),
+                    b.sequence(jsonTypeModifier, b.optional(jsonLimit))
+                ))
+            )
 
             b.rule(DATATYPE).define(b.firstOf(
                     NUMERIC_DATATYPE,
