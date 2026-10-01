@@ -60,6 +60,8 @@ enum class DdlGrammar : GrammarRuleKey {
     ANNOTATIONS_CLAUSE,
     ANNOTATION,
     TABLE_COLUMN_DEFINITION,
+    VIRTUAL_COLUMN_DEFINITION,
+    JSON_COLLECTION_COLUMNS,
     CTAS_COLUMN_DEFINITION,
     CTAS_RELATIONAL_PROPERTIES,
     CREATE_TABLE_RELATIONAL_TAIL,
@@ -662,7 +664,29 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.sequence(b.nextNot(identityStart), DATATYPE),
                         b.next(identityStart)),
                     b.optional(SORT),
-                    columnValueAndConstraints())
+                    columnValueAndConstraints(),
+                    b.nextNot(b.firstOf(
+                        AS, VISIBLE, INVISIBLE, b.sequence(GENERATED, ALWAYS, AS, LPARENTHESIS))))
+
+            // Oracle also accepts STORED for MATERIALIZED.
+            val editionName = b.sequence(EDITION, IDENTIFIER_NAME)
+            b.rule(VIRTUAL_COLUMN_DEFINITION).define(
+                    IDENTIFIER_NAME,
+                    b.optional(b.nextNot(b.firstOf(VISIBLE, INVISIBLE, GENERATED)), DATATYPE, b.optional(COLLATE, IDENTIFIER_NAME)),
+                    b.optional(b.firstOf(VISIBLE, INVISIBLE)),
+                    b.optional(GENERATED, ALWAYS),
+                    AS, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                    b.optional(b.firstOf(VIRTUAL, MATERIALIZED, STORED)),
+                    b.optional(EVALUATE, USING, b.firstOf(b.sequence(CURRENT, EDITION), editionName, b.sequence(NULL, EDITION))),
+                    b.optional(UNUSABLE, BEFORE, b.firstOf(b.sequence(CURRENT, EDITION), editionName)),
+                    b.optional(UNUSABLE, BEGINNING, WITH, b.firstOf(b.sequence(CURRENT, EDITION), editionName, b.sequence(NULL, EDITION))),
+                    b.zeroOrMore(INLINE_CONSTRAINT))
+
+            b.rule(JSON_COLLECTION_COLUMNS).define(
+                    LPARENTHESIS,
+                    b.firstOf(OUT_OF_LINE_CONSTRAINT, VIRTUAL_COLUMN_DEFINITION),
+                    b.zeroOrMore(COMMA, b.firstOf(OUT_OF_LINE_CONSTRAINT, VIRTUAL_COLUMN_DEFINITION)),
+                    RPARENTHESIS)
 
             // CREATE TABLE ... AS subquery infers datatypes; keep this out of ordinary columns and ALTER.
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
@@ -735,7 +759,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(
                     b.nextNot(b.firstOf(
                         b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG))),
-                    TABLE_COLUMN_DEFINITION))
+                    TABLE_COLUMN_DEFINITION),
+                VIRTUAL_COLUMN_DEFINITION)
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
                 b.oneOrMore(b.firstOf(
                     b.sequence(
@@ -1515,6 +1540,13 @@ enum class DdlGrammar : GrammarRuleKey {
                                     createTableBody(immutableTableClauses)),
                             b.sequence(PRIVATE, TEMPORARY, TABLE,
                                     b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, createTableBody(null))),
+                            b.sequence(JSON, COLLECTION, TABLE, UNIT_NAME,
+                                    b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.sequence(
+                                            b.optional(WITH, ETAG),
+                                            b.optional(JSON_COLLECTION_COLUMNS),
+                                            CREATE_TABLE_RELATIONAL_TAIL,
+                                            b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
+                                    b.optional(SEMICOLON)),
                             b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, createTableBody(null))))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
