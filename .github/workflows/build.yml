@@ -74,11 +74,21 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-read-only: true
 
       - name: Download build artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: build-artifacts
+
+      - name: Cache SonarQube distribution
+        id: sonar-cache
+        if: ${{ !contains(matrix.sqVersion, 'SNAPSHOT') }}
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: sonar-zpa-plugin/sonar-application-${{ matrix.sqVersion }}.zip
+          key: sonarqube-${{ matrix.sqVersion }}
 
       - name: Run plugin integration test
         run: |
@@ -87,11 +97,12 @@ jobs:
           else
             FOLDER="releases"
           fi
-          
+
           FILE_NAME="sonar-application-${SQ_VERSION}.zip"
-          DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/${FOLDER}/${FILE_NAME}"
-          
-          curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
+          if [[ ! -f "sonar-zpa-plugin/${FILE_NAME}" ]]; then
+            DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/${FOLDER}/${FILE_NAME}"
+            curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
+          fi
           ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=$FILE_NAME --rerun --info
         env:
           SQ_VERSION: ${{ matrix.sqVersion }}
