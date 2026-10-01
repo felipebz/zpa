@@ -149,7 +149,7 @@ jobs:
     name: Snapshot publication
     permissions:
       contents: read
-    needs: integration-tests
+    needs: [integration-tests, sonar]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
