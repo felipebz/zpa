@@ -57,7 +57,12 @@ class AlterDatabaseTest : RuleTest() {
             "payable rename file 'a' to 'b'",
             "payable clear logfile group 1",
             "payable switch all logfiles to blocksize 4096",
-            "payable add supplemental log data"
+            "payable add supplemental log data",
+            "payable datafile 'a.dbf' online",
+            "\"payable\" tempfile 1 offline",
+            "payable create datafile 1 as new",
+            "payable move datafile 1 to '+DATA'",
+            "\"datafile\" datafile 1 online"
         )
     }
 
@@ -75,7 +80,11 @@ class AlterDatabaseTest : RuleTest() {
             "force force logging",
             "archivelog archivelog",
             "switch switch all logfiles to blocksize 512",
-            "link add logfile ('a.log')"
+            "link add logfile ('a.log')",
+            "datafile datafile 'a.dbf' online",
+            "tempfile tempfile 1 offline",
+            "create create datafile 1 as new",
+            "move move datafile 1 to '+DATA'"
         )
     }
 
@@ -274,9 +283,6 @@ class AlterDatabaseTest : RuleTest() {
         notMatches(
             "open read only",
             "recover automatic database",
-            "datafile 'a.dbf' resize 10m",
-            "tempfile 'temp02.dbf' offline",
-            "create datafile 'a.dbf' as 'b.dbf'",
             "default temporary tablespace tbs_05",
             "set default bigfile tablespace",
             "rename global_name to demo.world.example.com",
@@ -285,6 +291,17 @@ class AlterDatabaseTest : RuleTest() {
             "flashback on",
             "db_name prepare mirror copy m with high redundancy"
         )
+    }
+
+    @Test
+    fun reusesLogfileRenameWithinDatabaseFileFamily() {
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        val tree = p.parse("alter database rename file 'a.dbf' to 'b.dbf'; " +
+            "alter database add logfile 'a.log';")
+        val rename = tree.getDescendants(DdlGrammar.DATABASE_FILE_CLAUSES).single()
+        assertThatAst(rename.getChildren(DdlGrammar.LOGFILE_CLAUSES)).hasSize(1)
+        assertThatAst(tree.getDescendants(DdlGrammar.LOGFILE_CLAUSES)).hasSize(2)
+        assertThatAst(rename.getDescendants(DdlGrammar.REDO_LOG_FILE_SPEC)).isEmpty()
     }
 
     @Test

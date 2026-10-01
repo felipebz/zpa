@@ -2,7 +2,7 @@
   "examples-sql-script/e_in_out_parameters.pks" : [ 4 ],
   "examples/administer_key_management.sql" : [ 1 ],
   "examples/alter_analytic_view.sql" : [ 3 ],
-  "examples/alter_database.sql" : [ 2 ],
+  "examples/alter_database.sql" : [ 3 ],
   "examples/alter_diskgroup.sql" : [ 1 ],
   "examples/alter_pmem_filestore.sql" : [ 1 ],
   "examples/alter_synonym01.sql" : [ 4 ],

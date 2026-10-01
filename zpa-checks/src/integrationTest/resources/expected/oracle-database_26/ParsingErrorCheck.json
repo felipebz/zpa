@@ -48,13 +48,10 @@
   "sqlrf/ALTER-DATABASE-16.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-17.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-18.sql" : [ 3 ],
-  "sqlrf/ALTER-DATABASE-19.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-2.sql" : [ 2 ],
-  "sqlrf/ALTER-DATABASE-20.sql" : [ 2 ],
   "sqlrf/ALTER-DATABASE-21.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-22.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-23.sql" : [ 3 ],
-  "sqlrf/ALTER-DATABASE-24.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-26.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-27.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-28.sql" : [ 3 ],
@@ -159,6 +156,5 @@
   "sqlrf/create-property-graph-16.sql" : [ 2 ],
   "sqlrf/create-property-graph-23.sql" : [ 3 ],
   "sqlrf/file_specification-0.sql" : [ 2 ],
-  "sqlrf/file_specification-5.sql" : [ 3 ],
   "sqlrf/graphql-table-function-0.sql" : [ 2 ]
 }

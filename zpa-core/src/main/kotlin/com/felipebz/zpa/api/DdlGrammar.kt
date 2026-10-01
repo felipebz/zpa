@@ -228,6 +228,11 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_CLOSE,
     PDB_INSTANCES_CLAUSE,
     ALTER_DATABASE,
+    DATABASE_FILE_CLAUSES,
+    CREATE_DATAFILE_CLAUSE,
+    ALTER_DATAFILE_CLAUSE,
+    ALTER_TEMPFILE_CLAUSE,
+    MOVE_DATAFILE_CLAUSE,
     LOGFILE_CLAUSES,
     ADD_LOGFILE_CLAUSES,
     DROP_LOGFILE_CLAUSES,
@@ -1555,7 +1560,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 PARAMETERS, LPARENTHESIS, CHARACTER_LITERAL, RPARENTHESIS)
 
             b.rule(INDEX_SIZE_CLAUSE).define(
-                INTEGER_LITERAL, b.optional(b.firstOf("K", "M", "G", "T", "P", "E")))
+                b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL), b.optional(b.firstOf("K", "M", "G", "T", "P", "E")))
 
             b.rule(INDEX_STORAGE_CLAUSE).define(
                 STORAGE,
@@ -4270,6 +4275,56 @@ enum class DdlGrammar : GrammarRuleKey {
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
+        private fun databaseFileClauses(b: PlSqlGrammarBuilder) {
+            val fileNumber = b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)
+            val fileReference = b.firstOf(CHARACTER_LITERAL, fileNumber)
+            // CREATE DATAFILE and DATAFILE choose filename or filenumber per element.
+            val fileReferences = b.sequence(fileReference, b.zeroOrMore(COMMA, fileReference))
+            // TEMPFILE documents separate homogeneous filename and filenumber lists.
+            val tempfileReferences = b.firstOf(
+                b.sequence(CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)),
+                b.sequence(fileNumber, b.zeroOrMore(COMMA, fileNumber)))
+
+            // AUTOEXTEND parses here; empty destination specs are implicit OMF files. Commas consume input.
+            val destinations = b.sequence(DATAFILE_TEMPFILE_SPEC, b.zeroOrMore(COMMA, DATAFILE_TEMPFILE_SPEC))
+            b.rule(CREATE_DATAFILE_CLAUSE).define(
+                CREATE, DATAFILE, fileReferences,
+                b.optional(AS, b.firstOf(NEW, destinations)))
+
+            val resize = b.sequence(RESIZE, INDEX_SIZE_CLAUSE)
+            b.rule(ALTER_DATAFILE_CLAUSE).define(
+                DATAFILE, fileReferences,
+                b.firstOf(
+                    ONLINE,
+                    b.sequence(OFFLINE, b.optional(FOR, DROP)),
+                    resize,
+                    AUTOEXTEND_CLAUSE,
+                    b.sequence(END, BACKUP),
+                    ENCRYPT,
+                    DECRYPT))
+            b.rule(ALTER_TEMPFILE_CLAUSE).define(
+                TEMPFILE, tempfileReferences,
+                b.firstOf(
+                    resize,
+                    AUTOEXTEND_CLAUSE,
+                    b.sequence(DROP, b.optional(INCLUDING, DATAFILES)),
+                    ONLINE,
+                    OFFLINE))
+
+            // Oracle 26ai also accepts KEEP REUSE, but not repeated modifiers.
+            b.rule(MOVE_DATAFILE_CLAUSE).define(
+                MOVE, DATAFILE, b.firstOf(CHARACTER_LITERAL, fileNumber),
+                b.optional(TO, CHARACTER_LITERAL),
+                b.anyOrder(REUSE, KEEP))
+            b.rule(DATABASE_FILE_CLAUSES).define(
+                b.firstOf(
+                    CREATE_DATAFILE_CLAUSE,
+                    ALTER_DATAFILE_CLAUSE,
+                    ALTER_TEMPFILE_CLAUSE,
+                    MOVE_DATAFILE_CLAUSE,
+                    b.sequence(b.next(RENAME), LOGFILE_CLAUSES)))
+        }
+
         private fun alterDatabase(b: PlSqlGrammarBuilder) {
             fun literals() = b.sequence(CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL))
             val literalList = b.sequence(LPARENTHESIS, literals(), RPARENTHESIS)
@@ -4330,12 +4385,16 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(SWITCH, ALL, LOGFILES, TO, BLOCKSIZE, INTEGER_LITERAL, b.optional("K")),
                     SUPPLEMENTAL_DB_LOGGING))
 
+            databaseFileClauses(b)
+
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
-            val notName = b.firstOf(ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK)
+            val notName = b.firstOf(
+                ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
+                CREATE, DATAFILE, TEMPFILE, MOVE)
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
-                LOGFILE_CLAUSES,
+                b.firstOf(DATABASE_FILE_CLAUSES, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
