@@ -120,6 +120,8 @@ class CreateViewTest : RuleTest() {
         assertThat(p).matches("create view foo of object_type with object id (id) as select 1 from dual;")
         assertThat(p).matches("create view foo of object_type with object identifier default as select 1 from dual;")
         assertThat(p).matches("create view child of object_type under superview (id unique) as select 1 from dual;")
+        assertThat(p).notMatches("create view foo of object_type with object arbitrary_word (id) as select 1 from dual;")
+        assertThat(p).notMatches("create view foo of object_type with object \"IDENTIFIER\" (id) as select 1 from dual;")
     }
 
     @Test

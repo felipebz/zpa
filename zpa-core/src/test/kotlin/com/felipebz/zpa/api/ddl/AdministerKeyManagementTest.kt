@@ -301,21 +301,15 @@ class AdministerKeyManagementTest : RuleTest() {
     }
 
     @Test
-    fun rejectsOtherOperationsAndHeaders() {
+    fun rejectsDeferredOperationsAndMalformedHeaders() {
         notMatches(
             "set keystore reopen",
             "set keystore",
             "keystore open identified by password",
             "merge keystore '/w' into new keystore '/n' identified by pw",
-            "set key identified by pw with backup",
-            "create key identified by pw with backup",
-            "use key 'k' identified by pw with backup",
-            "set tag 't' for 'k' identified by pw with backup",
-            "export keys with secret \"s\" to '/e' identified by pw",
-            "import keys with secret \"s\" from '/e' identified by pw with backup",
-            "set encryption key identified by pw migrate using \"u:p\"",
-            "set encryption key identified by pw reverse migrate using \"u:p\"",
             "move keys to new keystore '/w' identified by pw from identified by pw",
+            "move keys to new keystore '/w' identified by pw from force keystore identified by pw " +
+                "with identifier in (select key_id from v\$encryption_keys)",
             "isolate keystore identified by pw from root keystore identified by pw with backup",
             "unite keystore identified by pw with root keystore identified by pw with backup"
         )

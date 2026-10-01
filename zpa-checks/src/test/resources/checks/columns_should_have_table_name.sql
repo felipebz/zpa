@@ -37,3 +37,16 @@ select col, -- Noncompliant {{Specify the table of column "col".}}
        'text'
   from tab, tab2
 /
+
+select id, -- Noncompliant
+       value, -- Noncompliant
+       rowid, -- Noncompliant
+       "SYSDATE" -- Noncompliant
+  from tab, tab2;
+
+select rownum, sysdate, systimestamp, current_date, current_timestamp,
+       localtimestamp, dbtimezone, sessiontimezone, user, uid
+  from tab, tab2;
+
+select level, connect_by_isleaf, connect_by_iscycle
+  from tab, tab2 connect by nocycle level < 3;

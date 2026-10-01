@@ -213,6 +213,15 @@ enum class DdlGrammar : GrammarRuleKey {
     SECRET_MANAGEMENT_CLAUSES,
     ADD_UPDATE_SECRET,
     DELETE_SECRET,
+    KEY_MANAGEMENT_CLAUSES,
+    SET_KEY,
+    CREATE_KEY,
+    USE_KEY,
+    SET_KEY_TAG,
+    EXPORT_KEYS,
+    IMPORT_KEYS,
+    MIGRATE_KEY,
+    REVERSE_MIGRATE_KEY,
     ALTER_PLUGGABLE_DATABASE,
     PDB_CHANGE_STATE,
     PDB_OPEN,
@@ -763,7 +772,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(OBJECT_IDENTIFIER_CLAUSE).define(
                 OBJECT,
-                "IDENTIFIER",
+                IDENTIFIER_KEYWORD,
                 IS,
                 b.firstOf(
                     b.sequence(PRIMARY, KEY),
@@ -4129,13 +4138,85 @@ enum class DdlGrammar : GrammarRuleKey {
                 KEYSTORE_IDENTIFIED_BY,
                 b.optional(KEYSTORE_WITH_BACKUP))
 
+            keyManagementCreation(b)
+            keyManagementTransfers(b)
+            keyManagementMigration(b)
+            b.rule(KEY_MANAGEMENT_CLAUSES).define(
+                b.firstOf(MIGRATE_KEY, REVERSE_MIGRATE_KEY,
+                    SET_KEY, CREATE_KEY, USE_KEY, SET_KEY_TAG, EXPORT_KEYS, IMPORT_KEYS))
+
             b.rule(ADMINISTER_KEY_MANAGEMENT).define(
                 ADMINISTER, KEY, MANAGEMENT,
                 b.firstOf(OPEN_KEYSTORE, CLOSE_KEYSTORE, SECRET_MANAGEMENT_CLAUSES,
                     CREATE_KEYSTORE, BACKUP_KEYSTORE, ALTER_KEYSTORE_PASSWORD,
-                    MERGE_INTO_NEW_KEYSTORE, MERGE_INTO_EXISTING_KEYSTORE),
+                    MERGE_INTO_NEW_KEYSTORE, MERGE_INTO_EXISTING_KEYSTORE, KEY_MANAGEMENT_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
+        }
+
+        private fun keyManagementMigration(b: PlSqlGrammarBuilder) {
+            // Oracle parses USING TAG and forward WITH BACKUP omitted by the migration diagram.
+            val keyIdentifier = b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)
+            val tag = b.optional(USING, TAG, b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME))
+            val authentication = b.sequence(KEYSTORE_PASSWORD_IDENTIFIED_BY, b.optional(FORCE_KEYSTORE))
+
+            b.rule(MIGRATE_KEY).define(
+                b.firstOf(
+                    b.sequence(SET, b.optional(ENCRYPTION), KEY),
+                    b.sequence(USE, b.optional(ENCRYPTION), KEY, keyIdentifier)),
+                tag, authentication,
+                MIGRATE, USING, IDENTIFIER_NAME,
+                b.optional(KEYSTORE_WITH_BACKUP))
+
+            b.rule(REVERSE_MIGRATE_KEY).define(
+                SET, b.optional(ENCRYPTION), KEY,
+                tag, authentication,
+                REVERSE, MIGRATE, USING, IDENTIFIER_NAME,
+                b.optional(KEYSTORE_WITH_BACKUP))
+        }
+
+        private fun keyManagementTransfers(b: PlSqlGrammarBuilder) {
+            val authentication = b.sequence(b.optional(FORCE_KEYSTORE), KEYSTORE_IDENTIFIED_BY)
+            val keyIdentifier = b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)
+            val identifierFilter = b.sequence(
+                WITH, IDENTIFIER_KEYWORD, IN,
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS),
+                    b.sequence(keyIdentifier, b.zeroOrMore(COMMA, keyIdentifier))))
+
+            b.rule(EXPORT_KEYS).define(
+                EXPORT, b.optional(ENCRYPTION), KEYS, WITH, SECRET, IDENTIFIER_NAME,
+                TO, CHARACTER_LITERAL, authentication, b.optional(identifierFilter))
+
+            // Oracle 26 parses IMPORT without WITH BACKUP, despite its diagram.
+            b.rule(IMPORT_KEYS).define(
+                IMPORT, b.optional(ENCRYPTION), KEYS, WITH, SECRET, IDENTIFIER_NAME,
+                FROM, CHARACTER_LITERAL, authentication, b.optional(KEYSTORE_WITH_BACKUP))
+        }
+
+        private fun keyManagementCreation(b: PlSqlGrammarBuilder) {
+            val nameOrLiteral = b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)
+            val tag = b.sequence(USING, TAG, nameOrLiteral)
+            val authentication = b.sequence(b.optional(FORCE_KEYSTORE), KEYSTORE_IDENTIFIED_BY)
+            // MKID:MK is one literal, not two tokens separated by a SQL colon. CREATE's diagram
+            // omits this documented material; Oracle 26 parses it for both SET and CREATE.
+            val creation = b.sequence(
+                b.optional(ENCRYPTION), KEY, b.optional(CHARACTER_LITERAL),
+                b.optional(tag),
+                b.optional(USING, ALGORITHM, CHARACTER_LITERAL),
+                authentication,
+                b.optional(KEYSTORE_WITH_BACKUP),
+                b.optional(KEYSTORE_CONTAINER_CLAUSE))
+            b.rule(SET_KEY).define(SET, creation)
+            b.rule(CREATE_KEY).define(CREATE, creation)
+
+            b.rule(USE_KEY).define(
+                USE, b.optional(ENCRYPTION), KEY, nameOrLiteral,
+                b.optional(tag), authentication, b.optional(KEYSTORE_WITH_BACKUP))
+            // BACKUP is optional here and in the creation clauses despite their diagrams.
+            b.rule(SET_KEY_TAG).define(
+                SET, TAG, nameOrLiteral, FOR, nameOrLiteral,
+                authentication, b.optional(KEYSTORE_WITH_BACKUP))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html

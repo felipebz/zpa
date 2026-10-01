@@ -1725,7 +1725,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 WITH,
                 b.optional(
                     b.firstOf(
-                        b.sequence(OBJECT, IDENTIFIER),
+                        b.sequence(OBJECT, ID),
                         b.sequence(PRIMARY, KEY),
                         ROWID,
                         b.sequence(
@@ -1742,7 +1742,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.zeroOrMore(
                         COMMA,
                         b.firstOf(
-                            b.sequence(OBJECT, IDENTIFIER),
+                            b.sequence(OBJECT, ID),
                             b.sequence(PRIMARY, KEY),
                             ROWID,
                             b.sequence(
@@ -1807,7 +1807,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // without COMMIT SCN (ORA-32418). A list ending in a bare keyword item may only be followed by NEW
             // VALUES (ORA-02000 at PURGE or FOR). FOR FAST REFRESH is rejected here (ORA-00922).
             val logItem = b.firstOf(
-                b.sequence(OBJECT, IDENTIFIER), b.sequence(PRIMARY, KEY), ROWID, SEQUENCE)
+                b.sequence(OBJECT, ID), b.sequence(PRIMARY, KEY), ROWID, SEQUENCE)
             val logColumns = b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
             val newValues = b.sequence(b.firstOf(INCLUDING, EXCLUDING), NEW, VALUES)
             b.rule(ALTER_MATERIALIZED_VIEW_LOG).define(
@@ -1901,7 +1901,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 OF, UNIT_NAME,
                 b.firstOf(
                     b.sequence(
-                        WITH, OBJECT, IDENTIFIER,
+                        WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID),
                         b.firstOf(
                             DEFAULT,
                             b.sequence(
@@ -1934,7 +1934,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(XMLTYPE_VIEW_CLAUSE).define(
                 OF, XMLTYPE,
                 b.optional(XMLSCHEMA_SPEC),
-                WITH, OBJECT, IDENTIFIER,
+                WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID),
                 b.firstOf(
                     DEFAULT,
                     b.sequence(

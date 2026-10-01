@@ -7,6 +7,8 @@
   "sqlrf/Comments-50.sql" : [ 2 ],
   "sqlrf/Comments-51.sql" : [ 2 ],
   "sqlrf/Expression-Lists-3.sql" : [ 3, 3, 3, 3 ],
+  "sqlrf/FEATURE_DETAILS-0.sql" : [ 2 ],
+  "sqlrf/FEATURE_DETAILS-1.sql" : [ 2, 2 ],
   "sqlrf/JSON_TABLE-10.sql" : [ 2 ],
   "sqlrf/JSON_TABLE-9.sql" : [ 2, 2 ],
   "sqlrf/ROW_NUMBER-1.sql" : [ 10, 10, 23, 23 ],
