@@ -230,6 +230,13 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_CLOSE,
     PDB_INSTANCES_CLAUSE,
     ALTER_DATABASE,
+    ALTER_DISKGROUP,
+    QUALIFIED_DISK_CLAUSE,
+    ADD_DISK_CLAUSE,
+    DROP_DISK_CLAUSE,
+    UNDROP_DISK_CLAUSE,
+    RESIZE_DISK_CLAUSE,
+    REBALANCE_DISKGROUP_CLAUSE,
     DATABASE_FILE_CLAUSES,
     CREATE_DATAFILE_CLAUSE,
     ALTER_DATAFILE_CLAUSE,
@@ -2597,6 +2604,7 @@ enum class DdlGrammar : GrammarRuleKey {
             administerKeyManagement(b)
             alterPluggableDatabase(b)
             alterDatabase(b)
+            alterDiskgroup(b)
             createCluster(b)
             createAnalyze(b)
             createAudit(b)
@@ -2984,6 +2992,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
                 ALTER_DATABASE,
+                ALTER_DISKGROUP,
                 CREATE_OUTLINE,
                 ALTER_OUTLINE,
                 CREATE_INMEMORY_JOIN_GROUP,
@@ -4438,6 +4447,68 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
                 b.firstOf(DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, LOGFILE_CLAUSES),
+                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DISKGROUP.html
+        private fun alterDiskgroup(b: PlSqlGrammarBuilder) {
+            val forceState = b.firstOf(FORCE, NOFORCE)
+            val diskKind = b.firstOf(QUORUM, REGULAR)
+
+            b.rule(QUALIFIED_DISK_CLAUSE).define(
+                CHARACTER_LITERAL,
+                b.optional(NAME, IDENTIFIER_NAME),
+                b.optional(SIZE, INDEX_SIZE_CLAUSE),
+                b.optional(forceState))
+
+            // The diagram's repeated group takes no ADD keyword, and a comma only continues the disk list.
+            val addGroup = b.sequence(
+                b.optional(SITE, IDENTIFIER_NAME),
+                b.optional(diskKind),
+                b.optional(FAILGROUP, IDENTIFIER_NAME),
+                DISK, QUALIFIED_DISK_CLAUSE, b.zeroOrMore(COMMA, QUALIFIED_DISK_CLAUSE))
+            b.rule(ADD_DISK_CLAUSE).define(ADD, b.oneOrMore(addGroup))
+
+            val dropTarget = b.sequence(b.nextNot(b.firstOf(ADD, DROP)), IDENTIFIER_NAME, b.optional(forceState))
+            val dropTargets = b.sequence(dropTarget, b.zeroOrMore(COMMA, dropTarget))
+            b.rule(DROP_DISK_CLAUSE).define(
+                DROP,
+                b.firstOf(
+                    b.sequence(b.optional(diskKind), DISK, dropTargets),
+                    b.sequence(DISKS, IN, b.optional(diskKind), FAILGROUP, dropTargets)))
+
+            b.rule(UNDROP_DISK_CLAUSE).define(UNDROP, DISKS)
+            b.rule(RESIZE_DISK_CLAUSE).define(RESIZE, ALL, b.optional(SIZE, INDEX_SIZE_CLAUSE))
+
+            val phase = b.firstOf(RESTORE, BALANCE, PREPARE, COMPACT)
+            b.rule(REBALANCE_DISKGROUP_CLAUSE).define(
+                REBALANCE,
+                b.firstOf(
+                    b.sequence(MODIFY, POWER, b.optional(INTEGER_LITERAL)),
+                    b.sequence(
+                        b.optional(b.firstOf(WITH, WITHOUT), phase, b.zeroOrMore(b.optional(COMMA), phase)),
+                        b.optional(POWER, INTEGER_LITERAL),
+                        b.optional(b.firstOf(WAIT, NOWAIT)))))
+
+            // Oracle takes a comma between items only after a DROP item (a comma after an ADD item continues its
+            // disk list) and also accepts items with no comma at all.
+            val addDropItems = b.oneOrMore(b.firstOf(
+                ADD_DISK_CLAUSE,
+                b.sequence(DROP_DISK_CLAUSE, b.optional(COMMA, b.next(b.firstOf(ADD, DROP))))))
+
+            b.rule(ALTER_DISKGROUP).define(
+                ALTER, DISKGROUP,
+                b.firstOf(
+                    b.sequence(ALL, UNDROP_DISK_CLAUSE),
+                    b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), UNDROP_DISK_CLAUSE),
+                    b.sequence(
+                        IDENTIFIER_NAME,
+                        b.firstOf(
+                            b.sequence(
+                                b.firstOf(addDropItems, RESIZE_DISK_CLAUSE),
+                                b.optional(REBALANCE_DISKGROUP_CLAUSE)),
+                            REBALANCE_DISKGROUP_CLAUSE))),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
