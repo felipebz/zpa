@@ -286,7 +286,6 @@ class AlterDatabaseTest : RuleTest() {
             "default temporary tablespace tbs_05",
             "set default bigfile tablespace",
             "rename global_name to demo.world.example.com",
-            "enable lost write protection",
             "enable block change tracking",
             "flashback on",
             "db_name prepare mirror copy m with high redundancy"

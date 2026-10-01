@@ -205,7 +205,6 @@ class AlterPluggableDatabaseTest : RuleTest() {
             "pdb1 unplug into '/tmp/pdb1.xml'",
             "pdb1 storage (maxsize 500m)",
             "pdb1 datafile all offline",
-            "enable lost write protection",
             "application all except hrapp sync",
             "containers port = 1599",
             "pdb1 save state",

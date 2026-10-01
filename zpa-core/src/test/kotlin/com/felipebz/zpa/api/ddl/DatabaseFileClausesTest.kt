@@ -210,15 +210,11 @@ class DatabaseFileClausesTest : RuleTest() {
     }
 
     @Test
-    fun keepsLostWriteOperationsUnsupported() {
-        for (kind in listOf("datafile", "tempfile")) {
-            for (operation in listOf("remove", "suspend", "enable")) {
-                notMatches(
-                    "$kind 1 $operation lost write",
-                    "$kind 1 $operation lost write protection"
-                )
-            }
+    fun keepsLostWriteOutsideOrdinaryDatafileOperations() {
+        for (operation in listOf("remove", "suspend", "enable")) {
+            notMatches("tempfile 1 $operation lost write protection", "datafile 1 $operation lost write")
         }
+        notMatches("datafile 1 online enable lost write protection", "datafile 1 resize 10m remove lost write protection")
     }
 
     @Test

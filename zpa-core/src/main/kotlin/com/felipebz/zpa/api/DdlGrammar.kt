@@ -233,6 +233,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_DATAFILE_CLAUSE,
     ALTER_TEMPFILE_CLAUSE,
     MOVE_DATAFILE_CLAUSE,
+    LOST_WRITE_PROTECTION,
     LOGFILE_CLAUSES,
     ADD_LOGFILE_CLAUSES,
     DROP_LOGFILE_CLAUSES,
@@ -4269,23 +4270,27 @@ enum class DdlGrammar : GrammarRuleKey {
 
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
-                PDB_CHANGE_STATE,
-                b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.firstOf(
+                    b.sequence(PDB_CHANGE_STATE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(
+                        b.firstOf(LOST_WRITE_PROTECTION, b.sequence(IDENTIFIER_NAME, LOST_WRITE_PROTECTION)),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
         }
+
+        private fun lostWriteAction(b: PlSqlGrammarBuilder) =
+            b.sequence(b.firstOf(ENABLE, REMOVE, SUSPEND), LOST, WRITE, PROTECTION)
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
         private fun databaseFileClauses(b: PlSqlGrammarBuilder) {
             val fileNumber = b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)
             val fileReference = b.firstOf(CHARACTER_LITERAL, fileNumber)
-            // CREATE DATAFILE and DATAFILE choose filename or filenumber per element.
             val fileReferences = b.sequence(fileReference, b.zeroOrMore(COMMA, fileReference))
-            // TEMPFILE documents separate homogeneous filename and filenumber lists.
             val tempfileReferences = b.firstOf(
                 b.sequence(CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)),
                 b.sequence(fileNumber, b.zeroOrMore(COMMA, fileNumber)))
 
-            // AUTOEXTEND parses here; empty destination specs are implicit OMF files. Commas consume input.
+            // Oracle accepts AUTOEXTEND here despite the documented restriction.
             val destinations = b.sequence(DATAFILE_TEMPFILE_SPEC, b.zeroOrMore(COMMA, DATAFILE_TEMPFILE_SPEC))
             b.rule(CREATE_DATAFILE_CLAUSE).define(
                 CREATE, DATAFILE, fileReferences,
@@ -4311,7 +4316,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     ONLINE,
                     OFFLINE))
 
-            // Oracle 26ai also accepts KEEP REUSE, but not repeated modifiers.
+            // Oracle also accepts KEEP before REUSE, unlike the diagram.
             b.rule(MOVE_DATAFILE_CLAUSE).define(
                 MOVE, DATAFILE, b.firstOf(CHARACTER_LITERAL, fileNumber),
                 b.optional(TO, CHARACTER_LITERAL),
@@ -4323,6 +4328,12 @@ enum class DdlGrammar : GrammarRuleKey {
                     ALTER_TEMPFILE_CLAUSE,
                     MOVE_DATAFILE_CLAUSE,
                     b.sequence(b.next(RENAME), LOGFILE_CLAUSES)))
+
+            // The documented unquoted `td_file.df` is rejected by Oracle (ORA-02236), as for ordinary DATAFILE.
+            b.rule(LOST_WRITE_PROTECTION).define(
+                b.firstOf(
+                    b.sequence(b.firstOf(ENABLE, DISABLE), LOST, WRITE, PROTECTION),
+                    b.sequence(DATAFILE, fileReferences, lostWriteAction(b))))
         }
 
         private fun alterDatabase(b: PlSqlGrammarBuilder) {
@@ -4390,11 +4401,11 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
-                CREATE, DATAFILE, TEMPFILE, MOVE)
+                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE)
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
-                b.firstOf(DATABASE_FILE_CLAUSES, LOGFILE_CLAUSES),
+                b.firstOf(DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
@@ -4694,7 +4705,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(READ, b.firstOf(ONLY, WRITE)),
                     AUTOEXTEND_CLAUSE,
                     ALTER_TABLESPACE_ENCRYPTION,
-                    b.sequence(b.firstOf(ENABLE, REMOVE, SUSPEND), LOST, WRITE, PROTECTION))).skip()
+                    lostWriteAction(b))).skip()
 
             // Oracle 26 accepts a single attribute per statement (ORA-03049 at a second one), and requires
             // ENABLE, REMOVE or SUSPEND before LOST WRITE PROTECTION here (ORA-02142).
