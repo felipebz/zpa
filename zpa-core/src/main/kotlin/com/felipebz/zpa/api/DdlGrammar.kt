@@ -129,6 +129,8 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_OUTLINE,
     CREATE_INMEMORY_JOIN_GROUP,
     ALTER_INMEMORY_JOIN_GROUP,
+    CREATE_MLE_ENV,
+    ALTER_MLE_ENV,
     ALTER_VIEW,
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
@@ -2625,6 +2627,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDatabaseLink(b)
             createOutline(b)
             createInmemoryJoinGroup(b)
+            createAlterMleEnv(b)
             createAlterView(b)
             createFlashbackArchive(b)
             createPurge(b)
@@ -3007,6 +3010,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_OUTLINE,
                 CREATE_INMEMORY_JOIN_GROUP,
                 ALTER_INMEMORY_JOIN_GROUP,
+                CREATE_MLE_ENV,
+                ALTER_MLE_ENV,
                 ALTER_VIEW,
                 CREATE_FLASHBACK_ARCHIVE,
                 ALTER_FLASHBACK_ARCHIVE,
@@ -3633,6 +3638,38 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_INMEMORY_JOIN_GROUP).define(
                 ALTER, INMEMORY, JOIN, GROUP, b.optional(IF, EXISTS), UNIT_NAME,
                 b.firstOf(ADD, REMOVE), members, b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MLE-ENV.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MLE-ENV.html
+        // Oracle 26 takes the CREATE parts in this order, each once, and rejects PURE after CLONE, unlike the
+        // diagram. Import items are not parenthesised, and OR REPLACE with IF NOT EXISTS fails only later (ORA-11541).
+        private fun createAlterMleEnv(b: PlSqlGrammarBuilder) {
+            val name = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val importItem = b.sequence(CHARACTER_LITERAL, MODULE, name)
+            val importItems = b.sequence(LPARENTHESIS, importItem, b.zeroOrMore(COMMA, importItem), RPARENTHESIS)
+            val languageOptions = b.sequence(LANGUAGE, OPTIONS, CHARACTER_LITERAL)
+
+            b.rule(CREATE_MLE_ENV).define(
+                CREATE, b.optional(OR, REPLACE), MLE, ENV, b.optional(IF, NOT, EXISTS), name,
+                b.firstOf(
+                    b.sequence(CLONE, name),
+                    b.sequence(
+                        b.optional(IMPORTS, importItems),
+                        b.optional(languageOptions),
+                        b.optional(PURE))),
+                b.optional(SEMICOLON))
+
+            b.rule(ALTER_MLE_ENV).define(
+                ALTER, MLE, ENV, b.optional(IF, EXISTS), name,
+                b.firstOf(
+                    b.sequence(b.firstOf(ADD, ALTER), IMPORTS, importItems),
+                    b.sequence(
+                        DROP, IMPORTS,
+                        LPARENTHESIS, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS),
+                    b.sequence(SET, languageOptions),
+                    COMPILE),
+                b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-VIEW.html
