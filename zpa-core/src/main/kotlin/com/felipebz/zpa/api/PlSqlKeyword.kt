@@ -833,6 +833,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     RECYCLEBIN("recyclebin"),
     REF("ref"),
     REDUCED("reduced"),
+    REDUNDANCY("redundancy"),
     REFERENCE("reference"),
     REFERENCES("references"),
     REFERENCING("referencing"),

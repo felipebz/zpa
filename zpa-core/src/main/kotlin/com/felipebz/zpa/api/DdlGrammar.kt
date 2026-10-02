@@ -225,6 +225,8 @@ enum class DdlGrammar : GrammarRuleKey {
     MIGRATE_KEY,
     REVERSE_MIGRATE_KEY,
     ALTER_PLUGGABLE_DATABASE,
+    PREPARE_CLAUSE,
+    DROP_MIRROR_COPY,
     PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
     PDB_OPEN,
@@ -4322,12 +4324,25 @@ enum class DdlGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME, UNPLUG, INTO, CHARACTER_LITERAL,
                 b.optional(ENCRYPT, USING, IDENTIFIER_NAME))
 
+            // The diagram and text disagree on the redundancy names; Oracle 26 takes UNPROTECTED, MIRROR or HIGH.
+            // FOR DATABASE is a PDB-only option: ALTER DATABASE rejects it (ORA-00922).
+            b.rule(PREPARE_CLAUSE).define(
+                PREPARE, MIRROR, COPY, IDENTIFIER_NAME,
+                b.optional(WITH, b.firstOf(UNPROTECTED, MIRROR, HIGH), REDUNDANCY))
+            b.rule(DROP_MIRROR_COPY).define(DROP, MIRROR, COPY, IDENTIFIER_NAME)
+            val pdbMirrorCopy = b.firstOf(
+                b.sequence(PREPARE_CLAUSE, b.optional(FOR, DATABASE, IDENTIFIER_NAME)),
+                DROP_MIRROR_COPY)
+
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 b.firstOf(
                     b.sequence(PDB_CHANGE_STATE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
                     b.sequence(
                         b.firstOf(LOST_WRITE_PROTECTION, b.sequence(IDENTIFIER_NAME, LOST_WRITE_PROTECTION)),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(
+                        b.firstOf(pdbMirrorCopy, b.sequence(IDENTIFIER_NAME, pdbMirrorCopy)),
                         b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
                     b.sequence(PDB_UNPLUG_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
@@ -4488,11 +4503,13 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
-                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER)
+                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE)
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
-                b.firstOf(DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, LOGFILE_CLAUSES),
+                b.firstOf(
+                    DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
+                    LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

@@ -286,8 +286,7 @@ class AlterDatabaseTest : RuleTest() {
             "set default bigfile tablespace",
             "rename global_name to demo.world.example.com",
             "enable block change tracking",
-            "flashback on",
-            "db_name prepare mirror copy m with high redundancy"
+            "flashback on"
         )
     }
 
