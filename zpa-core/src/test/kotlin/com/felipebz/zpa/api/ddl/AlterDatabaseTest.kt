@@ -282,8 +282,6 @@ class AlterDatabaseTest : RuleTest() {
     fun keepsOtherAlterDatabaseClausesUnsupported() {
         notMatches(
             "open read only",
-            "default temporary tablespace tbs_05",
-            "set default bigfile tablespace",
             "rename global_name to demo.world.example.com",
             "enable block change tracking",
             "flashback on"

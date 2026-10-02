@@ -249,6 +249,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DISKGROUP_ALIAS_CLAUSES,
     SCRUB_CLAUSE,
     GENERAL_RECOVERY,
+    DEFAULT_TABLESPACE_SETTINGS,
     DATABASE_FILE_CLAUSES,
     CREATE_DATAFILE_CLAUSE,
     ALTER_DATAFILE_CLAUSE,
@@ -4541,12 +4542,17 @@ enum class DdlGrammar : GrammarRuleKey {
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
                 CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE)
+            b.rule(DEFAULT_TABLESPACE_SETTINGS).define(
+                b.firstOf(
+                    b.sequence(SET, DEFAULT, b.firstOf(BIGFILE, SMALLFILE), TABLESPACE),
+                    b.sequence(DEFAULT, b.optional(b.optional(LOCAL), TEMPORARY), TABLESPACE, IDENTIFIER_NAME)))
+
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
                 b.firstOf(
                     DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
-                    LOGFILE_CLAUSES),
+                    DEFAULT_TABLESPACE_SETTINGS, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
