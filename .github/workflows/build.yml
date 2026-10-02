@@ -38,7 +38,12 @@ jobs:
           key: sqlcl-${{ hashFiles('zpa-checks/build.gradle.kts') }}
 
       - name: Build with Gradle
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: ./gradlew build publishToMavenLocal --refresh-dependencies
+
+      - name: Build with Gradle and prepare Maven staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: ./gradlew build publishToMavenLocal publish --refresh-dependencies
 
       - name: Run zpa-checks integration tests
         run: |
@@ -54,7 +59,17 @@ jobs:
           name: build-artifacts
           path: |
             **/build/
+            !build/staging-deploy/**
           retention-days: 1
+
+      - name: Upload Maven staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: maven-staging
+          path: build/staging-deploy/
+          retention-days: 1
+          if-no-files-found: error
 
   integration-tests:
     name: IT
@@ -88,7 +103,6 @@ jobs:
           name: build-artifacts
 
       - name: Cache SonarQube distribution
-        id: sonar-cache
         if: ${{ !contains(matrix.sqVersion, 'SNAPSHOT') }}
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
@@ -157,8 +171,6 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          submodules: true
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
@@ -167,11 +179,14 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-read-only: true
 
-      - name: Download build artifacts
+      - name: Download Maven staging
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: build-artifacts
+          name: maven-staging
+          path: build/staging-deploy
 
       - name: Detect project version
         id: version
@@ -193,9 +208,7 @@ jobs:
 
       - name: Publish snapshot to Maven repositories
         if: steps.version.outputs.is_snapshot == 'true'
-        run: |
-          ./gradlew publish --refresh-dependencies
-          ./gradlew jreleaserDeploy
+        run: ./gradlew jreleaserDeploy
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
