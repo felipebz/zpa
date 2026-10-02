@@ -23,7 +23,6 @@ import com.sonar.orchestrator.Orchestrator
 import com.sonar.orchestrator.build.SonarScanner
 import com.sonar.orchestrator.junit5.OrchestratorExtension
 import com.sonar.orchestrator.locator.FileLocation
-import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.client.HttpConnector
 import org.sonarqube.ws.client.WsClient
 import org.sonarqube.ws.client.WsClientFactories
@@ -32,7 +31,6 @@ import java.io.File
 object Tests {
 
     @JvmField
-    @RegisterExtension
     val ORCHESTRATOR: OrchestratorExtension =
         OrchestratorExtension.builderEnv()
             .useDefaultAdminCredentialsForBuilds(true)
