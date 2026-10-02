@@ -158,6 +158,30 @@ class DefaultTypeSolverTest {
     }
 
     @Test
+    fun qualifiedTypeUsesItsDeclaringScopeInsteadOfALocalType() {
+        val packageScope = ScopeImpl(identifier = "pkg")
+        scope = packageScope
+        val packageType = createSymbol("item_type", Symbol.Kind.TYPE, RowtypeDatatype())
+        packageScope.addSymbol(packageType)
+        scope = ScopeImpl(packageScope, identifier = "proc")
+        scope.addSymbol(createSymbol("item_type", Symbol.Kind.TYPE, NumericDatatype()))
+
+        assertThat(solveTypeFromDatatype("item_type")).isEqualTo(PlSqlType.NUMERIC)
+        assertThat(solveTypeFromDatatype("pkg.item_type")).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(solveTypeFromDatatype("other_pkg.item_type")).isEqualTo(PlSqlType.UNKNOWN)
+    }
+
+    @Test
+    fun schemaQualifiedTypeMatchesTheCompleteScopePath() {
+        val schemaScope = ScopeImpl(identifier = "owner")
+        scope = ScopeImpl(schemaScope, identifier = "pkg")
+        scope.addSymbol(createSymbol("item_type", Symbol.Kind.TYPE, RowtypeDatatype()))
+
+        assertThat(solveTypeFromDatatype("owner.pkg.item_type")).isEqualTo(PlSqlType.ROWTYPE)
+        assertThat(solveTypeFromDatatype("other_owner.pkg.item_type")).isEqualTo(PlSqlType.UNKNOWN)
+    }
+
+    @Test
     fun unknownType() {
         val type = solveTypeFromDatatype("tab.col%type")
         assertThat(type).isEqualTo(PlSqlType.UNKNOWN)

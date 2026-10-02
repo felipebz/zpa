@@ -37,3 +37,22 @@ begin
   insert into tab by position select 1 from dual; -- Noncompliant {{Specify the columns in this INSERT.}}
 
 end;
+create or replace package sample_pkg is
+  type row_table is table of tab%rowtype index by binary_integer;
+
+  procedure insert_rows (rows in row_table);
+  procedure insert_rows_qualified (rows in sample_pkg.row_table);
+end sample_pkg;
+/
+create or replace package body sample_pkg is
+  procedure insert_rows (rows in row_table) is
+  begin
+    insert into tab values rows(1);
+  end;
+
+  procedure insert_rows_qualified (rows in sample_pkg.row_table) is
+  begin
+    insert into tab values rows(1);
+  end;
+end sample_pkg;
+/

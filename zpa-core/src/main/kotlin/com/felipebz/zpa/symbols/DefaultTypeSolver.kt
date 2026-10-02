@@ -69,7 +69,14 @@ open class DefaultTypeSolver {
             type = JsonDatatype()
         } else {
             val datatype = node.firstChild
-            type = scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
+            val member = datatype.getFirstChildOrNull(PlSqlGrammar.MEMBER_EXPRESSION)
+            type = if (member != null) {
+                val parts = member.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
+                val path = parts.dropLast(1).map { it.tokenValue }.reversed()
+                scope?.getSymbol(parts.last().tokenValue, path, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
+            } else {
+                scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
+            }
         }
         return type
     }
