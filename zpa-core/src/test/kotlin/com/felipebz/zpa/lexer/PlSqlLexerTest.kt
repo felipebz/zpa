@@ -450,7 +450,6 @@ class PlSqlLexerTest {
         assertExactTokenStream("DATEVALUE", GenericTokenType.IDENTIFIER to "DATEVALUE")
         assertExactTokenStream("TIMESTAMPVALUE", GenericTokenType.IDENTIFIER to "TIMESTAMPVALUE")
         assertExactTokenStream("DUMMY", GenericTokenType.IDENTIFIER to "DUMMY")
-        assertExactTokenStream("TEST", GenericTokenType.IDENTIFIER to "TEST")
     }
 
     private fun assertThatIsToken(sourceCode: String, tokenType: TokenType) {

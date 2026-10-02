@@ -243,6 +243,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DISKGROUP_DIRECTORY_CLAUSES,
     DISKGROUP_ALIAS_CLAUSES,
     SCRUB_CLAUSE,
+    GENERAL_RECOVERY,
     DATABASE_FILE_CLAUSES,
     CREATE_DATAFILE_CLAUSE,
     ALTER_DATAFILE_CLAUSE,
@@ -4445,14 +4446,46 @@ enum class DdlGrammar : GrammarRuleKey {
 
             databaseFileClauses(b)
 
+            // Oracle takes UNTIL and USING BACKUP CONTROLFILE only after DATABASE or on their own, rejects the
+            // deprecated STANDBY TABLESPACE/DATAFILE/LOGFILE, and also accepts DATABASE left out, even a bare RECOVER.
+            val recoveryFileNumber = b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)
+            val recoveryFile = b.firstOf(CHARACTER_LITERAL, recoveryFileNumber)
+            val fullRecoveryOption = b.firstOf(
+                b.sequence(
+                    UNTIL,
+                    b.firstOf(
+                        CANCEL, CONSISTENT,
+                        b.sequence(TIME, CHARACTER_LITERAL),
+                        b.sequence(CHANGE, INTEGER_LITERAL))),
+                b.sequence(USING, BACKUP, CONTROLFILE))
+            b.rule(GENERAL_RECOVERY).define(
+                RECOVER,
+                b.optional(AUTOMATIC),
+                b.optional(FROM, CHARACTER_LITERAL),
+                b.firstOf(
+                    b.sequence(CONTINUE, b.optional(DEFAULT)),
+                    CANCEL,
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(TABLESPACE, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
+                            b.sequence(DATAFILE, recoveryFile, b.zeroOrMore(COMMA, recoveryFile)),
+                            b.sequence(LOGFILE, CHARACTER_LITERAL),
+                            b.sequence(b.firstOf(b.sequence(STANDBY, DATABASE), DATABASE), b.zeroOrMore(fullRecoveryOption)),
+                            b.zeroOrMore(fullRecoveryOption)),
+                        b.zeroOrMore(b.firstOf(
+                            TEST,
+                            b.sequence(ALLOW, INTEGER_LITERAL, CORRUPTION),
+                            NOPARALLEL,
+                            b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))))))
+
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
-                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE)
+                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER)
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
-                b.firstOf(DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, LOGFILE_CLAUSES),
+                b.firstOf(DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }
