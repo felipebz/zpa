@@ -67,6 +67,7 @@ enum class DmlGrammar : GrammarRuleKey {
     JOIN_CLAUSE,
     SELECT_COLUMN,
     FROM_CLAUSE,
+    FROM_USING_CLAUSE,
     WHERE_CLAUSE,
     INTO_CLAUSE,
     GROUP_BY_CLAUSE,
@@ -480,28 +481,17 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
             )
 
-            b.rule(FROM_CLAUSE).define(
-                    FROM,
-                    b.withContext(
-                        ROW_SOURCE_CONTEXT, RowSource.QUERY,
-                        b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
-                        b.optional(
-                            b.firstOf(
-                                PIVOT_CLAUSE,
-                                UNPIVOT_CLAUSE
-                            )
-                        ),
-                        b.zeroOrMore(COMMA,
-                            b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
-                            b.optional(
-                                b.firstOf(
-                                    PIVOT_CLAUSE,
-                                    UNPIVOT_CLAUSE
-                                )
-                            )
-                        )
-                    )
-            )
+            val fromItems = b.withContext(
+                ROW_SOURCE_CONTEXT, RowSource.QUERY,
+                b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                b.optional(b.firstOf(PIVOT_CLAUSE, UNPIVOT_CLAUSE)),
+                b.zeroOrMore(COMMA,
+                    b.firstOf(JOIN_CLAUSE, DML_TABLE_EXPRESSION_CLAUSE),
+                    b.optional(b.firstOf(PIVOT_CLAUSE, UNPIVOT_CLAUSE))))
+
+            b.rule(FROM_CLAUSE).define(FROM, fromItems)
+
+            b.rule(FROM_USING_CLAUSE).define(b.firstOf(FROM, USING), fromItems)
 
             b.rule(WHERE_CLAUSE).define(WHERE, EXPRESSION)
 
@@ -936,6 +926,7 @@ enum class DmlGrammar : GrammarRuleKey {
             b.rule(DELETE_EXPRESSION).define(
                     DELETE, b.optional(FROM),
                     DML_TABLE_EXPRESSION_CLAUSE,
+                    b.optional(FROM_USING_CLAUSE),
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
@@ -949,6 +940,7 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(UPDATE_EXPRESSION).define(
                     UPDATE, DML_TABLE_EXPRESSION_CLAUSE, SET, UPDATE_COLUMN, b.zeroOrMore(COMMA, UPDATE_COLUMN),
+                    b.optional(FROM_USING_CLAUSE),
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
