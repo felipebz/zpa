@@ -66,6 +66,12 @@ class UnusedParameterCheck : AbstractBaseCheck() {
                 continue
             }
 
+            // the body of an MLE call specification is opaque source code that uses the parameters by name
+            if (scopeNode.children.firstOrNull { it.type == PlSqlGrammar.CALL_SPECIFICATION }
+                    ?.hasDirectChildren(PlSqlGrammar.MLE_DECLARATION) == true) {
+                continue
+            }
+
             // cursor declaration (without implementation)
             if (scope.type == PlSqlGrammar.CURSOR_DECLARATION && !scopeNode.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
                 continue

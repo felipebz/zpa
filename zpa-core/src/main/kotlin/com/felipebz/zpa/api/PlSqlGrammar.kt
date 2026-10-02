@@ -215,6 +215,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     EXTERNAL_PARAMETER_PROPERTY,
     EXTERNAL_PARAMETER,
     CALL_SPECIFICATION,
+    MLE_DECLARATION,
 
     DECLARE_SECTION,
     EXCEPTION_HANDLERS,
@@ -1175,7 +1176,16 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.optional(BY, REFERENCE),
                             b.optional(DATATYPE))))
 
-            b.rule(CALL_SPECIFICATION).define(b.firstOf(JAVA_DECLARATION, C_DECLARATION), SEMICOLON)
+            // Oracle 26 rejects PURE after a module-backed MLE call specification, unlike the diagram. The lexer
+            // delivers an inline body as one MLE_INLINE_SOURCE token.
+            val mleName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            b.rule(MLE_DECLARATION).define(
+                    MLE,
+                    b.firstOf(
+                            b.sequence(LANGUAGE, mleName, b.optional(PURE), PlSqlTokenType.MLE_INLINE_SOURCE),
+                            b.sequence(MODULE, mleName, b.optional(ENV, mleName), SIGNATURE, STRING_LITERAL)))
+
+            b.rule(CALL_SPECIFICATION).define(b.firstOf(JAVA_DECLARATION, C_DECLARATION, MLE_DECLARATION), SEMICOLON)
 
             // http://docs.oracle.com/cd/B28359_01/appdev.111/b28370/procedure.htm
             b.rule(PROCEDURE_DECLARATION).define(

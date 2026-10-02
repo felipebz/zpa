@@ -27,7 +27,9 @@ enum class PlSqlTokenType : TokenType {
     INTEGER_LITERAL,
     NUMBER_LITERAL,
     DATE_LITERAL,
-    TIMESTAMP_LITERAL;
+    TIMESTAMP_LITERAL,
+    MLE_INLINE_SOURCE,
+    MLE_MODULE_SOURCE;
 
     override val value = name
 

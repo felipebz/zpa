@@ -67,3 +67,9 @@ return table pipelined row polymorphic using process_table_pkg;
 create function second_max(input number) return number -- don't report violation, the implementation type owns the parameters
     parallel_enable aggregate using second_max_impl;
 /
+create function mle_inline(a number, b number) return number as mle language javascript {{ return a; }}; -- don't report violation, the MLE body is opaque
+/
+create function mle_module(a number, b number) return number as mle module m signature 'f'; -- don't report violation, the MLE body is opaque
+/
+create procedure mle_module_env(a number) as mle module m env e signature 'p'; -- don't report violation, the MLE body is opaque
+/

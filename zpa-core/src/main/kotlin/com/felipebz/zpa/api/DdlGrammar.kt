@@ -131,6 +131,9 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_INMEMORY_JOIN_GROUP,
     CREATE_MLE_ENV,
     ALTER_MLE_ENV,
+    CREATE_MLE_MODULE,
+    ALTER_MLE_MODULE,
+    MLE_MODULE_USING_CLAUSE,
     ALTER_VIEW,
     CREATE_FLASHBACK_ARCHIVE,
     ALTER_FLASHBACK_ARCHIVE,
@@ -2628,6 +2631,7 @@ enum class DdlGrammar : GrammarRuleKey {
             createDatabaseLink(b)
             createOutline(b)
             createInmemoryJoinGroup(b)
+            createAlterMleModule(b)
             createAlterMleEnv(b)
             createAlterView(b)
             createFlashbackArchive(b)
@@ -3012,6 +3016,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_INMEMORY_JOIN_GROUP,
                 ALTER_INMEMORY_JOIN_GROUP,
                 CREATE_MLE_ENV,
+                CREATE_MLE_MODULE,
+                ALTER_MLE_MODULE,
                 ALTER_MLE_ENV,
                 ALTER_VIEW,
                 CREATE_FLASHBACK_ARCHIVE,
@@ -3670,6 +3676,41 @@ enum class DdlGrammar : GrammarRuleKey {
                         LPARENTHESIS, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL), RPARENTHESIS),
                     b.sequence(SET, languageOptions),
                     COMPILE),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MLE-MODULE.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MLE-MODULE.html
+        // Oracle 26 requires USING before CLOB, BLOB and BFILE, unlike the diagram. The module text is one opaque
+        // token (MleModuleSourceChannel). CLOB and BLOB take a query with or without parentheses; BFILE takes
+        // (directory, 'file') or an unparenthesised query, and rejects a parenthesised one (ORA-03050).
+        private fun createAlterMleModule(b: PlSqlGrammarBuilder) {
+            val name = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val query = b.firstOf(
+                b.sequence(LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS),
+                DmlGrammar.SELECT_EXPRESSION)
+
+            b.rule(MLE_MODULE_USING_CLAUSE).define(
+                USING,
+                b.firstOf(
+                    b.sequence(BFILE, LPARENTHESIS, IDENTIFIER_NAME, COMMA, CHARACTER_LITERAL, RPARENTHESIS),
+                    b.sequence(b.firstOf(CLOB, BLOB), query),
+                    b.sequence(BFILE, b.nextNot(LPARENTHESIS), DmlGrammar.SELECT_EXPRESSION)))
+
+            b.rule(CREATE_MLE_MODULE).define(
+                CREATE, b.optional(OR, REPLACE), MLE, MODULE, b.optional(IF, NOT, EXISTS), name,
+                LANGUAGE, name, b.optional(VERSION, CHARACTER_LITERAL),
+                b.firstOf(
+                    b.sequence(AS, PlSqlTokenType.MLE_MODULE_SOURCE),
+                    MLE_MODULE_USING_CLAUSE),
+                b.optional(SEMICOLON))
+
+            b.rule(ALTER_MLE_MODULE).define(
+                ALTER, MLE, MODULE, b.optional(IF, EXISTS), name,
+                SET, METADATA, USING, CLOB,
+                b.firstOf(
+                    b.sequence(LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS),
+                    DmlGrammar.SELECT_EXPRESSION),
                 b.optional(SEMICOLON))
         }
 

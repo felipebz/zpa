@@ -941,6 +941,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     SHRINK("shrink"),
     SHUTDOWN("shutdown"),
     SIBLINGS("siblings"),
+    SIGNATURE("signature"),
     SIGNTYPE("signtype"),
     SINGLE("single"),
     SINGLEVALUE("singlevalue"),
