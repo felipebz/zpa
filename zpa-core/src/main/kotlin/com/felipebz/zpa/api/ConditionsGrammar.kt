@@ -53,6 +53,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
     JSON_EQUAL_CONDITION,
     JSON_EXISTS_CONDITION,
     JSON_TEXTCONTAINS_CONDITION,
+    DANGLING_PREDICATE,
+    CASE_SELECTOR_CHOICE,
     CONDITION;
 
     companion object {
@@ -263,6 +265,46 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 PlSqlGrammar.EXPRESSION,
                 PlSqlPunctuator.RPARENTHESIS
             )
+
+            // Oracle 26 extended simple CASE: a dangling predicate is an ordinary predicate whose left operand is
+            // the CASE selector. Oracle rejects IS JSON, IS OF, IS TRUE/FALSE, chained predicates (`< 1 and > 0`,
+            // `< 1 is null`), subqueries and ANY/SOME/ALL here, so those are deliberately not listed.
+            b.rule(DANGLING_PREDICATE).define(
+                b.firstOf(
+                    b.sequence(
+                        b.firstOf(
+                            PlSqlGrammar.EQUALS_OPERATOR,
+                            PlSqlGrammar.NOTEQUALS_OPERATOR,
+                            PlSqlGrammar.LESSTHANOREQUALS_OPERATOR,
+                            PlSqlGrammar.LESSTHAN_OPERATOR,
+                            PlSqlGrammar.GREATERTHANOREQUALS_OPERATOR,
+                            PlSqlGrammar.GREATERTHAN_OPERATOR
+                        ),
+                        CONCATENATION_EXPRESSION
+                    ),
+                    b.sequence(
+                        IS, b.optional(NOT),
+                        b.firstOf(NULL_LITERAL, NAN, INFINITE, b.sequence(A, SET), EMPTY)
+                    ),
+                    b.sequence(
+                        b.optional(NOT),
+                        b.firstOf(
+                            b.sequence(LIKE, CONCATENATION_EXPRESSION, b.optional(ESCAPE, CONCATENATION_EXPRESSION)),
+                            b.sequence(BETWEEN, CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION),
+                            b.sequence(
+                                IN, PlSqlPunctuator.LPARENTHESIS,
+                                PlSqlGrammar.EXPRESSION, b.zeroOrMore(PlSqlPunctuator.COMMA, PlSqlGrammar.EXPRESSION),
+                                PlSqlPunctuator.RPARENTHESIS
+                            ),
+                            b.sequence(MEMBER, b.optional(OF), CONCATENATION_EXPRESSION),
+                            b.sequence(SUBMULTISET, b.optional(OF), CONCATENATION_EXPRESSION)
+                        )
+                    )
+                )
+            )
+
+            // One WHEN choice of a simple CASE. An ordinary value stays a plain expression node.
+            b.rule(CASE_SELECTOR_CHOICE).define(b.firstOf(DANGLING_PREDICATE, PlSqlGrammar.EXPRESSION)).skip()
 
             b.rule(CONDITION).define(
                 b.firstOf(

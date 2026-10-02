@@ -750,8 +750,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(CASE_STATEMENT).define(
                     b.optional(LABEL),
-                    CASE, b.optional(EXPRESSION),
-                    b.oneOrMore(WHEN, EXPRESSION, THEN, STATEMENTS),
+                    CASE,
+                    b.firstOf(
+                        b.sequence(EXPRESSION, simpleCaseBranches(b, STATEMENTS)),
+                        b.oneOrMore(WHEN, EXPRESSION, THEN, STATEMENTS)),
                     b.optional(ELSE, STATEMENTS),
                     END, CASE, b.optional(IDENTIFIER_NAME), SEMICOLON)
 
@@ -1062,9 +1064,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 RPARENTHESIS
             ).skipIfOneChild()
 
+            // A simple CASE (with a selector) takes comma-separated values and dangling predicates after WHEN;
+            // a searched CASE takes exactly one boolean expression.
             b.rule(CASE_EXPRESSION).define(
-                    CASE, b.optional(EXPRESSION),
-                    b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION),
+                    CASE,
+                    b.firstOf(
+                        b.sequence(EXPRESSION, simpleCaseBranches(b, EXPRESSION)),
+                        b.oneOrMore(WHEN, EXPRESSION, THEN, EXPRESSION)),
                     b.optional(ELSE, EXPRESSION),
                     END)
 
@@ -1136,6 +1142,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(EXPRESSION).define(BOOLEAN_EXPRESSION).skipIfOneChild()
         }
+
+        // WHEN choice [, choice]... THEN result, repeated, for a simple CASE expression or statement.
+        private fun simpleCaseBranches(b: PlSqlGrammarBuilder, result: Any): Any = b.oneOrMore(
+            WHEN, ConditionsGrammar.CASE_SELECTOR_CHOICE,
+            b.zeroOrMore(COMMA, ConditionsGrammar.CASE_SELECTOR_CHOICE),
+            THEN, result)
 
         private fun createDeclarations(b: PlSqlGrammarBuilder) {
             b.rule(DEFAULT_VALUE_ASSIGNMENT).define(b.firstOf(ASSIGNMENT, DEFAULT), EXPRESSION)
