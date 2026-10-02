@@ -42,6 +42,7 @@ internal val ROW_SOURCE_CONTEXT: ContextKey<RowSource> = ContextKey()
 enum class DmlGrammar : GrammarRuleKey {
 
     TABLE_REFERENCE,
+    FLASHBACK_QUERY_CLAUSE,
     SAMPLE_CLAUSE,
     PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
@@ -397,6 +398,24 @@ enum class DmlGrammar : GrammarRuleKey {
                 SAMPLE, b.optional(BLOCK), LPARENTHESIS, sampleValue, b.optional(COMMA, sampleValue), RPARENTHESIS,
                 b.optional(SEED, LPARENTHESIS, sampleValue, RPARENTHESIS))
 
+            // The operands stop before AND and comparison operators (ORA-03048); MINVALUE and MAXVALUE are bare
+            // bounds. Oracle parses VERSIONS and AS OF items together, in either order and repeated, and rejects
+            // repeats only afterwards (ORA-08187). It also takes the clause after the table alias.
+            val flashbackKind = b.firstOf(SCN, TIMESTAMP)
+            val flashbackOperand = CONCATENATION_EXPRESSION
+            b.rule(FLASHBACK_QUERY_CLAUSE).define(
+                b.oneOrMore(b.firstOf(
+                    b.sequence(
+                        VERSIONS, BETWEEN, flashbackKind,
+                        b.firstOf(MINVALUE, flashbackOperand), AND, b.firstOf(MAXVALUE, flashbackOperand)),
+                    b.sequence(
+                        VERSIONS, PERIOD, FOR, IDENTIFIER_NAME, BETWEEN,
+                        b.firstOf(MINVALUE, flashbackOperand), AND, b.firstOf(MAXVALUE, flashbackOperand)),
+                    b.sequence(AS, OF, flashbackKind, flashbackOperand),
+                    b.sequence(AS, OF, PERIOD, FOR, IDENTIFIER_NAME, flashbackOperand))),
+                // The alias that follows has no AS (ORA-03048).
+                b.nextNot(AS))
+
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
                     b.sequence(
@@ -427,6 +446,7 @@ enum class DmlGrammar : GrammarRuleKey {
                                 b.optional(b.requireContext(ROW_SOURCE_CONTEXT, RowSource.QUERY), SAMPLE_CLAUSE, b.nextNot(AS, ALIAS))),
                             b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), OBJECT_REFERENCE)
                         ),
+                        b.optional(FLASHBACK_QUERY_CLAUSE),
                         b.optional(NESTED_CLAUSE),
                         b.optional(
                             b.firstOf(
@@ -444,7 +464,7 @@ enum class DmlGrammar : GrammarRuleKey {
                                 ROW_PATTERN_CLAUSE
                             )
                         ),
-                        b.optional(tableAlias)
+                        b.optional(tableAlias, b.optional(FLASHBACK_QUERY_CLAUSE))
                     ),
                     VALUES_EXPRESSION_CLAUSE
                 )

@@ -71,6 +71,7 @@
   "examples/query_factoring08.sql" : [ 2, 3, 5 ],
   "examples/sample01.sql" : [ 1 ],
   "examples/select_all_some_any.sql" : [ 2, 3, 4 ],
+  "examples/select_flashback_query.sql" : [ 1 ],
   "examples/simple04.sql" : [ 1, 4 ],
   "examples/simple05.sql" : [ 1, 3 ],
   "examples/simple06.sql" : [ 1, 1 ],

@@ -1069,6 +1069,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     VECTOR_EMBEDDING("vector_embedding"),
     VECTOR_SERIALIZE("vector_serialize"),
     VERSION("version"),
+    VERSIONS("versions"),
     VERTEX("vertex"),
     VIEWS("views"),
     VIOLATION("violation"),
