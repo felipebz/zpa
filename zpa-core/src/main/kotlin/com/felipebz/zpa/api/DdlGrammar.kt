@@ -237,6 +237,12 @@ enum class DdlGrammar : GrammarRuleKey {
     UNDROP_DISK_CLAUSE,
     RESIZE_DISK_CLAUSE,
     REBALANCE_DISKGROUP_CLAUSE,
+    DISKGROUP_AVAILABILITY,
+    CHECK_DISKGROUP_CLAUSE,
+    DISKGROUP_TEMPLATE_CLAUSES,
+    DISKGROUP_DIRECTORY_CLAUSES,
+    DISKGROUP_ALIAS_CLAUSES,
+    SCRUB_CLAUSE,
     DATABASE_FILE_CLAUSES,
     CREATE_DATAFILE_CLAUSE,
     ALTER_DATAFILE_CLAUSE,
@@ -4497,18 +4503,84 @@ enum class DdlGrammar : GrammarRuleKey {
                 ADD_DISK_CLAUSE,
                 b.sequence(DROP_DISK_CLAUSE, b.optional(COMMA, b.next(b.firstOf(ADD, DROP))))))
 
+            b.rule(DISKGROUP_AVAILABILITY).define(
+                b.firstOf(
+                    b.sequence(MOUNT, b.optional(b.firstOf(RESTRICTED, NORMAL)), b.optional(forceState)),
+                    b.sequence(DISMOUNT, b.optional(forceState))))
+
+            // The deprecated ALL, DISK and FILE targets are still documented; DISKS IN FAILGROUP is rejected.
+            b.rule(CHECK_DISKGROUP_CLAUSE).define(
+                CHECK,
+                b.optional(b.firstOf(
+                    ALL,
+                    b.sequence(DISK, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)),
+                    b.sequence(FILE, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)))),
+                b.optional(b.firstOf(REPAIR, NOREPAIR)))
+
+            // Oracle also accepts the singular ATTRIBUTE, any order of the two attributes, an empty list,
+            // and several items without a comma between them.
+            val templateAttributes = b.sequence(
+                b.firstOf(ATTRIBUTE, ATTRIBUTES), LPARENTHESIS,
+                b.zeroOrMore(b.firstOf(MIRROR, HIGH, UNPROTECTED, PARITY, DOUBLE, FINE, COARSE)),
+                RPARENTHESIS)
+            val templateWithAttributes = b.sequence(IDENTIFIER_NAME, templateAttributes)
+            b.rule(DISKGROUP_TEMPLATE_CLAUSES).define(
+                b.oneOrMore(b.firstOf(
+                    b.sequence(
+                        b.firstOf(ADD, MODIFY, ALTER), TEMPLATE,
+                        templateWithAttributes, b.zeroOrMore(COMMA, templateWithAttributes)),
+                    b.sequence(DROP, TEMPLATE, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME)))))
+
+            val literalList = b.sequence(CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL))
+            fun literalPairs(joiner: PlSqlKeyword): Any {
+                val pair = b.sequence(CHARACTER_LITERAL, joiner, CHARACTER_LITERAL)
+                return b.sequence(pair, b.zeroOrMore(COMMA, pair))
+            }
+            val directoryDrop = b.sequence(CHARACTER_LITERAL, b.optional(forceState))
+            b.rule(DISKGROUP_DIRECTORY_CLAUSES).define(
+                b.oneOrMore(b.firstOf(
+                    b.sequence(ADD, DIRECTORY, literalList),
+                    b.sequence(DROP, DIRECTORY, directoryDrop, b.zeroOrMore(COMMA, directoryDrop)),
+                    b.sequence(RENAME, DIRECTORY, literalPairs(TO)))))
+            b.rule(DISKGROUP_ALIAS_CLAUSES).define(
+                b.oneOrMore(b.firstOf(
+                    b.sequence(ADD, ALIAS, literalPairs(FOR)),
+                    b.sequence(DROP, ALIAS, literalList),
+                    b.sequence(RENAME, ALIAS, literalPairs(TO)))))
+
+            // Oracle takes STOP only on its own and the other options only in this order.
+            b.rule(SCRUB_CLAUSE).define(
+                SCRUB,
+                b.firstOf(
+                    STOP,
+                    b.sequence(
+                        b.optional(b.firstOf(
+                            b.sequence(FILE, CHARACTER_LITERAL),
+                            b.sequence(DISK, IDENTIFIER_NAME))),
+                        b.optional(b.firstOf(REPAIR, NOREPAIR)),
+                        b.optional(POWER, b.firstOf(AUTO, LOW, HIGH, MAX)),
+                        b.optional(b.firstOf(WAIT, NOWAIT)),
+                        b.optional(forceState))))
+
             b.rule(ALTER_DISKGROUP).define(
                 ALTER, DISKGROUP,
                 b.firstOf(
-                    b.sequence(ALL, UNDROP_DISK_CLAUSE),
-                    b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), UNDROP_DISK_CLAUSE),
+                    b.sequence(ALL, b.firstOf(UNDROP_DISK_CLAUSE, DISKGROUP_AVAILABILITY)),
+                    b.sequence(
+                        IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME),
+                        b.firstOf(UNDROP_DISK_CLAUSE, DISKGROUP_AVAILABILITY)),
                     b.sequence(
                         IDENTIFIER_NAME,
                         b.firstOf(
                             b.sequence(
                                 b.firstOf(addDropItems, RESIZE_DISK_CLAUSE),
                                 b.optional(REBALANCE_DISKGROUP_CLAUSE)),
-                            REBALANCE_DISKGROUP_CLAUSE))),
+                            REBALANCE_DISKGROUP_CLAUSE,
+                            CHECK_DISKGROUP_CLAUSE,
+                            DISKGROUP_TEMPLATE_CLAUSES,
+                            DISKGROUP_DIRECTORY_CLAUSES,
+                            DISKGROUP_ALIAS_CLAUSES,
+                            SCRUB_CLAUSE))),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

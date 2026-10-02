@@ -295,17 +295,10 @@ class AlterDiskgroupTest : RuleTest() {
             "dg dg2 add disk '/d/d1'",
             "dg1, dg2 add disk '/d/d1'",
             "dg",
-            "dg mount",
-            "dg dismount force",
             "dg replace disk d1 with '/d/d2'",
             "dg rename disk d1 to d2",
             "dg online all",
             "dg offline disk d1",
-            "dg check all",
-            "dg add template t attributes (fine)",
-            "dg add directory '+dg/d'",
-            "dg add alias '+dg/a' for '+dg.1.1'",
-            "dg scrub",
             "dg add filegroup fg database none"
         )
     }
