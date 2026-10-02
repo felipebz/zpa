@@ -225,6 +225,7 @@ enum class DdlGrammar : GrammarRuleKey {
     MIGRATE_KEY,
     REVERSE_MIGRATE_KEY,
     ALTER_PLUGGABLE_DATABASE,
+    PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
     PDB_OPEN,
     PDB_CLOSE,
@@ -4316,13 +4317,19 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(b.firstOf(b.sequence(ALL, b.optional(EXCEPT, pdbNames)), pdbNames), state),
                     state))
 
+            // The diagram quotes the transport secret, but Oracle 26 rejects a string and takes an identifier.
+            b.rule(PDB_UNPLUG_CLAUSE).define(
+                IDENTIFIER_NAME, UNPLUG, INTO, CHARACTER_LITERAL,
+                b.optional(ENCRYPT, USING, IDENTIFIER_NAME))
+
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 b.firstOf(
                     b.sequence(PDB_CHANGE_STATE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
                     b.sequence(
                         b.firstOf(LOST_WRITE_PROTECTION, b.sequence(IDENTIFIER_NAME, LOST_WRITE_PROTECTION)),
-                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(PDB_UNPLUG_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
         }
 

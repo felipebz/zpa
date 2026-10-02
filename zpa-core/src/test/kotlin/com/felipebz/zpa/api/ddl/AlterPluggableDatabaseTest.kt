@@ -200,9 +200,64 @@ class AlterPluggableDatabaseTest : RuleTest() {
     }
 
     @Test
+    fun matchesUnplug() {
+        matches(
+            "pdb1 unplug into '/oracle/data/pdb1.xml'",
+            "pdb1 unplug into '/tmp/pdb1.pdb';",
+            "\"pdb1\" unplug into '/tmp/pdb1.xml'",
+            "pdb1 unplug into '/tmp/pdb1.pdb' encrypt using transport_secret",
+            "pdb1 unplug into '/tmp/pdb1.pdb' encrypt using \"Secret\"",
+            "unplug unplug into '/tmp/pdb1.xml'",
+            "open unplug into '/tmp/pdb1.xml'",
+            "enable unplug into '/tmp/pdb1.xml'",
+            "close unplug into '/tmp/pdb1.xml' encrypt using s"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedUnplug() {
+        notMatches(
+            "unplug into '/tmp/pdb1.xml'",
+            "pdb1 unplug",
+            "pdb1 unplug '/tmp/pdb1.xml'",
+            "pdb1 unplug into",
+            "pdb1 unplug into pdb1",
+            "pdb1 unplug into 5",
+            "pdb1 unplug into ('/tmp/pdb1.xml')",
+            "pdb1 unplug into '/a.xml', '/b.xml'",
+            "pdb1, pdb2 unplug into '/tmp/pdb1.xml'",
+            "all unplug into '/tmp/pdb1.xml'",
+            "all except pdb1 unplug into '/tmp/pdb1.xml'",
+            "a.pdb1 unplug into '/tmp/pdb1.xml'",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using 'secret'",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using :s",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using 5",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using a b",
+            "pdb1 unplug into '/tmp/pdb1.xml' encrypt using a encrypt using b",
+            "pdb1 unplug encrypt using s into '/tmp/pdb1.xml'",
+            "pdb1 unplug into '/tmp/pdb1.xml' using s",
+            "pdb1 unplug into '/tmp/pdb1.xml' close",
+            "pdb1 unplug into '/tmp/pdb1.xml' x",
+            "pdb1 open unplug into '/tmp/pdb1.xml'"
+        )
+    }
+
+    @Test
+    fun exposesUnplugAsOwnNode() {
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        val tree = p.parse("alter pluggable database pdb1 unplug into '/tmp/p.pdb' encrypt using s; " +
+            "alter pluggable database pdb1 open;")
+        val statements = tree.getDescendants(DdlGrammar.ALTER_PLUGGABLE_DATABASE)
+        assertThatAst(statements.map { it.getChildren(DdlGrammar.PDB_UNPLUG_CLAUSE).size }).containsExactly(1, 0)
+        assertThatAst(statements[1].getChildren(DdlGrammar.PDB_CHANGE_STATE)).hasSize(1)
+    }
+
+    @Test
     fun keepsOtherOperationsUnsupported() {
         notMatches(
-            "pdb1 unplug into '/tmp/pdb1.xml'",
+            "pdb1 unplug",
             "pdb1 storage (maxsize 500m)",
             "pdb1 datafile all offline",
             "application all except hrapp sync",
@@ -225,6 +280,6 @@ class AlterPluggableDatabaseTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_OPEN)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_CLOSE)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_INSTANCES_CLAUSE)).isEmpty()
-        assertThat(p).notMatches("alter pluggable database pdb1 unplug into '/tmp/pdb1.xml';")
+        assertThat(p).notMatches("alter pluggable database pdb1 save state;")
     }
 }
