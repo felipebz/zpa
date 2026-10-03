@@ -159,9 +159,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
 
             b.rule(IS_JSON_ARGS).define(
                 b.firstOf(
-                    b.sequence(
-                        VALIDATE, b.optional(CAST), b.optional(USING), PlSqlTokenType.STRING_LITERAL
-                    ),
+                    JSON_VALIDATE_CLAUSE,
                     b.sequence(
                         b.optional(FORMAT, JSON),
                         PlSqlPunctuator.LPARENTHESIS, b.firstOf(STRICT, LAX), PlSqlPunctuator.RPARENTHESIS

@@ -729,7 +729,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(PRETTY),
                 b.optional(ASCII),
                 b.optional(STRICT),
-                b.optional(WITH, UNIQUE, KEYS)
+                b.zeroOrMore(WITH, b.firstOf(TYPENAME, b.sequence(UNIQUE, KEYS)))
             ).skip()
 
             b.rule(JSON_OBJECT_EXPRESSION).define(
@@ -764,10 +764,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 LPARENTHESIS,
                 EXPRESSION,
                 b.optional(JSON_RETURNING_CLAUSE),
-                b.optional(PRETTY),
-                b.optional(ASCII),
-                b.optional(ORDERED),
-                b.optional(TRUNCATE),
+                // Unlike the diagram, PRETTY, ASCII and TRUNCATE take any order and may repeat; ORDERED ends the list.
+                b.zeroOrMore(b.firstOf(PRETTY, ASCII, TRUNCATE)),
+                b.optional(ORDERED, b.optional(TRUNCATE)),
                 b.optional(
                     b.firstOf(
                         NULL,
@@ -1005,8 +1004,12 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                         b.optional(TRUNCATE)
                     ),
                     CLOB,
-                    NUMERIC_DATATYPE,
-                    b.sequence(b.firstOf(ALLOW, DISALLOW), b.optional(BOOLEAN), TO, NUMBER, b.optional(CONVERSION)),
+                    b.sequence(
+                        b.nextNot(b.firstOf(BINARY_DOUBLE, BINARY_FLOAT)),
+                        NUMERIC_DATATYPE,
+                        b.optional(b.firstOf(ALLOW, DISALLOW), b.optional(BOOLEAN), TO, NUMBER, b.optional(CONVERSION))
+                    ),
+                    b.sequence(b.firstOf(BINARY_DOUBLE, BINARY_FLOAT), b.optional(NUMERIC_DATATYPE_CONSTRAINT)),
                     b.sequence(DATE, b.optional(b.firstOf(TRUNCATE, PRESERVE), TIME)),
                     b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
                     BOOLEAN,

@@ -59,6 +59,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     CUSTOM_DATATYPE,
     REF_DATATYPE,
     JSON_DATATYPE,
+    JSON_VALIDATE_CLAUSE,
     DATATYPE_NULL_CONSTRAINT,
 
     // Literals
@@ -543,6 +544,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.sequence(jsonTypeModifier, b.optional(jsonLimit))
                 ))
             )
+
+            b.rule(JSON_VALIDATE_CLAUSE).define(
+                VALIDATE, b.optional(CAST), b.optional(USING), STRING_LITERAL).skip()
 
             b.rule(DATATYPE).define(b.firstOf(
                     NUMERIC_DATATYPE,

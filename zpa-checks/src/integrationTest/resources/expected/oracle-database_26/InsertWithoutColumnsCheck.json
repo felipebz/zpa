@@ -3,6 +3,7 @@
   "adjsn/change-triggers-data-guide-enabled-search-index-1.sql" : [ 27 ],
   "adjsn/creating-multivalue-function-based-indexes-json_exists-0.sql" : [ 3, 6 ],
   "adjsn/json-schema-14.sql" : [ 6 ],
+  "adjsn/json-schema-16.sql" : [ 6 ],
   "adjsn/loading-external-json-data-4.sql" : [ 3 ],
   "adjsn/multiple-data-guides-document-set-0.sql" : [ 2 ],
   "adjsn/multiple-data-guides-document-set-1.sql" : [ 2 ],

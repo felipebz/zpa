@@ -707,7 +707,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(SCOPE, IS, DmlGrammar.TABLE_REFERENCE),
                     b.sequence(WITH, ROWID)))
 
-            fun columnValueAndConstraints() = b.sequence(
+            // JSON VALIDATE parses after any datatype; Oracle rejects non-JSON types only afterwards (ORA-40878).
+            fun columnValueAndConstraints(withJsonValidate: Boolean = false): Any {
+                val parts = listOfNotNull<Any>(
                     b.optional(b.firstOf(
                         b.sequence(DEFAULT, b.optional(
                             b.sequence(ON, NULL,
@@ -715,9 +717,12 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
                         identityClause(false))),
                     b.optional(columnEncryptionClause()),
+                    if (withJsonValidate) b.optional(JSON_VALIDATE_CLAUSE) else null,
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     // Oracle 26 accepts annotations only after DEFAULT, encryption and inline constraints.
                     b.optional(ANNOTATIONS_CLAUSE))
+                return b.sequence(parts[0], parts[1], *parts.drop(2).toTypedArray())
+            }
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME,
@@ -726,7 +731,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.sequence(b.nextNot(identityStart), DATATYPE),
                         b.next(identityStart)),
                     b.optional(SORT),
-                    columnValueAndConstraints(),
+                    columnValueAndConstraints(withJsonValidate = true),
                     b.nextNot(b.firstOf(
                         AS, VISIBLE, INVISIBLE, b.sequence(GENERATED, ALWAYS, AS, LPARENTHESIS))))
 
@@ -3144,7 +3149,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(ON, NULL, b.optional(FOR, INSERT, b.firstOf(ONLY, b.sequence(AND, UPDATE)))),
                 EXPRESSION)
             val nullProperty = b.sequence(b.optional(NOT), NULL)
-            val validateProperty = b.sequence(VALIDATE, b.optional(CAST), b.optional(USING), CHARACTER_LITERAL)
+            val validateProperty = JSON_VALIDATE_CLAUSE
             val collateProperty = b.sequence(COLLATE, IDENTIFIER_NAME)
             val displayProperty = b.sequence(DISPLAY, EXPRESSION)
             val orderProperty = b.sequence(ORDER, EXPRESSION)

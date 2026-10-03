@@ -1,8 +1,5 @@
 {
-  "adjsn/json-schema-16.sql" : [ 4 ],
   "adjsn/loading-external-json-data-1.sql" : [ 3 ],
-  "adjsn/sql-json-function-json_object-21.sql" : [ 2 ],
-  "adjsn/using-sql-json-function-json_value-boolean-json-value-3.sql" : [ 4 ],
   "lnpls/ALTER-TYPE-statement-11.sql" : [ 2 ],
   "lnpls/ALTER-TYPE-statement-12.sql" : [ 2 ],
   "lnpls/ALTER-TYPE-statement-14.sql" : [ 2 ],
@@ -54,7 +51,6 @@
   "sqlrf/FLASHBACK-DATABASE-0.sql" : [ 3 ],
   "sqlrf/FLASHBACK-DATABASE-1.sql" : [ 4 ],
   "sqlrf/Interval-Expressions-0.sql" : [ 2 ],
-  "sqlrf/JSON_SERIALIZE-0.sql" : [ 2 ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [ 2 ],
   "sqlrf/MERGE-10.sql" : [ 11 ],
   "sqlrf/MERGE-12.sql" : [ 11 ],

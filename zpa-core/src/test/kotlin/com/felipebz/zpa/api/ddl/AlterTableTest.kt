@@ -943,4 +943,11 @@ class AlterTableTest : RuleTest() {
     fun doesNotMatchAlterTableAddWithoutADatatype() {
         assertThat(p).notMatches("alter table tab add (col);")
     }
+
+    @Test
+    fun matchesAddColumnWithJsonValidate() {
+        assertThat(p).matches("alter table t add (j json validate cast using '{}')")
+        assertThat(p).matches("alter table t add (j json sort validate '{}' not null)")
+        assertThat(p).notMatches("alter table t add (j json validate cast '{}' sort)")
+    }
 }
