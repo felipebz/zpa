@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 
 class CharacterExpressionTest : RuleTest() {
 
@@ -91,4 +93,47 @@ class CharacterExpressionTest : RuleTest() {
         assertThat(p).matches("replace(var, 'x', 'y')")
     }
 
+    @Test
+    fun matchesChrUsingNationalCharacterSet() {
+        assertThat(p).matches("chr(196 using nchar_cs)")
+        assertThat(p).matches("CHR (196 USING NCHAR_CS)")
+        assertThat(p).matches("chr(196 using char_cs)")
+        assertThat(p).matches("chr(a + 1 using nchar_cs)")
+        assertThat(p).matches("chr(abs(-196) using nchar_cs)")
+        assertThat(p).matches("chr((select 196 from dual) using nchar_cs)")
+        assertThat(p).matches("chr(case when x = 1 then 65 else 66 end using nchar_cs)")
+        assertThat(p).matches("chr(:n using nchar_cs) || 'x'")
+        assertThat(p).matches("nvl(chr(196 using nchar_cs), 'a')")
+    }
+
+    @Test
+    fun keepsOrdinaryChrAndNchrCallsGeneric() {
+        assertThat(p).matches("chr(196)")
+        assertThat(p).matches("nchr(187)")
+        assertThat(p).matches("pkg.chr(196)")
+        assertThat(p).matches("pkg.chr(a, b)")
+        assertThat(p).matches("chr(a, b)")
+        assertThat(p).matches("chr")
+    }
+
+    @Test
+    fun rejectsMalformedChrUsing() {
+        assertThat(p).notMatches("chr(196 using)")
+        assertThat(p).notMatches("chr(196 using nchar_cs using nchar_cs)")
+        assertThat(p).notMatches("chr(196 using nchar_cs, 1)")
+        assertThat(p).notMatches("chr(196, 1 using nchar_cs)")
+        assertThat(p).notMatches("chr(using nchar_cs)")
+        assertThat(p).notMatches("chr(196 nchar_cs)")
+        assertThat(p).notMatches("nchr(187 using nchar_cs)")
+        assertThat(p).notMatches("nchr(187 using char_cs)")
+        assertThat(p).notMatches("pkg.chr(196 using nchar_cs)")
+    }
+
+    @Test
+    fun buildsChrUsingNode() {
+        val node = p.parse("chr(196 using nchar_cs)").getFirstDescendant(SingleRowSqlFunctionsGrammar.CHR_USING_EXPRESSION)
+        assertThatAst(node.children.map { it.tokenOriginalValue }).containsExactly("chr", "(", "196", "using", "nchar_cs", ")")
+        assertThatAst(p.parse("chr(196)").getDescendants(SingleRowSqlFunctionsGrammar.CHR_USING_EXPRESSION)).isEmpty()
+        assertThatAst(p.parse("nchr(187)").getDescendants(SingleRowSqlFunctionsGrammar.CHR_USING_EXPRESSION)).isEmpty()
+    }
 }

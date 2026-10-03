@@ -148,6 +148,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TO_TIMESTAMP_TZ_EXPRESSION,
     TO_YMINTERVAL_EXPRESSION,
     TRIM_EXPRESSION,
+    CHR_USING_EXPRESSION,
     TRANSLATE_USING_EXPRESSION,
     VALIDATE_CONVERSION_EXPRESSION,
     TABLE_EXPRESSION,
@@ -197,6 +198,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(TREAT_AS_EXPRESSION, TREAT, LPARENTHESIS),
             FunctionAlternative(SET_EXPRESSION, SET),
             FunctionAlternative(CAST_EXPRESSION, CAST),
+            FunctionAlternative(CHR_USING_EXPRESSION, CHR),
             FunctionAlternative(TRANSLATE_USING_EXPRESSION, TRANSLATE),
             FunctionAlternative(VALIDATE_CONVERSION_EXPRESSION, VALIDATE_CONVERSION),
             FunctionAlternative(TO_BINARY_DOUBLE_EXPRESSION, TO_BINARY_DOUBLE),
@@ -318,6 +320,10 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         }
 
         private fun createCharacterFunctions(b: PlSqlGrammarBuilder) {
+            // chr(n using {char_cs | nchar_cs}); NCHR takes no USING clause
+            b.rule(CHR_USING_EXPRESSION).define(
+                CHR, LPARENTHESIS, EXPRESSION, USING, b.firstOf(CHAR_CS, NCHAR_CS), RPARENTHESIS)
+
             // translate(expr using {char_cs | nchar_cs})
             b.rule(TRANSLATE_USING_EXPRESSION).define(
                 TRANSLATE, LPARENTHESIS, EXPRESSION, USING, b.firstOf(CHAR_CS, NCHAR_CS), RPARENTHESIS)

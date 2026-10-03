@@ -221,6 +221,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     CHAR_CS("char_cs"),
     CHILD("child"),
     CHOOSE("choose"),
+    CHR("chr"),
     CLASS("class"),
     CLASSIFICATION("classification"),
     CLAUSE("clause"),
