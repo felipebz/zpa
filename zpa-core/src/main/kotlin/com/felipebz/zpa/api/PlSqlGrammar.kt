@@ -864,8 +864,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(INTERVAL_QUALIFIER).define(
                     b.firstOf(
-                            b.sequence(YEAR, TO, MONTH),
-                            b.sequence(DAY, TO, SECOND)))
+                            b.sequence(YEAR, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), TO, MONTH),
+                            b.sequence(
+                                    DAY, b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS), TO, SECOND,
+                                    b.optional(LPARENTHESIS, INTEGER_LITERAL, RPARENTHESIS))))
 
             b.rule(MULTIPLE_VALUE_EXPRESSION).define(b.firstOf(
                     BRACKED_EXPRESSION,
