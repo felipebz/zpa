@@ -260,8 +260,7 @@ class AlterPluggableDatabaseTest : RuleTest() {
             "pdb1 unplug",
             "pdb1 storage (maxsize 500m)",
             "pdb1 datafile all offline",
-            "application all except hrapp sync",
-            "containers port = 1599"
+            "application all except hrapp sync"
         )
     }
 

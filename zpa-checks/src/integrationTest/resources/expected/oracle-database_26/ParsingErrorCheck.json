@@ -37,8 +37,6 @@
   "sqlrf/ALTER-DISKGROUP-2.sql" : [ 3 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-13.sql" : [ 3 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-14.sql" : [ 3 ],
-  "sqlrf/ALTER-PLUGGABLE-DATABASE-2.sql" : [ 2 ],
-  "sqlrf/ALTER-PLUGGABLE-DATABASE-3.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-6.sql" : [ 2 ],
   "sqlrf/ALTER-PLUGGABLE-DATABASE-7.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-117.sql" : [ 2 ],

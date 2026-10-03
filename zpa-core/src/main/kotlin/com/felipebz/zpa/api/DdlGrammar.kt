@@ -233,6 +233,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_PLUGGABLE_DATABASE,
     PREPARE_CLAUSE,
     DROP_MIRROR_COPY,
+    PDB_CONTAINERS_CLAUSE,
     PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
     PDB_SAVE_OR_DISCARD_STATE,
@@ -4422,6 +4423,13 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(PREPARE_CLAUSE, b.optional(FOR, DATABASE, IDENTIFIER_NAME)),
                 DROP_MIRROR_COPY)
 
+            b.rule(PDB_CONTAINERS_CLAUSE).define(
+                CONTAINERS,
+                b.firstOf(
+                    b.sequence(DEFAULT, TARGET, EQUALS, b.firstOf(NONE, b.sequence(LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS))),
+                    b.sequence(HOST, EQUALS, CHARACTER_LITERAL),
+                    b.sequence(PORT, EQUALS, b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL))))
+
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 b.firstOf(
@@ -4432,7 +4440,10 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                         b.firstOf(pdbMirrorCopy, b.sequence(IDENTIFIER_NAME, pdbMirrorCopy)),
                         b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
-                    b.sequence(PDB_UNPLUG_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
+                    b.sequence(PDB_UNPLUG_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(
+                        b.firstOf(b.sequence(IDENTIFIER_NAME, PDB_CONTAINERS_CLAUSE), PDB_CONTAINERS_CLAUSE),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
         }
 
