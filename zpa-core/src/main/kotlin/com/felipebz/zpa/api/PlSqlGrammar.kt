@@ -278,6 +278,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     TYPE_CONSTRUCTOR,
     MAP_ORDER_FUNCTION,
     TYPE_ELEMENT_SPEC,
+    PERSISTABLE_CLAUSE,
     OBJECT_TYPE_DEFINITION,
     CREATE_TRIGGER,
     CREATE_TYPE,
@@ -1919,7 +1920,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 OF, UNIT_NAME,
                 b.firstOf(
                     b.sequence(
-                        WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID),
+                        WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID, OID),
                         b.firstOf(
                             DEFAULT,
                             b.sequence(
@@ -1952,7 +1953,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(XMLTYPE_VIEW_CLAUSE).define(
                 OF, XMLTYPE,
                 b.optional(XMLSCHEMA_SPEC),
-                WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID),
+                WITH, OBJECT, b.firstOf(IDENTIFIER_KEYWORD, ID, OID),
                 b.firstOf(
                     DEFAULT,
                     b.sequence(
@@ -2065,26 +2066,39 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(b.firstOf(DEPRECATE_PRAGMA, SUPPRESSES_WARNING_6009_PRAGMA), b.optional(COMMA))
                 ),
                 RPARENTHESIS,
-                b.zeroOrMore(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE))
+                b.zeroOrMore(b.firstOf(
+                    b.sequence(b.optional(NOT), b.firstOf(FINAL, INSTANTIABLE)),
+                    PERSISTABLE_CLAUSE))
             )
+
+            b.rule(PERSISTABLE_CLAUSE).define(b.optional(NOT), PERSISTABLE)
 
             val typeProperties = b.zeroOrMore(b.firstOf(
                     b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
                     b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
                     ACCESSIBLE_BY_CLAUSE))
+            val collectionElementSpec = b.sequence(
+                LPARENTHESIS, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT), RPARENTHESIS, b.optional(PERSISTABLE_CLAUSE))
             val typeDefinition = b.firstOf(
                     OBJECT_TYPE_DEFINITION,
                     b.sequence(
                             b.firstOf(IS, AS),
                             b.firstOf(
+                                    b.sequence(TABLE, OF, collectionElementSpec),
+                                    b.sequence(
+                                        b.firstOf(VARRAY, b.sequence(b.optional(VARYING), ARRAY)),
+                                        LPARENTHESIS, b.firstOf(INTEGER_LITERAL, OBJECT_REFERENCE), RPARENTHESIS,
+                                        OF, collectionElementSpec),
                                     VARRAY_TYPE_DEFINITION,
                                     NESTED_TABLE_DEFINITION)))
 
             b.rule(CREATE_TYPE).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     TYPE, UNIT_NAME,
-                    b.optional(FORCE),
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
+                    b.optional(b.firstOf(
+                        b.sequence(FORCE, b.optional(OID, CHARACTER_LITERAL)),
+                        b.sequence(OID, CHARACTER_LITERAL, b.optional(FORCE)))),
                     typeProperties,
                     b.optional(typeDefinition),
                     b.optional(SEMICOLON))

@@ -37,6 +37,7 @@
   "sqlrf/CREATE-TABLE-62.sql" : [ 3 ],
   "sqlrf/Concatenation-Operator-1.sql" : [ 2, 3 ],
   "sqlrf/Pattern-matching-Conditions-10.sql" : [ 2 ],
+  "sqlrf/Syntax-for-Schema-Objects-and-Parts-in-SQL-Statements-4.sql" : [ 9 ],
   "sqlrf/constraint-27.sql" : [ 7 ],
   "sqlrf/constraint-3.sql" : [ 8 ],
   "sqlrf/constraint-4.sql" : [ 8 ],

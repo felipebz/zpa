@@ -81,6 +81,7 @@
   "sqlrf/CREATE-MATERIALIZED-ZONEMAP-7.sql" : [ 9, 10, 11 ],
   "sqlrf/CREATE-MATERIALIZED-ZONEMAP-8.sql" : [ 9, 9, 9 ],
   "sqlrf/CREATE-TABLE-48.sql" : [ 2, 2 ],
+  "sqlrf/CREATE-VIEW-11.sql" : [ 15, 15 ],
   "sqlrf/CREATE-VIEW-12.sql" : [ 4 ],
   "sqlrf/CREATE-VIEW-13.sql" : [ 3 ],
   "sqlrf/CREATE-VIEW-15.sql" : [ 2 ],
