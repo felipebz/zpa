@@ -950,4 +950,64 @@ class AlterTableTest : RuleTest() {
         assertThat(p).matches("alter table t add (j json sort validate '{}' not null)")
         assertThat(p).notMatches("alter table t add (j json validate cast '{}' sort)")
     }
+
+    @Test
+    fun matchesModifyDomainAssociations() {
+        assertThat(p).matches("alter table t modify (c1) add domain d")
+        assertThat(p).matches("alter table t modify (c1, c2) add domain s.d")
+        assertThat(p).matches("alter table t modify (c1) add domain \"D\"")
+        assertThat(p).matches("alter table t modify (c1) drop domain")
+        assertThat(p).matches("alter table t modify (c1, c2) drop domain")
+        assertThat(p).matches("alter table t modify (c1) drop domain preserve")
+        assertThat(p).matches("alter table t modify (c1) drop domain preserve constraints")
+        assertThat(p).matches("alter table t modify (c1 domain d)")
+        assertThat(p).matches("alter table t modify (c1 number domain s.d)")
+        assertThat(p).matches("alter table t modify (c1 domain d not null, c2 domain d)")
+    }
+
+    @Test
+    fun matchesTableLevelDomainInAddColumns() {
+        assertThat(p).matches("alter table t add (c9 number, domain d (c9))")
+        assertThat(p).matches("alter table t add (c9 number, c8 number, domain s.d (c9, c8))")
+        assertThat(p).matches("alter table t add domain number")
+        assertThat(p).matches("alter table t add (domain number)")
+    }
+
+    @Test
+    fun rejectsMalformedDomainAssociationsInAlterTable() {
+        assertThat(p).notMatches("alter table t modify c1 add domain d")
+        assertThat(p).notMatches("alter table t modify (c1) add domain")
+        assertThat(p).notMatches("alter table t modify (c1,) add domain d")
+        assertThat(p).notMatches("alter table t modify () add domain d")
+        assertThat(p).notMatches("alter table t modify (c1) add domain a.b.d")
+        assertThat(p).notMatches("alter table t modify (c1) drop domain constraints")
+        assertThat(p).notMatches("alter table t modify (c1) add domain d not null")
+        assertThat(p).notMatches("alter table t modify (c1) add domain d (c1)")
+        assertThat(p).notMatches("alter table t modify (c1) add domain d add domain d")
+        assertThat(p).notMatches("alter table t modify (c1) add domain d enable row movement")
+        assertThat(p).notMatches("alter table t modify (c1 drop domain)")
+        assertThat(p).notMatches("alter table t add domain d (c1)")
+    }
+
+    @Test
+    fun matchesDatatypeDomainInAddColumns() {
+        assertThat(p).matches("alter table t add c2 number domain d")
+        assertThat(p).matches("alter table t add (c2 number domain d)")
+        assertThat(p).matches("alter table t add (c2 domain d)")
+        assertThat(p).matches("alter table t add c2 domain d")
+        assertThat(p).matches("alter table t add (c2 number domain s.d not null, c3 domain \"E\")")
+        assertThat(p).matches("alter table t add c2 number domain d not null")
+        assertThat(p).matches("alter table t add c2 d")
+        assertThat(p).notMatches("alter table t add c2 number d")
+        assertThat(p).notMatches("alter table t add (c2 domain d (e))")
+    }
+
+    @Test
+    fun keepsModifyDatatypeDomainBehaviour() {
+        assertThat(p).matches("alter table t modify (c1 number domain d default 1)")
+        assertThat(p).matches("alter table t modify c1 domain d")
+        assertThat(p).notMatches("alter table t modify (c1 domain d domain d)")
+        assertThat(p).notMatches("alter table t modify (c1 default 1 domain d)")
+        assertThat(p).notMatches("alter table t modify (c1 not null domain d)")
+    }
 }

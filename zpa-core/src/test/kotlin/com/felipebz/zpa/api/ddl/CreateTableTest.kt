@@ -1326,4 +1326,100 @@ class CreateTableTest : RuleTest() {
             "inmemory", "priority", "high", "ilm", "delete", "policy", "pol",
             "json", "(", "j", ",", "k", ")", "store", "as", "lobseg", "(", "cache", ")")
     }
+
+    @Test
+    fun matchesTableLevelDomainAssociations() {
+        assertThat(p).matches("create table tm1 (c1 number, c2 number, c3 varchar2(15), c4 number, c5 number, c6 number, c7 number, domain dm1 (c1, c2, c3, c4), domain dn2(c5, c6), domain dn1(c7))")
+        assertThat(p).matches("create table t (c1 number, domain d (c1))")
+        assertThat(p).matches("create table t (c1 number, c2 number, DOMAIN dm1(c1,c2))")
+        assertThat(p).matches("create table t (c1 number, domain s.d (c1))")
+        assertThat(p).matches("create table t (c1 number, domain s.\"D\" (c1))")
+        assertThat(p).matches("create table t (c1 number, domain \"D\" (c1))")
+        assertThat(p).matches("create table t (\"c1\" number, domain d (\"c1\"))")
+        assertThat(p).matches("create table t (domain d (c1), c1 number)")
+        assertThat(p).matches("create table t (c1 number, domain d (c1), c2 number)")
+        assertThat(p).matches("create table t (c1 number, constraint x check (c1 > 0), domain d (c1))")
+        assertThat(p).matches("create table t (c1 number, domain d (c1), constraint x check (c1 > 0))")
+        assertThat(p).matches("create table t (c1 number, c2 number, c3 as (c1 + c2), domain d (c3))")
+        assertThat(p).matches("create table t (c1 number, domain d (c1)) tablespace users")
+    }
+
+    @Test
+    fun keepsColumnNamedDomainAColumn() {
+        for (ddl in listOf(
+            "create table t (domain number)",
+            "create table t (c1 number, domain number)",
+            "create table t (domain ty_obj, c1 number)",
+            "create table t (c1 number, domain ty_obj, c2 number)",
+            "create table t (c1 number, domain dn1)",
+            "create table t (c1 number, domain dn1 not null)",
+            "create table t (domain number, domain dn1 (domain))",
+        )) {
+            assertThat(p).describedAs(ddl).matches(ddl)
+        }
+        val column = p.parse("create table t (c1 number, domain ty_obj, c2 number)")
+        assertThatAst(column.getDescendants(DdlGrammar.TABLE_DOMAIN_CLAUSE)).isEmpty()
+        assertThatAst(column.getDescendants(DdlGrammar.TABLE_COLUMN_DEFINITION)).hasSize(3)
+    }
+
+    @Test
+    fun rejectsMalformedTableLevelDomainAssociations() {
+        assertThat(p).notMatches("create table t (c1 number, domain d ())")
+        assertThat(p).notMatches("create table t (c1 number, domain d (c1,))")
+        assertThat(p).notMatches("create table t (c1 number, domain d (,c1))")
+        assertThat(p).notMatches("create table t (c1 number, domain d (c1 c1))")
+        assertThat(p).notMatches("create table t (c1 number, domain d c1)")
+        assertThat(p).notMatches("create table t (c1 number, domain d (t.c1))")
+        assertThat(p).notMatches("create table t (c1 number, domain a.b.d (c1))")
+        assertThat(p).notMatches("create table t (c1 number, domain d (c1 desc))")
+        assertThat(p).notMatches("create table t (c1 number, domain d ((c1)))")
+        assertThat(p).notMatches("create table t (c1 number, domain d (c1 + 1))")
+        assertThat(p).notMatches("create table t (c1 number, domain d (c1) not null)")
+        assertThat(p).notMatches("create table t (c1 number, domain)")
+    }
+
+    @Test
+    fun buildsTableDomainClauseNode() {
+        val clause = p.parse("create table t (c1 number, c2 number, domain s.d (c1, \"C2\"), c3 number)")
+            .getFirstDescendant(DdlGrammar.TABLE_DOMAIN_CLAUSE)
+        assertThatAst(clause.tokens.map { it.originalValue }).containsExactly("domain", "s", ".", "d", "(", "c1", ",", "\"C2\"", ")")
+        assertThatAst(clause.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map { it.tokenOriginalValue }).containsExactly("s", "d", "c1", "\"C2\"")
+    }
+
+    @Test
+    fun matchesColumnDatatypeDomain() {
+        for (column in listOf(
+            "c number domain d", "c domain d", "c d", "c s.d", "c domain s.d", "c number domain s.d",
+            "c number domain \"D\"", "c domain \"D\"", "\"c\" number domain d", "c varchar2(10) domain d",
+            "c number domain d default 1", "c number domain d not null", "c domain d not null", "c domain d default 1",
+            "c number domain d constraint k check (c > 0)", "c number domain d primary key",
+            "c number domain d annotations (a 'x')", "c number domain d sort",
+            "c number domain d generated always as identity", "c number domain d default on null 1",
+            "c domain d, e domain f", "domain domain d", "domain number domain d",
+        )) {
+            assertThat(p).describedAs(column).matches("create table t ($column)")
+        }
+    }
+
+    @Test
+    fun rejectsMisplacedOrMalformedColumnDatatypeDomain() {
+        for (column in listOf(
+            "c number d", "c number d not null",
+            "c domain", "c number domain", "c domain d (e)", "c domain d(10)",
+        )) {
+            assertThat(p).describedAs(column).notMatches("create table t ($column)")
+        }
+    }
+
+    @Test
+    fun buildsColumnDatatypeDomainNodes() {
+        val withType = p.parse("create table t (c number domain s.d not null)").getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(withType.getFirstChild(PlSqlGrammar.DATATYPE).tokenOriginalValue).isEqualTo("number")
+        assertThatAst(withType.tokens.map { it.originalValue }).containsSubsequence("c", "number", "domain", "s", ".", "d", "not")
+        val withoutType = p.parse("create table t (c domain d)").getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(withoutType.hasDirectChildren(PlSqlGrammar.DATATYPE)).isFalse()
+        assertThatAst(withoutType.tokens.map { it.originalValue }).containsExactly("c", "domain", "d")
+        val customType = p.parse("create table t (c d)").getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(customType.hasDirectChildren(PlSqlGrammar.DATATYPE)).isTrue()
+    }
 }

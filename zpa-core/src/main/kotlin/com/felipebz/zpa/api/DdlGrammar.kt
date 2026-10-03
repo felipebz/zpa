@@ -68,6 +68,7 @@ enum class DdlGrammar : GrammarRuleKey {
     SUPPLEMENTAL_LOGGING_PROPS,
     SUPPLEMENTAL_ID_KEY_CLAUSE,
     TABLE_RELATIONAL_PROPERTIES,
+    TABLE_DOMAIN_CLAUSE,
     OBJECT_TABLE_CLAUSE,
     XMLTYPE_TABLE,
     XMLTYPE_COLUMN_PROPERTIES,
@@ -727,11 +728,15 @@ enum class DdlGrammar : GrammarRuleKey {
                 return b.sequence(parts[0], parts[1], *parts.drop(2).toTypedArray())
             }
 
+            val domainName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
+            val datatypeDomain = b.sequence(DOMAIN, domainName)
+
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME,
                     // Oracle rejects a missing identity datatype only after parsing (ORA-02263).
                     b.firstOf(
-                        b.sequence(b.nextNot(identityStart), DATATYPE),
+                        datatypeDomain,
+                        b.sequence(b.nextNot(identityStart), b.nextNot(DOMAIN), DATATYPE, b.optional(datatypeDomain)),
                         b.next(identityStart)),
                     b.optional(SORT),
                     columnValueAndConstraints(withJsonValidate = true),
@@ -823,12 +828,17 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(SUPPLEMENTAL_LOGGING_PROPS).define(
                 SUPPLEMENTAL, LOG, b.firstOf(supplementalLogGroup, SUPPLEMENTAL_ID_KEY_CLAUSE))
 
+            b.rule(TABLE_DOMAIN_CLAUSE).define(
+                DOMAIN, domainName, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+
             val relationalProperty = b.firstOf(
                 OUT_OF_LINE_REF_CONSTRAINT,
                 OUT_OF_LINE_CONSTRAINT,
+                TABLE_DOMAIN_CLAUSE,
                 b.sequence(
                     b.nextNot(b.firstOf(
-                        b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG))),
+                        b.sequence(SCOPE, FOR), b.sequence(REF, LPARENTHESIS), b.sequence(SUPPLEMENTAL, LOG),
+                        b.sequence(DOMAIN, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME), LPARENTHESIS))),
                     TABLE_COLUMN_DEFINITION),
                 VIRTUAL_COLUMN_DEFINITION)
             b.rule(TABLE_RELATIONAL_PROPERTIES).define(
@@ -2285,8 +2295,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(b.sequence(
                             b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS,
-                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS), identityStart)),
+                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS), identityStart, ADD, DROP, b.sequence(DOMAIN, IDENTIFIER_NAME))),
                             DATATYPE)),
+                    b.optional(DOMAIN, domainName),
                     b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(b.firstOf(b.sequence(DEFAULT, EXPRESSION), identityClause(true))),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
@@ -2645,12 +2656,17 @@ enum class DdlGrammar : GrammarRuleKey {
                                     ADD,
                                     b.firstOf(
                                             b.sequence(LPARENTHESIS, TABLE_RELATIONAL_PROPERTIES, RPARENTHESIS),
-                                            TABLE_RELATIONAL_PROPERTIES),
+                                            b.sequence(b.nextNot(TABLE_DOMAIN_CLAUSE), TABLE_RELATIONAL_PROPERTIES)),
                                     tablePropertyClauses()),
                             ALTER_TABLE_MODIFY_CONSTRAINT,
                             b.sequence(
                                     MODIFY,
                                     b.firstOf(
+                                            b.sequence(
+                                                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                                                    b.firstOf(
+                                                            b.sequence(ADD, DOMAIN, domainName),
+                                                            b.sequence(DROP, DOMAIN, b.optional(PRESERVE, b.optional(CONSTRAINTS))))),
                                             b.sequence(LPARENTHESIS, ALTER_TABLE_COLUMN,
                                                     b.zeroOrMore(COMMA, ALTER_TABLE_COLUMN), RPARENTHESIS),
                                             b.sequence(b.nextNot(b.firstOf(CONSTRAINT, PARTITION, b.sequence(PRIMARY, KEY),

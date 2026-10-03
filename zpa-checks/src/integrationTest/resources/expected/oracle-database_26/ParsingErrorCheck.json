@@ -40,7 +40,6 @@
   "sqlrf/CREATE-SCHEMA-0.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-11.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-36.sql" : [ 7 ],
-  "sqlrf/CREATE-TABLE-72.sql" : [ 3 ],
   "sqlrf/CREATE-TABLESPACE-0.sql" : [ 2 ],
   "sqlrf/CREATE-USER-0.sql" : [ 2 ],
   "sqlrf/CREATE-USER-1.sql" : [ 2 ],
