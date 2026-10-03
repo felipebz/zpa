@@ -164,6 +164,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     ),
                     b.sequence(
                         b.optional(FORMAT, JSON),
+                        PlSqlPunctuator.LPARENTHESIS, b.firstOf(STRICT, LAX), PlSqlPunctuator.RPARENTHESIS
+                    ),
+                    b.sequence(
+                        b.optional(FORMAT, JSON),
                         b.optional(b.firstOf(STRICT, LAX)),
                         b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
                         b.optional(b.firstOf(WITH, WITHOUT), UNIQUE, KEYS)
@@ -234,8 +238,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 SingleRowSqlFunctionsGrammar.JSON_BASIC_PATH_EXPRESSION,
                 b.optional(SingleRowSqlFunctionsGrammar.JSON_PASSING_CLAUSE),
                 b.optional(JSON_EXISTS_ON_ERROR_CLAUSE),
-                b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 b.optional(JSON_EXISTS_ON_EMPTY_CLAUSE),
+                b.optional(SingleRowSqlFunctionsGrammar.JSON_TYPE_CLAUSE),
                 PlSqlPunctuator.RPARENTHESIS
             )
 

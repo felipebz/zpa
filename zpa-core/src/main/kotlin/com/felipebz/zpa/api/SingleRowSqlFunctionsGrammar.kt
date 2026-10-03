@@ -31,6 +31,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
     // internals
     JSON_PASSING_CLAUSE,
+    JSON_TYPE_CLAUSE,
     JSON_ON_NULL_CLAUSE,
     JSON_ON_ERROR_CLAUSE,
     JSON_RETURNING_CLAUSE,
@@ -792,9 +793,12 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_QUERY_ON_ERROR_CLAUSE),
                 b.optional(JSON_QUERY_ON_EMPTY_CLAUSE),
                 b.optional(JSON_QUERY_ON_MISMATCH_CLAUSE),
-                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                b.optional(JSON_TYPE_CLAUSE),
                 RPARENTHESIS
             )
+
+            // The documentation also lists it for JSON_TABLE, which Oracle rejects in every position.
+            b.rule(JSON_TYPE_CLAUSE).define(TYPE, LPARENTHESIS, b.firstOf(STRICT, LAX), RPARENTHESIS)
 
             b.rule(JSON_PASSING_CLAUSE).define(
                 PASSING, EXPRESSION, AS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, EXPRESSION, AS, IDENTIFIER_NAME)
@@ -850,7 +854,6 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(FORMAT, JSON),
                 b.optional(COMMA, JSON_BASIC_PATH_EXPRESSION),
                 b.optional(JSON_TABLE_ON_ERROR_CLAUSE),
-                b.optional(TYPE, b.firstOf(STRICT, LAX)),
                 b.optional(JSON_TABLE_ON_EMPTY_CLAUSE),
                 b.optional(JSON_TABLE_ON_MISMATCH_CLAUSE),
                 JSON_TABLE_COLUMNS_CLAUSE,
@@ -1069,7 +1072,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_VALUE_RETURNING_CLAUSE),
                 b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
                 b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
-                b.optional(TYPE, b.firstOf(STRICT, LAX)),
+                b.optional(JSON_TYPE_CLAUSE),
                 RPARENTHESIS
             )
 
@@ -1082,11 +1085,11 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 COMMA,
                 JSON_TRANSFORM_OPERATION,
                 b.zeroOrMore(COMMA, JSON_TRANSFORM_OPERATION),
+                b.optional(JSON_PASSING_CLAUSE),
                 b.optional(JSON_TRANSFORM_RETURNING_CLAUSE),
                 b.optional(PRETTY),
                 b.optional(ASCII),
-                b.optional(TYPE, b.firstOf(STRICT, LAX)),
-                b.optional(JSON_PASSING_CLAUSE),
+                b.optional(JSON_TYPE_CLAUSE),
                 RPARENTHESIS
             )
 

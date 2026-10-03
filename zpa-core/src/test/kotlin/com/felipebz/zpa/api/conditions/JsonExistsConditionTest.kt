@@ -54,7 +54,7 @@ class JsonExistsConditionTest : RuleTest() {
 
     @Test
     fun matchesJsonExistsStrict() {
-        assertThat(p).matches("json_exists(doc, '$.a' type strict)")
+        assertThat(p).matches("json_exists(doc, '$.a' type (strict))")
     }
 
     @Test
@@ -68,8 +68,8 @@ class JsonExistsConditionTest : RuleTest() {
             json_exists(doc format json, '$.a'
             passing var1 as a, var2 as b
             false on error
-            type lax
-            true on empty)
+            true on empty
+            type (lax))
             """)
     }
 

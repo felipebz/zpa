@@ -84,7 +84,7 @@ class JsonValueTest : RuleTest() {
             error on empty
             error on mismatch (missing data)
             ignore on mismatch (extra data)
-            type strict)""")
+            type (strict))""")
     }
 
 

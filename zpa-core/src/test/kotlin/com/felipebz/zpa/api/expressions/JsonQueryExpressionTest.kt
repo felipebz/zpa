@@ -44,7 +44,7 @@ class JsonQueryExpressionTest : RuleTest() {
 
     @Test
     fun matchesJsonQueryWithType() {
-        assertThat(p).matches("json_query(foo, '$' type strict)")
+        assertThat(p).matches("json_query(foo, '$' type (strict))")
     }
 
     @Test
@@ -97,7 +97,7 @@ class JsonQueryExpressionTest : RuleTest() {
             empty object on error 
             empty array on empty 
             error on mismatch 
-            type lax)""")
+            type (lax))""")
     }
 
 }

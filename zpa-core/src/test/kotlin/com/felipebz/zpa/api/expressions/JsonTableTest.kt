@@ -79,7 +79,6 @@ class JsonTableTest : RuleTest() {
         assertThat(p).matches("""
             json_table(doc, '$'
             error on error
-            type strict
             error on empty
             columns (
               c1 clob truncate path '$.c1' error on error error on empty error on mismatch(missing data),
