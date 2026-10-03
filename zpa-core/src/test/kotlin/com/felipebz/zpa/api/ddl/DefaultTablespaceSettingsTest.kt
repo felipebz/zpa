@@ -107,7 +107,6 @@ class DefaultTablespaceSettingsTest : RuleTest() {
         notMatches(
             "default",
             "default edition = e1",
-            "rename global_name to demo.world.example.com",
             "set standby nologging for data availability tablespace",
             "set compatibility to '23.0.0'"
         )

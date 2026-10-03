@@ -84,7 +84,7 @@ class StartupClausesTest : RuleTest() {
 
     @Test
     fun keepsOtherAlterDatabaseClausesSeparate() {
-        notMatches("rename global_name to demo.world.example.com", "enable block change tracking", "flashback on")
+        notMatches("flashback on")
         notMatches("open add logfile group 3 ('a.log') size 1m")
     }
 

@@ -201,8 +201,6 @@ class LostWriteProtectionTest : RuleTest() {
         )
         notMatches(
             database,
-            "enable block change tracking",
-            "disable block change tracking",
             "enable thread 2",
             "enable"
         )

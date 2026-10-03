@@ -258,6 +258,8 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_FILEGROUP_CLAUSE,
     FILEGROUP_PROPERTY,
     SCRUB_CLAUSE,
+    RENAME_GLOBAL_NAME_CLAUSE,
+    BLOCK_CHANGE_TRACKING_CLAUSE,
     GENERAL_RECOVERY,
     STARTUP_CLAUSES,
     DEFAULT_TABLESPACE_SETTINGS,
@@ -4618,12 +4620,23 @@ enum class DdlGrammar : GrammarRuleKey {
                                 b.optional(b.firstOf(RESETLOGS, NORESETLOGS)),
                                 b.optional(b.firstOf(UPGRADE, DOWNGRADE)))))))
 
+            b.rule(RENAME_GLOBAL_NAME_CLAUSE).define(
+                RENAME, GLOBAL_NAME, TO, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME))
+
+            // Oracle also recognises USING after DISABLE but rejects it only afterwards (ORA-19768), so DISABLE
+            // takes no options here.
+            b.rule(BLOCK_CHANGE_TRACKING_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(ENABLE, BLOCK, CHANGE, TRACKING, b.optional(USING, FILE, CHARACTER_LITERAL, b.optional(REUSE))),
+                    b.sequence(DISABLE, BLOCK, CHANGE, TRACKING)))
+
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
                 b.firstOf(
                     DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
-                    DEFAULT_TABLESPACE_SETTINGS, STARTUP_CLAUSES, LOGFILE_CLAUSES),
+                    DEFAULT_TABLESPACE_SETTINGS, STARTUP_CLAUSES, RENAME_GLOBAL_NAME_CLAUSE,
+                    BLOCK_CHANGE_TRACKING_CLAUSE, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

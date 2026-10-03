@@ -281,8 +281,6 @@ class AlterDatabaseTest : RuleTest() {
     @Test
     fun keepsOtherAlterDatabaseClausesUnsupported() {
         notMatches(
-            "rename global_name to demo.world.example.com",
-            "enable block change tracking",
             "flashback on"
         )
     }
