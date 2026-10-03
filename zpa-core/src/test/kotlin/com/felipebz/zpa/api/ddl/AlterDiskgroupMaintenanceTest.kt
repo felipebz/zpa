@@ -301,7 +301,6 @@ class AlterDiskgroupMaintenanceTest : RuleTest() {
             "dg rename disk d1 to d2",
             "dg online all",
             "dg offline disk d1",
-            "dg add filegroup fg database none",
             "dg add volume v1 size 1g",
             "dg set attribute 'x' = 'y'",
             "dg add quotagroup q1",

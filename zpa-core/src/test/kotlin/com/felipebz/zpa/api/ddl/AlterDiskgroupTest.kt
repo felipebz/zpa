@@ -298,8 +298,7 @@ class AlterDiskgroupTest : RuleTest() {
             "dg replace disk d1 with '/d/d2'",
             "dg rename disk d1 to d2",
             "dg online all",
-            "dg offline disk d1",
-            "dg add filegroup fg database none"
+            "dg offline disk d1"
         )
     }
 

@@ -97,6 +97,20 @@
       "reason": "The data file name must be a quoted literal; unquoted td_file.df is rejected."
     }
   },
+  "sqlrf/ALTER-DISKGROUP-1.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00905",
+      "reason": "The file joins two ALTER DISKGROUP statements with no terminator between them; Oracle reports a missing keyword for the combined text, and each statement parses on its own."
+    }
+  },
+  "sqlrf/ALTER-DISKGROUP-2.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00905",
+      "reason": "The ADD FILEGROUP statement has no terminator and is followed by a separate CREATE TABLESPACE example; Oracle reports a missing keyword for the combined text, and each statement parses on its own."
+    }
+  },
   "sqlrf/ALTER-TABLE-8.sql": {
     "4": {
       "classification": "INVALID_SOURCE",

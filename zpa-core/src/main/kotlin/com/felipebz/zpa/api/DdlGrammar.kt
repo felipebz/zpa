@@ -251,6 +251,12 @@ enum class DdlGrammar : GrammarRuleKey {
     DISKGROUP_TEMPLATE_CLAUSES,
     DISKGROUP_DIRECTORY_CLAUSES,
     DISKGROUP_ALIAS_CLAUSES,
+    DISKGROUP_FILEGROUP_CLAUSE,
+    ADD_FILEGROUP_CLAUSE,
+    MODIFY_FILEGROUP_CLAUSE,
+    MOVE_TO_FILEGROUP_CLAUSE,
+    DROP_FILEGROUP_CLAUSE,
+    FILEGROUP_PROPERTY,
     SCRUB_CLAUSE,
     GENERAL_RECOVERY,
     STARTUP_CLAUSES,
@@ -4664,9 +4670,10 @@ enum class DdlGrammar : GrammarRuleKey {
 
             // Oracle takes a comma between items only after a DROP item (a comma after an ADD item continues its
             // disk list) and also accepts items with no comma at all.
-            val addDropItems = b.oneOrMore(b.firstOf(
+            val diskItem = b.firstOf(
                 ADD_DISK_CLAUSE,
-                b.sequence(DROP_DISK_CLAUSE, b.optional(COMMA, b.next(b.firstOf(ADD, DROP))))))
+                b.sequence(DROP_DISK_CLAUSE, b.optional(COMMA, b.next(b.firstOf(ADD, DROP)))))
+            val addDropItems = b.oneOrMore(diskItem)
 
             b.rule(DISKGROUP_AVAILABILITY).define(
                 b.firstOf(
@@ -4727,6 +4734,46 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(b.firstOf(WAIT, NOWAIT)),
                         b.optional(forceState))))
 
+            // Oracle 26 takes the client kind (DATABASE, CLUSTER, VOLUME or TEMPLATE) in ADD FILEGROUP, and
+            // accepts FROM TEMPLATE after any of them although the diagram lists it only after TEMPLATE. A database
+            // or cluster name may be a string literal or NONE. Oracle also parses several filegroup actions in one
+            // statement (and a comma-separated SET list) and rejects them only at run time (ORA-15116, ORA-15396),
+            // so one action and one property are modelled.
+            val filegroupProperty = b.sequence(CHARACTER_LITERAL, EQUALS, CHARACTER_LITERAL)
+            val clientName = b.firstOf(IDENTIFIER_NAME, CHARACTER_LITERAL)
+            // Oracle parses a comma-separated property list and rejects it only afterwards (ORA-15396); that error
+            // and ORA-15116 are raised at the comma or keyword, before the rest is checked.
+            b.rule(FILEGROUP_PROPERTY).define(SET, filegroupProperty, b.zeroOrMore(COMMA, filegroupProperty))
+
+            b.rule(ADD_FILEGROUP_CLAUSE).define(
+                ADD, FILEGROUP, IDENTIFIER_NAME,
+                b.firstOf(
+                    b.sequence(b.firstOf(DATABASE, CLUSTER), clientName),
+                    b.sequence(VOLUME, IDENTIFIER_NAME),
+                    TEMPLATE),
+                b.optional(FROM, TEMPLATE, IDENTIFIER_NAME),
+                b.optional(FILEGROUP_PROPERTY))
+
+            b.rule(MODIFY_FILEGROUP_CLAUSE).define(MODIFY, FILEGROUP, IDENTIFIER_NAME, FILEGROUP_PROPERTY)
+
+            b.rule(MOVE_TO_FILEGROUP_CLAUSE).define(MOVE, FILE, CHARACTER_LITERAL, TO, FILEGROUP, IDENTIFIER_NAME)
+
+            b.rule(DROP_FILEGROUP_CLAUSE).define(
+                DROP, FILEGROUP, IDENTIFIER_NAME,
+                b.optional(CASCADE),
+                b.optional(FOR, b.optional(PLUGGABLE, DATABASE, IDENTIFIER_NAME), DATABASE, IDENTIFIER_NAME))
+
+            // Oracle parses a run of actions with no comma between them, in any order and mixed with ADD/DROP
+            // DISK items, and rejects most combinations only afterwards (ORA-15116). Such a run needs at least one
+            // filegroup action, so a plain disk statement keeps its own alternative. A comma between actions is a
+            // syntax error (ORA-00905), apart from the comma the disk items already take.
+            val filegroupAction = b.firstOf(
+                ADD_FILEGROUP_CLAUSE, MODIFY_FILEGROUP_CLAUSE, MOVE_TO_FILEGROUP_CLAUSE, DROP_FILEGROUP_CLAUSE)
+            b.rule(DISKGROUP_FILEGROUP_CLAUSE).define(
+                b.zeroOrMore(diskItem),
+                filegroupAction,
+                b.zeroOrMore(b.firstOf(diskItem, filegroupAction)))
+
             b.rule(ALTER_DISKGROUP).define(
                 ALTER, DISKGROUP,
                 b.firstOf(
@@ -4737,6 +4784,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                         IDENTIFIER_NAME,
                         b.firstOf(
+                            DISKGROUP_FILEGROUP_CLAUSE,
                             b.sequence(
                                 b.firstOf(addDropItems, RESIZE_DISK_CLAUSE),
                                 b.optional(REBALANCE_DISKGROUP_CLAUSE)),
