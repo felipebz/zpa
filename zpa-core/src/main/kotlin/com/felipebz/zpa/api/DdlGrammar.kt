@@ -98,6 +98,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_CONSTRAINT_CLAUSE,
     ALTER_SYSTEM,
     ALTER_LOCKDOWN_PROFILE,
+    CREATE_LOCKDOWN_PROFILE,
     LOCKDOWN_FEATURES,
     LOCKDOWN_OPTIONS,
     LOCKDOWN_STATEMENTS,
@@ -3068,6 +3069,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
+                CREATE_LOCKDOWN_PROFILE,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,
@@ -5311,6 +5313,11 @@ enum class DdlGrammar : GrammarRuleKey {
             fun clauseOptions(optionValues: Any?) = b.sequence(OPTION, singleOrList(optionValues))
 
             fun statementClauses(optionValues: Any?) = b.sequence(CLAUSE, singleOrList(clauseOptions(optionValues)))
+
+            b.rule(CREATE_LOCKDOWN_PROFILE).define(
+                CREATE, LOCKDOWN, PROFILE, IDENTIFIER_NAME,
+                b.optional(b.firstOf(FROM, INCLUDING), IDENTIFIER_NAME),
+                b.optional(SEMICOLON))
 
             b.rule(ALTER_LOCKDOWN_PROFILE).define(
                 ALTER, LOCKDOWN, PROFILE, IDENTIFIER_NAME,
