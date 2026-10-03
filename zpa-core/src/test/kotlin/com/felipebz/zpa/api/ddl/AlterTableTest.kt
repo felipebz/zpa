@@ -940,8 +940,8 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
-    fun doesNotMatchAlterTableAddWithoutADatatype() {
-        assertThat(p).notMatches("alter table tab add (col);")
+    fun matchesAlterTableAddWithoutADatatypeWhichOracleRejectsAfterParsing() {
+        assertThat(p).matches("alter table tab add (col);")
     }
 
     @Test
@@ -1009,5 +1009,17 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t modify (c1 domain d domain d)")
         assertThat(p).notMatches("alter table t modify (c1 default 1 domain d)")
         assertThat(p).notMatches("alter table t modify (c1 not null domain d)")
+    }
+
+    @Test
+    fun matchesDatatypeLessForeignKeyColumnsInAdd() {
+        assertThat(p).matches("alter table t add (d, foreign key (d) references r(id))")
+        assertThat(p).matches("alter table t add (d, constraint fk foreign key (d) references r(id))")
+        assertThat(p).matches("alter table t add d references r(id)")
+        assertThat(p).matches("alter table t add (d references r(id))")
+        assertThat(p).matches("alter table t add d")
+        assertThat(p).matches("alter table t add (d, e number)")
+        assertThat(p).matches("alter table t add (d not null)")
+        assertThat(p).notMatches("alter table t add (d collate binary_ci)")
     }
 }

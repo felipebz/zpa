@@ -148,22 +148,23 @@ class CreateTableAsSelectTest : RuleTest() {
     }
 
     @Test
-    fun requiresSubqueryOnlyForDatatypeLessColumns() {
+    fun parsesDatatypeLessColumnsAndLeavesTheRequirementToOracle() {
         listOf(
             "create table t (x)", "create table t (x, y)", "create table t (x not null)",
-            "create table t (x default 1)", "create table t (x primary key) organization index",
-            "create table t (x) tablespace users", "create table t (x) as",
-            "create table t (x) as select", "create table t (x number) as select 1 from dual",
+            "create table t (x default 1)", "create table t (x) tablespace users"
+        ).forEach { assertThat(p).matches(it) }
+        listOf(
+            "create table t (x) as", "create table t (x) as select", "create table t (x number) as select 1 from dual",
             "create table t (x, y number) as select 1, 2 from dual",
             "create table t (x number, y) as select 1, 2 from dual"
         ).forEach { assertThat(p).notMatches(it) }
         assertThat(p).matches("create table t (x number, y custom_type)")
         setRootRule(DdlGrammar.TABLE_COLUMN_DEFINITION)
         assertThat(p).matches("x number")
-        assertThat(p).notMatches("x")
-        assertThat(p).notMatches("x not null")
+        assertThat(p).matches("x")
+        assertThat(p).matches("x not null")
         setRootRule(DdlGrammar.DDL_COMMAND)
-        assertThat(p).notMatches("alter table t add (x)")
+        assertThat(p).matches("alter table t add (x)")
     }
 
     @Test
@@ -182,7 +183,7 @@ class CreateTableAsSelectTest : RuleTest() {
         val typed = (1..512).joinToString(", ") { "c$it number" }
         assertThat(p).matches("create table t ($names) parallel as select * from source_table")
         assertThat(p).matches("create table t ($typed) parallel")
-        assertThat(p).notMatches("create table t ($names) parallel")
+        assertThat(p).matches("create table t ($names) parallel")
         assertThat(p).notMatches("create table t ($typed) parallel as select * from source_table")
         assertThat(p).notMatches("create table t ($names,) as select * from source_table")
     }
@@ -210,6 +211,6 @@ class CreateTableAsSelectTest : RuleTest() {
         assertThat(p).matches(
             "create table t (x) as select 1 from dual; drop table t; create table t (x number);")
         assertThat(p).notMatches(
-            "create table t (x) as select 1 from dual; create table invalid_table (x);")
+            "create table t (x) as select 1 from dual; create table invalid_table (x) as;")
     }
 }

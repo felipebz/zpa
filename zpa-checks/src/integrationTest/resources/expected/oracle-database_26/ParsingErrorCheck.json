@@ -58,7 +58,6 @@
   "sqlrf/SET-CONSTRAINTS-1.sql" : [ 3 ],
   "sqlrf/XMLDATA-Pseudocolumn-1.sql" : [ 3 ],
   "sqlrf/analytic-view-measure-expressions-5.sql" : [ 5 ],
-  "sqlrf/constraint-8.sql" : [ 10 ],
   "sqlrf/create-property-graph-16.sql" : [ 2 ],
   "sqlrf/create-property-graph-23.sql" : [ 3 ],
   "sqlrf/file_specification-0.sql" : [ 2 ],

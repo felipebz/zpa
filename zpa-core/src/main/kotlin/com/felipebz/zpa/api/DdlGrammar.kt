@@ -730,12 +730,18 @@ enum class DdlGrammar : GrammarRuleKey {
 
             val domainName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
             val datatypeDomain = b.sequence(DOMAIN, domainName)
+            val datatypeLessFollower = b.firstOf(
+                COMMA, RPARENTHESIS, DEFAULT, NOT, NULL, CONSTRAINT, UNIQUE, PRIMARY, CHECK, REFERENCES,
+                ENCRYPT, ANNOTATIONS, SORT, SEMICOLON, DIVISION, EOF)
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME,
                     // Oracle rejects a missing identity datatype only after parsing (ORA-02263).
                     b.firstOf(
                         datatypeDomain,
+                        // The documentation omits the datatype only for foreign key columns; Oracle's parser accepts
+                        // any datatype-less column and rejects it later (ORA-02263).
+                        b.next(datatypeLessFollower),
                         b.sequence(b.nextNot(identityStart), b.nextNot(DOMAIN), DATATYPE, b.optional(datatypeDomain)),
                         b.next(identityStart)),
                     b.optional(SORT),
@@ -845,7 +851,11 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.oneOrMore(b.firstOf(
                     b.sequence(
                         relationalProperty,
-                        b.firstOf(COMMA, b.nextNot(b.sequence(SUPPLEMENTAL, LOG)))),
+                        b.firstOf(
+                            COMMA,
+                            b.sequence(
+                                b.nextNot(b.sequence(SUPPLEMENTAL, LOG)),
+                                b.nextNot(b.sequence(IDENTIFIER_NAME, datatypeLessFollower))))),
                     b.sequence(
                         SUPPLEMENTAL_LOGGING_PROPS,
                         b.firstOf(

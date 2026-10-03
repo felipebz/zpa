@@ -1375,7 +1375,6 @@ class CreateTableTest : RuleTest() {
         assertThat(p).notMatches("create table t (c1 number, domain d ((c1)))")
         assertThat(p).notMatches("create table t (c1 number, domain d (c1 + 1))")
         assertThat(p).notMatches("create table t (c1 number, domain d (c1) not null)")
-        assertThat(p).notMatches("create table t (c1 number, domain)")
     }
 
     @Test
@@ -1421,5 +1420,79 @@ class CreateTableTest : RuleTest() {
         assertThatAst(withoutType.tokens.map { it.originalValue }).containsExactly("c", "domain", "d")
         val customType = p.parse("create table t (c d)").getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
         assertThatAst(customType.hasDirectChildren(PlSqlGrammar.DATATYPE)).isTrue()
+    }
+
+    @Test
+    fun matchesDatatypeLessForeignKeyColumns() {
+        for (ddl in listOf(
+            "create table t (e number, h date, department_id, constraint fk_deptno foreign key (department_id) references departments(department_id))",
+            "create table t (c1 number, d, constraint fk foreign key (d) references r(id))",
+            "create table t (d, constraint fk foreign key (d) references r(id), c1 number)",
+            "create table t (constraint fk foreign key (d) references r(id), d)",
+            "create table t (c1 number, constraint fk foreign key (d) references r(id), d)",
+            "create table t (d, e, constraint fk foreign key (d, e) references r(a, b))",
+            "create table t (d, e number, constraint fk foreign key (d, e) references r(a, b))",
+            "create table t (d, foreign key (d) references r(id))",
+            "create table t (\"D\", foreign key (\"D\") references r(id))",
+            "create table t (d, c1 number as (1), foreign key (d) references r(id))",
+            "create table t (d domain dn, foreign key (d) references r(id))",
+            "create table t (d, c1 number, domain dn (c1), foreign key (d) references r(id))",
+            "create table t (d, domain dn (d), foreign key (d) references r(id))",
+            "create table t (d, d2, foreign key (d) references r(id), foreign key (d2) references r(id))",
+            "create table t (d, c1 number, constraint fk foreign key (d) references r(id) on delete cascade)",
+            "create table t (d, constraint fk foreign key (d) references r(id) deferrable) tablespace users",
+            "create table t (d not null, foreign key (d) references r(id))",
+            "create table t (d null, foreign key (d) references r(id))",
+            "create table t (d unique, c number, foreign key (d) references r(id))",
+            "create table t (d primary key, foreign key (d) references r(id))",
+            "create table t (d check (d > 0), foreign key (d) references r(id))",
+            "create table t (d sort, foreign key (d) references r(id))",
+            "create table t (d references r(id))",
+            "create table t (d constraint k references r(id))",
+            "create table t (d not null references r(id))",
+            "create table t (d constraint k not null references r(id))",
+            "create table t (d not null constraint k references r(id) on delete set null)",
+        )) {
+            assertThat(p).describedAs(ddl).matches(ddl)
+        }
+    }
+
+    @Test
+    fun parsesDatatypeLessColumnsWhichOracleRejectsAfterParsing() {
+        for (ddl in listOf(
+            "create table t (d)", "create table t (d, c1 number)", "create table t (d not null)", "create table t (d default 1)",
+            "create table t (d, constraint k primary key (d))", "create table t (d, constraint k unique (d))",
+            "create table t (d, constraint k check (d > 0))", "create table t (d unique)", "create table t (d primary key)",
+            "create table t (d, e references r(id))", "create table t (d, e, foreign key (d) references r(id))",
+            "create table t (d, c number, foreign key (c) references r(id))", "create table t (c1 number, domain)",
+            "create table t (d check (d > 0))", "create table t (d encrypt)", "create table t (d null)",
+            "create table t (d constraint k not null)", "create table t (d annotations (a 'x'))",
+        )) {
+            assertThat(p).describedAs(ddl).matches(ddl)
+        }
+    }
+
+    @Test
+    fun rejectsMalformedDatatypeLessColumns() {
+        for (ddl in listOf(
+            "create table t (d collate binary_ci, foreign key (d) references r(id))",
+            "create table t (d collate binary_ci)", "create table t (d domain)", "create table t (d domain, foreign key (d) references r(id))",
+            "create table t (c number d)", "create table t (c number d not null)", "create table t (d, , e)",
+        )) {
+            assertThat(p).describedAs(ddl).notMatches(ddl)
+        }
+    }
+
+    @Test
+    fun buildsDatatypeLessForeignKeyColumn() {
+        val tree = p.parse("create table t (c1 number, d, constraint fk foreign key (d) references r(id))")
+        val columns = tree.getDescendants(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(columns).hasSize(2)
+        assertThatAst(columns[0].hasDirectChildren(PlSqlGrammar.DATATYPE)).isTrue()
+        assertThatAst(columns[1].hasDirectChildren(PlSqlGrammar.DATATYPE)).isFalse()
+        assertThatAst(columns[1].tokens.map { it.originalValue }).containsExactly("d")
+        val inline = p.parse("create table t (d not null references r(id))").getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(inline.hasDirectChildren(PlSqlGrammar.DATATYPE)).isFalse()
+        assertThatAst(inline.getDescendants(DdlGrammar.INLINE_REF_CONSTRAINT, DdlGrammar.INLINE_CONSTRAINT)).isNotEmpty()
     }
 }
