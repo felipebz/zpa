@@ -257,6 +257,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_USING_SNAPSHOT,
     PDB_DECRYPT_CLAUSE,
     PDB_APPLICATION_SYNC_CLAUSE,
+    PDB_DATAFILE_CLAUSE,
     PDB_CONTAINERS_CLAUSE,
     PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
@@ -4466,6 +4467,14 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.firstOf(CHARACTER_LITERAL, b.sequence(PATCH, b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)))),
                     b.sequence(applicationNames, SYNC)))
 
+            // Oracle also parses the ALTER DATABASE datafile options here (RESIZE, AUTOEXTEND, ...); only the
+            // documented ONLINE | OFFLINE is modelled.
+            val pdbFileReference = b.firstOf(CHARACTER_LITERAL, INTEGER_LITERAL, NUMBER_LITERAL)
+            b.rule(PDB_DATAFILE_CLAUSE).define(
+                DATAFILE,
+                b.firstOf(ALL, b.sequence(pdbFileReference, b.zeroOrMore(COMMA, pdbFileReference))),
+                b.firstOf(ONLINE, OFFLINE))
+
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 b.firstOf(
@@ -4480,7 +4489,13 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(
                         b.firstOf(b.sequence(IDENTIFIER_NAME, PDB_CONTAINERS_CLAUSE), PDB_CONTAINERS_CLAUSE),
                         b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
-                    b.sequence(PDB_APPLICATION_SYNC_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
+                    b.sequence(PDB_APPLICATION_SYNC_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(
+                        b.firstOf(b.sequence(IDENTIFIER_NAME, PDB_STORAGE_CLAUSE), PDB_STORAGE_CLAUSE),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(
+                        b.firstOf(b.sequence(IDENTIFIER_NAME, PDB_DATAFILE_CLAUSE), PDB_DATAFILE_CLAUSE),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
         }
 

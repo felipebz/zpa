@@ -257,9 +257,7 @@ class AlterPluggableDatabaseTest : RuleTest() {
     @Test
     fun keepsOtherOperationsUnsupported() {
         notMatches(
-            "pdb1 unplug",
-            "pdb1 storage (maxsize 500m)",
-            "pdb1 datafile all offline"
+            "pdb1 unplug"
         )
     }
 
