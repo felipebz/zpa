@@ -89,7 +89,7 @@ class JsonTransformExpressionTest : RuleTest() {
 
     @Test
     fun matchesJsonTransformRename() {
-        assertThat(p).matches("json_transform(foo, rename 'a' with 'b')")
+        assertThat(p).matches("json_transform(foo, rename 'a' = 'b')")
     }
 
     @Test
@@ -135,7 +135,7 @@ class JsonTransformExpressionTest : RuleTest() {
             ),
             prepend 'a' = 'b' ignore on missing ignore on mismatch ignore on null ignore on empty,
             remove 'a' ignore on missing,
-            rename 'a' with 'b' ignore on missing,
+            rename 'a' = 'b' ignore on missing,
             replace 'a' = 'b' ignore on missing ignore on null ignore on empty ignore on error,
             set 'a' = 'b' ignore on existing ignore on missing ignore on null ignore on empty ignore on error,
             sort 'a' reverse,

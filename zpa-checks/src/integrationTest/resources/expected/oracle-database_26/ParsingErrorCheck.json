@@ -1,8 +1,5 @@
 {
   "adjsn/json-schema-16.sql" : [ 4 ],
-  "adjsn/json_transform-operation-handlers-3.sql" : [ 4 ],
-  "adjsn/json_transform-operation-handlers-5.sql" : [ 4 ],
-  "adjsn/json_transform-operator-rename-0.sql" : [ 3 ],
   "adjsn/loading-external-json-data-1.sql" : [ 3 ],
   "adjsn/sql-json-function-json_object-21.sql" : [ 2 ],
   "adjsn/using-sql-json-function-json_value-boolean-json-value-3.sql" : [ 4 ],

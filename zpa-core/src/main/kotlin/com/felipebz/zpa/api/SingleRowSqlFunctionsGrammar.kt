@@ -1135,12 +1135,24 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 )
             )
 
+            // Oracle takes the ON handlers of an operation in any order and reports repeated or inapplicable
+            // options only when the operation runs (ORA-40792, ORA-400xx); each condition lists its documented options.
+            fun handlers(vararg conditions: Pair<PlSqlKeyword, Array<PlSqlKeyword>>): Any {
+                val alternatives = conditions.map { (condition, actions) ->
+                    b.sequence(b.firstOf(actions[0], actions[1], *actions.drop(2).toTypedArray()), ON, condition)
+                }
+                return b.zeroOrMore(
+                    if (alternatives.size == 1) alternatives[0]
+                    else b.firstOf(alternatives[0], alternatives[1], *alternatives.drop(2).toTypedArray()))
+            }
+
             b.rule(JSON_APPEND_OPERATION).define(
                 APPEND, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, NULL), ON, MISMATCH),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY),
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    MISMATCH to arrayOf(IGNORE, ERROR, REPLACE, CREATE),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_CASE_OPERATION).define(
@@ -1160,42 +1172,48 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_COPY_OPERATION).define(
                 COPY, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_INSERT_OPERATION).define(
                 INSERT, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, NULL), ON, EXISTING),
-                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+                handlers(
+                    EXISTING to arrayOf(IGNORE, ERROR, REPLACE),
+                    NULL to arrayOf(IGNORE, ERROR, REMOVE, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR, NULL),
+                    ERROR to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_INTERSECT_OPERATION).define(
                 INTERSECT, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    NULL to arrayOf(IGNORE, ERROR, NULL))
             )
 
             b.rule(JSON_KEEP_OPERATION).define(
                 KEEP, JSON_PATH_EXPRESSION, b.zeroOrMore(COMMA, JSON_PATH_EXPRESSION),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_MERGE_OPERATION).define(
                 MERGE, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, MISMATCH),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    MISMATCH to arrayOf(IGNORE, ERROR),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_MINUS_OPERATION).define(
                 MINUS_KEYWORD, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    NULL to arrayOf(IGNORE, ERROR, NULL))
             )
 
             b.rule(JSON_NESTED_PATH_OPERATION).define(
@@ -1206,37 +1224,42 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_PREPEND_OPERATION).define(
                 PREPEND, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, REPLACE, CREATE), ON, MISMATCH),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    MISMATCH to arrayOf(IGNORE, ERROR, REPLACE, CREATE),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_REMOVE_OPERATION).define(
                 REMOVE, JSON_PATH_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_RENAME_OPERATION).define(
-                RENAME, JSON_PATH_EXPRESSION, WITH, STRING_LITERAL,
-                b.optional(b.firstOf(IGNORE, ERROR), ON, MISSING)
+                RENAME, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_REPLACE_OPERATION).define(
                 REPLACE, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE),
+                    NULL to arrayOf(IGNORE, ERROR, REMOVE, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR, NULL),
+                    ERROR to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_SET_OPERATION).define(
                 SET, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, REPLACE), ON, EXISTING),
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, REMOVE, NULL), ON, NULL),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, EMPTY),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+                handlers(
+                    EXISTING to arrayOf(IGNORE, ERROR, REPLACE),
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE),
+                    NULL to arrayOf(IGNORE, ERROR, REMOVE, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR, NULL),
+                    ERROR to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_SORT_OPERATION).define(
@@ -1260,16 +1283,18 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                         )
                     )
                 ),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, MISMATCH),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, EMPTY),
-                b.optional(b.firstOf(IGNORE, ERROR), ON, ERROR)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, NULL),
+                    MISMATCH to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR),
+                    ERROR to arrayOf(IGNORE, ERROR))
             )
 
             b.rule(JSON_UNION_OPERATION).define(
                 UNION, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
-                b.optional(b.firstOf(IGNORE, ERROR, CREATE, NULL), ON, MISSING),
-                b.optional(b.firstOf(IGNORE, ERROR, NULL), ON, NULL)
+                handlers(
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE, NULL),
+                    NULL to arrayOf(IGNORE, ERROR, NULL))
             )
         }
     }
