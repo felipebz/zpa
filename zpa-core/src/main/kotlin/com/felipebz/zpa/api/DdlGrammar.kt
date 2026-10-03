@@ -261,6 +261,8 @@ enum class DdlGrammar : GrammarRuleKey {
     RENAME_GLOBAL_NAME_CLAUSE,
     BLOCK_CHANGE_TRACKING_CLAUSE,
     GENERAL_RECOVERY,
+    MANAGED_STANDBY_RECOVERY,
+    RECOVER_TO_LOGICAL_STANDBY,
     STARTUP_CLAUSES,
     DEFAULT_TABLESPACE_SETTINGS,
     DATABASE_FILE_CLAUSES,
@@ -4563,6 +4565,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.sequence(TIME, CHARACTER_LITERAL),
                         b.sequence(CHANGE, INTEGER_LITERAL))),
                 b.sequence(USING, BACKUP, CONTROLFILE))
+            val parallelClause = b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))
             b.rule(GENERAL_RECOVERY).define(
                 RECOVER,
                 b.optional(AUTOMATIC),
@@ -4580,8 +4583,24 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.zeroOrMore(b.firstOf(
                             TEST,
                             b.sequence(ALLOW, INTEGER_LITERAL, CORRUPTION),
-                            NOPARALLEL,
-                            b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))))))
+                            parallelClause)))))
+
+            b.rule(MANAGED_STANDBY_RECOVERY).define(
+                RECOVER, MANAGED, STANDBY, DATABASE,
+                b.optional(b.firstOf(
+                    FINISH,
+                    CANCEL,
+                    b.oneOrMore(b.firstOf(
+                        b.sequence(USING, ARCHIVED, LOGFILE),
+                        b.sequence(DISCONNECT, b.optional(FROM, SESSION)),
+                        NODELAY,
+                        b.sequence(UNTIL, b.firstOf(b.sequence(CHANGE, INTEGER_LITERAL), CONSISTENT)),
+                        b.sequence(USING, INSTANCES, b.firstOf(ALL, INTEGER_LITERAL)),
+                        parallelClause)))))
+
+            b.rule(RECOVER_TO_LOGICAL_STANDBY).define(
+                RECOVER, TO, LOGICAL, STANDBY,
+                b.firstOf(b.sequence(KEEP, IDENTITY), b.sequence(b.nextNot(KEEP), IDENTIFIER_NAME)))
 
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
@@ -4618,7 +4637,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
                 b.firstOf(
-                    DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
+                    DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, MANAGED_STANDBY_RECOVERY, RECOVER_TO_LOGICAL_STANDBY,
+                    GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
                     DEFAULT_TABLESPACE_SETTINGS, STARTUP_CLAUSES, RENAME_GLOBAL_NAME_CLAUSE,
                     BLOCK_CHANGE_TRACKING_CLAUSE, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),

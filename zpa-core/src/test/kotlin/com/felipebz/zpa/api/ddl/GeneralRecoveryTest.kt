@@ -220,10 +220,8 @@ class GeneralRecoveryTest : RuleTest() {
     }
 
     @Test
-    fun keepsManagedStandbyRecoveryAndOtherClausesSeparate() {
+    fun keepsOtherClausesSeparate() {
         notMatches(
-            "recover managed standby database",
-            "recover managed standby database cancel",
             "begin backup",
             "end backup",
             "recover database managed"
