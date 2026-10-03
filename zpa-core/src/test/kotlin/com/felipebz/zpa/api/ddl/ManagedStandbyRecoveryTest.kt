@@ -84,6 +84,42 @@ class ManagedStandbyRecoveryTest : RuleTest() {
     }
 
     @Test
+    fun matchesDeprecatedFinishAndCancelForms() {
+        matches(
+            "$managed finish force", "$managed finish wait", "$managed finish nowait",
+            "$managed cancel immediate", "$managed cancel wait", "$managed cancel nowait",
+            "$managed cancel immediate wait", "$managed cancel immediate nowait",
+            "$managed cancel wait immediate", "$managed cancel nowait immediate", "$managed cancel nowait;"
+        )
+    }
+
+    @Test
+    fun rejectsInvalidDeprecatedCombinations() {
+        notMatches(
+            "$managed cancel wait nowait", "$managed cancel nowait wait", "$managed cancel immediate immediate",
+            "$managed cancel nowait nowait", "$managed cancel wait wait", "$managed cancel force",
+            "$managed cancel immediate force", "$managed cancel immediate x", "$managed immediate", "$managed nodelay immediate",
+            "$managed finish force nowait", "$managed finish force wait", "$managed finish nowait force",
+            "$managed finish nowait wait", "$managed finish immediate", "$managed finish skip", "$managed finish wait wait",
+            "$managed nowait", "$managed wait", "$managed parallel wait", "$managed disconnect nowait"
+        )
+    }
+
+    @Test
+    fun matchesUsingCurrentLogfile() {
+        matches(
+            "$managed using current logfile", "$managed using current logfile disconnect",
+            "$managed disconnect using current logfile", "$managed using current logfile using archived logfile",
+            "$managed using archived logfile using current logfile",
+            "$managed using current logfile nodelay parallel 2 until change 5", "$managed using current logfile;"
+        )
+        notMatches(
+            "$managed using current", "$managed using current logfile finish", "$managed using current logfile x",
+            "$managed using logfile current"
+        )
+    }
+
+    @Test
     fun matchesRecoverToLogicalStandby() {
         matches(
             "recover to logical standby d1", "recover to logical standby keep identity", "recover to logical standby \"d1\";",

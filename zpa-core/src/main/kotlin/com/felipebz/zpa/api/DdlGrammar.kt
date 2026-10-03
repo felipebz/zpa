@@ -4585,13 +4585,19 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(ALLOW, INTEGER_LITERAL, CORRUPTION),
                             parallelClause)))))
 
+            // FINISH FORCE/WAIT/NOWAIT, CANCEL IMMEDIATE/WAIT/NOWAIT and USING CURRENT LOGFILE are deprecated but
+            // documented. Oracle rejects WAIT with NOWAIT and repeats of either option on CANCEL (ORA-00274).
             b.rule(MANAGED_STANDBY_RECOVERY).define(
                 RECOVER, MANAGED, STANDBY, DATABASE,
                 b.optional(b.firstOf(
-                    FINISH,
-                    CANCEL,
+                    b.sequence(FINISH, b.optional(b.firstOf(FORCE, WAIT, NOWAIT))),
+                    b.sequence(
+                        CANCEL,
+                        b.optional(b.firstOf(
+                            b.sequence(IMMEDIATE, b.optional(b.firstOf(WAIT, NOWAIT))),
+                            b.sequence(b.firstOf(WAIT, NOWAIT), b.optional(IMMEDIATE))))),
                     b.oneOrMore(b.firstOf(
-                        b.sequence(USING, ARCHIVED, LOGFILE),
+                        b.sequence(USING, b.firstOf(ARCHIVED, CURRENT), LOGFILE),
                         b.sequence(DISCONNECT, b.optional(FROM, SESSION)),
                         NODELAY,
                         b.sequence(UNTIL, b.firstOf(b.sequence(CHANGE, INTEGER_LITERAL), CONSISTENT)),
