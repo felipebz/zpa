@@ -27,10 +27,6 @@ import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.zpa.api.PlSqlKeyword
 
-/**
- * Character-level lookahead and token emission shared by the channels that read MLE source as opaque text.
- * Offsets are relative to the reader's current position.
- */
 internal class RawCodeScanner(private val code: CodeReader, private val output: LexerOutput) {
 
     private var consumed = 0
@@ -38,13 +34,11 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
 
     fun char(offset: Int): Int = code.intAt(offset)
 
-    /** True when the last emitted token is `AS` or `IS`, the only prefix of an inline MLE call specification. */
     fun followsAsOrIs(): Boolean {
         val type = output.tokens.lastOrNull()?.type
         return type == PlSqlKeyword.AS || type == PlSqlKeyword.IS
     }
 
-    /** True when the emitted tokens end with `CREATE` or `CREATE OR REPLACE`, the only prefix of an MLE module. */
     fun followsCreateOrReplace(): Boolean {
         val tokens = output.tokens
         val size = tokens.size
@@ -59,7 +53,6 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         it > 0 && (Character.isLetterOrDigit(it) || it == '_'.code || it == '$'.code || it == '#'.code)
     }
 
-    /** End of [word] matched case-insensitively at [start] as a whole word, or -1. */
     fun word(start: Int, word: String): Int {
         for (i in word.indices) {
             val c = char(start + i)
@@ -69,10 +62,7 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         return if (isIdentifierPart(end)) -1 else end
     }
 
-    /**
-     * End of the run of whitespace and SQL comments starting at [start] if it is not empty, or -1. Comments met on
-     * the way are emitted as trivia, in order, before the next token emitted.
-     */
+    // Comments met are emitted as trivia before the next emitted token.
     fun skipTrivia(start: Int, minimum: Int): Int {
         var position = start
         while (true) {
@@ -107,7 +97,6 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         return position
     }
 
-    /** End of a double-quoted identifier starting at [start], or -1. */
     fun quotedIdentifierEnd(start: Int): Int {
         if (char(start) != '"'.code) return -1
         var position = start + 1
@@ -115,10 +104,6 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         return if (char(position) == '"'.code && position > start + 1) position + 1 else -1
     }
 
-    /**
-     * End of a string literal starting at [start], or -1. Accepts the forms of the regular lexer: `'text'` with
-     * doubled quotes, and an optional `n` prefix and `q` alternative quoting (`q'[text]'`, `nq'!text!'`).
-     */
     fun stringEnd(start: Int): Int {
         var quote = start
         if (char(quote) == 'n'.code || char(quote) == 'N'.code) quote++

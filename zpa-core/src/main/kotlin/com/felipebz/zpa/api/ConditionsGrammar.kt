@@ -266,9 +266,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 PlSqlPunctuator.RPARENTHESIS
             )
 
-            // Oracle 26 extended simple CASE: a dangling predicate is an ordinary predicate whose left operand is
-            // the CASE selector. Oracle rejects IS JSON, IS OF, IS TRUE/FALSE, chained predicates (`< 1 and > 0`,
-            // `< 1 is null`), subqueries and ANY/SOME/ALL here, so those are deliberately not listed.
+            // Oracle rejects IS JSON, IS OF, IS TRUE/FALSE and chained predicates here.
             b.rule(DANGLING_PREDICATE).define(
                 b.firstOf(
                     b.sequence(
@@ -303,7 +301,6 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 )
             )
 
-            // One WHEN choice of a simple CASE. An ordinary value stays a plain expression node.
             b.rule(CASE_SELECTOR_CHOICE).define(b.firstOf(DANGLING_PREDICATE, PlSqlGrammar.EXPRESSION)).skip()
 
             b.rule(CONDITION).define(

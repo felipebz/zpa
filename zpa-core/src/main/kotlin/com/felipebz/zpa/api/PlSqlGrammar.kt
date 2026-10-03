@@ -1064,8 +1064,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 RPARENTHESIS
             ).skipIfOneChild()
 
-            // A simple CASE (with a selector) takes comma-separated values and dangling predicates after WHEN;
-            // a searched CASE takes exactly one boolean expression.
             b.rule(CASE_EXPRESSION).define(
                     CASE,
                     b.firstOf(
@@ -1143,7 +1141,6 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(EXPRESSION).define(BOOLEAN_EXPRESSION).skipIfOneChild()
         }
 
-        // WHEN choice [, choice]... THEN result, repeated, for a simple CASE expression or statement.
         private fun simpleCaseBranches(b: PlSqlGrammarBuilder, result: Any): Any = b.oneOrMore(
             WHEN, ConditionsGrammar.CASE_SELECTOR_CHOICE,
             b.zeroOrMore(COMMA, ConditionsGrammar.CASE_SELECTOR_CHOICE),
@@ -1188,8 +1185,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.optional(BY, REFERENCE),
                             b.optional(DATATYPE))))
 
-            // Oracle 26 rejects PURE after a module-backed MLE call specification, unlike the diagram. The lexer
-            // delivers an inline body as one MLE_INLINE_SOURCE token.
+            // Oracle rejects PURE after a module-backed MLE call specification, unlike the diagram.
             val mleName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
             b.rule(MLE_DECLARATION).define(
                     MLE,

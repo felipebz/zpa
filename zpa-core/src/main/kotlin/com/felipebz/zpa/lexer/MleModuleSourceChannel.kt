@@ -28,13 +28,6 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 
-/**
- * Reads the text of `MLE MODULE [IF NOT EXISTS] name LANGUAGE lang [VERSION 'v'] AS <text>` as one opaque token,
- * because the module text is source code, not SQL: quotes, comments and backticks in it must not be tokenized.
- *
- * The text runs up to the line that holds only `/` (the SQL*Plus terminator) or the end of the input, without its
- * trailing blank space. Without such text, or when the header differs, the channel declines.
- */
 class MleModuleSourceChannel : Channel<LexerOutput> {
 
     private class Piece(
@@ -49,7 +42,6 @@ class MleModuleSourceChannel : Channel<LexerOutput> {
         if (first != 'm'.code && first != 'M'.code) return false
 
         val scan = RawCodeScanner(code, output)
-        // Only a `CREATE [OR REPLACE] MLE MODULE` header starts module source; elsewhere these are ordinary words.
         if (scan.word(0, "mle") < 0 || !scan.followsCreateOrReplace()) return false
         val pieces = mutableListOf<Piece>()
 
@@ -149,7 +141,6 @@ class MleModuleSourceChannel : Channel<LexerOutput> {
         return if (simple && inner == inner.uppercase()) inner else quoted
     }
 
-    /** End of the module text: the last non-blank character before a line holding only `/`, or the input end. */
     private fun textEnd(scan: RawCodeScanner, start: Int): Int {
         var position = start
         var lineStart = start

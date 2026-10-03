@@ -27,15 +27,6 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 
-/**
- * Reads the body of an inline MLE call specification, `MLE LANGUAGE lang [PURE] <delim> source <delim>`, as one
- * opaque token, because the source is not SQL and must not be tokenized.
- *
- * Oracle 26 takes the opening delimiter as the run of non-blank characters after the language (or PURE) and the
- * closing delimiter as the same text, except that a delimiter made only of `{ [ ( <` closes with the reversed,
- * mirrored brackets. The body ends at the first occurrence of the closing delimiter.
- * Without a closing delimiter the channel declines, and the text is tokenized normally.
- */
 class MleInlineSourceChannel : Channel<LexerOutput> {
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
@@ -45,7 +36,6 @@ class MleInlineSourceChannel : Channel<LexerOutput> {
         val scan = RawCodeScanner(code, output)
         val mleEnd = scan.word(0, "mle")
         if (mleEnd < 0) return false
-        // Only `AS|IS MLE LANGUAGE ...` starts an inline call specification; elsewhere these are ordinary words.
         if (!scan.followsAsOrIs()) return false
         var position = scan.skipTrivia(mleEnd, 1)
         if (position < 0) return false

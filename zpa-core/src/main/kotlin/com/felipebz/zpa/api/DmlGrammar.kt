@@ -399,9 +399,8 @@ enum class DmlGrammar : GrammarRuleKey {
                 SAMPLE, b.optional(BLOCK), LPARENTHESIS, sampleValue, b.optional(COMMA, sampleValue), RPARENTHESIS,
                 b.optional(SEED, LPARENTHESIS, sampleValue, RPARENTHESIS))
 
-            // The operands stop before AND and comparison operators (ORA-03048); MINVALUE and MAXVALUE are bare
-            // bounds. Oracle parses VERSIONS and AS OF items together, in either order and repeated, and rejects
-            // repeats only afterwards (ORA-08187). It also takes the clause after the table alias.
+            // Oracle parses VERSIONS and AS OF items together, in either order and repeated, and rejects repeats
+            // only afterwards (ORA-08187).
             val flashbackKind = b.firstOf(SCN, TIMESTAMP)
             val flashbackOperand = CONCATENATION_EXPRESSION
             b.rule(FLASHBACK_QUERY_CLAUSE).define(
@@ -414,7 +413,6 @@ enum class DmlGrammar : GrammarRuleKey {
                         b.firstOf(MINVALUE, flashbackOperand), AND, b.firstOf(MAXVALUE, flashbackOperand)),
                     b.sequence(AS, OF, flashbackKind, flashbackOperand),
                     b.sequence(AS, OF, PERIOD, FOR, IDENTIFIER_NAME, flashbackOperand))),
-                // The alias that follows has no AS (ORA-03048).
                 b.nextNot(AS))
 
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(

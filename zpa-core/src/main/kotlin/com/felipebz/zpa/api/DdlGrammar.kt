@@ -3657,10 +3657,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.firstOf(ADD, REMOVE), members, b.optional(SEMICOLON))
         }
 
-        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MLE-ENV.html
-        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MLE-ENV.html
-        // Oracle 26 takes the CREATE parts in this order, each once, and rejects PURE after CLONE, unlike the
-        // diagram. Import items are not parenthesised, and OR REPLACE with IF NOT EXISTS fails only later (ORA-11541).
+        // Unlike the diagram, Oracle rejects PURE after CLONE and takes unparenthesised import items.
         private fun createAlterMleEnv(b: PlSqlGrammarBuilder) {
             val name = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
             val importItem = b.sequence(CHARACTER_LITERAL, MODULE, name)
@@ -3689,11 +3686,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SEMICOLON))
         }
 
-        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MLE-MODULE.html
-        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MLE-MODULE.html
-        // Oracle 26 requires USING before CLOB, BLOB and BFILE, unlike the diagram. The module text is one opaque
-        // token (MleModuleSourceChannel). CLOB and BLOB take a query with or without parentheses; BFILE takes
-        // (directory, 'file') or an unparenthesised query, and rejects a parenthesised one (ORA-03050).
+        // Oracle requires USING before CLOB, BLOB and BFILE, unlike the diagram, and rejects a parenthesised BFILE query.
         private fun createAlterMleModule(b: PlSqlGrammarBuilder) {
             val name = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
             val query = b.firstOf(
@@ -4400,27 +4393,23 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(RELOCATE, b.optional(TO, CHARACTER_LITERAL)),
                             NORELOCATE)))))
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html
-            // Oracle 26 takes only the instances clause after STATE; RESTRICTED, FORCE and SERVICES fail.
             b.rule(PDB_SAVE_OR_DISCARD_STATE).define(
                 b.firstOf(SAVE, DISCARD), STATE, b.optional(PDB_INSTANCES_CLAUSE))
 
             val pdbNames = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
             val state = b.firstOf(PDB_OPEN, PDB_CLOSE, PDB_SAVE_OR_DISCARD_STATE)
-            // The target is optional and may itself be named OPEN, CLOSE, SAVE or DISCARD (`save save state`),
-            // so the named form is tried first.
+            // The target may itself be named OPEN, CLOSE, SAVE or DISCARD, so the named form is tried first.
             b.rule(PDB_CHANGE_STATE).define(
                 b.firstOf(
                     b.sequence(b.firstOf(b.sequence(ALL, b.optional(EXCEPT, pdbNames)), pdbNames), state),
                     state))
 
-            // The diagram quotes the transport secret, but Oracle 26 rejects a string and takes an identifier.
+            // The diagram quotes the transport secret, but Oracle takes an identifier.
             b.rule(PDB_UNPLUG_CLAUSE).define(
                 IDENTIFIER_NAME, UNPLUG, INTO, CHARACTER_LITERAL,
                 b.optional(ENCRYPT, USING, IDENTIFIER_NAME))
 
-            // The diagram and text disagree on the redundancy names; Oracle 26 takes UNPROTECTED, MIRROR or HIGH.
-            // FOR DATABASE is a PDB-only option: ALTER DATABASE rejects it (ORA-00922).
+            // The diagram and text disagree on the redundancy names; Oracle takes UNPROTECTED, MIRROR or HIGH.
             b.rule(PREPARE_CLAUSE).define(
                 PREPARE, MIRROR, COPY, IDENTIFIER_NAME,
                 b.optional(WITH, b.firstOf(UNPROTECTED, MIRROR, HIGH), REDUNDANCY))
@@ -4563,8 +4552,7 @@ enum class DdlGrammar : GrammarRuleKey {
 
             databaseFileClauses(b)
 
-            // Oracle takes UNTIL and USING BACKUP CONTROLFILE only after DATABASE or on their own, rejects the
-            // deprecated STANDBY TABLESPACE/DATAFILE/LOGFILE, and also accepts DATABASE left out, even a bare RECOVER.
+            // Oracle also accepts DATABASE left out, even a bare RECOVER.
             val recoveryFileNumber = b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)
             val recoveryFile = b.firstOf(CHARACTER_LITERAL, recoveryFileNumber)
             val fullRecoveryOption = b.firstOf(
@@ -4604,10 +4592,6 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(SET, DEFAULT, b.firstOf(BIGFILE, SMALLFILE), TABLESPACE),
                     b.sequence(DEFAULT, b.optional(b.optional(LOCAL), TEMPORARY), TABLESPACE, IDENTIFIER_NAME)))
 
-            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
-            // Oracle 26 matches the diagram: after OPEN, READ WRITE, then RESETLOGS or NORESETLOGS, then UPGRADE or
-            // DOWNGRADE, each optional and in that order; READ ONLY takes nothing after it. MOUNT needs DATABASE
-            // after STANDBY or CLONE and takes nothing else.
             b.rule(STARTUP_CLAUSES).define(
                 b.firstOf(
                     b.sequence(MOUNT, b.optional(b.firstOf(STANDBY, CLONE), DATABASE)),
@@ -4693,7 +4677,6 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(MOUNT, b.optional(b.firstOf(RESTRICTED, NORMAL)), b.optional(forceState)),
                     b.sequence(DISMOUNT, b.optional(forceState))))
 
-            // The deprecated ALL, DISK and FILE targets are still documented; DISKS IN FAILGROUP is rejected.
             b.rule(CHECK_DISKGROUP_CLAUSE).define(
                 CHECK,
                 b.optional(b.firstOf(
@@ -4702,8 +4685,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(FILE, CHARACTER_LITERAL, b.zeroOrMore(COMMA, CHARACTER_LITERAL)))),
                 b.optional(b.firstOf(REPAIR, NOREPAIR)))
 
-            // Oracle also accepts the singular ATTRIBUTE, any order of the two attributes, an empty list,
-            // and several items without a comma between them.
+            // Oracle also accepts the singular ATTRIBUTE, any attribute order, an empty list and items without commas.
             val templateAttributes = b.sequence(
                 b.firstOf(ATTRIBUTE, ATTRIBUTES), LPARENTHESIS,
                 b.zeroOrMore(b.firstOf(MIRROR, HIGH, UNPROTECTED, PARITY, DOUBLE, FINE, COARSE)),
@@ -4733,7 +4715,6 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(DROP, ALIAS, literalList),
                     b.sequence(RENAME, ALIAS, literalPairs(TO)))))
 
-            // Oracle takes STOP only on its own and the other options only in this order.
             b.rule(SCRUB_CLAUSE).define(
                 SCRUB,
                 b.firstOf(
@@ -4747,15 +4728,9 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(b.firstOf(WAIT, NOWAIT)),
                         b.optional(forceState))))
 
-            // Oracle 26 takes the client kind (DATABASE, CLUSTER, VOLUME or TEMPLATE) in ADD FILEGROUP, and
-            // accepts FROM TEMPLATE after any of them although the diagram lists it only after TEMPLATE. A database
-            // or cluster name may be a string literal or NONE. Oracle also parses several filegroup actions in one
-            // statement (and a comma-separated SET list) and rejects them only at run time (ORA-15116, ORA-15396),
-            // so one action and one property are modelled.
+            // Oracle accepts FROM TEMPLATE after every client kind, although the diagram lists it only after TEMPLATE.
             val filegroupProperty = b.sequence(CHARACTER_LITERAL, EQUALS, CHARACTER_LITERAL)
             val clientName = b.firstOf(IDENTIFIER_NAME, CHARACTER_LITERAL)
-            // Oracle parses a comma-separated property list and rejects it only afterwards (ORA-15396); that error
-            // and ORA-15116 are raised at the comma or keyword, before the rest is checked.
             b.rule(FILEGROUP_PROPERTY).define(SET, filegroupProperty, b.zeroOrMore(COMMA, filegroupProperty))
 
             b.rule(ADD_FILEGROUP_CLAUSE).define(
@@ -4776,10 +4751,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(CASCADE),
                 b.optional(FOR, b.optional(PLUGGABLE, DATABASE, IDENTIFIER_NAME), DATABASE, IDENTIFIER_NAME))
 
-            // Oracle parses a run of actions with no comma between them, in any order and mixed with ADD/DROP
-            // DISK items, and rejects most combinations only afterwards (ORA-15116). Such a run needs at least one
-            // filegroup action, so a plain disk statement keeps its own alternative. A comma between actions is a
-            // syntax error (ORA-00905), apart from the comma the disk items already take.
+            // Oracle parses runs of actions (and comma-separated properties) and rejects the combination only afterwards
+            // (ORA-15116, ORA-15396).
             val filegroupAction = b.firstOf(
                 ADD_FILEGROUP_CLAUSE, MODIFY_FILEGROUP_CLAUSE, MOVE_TO_FILEGROUP_CLAUSE, DROP_FILEGROUP_CLAUSE)
             b.rule(DISKGROUP_FILEGROUP_CLAUSE).define(
