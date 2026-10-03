@@ -410,9 +410,12 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_LIBRARY,
     ALTER_LIBRARY,
     PARTITION_BY_RANGE,
+    PARTITION_INTERVAL_CLAUSE,
+    PARTITION_BY_REFERENCE,
     PARTITION_BY_HASH,
     RANGE_VALUES_CLAUSE,
     TABLE_PARTITION_DESCRIPTION,
+    TABLE_PARTITION_ATTRIBUTE,
     SEGMENT_ATTRIBUTES_CLAUSE,
     PHYSICAL_ATRIBUTES_CLAUSE,
     TABLE_COMPRESSION,
@@ -1102,29 +1105,18 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(LOGGING_CLAUSE).define(
                     b.firstOf(LOGGING, NOLOGGING))
 
+            val lobParameterCommon = b.firstOf(
+                    b.sequence(TABLESPACE, IDENTIFIER_NAME),
+                    b.sequence(b.firstOf(ENABLE, DISABLE), STORAGE, IN, ROW),
+                    INDEX_STORAGE_CLAUSE,
+                    b.sequence(CHUNK, INTEGER_LITERAL),
+                    b.sequence(PCTVERSION, INTEGER_LITERAL),
+                    b.sequence(FREEPOOLS, INTEGER_LITERAL))
+
             b.rule(LOB_PARAMETERS).define(
                     b.oneOrMore(b.firstOf(
-                            b.sequence(
-                                    TABLESPACE,
-                                    IDENTIFIER_NAME),
-                            b.sequence(
-                                    b.firstOf(
-                                            ENABLE,
-                                            DISABLE),
-                                    STORAGE,
-                                    IN,
-                                    ROW),
-                            INDEX_STORAGE_CLAUSE,
-                            b.sequence(
-                                    CHUNK,
-                                    INTEGER_LITERAL),
-                            b.sequence(
-                                    PCTVERSION,
-                                    INTEGER_LITERAL),
+                            lobParameterCommon,
                             RETENTION,
-                            b.sequence(
-                                    FREEPOOLS,
-                                    INTEGER_LITERAL),
                             b.firstOf(
                                     b.sequence(CACHE,
                                             b.optional(b.sequence(
@@ -1250,17 +1242,64 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.optional(COMMA)),
                                     RPARENTHESIS)))
 
+            val memcompress = b.firstOf(
+                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
+                            DML,
+                            b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
+                            b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
+                    b.sequence(NO, MEMCOMPRESS))
+            val inmemoryAttribute = b.firstOf(
+                    memcompress,
+                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
+                    b.sequence(DISTRIBUTE,
+                            b.optional(b.firstOf(
+                                    AUTO,
+                                    b.sequence(BY, b.firstOf(b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION)))),
+                            b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
+                    b.sequence(DUPLICATE, b.optional(ALL)),
+                    b.sequence(NO, DUPLICATE))
+            // Oracle 26 rejects TEXT and any attribute after NO INMEMORY inside a partition description,
+            // although the diagram's inmemory_clause allows them.
+            val partitionInmemory = b.firstOf(
+                    b.sequence(NO, INMEMORY),
+                    b.sequence(INMEMORY, b.zeroOrMore(inmemoryAttribute)))
+            val partitionIlm = b.sequence(ILM, b.firstOf(
+                    b.sequence(ADD, POLICY, b.optional(TABLESPACE_ILM_POLICY)),
+                    b.sequence(b.firstOf(DELETE, ENABLE, DISABLE), POLICY, IDENTIFIER_NAME),
+                    DELETE_ALL, ENABLE_ALL, DISABLE_ALL))
+            val partitionJsonParameters = b.sequence(LPARENTHESIS, b.oneOrMore(b.firstOf(
+                    lobParameterCommon,
+                    b.sequence(RETENTION, b.optional(b.firstOf(MAX, AUTO, NONE, b.sequence(MIN, INTEGER_LITERAL)))),
+                    b.sequence(CACHE, b.optional(READS, b.optional(LOGGING_CLAUSE))),
+                    b.sequence(COMPRESS, b.optional(b.firstOf(HIGH, MEDIUM, LOW))),
+                    NOCOMPRESS)), RPARENTHESIS)
+            val partitionJsonStorage = b.sequence(
+                    JSON, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                    STORE, AS,
+                    b.firstOf(
+                            b.sequence(b.firstOf(BLOB, CLOB), b.optional(partitionJsonParameters)),
+                            b.sequence(
+                                    b.optional(
+                                            b.nextNot(b.firstOf(
+                                                    INMEMORY, ILM, READ, INDEXING, JSON, COMPRESS, NOCOMPRESS,
+                                                    ROW, COLUMN, SEGMENT)),
+                                            optionalLobSegname),
+                                    b.optional(partitionJsonParameters))))
+
             // Keep compression, overflow, and column-storage stages in their prior order and cardinality.
             // Oracle 26 accepts SEGMENT CREATION at every boundary. It also accepts physical attributes
             // after compression (including NOCOMPRESS LOGGING STORAGE in the ECLAIMPROCESS fixture).
-            val segmentCreationWithAttributes = b.sequence(
-                    deferredSegmentCreation, b.optional(SEGMENT_ATTRIBUTES_CLAUSE))
+            b.rule(TABLE_PARTITION_ATTRIBUTE).define(b.firstOf(
+                    b.sequence(deferredSegmentCreation, b.optional(SEGMENT_ATTRIBUTES_CLAUSE)),
+                    b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                    b.sequence(INDEXING, b.firstOf(ON, OFF)),
+                    partitionInmemory, partitionIlm, partitionJsonStorage)).skip()
+            val segmentCreationWithAttributes = TABLE_PARTITION_ATTRIBUTE
+            val partitionAttributes = b.zeroOrMore(b.firstOf(SEGMENT_ATTRIBUTES_CLAUSE, segmentCreationWithAttributes))
             b.rule(TABLE_PARTITION_DESCRIPTION).define(
-                    b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
-                    b.zeroOrMore(segmentCreationWithAttributes),
+                    partitionAttributes,
                     b.optional(b.firstOf(TABLE_COMPRESSION, KEY_COMPRESSION)),
-                    b.optional(SEGMENT_ATTRIBUTES_CLAUSE),
-                    b.zeroOrMore(segmentCreationWithAttributes),
+                    partitionAttributes,
                     b.optional(OVERFLOW, b.optional(SEGMENT_ATTRIBUTES_CLAUSE)),
                     b.zeroOrMore(segmentCreationWithAttributes),
                     b.zeroOrMore(b.firstOf(
@@ -1353,6 +1392,25 @@ enum class DdlGrammar : GrammarRuleKey {
                                                                     RPARENTHESIS))),
                                             SUBPARTITION_TEMPLATE))))
 
+            b.rule(PARTITION_INTERVAL_CLAUSE).define(
+                    INTERVAL, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
+                    b.optional(
+                            STORE, IN, LPARENTHESIS,
+                            IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), b.optional(COMMA),
+                            RPARENTHESIS))
+
+            val referencePartition = b.sequence(
+                    PARTITION,
+                    b.firstOf(
+                            b.sequence(TABLE_PARTITION_DESCRIPTION, b.next(b.firstOf(COMMA, RPARENTHESIS))),
+                            b.sequence(IDENTIFIER_NAME, TABLE_PARTITION_DESCRIPTION)))
+            b.rule(PARTITION_BY_REFERENCE).define(
+                    PARTITION, BY, REFERENCE, LPARENTHESIS, IDENTIFIER_NAME, RPARENTHESIS,
+                    b.optional(
+                            LPARENTHESIS,
+                            referencePartition, b.zeroOrMore(COMMA, referencePartition),
+                            RPARENTHESIS))
+
             b.rule(PARTITION_BY_RANGE).define(
                     b.sequence(
                             PARTITION,
@@ -1363,6 +1421,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     IDENTIFIER_NAME,
                                     b.optional(COMMA)),
                             RPARENTHESIS,
+                            b.optional(PARTITION_INTERVAL_CLAUSE),
                             LPARENTHESIS,
                             b.oneOrMore(
                                     PARTITION,
@@ -1415,6 +1474,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     IDENTIFIER_NAME,
                                     b.optional(COMMA),
                                     RPARENTHESIS),
+                            b.optional(PARTITION_INTERVAL_CLAUSE),
                             b.firstOf(
                                     SUBPARTITION_BY_LIST,
                                     SUBPARTITION_BY_HASH),
@@ -1432,7 +1492,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     PARTITION_BY_RANGE,
                     PARTITION_BY_HASH,
                     PARTITION_BY_LIST,
-                    PARTITION_COMPOSITE))
+                    PARTITION_COMPOSITE,
+                    PARTITION_BY_REFERENCE))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLE.html
@@ -1441,22 +1502,6 @@ enum class DdlGrammar : GrammarRuleKey {
             // unlike the diagram), NO INMEMORY TEXT is also accepted, and the column clause has no ALL.
             // A second table-level INMEMORY/NO INMEMORY fails with ORA-64350, a duplicate-option error that,
             // like the other repeated table options, is not encoded. MEMCOMPRESS AUTO is rejected.
-            val memcompress = b.firstOf(
-                    b.sequence(MEMCOMPRESS, FOR, b.firstOf(
-                            DML,
-                            b.sequence(QUERY, b.optional(b.firstOf(LOW, HIGH))),
-                            b.sequence(CAPACITY, b.optional(b.firstOf(LOW, HIGH))))),
-                    b.sequence(NO, MEMCOMPRESS))
-            val inmemoryAttribute = b.firstOf(
-                    memcompress,
-                    b.sequence(PRIORITY, b.firstOf(NONE, LOW, MEDIUM, HIGH, CRITICAL)),
-                    b.sequence(DISTRIBUTE,
-                            b.optional(b.firstOf(
-                                    AUTO,
-                                    b.sequence(BY, b.firstOf(b.sequence(ROWID, RANGE_KEYWORD), PARTITION, SUBPARTITION)))),
-                            b.optional(FOR, SERVICE, b.firstOf(DEFAULT, ALL, NONE, IDENTIFIER_NAME))),
-                    b.sequence(DUPLICATE, b.optional(ALL)),
-                    b.sequence(NO, DUPLICATE))
             // Text columns are names (expressions fail with ORA-00904) with an optional literal policy name
             // (ORA-01780 for an identifier).
             val inmemoryTextColumn = b.sequence(

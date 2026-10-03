@@ -29,7 +29,6 @@
   "examples/materialized_views.sql" : [ 81 ],
   "examples/max_001.sql" : [ 4 ],
   "examples/order_by04.sql" : [ 1 ],
-  "examples/partitioned_tables.sql" : [ 56 ],
   "examples/select_analytic_view.sql" : [ 2 ],
   "examples/select_time.sql" : [ 1 ],
   "examples/views.sql" : [ 59 ]

@@ -23,7 +23,9 @@ import com.felipebz.flr.tests.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.DdlGrammar
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 
 class CreateTableTest : RuleTest() {
 
@@ -1084,5 +1086,244 @@ class CreateTableTest : RuleTest() {
             "create table sales (c number) storage (initial 100k next 50k) logging " +
                 "partition by range (c) (partition p1 values less than (10) tablespace tsa) enable row movement;")
         assertThat(p).notMatches("create table t (c number) enable row;")
+    }
+
+    @Test
+    fun matchesIntervalPartitioning() {
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) (partition p1 values less than (5001))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (d) interval (numtoyminterval(1, 'MONTH')) (partition p1 values less than (to_date('2020-01-01', 'YYYY-MM-DD')))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (d) interval (interval '1' month) (partition p1 values less than (date '2020-01-01'))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in (users) (partition p1 values less than (100))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in (users, system,) (partition p1 values less than (100))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000 + 1) (partition p1 values less than (100), partition p2 values less than (200))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (abs(1)) (partition p1 values less than (100))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n, id) interval (1000) (partition p1 values less than (100, 5))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) subpartition by hash (id) subpartitions 2 (partition p1 values less than (100))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in (users) subpartition by list (id) subpartition template (subpartition s1 values (1)) (partition p1 values less than (100))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (10) (partition p1 values less than (10)) enable row movement")
+    }
+
+    @Test
+    fun rejectsMalformedIntervalPartitioning() {
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval 1000 (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval () (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000, 2) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in users (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in () (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store (users) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) store in (users) store in (users) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) store in (users) interval (1000) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) store in (users) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (100)) interval (1000)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) interval (1000) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) ()")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) partition p1 values less than (100)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by list (n) interval (1000) (partition p1 values (1))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by hash (n) interval (1000) partitions 4")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) subpartition by hash (id) subpartitions 2 interval (1000) (partition p1 values less than (100))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000) automatic (partition p1 values less than (100))")
+    }
+
+    @Test
+    fun matchesReferencePartitioning() {
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (\"FK\")")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1, partition p2)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1 tablespace users)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1, partition p2 compress)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) enable row movement")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) parallel 2")
+    }
+
+    @Test
+    fun rejectsMalformedReferencePartitioning() {
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference fk")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference ()")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (s.fk)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk, fk2)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) ()")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1,)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) partition p1")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) interval (1)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) subpartition by hash (id) subpartitions 2")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (10) (partition p1 values less than (10)) partition by reference (fk)")
+    }
+
+    @Test
+    fun matchesReferencePartitionDescriptors() {
+        for (d in listOf(
+            "partition", "partition p0", "partition tablespace users", "partition p0 tablespace users",
+            "partition read only", "partition read write", "partition p0 read only", "partition p0 read write",
+            "partition indexing on", "partition indexing off", "partition p0 indexing on", "partition p0 indexing off",
+            "partition segment creation immediate", "partition p0 segment creation deferred",
+            "partition pctfree 5", "partition logging", "partition nologging", "partition compress", "partition p0 nocompress",
+            "partition row store compress advanced", "partition storage (initial 1m)", "partition overflow",
+            "partition overflow tablespace users", "partition nested table c store as nt",
+            "partition p0 read only indexing on tablespace users", "partition p0 indexing on read only",
+            "partition p0 tablespace users read only", "partition p0 segment creation immediate read only indexing off pctfree 5 compress",
+            "partition read only indexing on",
+        )) {
+            assertThat(p).describedAs(d).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) ($d)")
+        }
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition tablespace users, partition read only, partition p0 indexing off, partition, partition p3)")
+    }
+
+    @Test
+    fun treatsKeywordLikeReferencePartitionNamesAsNames() {
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition read)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition indexing)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition tablespace)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition compress, partition segment)")
+    }
+
+    @Test
+    fun rejectsMalformedReferencePartitionDescriptors() {
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 indexing)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 read)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 read only only)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 indexing onn)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 partition)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0,)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition, )")
+    }
+
+    @Test
+    fun matchesReadOnlyAndIndexingInRangeAndListPartitions() {
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) read only, partition p2 values less than (20) read write)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) indexing off)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) tablespace users read only indexing on pctfree 5 compress)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by list (n) (partition p1 values (1) read only indexing off)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) indexing)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) read)")
+    }
+
+    @Test
+    fun matchesInmemoryIlmAndJsonStorageInReferencePartitions() {
+        for (d in listOf(
+            "partition inmemory", "partition p0 inmemory", "partition no inmemory", "partition p0 no inmemory",
+            "partition p0 inmemory memcompress for query low priority high duplicate all",
+            "partition p0 inmemory distribute by rowid range", "partition p0 inmemory distribute for service all",
+            "partition p0 inmemory memcompress for dml memcompress for query",
+            "partition p0 tablespace users inmemory", "partition p0 inmemory tablespace users",
+            "partition p0 compress inmemory", "partition p0 inmemory compress", "partition p0 read only inmemory indexing off",
+            "partition ilm delete policy p1", "partition p0 ilm enable policy p1", "partition p0 ilm disable policy p1",
+            "partition p0 ilm delete_all", "partition p0 ilm enable_all", "partition p0 ilm disable_all",
+            "partition p0 ilm add policy row store compress advanced row after 30 days of no modification",
+            "partition p0 ilm add policy compress segment after 3 months of no access",
+            "partition p0 ilm add policy tier to users read only segment after 1 year of creation",
+            "partition p0 ilm add policy set inmemory segment after 1 day of no access",
+            "partition p0 ilm add policy compress segment on myfn", "partition p0 ilm add policy",
+            "partition p0 ilm delete policy p1 tablespace users", "partition p0 tablespace users ilm delete policy p1",
+            "partition p0 ilm delete policy p1 read only", "partition p0 read only ilm delete policy p1",
+            "partition p0 inmemory priority high ilm delete policy p1",
+            "partition json (j) store as (tablespace users)", "partition p0 json (j) store as (cache)",
+            "partition p0 json (j, k) store as (tablespace users cache reads)", "partition p0 json (j) store as blob",
+            "partition p0 json (j) store as clob (tablespace users)", "partition p0 json (j) store as lobseg",
+            "partition p0 json (j) store as lobseg (cache) tablespace users", "partition p0 json (j) store as",
+            "partition p0 json (j) store as (compress high)", "partition p0 json (j) store as (nocompress)",
+            "partition p0 json (j) store as (chunk 8192 freepools 2 retention)",
+            "partition p0 json (j) store as (enable storage in row)", "partition p0 json (j) store as (pctversion 10 cache)",
+            "partition p0 json (j) store as (cache) json (k) store as (cache)",
+            "partition p0 tablespace users json (j) store as (cache)", "partition p0 json (j) store as (cache) tablespace users",
+            "partition p0 json (j) store as (cache) compress", "partition p0 compress json (j) store as (cache)",
+            "partition p0 json (j) store as (cache) inmemory ilm delete policy p1",
+            "partition p0 nested table k store as nt json (j) store as (cache)",
+            "partition ilm", "partition internal", "partition external", "partition no inmemory priority high",
+        )) {
+            assertThat(p).describedAs(d).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) ($d)")
+        }
+    }
+
+    @Test
+    fun matchesInmemoryIlmAndJsonStorageInRangeAndListPartitions() {
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) inmemory priority high tablespace users)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) no inmemory, partition p2 values less than (20) inmemory)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) ilm add policy compress segment after 3 months of no access)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) tablespace users ilm delete policy p1)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) json (j, k) store as blob (cache) inmemory)")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by list (n) (partition p1 values (1) inmemory ilm delete policy p1 json (j) store as (cache))")
+        assertThat(p).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by list (n) (partition p1 values (1) read only inmemory)")
+    }
+
+    @Test
+    fun rejectsMalformedInmemoryIlmAndJsonStorageDescriptors() {
+        for (d in listOf(
+            "partition p0 inmemory text (c)", "partition p0 no inmemory priority high",
+            "partition p0 inmemory memcompress auto", "partition p0 inmemory memcompress for query middle",
+            "partition p0 inmemory priority", "partition p0 inmemory ilm delete policy p1 priority high",
+            "partition p0 ilm", "partition p0 ilm tablespace users", "partition p0 ilm delete policy",
+            "partition p0 json (j)", "partition p0 json j store as (cache)", "partition p0 json (j k) store as (cache)",
+            "partition p0 json (j,) store as (cache)", "partition p0 json () store as (cache)",
+            "partition p0 json (j) store (cache)", "partition p0 json (j) as (cache)",
+            "partition p0 json (j) store as securefile", "partition p0 json (j) store as basicfile (cache)",
+            "partition p0 json (j) store as blob lobseg", "partition p0 json (j) store as (cache) (cache)",
+            "partition p0 json (j) store as (cache) lobseg", "partition p0 json (j) store as (deduplicate)",
+            "partition p0 json (j) store as (encrypt)", "partition p0 json (j) store as ()",
+            "partition p0 internal", "partition p0 external", "partition internal external",
+        )) {
+            assertThat(p).describedAs(d).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) ($d)")
+        }
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) internal)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) external)")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (10) inmemory text (id))")
+        assertThat(p).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by list (n) (partition p1 values (1) json (j) store as securefile)")
+    }
+
+    @Test
+    fun matchesJsonStorageParameters() {
+        for (params in listOf(
+            "tablespace users", "storage (initial 1m)", "storage (initial 1m next 1m)", "chunk 8192", "pctversion 10",
+            "freepools 2", "retention", "retention max", "retention auto", "retention none", "retention min 10",
+            "cache", "cache reads", "cache reads logging", "cache reads nologging",
+            "enable storage in row", "disable storage in row",
+            "compress", "compress high", "compress medium", "compress low", "nocompress",
+            "cache reads tablespace users", "tablespace users cache", "chunk 8192 tablespace users",
+            "compress high cache", "cache compress high", "retention cache", "retention min 10 cache", "retention max cache",
+            "enable storage in row chunk 8192", "storage (initial 1m) cache",
+            "tablespace users storage (initial 1m) chunk 8192 freepools 2 retention enable storage in row cache reads compress high",
+        )) {
+            assertThat(p).describedAs(params).matches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 json (j) store as ($params))")
+        }
+    }
+
+    @Test
+    fun rejectsJsonStorageParametersOracleDoesNotParse() {
+        for (params in listOf(
+            "nocache", "nocache logging", "nocache nologging", "logging", "nologging", "cache logging", "cache nologging",
+            "reads", "reads cache", "cache logging cache", "compress low nocache", "cache reads logging logging",
+            "compress basic", "retention max 10", "storage ()", "enable storage", "index (tablespace users)", "deduplicate", "keep_duplicates", "encrypt", "no salt", "cache,cache",
+        )) {
+            assertThat(p).describedAs(params).notMatches("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 json (j) store as ($params))")
+        }
+    }
+
+    @Test
+    fun buildsIntervalAndReferencePartitioningNodes() {
+        val interval = p.parse("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) interval (1000 + 1) store in (a, b) (partition p1 values less than (5))")
+            .getFirstDescendant(DdlGrammar.PARTITION_INTERVAL_CLAUSE)
+        assertThatAst(interval.tokens.map { it.originalValue.lowercase() })
+            .containsExactly("interval", "(", "1000", "+", "1", ")", "store", "in", "(", "a", ",", "b", ")")
+        assertThatAst(interval.getChildren(PlSqlGrammar.IDENTIFIER_NAME)).hasSize(2)
+        val reference = p.parse("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p1 tablespace users, partition p2)")
+            .getFirstDescendant(DdlGrammar.PARTITION_BY_REFERENCE)
+        assertThatAst(reference.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenOriginalValue).isEqualTo("fk")
+        assertThatAst(reference.getChildren(DdlGrammar.TABLE_PARTITION_DESCRIPTION)).hasSize(2)
+        val unnamed = p.parse("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition tablespace users, partition p2 read only)")
+            .getFirstDescendant(DdlGrammar.PARTITION_BY_REFERENCE)
+        assertThatAst(unnamed.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map { it.tokenOriginalValue }).containsExactly("fk", "p2")
+        assertThatAst(p.parse("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by range (n) (partition p1 values less than (5))")
+            .getDescendants(DdlGrammar.PARTITION_INTERVAL_CLAUSE)).isEmpty()
+    }
+
+    @Test
+    fun buildsPartitionDescriptionWithInmemoryIlmAndJsonStorage() {
+        val description = p.parse("create table t (id number, n number, d date, constraint fk foreign key (id) references p (id)) partition by reference (fk) (partition p0 inmemory priority high ilm delete policy pol json (j, k) store as lobseg (cache))")
+            .getFirstDescendant(DdlGrammar.TABLE_PARTITION_DESCRIPTION)
+        assertThatAst(description.tokens.map { it.originalValue.lowercase() }).containsExactly(
+            "inmemory", "priority", "high", "ilm", "delete", "policy", "pol",
+            "json", "(", "j", ",", "k", ")", "store", "as", "lobseg", "(", "cache", ")")
     }
 }
