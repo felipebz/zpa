@@ -1051,20 +1051,29 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(REJECT, LIMIT, b.firstOf(EXPRESSION, UNLIMITED)))
 
             //https://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_9016.htm#SQLRF01606
-            b.rule(MERGE_EXPRESSION).define(
-                    MERGE, INTO,
-                    b.firstOf(
-                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
-                            // Undocumented, but Oracle 26ai parses and executes MERGE INTO GRAPH_TABLE
-                            // (both branches change the vertex table); it rejects AS and PARTITION here.
-                            GraphTableGrammar.GRAPH_TABLE,
-                            b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),
-                    b.optional(b.nextNot(USING), IDENTIFIER_NAME),
-                    USING, b.withContext(ROW_SOURCE_CONTEXT, RowSource.MERGE, DML_TABLE_EXPRESSION_CLAUSE),
+            val mergeBody = b.sequence(
                     ON, LPARENTHESIS, BOOLEAN_EXPRESSION, RPARENTHESIS,
                     b.firstOf(
                             b.sequence(MERGE_UPDATE_CLAUSE, b.optional(MERGE_INSERT_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE)),
                             b.sequence(MERGE_INSERT_CLAUSE, b.optional(MERGE_UPDATE_CLAUSE), b.optional(ERROR_LOGGING_CLAUSE))))
+
+            b.rule(MERGE_EXPRESSION).define(
+                    MERGE, INTO,
+                    b.firstOf(
+                            b.sequence(
+                                    b.firstOf(
+                                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                                            // Undocumented, but Oracle 26ai parses and executes MERGE INTO GRAPH_TABLE
+                                            // (both branches change the vertex table); it rejects AS and PARTITION here.
+                                            GraphTableGrammar.GRAPH_TABLE,
+                                            b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),
+                                    b.optional(b.nextNot(USING), IDENTIFIER_NAME),
+                                    USING, b.withContext(ROW_SOURCE_CONTEXT, RowSource.MERGE, DML_TABLE_EXPRESSION_CLAUSE),
+                                    mergeBody),
+                            b.sequence(
+                                    TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE),
+                                    b.optional(b.nextNot(b.firstOf(USING, ON)), IDENTIFIER_NAME),
+                                    mergeBody)))
         }
     }
 

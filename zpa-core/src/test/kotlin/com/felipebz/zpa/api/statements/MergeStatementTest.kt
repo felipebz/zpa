@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import com.felipebz.zpa.api.DmlGrammar
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 
 class MergeStatementTest : RuleTest() {
 
@@ -216,5 +218,48 @@ class MergeStatementTest : RuleTest() {
     @Test
     fun doesNotMatchMergeInsertWithoutValues() {
         assertThat(p).notMatches("merge into tab d using src s on (d.id = s.id) when not matched then insert;")
+    }
+
+    @Test
+    fun matchesMergeWithoutUsing() {
+        assertThat(p).matches("merge into t on (id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);")
+        assertThat(p).matches("merge into t x on (x.id = :i) when matched then update set a = :a;")
+        assertThat(p).matches("merge into s.t on (id = :i) when not matched then insert (id, a) values (:i, :a);")
+        assertThat(p).matches("merge into t on (id = :i) when not matched then insert (id, a) values (:i, :a) when matched then update set a = :a;")
+        assertThat(p).matches("merge /*+ parallel */ into t on (id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);")
+        assertThat(p).matches("merge into t partition (p1) on (id = :i) when matched then update set a = :a;")
+        assertThat(p).matches("merge into t on ((id = :i) and a = :a) when matched then update set a = :a;")
+        assertThat(p).matches("merge into t on (id = :i) when matched then update set a = :a delete where id = 1 when not matched then insert (id, a) values (:i, :a) where id > 0;")
+        assertThat(p).matches("merge into t on (id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a) log errors into e reject limit 5;")
+        assertThat(p).matches("merge into t on (id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);")
+    }
+
+    @Test
+    fun rejectsMalformedMergeWithoutUsing() {
+        assertThat(p).notMatches("merge into t as x on (x.id = :i) when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);")
+        assertThat(p).notMatches("merge into t x when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t on (id = :i);")
+        assertThat(p).notMatches("merge into t on id = :i when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t on () when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t on (id = :i) using dual when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t using on (id = :i) when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t using when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t using dual when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t x using on (id = :i) when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into t on (id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a) when not matched then insert (id, a) values (:i, :a);")
+        assertThat(p).notMatches("merge into t on (id = :i) when matched then delete;")
+        assertThat(p).notMatches("merge into t on (id = :i) when not matched by source then delete;")
+        assertThat(p).notMatches("merge into (select * from t) on (id = :i) when matched then update set a = :a;")
+        assertThat(p).notMatches("merge into table(t) on (id = :i) when matched then update set a = :a;")
+    }
+
+    @Test
+    fun buildsMergeWithoutUsingNodes() {
+        val merge = p.parse("merge into t x on (x.id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);").getFirstDescendant(DmlGrammar.MERGE_EXPRESSION)!!
+        assertThatAst(merge.children.map { it.tokenOriginalValue.lowercase() }.take(4)).containsExactly("merge", "into", "t", "x")
+        assertThatAst(merge.hasDirectChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)).isFalse()
+        assertThatAst(merge.hasDirectChildren(DmlGrammar.MERGE_UPDATE_CLAUSE, DmlGrammar.MERGE_INSERT_CLAUSE)).isTrue()
+        assertThatAst(merge.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenOriginalValue).isEqualTo("x")
     }
 }

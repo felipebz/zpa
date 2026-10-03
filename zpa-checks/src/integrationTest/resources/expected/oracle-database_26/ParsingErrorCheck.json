@@ -52,8 +52,6 @@
   "sqlrf/FLASHBACK-DATABASE-1.sql" : [ 4 ],
   "sqlrf/Interval-Expressions-0.sql" : [ 2 ],
   "sqlrf/JSON_TRANSFORM-1.sql" : [ 2 ],
-  "sqlrf/MERGE-10.sql" : [ 11 ],
-  "sqlrf/MERGE-12.sql" : [ 11 ],
   "sqlrf/NCHR-0.sql" : [ 4 ],
   "sqlrf/SELECT-31.sql" : [ 6 ],
   "sqlrf/SELECT-33.sql" : [ 3 ],
