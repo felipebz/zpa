@@ -281,7 +281,6 @@ class AlterDatabaseTest : RuleTest() {
     @Test
     fun keepsOtherAlterDatabaseClausesUnsupported() {
         notMatches(
-            "open read only",
             "rename global_name to demo.world.example.com",
             "enable block change tracking",
             "flashback on"
@@ -314,6 +313,5 @@ class AlterDatabaseTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.REDO_LOG_FILE_SPEC)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.LOGFILE_DESCRIPTOR)).hasSize(2)
         assertThatAst(tree.getDescendants(DdlGrammar.ALTER_DATABASE_LINK)).hasSize(1)
-        assertThat(p).notMatches("alter database open read only;")
     }
 }

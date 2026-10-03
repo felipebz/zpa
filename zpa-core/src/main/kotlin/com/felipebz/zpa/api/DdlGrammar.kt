@@ -252,6 +252,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DISKGROUP_ALIAS_CLAUSES,
     SCRUB_CLAUSE,
     GENERAL_RECOVERY,
+    STARTUP_CLAUSES,
     DEFAULT_TABLESPACE_SETTINGS,
     DATABASE_FILE_CLAUSES,
     CREATE_DATAFILE_CLAUSE,
@@ -4582,18 +4583,34 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
-                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE)
+                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE, MOUNT, OPEN)
             b.rule(DEFAULT_TABLESPACE_SETTINGS).define(
                 b.firstOf(
                     b.sequence(SET, DEFAULT, b.firstOf(BIGFILE, SMALLFILE), TABLESPACE),
                     b.sequence(DEFAULT, b.optional(b.optional(LOCAL), TEMPORARY), TABLESPACE, IDENTIFIER_NAME)))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
+            // Oracle 26 matches the diagram: after OPEN, READ WRITE, then RESETLOGS or NORESETLOGS, then UPGRADE or
+            // DOWNGRADE, each optional and in that order; READ ONLY takes nothing after it. MOUNT needs DATABASE
+            // after STANDBY or CLONE and takes nothing else.
+            b.rule(STARTUP_CLAUSES).define(
+                b.firstOf(
+                    b.sequence(MOUNT, b.optional(b.firstOf(STANDBY, CLONE), DATABASE)),
+                    b.sequence(
+                        OPEN,
+                        b.firstOf(
+                            b.sequence(READ, ONLY),
+                            b.sequence(
+                                b.optional(READ, WRITE),
+                                b.optional(b.firstOf(RESETLOGS, NORESETLOGS)),
+                                b.optional(b.firstOf(UPGRADE, DOWNGRADE)))))))
 
             b.rule(ALTER_DATABASE).define(
                 ALTER, DATABASE,
                 b.optional(b.nextNot(notName), IDENTIFIER_NAME),
                 b.firstOf(
                     DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
-                    DEFAULT_TABLESPACE_SETTINGS, LOGFILE_CLAUSES),
+                    DEFAULT_TABLESPACE_SETTINGS, STARTUP_CLAUSES, LOGFILE_CLAUSES),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

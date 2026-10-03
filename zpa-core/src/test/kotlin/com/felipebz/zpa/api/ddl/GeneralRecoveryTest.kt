@@ -226,7 +226,6 @@ class GeneralRecoveryTest : RuleTest() {
             "recover managed standby database cancel",
             "begin backup",
             "end backup",
-            "open read only",
             "recover database managed"
         )
         matches(

@@ -36,8 +36,6 @@
   "sqlrf/ALTER-DATABASE-23.sql" : [ 3 ],
   "sqlrf/ALTER-DATABASE-3.sql" : [ 2 ],
   "sqlrf/ALTER-DATABASE-4.sql" : [ 2 ],
-  "sqlrf/ALTER-DATABASE-7.sql" : [ 2 ],
-  "sqlrf/ALTER-DATABASE-8.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-1.sql" : [ 2 ],
   "sqlrf/ALTER-DISKGROUP-2.sql" : [ 2 ],
   "sqlrf/ALTER-LOCKDOWN-PROFILE-2.sql" : [ 2 ],
