@@ -113,6 +113,7 @@
   "sqlrf/Comments-62.sql" : [ 3, 3 ],
   "sqlrf/Comments-64.sql" : [ 3, 3 ],
   "sqlrf/DEREF-0.sql" : [ 5 ],
+  "sqlrf/Data-Types-36.sql" : [ 3 ],
   "sqlrf/EXISTS-Condition-1.sql" : [ 3, 5 ],
   "sqlrf/EXTRACTVALUE-0.sql" : [ 3 ],
   "sqlrf/FEATURE_DETAILS-0.sql" : [ 6 ],

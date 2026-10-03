@@ -44,6 +44,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
     BETWEEN_CONDITION,
     OVERLAPS_CONDITION,
     MULTISET_CONDITION,
+    IS_DANGLING_CONDITION,
     IS_A_SET_CONDITION,
     IS_EMPTY_CONDITION,
     MEMBER_CONDITION,
@@ -108,6 +109,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 b.optional(NOT), BETWEEN,
                 CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION
             ).skip()
+
+            b.rule(IS_DANGLING_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), DANGLING)
 
             b.rule(IS_A_SET_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), A, SET)
 
@@ -316,6 +319,10 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     b.sequence(
                         b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
                         FLOATING_POINT_CONDITION
+                    ),
+                    b.sequence(
+                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), DANGLING),
+                        IS_DANGLING_CONDITION
                     ),
                     b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
                     b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
