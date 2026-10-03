@@ -111,6 +111,20 @@
       "reason": "The ADD FILEGROUP statement has no terminator and is followed by a separate CREATE TABLESPACE example; Oracle reports a missing keyword for the combined text, and each statement parses on its own."
     }
   },
+  "sqlrf/ALTER-PLUGGABLE-DATABASE-6.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00922",
+      "reason": "The documentation is inconsistent: the SQL Language Reference examples separate application names with spaces, while the Multitenant Administrator's Guide uses commas. Oracle 26ai Free rejects the space-separated list (ORA-00922) and accepts only the comma-separated form."
+    }
+  },
+  "sqlrf/ALTER-PLUGGABLE-DATABASE-7.sql": {
+    "2": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00922",
+      "reason": "The documentation is inconsistent: the SQL Language Reference examples separate application names with spaces, while the Multitenant Administrator's Guide uses commas. Oracle 26ai Free rejects the space-separated list (ORA-00922) and accepts only the comma-separated form."
+    }
+  },
   "sqlrf/ALTER-TABLE-8.sql": {
     "4": {
       "classification": "INVALID_SOURCE",

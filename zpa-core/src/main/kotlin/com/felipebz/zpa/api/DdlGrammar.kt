@@ -233,6 +233,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_PLUGGABLE_DATABASE,
     PREPARE_CLAUSE,
     DROP_MIRROR_COPY,
+    PDB_APPLICATION_SYNC_CLAUSE,
     PDB_CONTAINERS_CLAUSE,
     PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
@@ -4430,6 +4431,16 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(HOST, EQUALS, CHARACTER_LITERAL),
                     b.sequence(PORT, EQUALS, b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL))))
 
+            val applicationNames = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
+            b.rule(PDB_APPLICATION_SYNC_CLAUSE).define(
+                APPLICATION,
+                b.firstOf(
+                    b.sequence(ALL, b.optional(EXCEPT, applicationNames), SYNC),
+                    b.sequence(
+                        IDENTIFIER_NAME, SYNC, TO,
+                        b.firstOf(CHARACTER_LITERAL, b.sequence(PATCH, b.firstOf(INTEGER_LITERAL, NUMBER_LITERAL)))),
+                    b.sequence(applicationNames, SYNC)))
+
             b.rule(ALTER_PLUGGABLE_DATABASE).define(
                 ALTER, PLUGGABLE, DATABASE,
                 b.firstOf(
@@ -4443,7 +4454,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(PDB_UNPLUG_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
                     b.sequence(
                         b.firstOf(b.sequence(IDENTIFIER_NAME, PDB_CONTAINERS_CLAUSE), PDB_CONTAINERS_CLAUSE),
-                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
+                        b.next(b.firstOf(SEMICOLON, DIVISION, EOF))),
+                    b.sequence(PDB_APPLICATION_SYNC_CLAUSE, b.next(b.firstOf(SEMICOLON, DIVISION, EOF)))),
                 b.optional(SEMICOLON))
         }
 

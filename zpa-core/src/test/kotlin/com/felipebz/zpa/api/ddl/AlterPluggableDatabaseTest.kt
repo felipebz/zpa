@@ -259,8 +259,7 @@ class AlterPluggableDatabaseTest : RuleTest() {
         notMatches(
             "pdb1 unplug",
             "pdb1 storage (maxsize 500m)",
-            "pdb1 datafile all offline",
-            "application all except hrapp sync"
+            "pdb1 datafile all offline"
         )
     }
 
