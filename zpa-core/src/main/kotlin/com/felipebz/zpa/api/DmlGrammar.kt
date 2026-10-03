@@ -76,6 +76,8 @@ enum class DmlGrammar : GrammarRuleKey {
     ORDER_BY_CLAUSE,
     OFFSET_CLAUSE,
     FETCH_ROW_CLAUSE,
+    ROW_LIMITING_PARTITION,
+    ROW_LIMITING_ACCURACY_CLAUSE,
     ROW_LIMITING_CLAUSE,
     FOR_UPDATE_CLAUSE,
     CONNECT_BY_CLAUSE,
@@ -639,13 +641,32 @@ enum class DmlGrammar : GrammarRuleKey {
 
             b.rule(OFFSET_CLAUSE).define(OFFSET, EXPRESSION, b.firstOf(ROW, ROWS))
 
-            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.firstOf(FIRST, NEXT),
-                    b.optional(b.nextNot(b.firstOf(ROW, ROWS)), EXPRESSION, b.optional(PERCENT)),
+            b.rule(ROW_LIMITING_PARTITION).define(
+                    EXPRESSION, b.optional(b.firstOf(PARTITION, PARTITIONS), BY), EXPRESSION, COMMA)
+
+            b.rule(FETCH_ROW_CLAUSE).define(FETCH, b.optional(b.firstOf(EXACT, APPROX, APPROXIMATE)),
+                    b.firstOf(FIRST, NEXT),
+                    b.firstOf(
+                            b.sequence(b.oneOrMore(ROW_LIMITING_PARTITION), EXPRESSION, b.optional(PERCENT)),
+                            b.optional(b.nextNot(b.firstOf(ROW, ROWS)), EXPRESSION, b.optional(PERCENT))),
                     b.firstOf(ROW, ROWS), b.firstOf(ONLY, b.sequence(WITH, TIES)))
 
-            b.rule(ROW_LIMITING_CLAUSE).define(b.firstOf(
-                    b.sequence(OFFSET_CLAUSE, b.optional(FETCH_ROW_CLAUSE)),
-                    FETCH_ROW_CLAUSE))
+            // The documentation omits RESCORE FACTOR, which Oracle accepts here.
+            val accuracyParameter = b.sequence(
+                    b.firstOf(EFSEARCH, b.sequence(NEIGHBOR, PARTITION, PROBES), b.sequence(RESCORE, FACTOR)),
+                    EXPRESSION)
+            b.rule(ROW_LIMITING_ACCURACY_CLAUSE).define(
+                    b.optional(WITH), b.optional(TARGET), ACCURACY,
+                    b.firstOf(
+                            b.sequence(PARAMETERS, LPARENTHESIS, accuracyParameter,
+                                    b.zeroOrMore(COMMA, accuracyParameter), RPARENTHESIS),
+                            b.sequence(b.nextNot(PARAMETERS), EXPRESSION, b.optional(PERCENT))))
+
+            b.rule(ROW_LIMITING_CLAUSE).define(
+                    b.firstOf(
+                            b.sequence(OFFSET_CLAUSE, b.optional(FETCH_ROW_CLAUSE)),
+                            FETCH_ROW_CLAUSE),
+                    b.optional(ROW_LIMITING_ACCURACY_CLAUSE))
 
             b.rule(FOR_UPDATE_CLAUSE).define(
                     FOR, UPDATE,
@@ -910,8 +931,8 @@ enum class DmlGrammar : GrammarRuleKey {
                 QUERY_BLOCK,
                 b.zeroOrMore(b.firstOf(MINUS_KEYWORD, INTERSECT, UNION, EXCEPT), b.optional(ALL), QUERY_BLOCK),
                 b.optional(b.firstOf(
-                    b.sequence(ORDER_BY_CLAUSE, b.optional(b.firstOf(FOR_UPDATE_CLAUSE, ROW_LIMITING_CLAUSE))),
-                    ROW_LIMITING_CLAUSE,
+                    b.sequence(ORDER_BY_CLAUSE, b.optional(ROW_LIMITING_CLAUSE), b.optional(FOR_UPDATE_CLAUSE)),
+                    b.sequence(ROW_LIMITING_CLAUSE, b.optional(FOR_UPDATE_CLAUSE)),
                     b.sequence(FOR_UPDATE_CLAUSE, b.optional(ORDER_BY_CLAUSE)))))
         }
 

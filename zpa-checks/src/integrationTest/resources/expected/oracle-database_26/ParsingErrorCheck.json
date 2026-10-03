@@ -55,8 +55,6 @@
   "sqlrf/MERGE-10.sql" : [ 11 ],
   "sqlrf/MERGE-12.sql" : [ 11 ],
   "sqlrf/NCHR-0.sql" : [ 4 ],
-  "sqlrf/SELECT-11.sql" : [ 4 ],
-  "sqlrf/SELECT-117.sql" : [ 4 ],
   "sqlrf/SELECT-31.sql" : [ 6 ],
   "sqlrf/SELECT-33.sql" : [ 3 ],
   "sqlrf/SELECT-35.sql" : [ 3 ],

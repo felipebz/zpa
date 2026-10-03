@@ -360,4 +360,31 @@ class SelectExpressionTest : RuleTest() {
     fun doesNotMatchOuterWithoutTheJoinedTable() {
         assertThat(p).notMatches("select 1 from tab outer join")
     }
+
+    @Test
+    fun matchesRowLimitingFollowedByForUpdate() {
+        assertThat(p).matches("select e from t fetch first 3 rows only for update")
+        assertThat(p).matches("select e from t fetch first 3 rows only with target accuracy 90 for update")
+        assertThat(p).matches("select e from t order by s fetch first 3 rows only for update")
+        assertThat(p).matches("select e from t order by s fetch first 3 rows only with target accuracy 90 for update")
+        assertThat(p).matches("select e from t order by s fetch approx first 3 rows only accuracy 90 percent for update")
+        assertThat(p).matches("select e from t offset 1 row for update")
+        assertThat(p).matches("select e from t order by s offset 1 row for update")
+        assertThat(p).matches("select e from t order by s offset 1 row with target accuracy 90 for update")
+        assertThat(p).matches("select e from t order by s offset 1 row fetch next 2 rows only for update")
+        assertThat(p).matches("select e from t order by s fetch first 2 partitions by d, 3 rows only for update")
+        assertThat(p).matches("select e from t order by s fetch first 3 rows only for update of s nowait")
+        assertThat(p).matches("select e from t order by s fetch first 3 rows only for update skip locked")
+        assertThat(p).matches("select e from t order by s fetch first 3 rows only for update wait 5")
+    }
+
+    @Test
+    fun rejectsRowLimitingAfterForUpdate() {
+        assertThat(p).notMatches("select e from t for update fetch first 3 rows only")
+        assertThat(p).notMatches("select e from t for update offset 1 row")
+        assertThat(p).notMatches("select e from t order by s for update fetch first 3 rows only")
+        assertThat(p).notMatches("select e from t order by s for update of s nowait fetch first 3 rows only")
+        assertThat(p).notMatches("select e from t order by s for update offset 1 row with target accuracy 90")
+        assertThat(p).notMatches("select e from t order by s fetch first 3 rows only for update fetch first 1 row only")
+    }
 }
