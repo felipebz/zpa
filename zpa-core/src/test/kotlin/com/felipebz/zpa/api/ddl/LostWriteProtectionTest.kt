@@ -174,8 +174,6 @@ class LostWriteProtectionTest : RuleTest() {
             "all except pdb1 disable lost write protection",
             "(pdb1) enable lost write protection",
             "pdb1 pdb2 enable lost write protection",
-            "pdb1 save state",
-            "pdb1 discard state",
             "pdb1 open enable lost write protection",
             "enable lost write protection open"
         )

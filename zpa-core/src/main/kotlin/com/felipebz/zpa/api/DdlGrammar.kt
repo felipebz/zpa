@@ -234,6 +234,7 @@ enum class DdlGrammar : GrammarRuleKey {
     DROP_MIRROR_COPY,
     PDB_UNPLUG_CLAUSE,
     PDB_CHANGE_STATE,
+    PDB_SAVE_OR_DISCARD_STATE,
     PDB_OPEN,
     PDB_CLOSE,
     PDB_INSTANCES_CLAUSE,
@@ -4391,9 +4392,15 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(RELOCATE, b.optional(TO, CHARACTER_LITERAL)),
                             NORELOCATE)))))
 
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html
+            // Oracle 26 takes only the instances clause after STATE; RESTRICTED, FORCE and SERVICES fail.
+            b.rule(PDB_SAVE_OR_DISCARD_STATE).define(
+                b.firstOf(SAVE, DISCARD), STATE, b.optional(PDB_INSTANCES_CLAUSE))
+
             val pdbNames = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME))
-            val state = b.firstOf(PDB_OPEN, PDB_CLOSE)
-            // The target is optional and may itself be named OPEN or CLOSE, so the named form is tried first.
+            val state = b.firstOf(PDB_OPEN, PDB_CLOSE, PDB_SAVE_OR_DISCARD_STATE)
+            // The target is optional and may itself be named OPEN, CLOSE, SAVE or DISCARD (`save save state`),
+            // so the named form is tried first.
             b.rule(PDB_CHANGE_STATE).define(
                 b.firstOf(
                     b.sequence(b.firstOf(b.sequence(ALL, b.optional(EXCEPT, pdbNames)), pdbNames), state),

@@ -141,7 +141,6 @@ class MirrorCopyTest : RuleTest() {
         notMatches(pdb, "p1, p2 prepare mirror copy m1", "all prepare mirror copy m1", "p1 open prepare mirror copy m1")
         matches(database, "drop logfile group 3", "add logfile 'a.log'", "drop supplemental log data")
         matches(pdb, "p1 open", "p1 unplug into '/tmp/p.xml'", "enable lost write protection")
-        notMatches(pdb, "p1 save state")
     }
 
     @Test
