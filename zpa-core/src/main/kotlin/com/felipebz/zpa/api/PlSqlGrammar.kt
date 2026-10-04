@@ -106,6 +106,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
     IN_EXPRESSION,
     EXISTS_EXPRESSION,
     UNARY_EXPRESSION,
+    COLLATE_EXPRESSION,
+    SUFFIXED_UNARY_EXPRESSION,
     RETURNING_VALUE_EXPRESSION,
     MULTIPLICATIVE_EXPRESSION,
     ADDITIVE_EXPRESSION,
@@ -1080,7 +1082,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(ELSE, EXPRESSION),
                     END)
 
-            b.rule(AT_TIME_ZONE_EXPRESSION).define(AT, b.firstOf(LOCAL, b.sequence(TIME, ZONE, EXPRESSION)))
+            // A string literal zone directly followed by COLLATE leaves the operator to the whole datetime
+            // expression; any other zone expression, parenthesized or not, consumes its own COLLATE.
+            b.rule(AT_TIME_ZONE_EXPRESSION).define(
+                    AT, b.firstOf(
+                            LOCAL,
+                            b.sequence(TIME, ZONE, b.firstOf(
+                                    b.sequence(CHARACTER_LITERAL, b.next(COLLATE)),
+                                    EXPRESSION))))
 
             b.rule(NEW_OBJECT_EXPRESSION).define(NEW, OBJECT_REFERENCE, b.optional(ARGUMENTS))
 
@@ -1106,6 +1115,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.nextNot(LPARENTHESIS),
                     b.firstOf(LITERAL, OBJECT_REFERENCE))
 
+            b.rule(COLLATE_EXPRESSION).define(COLLATE, IDENTIFIER_NAME)
+
             b.rule(UNARY_EXPRESSION).define(b.firstOf(
                     RETURNING_VALUE_EXPRESSION,
                     b.sequence(
@@ -1123,10 +1134,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.sequence(
                                 LPARENTHESIS,
                                 b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
-                                RPARENTHESIS)))),
-                    b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild()
+                                RPARENTHESIS))))).skipIfOneChild()
 
-            b.rule(EXPONENTIATION_EXPRESSION).define(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild()
+            // PRIOR and CONNECT_BY_ROOT operands take no COLLATE (ORA-00920/ORA-00923).
+            b.rule(SUFFIXED_UNARY_EXPRESSION).define(b.firstOf(
+                    b.sequence(
+                        b.next(b.firstOf(PRIOR, CONNECT_BY_ROOT)),
+                        UNARY_EXPRESSION, b.optional(AT_TIME_ZONE_EXPRESSION)),
+                    b.sequence(
+                        UNARY_EXPRESSION, b.optional(AT_TIME_ZONE_EXPRESSION), b.optional(COLLATE_EXPRESSION)))).skipIfOneChild()
+
+            b.rule(EXPONENTIATION_EXPRESSION).define(
+                    SUFFIXED_UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, SUFFIXED_UNARY_EXPRESSION)).skipIfOneChild()
 
             b.rule(MULTIPLICATIVE_EXPRESSION).define(
                 EXPONENTIATION_EXPRESSION, b.zeroOrMore(

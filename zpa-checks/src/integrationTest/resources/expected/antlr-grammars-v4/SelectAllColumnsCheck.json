@@ -53,6 +53,7 @@
   "examples/order_by01.sql" : [ 1 ],
   "examples/order_by02.sql" : [ 1 ],
   "examples/order_by03.sql" : [ 1 ],
+  "examples/order_by04.sql" : [ 1 ],
   "examples/order_by05.sql" : [ 1 ],
   "examples/order_by06.sql" : [ 1, 1 ],
   "examples/pivot01.sql" : [ 1 ],
