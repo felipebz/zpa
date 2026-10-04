@@ -20,6 +20,13 @@
       "reason": "A public synonym cannot be schema-qualified; Oracle rejects the dot after PUBLIC SYNONYM sch."
     }
   },
+  "examples/alter_table.sql": {
+    "134": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00906",
+      "reason": "DROP PARTITION FOR requires a parenthesized key list; `FOR 101` without parentheses is rejected on a partitioned table, while `FOR (101)` parses."
+    }
+  },
   "examples/create_index.sql": {
     "18": {
       "classification": "INVALID_SOURCE",

@@ -94,6 +94,11 @@ enum class DdlGrammar : GrammarRuleKey {
     SPLIT_TABLE_PARTITION,
     MERGE_TABLE_PARTITIONS,
     MODIFY_PARTITION_LOCAL_INDEXES,
+    MODIFY_TABLE_PARTITION,
+    MODIFY_TO_PARTITIONED,
+    MODIFY_COLLECTION_RETRIEVAL,
+    MODIFY_OPAQUE_TYPE,
+    MODIFY_LOB_STORAGE_CLAUSE,
     SPLIT_NESTED_TABLE_PART,
     UPDATE_INDEX_CLAUSES,
     DROP_CONSTRAINT_CLAUSE,
@@ -2535,6 +2540,57 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(MODIFY_PARTITION_LOCAL_INDEXES).define(
                 MODIFY, PARTITION_EXTENDED_NAME, unusableLocalIndexesClause())
 
+            // SHRINK must be the last attribute (ORA-10630).
+            b.rule(MODIFY_TABLE_PARTITION).define(
+                MODIFY, PARTITION_EXTENDED_NAME,
+                b.firstOf(
+                    b.sequence(
+                        b.oneOrMore(b.firstOf(
+                            PHYSICAL_ATRIBUTES_CLAUSE, LOGGING_CLAUSE, INDEX_ALLOCATE_EXTENT_CLAUSE,
+                            INDEX_DEALLOCATE_UNUSED_CLAUSE)),
+                        b.optional(INDEX_SHRINK_CLAUSE)),
+                    INDEX_SHRINK_CLAUSE))
+
+            b.rule(MODIFY_TO_PARTITIONED).define(
+                MODIFY,
+                b.firstOf(
+                    PARTITION_BY_RANGE, PARTITION_BY_HASH, PARTITION_BY_LIST, PARTITION_COMPOSITE, NONPARTITIONED),
+                b.optional(INCLUDING, ROWS, DmlGrammar.WHERE_CLAUSE),
+                b.optional(ONLINE),
+                b.optional(UPDATE, INDEXES, b.optional(
+                    LPARENTHESIS, IDENTIFIER_NAME, b.firstOf(LOCAL, GLOBAL),
+                    b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.firstOf(LOCAL, GLOBAL)), RPARENTHESIS)))
+
+            // Oracle 26 also accepts RETURN VALUE without AS.
+            b.rule(MODIFY_COLLECTION_RETRIEVAL).define(
+                MODIFY, NESTED, TABLE, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                RETURN, b.optional(AS), b.firstOf(VALUE, LOCATOR))
+
+            b.rule(MODIFY_OPAQUE_TYPE).define(
+                MODIFY, OPAQUE, TYPE, IDENTIFIER_NAME,
+                STORE, LPARENTHESIS,
+                IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                RPARENTHESIS, UNPACKED)
+
+            // The documentation allows one LOB_item; Oracle parses a list and rejects several with ORA-22865.
+            b.rule(MODIFY_LOB_STORAGE_CLAUSE).define(
+                MODIFY, LOB, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                LPARENTHESIS,
+                b.oneOrMore(b.firstOf(
+                    INDEX_STORAGE_CLAUSE,
+                    b.sequence(PCTVERSION, INTEGER_LITERAL),
+                    b.sequence(FREEPOOLS, INTEGER_LITERAL),
+                    b.sequence(REBUILD, FREEPOOLS),
+                    b.sequence(RETENTION, b.optional(b.firstOf(MAX, AUTO, NONE, b.sequence(MIN, INTEGER_LITERAL)))),
+                    DEDUPLICATE, KEEP_DUPLICATES,
+                    b.sequence(COMPRESS, b.optional(b.firstOf(HIGH, MEDIUM, LOW))), NOCOMPRESS,
+                    columnEncryptionClause(), DECRYPT,
+                    b.sequence(CACHE, b.optional(READS, b.optional(LOGGING_CLAUSE))),
+                    b.sequence(NOCACHE, b.optional(LOGGING_CLAUSE)),
+                    INDEX_ALLOCATE_EXTENT_CLAUSE, INDEX_SHRINK_CLAUSE, INDEX_DEALLOCATE_UNUSED_CLAUSE)),
+                RPARENTHESIS)
+
             // The shared description permits repeated segment attributes; a partition MOVE
             // must not specify TABLESPACE twice, including around physical/logging attributes.
             val otherSegmentAttribute = b.firstOf(PHYSICAL_ATRIBUTES_CLAUSE, LOGGING_CLAUSE)
@@ -2699,7 +2755,12 @@ enum class DdlGrammar : GrammarRuleKey {
                             ADD_RANGE_TABLE_PARTITIONS,
                             SPLIT_TABLE_PARTITION,
                             MERGE_TABLE_PARTITIONS,
+                            MODIFY_TO_PARTITIONED,
                             MODIFY_PARTITION_LOCAL_INDEXES,
+                            MODIFY_TABLE_PARTITION,
+                            b.sequence(
+                                    b.oneOrMore(b.firstOf(MODIFY_COLLECTION_RETRIEVAL, MODIFY_OPAQUE_TYPE, MODIFY_LOB_STORAGE_CLAUSE)),
+                                    b.zeroOrMore(alterTableTrailingClause)),
                             moveTableClause,
                             shrinkTableClause,
                             // Tried before ADD column; the end-of-statement lookahead keeps a column named OVERFLOW

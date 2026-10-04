@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api.ddl
 
 import com.felipebz.flr.tests.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.DdlGrammar
@@ -1021,5 +1022,133 @@ class AlterTableTest : RuleTest() {
         assertThat(p).matches("alter table t add (d, e number)")
         assertThat(p).matches("alter table t add (d not null)")
         assertThat(p).notMatches("alter table t add (d collate binary_ci)")
+    }
+
+    @Test
+    fun matchesModifyNestedTableReturnAs() {
+        listOf(
+            "alter table t modify nested table n return as value", "alter table t modify nested table n return as locator",
+            "alter table t modify nested table n return value", "alter table t modify nested table s.n return as value",
+            "alter table print_media modify nested table ad_textdocs_ntab return as value;",
+            "alter table t modify nested table n return as value modify nested table m return as locator",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify nested table n return as", "alter table t modify nested table return as value",
+            "alter table t modify nested table n return as value, modify nested table m return as locator",
+            "alter table t modify nested table n return as null", "alter table t modify nested table n as value",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesModifyOpaqueType() {
+        listOf(
+            "alter table t1 modify opaque type x store (xmltype, clob_typ) unpacked", "alter table t modify opaque type c store (a) unpacked",
+            "alter table t modify opaque type c store (sys.xmltype, s.t) unpacked",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify opaque type c store (a)", "alter table t modify opaque type c store () unpacked",
+            "alter table t modify opaque type c store a unpacked", "alter table t modify opaque type c unpacked",
+            "alter table t modify opaque type c store (a, b) packed", "alter table t modify opaque type c store (a,) unpacked",
+            "alter table t modify opaque type c store (a) unpacked unpacked",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesModifyLobStorage() {
+        listOf(
+            "alter table xml_lob_tab modify lob (xmldata) (storage (maxsize 2g) cache);",
+            "alter table t modify lob (c) (cache)", "alter table t modify lob (c) (nocache)", "alter table t modify lob (c) (nocache logging)",
+            "alter table t modify lob (c) (cache reads nologging)", "alter table t modify lob (c) (storage (maxsize 2g))",
+            "alter table t modify lob (c) (pctversion 10)", "alter table t modify lob (c) (freepools 2)",
+            "alter table t modify lob (c) (rebuild freepools)", "alter table t modify lob (c) (retention)",
+            "alter table t modify lob (c) (retention max)", "alter table t modify lob (c) (retention min 10)",
+            "alter table t modify lob (c) (retention auto)", "alter table t modify lob (c) (retention none)",
+            "alter table t modify lob (c) (deduplicate)", "alter table t modify lob (c) (keep_duplicates)",
+            "alter table t modify lob (c) (compress)", "alter table t modify lob (c) (compress high)",
+            "alter table t modify lob (c) (nocompress)", "alter table t modify lob (c) (encrypt)",
+            "alter table t modify lob (c) (encrypt using 'aes256')", "alter table t modify lob (c) (decrypt)",
+            "alter table t modify lob (c) (allocate extent (size 1m))", "alter table t modify lob (c) (deallocate unused keep 1m)",
+            "alter table t modify lob (c) (shrink space cascade)", 
+            "alter table t modify lob (c) (cache storage (maxsize 2g) retention shrink space)",
+            "alter table t modify lob (c) (cache) modify lob (d) (nocache)",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify lob (c) ()",
+            "alter table t modify lob (c) (cache), modify lob (d) (nocache)", "alter table t modify lob (c) (cache) lob (d) (nocache)",
+            "alter table t modify lob (c) (cache logging)",
+            "alter table t modify lob (c) (retention max 10)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun parsesMultipleModifyLobItemsWhichOracleRejectsAfterParsing() {
+        assertThat(p).matches("alter table t modify lob (c, d) (cache)")
+        assertThat(p).notMatches("alter table t modify lob (c,) (cache)")
+        assertThat(p).notMatches("alter table t modify lob () (cache)")
+        assertThat(p).notMatches("alter table t modify lob (c d) (cache)")
+    }
+
+    @Test
+    fun matchesModifyPartitionAttributes() {
+        listOf(
+            "alter table tft_tsm.t_act_trade_detail modify partition sys_p41089 shrink space;",
+            "alter table t modify partition p1 shrink space compact", "alter table t modify partition p1 shrink space cascade",
+            "alter table t modify partition p1 shrink space compact cascade", "alter table t modify partition for (5) shrink space",
+            "alter table t modify partition p1 pctfree 5", "alter table t modify partition p1 nologging",
+            "alter table t modify partition p1 logging shrink space", "alter table t modify partition p1 allocate extent",
+            "alter table t modify partition p1 deallocate unused keep 1m",
+            "alter table t modify partition p1 unusable local indexes",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify partition p1 shrink", "alter table t modify partition p1 shrink space pctfree 5",
+            "alter table t modify partition p1 shrink space shrink space",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesModifyToPartitioned() {
+        listOf(
+            """alter table table_name modify partition by range (date_column)
+                interval (numtodsinterval(1, 'DAY'))
+                (partition values less than (to_date('2024-01-01', 'YYYY-MM-DD')));""",
+            "alter table t modify partition by range (id) (partition values less than (10))",
+            "alter table t modify partition by range (id) (partition p1 values less than (10), partition values less than (maxvalue))",
+            "alter table t modify partition by range (id) interval (10) store in (users) (partition values less than (10))",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) online",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) online update indexes",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) update indexes (i local, j global)",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) including rows where id > 1 online",
+            "alter table t modify partition by hash (id) partitions 4", "alter table t modify partition by hash (id) (partition p1, partition p2)",
+            "alter table t modify partition by list (id) (partition p1 values (1), partition p2 values (default))",
+            "alter table t modify partition by range (id) subpartition by hash (id) subpartitions 2 (partition p1 values less than (10))",
+            "alter table t modify nonpartitioned", "alter table t modify nonpartitioned online update indexes",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify partition by range (id)", "alter table t modify partition by range (id) ()",
+            "alter table t modify partition by range (id) online (partition p1 values less than (10))",
+            "alter table t modify (id number) partition by range (id) (partition p1 values less than (10))",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) online online",
+            "alter table t modify partition by range (id) (partition p1 values less than (10)) update indexes (i)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun buildsModifyClauseNodes() {
+        val lob = p.parse("alter table t modify lob (xmldata) (storage (maxsize 2g) cache)").getFirstDescendant(DdlGrammar.MODIFY_LOB_STORAGE_CLAUSE)
+        assertThatAst(lob.tokens.map { it.originalValue }).containsExactly(
+            "modify", "lob", "(", "xmldata", ")", "(", "storage", "(", "maxsize", "2", "g", ")", "cache", ")")
+        assertThatAst(p.parse("alter table t modify nested table n return value")
+            .getFirstDescendant(DdlGrammar.MODIFY_COLLECTION_RETRIEVAL).tokens.map { it.originalValue })
+            .containsExactly("modify", "nested", "table", "n", "return", "value")
+        assertThatAst(p.parse("alter table t modify opaque type x store (a, b) unpacked")
+            .getFirstDescendant(DdlGrammar.MODIFY_OPAQUE_TYPE).tokens.map { it.originalValue })
+            .containsExactly("modify", "opaque", "type", "x", "store", "(", "a", ",", "b", ")", "unpacked")
+        val partition = p.parse("alter table t modify partition p1 pctfree 5 shrink space compact")
+            .getFirstDescendant(DdlGrammar.MODIFY_TABLE_PARTITION)
+        assertThatAst(partition.hasDirectChildren(DdlGrammar.INDEX_SHRINK_CLAUSE)).isTrue()
+        val converted = p.parse("alter table t modify partition by range (id) interval (10) (partition values less than (10)) online")
+        assertThatAst(converted.getFirstDescendant(DdlGrammar.MODIFY_TO_PARTITIONED).hasDirectChildren(DdlGrammar.PARTITION_BY_RANGE)).isTrue()
+        assertThatAst(converted.getDescendants(DdlGrammar.PARTITION_INTERVAL_CLAUSE)).hasSize(1)
+        assertThatAst(p.parse("alter table t modify partition p1 unusable local indexes").getDescendants(DdlGrammar.MODIFY_TABLE_PARTITION)).isEmpty()
     }
 }
