@@ -39,6 +39,7 @@ enum class TclGrammar : GrammarRuleKey {
     ROLLBACK_EXPRESSION,
     SAVEPOINT_EXPRESSION,
     SET_TRANSACTION_EXPRESSION,
+    SET_CONSTRAINTS_EXPRESSION,
     LOCK_TABLE_MODE,
     LOCK_TABLE_EXPRESSION,
     TCL_COMMAND;
@@ -76,6 +77,14 @@ enum class TclGrammar : GrammarRuleKey {
                                     b.optional(TRANSACTION_NAME)),
                             TRANSACTION_NAME))
 
+            val constraintName = b.sequence(
+                    IDENTIFIER_NAME, b.optional(PlSqlPunctuator.DOT, IDENTIFIER_NAME),
+                    b.optional(PlSqlPunctuator.REMOTE, DdlGrammar.DATABASE_LINK_NAME))
+            b.rule(SET_CONSTRAINTS_EXPRESSION).define(
+                    SET, b.firstOf(CONSTRAINT, CONSTRAINTS),
+                    b.firstOf(ALL, b.sequence(constraintName, b.zeroOrMore(COMMA, constraintName))),
+                    b.firstOf(IMMEDIATE, DEFERRED))
+
             //https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/LOCK-TABLE.html
             b.rule(LOCK_TABLE_MODE).define(
                     b.firstOf(
@@ -99,6 +108,7 @@ enum class TclGrammar : GrammarRuleKey {
                             ROLLBACK_EXPRESSION,
                             SAVEPOINT_EXPRESSION,
                             SET_TRANSACTION_EXPRESSION,
+                            SET_CONSTRAINTS_EXPRESSION,
                             LOCK_TABLE_EXPRESSION),
                     b.optional(SEMICOLON))
         }

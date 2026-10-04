@@ -34,6 +34,7 @@ enum class SqlPlusGrammar : GrammarRuleKey {
 
         private fun createSqlPlusCommands(b: PlSqlGrammarBuilder) {
             b.rule(SQLPLUS_COMMAND).define(
+                    b.nextNot(PlSqlKeyword.SET, b.firstOf(PlSqlKeyword.ROLE, PlSqlKeyword.CONSTRAINT, PlSqlKeyword.CONSTRAINTS)),
                     b.firstOf(
                             "@",
                             "A", "APPEND",
