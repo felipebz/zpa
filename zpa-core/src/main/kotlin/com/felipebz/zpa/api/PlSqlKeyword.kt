@@ -1059,6 +1059,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     SUPPRESSES_WARNING_6009("suppresses_warning_6009"),
     SUSPEND("suspend"),
     SWITCH("switch"),
+    SWITCHOVER("switchover"),
     SYNC("sync"),
     SYNCHRONOUS("synchronous"),
     SYS("sys"),

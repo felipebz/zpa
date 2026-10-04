@@ -326,4 +326,35 @@ class AdministerKeyManagementTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.KEYSTORE_IDENTIFIED_BY)).isEmpty()
         assertThat(p).notMatches("administer key management set keystore close extra;")
     }
+
+    @Test
+    fun matchesSwitchoverToLibrary() {
+        matches(
+            "switchover to library 'updated_fully_qualified_file_name_of_library' for all containers;",
+            "switchover to library 'x' for all containers", "SWITCHOVER TO LIBRARY '/path/lib.so' FOR ALL CONTAINERS;",
+            "switchover to library 'x'\n  for all containers\n;",
+        )
+        notMatches(
+            "switchover to library 'x'", "switchover to library 'x' for all", "switchover to library 'x' for current container",
+            "switchover to library 'x' for all container", "switchover to library 'x' for each container",
+            "switchover library 'x' for all containers", "switchover to 'x' for all containers", "switchover",
+            "switchover to library for all containers", "switchover to library x for all containers",
+            "switchover to library 'x' 'y' for all containers", "switchover to library 'x' for all containers for all containers",
+            "switchover to library 'x' for all containers with backup", "switchover to library 'x' for all containers container = all",
+        )
+    }
+
+    @Test
+    fun buildsSwitchoverNodeAndKeepsOtherClausesUnchanged() {
+        val node = p.parse("administer key management switchover to library 'lib' for all containers;")
+        val switchover = node.getFirstChild(DdlGrammar.SWITCHOVER_LIBRARY)
+        assertThatAst(switchover.tokens.map { it.originalValue }).containsExactly(
+            "switchover", "to", "library", "'lib'", "for", "all", "containers")
+        assertThatAst(node.getDescendants(DdlGrammar.KEY_MANAGEMENT_CLAUSES)).isEmpty()
+        val open = p.parse("administer key management set keystore open identified by password;")
+        assertThatAst(open.getDescendants(DdlGrammar.SWITCHOVER_LIBRARY)).isEmpty()
+        assertThatAst(open.getDescendants(DdlGrammar.OPEN_KEYSTORE)).hasSize(1)
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        assertThat(p).matches("create table switchover (library number); select switchover.library from switchover;")
+    }
 }

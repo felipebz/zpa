@@ -6,6 +6,13 @@
       "reason": "NOCOPY is not valid for an IN-only parameter; Oracle accepts NOCOPY only with OUT and IN OUT parameters."
     }
   },
+  "examples/administer_key_management.sql": {
+    "1": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00921",
+      "reason": "MOVE KEYS with WITH IDENTIFIER IN (subquery) omits the required WITH BACKUP; Oracle rejects the statement as ending unexpectedly, and adding WITH BACKUP makes it parse."
+    }
+  },
   "examples/alter_analytic_view.sql": {
     "3": {
       "classification": "INVALID_SOURCE",
