@@ -106,6 +106,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     IN_EXPRESSION,
     EXISTS_EXPRESSION,
     UNARY_EXPRESSION,
+    RETURNING_VALUE_EXPRESSION,
     MULTIPLICATIVE_EXPRESSION,
     ADDITIVE_EXPRESSION,
     CONCATENATION_EXPRESSION,
@@ -1099,20 +1100,30 @@ enum class PlSqlGrammar : GrammarRuleKey {
                                             b.withoutContext(MODEL_EXPRESSION_CONTEXT, DmlGrammar.SELECT_EXPRESSION),
                                             RPARENTHESIS))))
 
+            b.rule(RETURNING_VALUE_EXPRESSION).define(
+                    b.requireContext(RETURNING_VALUE_CONTEXT, true),
+                    b.firstOf(OLD, NEW),
+                    b.nextNot(LPARENTHESIS),
+                    b.firstOf(LITERAL, OBJECT_REFERENCE))
+
             b.rule(UNARY_EXPRESSION).define(b.firstOf(
-                    b.sequence(PLUS, UNARY_EXPRESSION),
-                    b.sequence(MINUS, UNARY_EXPRESSION),
-                    b.sequence(PRIOR, UNARY_EXPRESSION),
-                    b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
-                    EXISTS_EXPRESSION,
-                    MULTISET_EXPRESSION,
-                    NEW_OBJECT_EXPRESSION,
-                    CASE_EXPRESSION,
-                    POSTFIX_EXPRESSION,
+                    RETURNING_VALUE_EXPRESSION,
                     b.sequence(
-                        LPARENTHESIS,
-                        b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
-                        RPARENTHESIS)),
+                        b.nextNot(b.requireContext(RETURNING_VALUE_CONTEXT, true), b.firstOf(OLD, NEW)),
+                        b.firstOf(
+                            b.sequence(PLUS, UNARY_EXPRESSION),
+                            b.sequence(MINUS, UNARY_EXPRESSION),
+                            b.sequence(PRIOR, UNARY_EXPRESSION),
+                            b.sequence(CONNECT_BY_ROOT, UNARY_EXPRESSION),
+                            EXISTS_EXPRESSION,
+                            MULTISET_EXPRESSION,
+                            NEW_OBJECT_EXPRESSION,
+                            CASE_EXPRESSION,
+                            POSTFIX_EXPRESSION,
+                            b.sequence(
+                                LPARENTHESIS,
+                                b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                                RPARENTHESIS)))),
                     b.optional(AT_TIME_ZONE_EXPRESSION)).skipIfOneChild()
 
             b.rule(EXPONENTIATION_EXPRESSION).define(UNARY_EXPRESSION, b.zeroOrMore(EXPONENTIATION, UNARY_EXPRESSION)).skipIfOneChild()

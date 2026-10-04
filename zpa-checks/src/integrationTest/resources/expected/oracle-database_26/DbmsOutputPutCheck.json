@@ -41,6 +41,7 @@
   "lnpls/bulk-sql-and-bulk-binding-57.sql" : [ 16, 18 ],
   "lnpls/bulk-sql-and-bulk-binding-59.sql" : [ 17, 20 ],
   "lnpls/bulk-sql-and-bulk-binding-6.sql" : [ 44, 47, 63, 67 ],
+  "lnpls/bulk-sql-and-bulk-binding-61.sql" : [ 18, 21 ],
   "lnpls/bulk-sql-and-bulk-binding-63.sql" : [ 23, 27 ],
   "lnpls/bulk-sql-and-bulk-binding-65.sql" : [ 24, 28 ],
   "lnpls/column-name-precedence-0.sql" : [ 9 ],

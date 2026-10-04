@@ -949,7 +949,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
-                    b.optional(RETURNING_INTO_CLAUSE),
+                    b.optional(b.withContext(RETURNING_VALUE_CONTEXT, true, RETURNING_INTO_CLAUSE)),
                     b.optional(ERROR_LOGGING_CLAUSE))
         }
 
@@ -963,7 +963,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.optional(b.firstOf(
                             b.sequence(WHERE, CURRENT, OF, IDENTIFIER_NAME),
                             WHERE_CLAUSE)),
-                    b.optional(RETURNING_INTO_CLAUSE),
+                    b.optional(b.withContext(RETURNING_VALUE_CONTEXT, true, RETURNING_INTO_CLAUSE)),
                     b.optional(ERROR_LOGGING_CLAUSE))
         }
 
@@ -986,7 +986,7 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         b.firstOf(b.sequence(VALUES_CLAUSE, b.zeroOrMore(COMMA, valuesRow)), INSERT_SET_CLAUSE),
-                        b.optional(RETURNING_INTO_CLAUSE)),
+                        b.optional(b.withContext(RETURNING_VALUE_CONTEXT, true, RETURNING_INTO_CLAUSE))),
                     b.sequence(b.optional(BY, b.firstOf(NAME, POSITION)), SELECT_EXPRESSION)),
                 b.optional(ERROR_LOGGING_CLAUSE))
 

@@ -5,7 +5,6 @@
   "lnpls/ALTER-TYPE-statement-14.sql" : [ 2 ],
   "lnpls/DEPRECATE-pragma-18.sql" : [ 2 ],
   "lnpls/DEPRECATE-pragma-30.sql" : [ 3 ],
-  "lnpls/bulk-sql-and-bulk-binding-61.sql" : [ 15 ],
   "lnpls/conditional-compilation1-21.sql" : [ 2 ],
   "lnpls/cursors-overview-7.sql" : [ 2 ],
   "lnpls/lexical-units-10.sql" : [ 7 ],

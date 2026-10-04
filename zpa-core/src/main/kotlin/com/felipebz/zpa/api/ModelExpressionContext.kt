@@ -25,3 +25,8 @@ import com.felipebz.flr.grammar.ContextKey
  * Marks the explicit MODEL expression scopes owned by the ZPA grammar.
  */
 internal val MODEL_EXPRESSION_CONTEXT: ContextKey<Boolean> = ContextKey()
+
+/**
+ * Set inside the static RETURNING list of INSERT, UPDATE and DELETE, where OLD and NEW may qualify an operand.
+ */
+internal val RETURNING_VALUE_CONTEXT: ContextKey<Boolean> = ContextKey()

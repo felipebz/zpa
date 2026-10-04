@@ -41,6 +41,7 @@
   "lnpls/bulk-sql-and-bulk-binding-5.sql" : [ 3 ],
   "lnpls/bulk-sql-and-bulk-binding-59.sql" : [ 4 ],
   "lnpls/bulk-sql-and-bulk-binding-6.sql" : [ 9, 13 ],
+  "lnpls/bulk-sql-and-bulk-binding-61.sql" : [ 4 ],
   "lnpls/bulk-sql-and-bulk-binding-63.sql" : [ 4 ],
   "lnpls/bulk-sql-and-bulk-binding-65.sql" : [ 4 ],
   "lnpls/chaining-pipelined-table-functions-multiple-transformations-0.sql" : [ 2 ],
