@@ -92,4 +92,32 @@ class CommitStatementTest : RuleTest() {
         assertThat(p).matches("<<foo>> commit;")
     }
 
+    @Test
+    fun matchesWriteOptionsInBothOrders() {
+        listOf(
+            "commit write immediate wait;", "commit write wait immediate;", "commit write batch nowait;", "commit write nowait batch;",
+            "commit write immediate nowait;", "commit write batch wait;", "commit write wait batch;", "commit write nowait immediate;",
+            "commit comment 'TEST' write nowait immediate;", "commit work write wait batch;",
+            "commit work comment 'x' write batch wait;", "commit work comment 'x' write nowait immediate;",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+    }
+
+    @Test
+    fun rejectsRepeatedAndMisplacedWriteOptions() {
+        listOf(
+            "commit write wait nowait;", "commit write nowait wait;", "commit write immediate batch;", "commit write batch immediate;",
+            "commit write wait wait;", "commit write immediate immediate;", "commit write wait wait immediate;",
+            "commit write wait immediate wait;", "commit write immediate wait nowait;", "commit write wait immediate batch;",
+            "commit write bogus;", "commit write wait bogus;", "commit write immediate,;", "commit immediate;", "commit wait;",
+            "commit write nowait immediate comment 'x';", "commit comment 'x' comment 'y';", "commit force 'x' write wait;",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun keepsWriteOptionTokensUnderTheCommitStatement() {
+        val tokens = p.parse("commit comment 'TEST' write nowait immediate;").tokens.map { it.originalValue }
+        org.assertj.core.api.Assertions.assertThat(tokens).containsExactly("commit", "comment", "'TEST'", "write", "nowait", "immediate", ";")
+        val plain = p.parse("commit work;").tokens.map { it.originalValue }
+        org.assertj.core.api.Assertions.assertThat(plain).containsExactly("commit", "work", ";")
+    }
 }

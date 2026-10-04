@@ -53,7 +53,9 @@ enum class TclGrammar : GrammarRuleKey {
                             b.sequence(FORCE, STRING_LITERAL, b.optional(COMMA, INTEGER_LITERAL)),
                             b.sequence(
                                     b.optional(COMMENT, STRING_LITERAL),
-                                    b.optional(WRITE, b.optional(b.firstOf(IMMEDIATE, BATCH)), b.optional(b.firstOf(WAIT, NOWAIT))))))).skip()
+                                    b.optional(WRITE, b.optional(b.firstOf(
+                                            b.sequence(b.firstOf(WAIT, NOWAIT), b.optional(b.firstOf(IMMEDIATE, BATCH))),
+                                            b.sequence(b.firstOf(IMMEDIATE, BATCH), b.optional(b.firstOf(WAIT, NOWAIT)))))))))).skip()
 
             b.rule(ROLLBACK_EXPRESSION).define(
                     ROLLBACK,
