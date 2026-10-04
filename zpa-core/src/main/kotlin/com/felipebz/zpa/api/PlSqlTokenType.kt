@@ -31,7 +31,8 @@ enum class PlSqlTokenType : TokenType {
     TIME_LITERAL,
     MLE_INLINE_SOURCE,
     MLE_MODULE_SOURCE,
-    WRAPPED_SOURCE;
+    WRAPPED_SOURCE,
+    GRAPHQL_DUALITY_SOURCE;
 
     override val value = name
 

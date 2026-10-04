@@ -73,6 +73,7 @@ object PlSqlLexer {
             .withChannel(CommentChannel())
             .withChannel(MleModuleSourceChannel())
             .withChannel(WrappedSourceChannel())
+            .withChannel(GraphQlDualitySourceChannel())
             .withChannel(NumericChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL)))
             .withChannel(IntegerChannel())
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))

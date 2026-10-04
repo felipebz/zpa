@@ -338,6 +338,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CALL_COMMAND,
     CREATE_TABLE,
     CREATE_SCHEMA,
+    CREATE_JSON_RELATIONAL_DUALITY_VIEW,
     INDEX_ORGANIZED_TABLE_CLAUSE,
     HEAP_ORGANIZED_TABLE_CLAUSE,
     EXTERNAL_TABLE_CLAUSE,
@@ -3244,10 +3245,26 @@ enum class DdlGrammar : GrammarRuleKey {
                     DclGrammar.GRANT_STATEMENT))),
                 b.optional(SEMICOLON))
 
+            // Oracle 26 rejects the parenthesized graphql_query of the diagram (ORA-00928) and accepts only the
+            // bare form; OR REPLACE and IF NOT EXISTS cannot be combined (ORA-11541). The SQL definition is not covered.
+            val dualityViewEditionability = b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE))
+            val dualityViewKind = b.sequence(JSON, b.optional(RELATIONAL), DUALITY, VIEW)
+            b.rule(CREATE_JSON_RELATIONAL_DUALITY_VIEW).define(
+                CREATE,
+                b.firstOf(
+                    b.sequence(OR, REPLACE, b.optional(FORCE), dualityViewEditionability, dualityViewKind),
+                    b.sequence(b.optional(FORCE), dualityViewEditionability, dualityViewKind, b.optional(IF, NOT, EXISTS))),
+                UNIT_NAME,
+                b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
+                b.optional(b.firstOf(ENABLE, DISABLE), LOGICAL, REPLICATION),
+                AS, PlSqlTokenType.GRAPHQL_DUALITY_SOURCE,
+                b.optional(SEMICOLON))
+
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
                 CREATE_SCHEMA,
+                CREATE_JSON_RELATIONAL_DUALITY_VIEW,
                 CREATE_INDEX,
                 CREATE_SEARCH_INDEX,
                 CREATE_VECTOR_INDEX,

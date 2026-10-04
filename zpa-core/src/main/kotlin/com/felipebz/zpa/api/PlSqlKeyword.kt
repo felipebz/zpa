@@ -379,6 +379,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     DOMAIN("domain"),
     DOUBLE("double"),
     DOWNGRADE("downgrade"),
+    DUALITY("duality"),
     DUPLICATE("duplicate"),
     DURATION("duration"),
     DV("dv"),
