@@ -342,6 +342,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             DmlGrammar.buildOn(b)
             RowPatternGrammar.buildOn(b)
             GraphTableGrammar.buildOn(b)
+            AnalyticViewGrammar.buildOn(b)
             DclGrammar.buildOn(b)
             TclGrammar.buildOn(b)
             SqlPlusGrammar.buildOn(b)
@@ -1057,6 +1058,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(POSTFIX_EXPRESSION).define(
                 b.firstOf(
+                    b.sequence(
+                        b.requireContext(ANALYTIC_VIEW_MEASURE_CONTEXT, true),
+                        b.firstOf(AnalyticViewGrammar.AV_LEAD_LAG_EXPRESSION, AnalyticViewGrammar.AV_RANK_EXPRESSION)),
                     b.sequence(b.next(functionWithoutAnalyticSuffix), OBJECT_REFERENCE),
                     b.sequence(
                         b.next(AggregateSqlFunctionsGrammar.LISTAGG_EXPRESSION),

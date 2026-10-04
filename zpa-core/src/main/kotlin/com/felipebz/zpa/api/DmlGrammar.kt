@@ -333,9 +333,9 @@ enum class DmlGrammar : GrammarRuleKey {
                     // Oracle tolerates `as` with the alias left out, but only before `from`.
                     b.sequence(AS, b.next(FROM)))))
 
-            val tableAlias = b.sequence(
-                b.nextNot(
+            val tableAliasStart = b.nextNot(
                     b.firstOf(
+                        HIERARCHIES,
                         PARTITION,
                         CROSS,
                         USING,
@@ -363,10 +363,9 @@ enum class DmlGrammar : GrammarRuleKey {
                         b.sequence(WINDOW, IDENTIFIER_NAME, AS),
                         b.sequence(MATCH_RECOGNIZE, LPARENTHESIS)
                     )
-                ),
-                b.optional(AS),
-                ALIAS
-            )
+                )
+
+            val tableAlias = b.sequence(tableAliasStart, b.optional(AS), ALIAS)
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/vector_chunks.html
             // A row source only: in an expression VECTOR_CHUNKS is an ordinary identifier (ORA-00904).
@@ -417,8 +416,10 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(AS, OF, PERIOD, FOR, IDENTIFIER_NAME, flashbackOperand))),
                 b.nextNot(AS))
 
+            // Unlike the documented [[AS] alias], Oracle 26 rejects AS before an inline analytic view alias (ORA-03048).
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
+                    b.sequence(AnalyticViewGrammar.INLINE_ANALYTIC_VIEW, b.optional(tableAliasStart, b.nextNot(AS), ALIAS)),
                     b.sequence(
                         b.firstOf(
                             b.sequence(b.optional(LATERAL), LPARENTHESIS, SELECT_EXPRESSION, b.optional(
@@ -444,7 +445,9 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(
                                 TABLE_REFERENCE, b.nextNot(LPARENTHESIS), b.optional(PARTITION_EXTENSION_CLAUSE),
                                 // The alias that follows a sample clause has no AS (ORA-03048).
-                                b.optional(b.requireContext(ROW_SOURCE_CONTEXT, RowSource.QUERY), SAMPLE_CLAUSE, b.nextNot(AS, ALIAS))),
+                                b.optional(b.firstOf(
+                                    AnalyticViewGrammar.HIERARCHIES_CLAUSE,
+                                    b.sequence(b.requireContext(ROW_SOURCE_CONTEXT, RowSource.QUERY), SAMPLE_CLAUSE, b.nextNot(AS, ALIAS))))),
                             b.sequence(b.nextNot(b.firstOf(GRAPH_TABLE, VECTOR_CHUNKS), LPARENTHESIS), OBJECT_REFERENCE)
                         ),
                         b.optional(FLASHBACK_QUERY_CLAUSE),
@@ -681,14 +684,16 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(CONNECT_BY_CLAUSE, b.optional(START_WITH_CLAUSE)),
                     b.sequence(START_WITH_CLAUSE, CONNECT_BY_CLAUSE)))
 
+            val factoringClause = b.firstOf(AnalyticViewGrammar.SUBAV_FACTORING_CLAUSE, SUBQUERY_FACTORING_CLAUSE)
+
             b.rule(WITH_CLAUSE).define(
                 WITH,
                 b.firstOf(
                     b.sequence(
                         b.oneOrMore(b.firstOf(FUNCTION_DECLARATION, PROCEDURE_DECLARATION)),
-                        b.zeroOrMore(SUBQUERY_FACTORING_CLAUSE, b.zeroOrMore(COMMA, SUBQUERY_FACTORING_CLAUSE))
+                        b.zeroOrMore(factoringClause, b.zeroOrMore(COMMA, factoringClause))
                     ),
-                    b.oneOrMore(SUBQUERY_FACTORING_CLAUSE, b.zeroOrMore(COMMA, SUBQUERY_FACTORING_CLAUSE))
+                    b.oneOrMore(factoringClause, b.zeroOrMore(COMMA, factoringClause))
                 )
             )
 
