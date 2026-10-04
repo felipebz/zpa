@@ -330,6 +330,12 @@ enum class DdlGrammar : GrammarRuleKey {
     CALL_COMMAND,
     CREATE_TABLE,
     INDEX_ORGANIZED_TABLE_CLAUSE,
+    HEAP_ORGANIZED_TABLE_CLAUSE,
+    EXTERNAL_TABLE_CLAUSE,
+    EXTERNAL_TABLE_ACCESS_PARAMETERS,
+    EXTERNAL_TABLE_OPAQUE_FORMAT_SPEC,
+    EXTERNAL_TABLE_LOCATION,
+    EXTERNAL_TABLE_REJECT_LIMIT,
     INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
     CREATE_INDEX,
     CREATE_SEARCH_INDEX,
@@ -1036,6 +1042,32 @@ enum class DdlGrammar : GrammarRuleKey {
                 )
             )
 
+            b.rule(HEAP_ORGANIZED_TABLE_CLAUSE).define(ORGANIZATION, HEAP)
+
+            b.rule(EXTERNAL_TABLE_OPAQUE_FORMAT_SPEC).define(
+                LPARENTHESIS,
+                b.zeroOrMore(b.firstOf(
+                    EXTERNAL_TABLE_OPAQUE_FORMAT_SPEC,
+                    b.anyTokenButNot(b.firstOf(LPARENTHESIS, RPARENTHESIS, EOF)))),
+                RPARENTHESIS)
+
+            b.rule(EXTERNAL_TABLE_ACCESS_PARAMETERS).define(
+                ACCESS, PARAMETERS,
+                b.firstOf(
+                    EXTERNAL_TABLE_OPAQUE_FORMAT_SPEC,
+                    b.sequence(
+                        USING, CLOB,
+                        b.firstOf(
+                            b.sequence(LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS),
+                            DmlGrammar.SELECT_EXPRESSION))))
+
+            val locationEntry = b.sequence(
+                b.optional(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME), COLON), CHARACTER_LITERAL)
+            b.rule(EXTERNAL_TABLE_LOCATION).define(
+                LOCATION, LPARENTHESIS, locationEntry, b.zeroOrMore(COMMA, locationEntry), RPARENTHESIS)
+
+            b.rule(EXTERNAL_TABLE_REJECT_LIMIT).define(REJECT, LIMIT, b.firstOf(INTEGER_LITERAL, UNLIMITED))
+
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html (LOB_storage_clause)
             // The diagram repeats {SECUREFILE | BASICFILE | LOB_segname | (params)} freely; Oracle 26 instead
             // parses them once each in that order (ORA-00922 otherwise), rejects SECUREFILE with BASICFILE
@@ -1569,6 +1601,18 @@ enum class DdlGrammar : GrammarRuleKey {
                     ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause(),
                     inmemoryProperty, b.sequence(FOR, STAGING), TABLE_COMPRESSION)
 
+            // Oracle 26 parses REJECT LIMIT in any number and position among the table properties that follow,
+            // unlike the diagram's single REJECT LIMIT; a repeated PARALLEL fails only afterwards (ORA-12812).
+            b.rule(EXTERNAL_TABLE_CLAUSE).define(
+                ORGANIZATION, EXTERNAL, LPARENTHESIS,
+                b.optional(TYPE, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                b.optional(DEFAULT, DIRECTORY, IDENTIFIER_NAME),
+                b.firstOf(
+                    b.sequence(b.next(ACCESS, PARAMETERS, USING), EXTERNAL_TABLE_ACCESS_PARAMETERS),
+                    b.sequence(b.optional(EXTERNAL_TABLE_ACCESS_PARAMETERS), b.optional(EXTERNAL_TABLE_LOCATION))),
+                RPARENTHESIS,
+                b.zeroOrMore(b.firstOf(EXTERNAL_TABLE_REJECT_LIMIT, tableLevelProperty())))
+
             fun tableSuffixesWithAnnotations() = b.sequence(
                     b.zeroOrMore(b.firstOf(
                             tableLevelProperty(),
@@ -1621,12 +1665,12 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.sequence(
                                 deferredSegmentCreation,
                                 tablePropertyClauses(),
-                                b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                b.optional(b.firstOf(INDEX_ORGANIZED_TABLE_CLAUSE, EXTERNAL_TABLE_CLAUSE, HEAP_ORGANIZED_TABLE_CLAUSE)),
                                 tableSuffixesWithAnnotations()),
                         b.sequence(
                                 b.optional(TABLE_CLUSTER_CLAUSE),
                                 tablePropertyClauses(),
-                                b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                b.optional(b.firstOf(INDEX_ORGANIZED_TABLE_CLAUSE, EXTERNAL_TABLE_CLAUSE, HEAP_ORGANIZED_TABLE_CLAUSE)),
                                 b.firstOf(
                                         b.sequence(
                                                 tablePartitioning(),
@@ -1654,7 +1698,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(
                                     b.firstOf(XMLTYPE_TABLE, OBJECT_TABLE_CLAUSE),
                                     tablePropertyClauses(),
-                                    b.optional(INDEX_ORGANIZED_TABLE_CLAUSE),
+                                    b.optional(b.firstOf(INDEX_ORGANIZED_TABLE_CLAUSE, EXTERNAL_TABLE_CLAUSE, HEAP_ORGANIZED_TABLE_CLAUSE)),
                                     tableSuffixesWithAnnotations(),
                                     b.firstOf(
                                         b.sequence(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true),
@@ -4877,20 +4921,20 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(
                     SEED,
                     b.optional(PDB_FILE_NAME_CONVERT),
-                    b.optional("SYSTEM", "DATAFILES", datafilesClauses),
-                    b.optional("SYSAUX", "DATAFILES", datafilesClauses)),
+                    b.optional(SYSTEM, DATAFILES, datafilesClauses),
+                    b.optional(SYSAUX, DATAFILES, datafilesClauses)),
                 b.optional(LOCAL, UNDO, b.firstOf(ON, OFF)))
 
             val clauseStart = b.firstOf(
-                USER, CONTROLFILE, "MAXLOGFILES", "MAXLOGMEMBERS", "MAXLOGHISTORY", "MAXDATAFILES", "MAXINSTANCES",
-                CHARACTER, NATIONAL, SET, LOGFILE, ARCHIVELOG, NOARCHIVELOG, FORCE, EXTENT, DATAFILE, "SYSAUX", DEFAULT,
-                UNDO, BIGFILE, SMALLFILE, "USER_DATA", ENABLE)
+                USER, CONTROLFILE, MAXLOGFILES, MAXLOGMEMBERS, MAXLOGHISTORY, MAXDATAFILES, MAXINSTANCES,
+                CHARACTER, NATIONAL, SET, LOGFILE, ARCHIVELOG, NOARCHIVELOG, FORCE, EXTENT, DATAFILE, SYSAUX, DEFAULT,
+                UNDO, BIGFILE, SMALLFILE, USER_DATA, ENABLE)
 
             b.rule(CREATE_DATABASE).define(
                 CREATE, DATABASE,
                 b.optional(b.nextNot(clauseStart), IDENTIFIER_NAME),
                 b.oneOrMore(b.firstOf(
-                    b.sequence(USER, b.firstOf("SYS", SYSTEM), IDENTIFIED, BY, IDENTIFIER_NAME),
+                    b.sequence(USER, b.firstOf(SYS, SYSTEM), IDENTIFIED, BY, IDENTIFIER_NAME),
                     b.sequence(CONTROLFILE, REUSE),
                     integerOption,
                     characterSet,
@@ -4900,12 +4944,12 @@ enum class DdlGrammar : GrammarRuleKey {
                     loggingOption,
                     extentManagement,
                     b.sequence(DATAFILE, dataFiles),
-                    b.sequence("SYSAUX", DATAFILE, dataFiles),
+                    b.sequence(SYSAUX, DATAFILE, dataFiles),
                     defaultTablespace,
                     defaultTemporaryTablespace,
                     undoTablespace,
-                    b.sequence(SET, "TIME_ZONE", EQUALS, CHARACTER_LITERAL),
-                    b.sequence(fileKind, "USER_DATA", TABLESPACE, IDENTIFIER_NAME, DATAFILE, dataFiles),
+                    b.sequence(SET, TIME_ZONE, EQUALS, CHARACTER_LITERAL),
+                    b.sequence(fileKind, USER_DATA, TABLESPACE, IDENTIFIER_NAME, DATAFILE, dataFiles),
                     enablePluggableDatabase)),
                 b.optional(SEMICOLON))
 
@@ -5282,7 +5326,7 @@ enum class DdlGrammar : GrammarRuleKey {
             val diskgroupAttribute = b.sequence(CHARACTER_LITERAL, EQUALS, CHARACTER_LITERAL)
             b.rule(CREATE_DISKGROUP).define(
                 CREATE, DISKGROUP, IDENTIFIER_NAME,
-                b.optional(b.firstOf(HIGH, NORMAL, "FLEX", EXTENDED, EXTERNAL), REDUNDANCY),
+                b.optional(b.firstOf(HIGH, NORMAL, FLEX, EXTENDED, EXTERNAL), REDUNDANCY),
                 b.oneOrMore(addGroup),
                 b.optional(ATTRIBUTE, diskgroupAttribute, b.zeroOrMore(COMMA, diskgroupAttribute)),
                 b.optional(SEMICOLON))
