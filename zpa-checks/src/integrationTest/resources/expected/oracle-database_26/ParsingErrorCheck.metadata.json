@@ -139,6 +139,13 @@
       "reason": "EXPORT is extracted query output, not a SQL statement."
     }
   },
+  "sqlrf/CREATE-CONTROLFILE-0.sql": {
+    "12": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "SP2-0734",
+      "reason": "The line is an annotation in the documentation example, not CREATE CONTROLFILE syntax, which has no STANDBY LOGFILE clause; SQL*Plus reports an unknown command beginning with STANDBY LO and drops the line, and a server receiving the # gets ORA-00911."
+    }
+  },
   "sqlrf/CREATE-TABLESPACE-0.sql": {
     "2": {
       "classification": "INVALID_SOURCE",
