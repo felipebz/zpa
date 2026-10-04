@@ -188,6 +188,7 @@
   "lnpls/retrieving-error-code-and-error-message-0.sql" : [ 19 ],
   "lnpls/retrying-transactions-handling-exceptions-0.sql" : [ 17, 34, 39 ],
   "lnpls/scope-and-visibility-identifiers-1.sql" : [ 10, 12 ],
+  "lnpls/scope-and-visibility-identifiers-11.sql" : [ 12, 13, 15, 16, 20, 23 ],
   "lnpls/scope-and-visibility-identifiers-3.sql" : [ 19, 23 ],
   "lnpls/scope-and-visibility-identifiers-7.sql" : [ 8, 16 ],
   "lnpls/scope-and-visibility-identifiers-9.sql" : [ 9, 10 ],

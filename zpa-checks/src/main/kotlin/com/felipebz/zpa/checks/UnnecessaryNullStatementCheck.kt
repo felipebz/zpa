@@ -34,6 +34,8 @@ class UnnecessaryNullStatementCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        if (node.hasDirectChildren(PlSqlGrammar.LABEL)) return
+
         val parent = node.parent
         if (parent.previousSiblingOrNull != null || parent.nextSiblingOrNull != null) {
             addIssue(node, getLocalizedMessage())

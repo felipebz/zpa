@@ -14,3 +14,13 @@ begin
   null;
 end;
 /
+begin
+  v := 0;
+  <<target>>
+  null;
+  <<first>>
+  <<second>>
+  null;
+  v := 1;
+end;
+/

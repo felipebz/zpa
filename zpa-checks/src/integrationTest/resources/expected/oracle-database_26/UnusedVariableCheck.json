@@ -23,6 +23,7 @@
   "lnpls/redeclared-predefined-exceptions-5.sql" : [ 4, 5 ],
   "lnpls/scope-and-visibility-identifiers-0.sql" : [ 3, 4, 10, 11, 19 ],
   "lnpls/scope-and-visibility-identifiers-1.sql" : [ 4 ],
+  "lnpls/scope-and-visibility-identifiers-11.sql" : [ 6 ],
   "lnpls/scope-and-visibility-identifiers-5.sql" : [ 4 ],
   "lnpls/scope-and-visibility-identifiers-9.sql" : [ 4 ],
   "lnpls/sql-data-types-29.sql" : [ 21, 22, 23, 24, 25, 26, 27, 28 ],
