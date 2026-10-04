@@ -202,4 +202,34 @@ class FlashbackQueryTest : RuleTest() {
         val tables = tree.getDescendants(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)
         assertThatAst(tables.filter { it.hasDirectChildren(DmlGrammar.FLASHBACK_QUERY_CLAUSE) }).hasSize(3)
     }
+
+    @Test
+    fun matchesAsOfSnapshot() {
+        listOf(
+            "as of snapshot(:b)", "as of snapshot(:2)", "as of snapshot(1)", "as of snapshot 1", "as of snapshot (1)", "as of snapshot :b",
+            "as of snapshot x", "as of snapshot pkg.x", "as of snapshot 1 + 2", "as of snapshot (1 + 2)", "as of snapshot (1) + 2",
+            "as of snapshot sysdate", "as of snapshot f(1)", "as of snapshot 'x'", "as of snapshot(1) as of scn 1", "as of scn 1 as of snapshot(1)",
+            "versions between scn 1 and 2 as of snapshot(1)", "as of snapshot(1) versions between scn 1 and 2",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "as of snapshot", "as of snapshot()", "as of snapshot 1, 2", "as of snapshot 1 = 1", "as of snapshot 1 and 2",
+            "versions between snapshot 1 and 2", "versions between snapshot(1) and snapshot(2)",
+            "versions between snapshot 1 and maxvalue", "snapshot 1", "as snapshot 1",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun keepsTheSnapshotOperandAsAnExpression() {
+        val snapshot = p.parse("as of snapshot (1 + 2)")
+        assertThatAst(snapshot.tokens.map { it.originalValue }).containsExactly("as", "of", "snapshot", "(", "1", "+", "2", ")")
+        val scn = p.parse("as of scn (1 + 2)")
+        assertThatAst(scn.tokens.map { it.originalValue }).containsExactly("as", "of", "scn", "(", "1", "+", "2", ")")
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        val statement = p.parse(
+            "select value(p\$) from \"XDB\".\"XDB\$SCHEMA\" as of snapshot(:2) p\$ where SYS_NC_OID\$ = :1")
+        val table = statement.getFirstDescendant(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)
+        assertThatAst(table.getFirstChild(DmlGrammar.FLASHBACK_QUERY_CLAUSE).tokens.map { it.originalValue })
+            .containsExactly("as", "of", "snapshot", "(", ":", "2", ")")
+        assertThatAst(table.getFirstChild(DmlGrammar.ALIAS).tokenOriginalValue).isEqualTo("p\$")
+    }
 }

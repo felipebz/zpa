@@ -13,6 +13,7 @@
   "examples/condition16.sql" : [ 1 ],
   "examples/create_materialized_zonemap.sql" : [ 15, 16, 26, 27, 28, 38, 38, 38 ],
   "examples/create_trigger02.sql" : [ 25 ],
+  "examples/flashback01.sql" : [ 1 ],
   "examples/for_update08.sql" : [ 2 ],
   "examples/join01.sql" : [ 2, 2 ],
   "examples/join02.sql" : [ 2, 2 ],

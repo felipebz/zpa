@@ -413,7 +413,8 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(
                         VERSIONS, PERIOD, FOR, IDENTIFIER_NAME, BETWEEN,
                         b.firstOf(MINVALUE, flashbackOperand), AND, b.firstOf(MAXVALUE, flashbackOperand)),
-                    b.sequence(AS, OF, flashbackKind, flashbackOperand),
+                    // SNAPSHOT is undocumented but parsed by Oracle 26, and only after AS OF.
+                    b.sequence(AS, OF, b.firstOf(flashbackKind, SNAPSHOT), flashbackOperand),
                     b.sequence(AS, OF, PERIOD, FOR, IDENTIFIER_NAME, flashbackOperand))),
                 b.nextNot(AS))
 
