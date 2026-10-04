@@ -252,6 +252,8 @@ class SqlFunctionsAdmissionCompletenessTest : RuleTest() {
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.TABLE_EXPRESSION, PlSqlKeyword.TABLE, "table(my_collection)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.THE_EXPRESSION, PlSqlKeyword.THE, "the(select col from tab)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.CURSOR_EXPRESSION, PlSqlKeyword.CURSOR, "cursor(select 1 from dual)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.VECTOR_CONSTRUCTOR_EXPRESSION, PlSqlKeyword.VECTOR, "vector('[1]', 1, float32)"),
+            SingleRowTestCase(SingleRowSqlFunctionsGrammar.VECTOR_CONSTRUCTOR_EXPRESSION, PlSqlKeyword.TO_VECTOR, "to_vector('[1]', *, *, sparse)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.FROM_VECTOR_EXPRESSION, PlSqlKeyword.FROM_VECTOR, "from_vector(v returning clob)"),
             SingleRowTestCase(SingleRowSqlFunctionsGrammar.VECTOR_SERIALIZE_EXPRESSION, PlSqlKeyword.VECTOR_SERIALIZE, "vector_serialize(v format dense)")
         )

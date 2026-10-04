@@ -112,6 +112,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
     MULTIPLICATIVE_EXPRESSION,
     ADDITIVE_EXPRESSION,
     CONCATENATION_EXPRESSION,
+    VECTOR_DISTANCE_EXPRESSION,
+    VECTOR_DISTANCE_OPERATOR,
+    VECTOR_DATATYPE,
     COMPARISON_EXPRESSION,
     EXPONENTIATION_EXPRESSION,
     ARGUMENT,
@@ -421,6 +424,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(GREATERTHANOREQUALS_OPERATOR).define(GREATERTHAN, EQUALS)
         }
 
+        // Dimension count, element format and storage format all accept `*`, an integer or a bare name;
+        // Oracle validates the values after parsing (ORA-51801, ORA-51802, ORA-51813).
+        internal fun vectorSpecificationArgument(b: PlSqlGrammarBuilder): Any =
+            b.firstOf(MULTIPLICATION, PlSqlTokenType.INTEGER_LITERAL, IDENTIFIER_NAME)
+
         private fun createDatatypes(b: PlSqlGrammarBuilder) {
             b.rule(DATATYPE_LENGTH).define(b.firstOf(EXPRESSION, INQUIRY_DIRECTIVE)).skip()
 
@@ -551,6 +559,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(JSON_VALIDATE_CLAUSE).define(
                 VALIDATE, b.optional(CAST), b.optional(USING), STRING_LITERAL).skip()
 
+            b.rule(VECTOR_DATATYPE).define(
+                    VECTOR,
+                    b.optional(
+                            LPARENTHESIS, vectorSpecificationArgument(b),
+                            b.optional(COMMA, vectorSpecificationArgument(b),
+                                    b.optional(COMMA, vectorSpecificationArgument(b))),
+                            RPARENTHESIS))
+
             b.rule(DATATYPE).define(b.firstOf(
                     NUMERIC_DATATYPE,
                     LOB_DATATYPE,
@@ -560,6 +576,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ANCHORED_DATATYPE,
                     REF_DATATYPE,
                     JSON_DATATYPE,
+                    VECTOR_DATATYPE,
                     CUSTOM_DATATYPE,
                     // Polymorphic table function parameters and results. Oracle 26 parses a bare TABLE in every
                     // datatype position: PL/SQL reports PLS-00765 only on compile, and SQL columns, clusters,
@@ -1025,6 +1042,19 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 *functionsWithoutAnalyticSuffix.drop(2).toTypedArray()
             )
 
+            // Oracle rejects these VECTOR/TO_VECTOR calls while parsing (ORA-00936, ORA-00907), so they must not
+            // fall back to an ordinary function call.
+            val malformedVectorConstructor = b.sequence(
+                b.firstOf(VECTOR, TO_VECTOR), LPARENTHESIS,
+                b.firstOf(
+                    RPARENTHESIS,
+                    b.sequence(MULTIPLICATION, RPARENTHESIS),
+                    b.sequence(
+                        EXPRESSION,
+                        COMMA, vectorSpecificationArgument(b), COMMA, vectorSpecificationArgument(b),
+                        COMMA, vectorSpecificationArgument(b),
+                        COMMA, b.firstOf(IDENTIFIER_NAME, RPARENTHESIS))))
+
             b.rule(POSTFIX_EXPRESSION).define(
                 b.firstOf(
                     b.sequence(b.next(functionWithoutAnalyticSuffix), OBJECT_REFERENCE),
@@ -1045,6 +1075,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     ),
                     b.sequence(
                         b.nextNot(functionWithoutAnalyticSuffix),
+                        b.nextNot(malformedVectorConstructor),
                         OBJECT_REFERENCE,
                         b.optional(b.firstOf(
                             ANALYTIC_CLAUSE,
@@ -1054,7 +1085,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 )
             ).skipIfOneChild()
 
-            b.rule(IN_EXPRESSION).define(CONCATENATION_EXPRESSION,
+            b.rule(IN_EXPRESSION).define(VECTOR_DISTANCE_EXPRESSION,
                     b.optional(b.sequence(
                             b.optional(NOT), IN,
                             b.firstOf(
@@ -1159,7 +1190,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(ADDITIVE_EXPRESSION).define(MULTIPLICATIVE_EXPRESSION, b.zeroOrMore(b.firstOf(PLUS, MINUS), MULTIPLICATIVE_EXPRESSION)).skipIfOneChild()
 
+            b.rule(VECTOR_DISTANCE_OPERATOR).define(
+                    b.firstOf(VECTOR_COSINE_DISTANCE, VECTOR_EUCLIDEAN_DISTANCE, VECTOR_NEGATIVE_DOT_PRODUCT))
+
             b.rule(CONCATENATION_EXPRESSION).define(ADDITIVE_EXPRESSION, b.zeroOrMore(CONCATENATION_OPERATOR, ADDITIVE_EXPRESSION)).skipIfOneChild()
+
+            b.rule(VECTOR_DISTANCE_EXPRESSION).define(
+                    CONCATENATION_EXPRESSION, b.zeroOrMore(VECTOR_DISTANCE_OPERATOR, CONCATENATION_EXPRESSION)).skipIfOneChild()
 
             b.rule(COMPARISON_EXPRESSION).define(b.firstOf(
                     ConditionsGrammar.CONDITION,

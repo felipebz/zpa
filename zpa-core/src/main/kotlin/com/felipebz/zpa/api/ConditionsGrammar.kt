@@ -73,59 +73,59 @@ enum class ConditionsGrammar : GrammarRuleKey {
             )
 
             b.rule(RELATIONAL_CONDITION).define(
-                CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR, CONCATENATION_EXPRESSION
+                VECTOR_DISTANCE_EXPRESSION, RELATIONAL_OPERATOR, VECTOR_DISTANCE_EXPRESSION
             ).skip()
 
             b.rule(BOOLEAN_TEST_CONDITION).define(
-                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)
+                VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)
             )
             b.rule(FLOATING_POINT_CONDITION).define(
-                CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)
+                VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)
             )
 
             b.rule(LIKE_CONDITION).define(
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 b.optional(NOT), LIKE,
-                CONCATENATION_EXPRESSION,
-                b.optional(ESCAPE, CONCATENATION_EXPRESSION)
+                VECTOR_DISTANCE_EXPRESSION,
+                b.optional(ESCAPE, VECTOR_DISTANCE_EXPRESSION)
             )
 
             b.rule(OVERLAPS_CONDITION).define(
                 PlSqlPunctuator.LPARENTHESIS,
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 PlSqlPunctuator.COMMA,
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 PlSqlPunctuator.RPARENTHESIS,
                 OVERLAPS,
                 PlSqlPunctuator.LPARENTHESIS,
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 PlSqlPunctuator.COMMA,
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 PlSqlPunctuator.RPARENTHESIS
             )
 
             b.rule(BETWEEN_CONDITION).define(
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 b.optional(NOT), BETWEEN,
-                CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION
+                VECTOR_DISTANCE_EXPRESSION, AND, VECTOR_DISTANCE_EXPRESSION
             ).skip()
 
-            b.rule(IS_DANGLING_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), DANGLING)
+            b.rule(IS_DANGLING_CONDITION).define(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), DANGLING)
 
-            b.rule(IS_A_SET_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), A, SET)
+            b.rule(IS_A_SET_CONDITION).define(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), A, SET)
 
-            b.rule(IS_EMPTY_CONDITION).define(CONCATENATION_EXPRESSION, IS, b.optional(NOT), EMPTY)
+            b.rule(IS_EMPTY_CONDITION).define(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), EMPTY)
 
             b.rule(MEMBER_CONDITION)
-                .define(CONCATENATION_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), CONCATENATION_EXPRESSION)
+                .define(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), MEMBER, b.optional(OF), VECTOR_DISTANCE_EXPRESSION)
                 .skip()
 
             b.rule(SUBMULTISET_CONDITION).define(
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 b.optional(NOT),
                 SUBMULTISET,
                 b.optional(OF),
-                CONCATENATION_EXPRESSION
+                VECTOR_DISTANCE_EXPRESSION
             )
 
             //https://docs.oracle.com/cloud/latest/db112/SQLRF/conditions006.htm#SQLRF52128
@@ -139,7 +139,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
             )
 
             b.rule(IS_OF_CONDITION).define(
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 IS,
                 b.optional(NOT),
                 OF,
@@ -152,7 +152,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
             )
 
             b.rule(IS_JSON_CONDITION).define(
-                CONCATENATION_EXPRESSION,
+                VECTOR_DISTANCE_EXPRESSION,
                 IS,
                 b.optional(NOT),
                 JSON,
@@ -283,7 +283,7 @@ enum class ConditionsGrammar : GrammarRuleKey {
                             PlSqlGrammar.GREATERTHANOREQUALS_OPERATOR,
                             PlSqlGrammar.GREATERTHAN_OPERATOR
                         ),
-                        CONCATENATION_EXPRESSION
+                        VECTOR_DISTANCE_EXPRESSION
                     ),
                     b.sequence(
                         IS, b.optional(NOT),
@@ -292,15 +292,15 @@ enum class ConditionsGrammar : GrammarRuleKey {
                     b.sequence(
                         b.optional(NOT),
                         b.firstOf(
-                            b.sequence(LIKE, CONCATENATION_EXPRESSION, b.optional(ESCAPE, CONCATENATION_EXPRESSION)),
-                            b.sequence(BETWEEN, CONCATENATION_EXPRESSION, AND, CONCATENATION_EXPRESSION),
+                            b.sequence(LIKE, VECTOR_DISTANCE_EXPRESSION, b.optional(ESCAPE, VECTOR_DISTANCE_EXPRESSION)),
+                            b.sequence(BETWEEN, VECTOR_DISTANCE_EXPRESSION, AND, VECTOR_DISTANCE_EXPRESSION),
                             b.sequence(
                                 IN, PlSqlPunctuator.LPARENTHESIS,
                                 PlSqlGrammar.EXPRESSION, b.zeroOrMore(PlSqlPunctuator.COMMA, PlSqlGrammar.EXPRESSION),
                                 PlSqlPunctuator.RPARENTHESIS
                             ),
-                            b.sequence(MEMBER, b.optional(OF), CONCATENATION_EXPRESSION),
-                            b.sequence(SUBMULTISET, b.optional(OF), CONCATENATION_EXPRESSION)
+                            b.sequence(MEMBER, b.optional(OF), VECTOR_DISTANCE_EXPRESSION),
+                            b.sequence(SUBMULTISET, b.optional(OF), VECTOR_DISTANCE_EXPRESSION)
                         )
                     )
                 )
@@ -311,24 +311,24 @@ enum class ConditionsGrammar : GrammarRuleKey {
             b.rule(CONDITION).define(
                 b.firstOf(
                     OVERLAPS_CONDITION,
-                    b.sequence(b.next(CONCATENATION_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
+                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
                     b.sequence(
-                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
+                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
                         BOOLEAN_TEST_CONDITION
                     ),
                     b.sequence(
-                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
+                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
                         FLOATING_POINT_CONDITION
                     ),
                     b.sequence(
-                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), DANGLING),
+                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), DANGLING),
                         IS_DANGLING_CONDITION
                     ),
-                    b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
-                    b.sequence(b.next(CONCATENATION_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
+                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
+                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
                     b.sequence(
                         b.next(
-                            CONCATENATION_EXPRESSION,
+                            VECTOR_DISTANCE_EXPRESSION,
                             b.firstOf(
                                 b.sequence(IS, b.optional(NOT), A, SET),
                                 b.sequence(IS, b.optional(NOT), EMPTY),
@@ -339,11 +339,11 @@ enum class ConditionsGrammar : GrammarRuleKey {
                         MULTISET_CONDITION
                     ),
                     b.sequence(
-                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), JSON),
+                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), JSON),
                         IS_JSON_CONDITION
                     ),
                     b.sequence(
-                        b.next(CONCATENATION_EXPRESSION, IS, b.optional(NOT), OF),
+                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), OF),
                         IS_OF_CONDITION
                     ),
                     JSON_EQUAL_CONDITION,

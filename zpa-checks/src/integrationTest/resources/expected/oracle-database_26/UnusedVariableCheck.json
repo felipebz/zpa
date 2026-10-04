@@ -25,6 +25,7 @@
   "lnpls/scope-and-visibility-identifiers-1.sql" : [ 4 ],
   "lnpls/scope-and-visibility-identifiers-5.sql" : [ 4 ],
   "lnpls/scope-and-visibility-identifiers-9.sql" : [ 4 ],
+  "lnpls/sql-data-types-29.sql" : [ 21, 22, 23, 24, 25, 26, 27, 28 ],
   "lnpls/subprogram-parameters-4.sql" : [ 4 ],
   "lnpls/user-defined-pl-sql-subtypes-2.sql" : [ 5, 6, 7, 8, 12, 14, 15 ],
   "sqlrf/Type-Constructor-Expressions-0.sql" : [ 6 ],

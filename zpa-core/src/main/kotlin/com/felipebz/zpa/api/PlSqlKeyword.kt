@@ -1062,6 +1062,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     TO_NUMBER("to_number"),
     TO_TIMESTAMP("to_timestamp"),
     TO_TIMESTAMP_TZ("to_timestamp_tz"),
+    TO_VECTOR("to_vector"),
     TO_YMINTERVAL("to_yminterval"),
     TRAILING("trailing"),
     TRACKING("tracking"),

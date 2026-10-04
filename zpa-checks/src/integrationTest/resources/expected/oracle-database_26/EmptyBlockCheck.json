@@ -15,6 +15,7 @@
   "lnpls/overloaded-subprograms-12.sql" : [ 8, 9 ],
   "lnpls/scope-and-visibility-identifiers-0.sql" : [ 14, 22 ],
   "lnpls/sequential-control-statements-1.sql" : [ 7 ],
+  "lnpls/sql-data-types-29.sql" : [ 30 ],
   "lnpls/subprogram-invocation-resolution-0.sql" : [ 22, 30, 39, 43 ],
   "lnpls/subprogram-parameters-10.sql" : [ 6 ],
   "lnpls/trigger-design-guidelines-1.sql" : [ 5 ],

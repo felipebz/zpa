@@ -127,6 +127,7 @@ enum class GraphTableGrammar : GrammarRuleKey {
                         LBRACKET, elementPatternFiller, RBRACKET,
                         MINUS, b.optional(GREATERTHAN)
                     ),
+                    VECTOR_EUCLIDEAN_DISTANCE,
                     b.sequence(LESSTHAN, MINUS, b.optional(GREATERTHAN)),
                     b.sequence(MINUS, b.optional(GREATERTHAN))
                 )

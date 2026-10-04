@@ -154,6 +154,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     TABLE_EXPRESSION,
     THE_EXPRESSION,
     CURSOR_EXPRESSION,
+    VECTOR_CONSTRUCTOR_EXPRESSION,
     FROM_VECTOR_EXPRESSION,
     VECTOR_SERIALIZE_EXPRESSION,
     SINGLE_ROW_SQL_FUNCTION;
@@ -214,6 +215,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
             FunctionAlternative(TABLE_EXPRESSION, TABLE),
             FunctionAlternative(THE_EXPRESSION, THE),
             FunctionAlternative(CURSOR_EXPRESSION, CURSOR),
+            FunctionAlternative(VECTOR_CONSTRUCTOR_EXPRESSION, VECTOR, TO_VECTOR),
             FunctionAlternative(FROM_VECTOR_EXPRESSION, FROM_VECTOR),
             FunctionAlternative(VECTOR_SERIALIZE_EXPRESSION, VECTOR_SERIALIZE),
         )
@@ -250,6 +252,12 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     CLOB,
                     BLOB)),
                 b.optional(FORMAT, b.firstOf(SPARSE, DENSE)),
+                RPARENTHESIS)
+            b.rule(VECTOR_CONSTRUCTOR_EXPRESSION).define(
+                b.firstOf(VECTOR, TO_VECTOR), LPARENTHESIS, EXPRESSION,
+                b.optional(COMMA, PlSqlGrammar.vectorSpecificationArgument(b),
+                    b.optional(COMMA, PlSqlGrammar.vectorSpecificationArgument(b),
+                        b.optional(COMMA, PlSqlGrammar.vectorSpecificationArgument(b)))),
                 RPARENTHESIS)
             b.rule(FROM_VECTOR_EXPRESSION).define(vectorSerialization(FROM_VECTOR))
             b.rule(VECTOR_SERIALIZE_EXPRESSION).define(vectorSerialization(VECTOR_SERIALIZE))

@@ -203,6 +203,7 @@
   "lnpls/sql-data-types-34.sql" : [ 13 ],
   "lnpls/sql-data-types-38.sql" : [ 29, 30, 31, 32, 33, 34, 35 ],
   "lnpls/sql-data-types-42.sql" : [ 6, 7, 8 ],
+  "lnpls/sql-data-types-44.sql" : [ 9, 10 ],
   "lnpls/sql-data-types-52.sql" : [ 9, 10 ],
   "lnpls/sql-data-types-6.sql" : [ 8 ],
   "lnpls/sql-injection-1.sql" : [ 17, 19 ],
