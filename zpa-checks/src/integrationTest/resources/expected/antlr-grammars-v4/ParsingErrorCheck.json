@@ -4,7 +4,6 @@
   "examples/alter_analytic_view.sql" : [ 3 ],
   "examples/alter_synonym01.sql" : [ 4 ],
   "examples/alter_table.sql" : [ 134 ],
-  "examples/audit.sql" : [ 1 ],
   "examples/bindvar04.sql" : [ 6 ],
   "examples/create_function01.sql" : [ 1 ],
   "examples/create_index.sql" : [ 18 ],

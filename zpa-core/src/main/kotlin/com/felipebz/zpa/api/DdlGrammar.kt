@@ -209,6 +209,7 @@ enum class DdlGrammar : GrammarRuleKey {
     NOAUDIT_STATEMENT,
     AUDIT_POLICY_CLAUSE,
     AUDIT_CONTEXT_CLAUSE,
+    TRADITIONAL_AUDIT_CLAUSE,
     STATISTICS_ASSOCIATION_TARGET,
     ASSOCIATE_STATISTICS,
     DISASSOCIATE_STATISTICS,
@@ -4350,6 +4351,7 @@ enum class DdlGrammar : GrammarRuleKey {
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Unified-Auditing.html
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Unified-Auditing.html
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Traditional-Auditing.html
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Traditional-Auditing.html
         private fun createAudit(b: PlSqlGrammarBuilder) {
             val name = DclGrammar.IDENTIFIER_OR_KEYWORD
             val users = b.sequence(name, b.zeroOrMore(COMMA, name))
@@ -4372,15 +4374,13 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(AUDIT_CONTEXT_CLAUSE).define(
                 namespace, b.zeroOrMore(COMMA, namespace), b.optional(BY, users))
 
-            b.rule(AUDIT_STATEMENT).define(
-                AUDIT, b.firstOf(AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE), b.optional(SEMICOLON))
-
             // Traditional auditing: each option is a run of words such as SELECT TABLE, DELETE ANY TABLE, ROLE,
             // ALL STATEMENTS or DIRECT_PATH LOAD. Oracle 26 rejects BY after ON object (ORA-01708/ORA-01718).
-            // Traditional AUDIT itself is desupported (ORA-46401 at its first option), so only NOAUDIT has it.
+            // Oracle 26 refuses to run traditional AUDIT (ORA-46401) but still documents it, and NOAUDIT must
+            // repeat its syntax, so both statements share this production.
             val operation = b.oneOrMore(b.nextNot(b.firstOf(ON, BY, WHENEVER, CONTAINER)), name)
             val schemaObjectName = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
-            val traditional = b.sequence(
+            b.rule(TRADITIONAL_AUDIT_CLAUSE).define(
                 operation, b.zeroOrMore(COMMA, operation),
                 b.firstOf(
                     b.sequence(
@@ -4393,10 +4393,17 @@ enum class DdlGrammar : GrammarRuleKey {
                             schemaObjectName)),
                     b.optional(BY, users)),
                 b.optional(whenever),
-                b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))
+                b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL))).skip()
+
+            b.rule(AUDIT_STATEMENT).define(
+                AUDIT,
+                b.firstOf(
+                    AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE,
+                    b.sequence(b.nextNot(b.firstOf(POLICY, CONTEXT)), TRADITIONAL_AUDIT_CLAUSE)),
+                b.optional(SEMICOLON))
 
             b.rule(NOAUDIT_STATEMENT).define(
-                NOAUDIT, b.firstOf(AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE, traditional), b.optional(SEMICOLON))
+                NOAUDIT, b.firstOf(AUDIT_POLICY_CLAUSE, AUDIT_CONTEXT_CLAUSE, TRADITIONAL_AUDIT_CLAUSE), b.optional(SEMICOLON))
         }
 
         // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ANALYZE.html
