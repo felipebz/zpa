@@ -238,6 +238,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     SYSTEM_TRIGGER,
     DML_EVENT_CLAUSE,
     REFERENCING_CLAUSE,
+    TRIGGER_CALL_BODY,
     TRIGGER_EDITION_CLAUSE,
     TRIGGER_ORDERING_CLAUSE,
     COMPOUND_TRIGGER_BLOCK,
@@ -1415,6 +1416,16 @@ enum class PlSqlGrammar : GrammarRuleKey {
         }
 
         private fun createTrigger(b: PlSqlGrammarBuilder) {
+            // Oracle 26 also accepts a REFERENCING clause with a CALL body, which the documentation forbids.
+            b.rule(TRIGGER_CALL_BODY).define(
+                    CALL, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
+                    b.optional(LPARENTHESIS, ARGUMENT, b.zeroOrMore(COMMA, ARGUMENT), RPARENTHESIS),
+                    b.optional(SEMICOLON))
+
+            val triggerBody = b.firstOf(
+                    TRIGGER_CALL_BODY,
+                    b.sequence(b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION))
+
             b.rule(CREATE_TRIGGER).define(
                     CREATE, b.optional(OR, REPLACE),
                     b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
@@ -1431,7 +1442,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(TRIGGER_ORDERING_CLAUSE),
                     b.optional(b.firstOf(ENABLE, DISABLE)),
                     b.optional(WHEN, LPARENTHESIS, EXPRESSION, RPARENTHESIS),
-                    b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
+                    triggerBody
             )
 
             b.rule(INSTEAD_OF_DML_TRIGGER).define(
@@ -1452,7 +1463,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(TRIGGER_EDITION_CLAUSE),
                     b.optional(TRIGGER_ORDERING_CLAUSE),
                     b.optional(b.firstOf(ENABLE, DISABLE)),
-                    b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
+                    triggerBody
             )
 
             b.rule(COMPOUND_DML_TRIGGER).define(
@@ -1476,7 +1487,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             b.sequence(b.optional(PLUGGABLE), DATABASE)),
                     b.optional(TRIGGER_ORDERING_CLAUSE),
                     b.optional(b.firstOf(ENABLE, DISABLE)),
-                    b.optional(DECLARE, b.optional(DECLARE_SECTION)), STATEMENTS_SECTION
+                    triggerBody
             )
 
             b.rule(DML_EVENT_CLAUSE).define(
@@ -1488,7 +1499,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             )
 
             b.rule(REFERENCING_CLAUSE).define(
-                    REFERENCING,
+                    b.firstOf(REFERENCING, REFERENCES),
                     b.zeroOrMore(
                             b.firstOf(
                                     b.sequence(OLD, b.optional(AS), IDENTIFIER_NAME),

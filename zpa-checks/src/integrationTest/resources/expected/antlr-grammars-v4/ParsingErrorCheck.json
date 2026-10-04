@@ -13,7 +13,6 @@
   "examples/create_index.sql" : [ 18 ],
   "examples/create_table.sql" : [ 50 ],
   "examples/create_tablespace.sql" : [ 58 ],
-  "examples/create_trigger02.sql" : [ 2 ],
   "examples/create_view.sql" : [ 32 ],
   "examples/drop_tablespace.sql" : [ 6 ],
   "examples/flashback01.sql" : [ 1 ],

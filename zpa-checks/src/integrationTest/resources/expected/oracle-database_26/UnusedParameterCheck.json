@@ -23,6 +23,7 @@
   "lnpls/sequential-control-statements-1.sql" : [ 3, 4 ],
   "lnpls/subprogram-invocation-resolution-0.sql" : [ 4, 5, 12, 18, 19, 26, 27 ],
   "lnpls/subprogram-parameters-10.sql" : [ 3 ],
+  "lnpls/subprograms-invoked-triggers-0.sql" : [ 2, 2 ],
   "sqlrf/SELECT-17.sql" : [ 2 ],
   "sqlrf/SELECT-20.sql" : [ 2, 3, 4 ],
   "sqlrf/SELECT-21.sql" : [ 2 ],

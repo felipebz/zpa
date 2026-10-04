@@ -10,7 +10,6 @@
   "lnpls/lexical-units-10.sql" : [ 7 ],
   "lnpls/loop-statements-31.sql" : [ 2 ],
   "lnpls/scope-and-visibility-identifiers-11.sql" : [ 3 ],
-  "lnpls/subprograms-invoked-triggers-0.sql" : [ 8 ],
   "lnpls/triggers-publishing-events-0.sql" : [ 2 ],
   "lnpls/wrapping-pl-sql-source-text-pl-sql-wrapper-utility-7.sql" : [ 4 ],
   "sqlrf/ALTER-ANALYTIC-VIEW-1.sql" : [ 2 ],

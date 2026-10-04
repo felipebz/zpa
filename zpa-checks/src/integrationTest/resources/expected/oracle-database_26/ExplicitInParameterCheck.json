@@ -127,6 +127,7 @@
   "lnpls/subprogram-parts-4.sql" : [ 5 ],
   "lnpls/subprogram-parts-6.sql" : [ 2 ],
   "lnpls/subprogram-parts-7.sql" : [ 2 ],
+  "lnpls/subprograms-invoked-triggers-0.sql" : [ 2 ],
   "lnpls/transaction-processing-and-control-0.sql" : [ 12, 13, 14 ],
   "lnpls/wrapping-pl-sql-source-text-dbms_ddl-subprograms-0.sql" : [ 5, 13 ],
   "lnpls/wrapping-pl-sql-source-text-dbms_ddl-subprograms-2.sql" : [ 2, 2, 3 ],
