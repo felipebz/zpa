@@ -55,6 +55,9 @@ object PlSqlLexer {
     // Oracle tolerates padding inside the literal.
     private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\s*\d{1,4}-\d{1,2}-\d{1,2}\s*')"""
 
+    // Undocumented, but Oracle 26 parses TIME followed by any string literal and validates the value afterwards.
+    private val TIME_LITERAL = "(?i)TIME\\s*?$STRING_LITERAL"
+
     private const val TIMESTAMP_LITERAL = """(?i)TIMESTAMP\s*?'\d{4}-\d{2}-\d{2}\s++\d{1,2}:\d{2}:\d{2}(?:.\d{1,9})?(?:\s++[A-Z0-9_/+-:]++(?:\s++[A-Z0-9_/+-]{1,5})?)?'"""
 
     private val SIMPLE_IDENTIFIER = and("""[\w\p{L}]""", o2n("""[\w\p{L}#$]"""))
@@ -74,6 +77,7 @@ object PlSqlLexer {
             .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL), 'd'))
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL), 't'))
+            .withChannel(DateChannel(regexp(PlSqlTokenType.TIME_LITERAL, TIME_LITERAL), 't'))
             .withChannel(IdentifierChannel(PlSqlKeyword.entries.toTypedArray()))
             .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
             .withChannel(BlackHoleChannel("(?is)" + or(

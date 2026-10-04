@@ -28,6 +28,7 @@ enum class PlSqlTokenType : TokenType {
     NUMBER_LITERAL,
     DATE_LITERAL,
     TIMESTAMP_LITERAL,
+    TIME_LITERAL,
     MLE_INLINE_SOURCE,
     MLE_MODULE_SOURCE;
 

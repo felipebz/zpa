@@ -499,3 +499,15 @@ BEGIN
   RETURN LTRIM(unknown_function());
 END;
 /
+
+CREATE FUNCTION date_literal_value RETURN DATE IS -- Noncompliant
+BEGIN
+  RETURN DATE '2026-01-01';
+END;
+/
+
+CREATE FUNCTION time_literal_value RETURN VARCHAR2 IS
+BEGIN
+  RETURN TIME '19:00:00';
+END;
+/

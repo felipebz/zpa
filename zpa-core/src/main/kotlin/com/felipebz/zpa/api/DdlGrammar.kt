@@ -5117,7 +5117,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     UNTIL,
                     b.firstOf(
                         CANCEL, CONSISTENT,
-                        b.sequence(TIME, CHARACTER_LITERAL),
+                        PlSqlTokenType.TIME_LITERAL,
                         b.sequence(CHANGE, INTEGER_LITERAL))),
                 b.sequence(USING, BACKUP, CONTROLFILE))
             val parallelClause = b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))

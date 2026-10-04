@@ -401,6 +401,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     STRING_LITERAL to CHARACTER_LITERAL,
                     DATE_LITERAL to DATE_LITERAL,
                     TIMESTAMP_LITERAL to TIMESTAMP_LITERAL,
+                    TIME_LITERAL to TIME_LITERAL,
                     INTERVAL to INTERVAL_LITERAL,
                     DOUBLEDOLLAR to INQUIRY_DIRECTIVE
                 )

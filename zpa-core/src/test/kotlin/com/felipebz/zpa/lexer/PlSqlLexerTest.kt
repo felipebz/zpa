@@ -414,6 +414,39 @@ class PlSqlLexerTest {
     }
 
     @Test
+    fun timeLiteralLexesAsOneTokenWithoutValidatingTheValue() {
+        listOf(
+            "TIME '19:00:00'", "TIME'19:00:00'", "TIME    '19:00:00'", "time '01:02:03'", "TIME '19:00:00.123456789'",
+            "TIME '19:00:00 +03:00'", "TIME ' 19:00:00 '",
+            "TIME 'x'", "TIME ''", "TIME '19:00'", "TIME '19-00-00'", "TIME '24:00:00'", "TIME '23:60:00'", "TIME '23:59:60'",
+            "TIME '19:00:00.1234567890'", "TIME 'it''s'",
+            "TIME q'[19:00:00]'", "TIME Q'(19:00:00)'", "TIME q'!19:00:00!'", "TIME q'{19:00:00}'", "TIME q'<19:00:00>'", "TIME q'[x]'",
+            "TIME N'19:00:00'", "TIME n'19:00:00'", "TIME nq'[19:00:00]'", "TIME NQ'[19:00:00]'",
+        ).forEach { source ->
+            val tokens = lexer.lex(source).dropLast(1)
+            org.assertj.core.api.Assertions.assertThat(tokens).describedAs(source).hasSize(1)
+            org.assertj.core.api.Assertions.assertThat(tokens[0].type).describedAs(source).isEqualTo(PlSqlTokenType.TIME_LITERAL)
+            org.assertj.core.api.Assertions.assertThat(tokens[0].originalValue).isEqualTo(source)
+        }
+    }
+
+    @Test
+    fun timeLiteralPreservesPrefixAndSyntaxBoundaries() {
+        assertExactTokenStream("TIME", PlSqlKeyword.TIME to "TIME")
+        assertExactTokenStream("TIMEVALUE", GenericTokenType.IDENTIFIER to "TIMEVALUE")
+        assertExactTokenStream(
+            "TIME '", PlSqlKeyword.TIME to "TIME", GenericTokenType.UNKNOWN_CHAR to "'", originalValues = listOf("TIME", "'"))
+        listOf("TIME 1", "TIME (3) '19:00:00'", "TIME(3)'19:00:00'", "TIME :b", "TIME \"19:00:00\"").forEach { source ->
+            org.assertj.core.api.Assertions.assertThat(lexer.lex(source).first().type).describedAs(source).isEqualTo(PlSqlKeyword.TIME)
+        }
+        val tokens = lexer.lex("TIME '19:00:00' '20:00:00'").dropLast(1)
+        org.assertj.core.api.Assertions.assertThat(tokens.map { it.type })
+            .containsExactly(PlSqlTokenType.TIME_LITERAL, PlSqlTokenType.STRING_LITERAL)
+        org.assertj.core.api.Assertions.assertThat(lexer.lex("TIMESTAMP '2026-01-01 10:00:00'").first().type).isEqualTo(PlSqlTokenType.TIMESTAMP_LITERAL)
+        org.assertj.core.api.Assertions.assertThat(lexer.lex("DATE '2026-01-01'").first().type).isEqualTo(PlSqlTokenType.DATE_LITERAL)
+    }
+
+    @Test
     fun dateAndTimestampAdmissionsPreserveLiteralAndPrefixBoundaries() {
         listOf(
             "DATE '2026-09-05'",

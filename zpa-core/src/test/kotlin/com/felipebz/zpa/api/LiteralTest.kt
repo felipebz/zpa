@@ -45,6 +45,7 @@ class LiteralTest : RuleTest() {
             "'text'",
             "DATE '2026-09-05'",
             "TIMESTAMP '2026-09-05 12:34:56'",
+            "TIME '19:00:00'",
             "INTERVAL '4' YEAR",
             "\$\$PLSQL_UNIT"
         ).forEach { assertThat(p).matches(it) }
@@ -56,5 +57,18 @@ class LiteralTest : RuleTest() {
         assertThat(p).notMatches("DATE")
         assertThat(p).notMatches("INTERVAL '4'")
         assertThat(p).notMatches("UNKNOWN")
+        assertThat(p).notMatches("TIME")
+        assertThat(p).matches("TIME 'x'")
+        assertThat(p).matches("TIME '19:00'")
+        assertThat(p).notMatches("TIME 1")
+        assertThat(p).notMatches("TIME (3) '19:00:00'")
+        assertThat(p).notMatches("TIMEVALUE '19:00:00'")
+    }
+
+    @Test
+    fun keepsTimeLiteralAsOneTokenUnderLiteral() {
+        val literal = p.parse("TIME '19:00:00 +03:00'")
+        org.assertj.core.api.Assertions.assertThat(literal.hasDirectChildren(PlSqlTokenType.TIME_LITERAL)).isTrue()
+        org.assertj.core.api.Assertions.assertThat(literal.tokens.map { it.originalValue }).containsExactly("TIME '19:00:00 +03:00'")
     }
 }

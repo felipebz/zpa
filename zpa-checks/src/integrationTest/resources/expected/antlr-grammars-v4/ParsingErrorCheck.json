@@ -14,6 +14,5 @@
   "examples/drop_tablespace.sql" : [ 6 ],
   "examples/interval03.sql" : [ 16 ],
   "examples/materialized_views.sql" : [ 81 ],
-  "examples/select_time.sql" : [ 1 ],
   "examples/views.sql" : [ 59 ]
 }

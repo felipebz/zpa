@@ -806,6 +806,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             PlSqlGrammar.CHARACTER_LITERAL,
             PlSqlTokenType.DATE_LITERAL,
             PlSqlTokenType.TIMESTAMP_LITERAL,
+            PlSqlTokenType.TIME_LITERAL,
             PlSqlGrammar.INTERVAL_LITERAL,
         )
 
