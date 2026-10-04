@@ -149,6 +149,9 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_RESTORE_POINT,
     FLASHBACK_TABLE,
     CREATE_EDITION,
+    FLASHBACK_DATABASE,
+    CREATE_PMEM_FILESTORE,
+    ALTER_PMEM_FILESTORE,
     CREATE_OPERATOR,
     ALTER_OPERATOR,
     CREATE_INDEXTYPE,
@@ -2817,6 +2820,8 @@ enum class DdlGrammar : GrammarRuleKey {
             createRestorePoint(b)
             createFlashbackTable(b)
             createEdition(b)
+            createFlashbackDatabase(b)
+            createPmemFilestore(b)
             createOperator(b)
             createIndextype(b)
 
@@ -3205,6 +3210,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE_RESTORE_POINT,
                 FLASHBACK_TABLE,
                 CREATE_EDITION,
+                FLASHBACK_DATABASE,
+                CREATE_PMEM_FILESTORE,
+                ALTER_PMEM_FILESTORE,
                 CREATE_OPERATOR,
                 ALTER_OPERATOR,
                 CREATE_INDEXTYPE,
@@ -3681,6 +3689,54 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
                             b.sequence(RESTORE, POINT, IDENTIFIER_NAME)),
                         b.optional(triggersClause))),
+                b.optional(SEMICOLON))
+        }
+
+        // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/FLASHBACK-DATABASE.html
+        // Oracle 26 parses BEFORE RESTORE POINT and TO RESETLOGS without BEFORE, unlike the documented diagram.
+        private fun createFlashbackDatabase(b: PlSqlGrammarBuilder) {
+            val restorePoint = b.sequence(RESTORE, POINT, IDENTIFIER_NAME)
+            b.rule(FLASHBACK_DATABASE).define(
+                FLASHBACK, b.optional(STANDBY), b.optional(PLUGGABLE), DATABASE, b.optional(IDENTIFIER_NAME),
+                TO,
+                b.firstOf(
+                    b.sequence(BEFORE, b.firstOf(b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION), RESETLOGS, restorePoint)),
+                    b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                    RESETLOGS,
+                    restorePoint),
+                b.optional(SEMICOLON))
+        }
+
+        private fun createPmemFilestore(b: PlSqlGrammarBuilder) {
+            val autoextend = b.sequence(
+                AUTOEXTEND,
+                b.firstOf(
+                    OFF,
+                    b.sequence(
+                        ON, b.optional(NEXT, INDEX_SIZE_CLAUSE),
+                        b.optional(MAXSIZE, b.firstOf(UNLIMITED, INDEX_SIZE_CLAUSE)))))
+            b.rule(CREATE_PMEM_FILESTORE).define(
+                CREATE, PMEM, FILESTORE, IDENTIFIER_NAME,
+                b.zeroOrMore(b.firstOf(
+                    b.sequence(MOUNTPOINT, CHARACTER_LITERAL),
+                    b.sequence(BACKINGFILE, CHARACTER_LITERAL, b.optional(REUSE)),
+                    b.sequence(SIZE, INDEX_SIZE_CLAUSE),
+                    b.sequence(BLOCKSIZE, INDEX_SIZE_CLAUSE),
+                    autoextend)),
+                b.optional(SEMICOLON))
+            b.rule(ALTER_PMEM_FILESTORE).define(
+                ALTER, PMEM, FILESTORE, IDENTIFIER_NAME,
+                b.firstOf(
+                    b.sequence(RESIZE, INDEX_SIZE_CLAUSE),
+                    autoextend,
+                    b.sequence(
+                        MOUNT,
+                        b.zeroOrMore(b.firstOf(
+                            b.sequence(MOUNTPOINT, CHARACTER_LITERAL),
+                            b.sequence(BACKINGFILE, CHARACTER_LITERAL),
+                            FORCE))),
+                    // The quick reference documents FORCE only for MOUNT; Oracle 26 parses it after DISMOUNT too.
+                    b.sequence(DISMOUNT, b.optional(FORCE))),
                 b.optional(SEMICOLON))
         }
 
@@ -4924,7 +4980,7 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle never takes a clause keyword or LINK as the database name (`ADD ADD LOGFILE` fails).
             val notName = b.firstOf(
                 ARCHIVELOG, NOARCHIVELOG, NO, FORCE, SET, RENAME, CLEAR, ADD, DROP, SWITCH, LINK,
-                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE, MOUNT, OPEN)
+                CREATE, DATAFILE, TEMPFILE, MOVE, ENABLE, DISABLE, RECOVER, PREPARE, MOUNT, OPEN, FLASHBACK)
             b.rule(DEFAULT_TABLESPACE_SETTINGS).define(
                 b.firstOf(
                     b.sequence(SET, DEFAULT, b.firstOf(BIGFILE, SMALLFILE), TABLESPACE),
@@ -4959,7 +5015,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     DATABASE_FILE_CLAUSES, LOST_WRITE_PROTECTION, MANAGED_STANDBY_RECOVERY, RECOVER_TO_LOGICAL_STANDBY,
                     GENERAL_RECOVERY, PREPARE_CLAUSE, DROP_MIRROR_COPY,
                     DEFAULT_TABLESPACE_SETTINGS, STARTUP_CLAUSES, RENAME_GLOBAL_NAME_CLAUSE,
-                    BLOCK_CHANGE_TRACKING_CLAUSE, LOGFILE_CLAUSES),
+                    BLOCK_CHANGE_TRACKING_CLAUSE, LOGFILE_CLAUSES, b.sequence(FLASHBACK, b.firstOf(ON, OFF))),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
                 b.optional(SEMICOLON))
         }

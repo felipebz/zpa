@@ -279,13 +279,6 @@ class AlterDatabaseTest : RuleTest() {
     }
 
     @Test
-    fun keepsOtherAlterDatabaseClausesUnsupported() {
-        notMatches(
-            "flashback on"
-        )
-    }
-
-    @Test
     fun reusesLogfileRenameWithinDatabaseFileFamily() {
         setRootRule(PlSqlGrammar.FILE_INPUT)
         val tree = p.parse("alter database rename file 'a.dbf' to 'b.dbf'; " +

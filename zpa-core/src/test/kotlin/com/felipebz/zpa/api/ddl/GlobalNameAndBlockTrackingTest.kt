@@ -104,7 +104,7 @@ class GlobalNameAndBlockTrackingTest : RuleTest() {
     @Test
     fun keepsOtherEnableDisableAndRenameClausesSeparate() {
         matches("enable lost write protection", "rename file 'a.dbf' to 'b.dbf'", "datafile 'a.dbf' online")
-        notMatches("enable thread 2", "enable", "disable", "rename", "flashback on")
+        notMatches("enable thread 2", "enable", "disable", "rename")
     }
 
     @Test

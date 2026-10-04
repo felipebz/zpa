@@ -84,7 +84,6 @@ class StartupClausesTest : RuleTest() {
 
     @Test
     fun keepsOtherAlterDatabaseClausesSeparate() {
-        notMatches("flashback on")
         notMatches("open add logfile group 3 ('a.log') size 1m")
     }
 
