@@ -11,6 +11,7 @@
   "lnpls/CREATE-FUNCTION-statement-8.sql" : [ 3 ],
   "lnpls/DEPRECATE-pragma-27.sql" : [ 12 ],
   "lnpls/DEPRECATE-pragma-28.sql" : [ 3, 6 ],
+  "lnpls/DEPRECATE-pragma-30.sql" : [ 4 ],
   "lnpls/EXIT-statement-0.sql" : [ 6, 13 ],
   "lnpls/EXIT-statement-2.sql" : [ 6, 11 ],
   "lnpls/GOTO-statement-0.sql" : [ 16 ],

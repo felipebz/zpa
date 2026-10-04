@@ -3,7 +3,6 @@
   "lnpls/ALTER-TYPE-statement-12.sql" : [ 2 ],
   "lnpls/ALTER-TYPE-statement-14.sql" : [ 2 ],
   "lnpls/DEPRECATE-pragma-18.sql" : [ 2 ],
-  "lnpls/DEPRECATE-pragma-30.sql" : [ 3 ],
   "lnpls/conditional-compilation1-21.sql" : [ 2 ],
   "lnpls/cursors-overview-7.sql" : [ 2 ],
   "lnpls/lexical-units-10.sql" : [ 7 ],

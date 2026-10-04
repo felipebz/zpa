@@ -824,8 +824,10 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     LOCK_TABLE_STATEMENT,
                     MERGE_STATEMENT,
                     INLINE_PRAGMA_STATEMENT,
-                    // Oracle compiles this one in the executable section too.
+                    // Oracle compiles these pragmas in the executable section too.
                     AUTONOMOUS_TRANSACTION_PRAGMA,
+                    b.sequence(DEPRECATE_PRAGMA, SEMICOLON),
+                    b.sequence(SUPPRESSES_WARNING_6009_PRAGMA, SEMICOLON),
                     COVERAGE_PRAGMA))
 
             b.rule(STATEMENTS).define(b.oneOrMore(STATEMENT))
