@@ -40,6 +40,7 @@ import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val OUTLINE_CREATE_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val PRIVATE_TEMPORARY_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
+internal val SHARDED_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 /**
  * Enables view-specific restrictions in shared constraint productions.
  * Callers remain responsible for restricting unsupported constraint kinds.
@@ -65,6 +66,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CTAS_COLUMN_DEFINITION,
     CTAS_RELATIONAL_PROPERTIES,
     CREATE_TABLE_RELATIONAL_TAIL,
+    CREATE_TABLE_BODY,
     SUPPLEMENTAL_LOGGING_PROPS,
     SUPPLEMENTAL_ID_KEY_CLAUSE,
     TABLE_RELATIONAL_PROPERTIES,
@@ -452,6 +454,7 @@ enum class DdlGrammar : GrammarRuleKey {
     INDIVIDUAL_HASH_PARTITIONS,
     HASH_PARTITIONS_BY_QUANTITY,
     PARTITION_BY_LIST,
+    PARTITION_BY_DIRECTORY,
     PARTITION_COMPOSITE,
     SUBPARTITION_BY_LIST,
     SUBPARTITION_BY_HASH,
@@ -1528,6 +1531,17 @@ enum class DdlGrammar : GrammarRuleKey {
                                             b.optional(COMMA))),
                             RPARENTHESIS))
 
+            val directoryPartition = b.sequence(
+                    PARTITION,
+                    b.firstOf(
+                            b.sequence(TABLE_PARTITION_DESCRIPTION, b.next(b.firstOf(COMMA, RPARENTHESIS))),
+                            b.sequence(IDENTIFIER_NAME, TABLE_PARTITION_DESCRIPTION)))
+            b.rule(PARTITION_BY_DIRECTORY).define(
+                    PARTITION, BY, DIRECTORY,
+                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                    LPARENTHESIS, directoryPartition, b.zeroOrMore(COMMA, directoryPartition), RPARENTHESIS,
+                    b.optional(DIRECTORY, TABLESPACE, IDENTIFIER_NAME))
+
             b.rule(PARTITION_COMPOSITE).define(
                     b.sequence(
                             PARTITION,
@@ -1556,6 +1570,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     PARTITION_BY_RANGE,
                     PARTITION_BY_HASH,
                     PARTITION_BY_LIST,
+                    b.sequence(b.requireContext(SHARDED_TABLE_CONTEXT, true), PARTITION_BY_DIRECTORY),
                     PARTITION_COMPOSITE,
                     PARTITION_BY_REFERENCE))
 
@@ -1719,6 +1734,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(SEMICOLON))
             }
 
+            b.rule(CREATE_TABLE_BODY).define(createTableBody(null)).skip()
+
             b.rule(CREATE_TABLE).define(
                     CREATE,
                     b.firstOf(
@@ -1727,7 +1744,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(IMMUTABLE, TABLE,
                                     createTableBody(immutableTableClauses)),
                             b.sequence(PRIVATE, TEMPORARY, TABLE,
-                                    b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, createTableBody(null))),
+                                    b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
                             b.sequence(JSON, COLLECTION, TABLE, UNIT_NAME,
                                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.sequence(
                                             b.optional(WITH, ETAG),
@@ -1735,7 +1752,8 @@ enum class DdlGrammar : GrammarRuleKey {
                                             CREATE_TABLE_RELATIONAL_TAIL,
                                             b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                                     b.optional(SEMICOLON)),
-                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, createTableBody(null))))
+                            b.sequence(SHARDED, TABLE, b.withContext(SHARDED_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
+                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, CREATE_TABLE_BODY)))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
             // nonexistent objects. Columns require table.column, optionally prefixed by a schema.

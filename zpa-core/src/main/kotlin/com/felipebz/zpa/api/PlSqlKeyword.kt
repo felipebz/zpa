@@ -991,6 +991,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     SETS("sets"),
     SETTINGS("settings"),
     SHARD("shard"),
+    SHARDED("sharded"),
     SHARD_ENABLE("shard_enable"),
     SHARDSPACE("shardspace"),
     SHARED("shared"),
