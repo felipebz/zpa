@@ -277,6 +277,7 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_INSTANCES_CLAUSE,
     ALTER_DATABASE,
     ALTER_DISKGROUP,
+    CREATE_DISKGROUP,
     QUALIFIED_DISK_CLAUSE,
     ADD_DISK_CLAUSE,
     DROP_DISK_CLAUSE,
@@ -3195,6 +3196,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_DATABASE_LINK,
                 ALTER_DATABASE,
                 ALTER_DISKGROUP,
+                CREATE_DISKGROUP,
                 CREATE_OUTLINE,
                 ALTER_OUTLINE,
                 CREATE_INMEMORY_JOIN_GROUP,
@@ -5176,6 +5178,17 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.zeroOrMore(diskItem),
                 filegroupAction,
                 b.zeroOrMore(b.firstOf(diskItem, filegroupAction)))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DISKGROUP.html
+            // Oracle 26 rejects the documented EXTENDED SITE name REDUNDANCY and takes SITE per disk group,
+            // as ALTER DISKGROUP does.
+            val diskgroupAttribute = b.sequence(CHARACTER_LITERAL, EQUALS, CHARACTER_LITERAL)
+            b.rule(CREATE_DISKGROUP).define(
+                CREATE, DISKGROUP, IDENTIFIER_NAME,
+                b.optional(b.firstOf(HIGH, NORMAL, "FLEX", EXTENDED, EXTERNAL), REDUNDANCY),
+                b.oneOrMore(addGroup),
+                b.optional(ATTRIBUTE, diskgroupAttribute, b.zeroOrMore(COMMA, diskgroupAttribute)),
+                b.optional(SEMICOLON))
 
             b.rule(ALTER_DISKGROUP).define(
                 ALTER, DISKGROUP,
