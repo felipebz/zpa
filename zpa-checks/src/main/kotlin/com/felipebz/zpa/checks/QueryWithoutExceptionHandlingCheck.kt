@@ -99,6 +99,7 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
         return queryBlock.getChildren(DmlGrammar.SELECT_COLUMN).any { selectColumn ->
             selectColumn.getDescendants(
                 PlSqlGrammar.METHOD_CALL,
+                PlSqlGrammar.AGGREGATE_ALL_EXPRESSION,
                 AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION
             ).any { aggregate ->
                 aggregate.getFirstAncestorOrNull(DmlGrammar.QUERY_BLOCK) === queryBlock &&
@@ -110,6 +111,9 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
 
     private fun isAggregate(node: AstNode): Boolean {
         if (node.type === AggregateSqlFunctionsGrammar.AGGREGATE_SQL_FUNCTION) return true
+        if (node.type === PlSqlGrammar.AGGREGATE_ALL_EXPRESSION) {
+            return COMMON_AGGREGATE_FUNCTIONS.any { it.equals(node.token.originalValue, ignoreCase = true) }
+        }
         if (node.type !== PlSqlGrammar.METHOD_CALL) return false
 
         val callee = node.children.firstOrNull {

@@ -643,6 +643,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     MAX_DIAG_SIZE("max_diag_size"),
     MEASURE("measure"),
     MEASURES("measures"),
+    MEDIAN("median"),
     MEDIUM("medium"),
     MEMBER("member"),
     MEMCOMPRESS("memcompress"),

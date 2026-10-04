@@ -23,6 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
 
@@ -36,10 +37,17 @@ class VariableInCountCheck : AbstractBaseCheck() {
 
     override fun init() {
         subscribeTo(PlSqlGrammar.METHOD_CALL)
+        subscribeTo(PlSqlGrammar.AGGREGATE_ALL_EXPRESSION)
     }
 
     override fun visitNode(node: AstNode) {
         if (!node.parent.typeIs(DmlGrammar.SELECT_COLUMN)) {
+            return
+        }
+        if (node.typeIs(PlSqlGrammar.AGGREGATE_ALL_EXPRESSION)) {
+            if (node.firstChild.typeIs(PlSqlKeyword.COUNT)) {
+                checkArguments(node, listOf(node.children.dropWhile { !it.typeIs(PlSqlKeyword.ALL) }[1]))
+            }
             return
         }
         if (!count.matches(node)) {

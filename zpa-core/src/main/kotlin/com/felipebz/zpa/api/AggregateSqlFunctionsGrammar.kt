@@ -135,6 +135,9 @@ enum class AggregateSqlFunctionsGrammar : GrammarRuleKey {
         val admissionTokens: Array<TokenType> =
             ALTERNATIVES.flatMap { it.admissionTokens }.distinct().toTypedArray()
 
+        val allModifierTokens: Array<TokenType> = arrayOf(
+            COUNT, SUM, AVG, MIN, MAX, STDDEV, STDDEV_POP, STDDEV_SAMP, VARIANCE, VAR_POP, VAR_SAMP, MEDIAN)
+
         fun buildOn(b: PlSqlGrammarBuilder) {
             b.rule(FILTER_CLAUSE).define(
                 FILTER, LPARENTHESIS, WHERE, ConditionsGrammar.CONDITION, RPARENTHESIS)

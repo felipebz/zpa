@@ -251,3 +251,83 @@ begin
     from values_table;
 end;
 /
+
+-- ALL behaves like the plain aggregate call.
+begin
+  select max(all value)
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select count(all value)
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select sum(all value), avg(all value), min(all value)
+    into var, var2, var3
+    from values_table;
+end;
+/
+
+begin
+  select max(all value) over () -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select count(all value) over (partition by other) -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select max(value) over () -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select count(all value) -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table
+   group by other;
+end;
+/
+
+begin
+  select max(all value)
+    bulk collect into var
+    from values_table;
+end;
+/
+
+-- Aggregates outside the common set keep their existing treatment.
+begin
+  select stddev(value) -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select stddev(all value) -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/
+
+begin
+  select median(all value) -- Noncompliant {{Handle exceptions of this query.}}
+    into var
+    from values_table;
+end;
+/

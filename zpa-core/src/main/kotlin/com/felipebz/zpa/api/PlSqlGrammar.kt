@@ -131,6 +131,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     EXPLICIT_CHOICE_LIST,
     QUALIFIED_EXPRESSION,
     CALL_EXPRESSION,
+    AGGREGATE_ALL_EXPRESSION,
     CASE_EXPRESSION,
     AT_TIME_ZONE_EXPRESSION,
     VARIABLE_NAME,
@@ -984,7 +985,14 @@ enum class PlSqlGrammar : GrammarRuleKey {
             val singleRowTokens = SingleRowSqlFunctionsGrammar.admissionTokens
             val aggregateTokens = AggregateSqlFunctionsGrammar.admissionTokens
 
+            b.rule(AGGREGATE_ALL_EXPRESSION).define(
+                b.isOneOfThem(AggregateSqlFunctionsGrammar.allModifierTokens), LPARENTHESIS, ALL, EXPRESSION, RPARENTHESIS)
+
             b.rule(CALL_EXPRESSION).define(b.firstOf(
+                    b.sequence(
+                        b.next(b.isOneOfThem(AggregateSqlFunctionsGrammar.allModifierTokens), LPARENTHESIS, ALL),
+                        AGGREGATE_ALL_EXPRESSION
+                    ),
                     b.sequence(
                         b.next(b.isOneOfThem(singleRowTokens)),
                         SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION
