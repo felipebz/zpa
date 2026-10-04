@@ -22,7 +22,6 @@
   "sqlrf/ALTER-TABLE-8.sql" : [ 4 ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql" : [ 4 ],
   "sqlrf/CREATE-CONTROLFILE-0.sql" : [ 12 ],
-  "sqlrf/CREATE-SCHEMA-0.sql" : [ 2 ],
   "sqlrf/CREATE-TABLESPACE-0.sql" : [ 2 ],
   "sqlrf/CREATE-USER-0.sql" : [ 2 ],
   "sqlrf/CREATE-USER-1.sql" : [ 2 ],

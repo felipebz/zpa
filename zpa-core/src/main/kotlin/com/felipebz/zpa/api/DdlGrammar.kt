@@ -41,6 +41,10 @@ internal val CREATE_ANNOTATIONS_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val OUTLINE_CREATE_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val PRIVATE_TEMPORARY_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
 internal val SHARDED_TABLE_CONTEXT: ContextKey<Boolean> = ContextKey()
+internal val CREATE_SCHEMA_CONTEXT: ContextKey<Boolean> = ContextKey()
+
+internal fun schemaElementTerminator(b: PlSqlGrammarBuilder): Any =
+    b.optional(b.nextNot(b.requireContext(CREATE_SCHEMA_CONTEXT, true)), PlSqlPunctuator.SEMICOLON)
 /**
  * Enables view-specific restrictions in shared constraint productions.
  * Callers remain responsible for restricting unsupported constraint kinds.
@@ -333,6 +337,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_CONTEXT,
     CALL_COMMAND,
     CREATE_TABLE,
+    CREATE_SCHEMA,
     INDEX_ORGANIZED_TABLE_CLAUSE,
     HEAP_ORGANIZED_TABLE_CLAUSE,
     EXTERNAL_TABLE_CLAUSE,
@@ -1733,7 +1738,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     b.nextNot(b.requireContext(OUTLINE_CREATE_TABLE_CONTEXT, true))),
                             b.sequence(
                                     relationalTail, AS, DmlGrammar.SELECT_EXPRESSION))),
-                    b.optional(SEMICOLON))
+                    schemaElementTerminator(b))
             }
 
             b.rule(CREATE_TABLE_BODY).define(createTableBody(null)).skip()
@@ -3229,9 +3234,20 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME)),
                 TO, renameObjectName, b.optional(SEMICOLON))
 
+            // The documentation allows system privileges, but Oracle 26 rejects those starting with CREATE
+            // (ORA-02422). OR REPLACE is undocumented, but accepted and ignored.
+            b.rule(CREATE_SCHEMA).define(
+                CREATE, b.optional(OR, REPLACE), SCHEMA, AUTHORIZATION, IDENTIFIER_NAME,
+                b.withContext(CREATE_SCHEMA_CONTEXT, true, b.zeroOrMore(b.firstOf(
+                    b.sequence(b.next(CREATE, TABLE), CREATE_TABLE),
+                    b.sequence(b.next(CREATE, VIEW), PlSqlGrammar.CREATE_VIEW),
+                    DclGrammar.GRANT_STATEMENT))),
+                b.optional(SEMICOLON))
+
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
                 CREATE_TABLE,
+                CREATE_SCHEMA,
                 CREATE_INDEX,
                 CREATE_SEARCH_INDEX,
                 CREATE_VECTOR_INDEX,

@@ -54,7 +54,10 @@ enum class DclGrammar : GrammarRuleKey {
             val rest = keywords.subList(1, keywords.size).toTypedArray()
             b.rule(IDENTIFIER_OR_KEYWORD).define(b.firstOf(GenericTokenType.IDENTIFIER, keywords[0], *rest))
 
-            b.rule(PRIVILEGE_PART).define(b.nextNot(b.firstOf(COMMA, ON, TO, LPARENTHESIS)), IDENTIFIER_OR_KEYWORD)
+            b.rule(PRIVILEGE_PART).define(
+                b.nextNot(b.firstOf(COMMA, ON, TO, LPARENTHESIS)),
+                b.nextNot(b.requireContext(CREATE_SCHEMA_CONTEXT, true), CREATE),
+                IDENTIFIER_OR_KEYWORD)
 
             b.rule(PRIVILEGE_COLUMNS).define(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
 
@@ -81,7 +84,7 @@ enum class DclGrammar : GrammarRuleKey {
                     b.zeroOrMore(COMMA, b.firstOf(FUNCTION, PROCEDURE, PACKAGE), UNIT_NAME)
             )
 
-            b.rule(GRANT_STATEMENT).define(GRANT, b.firstOf(GRANT_ROLES_TO_PROGRAMS, GRANT_SYSTEM_PRIVILEGES, GRANT_OBJECT_PRIVILEGES), b.optional(SEMICOLON))
+            b.rule(GRANT_STATEMENT).define(GRANT, b.firstOf(GRANT_ROLES_TO_PROGRAMS, GRANT_SYSTEM_PRIVILEGES, GRANT_OBJECT_PRIVILEGES), schemaElementTerminator(b))
 
             createRevoke(b)
 

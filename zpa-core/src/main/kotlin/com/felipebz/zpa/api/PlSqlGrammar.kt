@@ -2120,7 +2120,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 SELECT_EXPRESSION,
                 b.optional(VIEW_RESTRICTION_CLAUSE),
                 b.optional(b.firstOf(CONTAINER_MAP, CONTAINERS_DEFAULT)),
-                b.optional(SEMICOLON)
+                schemaElementTerminator(b)
             )
 
             b.rule(TYPE_ATTRIBUTE).define(IDENTIFIER_NAME, DATATYPE, b.optional(DATATYPE_NULL_CONSTRAINT))

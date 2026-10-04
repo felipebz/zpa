@@ -163,6 +163,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     AUTHENTICATED("authenticated"),
     AUTHENTICATION("authentication"),
     AUTHID("authid"),
+    AUTHORIZATION("authorization"),
     AUTO("auto"),
     AUTOALLOCATE("autoallocate"),
     AUTOEXTEND("autoextend"),
