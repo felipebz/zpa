@@ -708,8 +708,8 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.optional(LABEL),
                 FORALL, IDENTIFIER_NAME, IN,
                 b.firstOf(b.sequence(EXPRESSION, RANGE, EXPRESSION),
-                    b.sequence(VALUES, OF, IDENTIFIER_NAME),
-                    b.sequence(INDICES, OF, IDENTIFIER_NAME, b.optional(BETWEEN, AND_EXPRESSION))),
+                    b.sequence(VALUES, OF, CONCATENATION_EXPRESSION),
+                    b.sequence(INDICES, OF, CONCATENATION_EXPRESSION, b.optional(BETWEEN, AND_EXPRESSION))),
                 b.optional(SAVE, EXCEPTIONS),
                 b.firstOf(
                     INSERT_STATEMENT,

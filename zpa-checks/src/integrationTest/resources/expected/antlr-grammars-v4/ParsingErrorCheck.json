@@ -14,7 +14,6 @@
   "examples/create_view.sql" : [ 32 ],
   "examples/drop_tablespace.sql" : [ 6 ],
   "examples/flashback01.sql" : [ 1 ],
-  "examples/forall_indices_of.sql" : [ 12 ],
   "examples/interval03.sql" : [ 16 ],
   "examples/materialized_views.sql" : [ 81 ],
   "examples/max_001.sql" : [ 4 ],
