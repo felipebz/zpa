@@ -49,6 +49,7 @@ enum class DmlGrammar : GrammarRuleKey {
     VECTOR_CHUNKS_TABLE,
     ALIAS,
     VALUES_EXPRESSION_CLAUSE,
+    CTE_VALUES_CLAUSE,
     PARTITION_BY_CLAUSE,
     WINDOWING_LIMIT,
     WINDOWING_CLAUSE,
@@ -697,13 +698,16 @@ enum class DmlGrammar : GrammarRuleKey {
                 )
             )
 
+            val valuesRow = b.sequence(LPARENTHESIS, EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS)
+            b.rule(CTE_VALUES_CLAUSE).define(LPARENTHESIS, VALUES, valuesRow, b.zeroOrMore(COMMA, valuesRow), RPARENTHESIS)
+
             b.rule(SUBQUERY_FACTORING_CLAUSE).define(
                 IDENTIFIER_NAME,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 AS,
                 b.firstOf(
                     b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
-                    VALUES_EXPRESSION_CLAUSE),
+                    CTE_VALUES_CLAUSE),
                 b.optional(SEARCH_CLAUSE),
                 b.optional(CYCLE_CLAUSE)
             )

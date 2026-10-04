@@ -252,6 +252,7 @@
   "sqlrf/SELECT-4.sql" : [ 2 ],
   "sqlrf/SELECT-42.sql" : [ 2 ],
   "sqlrf/SELECT-43.sql" : [ 2 ],
+  "sqlrf/SELECT-5.sql" : [ 3 ],
   "sqlrf/SELECT-61.sql" : [ 2 ],
   "sqlrf/SELECT-75.sql" : [ 3, 7 ],
   "sqlrf/SELECT-76.sql" : [ 2, 6 ],
