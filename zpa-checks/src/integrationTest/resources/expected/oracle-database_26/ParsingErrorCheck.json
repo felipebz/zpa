@@ -24,9 +24,7 @@
   "sqlrf/ALTER-TABLE-127.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-8.sql" : [ 4 ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql" : [ 4 ],
-  "sqlrf/CREATE-CONTROLFILE-0.sql" : [ 3 ],
-  "sqlrf/CREATE-DATABASE-0.sql" : [ 2 ],
-  "sqlrf/CREATE-DATABASE-1.sql" : [ 2 ],
+  "sqlrf/CREATE-CONTROLFILE-0.sql" : [ 12 ],
   "sqlrf/CREATE-SCHEMA-0.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-11.sql" : [ 2 ],
   "sqlrf/CREATE-TABLE-36.sql" : [ 7 ],
@@ -39,6 +37,5 @@
   "sqlrf/SELECT-87.sql" : [ 7 ],
   "sqlrf/create-property-graph-16.sql" : [ 2 ],
   "sqlrf/create-property-graph-23.sql" : [ 3 ],
-  "sqlrf/file_specification-0.sql" : [ 2 ],
   "sqlrf/graphql-table-function-0.sql" : [ 2 ]
 }

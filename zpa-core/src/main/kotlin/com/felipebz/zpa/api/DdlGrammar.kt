@@ -244,6 +244,8 @@ enum class DdlGrammar : GrammarRuleKey {
     PREPARE_CLAUSE,
     DROP_MIRROR_COPY,
     CREATE_PLUGGABLE_DATABASE,
+    CREATE_DATABASE,
+    CREATE_CONTROLFILE,
     PDB_FROM_SEED,
     PDB_CLONE,
     PDB_FROM_XML,
@@ -2801,6 +2803,7 @@ enum class DdlGrammar : GrammarRuleKey {
             administerKeyManagement(b)
             alterPluggableDatabase(b)
             createPluggableDatabase(b)
+            createDatabase(b)
             alterDatabase(b)
             alterDiskgroup(b)
             createCluster(b)
@@ -3247,6 +3250,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_LOCKDOWN_PROFILE,
                 CREATE_LOCKDOWN_PROFILE,
                 CREATE_PLUGGABLE_DATABASE,
+                CREATE_DATABASE,
+                CREATE_CONTROLFILE,
                 ALTER_TABLE,
                 ALTER_INDEX,
                 ALTER_TRIGGER,
@@ -4069,7 +4074,7 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle 26 rejects a parenthesized source despite the diagram (ORA-00931).
             val column = b.sequence(IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME))
             val source = b.sequence(
-                schemaName, b.optional("REMOTE"),
+                schemaName, b.optional(REMOTE_KEYWORD),
                 b.optional(b.optional(AS), b.nextNot(b.firstOf(ATTRIBUTES, JOIN)), IDENTIFIER_NAME))
             val usingClause = b.sequence(
                 USING, source, b.zeroOrMore(COMMA, source),
@@ -4156,7 +4161,7 @@ enum class DdlGrammar : GrammarRuleKey {
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ANALYTIC-VIEW.html
             // Oracle 26 rejects the parenthesized source of the diagram and takes a single source.
             val analyticViewSource = b.sequence(
-                USING, schemaName, b.optional("REMOTE"),
+                USING, schemaName, b.optional(REMOTE_KEYWORD),
                 b.optional(b.optional(AS), b.nextNot(DIMENSION), IDENTIFIER_NAME))
             b.rule(CREATE_ANALYTIC_VIEW).define(
                 header, ANALYTIC, VIEW, b.optional(IF, NOT, EXISTS), schemaName, sharing,
@@ -4827,6 +4832,98 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE, PLUGGABLE, DATABASE, IDENTIFIER_NAME,
                 b.firstOf(PDB_FROM_SEED, PDB_CLONE, PDB_FROM_XML),
                 b.next(b.firstOf(SEMICOLON, DIVISION, EOF)),
+                b.optional(SEMICOLON))
+        }
+
+        private fun createDatabase(b: PlSqlGrammarBuilder) {
+            val integerOption = b.sequence(
+                b.firstOf(MAXLOGFILES, MAXLOGMEMBERS, MAXLOGHISTORY, MAXDATAFILES, MAXINSTANCES), INTEGER_LITERAL)
+            val characterSet = b.sequence(CHARACTER, SET, IDENTIFIER_NAME)
+            val loggingOption = b.firstOf(
+                ARCHIVELOG, NOARCHIVELOG, b.sequence(FORCE, LOGGING),
+                b.sequence(
+                    SET, STANDBY, NOLOGGING, FOR,
+                    b.firstOf(b.sequence(DATA, AVAILABILITY), b.sequence(LOAD, PERFORMANCE))))
+
+            fun commaList(element: Any, startsElement: Any) =
+                b.sequence(element, b.zeroOrMore(COMMA, b.next(startsElement), element))
+
+            val fileStart = b.firstOf(CHARACTER_LITERAL, SIZE, REUSE, AUTOEXTEND)
+            val redoStart = b.firstOf(GROUP, CHARACTER_LITERAL, LPARENTHESIS, SIZE, BLOCKSIZE, REUSE)
+            val dataFiles = b.sequence(b.next(fileStart), commaList(DATAFILE_TEMPFILE_SPEC, fileStart))
+            val redoGroup = b.sequence(b.next(redoStart), b.optional(GROUP, INTEGER_LITERAL), REDO_LOG_FILE_SPEC)
+            val logfile = b.sequence(LOGFILE, commaList(redoGroup, redoStart))
+
+            val extentManagement = b.sequence(
+                EXTENT, MANAGEMENT, LOCAL,
+                b.optional(b.firstOf(AUTOALLOCATE, b.sequence(UNIFORM, b.optional(SIZE, INDEX_SIZE_CLAUSE)))))
+            val fileKind = b.optional(b.firstOf(BIGFILE, SMALLFILE))
+            val defaultTablespace = b.sequence(
+                DEFAULT, TABLESPACE, IDENTIFIER_NAME,
+                b.optional(DATAFILE, b.next(fileStart), DATAFILE_TEMPFILE_SPEC), b.optional(extentManagement))
+            val defaultTemporaryTablespace = b.sequence(
+                fileKind, DEFAULT,
+                b.firstOf(
+                    b.sequence(TEMPORARY, TABLESPACE),
+                    b.sequence(LOCAL, TEMPORARY, TABLESPACE, FOR, b.firstOf(ALL, LEAF))),
+                IDENTIFIER_NAME,
+                b.optional(TEMPFILE, dataFiles), b.optional(extentManagement))
+            val undoTablespace = b.sequence(
+                fileKind, UNDO, TABLESPACE, IDENTIFIER_NAME, b.optional(DATAFILE, dataFiles))
+
+            val datafilesClauses = b.oneOrMore(b.firstOf(b.sequence(SIZE, INDEX_SIZE_CLAUSE), AUTOEXTEND_CLAUSE))
+            val enablePluggableDatabase = b.sequence(
+                ENABLE, PLUGGABLE, DATABASE,
+                b.optional(
+                    SEED,
+                    b.optional(PDB_FILE_NAME_CONVERT),
+                    b.optional("SYSTEM", "DATAFILES", datafilesClauses),
+                    b.optional("SYSAUX", "DATAFILES", datafilesClauses)),
+                b.optional(LOCAL, UNDO, b.firstOf(ON, OFF)))
+
+            val clauseStart = b.firstOf(
+                USER, CONTROLFILE, "MAXLOGFILES", "MAXLOGMEMBERS", "MAXLOGHISTORY", "MAXDATAFILES", "MAXINSTANCES",
+                CHARACTER, NATIONAL, SET, LOGFILE, ARCHIVELOG, NOARCHIVELOG, FORCE, EXTENT, DATAFILE, "SYSAUX", DEFAULT,
+                UNDO, BIGFILE, SMALLFILE, "USER_DATA", ENABLE)
+
+            b.rule(CREATE_DATABASE).define(
+                CREATE, DATABASE,
+                b.optional(b.nextNot(clauseStart), IDENTIFIER_NAME),
+                b.oneOrMore(b.firstOf(
+                    b.sequence(USER, b.firstOf("SYS", SYSTEM), IDENTIFIED, BY, IDENTIFIER_NAME),
+                    b.sequence(CONTROLFILE, REUSE),
+                    integerOption,
+                    characterSet,
+                    b.sequence(NATIONAL, characterSet),
+                    b.sequence(SET, DEFAULT, b.firstOf(BIGFILE, SMALLFILE), TABLESPACE),
+                    logfile,
+                    loggingOption,
+                    extentManagement,
+                    b.sequence(DATAFILE, dataFiles),
+                    b.sequence("SYSAUX", DATAFILE, dataFiles),
+                    defaultTablespace,
+                    defaultTemporaryTablespace,
+                    undoTablespace,
+                    b.sequence(SET, "TIME_ZONE", EQUALS, CHARACTER_LITERAL),
+                    b.sequence(fileKind, "USER_DATA", TABLESPACE, IDENTIFIER_NAME, DATAFILE, dataFiles),
+                    enablePluggableDatabase)),
+                b.optional(SEMICOLON))
+
+            // The syntax diagram puts LOGFILE before RESETLOGS and DATAFILE after it, but the documented example
+            // puts the options first and LOGFILE and DATAFILE last. Both orders are accepted; the Free instance
+            // cannot confirm either, as it fails with ORA-01503 before parsing.
+            val controlfileOption = b.firstOf(integerOption, loggingOption)
+            val controlfileEnd = b.next(b.firstOf(SEMICOLON, DIVISION, EOF))
+            val datafileClause = b.sequence(DATAFILE, dataFiles)
+            b.rule(CREATE_CONTROLFILE).define(
+                CREATE, CONTROLFILE, b.optional(REUSE), b.optional(SET), DATABASE, IDENTIFIER_NAME,
+                b.firstOf(
+                    b.sequence(
+                        b.optional(logfile), b.firstOf(RESETLOGS, NORESETLOGS), b.optional(datafileClause),
+                        b.zeroOrMore(controlfileOption), b.optional(characterSet), controlfileEnd),
+                    b.sequence(
+                        b.firstOf(RESETLOGS, NORESETLOGS), b.zeroOrMore(controlfileOption),
+                        b.optional(logfile), b.optional(datafileClause), b.optional(characterSet), controlfileEnd)),
                 b.optional(SEMICOLON))
         }
 
