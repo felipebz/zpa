@@ -129,6 +129,7 @@ enum class DdlGrammar : GrammarRuleKey {
     ALTER_ATTRIBUTE_DIMENSION,
     ALTER_HIERARCHY,
     ALTER_ANALYTIC_VIEW,
+    CREATE_ANALYTIC_VIEW,
     CREATE_DATABASE_LINK,
     ALTER_DATABASE_LINK,
     DATABASE_LINK_NAME,
@@ -3189,6 +3190,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 ALTER_ATTRIBUTE_DIMENSION,
                 ALTER_HIERARCHY,
                 ALTER_ANALYTIC_VIEW,
+                CREATE_ANALYTIC_VIEW,
                 CREATE_DATABASE_LINK,
                 ALTER_DATABASE_LINK,
                 ALTER_DATABASE,
@@ -4147,6 +4149,26 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(ALTER_HIERARCHY).define(
                 ALTER, HIERARCHY, b.optional(IF, EXISTS), schemaName,
                 renameOrCompile,
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ANALYTIC-VIEW.html
+            // Oracle 26 rejects the parenthesized source of the diagram and takes a single source.
+            val analyticViewSource = b.sequence(
+                USING, schemaName, b.optional("REMOTE"),
+                b.optional(b.optional(AS), b.nextNot(DIMENSION), IDENTIFIER_NAME))
+            b.rule(CREATE_ANALYTIC_VIEW).define(
+                header, ANALYTIC, VIEW, b.optional(IF, NOT, EXISTS), schemaName, sharing,
+                b.optional(AV_CLASSIFICATION_CLAUSE),
+                analyticViewSource,
+                DIMENSION, BY, LPARENTHESIS,
+                AnalyticViewGrammar.AV_DIMENSION_REFERENCE, b.zeroOrMore(COMMA, AnalyticViewGrammar.AV_DIMENSION_REFERENCE),
+                RPARENTHESIS,
+                MEASURES, LPARENTHESIS,
+                AnalyticViewGrammar.AV_DEFINITION_MEASURE, b.zeroOrMore(COMMA, AnalyticViewGrammar.AV_DEFINITION_MEASURE),
+                RPARENTHESIS,
+                b.optional(AnalyticViewGrammar.DEFAULT_MEASURE_CLAUSE),
+                b.optional(AnalyticViewGrammar.DEFAULT_AGGREGATE_CLAUSE),
+                b.optional(AnalyticViewGrammar.QUERY_TRANSFORM_CLAUSE),
                 b.optional(SEMICOLON))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ANALYTIC-VIEW.html

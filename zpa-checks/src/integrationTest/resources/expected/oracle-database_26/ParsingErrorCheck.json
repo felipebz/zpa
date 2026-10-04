@@ -24,7 +24,6 @@
   "sqlrf/ALTER-PLUGGABLE-DATABASE-7.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-127.sql" : [ 2 ],
   "sqlrf/ALTER-TABLE-8.sql" : [ 4 ],
-  "sqlrf/CREATE-ANALYTIC-VIEW-1.sql" : [ 2 ],
   "sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing-21.sql" : [ 4 ],
   "sqlrf/CREATE-CONTROLFILE-0.sql" : [ 3 ],
   "sqlrf/CREATE-DATABASE-0.sql" : [ 2 ],
