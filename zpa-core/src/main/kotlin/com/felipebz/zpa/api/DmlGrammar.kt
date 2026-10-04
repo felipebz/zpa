@@ -46,6 +46,8 @@ enum class DmlGrammar : GrammarRuleKey {
     SAMPLE_CLAUSE,
     PARTITION_EXTENSION_CLAUSE,
     DML_TABLE_EXPRESSION_CLAUSE,
+    SUBQUERY_RESTRICTION_CLAUSE,
+    DML_SUBQUERY_TARGET,
     VECTOR_CHUNKS_TABLE,
     ALIAS,
     VALUES_EXPRESSION_CLAUSE,
@@ -418,13 +420,19 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.sequence(AS, OF, PERIOD, FOR, IDENTIFIER_NAME, flashbackOperand))),
                 b.nextNot(AS))
 
+            // The diagram allows CONSTRAINT after the restriction, but Oracle 26 rejects it (ORA-00907).
+            b.rule(SUBQUERY_RESTRICTION_CLAUSE).define(WITH, b.firstOf(b.sequence(READ, ONLY), b.sequence(CHECK, OPTION))).skip()
+
+            b.rule(DML_SUBQUERY_TARGET).define(
+                LPARENTHESIS, SELECT_EXPRESSION, b.optional(SUBQUERY_RESTRICTION_CLAUSE), RPARENTHESIS).skip()
+
             // Unlike the documented [[AS] alias], Oracle 26 rejects AS before an inline analytic view alias (ORA-03048).
             b.rule(DML_TABLE_EXPRESSION_CLAUSE).define(
                 b.firstOf(
                     b.sequence(AnalyticViewGrammar.INLINE_ANALYTIC_VIEW, b.optional(tableAliasStart, b.nextNot(AS), ALIAS)),
                     b.sequence(
                         b.firstOf(
-                            b.sequence(b.optional(LATERAL), LPARENTHESIS, SELECT_EXPRESSION, b.optional(
+                            b.sequence(b.optional(LATERAL), LPARENTHESIS, SELECT_EXPRESSION, b.optional(SUBQUERY_RESTRICTION_CLAUSE), b.optional(
                                 b.firstOf(
                                     PIVOT_CLAUSE,
                                     UNPIVOT_CLAUSE
@@ -1003,7 +1011,7 @@ enum class DmlGrammar : GrammarRuleKey {
             // SET always starts the SET clause: Oracle 26 never reads it as a table alias here (ORA-01747 for
             // `INTO t set VALUES`).
             b.rule(INSERT_INTO_CLAUSE).define(INTO,
-                b.firstOf(b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS), b.firstOf(
+                b.firstOf(DML_SUBQUERY_TARGET, b.firstOf(
                     TABLE_EXPRESSION, THE_EXPRESSION, TABLE_REFERENCE)),
                 b.optional(PARTITION_EXTENSION_CLAUSE),
                 b.optional(b.nextNot(SET), IDENTIFIER_NAME), b.optional(INSERT_COLUMNS))
@@ -1072,7 +1080,7 @@ enum class DmlGrammar : GrammarRuleKey {
                     b.firstOf(
                             b.sequence(
                                     b.firstOf(
-                                            b.sequence(LPARENTHESIS, SELECT_EXPRESSION, RPARENTHESIS),
+                                            DML_SUBQUERY_TARGET,
                                             // Undocumented, but Oracle 26ai parses and executes MERGE INTO GRAPH_TABLE
                                             // (both branches change the vertex table); it rejects AS and PARTITION here.
                                             GraphTableGrammar.GRAPH_TABLE,
