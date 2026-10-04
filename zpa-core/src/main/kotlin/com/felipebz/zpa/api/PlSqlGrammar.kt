@@ -141,6 +141,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     // Statements
     LABEL,
     LABELS,
+    WRAPPED_SOURCE_CLAUSE,
     STATEMENTS_SECTION,
     BLOCK_STATEMENT,
     NULL_STATEMENT,
@@ -1624,17 +1625,22 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             val sharingClause = b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE))
 
+            b.rule(WRAPPED_SOURCE_CLAUSE).define(WRAPPED, PlSqlTokenType.WRAPPED_SOURCE).skip()
+
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PROCEDURE-statement.html
             b.rule(CREATE_PROCEDURE).define(
                     CREATE, createUnitHeader(b, PROCEDURE),
                     UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                     sharingClause,
-                    b.optional(PARAMETER_DECLARATIONS),
-                    b.zeroOrMore(subprogramProperty(b)),
-                    b.firstOf(IS, AS),
                     b.firstOf(
-                            b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                            CALL_SPECIFICATION)
+                            WRAPPED_SOURCE_CLAUSE,
+                            b.sequence(
+                                    b.optional(PARAMETER_DECLARATIONS),
+                                    b.zeroOrMore(subprogramProperty(b)),
+                                    b.firstOf(IS, AS),
+                                    b.firstOf(
+                                            b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                            CALL_SPECIFICATION)))
             )
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-FUNCTION-statement.html
@@ -1642,18 +1648,21 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     CREATE, createUnitHeader(b, FUNCTION),
                     UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                     sharingClause,
-                    b.optional(PARAMETER_DECLARATIONS),
-                    RETURN, DATATYPE,
-                    b.zeroOrMore(subprogramProperty(b)),
                     b.firstOf(
+                            WRAPPED_SOURCE_CLAUSE,
                             b.sequence(
-                                    b.firstOf(IS, AS),
+                                    b.optional(PARAMETER_DECLARATIONS),
+                                    RETURN, DATATYPE,
+                                    b.zeroOrMore(subprogramProperty(b)),
                                     b.firstOf(
-                                            b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
-                                            CALL_SPECIFICATION)),
-                            b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON),
-                            // PIPELINED ... USING; a declaration without a body fails only at compile time (PLS-00378).
-                            SEMICOLON)
+                                            b.sequence(
+                                                    b.firstOf(IS, AS),
+                                                    b.firstOf(
+                                                            b.sequence(b.optional(DECLARE_SECTION), STATEMENTS_SECTION),
+                                                            CALL_SPECIFICATION)),
+                                            b.sequence(AGGREGATE, USING, OBJECT_REFERENCE, SEMICOLON),
+                                            // PIPELINED ... USING; a declaration without a body fails only at compile time (PLS-00378).
+                                            SEMICOLON)))
             )
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PACKAGE-statement.html
@@ -1663,14 +1672,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(CREATE), createUnitHeader(b, PACKAGE),
                     UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                     sharingClause,
-                    b.zeroOrMore(b.firstOf(
-                            b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
-                            b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
-                            ACCESSIBLE_BY_CLAUSE,
-                            RESETTABLE)),
-                    b.firstOf(IS, AS),
-                    b.optional(DECLARE_SECTION),
-                    END, b.optional(IDENTIFIER_NAME), SEMICOLON)
+                    b.firstOf(
+                            WRAPPED_SOURCE_CLAUSE,
+                            b.sequence(
+                                    b.zeroOrMore(b.firstOf(
+                                            b.sequence(AUTHID, b.firstOf(CURRENT_USER, DEFINER)),
+                                            b.sequence(DEFAULT, COLLATION, USING_NLS_COMP),
+                                            ACCESSIBLE_BY_CLAUSE,
+                                            RESETTABLE)),
+                                    b.firstOf(IS, AS),
+                                    b.optional(DECLARE_SECTION),
+                                    END, b.optional(IDENTIFIER_NAME), SEMICOLON)))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PACKAGE-BODY-statement.html
             // A body accepts only SHARING and then a single RESETTABLE (PLS-00103 otherwise).
@@ -1678,12 +1690,15 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.optional(CREATE), createUnitHeader(b, b.sequence(PACKAGE, BODY)),
                     UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
                     sharingClause,
-                    b.optional(RESETTABLE),
-                    b.firstOf(IS, AS),
-                    b.optional(DECLARE_SECTION),
                     b.firstOf(
-                            STATEMENTS_SECTION,
-                            b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)))
+                            WRAPPED_SOURCE_CLAUSE,
+                            b.sequence(
+                                    b.optional(RESETTABLE),
+                                    b.firstOf(IS, AS),
+                                    b.optional(DECLARE_SECTION),
+                                    b.firstOf(
+                                            STATEMENTS_SECTION,
+                                            b.sequence(END, b.optional(IDENTIFIER_NAME), SEMICOLON)))))
 
             b.rule(VIEW_RESTRICTION_CLAUSE).define(
                 WITH, b.firstOf(
@@ -2198,12 +2213,15 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     TYPE, UNIT_NAME,
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
-                    b.optional(b.firstOf(
-                        b.sequence(FORCE, b.optional(OID, CHARACTER_LITERAL)),
-                        b.sequence(OID, CHARACTER_LITERAL, b.optional(FORCE)))),
-                    typeProperties,
-                    b.optional(typeDefinition),
-                    b.optional(SEMICOLON))
+                    b.firstOf(
+                        WRAPPED_SOURCE_CLAUSE,
+                        b.sequence(
+                            b.optional(b.firstOf(
+                                b.sequence(FORCE, b.optional(OID, CHARACTER_LITERAL)),
+                                b.sequence(OID, CHARACTER_LITERAL, b.optional(FORCE)))),
+                            typeProperties,
+                            b.optional(typeDefinition),
+                            b.optional(SEMICOLON))))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-TYPE-statement.html
             // Oracle 26 parses the evolution clauses as a type specification, so object existence,
@@ -2254,9 +2272,12 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(CREATE_TYPE_BODY).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
                     TYPE, BODY, UNIT_NAME,
-                    b.firstOf(IS, AS),
-                    b.oneOrMore(b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION), b.optional(COMMA)),
-                    END, b.optional(SEMICOLON))
+                    b.firstOf(
+                        WRAPPED_SOURCE_CLAUSE,
+                        b.sequence(
+                            b.firstOf(IS, AS),
+                            b.oneOrMore(b.firstOf(TYPE_SUBPROGRAM, TYPE_CONSTRUCTOR, MAP_ORDER_FUNCTION), b.optional(COMMA)),
+                            END, b.optional(SEMICOLON))))
 
             b.rule(ANONYMOUS_BLOCK).define(BLOCK_STATEMENT)
 

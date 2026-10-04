@@ -819,6 +819,17 @@ select func
         assertThat(func.innerScope).isNotNull()
     }
 
+    @Test
+    fun wrappedUnitsDeclareOnlyTheirOwnSymbol() {
+        val symbols = scan(
+            File("src/test/resources/wrapped/proc.plb").readText() +
+                File("src/test/resources/wrapped/func.plb").readText())
+        assertThat(symbols.map { it.name.lowercase() to it.kind })
+            .containsExactly("zpa_wr_proc" to Symbol.Kind.PROCEDURE, "zpa_wr_func" to Symbol.Kind.FUNCTION)
+        assertThat(symbols.map { it.innerScope }).doesNotContainNull()
+        assertThat(symbols.flatMap { it.innerScope!!.symbols }).isEmpty()
+    }
+
     private fun scan(contents: String): List<Symbol> {
         val file = tempFolder.resolve("test.sql")
         file.writeText(contents.trim())

@@ -1184,6 +1184,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     WITHOUT("without"),
     WORDS("words"),
     WORK("work"),
+    WRAPPED("wrapped"),
     WRAPPER("wrapper"),
     WRITE("write"),
     XDB("xdb"),

@@ -126,7 +126,7 @@ class MleModuleSourceChannel : Channel<LexerOutput> {
         while (scan.isWhitespace(textStart)) textStart++
         if (textStart == position || scan.char(textStart) <= 0) return false
 
-        val textEnd = textEnd(scan, textStart)
+        val textEnd = scan.slashTerminatedEnd(textStart)
         if (textEnd <= textStart) return false
 
         pieces.forEach { scan.emit(it.type, it.start, it.end, it.normalized, it.value) }
@@ -139,30 +139,5 @@ class MleModuleSourceChannel : Channel<LexerOutput> {
         val simple = inner.isNotEmpty() && (inner[0].isLetterOrDigit() || inner[0] == '_') &&
             inner.all { it.isLetterOrDigit() || it == '_' || it == '#' || it == '$' }
         return if (simple && inner == inner.uppercase()) inner else quoted
-    }
-
-    private fun textEnd(scan: RawCodeScanner, start: Int): Int {
-        var position = start
-        var lineStart = start
-        var lineHasContent = false
-        var slashOnly = false
-        while (true) {
-            val c = scan.char(position)
-            if (c <= 0 || c == '\n'.code) {
-                if (slashOnly || c <= 0) return trimEnd(scan, start, if (slashOnly) lineStart else position)
-                lineStart = position + 1
-                lineHasContent = false
-            } else if (!Character.isWhitespace(c)) {
-                slashOnly = c == '/'.code && !lineHasContent
-                lineHasContent = true
-            }
-            position++
-        }
-    }
-
-    private fun trimEnd(scan: RawCodeScanner, start: Int, limit: Int): Int {
-        var end = limit
-        while (end > start && scan.isWhitespace(end - 1)) end--
-        return end
     }
 }

@@ -137,6 +137,32 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         return -1
     }
 
+    // Ends at the line holding only a slash, or at the end of input, without the surrounding whitespace.
+    fun slashTerminatedEnd(start: Int): Int {
+        var position = start
+        var lineStart = start
+        var lineHasContent = false
+        var slashOnly = false
+        while (true) {
+            val c = char(position)
+            if (c <= 0 || c == '\n'.code) {
+                if (slashOnly || c <= 0) return trimEnd(start, if (slashOnly) lineStart else position)
+                lineStart = position + 1
+                lineHasContent = false
+            } else if (!Character.isWhitespace(c)) {
+                slashOnly = c == '/'.code && !lineHasContent
+                lineHasContent = true
+            }
+            position++
+        }
+    }
+
+    private fun trimEnd(start: Int, limit: Int): Int {
+        var end = limit
+        while (end > start && isWhitespace(end - 1)) end--
+        return end
+    }
+
     fun text(start: Int, end: Int): String {
         val builder = StringBuilder(end - start)
         for (i in start until end) builder.append(char(i).toChar())
