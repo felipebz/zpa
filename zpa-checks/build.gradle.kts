@@ -16,7 +16,7 @@ testing {
     suites {
         register<JvmTestSuite>("integrationTest") {
             val downloadZipFile = tasks.register<Download>("downloadZipFile") {
-                val sqlclVersion = "26.2.2.233.1901"
+                val sqlclVersion = "26.3.0.260.1620"
                 src("https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-$sqlclVersion.zip")
                 overwrite(false)
                 dest(layout.projectDirectory.dir("tools").file("sqlcl-$sqlclVersion.zip"))
