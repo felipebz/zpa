@@ -1,6 +1,5 @@
 {
-  "examples/json_sql.sql" : [ 1 ],
   "examples/lexer02.sql" : [ 1 ],
-  "examples/to_date.sql" : [ 3 ],
-  "hw-examples/lexer02.sql" : [ 1 ]
+  "more-examples/json_sql.sql" : [ 1 ],
+  "more-examples/to_date.sql" : [ 3 ]
 }

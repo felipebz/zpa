@@ -1,5 +1,5 @@
 {
-  "examples/condition03.sql" : [ 3, 8 ],
-  "examples/condition05.sql" : [ 4 ],
-  "examples/query_factoring05.sql" : [ 21 ]
+  "more-examples/condition03.sql" : [ 3, 8 ],
+  "more-examples/condition05.sql" : [ 4 ],
+  "more-examples/query_factoring05.sql" : [ 21 ]
 }

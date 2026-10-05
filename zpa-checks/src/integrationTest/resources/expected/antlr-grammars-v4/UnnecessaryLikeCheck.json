@@ -1,4 +1,4 @@
 {
-  "examples/condition06.sql" : [ 13, 13 ],
-  "examples/query_factoring05.sql" : [ 22 ]
+  "more-examples/condition06.sql" : [ 13, 13 ],
+  "more-examples/query_factoring05.sql" : [ 22 ]
 }

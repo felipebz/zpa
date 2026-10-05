@@ -1,4 +1,4 @@
 {
-  "examples/cluster.sql" : [ 13 ],
-  "examples/partitioned_tables.sql" : [ 6, 27, 50, 111 ]
+  "more-examples/cluster.sql" : [ 13 ],
+  "more-examples/partitioned_tables.sql" : [ 6, 27, 50, 111 ]
 }

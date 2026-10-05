@@ -1,5 +1,10 @@
 {
-  "examples-sql-script/declare_procedure_no_args.sql" : [ 5 ],
-  "examples-sql-script/package_body_null.pkb" : [ 3 ],
-  "examples-sql-script/package_with_schema.pkb" : [ 6 ]
+  "examples/editionable_trigger.sql" : [ 5, 13 ],
+  "examples/examples-sql-script/declare_procedure_no_args.sql" : [ 5 ],
+  "examples/examples-sql-script/package_body_null.pkb" : [ 3 ],
+  "examples/examples-sql-script/package_with_schema.pkb" : [ 6 ],
+  "more-examples/editionable_procedure.sql" : [ 3, 9 ],
+  "more-examples/keywordasidentifier07.sql" : [ 4, 10, 16 ],
+  "more-examples/keywordasidentifier08.sql" : [ 4 ],
+  "more-examples/sqlplus_slash_separated.sql" : [ 16 ]
 }

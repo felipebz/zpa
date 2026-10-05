@@ -1,3 +1,3 @@
 {
-  "examples/to_date.sql" : [ 1, 7, 10, 13, 16, 19 ]
+  "more-examples/to_date.sql" : [ 1, 7, 10, 13, 16, 19 ]
 }

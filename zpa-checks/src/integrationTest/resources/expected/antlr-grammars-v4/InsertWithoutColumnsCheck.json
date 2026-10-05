@@ -1,3 +1,4 @@
 {
-  "examples/values_clause.sql" : [ 27 ]
+  "more-examples/sqlplus_slash_separated.sql" : [ 9, 12 ],
+  "more-examples/values_clause.sql" : [ 27 ]
 }

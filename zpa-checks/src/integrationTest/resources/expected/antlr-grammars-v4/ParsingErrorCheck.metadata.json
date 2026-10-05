@@ -1,103 +1,166 @@
 {
-  "examples-sql-script/e_in_out_parameters.pks": {
+  "examples/create_table.sql": {
+    "4": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00906",
+      "reason": "CREATE TABLE ... ORGANIZATION EXTERNAL without a column list or AS subquery is rejected; Oracle requires a left parenthesis for the column definitions, and adding a column list makes it proceed to a later directory error."
+    }
+  },
+  "examples/examples-sql-script/case_when.sql": {
+    "10": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00103",
+      "reason": "A CASE statement must be terminated with END CASE; the plain END; closing the searched CASE statement is rejected."
+    }
+  },
+  "examples/examples-sql-script/e_in_out_parameters.pks": {
     "4": {
       "classification": "INVALID_SOURCE",
       "oracleError": "PLS-00103",
       "reason": "NOCOPY is not valid for an IN-only parameter; Oracle accepts NOCOPY only with OUT and IN OUT parameters."
     }
   },
-  "examples/administer_key_management.sql": {
+  "examples/examples-sql-script/grants.sql": {
+    "15": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00103",
+      "reason": "GRANT is a DCL statement and cannot appear as a static statement in a PL/SQL block; it would need EXECUTE IMMEDIATE."
+    }
+  },
+  "examples/table_ref01.sql": {
+    "1": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
+    }
+  },
+  "examples/table_ref02.sql": {
+    "1": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-02000",
+      "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
+    }
+  },
+  "examples/truncate_table.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00921",
+      "reason": "PRESERVE is only valid as PRESERVE MATERIALIZED VIEW LOG; bare TRUNCATE TABLE ... PRESERVE ends unexpectedly."
+    }
+  },
+  "more-examples/administer_key_management.sql": {
     "1": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-00921",
       "reason": "MOVE KEYS with WITH IDENTIFIER IN (subquery) omits the required WITH BACKUP; Oracle rejects the statement as ending unexpectedly, and adding WITH BACKUP makes it parse."
     }
   },
-  "examples/alter_analytic_view.sql": {
+  "more-examples/alter_analytic_view.sql": {
     "3": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02000",
       "reason": "The documented ADD CACHE example omits the cache type; Oracle 26 requires MATERIALIZED after the LEVELS clause and reports a missing MATERIALIZED keyword."
     }
   },
-  "examples/alter_synonym01.sql": {
+  "more-examples/alter_synonym01.sql": {
     "4": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-00922",
       "reason": "A public synonym cannot be schema-qualified; Oracle rejects the dot after PUBLIC SYNONYM sch."
     }
   },
-  "examples/alter_table.sql": {
+  "more-examples/alter_table.sql": {
     "134": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-00906",
       "reason": "DROP PARTITION FOR requires a parenthesized key list; `FOR 101` without parentheses is rejected on a partitioned table, while `FOR (101)` parses."
     }
   },
-  "examples/create_index.sql": {
-    "18": {
-      "classification": "INVALID_SOURCE",
-      "oracleError": "ORA-00969",
-      "reason": "Oracle requires IF NOT EXISTS before the index name; this statement places it after the name."
-    }
-  },
-  "examples/bindvar04.sql": {
+  "more-examples/bindvar04.sql": {
     "6": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-00923",
       "reason": "Oracle requires a quoted value after INTERVAL and integer values for DAY/SECOND precision; bind variables are not valid in these positions."
     }
   },
-  "examples/create_function01.sql": {
+  "more-examples/create_function01.sql": {
     "1": {
       "classification": "INVALID_SOURCE",
       "oracleError": "PLS-00103",
       "reason": "The sharing clause must precede the parameter list and RETURN; Oracle rejects SHARING after the return type."
     }
   },
-  "examples/create_table.sql": {
+  "more-examples/create_index.sql": {
+    "18": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00969",
+      "reason": "Oracle requires IF NOT EXISTS before the index name; this statement places it after the name."
+    }
+  },
+  "more-examples/create_table.sql": {
     "50": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02000",
       "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
     }
   },
-  "examples/create_tablespace.sql": {
+  "more-examples/create_tablespace.sql": {
     "58": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02180",
       "reason": "IF NOT EXISTS must precede the tablespace name; Oracle rejects it after the name."
     }
   },
-  "examples/create_view.sql": {
+  "more-examples/create_view.sql": {
     "32": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02000",
       "reason": "IF NOT EXISTS is placed after the view name; Oracle requires it before the name and reports a missing AS keyword here."
     }
   },
-  "examples/drop_tablespace.sql": {
+  "more-examples/drop_tablespace.sql": {
     "6": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02173",
       "reason": "IF EXISTS must precede the tablespace name in DROP TABLESPACE; Oracle 26 rejects the postfix IF EXISTS in this fixture."
     }
   },
-  "examples/interval03.sql": {
+  "more-examples/interval03.sql": {
     "16": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-00923",
       "reason": "Oracle INTERVAL literal syntax requires a literal value after INTERVAL; a bind variable is not valid in this position."
     }
   },
-  "examples/materialized_views.sql": {
-    "81": {
+  "more-examples/materialized_views.sql": {
+    "110": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02000",
       "reason": "A plain JOIN requires an ON or USING clause; Oracle rejects this JOIN without a join condition."
     }
   },
-  "examples/views.sql": {
+  "more-examples/sqlplus_slash_separated_invalid.sql": {
+    "7": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "PLS-00103",
+      "reason": "The package specification ends with END business_pkg without the terminating semicolon (the comment hides the intended one), so the unit fails to compile."
+    }
+  },
+  "more-examples/sqlplus_slash_separated_invalid3.sql": {
+    "3": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-03048",
+      "reason": "A slash that is not alone on its line is not a SQL*Plus terminator; the second line is sent to the server as part of the first query, which rejects the stray / after the select."
+    }
+  },
+  "more-examples/static_returning_clause_invalid.sql": {
+    "1": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00925",
+      "reason": "RETURNING accepts a single OLD or NEW qualifier per column; `old new my_column` is malformed and Oracle reports the missing INTO, while `returning old my_column into` is accepted."
+    }
+  },
+  "more-examples/views.sql": {
     "59": {
       "classification": "INVALID_SOURCE",
       "oracleError": "ORA-02000",
