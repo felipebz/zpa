@@ -1106,6 +1106,48 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesVirtualByUserForStatistics() {
+        listOf(
+            "alter table t add (x number generated always as (a + b) virtual);",
+            "alter table t add (sys_stu as (sys_op_combined_hash(c1, c2)) virtual by user for statistics);",
+            "alter table t add (sql_code_injection_check number generated always as (f(col)) virtual by user for statistics);",
+            "alter table \"S\".\"T\" add (sys_stu\$1#g as (sys_op_combined_hash(make, model)) virtual BY USER for statistics)",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t add (x as (a) virtual by foo for statistics)",
+            "alter table t add (x as (a) virtual by user foo statistics)",
+            "alter table t add (x as (a) virtual by user for foo)",
+            "alter table t add (x as (a) virtual by user)",
+            "alter table t add (x as (a) by user for statistics)",
+            "alter table t add (x as (a) stored by user for statistics)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesShrinkSpaceCheck() {
+        listOf(
+            "alter table t modify partition p1 shrink space check",
+            "alter table nav.t modify subpartition p12345 shrink space check;",
+            "alter table t modify partition p1 shrink space compact check",
+            "alter table t modify partition p1 shrink space check compact",
+            "alter table t shrink space check cascade",
+            "alter table t shrink space cascade check compact",
+            "alter table t shrink space cascade compact",
+            "alter table t modify subpartition sp1 logging shrink space compact check",
+            "alter table t modify subpartition for (1, 2) shrink space check",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t modify partition p1 shrink space check check",
+            "alter table t modify partition p1 shrink space compact check compact",
+            "alter table t modify partition p1 shrink check",
+            "alter table t modify partition p1 check",
+            "alter table t modify partition p1 shrink space foo",
+            "alter table t modify subpartition sp1 pctfree 5",
+            "alter table t modify subpartition sp1 shrink",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
     fun matchesModifyToPartitioned() {
         listOf(
             """alter table table_name modify partition by range (date_column)

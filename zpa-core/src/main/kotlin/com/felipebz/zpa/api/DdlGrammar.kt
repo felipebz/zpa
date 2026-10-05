@@ -101,6 +101,7 @@ enum class DdlGrammar : GrammarRuleKey {
     MERGE_TABLE_PARTITIONS,
     MODIFY_PARTITION_LOCAL_INDEXES,
     MODIFY_TABLE_PARTITION,
+    MODIFY_TABLE_SUBPARTITION,
     MODIFY_TO_PARTITIONED,
     MODIFY_COLLECTION_RETRIEVAL,
     MODIFY_OPAQUE_TYPE,
@@ -786,7 +787,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(b.firstOf(VISIBLE, INVISIBLE)),
                     b.optional(GENERATED, ALWAYS),
                     AS, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
-                    b.optional(b.firstOf(VIRTUAL, MATERIALIZED, STORED)),
+                    // BY USER FOR STATISTICS is undocumented: DBMS_STATS emits it when creating extended statistics.
+                    b.optional(b.firstOf(b.sequence(VIRTUAL, b.optional(BY, USER, FOR, STATISTICS)), MATERIALIZED, STORED)),
                     b.optional(EVALUATE, USING, b.firstOf(b.sequence(CURRENT, EDITION), editionName, b.sequence(NULL, EDITION))),
                     b.optional(UNUSABLE, BEFORE, b.firstOf(b.sequence(CURRENT, EDITION), editionName)),
                     b.optional(UNUSABLE, BEGINNING, WITH, b.firstOf(b.sequence(CURRENT, EDITION), editionName, b.sequence(NULL, EDITION))),
@@ -1876,7 +1878,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     RPARENTHESIS))
 
             b.rule(INDEX_SHRINK_CLAUSE).define(
-                SHRINK, SPACE, b.optional(COMPACT), b.optional(CASCADE))
+                SHRINK, SPACE, b.anyOrder(COMPACT, CASCADE, CHECK))
 
             b.rule(INDEX_TRACKING_STATISTICS_CLAUSE).define(
                 AFTER, INTEGER_LITERAL,
@@ -2300,6 +2302,9 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(MODIFY_INDEX_PARTITION).define(
                 MODIFY, PARTITION, IDENTIFIER_NAME,
                 b.firstOf(
+                    b.sequence(
+                        b.zeroOrMore(b.firstOf(INDEX_DEALLOCATE_UNUSED_CLAUSE, INDEX_ALLOCATE_EXTENT_CLAUSE, LOGGING_CLAUSE)),
+                        INDEX_SHRINK_CLAUSE),
                     b.oneOrMore(b.firstOf(
                         INDEX_DEALLOCATE_UNUSED_CLAUSE,
                         INDEX_ALLOCATE_EXTENT_CLAUSE,
@@ -2338,6 +2343,9 @@ enum class DdlGrammar : GrammarRuleKey {
                 MODIFY, SUBPARTITION, IDENTIFIER_NAME,
                 b.firstOf(
                     UNUSABLE,
+                    b.sequence(
+                        b.zeroOrMore(b.firstOf(INDEX_ALLOCATE_EXTENT_CLAUSE, INDEX_DEALLOCATE_UNUSED_CLAUSE)),
+                        INDEX_SHRINK_CLAUSE),
                     INDEX_ALLOCATE_EXTENT_CLAUSE,
                     INDEX_DEALLOCATE_UNUSED_CLAUSE))
 
@@ -2628,6 +2636,16 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(INDEX_SHRINK_CLAUSE)),
                     INDEX_SHRINK_CLAUSE))
 
+            // Unlike a partition, a subpartition rejects PCTFREE and the other physical attributes (ORA-14169).
+            b.rule(MODIFY_TABLE_SUBPARTITION).define(
+                MODIFY, SUBPARTITION_EXTENDED_NAME,
+                b.firstOf(
+                    b.sequence(
+                        b.oneOrMore(b.firstOf(
+                            LOGGING_CLAUSE, INDEX_ALLOCATE_EXTENT_CLAUSE, INDEX_DEALLOCATE_UNUSED_CLAUSE)),
+                        b.optional(INDEX_SHRINK_CLAUSE)),
+                    INDEX_SHRINK_CLAUSE))
+
             b.rule(MODIFY_TO_PARTITIONED).define(
                 MODIFY,
                 b.firstOf(
@@ -2835,6 +2853,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             MODIFY_TO_PARTITIONED,
                             MODIFY_PARTITION_LOCAL_INDEXES,
                             MODIFY_TABLE_PARTITION,
+                            MODIFY_TABLE_SUBPARTITION,
                             b.sequence(
                                     b.oneOrMore(b.firstOf(MODIFY_COLLECTION_RETRIEVAL, MODIFY_OPAQUE_TYPE, MODIFY_LOB_STORAGE_CLAUSE)),
                                     b.zeroOrMore(alterTableTrailingClause)),

@@ -1,6 +1,5 @@
 {
-  "examples/alter_index.sql" : [ 1 ],
-  "examples/alter_table.sql" : [ 5 ],
+  "examples/alter_table.sql" : [ 25 ],
   "examples/create_sequence.sql" : [ 49 ],
   "examples/create_table.sql" : [ 4 ],
   "examples/examples-sql-script/case_when.sql" : [ 10 ],

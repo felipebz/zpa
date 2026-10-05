@@ -88,6 +88,25 @@ class AlterIndexTest : RuleTest() {
     }
 
     @Test
+    fun matchesShrinkSpaceCheck() {
+        listOf(
+            "alter index ix modify partition p1 shrink space check;",
+            "alter index \"S\".\"IX\" modify subpartition \"SYS_SUBP1\" shrink space check;",
+            "alter index ix modify partition p1 shrink space compact check",
+            "alter index ix shrink space check cascade",
+            "alter index ix modify partition p1 logging shrink space",
+            "alter index ix modify subpartition sp1 allocate extent shrink space check",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter index ix modify partition p1 shrink space check check",
+            "alter index ix modify subpartition sp1 shrink check",
+            "alter index ix modify partition p1 shrink space foo",
+            "alter index ix modify partition p1 pctfree 5 shrink space",
+            "alter index ix modify subpartition sp1 pctfree 5",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
     fun matchesStorageOptionsApplicableToIndexes() {
         assertThat(p).matches("alter index employee_ix storage (maxsize 1g);")
         assertThat(p).matches("alter index employee_ix storage (maxsize unlimited flash_cache keep (cell_flash_cache (none)));")
