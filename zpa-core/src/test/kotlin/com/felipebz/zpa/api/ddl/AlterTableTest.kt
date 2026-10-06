@@ -619,6 +619,111 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesMoveTableSubpartition() {
+        listOf(
+            "alter table t move subpartition sp1",
+            "alter table t move subpartition sp1 tablespace ts1",
+            "alter table usr.acc move subpartition sp_inicial compress for query high tablespace ts1 update indexes;",
+            "alter table t move subpartition for (1, 2) tablespace ts1",
+            "alter table t move subpartition sp1 compress",
+            "alter table t move subpartition sp1 compress basic",
+            "alter table t move subpartition sp1 row store compress advanced",
+            "alter table t move subpartition sp1 nocompress",
+            "alter table t move subpartition sp1 logging tablespace ts1",
+            "alter table t move subpartition sp1 tablespace ts1 nologging",
+            "alter table t move subpartition sp1 update indexes",
+            "alter table t move subpartition sp1 update global indexes",
+            "alter table t move subpartition sp1 invalidate global indexes",
+            "alter table t move subpartition sp1 update indexes (ix (subpartition sp1 tablespace ts1))",
+            "alter table t move subpartition sp1 online",
+            "alter table t move subpartition sp1 parallel",
+            "alter table t move subpartition sp1 parallel 2",
+            "alter table t move subpartition sp1 noparallel",
+            "alter table t move subpartition sp1 indexing on",
+            "alter table t move subpartition sp1 indexing off",
+            "alter table t move subpartition sp1 including rows where a > 1",
+            "alter table t move subpartition sp1 allow clustering",
+            "alter table t move subpartition sp1 disallow clustering",
+            "alter table t move subpartition sp1 lob (c) store as securefile (tablespace ts1)",
+            "alter table t move subpartition sp1 tablespace ts1 compress for query high update indexes",
+            "alter table t move subpartition sp1 update indexes compress for query high tablespace ts1",
+            "alter table t move subpartition sp1 online tablespace ts1",
+            "alter table t move subpartition sp1 tablespace ts1 online",
+            "alter table t move subpartition sp1 update indexes online",
+            "alter table t move subpartition sp1 online update indexes",
+            "alter table t move subpartition sp1 update indexes parallel 2",
+            "alter table t move subpartition sp1 indexing on update indexes tablespace ts1",
+            "alter table t move subpartition sp1 including rows where a > 1 allow clustering online",
+            "alter table t move subpartition sp1 lob (c) store as (tablespace ts1) tablespace ts1 nocompress",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+    }
+
+    @Test
+    fun matchesUpdateIndexSubpartition() {
+        listOf(
+            "ix (subpartition sp1)", "ix (subpartition)", "ix (subpartition sp1 tablespace ts1)",
+            "ix (subpartition tablespace ts1)", "ix (subpartition sp1 tablespace ts1, subpartition sp2 tablespace ts2)",
+            "ix (subpartition sp1 usable)", "ix (subpartition sp1 unusable tablespace ts1)",
+            "ix (subpartition sp1 logging)", "ix (subpartition sp1 tablespace ts1 nologging unusable)",
+            "ix (partition p1 tablespace ts1)", "ix (partition p1 compress)",
+        ).forEach {
+            val sql = "alter table t move subpartition sp1 update indexes ($it)"
+            assertThat(p).describedAs(sql).matches(sql)
+        }
+        listOf(
+            "ix (subpartition sp1 compress)", "ix (subpartition sp1 nocompress)",
+            "ix (subpartition sp1 tablespace ts1 compress)", "ix (subpartition sp1 pctfree 5)",
+            "ix (subpartition sp1 storage (initial 1m))", "ix (subpartition sp1 tablespace)",
+            "ix (subpartition sp1 tablespace ts1 tablespace ts1)", "ix (subpartition sp1 usable unusable)",
+            "ix (subpartition sp1 logging nologging)",
+        ).forEach {
+            val sql = "alter table t move subpartition sp1 update indexes ($it)"
+            assertThat(p).describedAs(sql).notMatches(sql)
+        }
+    }
+
+    @Test
+    fun doesNotMatchMoveTableSubpartitionOutsideItsOptionSubset() {
+        listOf(
+            "alter table t move subpartition sp1 pctfree 5",
+            "alter table t move subpartition sp1 storage (initial 1m)",
+            "alter table t move subpartition sp1 mapping table",
+            "alter table t move subpartition sp1 compress 1",
+            "alter table t move subpartition sp1 overflow",
+            "alter table t move subpartition sp1 cache",
+            "alter table t move subpartition sp1 foo",
+            "alter table t move subpartition sp1 tablespace ts1 tablespace ts1",
+            "alter table t move subpartition sp1 tablespace ts1 logging tablespace ts2",
+            "alter table t move subpartition sp1 logging nologging",
+            "alter table t move subpartition sp1 compress nocompress",
+            "alter table t move subpartition sp1 compress tablespace ts1 compress",
+            "alter table t move subpartition sp1 online online",
+            "alter table t move subpartition sp1 online tablespace ts1 online",
+            "alter table t move subpartition sp1 parallel 2 parallel 2",
+            "alter table t move subpartition sp1 parallel noparallel",
+            "alter table t move subpartition sp1 indexing on indexing off",
+            "alter table t move subpartition sp1 update indexes update indexes",
+            "alter table t move subpartition sp1 update indexes update global indexes",
+            "alter table t move subpartition sp1 allow clustering allow clustering",
+            "alter table t move subpartition sp1 clustering",
+            "alter table t move subpartition",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun moveSubpartitionDoesNotBroadenMovePartitionOrTableMove() {
+        listOf(
+            "alter table t move partition p1 allow clustering",
+            "alter table t move partition p1 indexing on",
+            "alter table t move partition p1 including rows where a > 1",
+            "alter table t move partition sp1 foo",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+        assertThat(p).matches("alter table t move partition p1 mapping table")
+        assertThat(p).matches("alter table t move partition p1 pctfree 5")
+        assertThat(p).notMatches("alter table t move allow clustering")
+    }
+
+    @Test
     fun matchesMoveTablePartition() {
         assertThat(p).matches("alter table t move partition p1")
         assertThat(p).matches("alter table t move partition p1 tablespace ts2")
@@ -666,7 +771,6 @@ class AlterTableTest : RuleTest() {
         assertThat(p).notMatches("alter table t move partition p1 online update indexes online")
         assertThat(p).notMatches("alter table t move partition p1 parallel 2 update indexes noparallel")
         assertThat(p).notMatches("alter table t move partition p1 enable constraint ck")
-        assertThat(p).notMatches("alter table t move subpartition sp1")
     }
 
     @Test

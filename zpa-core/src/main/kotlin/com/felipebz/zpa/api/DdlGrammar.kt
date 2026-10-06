@@ -95,6 +95,8 @@ enum class DdlGrammar : GrammarRuleKey {
     RENAME_PARTITION_SUBPART,
     EXCHANGE_PARTITION_SUBPART,
     MOVE_TABLE_PARTITION,
+    MOVE_TABLE_SUBPARTITION,
+    MOVE_SUBPARTITION_ATTRIBUTES,
     TRUNCATE_PARTITION_SUBPART,
     ADD_RANGE_TABLE_PARTITIONS,
     SPLIT_TABLE_PARTITION,
@@ -2503,10 +2505,16 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SPLIT_NESTED_TABLE_PART), RPARENTHESIS,
                 b.optional(SPLIT_NESTED_TABLE_PART))
 
+            val updateIndexSubpartition = b.sequence(
+                SUBPARTITION,
+                b.optional(b.nextNot(b.firstOf(TABLESPACE, LOGGING, NOLOGGING, USABLE, UNUSABLE)), IDENTIFIER_NAME),
+                b.anyOrder(b.sequence(TABLESPACE, IDENTIFIER_NAME), LOGGING_CLAUSE, b.firstOf(USABLE, UNUSABLE)))
+            val updateIndexPartitionOrSubpartition = b.firstOf(INDEX_PARTITION_DESCRIPTION, updateIndexSubpartition)
+
             fun indexPartitionUpdates() = b.sequence(
                 IDENTIFIER_NAME, LPARENTHESIS,
-                INDEX_PARTITION_DESCRIPTION,
-                b.zeroOrMore(COMMA, INDEX_PARTITION_DESCRIPTION),
+                updateIndexPartitionOrSubpartition,
+                b.zeroOrMore(COMMA, updateIndexPartitionOrSubpartition),
                 RPARENTHESIS)
 
             b.rule(UPDATE_INDEX_CLAUSES).define(
@@ -2730,6 +2738,41 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(MAPPING, TABLE),
                 movePartitionSuffixes(15))
 
+            // Beyond the documented TABLESPACE and table_compression, Oracle 26 also accepts LOGGING and LOB storage.
+            // The families may appear in any order but only once each.
+            val subpartitionTablespace = b.sequence(TABLESPACE, IDENTIFIER_NAME)
+            val subpartitionAttribute = b.firstOf(subpartitionTablespace, LOGGING_CLAUSE, TABLE_COMPRESSION, LOB_STORAGE_CLAUSE)
+            fun repeatedSubpartitionAttribute(family: Any, others: Any) = b.nextNot(
+                b.sequence(b.zeroOrMore(others), family, b.zeroOrMore(others), family))
+            b.rule(MOVE_SUBPARTITION_ATTRIBUTES).define(
+                repeatedSubpartitionAttribute(subpartitionTablespace,
+                    b.firstOf(LOGGING_CLAUSE, TABLE_COMPRESSION, LOB_STORAGE_CLAUSE)),
+                repeatedSubpartitionAttribute(LOGGING_CLAUSE,
+                    b.firstOf(subpartitionTablespace, TABLE_COMPRESSION, LOB_STORAGE_CLAUSE)),
+                repeatedSubpartitionAttribute(TABLE_COMPRESSION,
+                    b.firstOf(subpartitionTablespace, LOGGING_CLAUSE, LOB_STORAGE_CLAUSE)),
+                b.oneOrMore(subpartitionAttribute))
+            val subpartitionFamilies = listOf<Any>(
+                MOVE_SUBPARTITION_ATTRIBUTES,
+                b.sequence(INDEXING, b.firstOf(ON, OFF)),
+                UPDATE_INDEX_CLAUSES,
+                INDEX_PARALLEL_CLAUSE,
+                ONLINE,
+                b.sequence(INCLUDING, ROWS, DmlGrammar.WHERE_CLAUSE),
+                b.sequence(b.firstOf(ALLOW, DISALLOW), "CLUSTERING"))
+            fun anyOf(expressions: List<Any>) =
+                b.firstOf(expressions[0], expressions[1], *expressions.drop(2).toTypedArray())
+            val subpartitionFamilyChecks = subpartitionFamilies.mapIndexed { i, family ->
+                val others = anyOf(subpartitionFamilies.filterIndexed { j, _ -> j != i })
+                b.nextNot(b.sequence(b.zeroOrMore(others), family, b.zeroOrMore(others), family))
+            }
+
+            b.rule(MOVE_TABLE_SUBPARTITION).define(
+                MOVE, SUBPARTITION_EXTENDED_NAME,
+                b.sequence(subpartitionFamilyChecks[0], subpartitionFamilyChecks[1],
+                    *subpartitionFamilyChecks.drop(2).toTypedArray()),
+                b.zeroOrMore(anyOf(subpartitionFamilies)))
+
             // Oracle rejects combining RENAME COLUMN with another ALTER TABLE operation (ORA-23290).
             fun renameColumnClause() = b.sequence(RENAME, COLUMN, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
 
@@ -2845,6 +2888,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             renameTableClause(),
                             RENAME_PARTITION_SUBPART,
                             MOVE_TABLE_PARTITION,
+                            MOVE_TABLE_SUBPARTITION,
                             TRUNCATE_PARTITION_SUBPART,
                             EXCHANGE_PARTITION_SUBPART,
                             ADD_RANGE_TABLE_PARTITIONS,
