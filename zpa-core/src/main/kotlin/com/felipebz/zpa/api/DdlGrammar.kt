@@ -105,6 +105,7 @@ enum class DdlGrammar : GrammarRuleKey {
     MODIFY_TABLE_PARTITION,
     MODIFY_TABLE_SUBPARTITION,
     MODIFY_TO_PARTITIONED,
+    MODIFY_TO_PARTITIONED_INDEX,
     MODIFY_COLLECTION_RETRIEVAL,
     MODIFY_OPAQUE_TYPE,
     MODIFY_LOB_STORAGE_CLAUSE,
@@ -2679,6 +2680,39 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(INDEX_SHRINK_CLAUSE)),
                     INDEX_SHRINK_CLAUSE))
 
+            val modifyIndexSegmentName = b.optional(
+                b.nextNot(b.firstOf(TABLESPACE, LOGGING, NOLOGGING, USABLE, UNUSABLE, PARAMETERS, STORAGE,
+                    PCTFREE, INITRANS, MAXTRANS, COMPRESS)),
+                IDENTIFIER_NAME)
+            val modifyIndexSubpartition = b.sequence(
+                SUBPARTITION, modifyIndexSegmentName, b.optional(TABLESPACE, IDENTIFIER_NAME))
+            val modifyIndexLocalPartition = b.sequence(
+                PARTITION, modifyIndexSegmentName,
+                b.zeroOrMore(b.firstOf(
+                    b.sequence(TABLESPACE, IDENTIFIER_NAME), LOGGING_CLAUSE, USABLE, UNUSABLE,
+                    INDEX_PARAMETERS_CLAUSE, INDEX_STORAGE_CLAUSE,
+                    b.sequence(PCTFREE, INTEGER_LITERAL), b.sequence(INITRANS, INTEGER_LITERAL),
+                    b.sequence(MAXTRANS, INTEGER_LITERAL),
+                    b.sequence(COMPRESS, b.optional(ADVANCED, b.optional(b.firstOf(LOW, HIGH)))))),
+                b.optional(LPARENTHESIS, modifyIndexSubpartition,
+                    b.zeroOrMore(COMMA, modifyIndexSubpartition), RPARENTHESIS))
+            val modifyIndexGlobalPartitioning = b.sequence(
+                PARTITION, BY,
+                b.firstOf(
+                    b.sequence(
+                        RANGE_KEYWORD, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                        LPARENTHESIS, CREATE_INDEX_PARTITIONING_CLAUSE,
+                        b.zeroOrMore(COMMA, CREATE_INDEX_PARTITIONING_CLAUSE), RPARENTHESIS),
+                    b.sequence(
+                        PlSqlKeyword.HASH, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
+                        b.optional(b.firstOf(CREATE_INDEX_HASH_PARTITIONS, CREATE_INDEX_HASH_PARTITIONS_BY_QUANTITY)))))
+            b.rule(MODIFY_TO_PARTITIONED_INDEX).define(
+                IDENTIFIER_NAME,
+                b.optional(b.firstOf(
+                    b.sequence(LOCAL, b.optional(LPARENTHESIS, modifyIndexLocalPartition,
+                        b.zeroOrMore(COMMA, modifyIndexLocalPartition), RPARENTHESIS)),
+                    b.sequence(GLOBAL, b.optional(modifyIndexGlobalPartitioning)))))
+
             b.rule(MODIFY_TO_PARTITIONED).define(
                 MODIFY,
                 b.firstOf(
@@ -2686,8 +2720,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(INCLUDING, ROWS, DmlGrammar.WHERE_CLAUSE),
                 b.optional(ONLINE),
                 b.optional(UPDATE, INDEXES, b.optional(
-                    LPARENTHESIS, IDENTIFIER_NAME, b.firstOf(LOCAL, GLOBAL),
-                    b.zeroOrMore(COMMA, IDENTIFIER_NAME, b.firstOf(LOCAL, GLOBAL)), RPARENTHESIS)))
+                    LPARENTHESIS, MODIFY_TO_PARTITIONED_INDEX,
+                    b.zeroOrMore(COMMA, MODIFY_TO_PARTITIONED_INDEX), RPARENTHESIS)))
 
             // Oracle 26 also accepts RETURN VALUE without AS.
             b.rule(MODIFY_COLLECTION_RETRIEVAL).define(

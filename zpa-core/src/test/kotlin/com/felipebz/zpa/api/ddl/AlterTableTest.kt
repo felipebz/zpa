@@ -1274,8 +1274,57 @@ class AlterTableTest : RuleTest() {
             "alter table t modify partition by range (id) online (partition p1 values less than (10))",
             "alter table t modify (id number) partition by range (id) (partition p1 values less than (10))",
             "alter table t modify partition by range (id) (partition p1 values less than (10)) online online",
-            "alter table t modify partition by range (id) (partition p1 values less than (10)) update indexes (i)",
         ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesModifyToPartitionedIndexConversion() {
+        fun alter(indexes: String) =
+            "alter table t modify partition by range (c) (partition p1 values less than (maxvalue)) update indexes ($indexes)"
+        listOf(
+            "ix", "ix, ix2", "ix local", "ix global", "ix local, ix2 global",
+            "ix local (partition p1)", "ix local (partition)", "ix local (partition p1 tablespace ts1)",
+            "ix local (partition p1 tablespace ts1, partition p2 tablespace ts2)",
+            "ix local (partition p1 logging, partition p2 nologging)", "ix local (partition p1 unusable, partition p2 usable)",
+            "ix local (partition p1 parameters ('x'), partition p2)", "ix local (partition p1 storage (initial 1m))",
+            "ix local (partition p1 pctfree 10, partition p2)", "ix local (partition p1 initrans 4, partition p2)",
+            "ix local (partition p1 maxtrans 255, partition p2)",
+            "ix local (partition p1 pctfree 10 initrans 4 tablespace ts1 logging storage (initial 1m) unusable)",
+            "ix local (partition p1 compress, partition p2)", "ix local (partition p1 compress advanced low, partition p2)",
+            "ix local (partition p1 tablespace ts1 compress advanced)",
+            "ix local (partition p1 (subpartition sp1 tablespace ts1, subpartition sp2), partition p2)",
+            "ix global partition by range (c) (partition p1 values less than (maxvalue))",
+            "ix global partition by range (c) (partition values less than (10) tablespace ts1, partition values less than (maxvalue))",
+            "ix global partition by hash (c)", "ix global partition by hash (c) partitions 2",
+            "ix global partition by hash (c) partitions 2 store in (ts1)",
+            "ix global partition by hash (c) (partition p1, partition p2)",
+            "ix2 global partition by range (d) (partition p1 values less than (maxvalue)), ix local (partition p1 tablespace ts1, partition p2)",
+        ).forEach { assertThat(p).describedAs(it).matches(alter(it)) }
+        listOf(
+            "ix (partition p1 tablespace ts1)", "ix (partition p1)",
+            "ix local local", "ix global global", "ix local global", "ix global local",
+            "ix local ()", "ix local (p1)", "ix local (partition p1, p2)", "ix local (partition p1,)",
+            "ix local (partition p1 pctused 20)", "ix local (partition p1 nocompress)", "ix local (partition p1 compress 1)",
+            "ix local (partition p1 pctfree)", "ix local (partition p1 pctfree foo)",
+            "ix local (partition p1 initrans)", "ix local (partition p1 maxtrans)", "ix local (partition p1 foo)",
+            "ix local (partition p1 partition p2)", "ix,", "ix local,", "ix local ix2 local", "",
+            "ix global partition by range (c)", "ix global partition by range (c) ()",
+            "ix global partition by hash (c) partitions 2 (partition p1)",
+            "ix global partition by list (c) (partition p1 values (1))", "ix global partition (c)",
+            "ix global partition by range (c) (partition p1 values less than (maxvalue)) global",
+        ).forEach { assertThat(p).describedAs(it).notMatches(alter(it)) }
+    }
+
+    @Test
+    fun conversionIndexSyntaxDoesNotLeakIntoPartitionMaintenance() {
+        listOf(
+            "alter table t move partition p1 update indexes (ix local)",
+            "alter table t move partition p1 update indexes (ix)",
+            "alter table t move subpartition sp1 update indexes (ix global)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+        assertThat(p).matches("alter table t move partition p1 update indexes (ix (partition p1 tablespace ts1))")
+        assertThat(p).notMatches("alter table t move partition p1 update indexes (ix local (partition p1))")
+        assertThat(p).notMatches("alter table t move subpartition sp1 update indexes (ix local)")
     }
 
     @Test
