@@ -6,6 +6,12 @@
       "reason": "The UPDATE INDEXES clause of MODIFY PARTITION BY requires a local or global index specification after each index name (IDX_AUD_ON LOCAL (...) or GLOBAL ...); the fixture supplies a bare PARTITION ... TABLESPACE ... description, which belongs to the partition-maintenance update_index_clauses, so Oracle reports a missing right parenthesis. Adding LOCAL makes it parse."
     }
   },
+  "examples/create_sequence.sql": {
+    "118": {
+      "classification": "INVALID_SOURCE",
+      "reason": "Per the Oracle 26 ALTER SEQUENCE documentation, when SHARD and SCALE are combined a single EXTEND or NOEXTEND applies to both; specifying it on each clause (SHARD EXTEND ... SCALE EXTEND) is a duplicate EXTEND error. The local instance rejects SHARD with ORA-02511 before parsing, so the rule could not be probed."
+    }
+  },
   "examples/create_table.sql": {
     "4": {
       "classification": "INVALID_SOURCE",

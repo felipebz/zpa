@@ -3218,7 +3218,10 @@ enum class DdlGrammar : GrammarRuleKey {
 
             // Options shared by CREATE and ALTER SEQUENCE. Oracle 26 accepts them in any order and parses SCALE
             // without EXTEND/NOEXTEND; duplicate or conflicting options fail after parsing (ORA-02279..ORA-02281).
-            val sequenceOption = b.firstOf(
+            val extendModifier = b.firstOf(EXTEND, NOEXTEND)
+            val shardWithModifier = b.sequence(SHARD, extendModifier)
+            val scaleWithModifier = b.sequence(SCALE, extendModifier)
+            val neutralSequenceOptions = listOf<Any>(
                     b.sequence(INCREMENT, BY, sequenceInteger),
                     b.sequence(START, WITH, sequenceInteger),
                     b.sequence(MAXVALUE, sequenceInteger),
@@ -3233,30 +3236,43 @@ enum class DdlGrammar : GrammarRuleKey {
                     NOORDER,
                     KEEP,
                     NOKEEP,
-                    b.sequence(SCALE, b.optional(b.firstOf(EXTEND, NOEXTEND))),
                     NOSCALE,
+                    NOSHARD,
                     SESSION,
-                    GLOBAL)
+                    GLOBAL,
+                    b.sequence(SHARD, b.nextNot(extendModifier)),
+                    b.sequence(SCALE, b.nextNot(extendModifier)))
+            val sequenceOption = b.firstOf(
+                    shardWithModifier, scaleWithModifier,
+                    neutralSequenceOptions[0], neutralSequenceOptions[1], *neutralSequenceOptions.drop(2).toTypedArray())
+
+            // With SHARD and SCALE together, one EXTEND or NOEXTEND applies to both; a modifier on each is an error.
+            val neutralSequenceOption = b.firstOf(
+                    neutralSequenceOptions[0], neutralSequenceOptions[1], *neutralSequenceOptions.drop(2).toTypedArray(),
+                    RESTART)
+            fun doubleModifier(first: Any, second: Any) = b.nextNot(b.sequence(
+                    b.zeroOrMore(neutralSequenceOption), first, b.zeroOrMore(neutralSequenceOption), second))
+            val sequenceModifierChecks = b.sequence(
+                    doubleModifier(shardWithModifier, scaleWithModifier),
+                    doubleModifier(scaleWithModifier, shardWithModifier))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SEQUENCE.html
-            // RESTART (ORA-64602), SHARD, OR REPLACE and EDITIONABLE are not CREATE SEQUENCE syntax.
+            // RESTART (ORA-64602), OR REPLACE and EDITIONABLE are not CREATE SEQUENCE syntax.
             b.rule(CREATE_SEQUENCE).define(
                     CREATE, SEQUENCE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, DATA, NONE)),
+                    sequenceModifierChecks,
                     b.zeroOrMore(sequenceOption),
                     b.optional(SEMICOLON))
 
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SEQUENCE.html
             // At least one option is required (ORA-02286), and SHARING is not an ALTER option. START WITH without
             // RESTART (ORA-02283) and a repeated RESTART (ORA-64601) fail only after parsing. The probe instance
-            // rejects SHARD before parsing (ORA-02511), so SHARD follows the documented diagram.
+            // rejects SHARD before parsing (ORA-02511), so SHARD follows the documentation (NOEXTEND is its default).
             b.rule(ALTER_SEQUENCE).define(
                     ALTER, SEQUENCE, b.optional(IF, EXISTS), UNIT_NAME,
-                    b.oneOrMore(b.firstOf(
-                            sequenceOption,
-                            RESTART,
-                            b.sequence(SHARD, b.firstOf(EXTEND, NOEXTEND)),
-                            NOSHARD)),
+                    sequenceModifierChecks,
+                    b.oneOrMore(b.firstOf(sequenceOption, RESTART)),
                     b.optional(SEMICOLON))
 
             b.rule(CREATE_DIRECTORY).define(

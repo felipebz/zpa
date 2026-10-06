@@ -52,6 +52,7 @@ class AlterSequenceTest : RuleTest() {
         assertThat(p).matches("alter sequence s scale extend session")
         assertThat(p).matches("alter sequence s scale global keep")
         assertThat(p).matches("alter sequence s noscale nokeep order")
+        assertThat(p).matches("alter sequence s shard")
         assertThat(p).matches("alter sequence s shard extend")
         assertThat(p).matches("alter sequence s shard noextend noshard")
         // Duplicate or conflicting options fail only after parsing (ORA-02280/ORA-02281/ORA-64601).
@@ -70,7 +71,12 @@ class AlterSequenceTest : RuleTest() {
         // ORA-03048 / ORA-03049
         assertThat(p).notMatches("alter sequence s restart with 10")
         assertThat(p).notMatches("alter sequence s scale foo")
-        assertThat(p).notMatches("alter sequence s shard")
+        assertThat(p).notMatches("alter sequence s shard foo")
+        assertThat(p).matches("alter sequence s shard scale extend")
+        assertThat(p).matches("alter sequence s scale shard noextend restart")
+        assertThat(p).notMatches("alter sequence s shard extend scale extend")
+        assertThat(p).notMatches("alter sequence s scale noextend shard extend")
+        assertThat(p).notMatches("alter sequence s noshard extend")
         assertThat(p).notMatches("alter sequence s maxvalue")
         assertThat(p).notMatches("alter sequence s cache 1.5")
     }

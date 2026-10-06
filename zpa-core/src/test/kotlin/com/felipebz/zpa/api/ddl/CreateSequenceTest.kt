@@ -138,13 +138,36 @@ class CreateSequenceTest : RuleTest() {
     }
 
     @Test
+    fun matchesShardOptions() {
+        listOf(
+            "create sequence s shard;", "create sequence s shard extend;", "create sequence s shard noextend;",
+            "create sequence s noshard;", "create sequence s increment by 1 shard;",
+            "create sequence s increment by 1 shard extend;", "create sequence s increment by 1 noshard;",
+            "create sequence s shard scale;", "create sequence s scale shard;",
+            "create sequence s shard extend scale;", "create sequence s scale shard extend;", "create sequence s shard scale noextend;",
+            "create sequence s scale extend shard;", "create sequence s shard noextend scale;", "create sequence s scale shard noextend",
+            "create sequence s start with 100 increment by 5 maxvalue 10000 minvalue 100 nocycle cache 100 order keep shard extend global;",
+            "create sequence s global shard extend scale keep order cache 20 cycle maxvalue 999999 minvalue 1 increment by 1 start with 1;",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "create sequence s shard foo;", "create sequence s noshard extend;", "create sequence s noshard noextend;",
+            "create sequence s shard extend 1;",
+            "create sequence s shard extend scale extend;", "create sequence s shard noextend scale noextend;",
+            "create sequence s shard extend scale noextend;", "create sequence s shard noextend scale extend;",
+            "create sequence s scale extend shard extend;", "create sequence s scale noextend shard noextend;",
+            "create sequence s scale extend shard noextend;", "create sequence s scale noextend shard extend;",
+            "create sequence s shard extend cache 20 scale extend;",
+            "create sequence s global shard extend scale extend keep order cache 20 cycle;",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
     fun rejectsNonCreateSequenceSyntax() {
         // ORA-11543 / ORA-00922 / ORA-64602
         assertThat(p).notMatches("create sequence if exists seq_name;")
         assertThat(p).notMatches("create or replace sequence seq_name;")
         assertThat(p).notMatches("create editionable sequence seq_name;")
         assertThat(p).notMatches("create sequence seq_name restart;")
-        assertThat(p).notMatches("create sequence seq_name noshard;")
     }
 
     @Test
