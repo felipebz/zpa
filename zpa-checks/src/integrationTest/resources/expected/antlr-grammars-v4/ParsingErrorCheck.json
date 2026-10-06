@@ -5,7 +5,6 @@
   "examples/examples-sql-script/case_when.sql" : [ 10 ],
   "examples/examples-sql-script/e_in_out_parameters.pks" : [ 4 ],
   "examples/examples-sql-script/grants.sql" : [ 15 ],
-  "examples/selection_directive.sql" : [ 13 ],
   "examples/table_ref01.sql" : [ 1 ],
   "examples/table_ref02.sql" : [ 1 ],
   "examples/truncate_table.sql" : [ 3 ],

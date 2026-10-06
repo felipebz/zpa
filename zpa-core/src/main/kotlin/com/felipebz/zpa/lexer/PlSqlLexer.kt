@@ -85,6 +85,7 @@ object PlSqlLexer {
             .withChannel(BlackHoleChannel("(?is)" + or(
                 "\\s&&?$SIMPLE_IDENTIFIER",
                 "\\\$if.*?\\\$then",
+                "\\\$elsif.*?\\\$end",
                 "\\\$else.*?\\\$end",
                 "\\\$error.*?\\\$end",
                 "\\\$end"

@@ -551,6 +551,41 @@ class PlSqlLexerTest {
     }
 
 
+    private fun parseBlock(source: String): com.felipebz.flr.api.AstNode {
+        val p = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false))
+        p.setRootRule(p.grammar.rule(PlSqlGrammar.BLOCK_STATEMENT))
+        return p.parse(source)
+    }
+
+    @Test
+    fun conditionalCompilationWithElsif() {
+        fun nullStatements(directives: String) =
+            parseBlock("begin\n$directives\nnull;\nend;").getDescendants(PlSqlGrammar.NULL_STATEMENT)
+
+        assertThat(nullStatements("\$if false \$then\n\$elsif true \$then\n  null;\n\$end")).hasSize(1)
+        assertThat(nullStatements("\$if false \$then\n  null;\n\$elsif true \$then\n  null;\n\$end")).hasSize(2)
+        assertThat(nullStatements("\$if false \$then\n\$elsif true \$then\n\$else\n\$end")).hasSize(1)
+        assertThat(nullStatements("\$if false \$then\n\$elsif false \$then\n\$elsif true \$then\n  null;\n\$else\n\$end")).hasSize(1)
+    }
+
+    @Test
+    fun conditionalCompilationWithEmptyBranches() {
+        listOf(
+            "\$if true \$then\n\$end",
+            "\$if true \$then\n\$else\n\$end",
+            "\$if false \$then\n\$elsif true \$then\n\$end",
+            "\$if false \$then\n\$elsif true \$then\n\$else\n\$end",
+            "\$if false \$then\n\$else\n  null;\n\$end",
+            "\$if false \$then\n  null;\n\$elsif true \$then\n  null;\n\$else\n  null;\n\$end",
+        ).forEach { assertThat(parseBlock("begin\n$it\nnull;\nend;")).describedAs(it).isNotNull }
+    }
+
+    @Test
+    fun elsifDirectiveDoesNotAffectOrdinaryIdentifiers() {
+        val node = parseBlock("begin\n  my\$elsif := 1;\n  \$\$plsql_unit := 1;\nend;")
+        assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT)).hasSize(2)
+    }
+
     @Test
     fun ignoreErrorPreProcessor() {
         val p = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false))

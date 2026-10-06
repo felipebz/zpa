@@ -2,6 +2,7 @@
   "examples/examples-sql-script/anonymous_block.sql" : [ 4, 7 ],
   "examples/examples-sql-script/green_tools.pkb" : [ 7, 23, 25 ],
   "examples/examples-sql-script/package_with_cursor.sql" : [ 19, 23 ],
+  "examples/selection_directive.sql" : [ 3, 19 ],
   "more-examples/block01.sql" : [ 21, 26, 30 ],
   "more-examples/block02.sql" : [ 5 ],
   "more-examples/collection_method_invocation.sql" : [ 7, 8, 9, 13 ],
