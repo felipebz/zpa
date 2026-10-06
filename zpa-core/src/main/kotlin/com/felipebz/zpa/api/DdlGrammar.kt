@@ -1192,18 +1192,44 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(PCTVERSION, INTEGER_LITERAL),
                     b.sequence(FREEPOOLS, INTEGER_LITERAL))
 
+            val lobRetention = b.sequence(RETENTION, b.optional(b.firstOf(MAX, AUTO, NONE, b.sequence(MIN, INTEGER_LITERAL))))
+            val lobCompression = b.firstOf(b.sequence(COMPRESS, b.optional(b.firstOf(HIGH, MEDIUM, LOW))), NOCOMPRESS)
+            val lobDeduplication = b.firstOf(DEDUPLICATE, KEEP_DUPLICATES)
+            val lobCache = b.firstOf(
+                    b.sequence(CACHE, b.optional(READS), b.optional(LOGGING_CLAUSE)),
+                    b.sequence(NOCACHE, b.optional(LOGGING_CLAUSE)))
+
+            val lobParameterFamilies = listOf<Any>(
+                    b.sequence(TABLESPACE, IDENTIFIER_NAME),
+                    b.sequence(ENABLE, STORAGE, IN, ROW, b.optional(INTEGER_LITERAL)),
+                    b.sequence(DISABLE, STORAGE, IN, ROW),
+                    INDEX_STORAGE_CLAUSE,
+                    b.sequence(CHUNK, INTEGER_LITERAL),
+                    b.sequence(PCTVERSION, INTEGER_LITERAL),
+                    b.sequence(FREEPOOLS, INTEGER_LITERAL),
+                    lobRetention,
+                    lobDeduplication,
+                    lobCompression,
+                    b.firstOf(
+                            b.sequence(ENCRYPT, b.optional(USING, CHARACTER_LITERAL), b.optional(IDENTIFIED, BY, encryptionPassword())),
+                            DECRYPT),
+                    lobCache)
+            val lobParameterFamilyGroups = lobParameterFamilies.indices.filter { it != 2 }.map { i ->
+                if (i == 1) listOf(lobParameterFamilies[1], lobParameterFamilies[2]) else listOf(lobParameterFamilies[i])
+            }
+            fun anyLobParameter(expressions: List<Any>) =
+                    if (expressions.size == 1) expressions[0]
+                    else b.firstOf(expressions[0], expressions[1], *expressions.drop(2).toTypedArray())
+            val lobParameterFamilyChecks = lobParameterFamilyGroups.mapIndexed { i, family ->
+                val familyExpression = anyLobParameter(family)
+                val others = anyLobParameter(lobParameterFamilyGroups.filterIndexed { j, _ -> j != i }.flatten())
+                b.nextNot(b.sequence(b.zeroOrMore(others), familyExpression, b.zeroOrMore(others), familyExpression))
+            }
+
             b.rule(LOB_PARAMETERS).define(
-                    b.oneOrMore(b.firstOf(
-                            lobParameterCommon,
-                            RETENTION,
-                            b.firstOf(
-                                    b.sequence(CACHE,
-                                            b.optional(b.sequence(
-                                                    READS,
-                                                    b.optional(LOGGING_CLAUSE)))),
-                                    b.sequence(
-                                            NOCACHE,
-                                            b.optional(LOGGING_CLAUSE))))))
+                    b.sequence(lobParameterFamilyChecks[0], lobParameterFamilyChecks[1],
+                            *lobParameterFamilyChecks.drop(2).toTypedArray()),
+                    b.oneOrMore(anyLobParameter(lobParameterFamilies)))
 
             b.rule(VARRAY_COL_PROPERTIES).define(
                     b.sequence(VARRAY,
@@ -1348,10 +1374,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     DELETE_ALL, ENABLE_ALL, DISABLE_ALL))
             val partitionJsonParameters = b.sequence(LPARENTHESIS, b.oneOrMore(b.firstOf(
                     lobParameterCommon,
-                    b.sequence(RETENTION, b.optional(b.firstOf(MAX, AUTO, NONE, b.sequence(MIN, INTEGER_LITERAL)))),
+                    lobRetention,
                     b.sequence(CACHE, b.optional(READS, b.optional(LOGGING_CLAUSE))),
-                    b.sequence(COMPRESS, b.optional(b.firstOf(HIGH, MEDIUM, LOW))),
-                    NOCOMPRESS)), RPARENTHESIS)
+                    lobCompression)), RPARENTHESIS)
             val partitionJsonStorage = b.sequence(
                     JSON, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS,
                     STORE, AS,
@@ -2685,9 +2710,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(PCTVERSION, INTEGER_LITERAL),
                     b.sequence(FREEPOOLS, INTEGER_LITERAL),
                     b.sequence(REBUILD, FREEPOOLS),
-                    b.sequence(RETENTION, b.optional(b.firstOf(MAX, AUTO, NONE, b.sequence(MIN, INTEGER_LITERAL)))),
-                    DEDUPLICATE, KEEP_DUPLICATES,
-                    b.sequence(COMPRESS, b.optional(b.firstOf(HIGH, MEDIUM, LOW))), NOCOMPRESS,
+                    lobRetention,
+                    lobDeduplication,
+                    lobCompression,
                     columnEncryptionClause(), DECRYPT,
                     b.sequence(CACHE, b.optional(READS, b.optional(LOGGING_CLAUSE))),
                     b.sequence(NOCACHE, b.optional(LOGGING_CLAUSE)),
@@ -2739,7 +2764,6 @@ enum class DdlGrammar : GrammarRuleKey {
                 movePartitionSuffixes(15))
 
             // Beyond the documented TABLESPACE and table_compression, Oracle 26 also accepts LOGGING and LOB storage.
-            // The families may appear in any order but only once each.
             val subpartitionTablespace = b.sequence(TABLESPACE, IDENTIFIER_NAME)
             val subpartitionAttribute = b.firstOf(subpartitionTablespace, LOGGING_CLAUSE, TABLE_COMPRESSION, LOB_STORAGE_CLAUSE)
             fun repeatedSubpartitionAttribute(family: Any, others: Any) = b.nextNot(

@@ -97,4 +97,70 @@ class LobStorageClauseTest : RuleTest() {
         assertThat(p).matches("alter table t move lob (a, b) store as securefile (tablespace users);")
         assertThat(p).notMatches("alter table t move lob (a, b) store as seg_x;")
     }
+
+    @Test
+    fun matchesLobParameters() {
+        setRootRule(DdlGrammar.LOB_STORAGE_CLAUSE)
+        listOf(
+            "lob (x) store as securefile x_seg (enable storage in row deduplicate compress medium nocache logging)",
+            "lob (\"X\") store as securefile \"X_SEG\" (enable storage in row deduplicate compress medium nocache logging)",
+            "lob (x) store as basicfile x_seg (enable storage in row chunk 8192 retention nocache logging)",
+            "lob (x) store as securefile (compress high deduplicate)",
+            "lob (x) store as securefile (keep_duplicates nocompress)",
+            "lob (x) store as securefile (compress)", "lob (x) store as securefile (compress low)",
+            "lob (x) store as securefile (decrypt)",
+            "lob (x) store as securefile (encrypt using 'AES256' identified by pw1)",
+            "lob (x) store as securefile (encrypt)",
+            "lob (x) store as securefile (retention max)", "lob (x) store as securefile (retention min 100)",
+            "lob (x) store as securefile (retention auto)", "lob (x) store as securefile (retention none)",
+            "lob (x) store as basicfile (pctversion 10 freepools 4)",
+            "lob (x) store as securefile (enable storage in row 4000)",
+            "lob (x) store as basicfile (disable storage in row chunk 8192)",
+            "lob (x) store as securefile (cache)", "lob (x) store as securefile (cache logging)",
+            "lob (x) store as securefile (cache reads nologging)", "lob (x) store as securefile (nocache nologging)",
+            "lob (x) store as securefile (storage (initial 1m) tablespace users)",
+            "lob (x) store as securefile (tablespace users chunk 8192 retention deduplicate compress cache)",
+            "lob (x) store as securefile (cache compress tablespace users deduplicate retention chunk 8192)",
+            "lob (a, b) store as securefile (deduplicate compress medium)",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+    }
+
+    @Test
+    fun rejectsInvalidAndRepeatedLobParameters() {
+        setRootRule(DdlGrammar.LOB_STORAGE_CLAUSE)
+        listOf(
+            "lob (x) store as securefile (deduplicate keep_duplicates)",
+            "lob (x) store as securefile (deduplicate deduplicate)",
+            "lob (x) store as securefile (compress nocompress)",
+            "lob (x) store as securefile (compress high compress low)",
+            "lob (x) store as securefile (compress high medium)",
+            "lob (x) store as securefile (cache nocache)", "lob (x) store as securefile (nocache nocache)",
+            "lob (x) store as securefile (retention retention)",
+            "lob (x) store as securefile (retention min)",
+            "lob (x) store as securefile (enable storage in row disable storage in row)",
+            "lob (x) store as securefile (chunk 8192 chunk 8192)",
+            "lob (x) store as securefile (tablespace users tablespace users)",
+            "lob (x) store as securefile (encrypt decrypt)",
+            "lob (x) store as securefile (encrypt no salt)",
+            "lob (x) store as securefile (disable storage in row 4000)",
+            "lob (x) store as securefile (logging)", "lob (x) store as securefile (nologging)",
+            "lob (x) store as securefile (chunk)", "lob (x) store as securefile (compress foo)",
+            "lob (x) store as securefile ()",
+            "lob (a, b) store as seg_x (deduplicate)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesLobParametersInTableStatements() {
+        setRootRule(DdlGrammar.DDL_COMMAND)
+        listOf(
+            "create table t (id number, x clob) lob (x) store as securefile (deduplicate compress medium cache);",
+            "alter table t move lob (\"X\") store as securefile \"X_SEG\" (enable storage in row deduplicate compress medium nocache logging);",
+            "alter table t move lob (\"X\") store as basicfile \"X_SEG\" (enable storage in row chunk 8192 retention nocache logging);",
+            "alter table t move online lob (\"X\") store as securefile \"X_SEG\" (enable storage in row deduplicate compress medium nocache logging);",
+            "alter table t move online lob (\"X\") store as basicfile \"X_SEG\" (enable storage in row chunk 8192 retention nocache logging);",
+            "alter table t modify lob (x) (deduplicate compress high retention auto)",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        assertThat(p).notMatches("alter table t move lob (x) store as securefile x_seg (deduplicate keep_duplicates);")
+    }
 }

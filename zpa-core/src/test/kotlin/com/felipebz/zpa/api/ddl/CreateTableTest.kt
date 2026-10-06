@@ -464,7 +464,7 @@ class CreateTableTest : RuleTest() {
 
     @Test
     fun matchesPartitionByRange_TPD_LSC_LPAR_TSM() {
-        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (tablespace tablespace_id1 tablespace tablespace_id2));")
+        assertThat(p).matches("create global temporary table table_id (id number) partition by range (column_id) (partition patition_id values less than (maxvalue) lob (lob_id) store as (tablespace tablespace_id1));")
     }
 
     @Test
