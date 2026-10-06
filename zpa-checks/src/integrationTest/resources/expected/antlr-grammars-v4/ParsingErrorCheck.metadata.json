@@ -1,4 +1,11 @@
 {
+  "examples/alter_table.sql": {
+    "90": {
+      "classification": "INVALID_SOURCE",
+      "oracleError": "ORA-00907",
+      "reason": "The UPDATE INDEXES clause of MODIFY PARTITION BY requires a local or global index specification after each index name (IDX_AUD_ON LOCAL (...) or GLOBAL ...); the fixture supplies a bare PARTITION ... TABLESPACE ... description, which belongs to the partition-maintenance update_index_clauses, so Oracle reports a missing right parenthesis. Adding LOCAL makes it parse."
+    }
+  },
   "examples/create_table.sql": {
     "4": {
       "classification": "INVALID_SOURCE",
