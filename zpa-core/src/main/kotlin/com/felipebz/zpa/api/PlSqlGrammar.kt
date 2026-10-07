@@ -2211,7 +2211,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(CREATE_TYPE).define(
                     CREATE, b.optional(OR, REPLACE), b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE)),
-                    TYPE, UNIT_NAME,
+                    TYPE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                     b.optional(SHARING, EQUALS, b.firstOf(METADATA, NONE)),
                     b.firstOf(
                         WRAPPED_SOURCE_CLAUSE,

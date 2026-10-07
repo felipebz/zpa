@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api.units
 
 import com.felipebz.flr.tests.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.PlSqlGrammar
@@ -287,4 +288,67 @@ class CreateTypeTest : RuleTest() {
                 + ");")
     }
 
+    @Test
+    fun matchesIfNotExists() {
+        listOf(
+            "create type if not exists varr_int as varray(10) of (pls_integer) not persistable;",
+            "create type if not exists t as object (a number);", "create type if not exists t as varray(10) of number;",
+            "create type if not exists t as table of number;", "create type if not exists hr.t as object (a number) not final;",
+            "create editionable type if not exists t as object (a number);",
+            "create nonEditionable type if not exists t as object (a number);",
+            "create or replace type if not exists t as object (a number);",
+            "create type if not exists t sharing = none as object (a number);",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "create type if exists t as object (a number);", "create type if not t as object (a number);",
+            "create type editionable if not exists t as object (a number);", "create type t if not exists as object (a number);",
+            "create type if t as object (a number);",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesPersistableClauses() {
+        listOf(
+            "create type t as object (a number) persistable;", "create type t as object (a number) not persistable;",
+            "create type t as object (a number) not final not persistable;", "create type t as object (a number) not persistable not final;",
+            "create type t as object (a number) not instantiable not final persistable;",
+            "create type t2 under t (b number) not persistable;",
+            "create type t as varray(10) of (number) persistable;", "create type t as varray(10) of (number) not persistable;",
+            "create type t as table of (number) persistable;", "create type t as table of (pls_integer) not persistable;",
+            "create type t as varray(10) of (simple_integer) not persistable;", "create type t as varray(10) of (pls_integer);",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "create type t as varray(10) of number persistable;", "create type t as varray(10) of number not persistable;",
+            "create type t as table of number persistable;", "create type t as table of number not persistable;",
+            "create type t as varray(10) of pls_integer not persistable;", "create type t as table of pls_integer not persistable;",
+            "create type t as table of (number) not null;",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesParenthesizedCollectionElements() {
+        listOf(
+            "create type t as varray(10) of (number);", "create type t as varray(10) of number;",
+            "create type t as varray(10) of (varchar2(20));", "create type t as varray(10) of varchar2(20);",
+            "create type t as table of (number);", "create type t as table of (varchar2(20));",
+            "create type t as table of (number not null);", "create type t as table of number not null;",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "create type t as varray(10) of ();", 
+            "create type t as varray(10) of (pls_integer;", "create type t as varray(10) of pls_integer);",
+            "create type t as table of ();", "create type t as table of (number;",
+            "create type t as table of number);",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun buildsIfNotExistsAndPersistableWithoutWrapperNodes() {
+        val tree = p.parse("create type if not exists varr_int as varray(10) of (pls_integer) not persistable;")
+        assertThatAst(tree.children.map { it.name }.take(6)).containsExactly("CREATE", "TYPE", "IF", "NOT", "EXISTS", "UNIT_NAME")
+        assertThatAst(tree.getFirstDescendant(PlSqlGrammar.DATATYPE).tokens.map { it.originalValue }).containsExactly("pls_integer")
+        val persistable = tree.getFirstDescendant(PlSqlGrammar.PERSISTABLE_CLAUSE)
+        assertThatAst(persistable.children.map { it.name }).containsExactly("NOT", "PERSISTABLE")
+        assertThatAst(p.parse("create type foo as object (x number)").children.map { it.name }.take(4))
+            .containsExactly("CREATE", "TYPE", "UNIT_NAME", "OBJECT_TYPE_DEFINITION")
+    }
 }
