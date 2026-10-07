@@ -25,6 +25,15 @@ Currently, we are not currently accepting pull requests for new features. We app
 
 We will accept pull requests for minor bug fixes. Please include a detailed description of the bug and the steps to reproduce it.
 
+## Running the integration tests
+
+The integration tests (`./gradlew integrationTest`) analyze real-world PL/SQL projects that are included in the repository as Git submodules (pljson, alexandria-plsql-utils, utPLSQL, Doag Forms). You must have these sources checked out before running them:
+
+- Clone the repository with `git clone --recurse-submodules https://github.com/felipebz/zpa.git`, or run `git submodule update --init --recursive` in an existing clone.
+- Do not use the "Download ZIP" button or the source archives of a release (`codeload.github.com/.../refs/tags/...`): GitHub does not include submodules in them, so the source directories will be empty and every test will fail with `Expected issues on ... were not found`.
+
+If you only want to build the custom rules example, you don't need the submodules: run `./gradlew build -p plsql-custom-rules`.
+
 ## Code of Conduct
 
 Please note that we have a [code of conduct](CODE_OF_CONDUCT.md) in place to ensure that our community is welcoming and inclusive. Please read the code of conduct before contributing.
