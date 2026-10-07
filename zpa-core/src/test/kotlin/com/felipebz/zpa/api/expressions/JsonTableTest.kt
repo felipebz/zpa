@@ -183,4 +183,14 @@ class JsonTableTest : RuleTest() {
         assertThatAst(query.children.map { it.name }).containsExactly(
             "IDENTIFIER_NAME", "JSON_VALUE_RETURN_TYPE", "JSON_QUERY_WRAPPER_CLAUSE", "PATH", "JSON_PATH")
     }
+
+    @Test
+    fun matchesColumnHandlersInterleavedWithOnMismatch() {
+        listOf(
+            "error on mismatch null on empty default -1 on error", "null on empty error on mismatch default -1 on error",
+            "default -1 on error error on mismatch null on empty",
+        ).forEach { assertThat(p).describedAs(it).matches(column("a number path '$.a' $it")) }
+        assertThat(p).notMatches(column("a number path '$.a' default 1 + 2 on error"))
+        assertThat(p).notMatches(column("a number path '$.a' null on error error on error"))
+    }
 }

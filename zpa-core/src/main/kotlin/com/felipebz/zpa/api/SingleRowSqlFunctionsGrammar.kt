@@ -948,8 +948,9 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.nextNot(FORMAT),
                 b.optional(TRUNCATE),
                 b.optional(PATH, JSON_PATH, b.optional(JSON_TYPE_CLAUSE)),
+                b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
                 b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
-                b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE)
+                b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE)
             )
 
             b.rule(JSON_NESTED_PATH).define(
@@ -1046,11 +1047,15 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.nextNot(NON_RESERVED_KEYWORD),
                 CUSTOM_DATATYPE, b.optional(USING, CASE_SENSITIVE, MAPPING))
 
+            // Oracle parses a unary-level operand (no binary operators, COLLATE or AT TIME ZONE) and checks
+            // that it is a constant of the RETURNING type afterwards (ORA-40452, ORA-40455).
+            val handlerDefault = b.sequence(DEFAULT, b.nextNot(EXISTS), UNARY_EXPRESSION)
+
             b.rule(JSON_VALUE_ON_ERROR_CLAUSE).define(
                 b.firstOf(
                     ERROR,
                     NULL,
-                    b.sequence(DEFAULT, LITERAL)
+                    handlerDefault
                 ), ON, ERROR
             )
 
@@ -1058,15 +1063,20 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.firstOf(
                     ERROR,
                     NULL,
-                    b.sequence(DEFAULT, LITERAL)
+                    handlerDefault
                 ), ON, EMPTY
             )
 
-            // Either order is accepted, but neither clause may be repeated (ORA-40450).
+            // Either order, and ON MISMATCH may sit between them. Oracle reports a repeated clause with
+            // ORA-40450, the code it also gives for malformed handlers, so repetition is treated as syntax.
             b.rule(JSON_VALUE_ERROR_EMPTY_CLAUSES).define(
                 b.firstOf(
-                    b.sequence(JSON_VALUE_ON_ERROR_CLAUSE, b.optional(JSON_VALUE_ON_EMPTY_CLAUSE)),
-                    b.sequence(JSON_VALUE_ON_EMPTY_CLAUSE, b.optional(JSON_VALUE_ON_ERROR_CLAUSE))
+                    b.sequence(
+                        JSON_VALUE_ON_ERROR_CLAUSE, b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
+                        b.optional(JSON_VALUE_ON_EMPTY_CLAUSE)),
+                    b.sequence(
+                        JSON_VALUE_ON_EMPTY_CLAUSE, b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
+                        b.optional(JSON_VALUE_ON_ERROR_CLAUSE))
                 )
             )
 
@@ -1096,6 +1106,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 EXPRESSION,
                 b.optional(JSON_PASSING_CLAUSE),
                 b.optional(JSON_VALUE_RETURNING_CLAUSE),
+                b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
                 b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
                 b.zeroOrMore(JSON_VALUE_ON_MISMATCH_CLAUSE),
                 b.optional(JSON_TYPE_CLAUSE),

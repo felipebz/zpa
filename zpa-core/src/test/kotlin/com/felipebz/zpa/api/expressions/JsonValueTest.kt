@@ -20,10 +20,12 @@
 package com.felipebz.zpa.api.expressions
 
 import com.felipebz.flr.tests.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar
 
 class JsonValueTest : RuleTest() {
 
@@ -96,5 +98,68 @@ class JsonValueTest : RuleTest() {
     @Test
     fun doesNotMatchJsonValueWithoutPath() {
         assertThat(p).notMatches("json_value(doc,)")
+    }
+
+    private fun handlers(clauses: String) = "json_value(d, '$.a' returning number $clauses)"
+
+    @Test
+    fun matchesDocumentationHandlerCombination() {
+        assertThat(p).matches(
+            """json_value('{a:"cat"}','$.a.number()' NULL ON EMPTY
+               ERROR ON MISMATCH DEFAULT -1 ON ERROR)""")
+    }
+
+    @Test
+    fun matchesDefaultOperandsOracleChecksLater() {
+        listOf("1", "-1", "+1", "- -1", "'x'", "null", "1.5e3", ":x", "dummy", "x.y", "(1)", "abs(1)", "sysdate", "date '2020-01-01'")
+            .forEach {
+                assertThat(p).describedAs(it).matches(handlers("default $it on error"))
+                assertThat(p).describedAs(it).matches(handlers("default $it on empty"))
+            }
+    }
+
+    @Test
+    fun rejectsDefaultOperandsOracleParsesAsSyntaxError() {
+        listOf("", "1 + 2", "1 || 2", "1 2", "-", "not 1", "exists (select 1 from dual)", "1 collate binary", "2 ** 2")
+            .forEach { assertThat(p).describedAs(it).notMatches(handlers("default $it on error")) }
+        assertThat(p).notMatches(handlers("default -1 on mismatch"))
+    }
+
+    @Test
+    fun matchesHandlersInEveryOrderOracleAccepts() {
+        listOf(
+            "null on empty error on error", "error on error null on empty",
+            "default -1 on error null on empty", "null on empty default -1 on error",
+            "null on empty error on mismatch default -1 on error", "null on empty default -1 on error error on mismatch",
+            "error on mismatch null on empty default -1 on error", "default -1 on error error on mismatch null on empty",
+            "error on mismatch default -1 on error", "error on mismatch null on empty",
+            "null on mismatch (missing data) error on mismatch (extra data)",
+        ).forEach { assertThat(p).describedAs(it).matches(handlers(it)) }
+    }
+
+    @Test
+    fun rejectsRepeatedAndMalformedHandlers() {
+        listOf(
+            "null on empty error on empty", "null on error error on error", "default 1 on error null on error",
+            "null on empty error on empty error on error", "null on foo", "null error", "default 1 on", "on error",
+            "error on mismatch (", "error on mismatch ()", "error on mismatch missing data", "default -1 on error ,",
+        ).forEach { assertThat(p).describedAs(it).notMatches(handlers(it)) }
+    }
+
+    @Test
+    fun buildsHandlerNodesWithoutExtraWrappers() {
+        val call = p.parse(handlers("null on empty error on mismatch default -1 on error"))
+            .getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_EXPRESSION)!!
+        assertThatAst(call.children.map { it.name }).containsSubsequence(
+            "JSON_VALUE_RETURNING_CLAUSE", "JSON_VALUE_ERROR_EMPTY_CLAUSES")
+        val wrapper = call.getFirstChild(SingleRowSqlFunctionsGrammar.JSON_VALUE_ERROR_EMPTY_CLAUSES)
+        assertThatAst(wrapper.children.map { it.name }).containsExactly(
+            "JSON_VALUE_ON_EMPTY_CLAUSE", "JSON_VALUE_ON_MISMATCH_CLAUSE", "JSON_VALUE_ON_ERROR_CLAUSE")
+        val onError = wrapper.getFirstChild(SingleRowSqlFunctionsGrammar.JSON_VALUE_ON_ERROR_CLAUSE)
+        assertThatAst(onError.children.map { it.name }).containsExactly("DEFAULT", "UNARY_EXPRESSION", "ON", "ERROR")
+        assertThatAst(onError.getFirstChild(PlSqlGrammar.UNARY_EXPRESSION).children.map { it.name })
+            .containsExactly("MINUS", "LITERAL")
+        val plain = p.parse(handlers("default 1 on error")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_ON_ERROR_CLAUSE)!!
+        assertThatAst(plain.children.map { it.name }).containsExactly("DEFAULT", "LITERAL", "ON", "ERROR")
     }
 }
