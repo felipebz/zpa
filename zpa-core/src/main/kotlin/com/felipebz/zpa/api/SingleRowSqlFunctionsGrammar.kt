@@ -813,7 +813,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 RPARENTHESIS
             )
 
-            // The documentation also lists it for JSON_TABLE, which Oracle rejects in every position.
+            // JSON_TABLE takes it only after the PATH of a column, not on the function itself.
             b.rule(JSON_TYPE_CLAUSE).define(TYPE, LPARENTHESIS, b.firstOf(STRICT, LAX), RPARENTHESIS)
 
             b.rule(JSON_PASSING_CLAUSE).define(
@@ -921,7 +921,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME,
                 b.optional(JSON_VALUE_RETURN_TYPE),
                 EXISTS,
-                b.optional(PATH, JSON_PATH),
+                b.optional(PATH, JSON_PATH, b.optional(JSON_TYPE_CLAUSE)),
                 b.optional(ConditionsGrammar.JSON_EXISTS_ON_ERROR_CLAUSE),
                 b.optional(ConditionsGrammar.JSON_EXISTS_ON_EMPTY_CLAUSE)
             )
@@ -932,7 +932,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(FORMAT, JSON),
                 b.optional(b.firstOf(ALLOW, DISALLOW), SCALARS),
                 b.optional(JSON_QUERY_WRAPPER_CLAUSE),
-                b.optional(PATH, JSON_PATH),
+                b.optional(PATH, JSON_PATH, b.optional(JSON_TYPE_CLAUSE)),
                 // Either order, neither clause twice — as for the value column.
                 b.optional(b.firstOf(
                     b.sequence(JSON_QUERY_ON_ERROR_CLAUSE, b.optional(JSON_QUERY_ON_EMPTY_CLAUSE)),
@@ -945,7 +945,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                 b.optional(JSON_VALUE_RETURN_TYPE),
                 b.nextNot(FORMAT),
                 b.optional(TRUNCATE),
-                b.optional(PATH, JSON_PATH),
+                b.optional(PATH, JSON_PATH, b.optional(JSON_TYPE_CLAUSE)),
                 b.optional(JSON_VALUE_ERROR_EMPTY_CLAUSES),
                 b.optional(JSON_VALUE_ON_MISMATCH_CLAUSE)
             )

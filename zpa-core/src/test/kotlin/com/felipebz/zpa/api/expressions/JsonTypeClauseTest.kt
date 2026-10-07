@@ -109,7 +109,7 @@ class JsonTypeClauseTest : RuleTest() {
     }
 
     @Test
-    fun rejectsTypeInJsonTable() {
+    fun rejectsTypeOnTheJsonTableFunction() {
         matches("json_table(d, '\$' error on error columns (a number path '\$.a'))")
         notMatches(
             "json_table(d, '\$' type(strict) columns (a number path '\$.a'))", "json_table(d, '\$' type(lax) columns (a number path '\$.a'))",
@@ -118,6 +118,50 @@ class JsonTypeClauseTest : RuleTest() {
             "json_table(d, '\$' error on error type(strict) null on empty columns (a number path '\$.a'))",
             "json_table(d, '\$' columns (a number path '\$.a') type(strict))", "json_table(d, '\$' type strict columns (a number path '\$.a'))"
         )
+    }
+
+    private fun column(definition: String) = "json_table(d, '\$' columns ($definition))"
+
+    @Test
+    fun matchesTypeAfterTheColumnPath() {
+        matches(
+            column("a number path '\$.a' type (strict)"), column("a number path '\$.a' type(lax)"),
+            column("a number path '\$.a' type (strict) error on mismatch"),
+            column("a number path '\$.a' type (lax) null on error"),
+            column("a number path '\$.a' type (strict) null on empty null on error"),
+            column("a varchar2(10) format json with wrapper path '\$.a' type (strict) null on error"),
+            column("a number exists path '\$.a' type (strict) error on error"),
+            column("a number path '\$.a' type (strict), b varchar2(5) path '\$.b' type (lax), c number path '\$.c'"),
+            column("nested path '\$.n' columns (a number path '\$.a' type (strict))"),
+            "json_table(d, '\$' columns a number path '\$.a' type (strict))",
+            "json_table(data, '\$' columns (ponumb number path '\$.PONumber' type (strict)))",
+            column("type number path '\$.a'"), column("type"),
+        )
+    }
+
+    @Test
+    fun rejectsTypeOutsideItsColumnPosition() {
+        notMatches(
+            column("a number type (strict)"), column("a number type (strict) path '\$.a'"),
+            column("a number path '\$.a' null on error type (strict)"), column("a number path '\$.a' null on empty type (strict)"),
+            column("a number path '\$.a' error on mismatch type (strict)"),
+            column("a number exists path '\$.a' error on error type (strict)"),
+            column("a varchar2(10) format json path '\$.a' null on error type (strict)"),
+            column("a for ordinality type (strict)"), column("nested path '\$.n' type (strict) columns (a number path '\$.a')"),
+            column("a number path '\$.a' type (strict) type (strict)"), column("a number path '\$.a' type strict"),
+            column("a number path '\$.a' type"), column("a number path '\$.a' type ()"), column("a number path '\$.a' type ((strict))"),
+            column("a number path '\$.a' type (strict,)"), column("a number path '\$.a' type (strict strict)"),
+        )
+    }
+
+    @Test
+    fun usesTheSharedTypeClauseNodeInColumns() {
+        val tree = p.parse(column("a number path '\$.a' type (strict) null on error, b number exists path '\$.b' type (lax)"))
+        assertThatAst(tree.getDescendants(SingleRowSqlFunctionsGrammar.JSON_TYPE_CLAUSE).map { it.tokens.map { t -> t.originalValue } })
+            .containsExactly(listOf("type", "(", "strict", ")"), listOf("type", "(", "lax", ")"))
+        val value = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)!!
+        assertThatAst(value.children.map { it.name }).containsExactly(
+            "IDENTIFIER_NAME", "JSON_VALUE_RETURN_TYPE", "PATH", "JSON_PATH", "JSON_TYPE_CLAUSE", "JSON_VALUE_ERROR_EMPTY_CLAUSES")
     }
 
     @Test
