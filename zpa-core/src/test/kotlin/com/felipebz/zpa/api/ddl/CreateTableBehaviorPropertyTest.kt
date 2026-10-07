@@ -163,7 +163,7 @@ class CreateTableBehaviorPropertyTest : RuleTest() {
         val tree = p.parse("create table t (id number primary key) organization index read only overflow cache")
         val clause = tree.getFirstDescendant(DdlGrammar.INDEX_ORGANIZED_TABLE_CLAUSE)
         assertThatAst(clause.hasDirectChildren(PlSqlKeyword.READ)).isTrue()
-        assertThatAst(tree.hasDirectChildren(PlSqlKeyword.CACHE)).isTrue()
+        assertThatAst(clause.hasDirectChildren(PlSqlKeyword.CACHE)).isTrue()
         assertThatAst(tree.getDescendants(DdlGrammar.TABLE_BEHAVIOR_PROPERTY)).isEmpty()
     }
 

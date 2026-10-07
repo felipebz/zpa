@@ -291,7 +291,7 @@ class CreateTableTest : RuleTest() {
     fun rejectsMalformedIndexOrganizedTableClauses() {
         assertThat(p).notMatches("create table t (id number primary key) organization;")
         assertThat(p).notMatches("create table t (id number primary key) organization index pctthreshold;")
-        assertThat(p).notMatches("create table t (id number primary key) organization index including id;")
+        assertThat(p).notMatches("create table t (id number primary key) organization index including;")
         assertThat(p).notMatches("create table t (id number primary key) organization index overflow initrans;")
         assertThat(p).notMatches("create table t (id number primary key) organization index overflow tablespace;")
         assertThat(p).notMatches("create table t (id number primary key) organization index overflow nologging pctthreshold 20;")

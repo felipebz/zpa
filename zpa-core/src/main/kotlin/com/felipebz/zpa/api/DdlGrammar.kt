@@ -578,6 +578,7 @@ enum class DdlGrammar : GrammarRuleKey {
             fun columnEncryptionClause() = b.sequence(ENCRYPT, encryptionSpec())
 
             fun indexOrganizedTableAttribute() = b.firstOf(
+                b.sequence(INCLUDING, IDENTIFIER_NAME),
                 KEY_COMPRESSION,
                 b.sequence(PCTTHRESHOLD, INTEGER_LITERAL),
                 b.firstOf(
@@ -586,6 +587,14 @@ enum class DdlGrammar : GrammarRuleKey {
                     NOCOMPRESS
                 ),
                 SEGMENT_ATTRIBUTES_CLAUSE,
+                INDEX_PARALLEL_CLAUSE,
+                TABLE_BEHAVIOR_PROPERTY
+            )
+
+            fun indexOrganizedTableTrailingAttribute() = b.firstOf(
+                b.sequence(INCLUDING, IDENTIFIER_NAME),
+                KEY_COMPRESSION,
+                INDEX_PARALLEL_CLAUSE,
                 TABLE_BEHAVIOR_PROPERTY
             )
 
@@ -1050,15 +1059,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 INDEX,
                 b.zeroOrMore(indexOrganizedTableAttribute()),
                 b.optional(
-                    b.firstOf(
-                        b.sequence(
-                            INCLUDING,
-                            IDENTIFIER_NAME,
-                            b.zeroOrMore(indexOrganizedTableAttribute()),
-                            INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE
-                        ),
-                        INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE
-                    )
+                    INDEX_ORGANIZED_TABLE_OVERFLOW_CLAUSE,
+                    b.zeroOrMore(indexOrganizedTableTrailingAttribute())
                 )
             )
 
