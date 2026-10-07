@@ -70,6 +70,7 @@ enum class DdlGrammar : GrammarRuleKey {
     CTAS_COLUMN_DEFINITION,
     CTAS_RELATIONAL_PROPERTIES,
     CREATE_TABLE_RELATIONAL_TAIL,
+    TABLE_BEHAVIOR_PROPERTY,
     CREATE_TABLE_BODY,
     SUPPLEMENTAL_LOGGING_PROPS,
     SUPPLEMENTAL_ID_KEY_CLAUSE,
@@ -584,7 +585,8 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.sequence(COMPRESS, b.optional(INTEGER_LITERAL)),
                     NOCOMPRESS
                 ),
-                SEGMENT_ATTRIBUTES_CLAUSE
+                SEGMENT_ATTRIBUTES_CLAUSE,
+                TABLE_BEHAVIOR_PROPERTY
             )
 
             b.rule(DDL_COMMENT).define(
@@ -765,7 +767,8 @@ enum class DdlGrammar : GrammarRuleKey {
             val datatypeDomain = b.sequence(DOMAIN, domainName)
             val datatypeLessFollower = b.firstOf(
                 COMMA, RPARENTHESIS, DEFAULT, NOT, NULL, CONSTRAINT, UNIQUE, PRIMARY, CHECK, REFERENCES,
-                ENCRYPT, ANNOTATIONS, SORT, SEMICOLON, DIVISION, EOF)
+                ENCRYPT, ANNOTATIONS, SORT, VISIBLE, INVISIBLE, SEMICOLON, DIVISION, EOF)
+            val visibility = b.firstOf(VISIBLE, INVISIBLE)
 
             b.rule(TABLE_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME,
@@ -777,7 +780,9 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.next(datatypeLessFollower),
                         b.sequence(b.nextNot(identityStart), b.nextNot(DOMAIN), DATATYPE, b.optional(datatypeDomain)),
                         b.next(identityStart)),
-                    b.optional(SORT),
+                    b.optional(b.firstOf(
+                        b.sequence(visibility, b.optional(SORT)),
+                        b.sequence(SORT, b.optional(visibility)))),
                     columnValueAndConstraints(withJsonValidate = true),
                     b.nextNot(b.firstOf(
                         AS, VISIBLE, INVISIBLE, b.sequence(GENERATED, ALWAYS, AS, LPARENTHESIS))))
@@ -808,7 +813,6 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle 26 also accepts repeated SORT and SORT after visibility. Column-count, identity,
             // annotation, foreign-key, REF and reservable-column restrictions are database validation,
             // not additional syntax restrictions here (ORA-01730/01773/11559/02440/22893/55773).
-            val visibility = b.firstOf(VISIBLE, INVISIBLE)
             b.rule(CTAS_COLUMN_DEFINITION).define(
                     IDENTIFIER_NAME,
                     b.zeroOrMore(SORT),
@@ -1647,12 +1651,24 @@ enum class DdlGrammar : GrammarRuleKey {
             // not precede ORGANIZATION INDEX (ORA-64303) or ON COMMIT (ORA-00922).
             fun rowMovementClause() = b.sequence(b.firstOf(ENABLE, DISABLE), ROW, MOVEMENT)
 
+            // Oracle accepts only a plain or quoted identifier here; any unquoted keyword needs quoting.
+            val flashbackArchiveName = b.optional(b.next(IDENTIFIER), IDENTIFIER_NAME)
+
+            b.rule(TABLE_BEHAVIOR_PROPERTY).define(b.firstOf(
+                    CACHE, NOCACHE,
+                    b.sequence(
+                            b.nextNot(b.requireContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true)),
+                            b.firstOf(
+                                    b.sequence(READ, b.firstOf(ONLY, WRITE)),
+                                    b.sequence(NO, FLASHBACK, ARCHIVE),
+                                    b.sequence(FLASHBACK, ARCHIVE, flashbackArchiveName))))).skip()
+
             // Oracle 26 also accepts ROW MOVEMENT anywhere among these properties, but only once (ORA-14190).
             // The In-Memory clauses and FOR STAGING are equally position-free, before or after partitioning;
             // CREATE rejects NOT FOR STAGING (ORA-00922), and a repeated FOR STAGING fails with ORA-12990.
             fun tableLevelProperty() = b.firstOf(
                     ANNOTATIONS_CLAUSE, SEGMENT_ATTRIBUTES_CLAUSE, INDEX_PARALLEL_CLAUSE, rowMovementClause(),
-                    inmemoryProperty, b.sequence(FOR, STAGING), TABLE_COMPRESSION)
+                    inmemoryProperty, b.sequence(FOR, STAGING), TABLE_COMPRESSION, TABLE_BEHAVIOR_PROPERTY)
 
             // Oracle 26 parses REJECT LIMIT in any number and position among the table properties that follow,
             // unlike the diagram's single REJECT LIMIT; a repeated PARALLEL fails only afterwards (ORA-12812).

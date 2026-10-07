@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.DdlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.RuleTest
 
 class AlterTableTest : RuleTest() {
@@ -1225,6 +1226,37 @@ class AlterTableTest : RuleTest() {
             "alter table t add (x as (a) by user for statistics)",
             "alter table t add (x as (a) stored by user for statistics)",
         ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesColumnVisibilityInAddColumn() {
+        listOf(
+            "alter table t add (a number invisible)", "alter table t add (a number visible)",
+            "alter table t add a number invisible", "alter table t add a number visible",
+            "alter table t add (a number invisible default 1)", "alter table t add (a number invisible not null)",
+            "alter table t add (a number invisible primary key)", "alter table t add (a invisible)",
+            "alter table t add (a number invisible, c number visible default 2)",
+            "alter table t add (b number invisible as (x + 1))",
+            "alter table t add (b number invisible generated always as (x + 1) virtual)",
+            "alter table t add (b invisible as (x + 1))",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        listOf(
+            "alter table t add (a number default 1 invisible)", "alter table t add (a number not null invisible)",
+            "alter table t add (a number invisible visible)", "alter table t add (a number invisible invisible)",
+            "alter table t add (b number as (x + 1) invisible)",
+            "alter table t add (b number generated always as (x + 1) virtual invisible)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun buildsAddColumnVisibilityWithoutAWrapperNode() {
+        val ordinary = p.parse("alter table t add (a number invisible default 1)")
+            .getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
+        assertThatAst(ordinary.children.map { it.name })
+            .containsExactly("IDENTIFIER_NAME", "DATATYPE", "INVISIBLE", "DEFAULT", "LITERAL")
+        val virtual = p.parse("alter table t add (b number invisible as (x + 1))")
+        assertThatAst(virtual.getDescendants(DdlGrammar.TABLE_COLUMN_DEFINITION)).isEmpty()
+        assertThatAst(virtual.getFirstDescendant(DdlGrammar.VIRTUAL_COLUMN_DEFINITION).hasDirectChildren(PlSqlKeyword.INVISIBLE)).isTrue()
     }
 
     @Test
