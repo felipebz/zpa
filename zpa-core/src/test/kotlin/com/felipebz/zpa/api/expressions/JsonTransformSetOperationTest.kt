@@ -73,12 +73,18 @@ class JsonTransformSetOperationTest : RuleTest() {
     }
 
     @Test
-    fun rejectsHandlersTheOperationsDoNotDefine() {
+    fun acceptsStructurallyValidHandlersTheOperationsRejectLater() {
+        matches(
+            "remove_set '\$.a' = 2 create on missing", "remove_set '\$.a' = 2 null on missing", "add_set '\$.a' = 4 replace on missing",
+            "add_set '\$.a' = 2 remove on null", "remove_set '\$.a' = 2 remove on null", "add_set '\$.a' = 4 ignore on mismatch",
+            "add_set '\$.a' = 4 ignore on existing", "add_set '\$.a' = 4 ignore on error",
+        )
+    }
+
+    @Test
+    fun rejectsIgnoreIfHandlersOfTheOtherOperationAndUnknownForms() {
         notMatches(
             "add_set '\$.a' = 2 ignore if absent", "remove_set '\$.a' = 5 ignore if present",
-            "remove_set '\$.a' = 2 create on missing", "remove_set '\$.a' = 2 null on missing",
-            "add_set '\$.a' = 4 replace on missing", "add_set '\$.a' = 2 remove on null", "remove_set '\$.a' = 2 remove on null",
-            "add_set '\$.a' = 4 ignore on mismatch", "add_set '\$.a' = 4 ignore on existing",
             "remove_set '\$.a' = 5 ignore on absent", "remove_set '\$.b' = 5 ignore if missing ignore if absent",
         )
     }
