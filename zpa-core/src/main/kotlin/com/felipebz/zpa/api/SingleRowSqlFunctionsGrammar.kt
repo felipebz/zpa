@@ -942,6 +942,8 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_VALUE_COLUMN).define(
                 IDENTIFIER_NAME,
+                // A native JSON column takes the query-column wrapper options, which the value column cannot.
+                b.nextNot(JSON_DATATYPE, b.optional(TRUNCATE), b.firstOf(WITH, WITHOUT, ALLOW, DISALLOW)),
                 b.optional(JSON_VALUE_RETURN_TYPE),
                 b.nextNot(FORMAT),
                 b.optional(TRUNCATE),
@@ -1030,6 +1032,10 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     b.sequence(DATE, b.optional(b.firstOf(TRUNCATE, PRESERVE), TIME)),
                     b.sequence(TIMESTAMP, b.optional(WITH, TIME, ZONE)),
                     BOOLEAN,
+                    // Oracle parses any datatype here and rejects unsupported ones afterwards (ORA-40449),
+                    // so the documented return-type list is not a whitelist.
+                    b.sequence(JSON_DATATYPE, b.optional(TRUNCATE)),
+                    BFILE, BLOB, NCLOB, XMLTYPE,
                     SDO_GEOMETRY,
                     JSON_VALUE_RETURN_OBJECT_INSTANCE,
                     VECTOR
