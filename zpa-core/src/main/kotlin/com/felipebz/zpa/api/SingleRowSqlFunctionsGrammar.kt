@@ -72,6 +72,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_TRANSFORM_OPERATION,
     JSON_TRANSFORM_RETURNING_CLAUSE,
     JSON_RHS_EXPRESSION,
+    JSON_ADD_SET_OPERATION,
     JSON_APPEND_OPERATION,
     JSON_CASE_OPERATION,
     JSON_COPY_OPERATION,
@@ -84,6 +85,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
     JSON_OBJECT_OPTIONS,
     JSON_PREPEND_OPERATION,
     JSON_REMOVE_OPERATION,
+    JSON_REMOVE_SET_OPERATION,
     JSON_RENAME_OPERATION,
     JSON_REPLACE_OPERATION,
     JSON_SET_OPERATION,
@@ -1133,6 +1135,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_TRANSFORM_OPERATION).define(
                 b.firstOf(
+                    JSON_ADD_SET_OPERATION,
                     JSON_APPEND_OPERATION,
                     JSON_CASE_OPERATION,
                     JSON_COPY_OPERATION,
@@ -1144,6 +1147,7 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
                     JSON_NESTED_PATH_OPERATION,
                     JSON_PREPEND_OPERATION,
                     JSON_REMOVE_OPERATION,
+                    JSON_REMOVE_SET_OPERATION,
                     JSON_RENAME_OPERATION,
                     JSON_REPLACE_OPERATION,
                     JSON_SET_OPERATION,
@@ -1154,14 +1158,35 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             // Oracle takes the ON handlers of an operation in any order and reports repeated or inapplicable
             // options only when the operation runs (ORA-40792, ORA-400xx); each condition lists its documented options.
-            fun handlers(vararg conditions: Pair<PlSqlKeyword, Array<PlSqlKeyword>>): Any {
+            fun handlersAndIgnoreIf(ignoreIf: PlSqlKeyword?, vararg conditions: Pair<PlSqlKeyword, Array<PlSqlKeyword>>): Any {
                 val alternatives = conditions.map { (condition, actions) ->
                     b.sequence(b.firstOf(actions[0], actions[1], *actions.drop(2).toTypedArray()), ON, condition)
-                }
+                }.toMutableList<Any>()
+                if (ignoreIf != null) alternatives.add(b.sequence(IGNORE, IF, ignoreIf))
                 return b.zeroOrMore(
                     if (alternatives.size == 1) alternatives[0]
                     else b.firstOf(alternatives[0], alternatives[1], *alternatives.drop(2).toTypedArray()))
             }
+
+            fun handlers(vararg conditions: Pair<PlSqlKeyword, Array<PlSqlKeyword>>): Any = handlersAndIgnoreIf(null, *conditions)
+
+            b.rule(JSON_ADD_SET_OPERATION).define(
+                ADD_SET, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                handlersAndIgnoreIf(
+                    PRESENT,
+                    MISSING to arrayOf(IGNORE, ERROR, CREATE),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR, NULL))
+            )
+
+            b.rule(JSON_REMOVE_SET_OPERATION).define(
+                REMOVE_SET, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
+                handlersAndIgnoreIf(
+                    ABSENT,
+                    MISSING to arrayOf(IGNORE, ERROR),
+                    NULL to arrayOf(IGNORE, ERROR, NULL),
+                    EMPTY to arrayOf(IGNORE, ERROR, NULL))
+            )
 
             b.rule(JSON_APPEND_OPERATION).define(
                 APPEND, JSON_PATH_EXPRESSION, EQUALS, JSON_RHS_EXPRESSION,
