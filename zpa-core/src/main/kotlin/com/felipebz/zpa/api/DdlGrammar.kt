@@ -3134,8 +3134,21 @@ enum class DdlGrammar : GrammarRuleKey {
                 TABLESPACE_DROP_OPTIONS, tablespaceDropEnd)
 
             // Tablespaces have explicit productions; never let an invalid one fall back to arbitrary tokens.
+            // Object types whose name is a (possibly schema-qualified) unit name expose it as UNIT_NAME; the
+            // remaining tokens (CASCADE CONSTRAINTS, PURGE, FORCE...) and every other kind of DROP stay unstructured.
+            val dropEnd = b.firstOf(SEMICOLON, DIVISION, EOF)
+            val dropObjectType = b.firstOf(
+                b.sequence(PACKAGE, BODY),
+                b.sequence(TYPE, BODY),
+                b.sequence(MATERIALIZED, VIEW, b.nextNot(LOG, ON)),
+                b.sequence(b.optional(PUBLIC), SYNONYM),
+                TABLE, INDEX, VIEW, SEQUENCE, PROCEDURE, FUNCTION, TRIGGER, PACKAGE, TYPE, CLUSTER)
             b.rule(DROP_COMMAND).define(DROP, b.nextNot(TABLESPACE),
-                b.oneOrMore(b.anyTokenButNot(b.firstOf(SEMICOLON, DIVISION, EOF))), b.optional(SEMICOLON))
+                b.firstOf(
+                    b.sequence(dropObjectType, b.optional(IF, EXISTS), UNIT_NAME,
+                        b.zeroOrMore(b.anyTokenButNot(dropEnd))),
+                    b.oneOrMore(b.anyTokenButNot(dropEnd))),
+                b.optional(SEMICOLON))
 
             b.rule(CREATE_JAVA).define(
                 CREATE,
