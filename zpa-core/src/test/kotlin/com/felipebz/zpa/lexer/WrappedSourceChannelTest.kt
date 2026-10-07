@@ -50,16 +50,19 @@ class WrappedSourceChannelTest {
             "types" to listOf(PlSqlKeyword.CREATE, PlSqlKeyword.OR, PlSqlKeyword.REPLACE, PlSqlKeyword.TYPE),
             "typeb" to listOf(PlSqlKeyword.CREATE, PlSqlKeyword.OR, PlSqlKeyword.REPLACE, PlSqlKeyword.TYPE, PlSqlKeyword.BODY),
         ).forEach { (name, header) ->
-            val source = resource(name)
-            val tokens = tokens(source)
-            assertThat(tokens.map { it.type }).describedAs(name).containsExactly(
-                *header.toTypedArray(), GenericTokenType.IDENTIFIER, PlSqlKeyword.WRAPPED,
-                PlSqlTokenType.WRAPPED_SOURCE, PlSqlPunctuator.DIVISION)
-            val payload = tokens.single { it.type == PlSqlTokenType.WRAPPED_SOURCE }
-            assertThat(payload.originalValue).startsWith("a000000\n").endsWith(source.trimEnd().removeSuffix("/").trimEnd().takeLast(20))
-            assertThat(payload.originalValue).contains("+").contains("abcd")
-            assertThat(payload.line).isEqualTo(2)
-            assertThat(tokens.last().line).isEqualTo(source.trimEnd().lines().size)
+            listOf("\n", "\r\n").forEach { lineEnding ->
+                val source = resource(name).replace("\r\n", "\n").replace("\n", lineEnding)
+                val tokens = tokens(source)
+                assertThat(tokens.map { it.type }).describedAs(name).containsExactly(
+                    *header.toTypedArray(), GenericTokenType.IDENTIFIER, PlSqlKeyword.WRAPPED,
+                    PlSqlTokenType.WRAPPED_SOURCE, PlSqlPunctuator.DIVISION)
+                val payload = tokens.single { it.type == PlSqlTokenType.WRAPPED_SOURCE }
+                assertThat(payload.originalValue).startsWith("a000000$lineEnding")
+                    .isEqualTo(source.substringAfter("wrapped").trim().removeSuffix("/").trimEnd())
+                assertThat(payload.originalValue).contains("+").contains("abcd")
+                assertThat(payload.line).isEqualTo(2)
+                assertThat(tokens.last().line).isEqualTo(source.trimEnd().lines().size)
+            }
         }
     }
 
