@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.DdlGrammar
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.RuleTest
 
@@ -1246,6 +1247,45 @@ class AlterTableTest : RuleTest() {
             "alter table t add (b number as (x + 1) invisible)",
             "alter table t add (b number generated always as (x + 1) virtual invisible)",
         ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun matchesColumnVisibilityInModifyColumn() {
+        listOf(
+            "z number invisible", "y number visible", "z invisible", "y visible", "z number invisible default 1",
+            "z invisible default 1", "z number invisible not null", "z invisible not null", "z invisible check (z > 0)",
+            "z invisible encrypt", "z invisible decrypt", "z invisible annotations (a 'b')",
+            "s varchar2(10) collate binary_ci invisible", "s collate binary_ci invisible", "z number domain d invisible",
+            "z domain d invisible", "z number invisible generated always as identity", "z invisible generated always as identity",
+        ).forEach {
+            assertThat(p).describedAs(it).matches("alter table t modify ($it)")
+            assertThat(p).describedAs(it).matches("alter table t modify $it")
+        }
+        assertThat(p).matches("alter table t modify (z invisible, s visible)")
+        assertThat(p).matches("alter table t modify (z number invisible, s varchar2(20) visible)")
+    }
+
+    @Test
+    fun rejectsColumnVisibilityOutsideItsPositionInModifyColumn() {
+        listOf(
+            "z number default 1 invisible", "z default 1 invisible", "z number invisible visible", "z invisible visible",
+            "z number invisible invisible", "z not null invisible", "z number not null invisible",
+            "z check (z > 0) invisible", "z encrypt invisible", "z decrypt invisible", "z annotations (a 'b') invisible",
+            "s varchar2(10) invisible collate binary_ci", "s invisible collate binary_ci", "z number invisible domain d",
+            "z invisible domain d", "z number generated always as identity invisible",
+        ).forEach { assertThat(p).describedAs(it).notMatches("alter table t modify ($it)") }
+    }
+
+    @Test
+    fun buildsModifyColumnVisibilityWithoutDatatypeOrWrapperNode() {
+        fun names(sql: String) = p.parse(sql).getFirstDescendant(DdlGrammar.ALTER_TABLE_COLUMN).children.map { it.name }
+        assertThatAst(names("alter table t modify y visible")).containsExactly("IDENTIFIER_NAME", "VISIBLE")
+        assertThatAst(names("alter table t modify (z invisible default 1)"))
+            .containsExactly("IDENTIFIER_NAME", "INVISIBLE", "DEFAULT", "LITERAL")
+        assertThatAst(names("alter table t modify (z number invisible not null)"))
+            .containsExactly("IDENTIFIER_NAME", "DATATYPE", "INVISIBLE", "INLINE_CONSTRAINT")
+        val column = p.parse("alter table t modify (z invisible)").getFirstDescendant(DdlGrammar.ALTER_TABLE_COLUMN)
+        assertThatAst(column.getDescendants(PlSqlGrammar.DATATYPE)).isEmpty()
     }
 
     @Test

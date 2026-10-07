@@ -2439,10 +2439,12 @@ enum class DdlGrammar : GrammarRuleKey {
                     IDENTIFIER_NAME,
                     b.optional(b.sequence(
                             b.nextNot(b.firstOf(COLLATE, DEFAULT, CONSTRAINT, CONSTRAINTS, NOT, NULL, ANNOTATIONS,
-                                    ENCRYPT, DECRYPT, b.sequence(SCOPE, IS), identityStart, ADD, DROP, b.sequence(DOMAIN, IDENTIFIER_NAME))),
+                                    ENCRYPT, DECRYPT, VISIBLE, INVISIBLE, b.sequence(SCOPE, IS), identityStart, ADD, DROP,
+                                    b.sequence(DOMAIN, IDENTIFIER_NAME))),
                             DATATYPE)),
                     b.optional(DOMAIN, domainName),
                     b.optional(COLLATE, IDENTIFIER_NAME),
+                    b.optional(visibility),
                     b.optional(b.firstOf(b.sequence(DEFAULT, EXPRESSION), identityClause(true))),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
