@@ -331,6 +331,7 @@ enum class DdlGrammar : GrammarRuleKey {
     LOGFILE_DESCRIPTOR,
     SUPPLEMENTAL_DB_LOGGING,
     CREATE_ASSERTION,
+    ALTER_ASSERTION,
     ASSERTION_CONDITION,
     ASSERTION_UNIVERSAL_EXPRESSION,
     DATAFILE_TEMPFILE_SPEC,
@@ -3512,6 +3513,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 AUDIT_STATEMENT,
                 NOAUDIT_STATEMENT,
                 CREATE_ASSERTION,
+                ALTER_ASSERTION,
                 CALL_COMMAND,
                 ALTER_SYSTEM,
                 ALTER_LOCKDOWN_PROFILE,
@@ -4548,6 +4550,18 @@ enum class DdlGrammar : GrammarRuleKey {
                 CREATE, ASSERTION, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
                 CHECK, LPARENTHESIS, ASSERTION_CONDITION, RPARENTHESIS,
                 b.zeroOrMore(assertionState),
+                b.optional(SEMICOLON))
+
+            // https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-assertion.html
+            // The diagram omits INITIALLY, but Oracle 26 accepts and runs it. DEFERRABLE is rejected (ORA-08725).
+            val alterAssertionStates = b.anyOrder(
+                b.firstOf(ENABLE, DISABLE),
+                b.firstOf(VALIDATE, NOVALIDATE),
+                b.sequence(INITIALLY, b.firstOf(DEFERRED, IMMEDIATE)))
+
+            b.rule(ALTER_ASSERTION).define(
+                ALTER, ASSERTION, b.optional(IF, EXISTS), IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
+                alterAssertionStates,
                 b.optional(SEMICOLON))
         }
 
