@@ -79,4 +79,12 @@ class CreateUserTest : RuleTest() {
         assertThat(p).notMatches("create user u identified by 'p1'")
         assertThat(p).notMatches("create user u identified externally as \"CN=foo\"")
     }
+
+    @Test
+    fun matchesEnableEditionsForObjectTypes() {
+        assertThat(p).matches("create user u enable editions for view, sql translation profile force")
+        assertThat(p).notMatches("create user u enable editions for table")
+        assertThat(p).notMatches("create user u enable editions for package body")
+        assertThat(p).notMatches("create user u enable editions for")
+    }
 }

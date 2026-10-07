@@ -22,6 +22,7 @@ package com.felipebz.zpa.api.ddl
 import com.felipebz.flr.tests.Assertions.assertThat
 import com.felipebz.zpa.api.DdlGrammar
 import com.felipebz.zpa.api.RuleTest
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -90,5 +91,36 @@ class AlterUserTest : RuleTest() {
         // ORA-28151 / ORA-03049: a user list needs a proxy clause, and options cannot follow it.
         assertThat(p).notMatches("alter user u1, u2 profile default")
         assertThat(p).notMatches("alter user u grant connect through p profile default")
+    }
+
+    @Test
+    fun matchesEnableEditionsForObjectTypes() {
+        listOf(
+            "enable editions", "enable editions force", "enable editions for sql translation profile",
+            "enable editions for view", "enable editions for view, synonym", "enable editions for package, type",
+            "enable editions for procedure, function, trigger, library",
+            "enable editions for sql translation profile, view", "enable editions for view, sql translation profile force",
+        ).forEach { assertThat(p).describedAs(it).matches("alter user u $it") }
+        assertThat(p).matches("ALTER USER username ENABLE EDITIONS FOR SQL TRANSLATION PROFILE;")
+    }
+
+    @Test
+    fun rejectsMalformedOrUnknownEditionableTypes() {
+        listOf(
+            "enable editions for", "enable editions for view,", "enable editions for , view", "enable editions for view synonym",
+            "enable editions for view,,synonym", "enable editions for definitely_not_a_type", "enable editions for table",
+            "enable editions for materialized view", "enable editions for package body", "enable editions for type body",
+            "enable editions for sql translation", "enable editions for sql translation profile profile",
+            "enable editions force for view", "enable editions for view force force", "enable editions for view for synonym",
+        ).forEach { assertThat(p).describedAs(it).notMatches("alter user u $it") }
+    }
+
+    @Test
+    fun buildsEnableEditionsAsFlatTokens() {
+        val bare = p.parse("alter user u enable editions")
+        assertThatAst(bare.children.map { it.name }).containsExactly("ALTER", "USER", "IDENTIFIER_NAME", "ENABLE", "EDITIONS")
+        val typed = p.parse("alter user username enable editions for sql translation profile;")
+        assertThatAst(typed.children.map { it.name }).containsExactly(
+            "ALTER", "USER", "IDENTIFIER_NAME", "ENABLE", "EDITIONS", "FOR", "SQL", "TRANSLATION", "PROFILE", "SEMICOLON")
     }
 }

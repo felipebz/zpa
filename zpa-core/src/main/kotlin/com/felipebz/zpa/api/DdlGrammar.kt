@@ -5962,11 +5962,19 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)),
                 b.sequence(READ, b.firstOf(ONLY, WRITE)))
 
+            val editionableType = b.firstOf(
+                VIEW, SYNONYM, PROCEDURE, FUNCTION, PACKAGE, TRIGGER, TYPE, LIBRARY,
+                b.sequence(SQL, TRANSLATION, PROFILE))
+            val enableEditions = b.sequence(
+                ENABLE, EDITIONS,
+                b.optional(FOR, editionableType, b.zeroOrMore(COMMA, editionableType)),
+                b.optional(FORCE))
+
             // Oracle 26 accepts the options in any order. Repeats of most of them are rejected, but tracking
             // that per option makes the compiled grammar grow factorially, so the parser accepts them.
             b.rule(CREATE_USER).define(
                 CREATE, USER, b.optional(IF, NOT, EXISTS), IDENTIFIER_NAME,
-                b.zeroOrMore(b.firstOf(USER_AUTHENTICATION_CLAUSE, b.sequence(ENABLE, EDITIONS), *sharedOptions)),
+                b.zeroOrMore(b.firstOf(USER_AUTHENTICATION_CLAUSE, enableEditions, *sharedOptions)),
                 b.optional(SEMICOLON))
 
             val nameList = b.sequence(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
@@ -5980,10 +5988,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(DROP, FACTOR, CHARACTER_LITERAL),
                 b.sequence(DEFAULT, ROLE, b.firstOf(b.sequence(ALL, b.optional(EXCEPT, roleList())), NONE, roleList())),
                 b.sequence(EXPIRE, PASSWORD, ROLLOVER, PERIOD),
-                b.sequence(
-                    ENABLE, EDITIONS,
-                    b.optional(FOR, nameOrKeyword, b.zeroOrMore(COMMA, nameOrKeyword)),
-                    b.optional(FORCE)),
+                enableEditions,
                 digest,
                 b.sequence(b.firstOf(ENABLE, DISABLE), DICTIONARY, PROTECTION),
                 b.sequence(
