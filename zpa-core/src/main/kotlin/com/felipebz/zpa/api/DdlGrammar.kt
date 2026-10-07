@@ -3614,9 +3614,10 @@ enum class DdlGrammar : GrammarRuleKey {
                 IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME),
                 AS,
                 b.firstOf(
-                    // Oracle 26 also accepts a trailing comma before the closing parenthesis.
+                    // The columns may be separated by commas or by nothing, as in the documentation examples,
+                    // and Oracle 26 also accepts a trailing comma before the closing parenthesis.
                     b.sequence(
-                        LPARENTHESIS, DOMAIN_COLUMN, b.zeroOrMore(COMMA, DOMAIN_COLUMN), b.optional(COMMA), RPARENTHESIS,
+                        LPARENTHESIS, DOMAIN_COLUMN, b.zeroOrMore(b.optional(COMMA), DOMAIN_COLUMN), b.optional(COMMA), RPARENTHESIS,
                         b.zeroOrMore(multiColumnProperty)),
                     b.sequence(
                         domainType,

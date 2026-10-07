@@ -22,6 +22,7 @@ package com.felipebz.zpa.api.ddl
 import com.felipebz.flr.tests.Assertions.assertThat
 import com.felipebz.zpa.api.DdlGrammar
 import com.felipebz.zpa.api.RuleTest
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -210,5 +211,64 @@ class CreateDomainTest : RuleTest() {
         assertThat(p).notMatches("create domain d as (c1 as number) strict")
         assertThat(p).notMatches("create domain d as (c1 as number) validate '{}'")
         assertThat(p).notMatches("create domain d as (c1 as number) collate binary")
+    }
+
+    @Test
+    fun matchesMultiColumnDomainWithOptionalSeparators() {
+        listOf(
+            "create domain d as (a as number b as varchar2(20));",
+            "create domain d as (a as number b as varchar2(20) c as date);",
+            "create domain d as (a as number, b as varchar2(20) c as date);",
+            "create domain d as (a as number b as varchar2(20), c as date);",
+            "create domain d as (a as number b as varchar2(20),);",
+            "create domain d as (a as number,);", "create domain d as (a as number);",
+            "create domain d as (a as number b as number c as number d as number);",
+            "create domain d as (a as number not null b as date default sysdate);",
+            "create domain d as (a as number strict b as date strict);",
+            "create domain d as (a as number default 1 b as date);",
+            "create domain d as (a as number check (a > 0) b as date);",
+            "create domain d as (a as number annotations (x 'y') b as date);",
+            "create domain d as (a as number collate binary b as date);",
+            "create domain d as (a as number b as date) display a order a check (a > 0);",
+            "create domain d as (a as number b as date) constraint c check (a > 0) annotations (x 'y');",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+    }
+
+    @Test
+    fun matchesMultiColumnDocumentationExamples() {
+        val columns = "(\n  amount        AS NUMBER(10, 2)\n  currency_code AS CHAR(3 CHAR)\n)"
+        listOf(
+            "CREATE DOMAIN currency AS $columns\nCONSTRAINT supported_currencies_c\n  CHECK ( currency_code IN ( 'USD', 'GBP', 'EUR', 'JPY' ) )\n" +
+                "  DEFERRABLE INITIALLY DEFERRED\nCONSTRAINT non_negative_amounts_c\n  CHECK ( amount >= 0 )\n  DEFERRABLE INITIALLY DEFERRED;",
+            "CREATE DOMAIN currency AS $columns\nDISPLAY CASE currency_code\n  WHEN 'USD' THEN '\$'\n  WHEN 'GBP' THEN '£'\n" +
+                "  WHEN 'EUR' THEN '€'\n  WHEN 'JPY' THEN '¥'\nEND || TO_CHAR(amount, '999,999,999.00');",
+            "CREATE DOMAIN co.currency AS $columns;",
+            "CREATE DOMAIN currency AS $columns\nORDER currency_code || TO_CHAR(amount, '999999999.00');",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+    }
+
+    @Test
+    fun rejectsMalformedMultiColumnSeparators() {
+        listOf(
+            "create domain d as (a as number,, b as date)", "create domain d as (,a as number, b as date)",
+            "create domain d as (a as number b as date,,)", "create domain d as (a as number , , b as date)",
+            "create domain d as (a as)", "create domain d as (as number, b as date)", "create domain d as (a number b date)",
+            "create domain d as (a as number b)", "create domain d as ((a as number, b as date))",
+            "create domain d as (a as number b as date) strict", "create domain d as (a as number b as date) default 1",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun buildsMultiColumnDomainWithoutSeparatorNodes() {
+        val tree = p.parse("create domain d as (a as number b as varchar2(20) not null, c as date)")
+        val columns = tree.getDescendants(DdlGrammar.DOMAIN_COLUMN)
+        assertThatAst(columns.map { it.firstChild.tokenOriginalValue }).containsExactly("a", "b", "c")
+        assertThatAst(columns.map { it.children.map { c -> c.name } }).containsExactly(
+            listOf("IDENTIFIER_NAME", "AS", "DATATYPE"),
+            listOf("IDENTIFIER_NAME", "AS", "DATATYPE", "NOT", "NULL"),
+            listOf("IDENTIFIER_NAME", "AS", "DATATYPE"))
+        assertThatAst(tree.children.map { it.name }).doesNotContain("COMMA_WRAPPER")
+        assertThatAst(p.parse("create domain d as number not null").children.map { it.name }).containsExactly(
+            "CREATE", "DOMAIN", "IDENTIFIER_NAME", "AS", "DATATYPE", "NOT", "NULL")
     }
 }
