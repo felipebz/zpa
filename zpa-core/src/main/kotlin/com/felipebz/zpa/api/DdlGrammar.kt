@@ -475,6 +475,10 @@ enum class DdlGrammar : GrammarRuleKey {
     HASH_PARTITIONS_BY_QUANTITY,
     PARTITION_BY_LIST,
     PARTITION_BY_DIRECTORY,
+    PARTITION_BY_CONSISTENT_HASH,
+    PARTITIONSET_BY_LIST,
+    PARTITIONSET_TUPLE_VALUES_CLAUSE,
+    PARTITIONSET_BY_RANGE,
     PARTITION_COMPOSITE,
     SUBPARTITION_BY_LIST,
     SUBPARTITION_BY_HASH,
@@ -1593,6 +1597,33 @@ enum class DdlGrammar : GrammarRuleKey {
                     LPARENTHESIS, directoryPartition, b.zeroOrMore(COMMA, directoryPartition), RPARENTHESIS,
                     b.optional(DIRECTORY, TABLESPACE, IDENTIFIER_NAME))
 
+            val shardingKeyColumns = b.sequence(
+                    LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
+            val consistentHash = b.sequence(PARTITION, BY, CONSISTENT, PlSqlKeyword.HASH, shardingKeyColumns)
+            val tablespaceSet = b.sequence(TABLESPACE, SET, IDENTIFIER_NAME)
+
+            // The diagram requires TABLESPACE SET, but the official examples omit it when the table names the set.
+            b.rule(PARTITION_BY_CONSISTENT_HASH).define(
+                    consistentHash, b.optional(PARTITIONS, AUTO), b.optional(tablespaceSet))
+
+            fun partitionsetDescriptions(values: Any): Any {
+                val description = b.sequence(
+                        PARTITIONSET, IDENTIFIER_NAME, values, b.optional(tablespaceSet), b.optional(LOB_STORAGE_CLAUSE))
+                return b.sequence(LPARENTHESIS, description, b.zeroOrMore(COMMA, description), RPARENTHESIS)
+            }
+            // Oracle parses several list columns and tuple values, then rejects them (ORA-02514).
+            val tupleValue = b.sequence(
+                    LPARENTHESIS, b.firstOf(LITERAL, NULL), b.zeroOrMore(COMMA, b.firstOf(LITERAL, NULL)), RPARENTHESIS)
+            b.rule(PARTITIONSET_TUPLE_VALUES_CLAUSE).define(
+                    VALUES, LPARENTHESIS, tupleValue, b.zeroOrMore(COMMA, tupleValue), RPARENTHESIS)
+            b.rule(PARTITIONSET_BY_LIST).define(
+                    PARTITIONSET, BY, LIST, shardingKeyColumns,
+                    consistentHash, PARTITIONS, AUTO,
+                    partitionsetDescriptions(b.firstOf(LIST_VALUES_CLAUSE, PARTITIONSET_TUPLE_VALUES_CLAUSE)))
+            b.rule(PARTITIONSET_BY_RANGE).define(
+                    PARTITIONSET, BY, RANGE_KEYWORD, shardingKeyColumns,
+                    consistentHash, PARTITIONS, AUTO, partitionsetDescriptions(RANGE_VALUES_CLAUSE))
+
             b.rule(PARTITION_COMPOSITE).define(
                     b.sequence(
                             PARTITION,
@@ -1622,6 +1653,9 @@ enum class DdlGrammar : GrammarRuleKey {
                     PARTITION_BY_HASH,
                     PARTITION_BY_LIST,
                     b.sequence(b.requireContext(SHARDED_TABLE_CONTEXT, true), PARTITION_BY_DIRECTORY),
+                    b.sequence(
+                            b.requireContext(SHARDED_TABLE_CONTEXT, true),
+                            b.firstOf(PARTITIONSET_BY_LIST, PARTITIONSET_BY_RANGE, PARTITION_BY_CONSISTENT_HASH)),
                     PARTITION_COMPOSITE,
                     PARTITION_BY_REFERENCE))
 

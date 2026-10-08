@@ -797,6 +797,7 @@ enum class PlSqlKeyword(override val value: String, val isReserved: Boolean = fa
     PARTIAL("partial"),
     PARTITION("partition"),
     PARTITIONS("partitions"),
+    PARTITIONSET("partitionset"),
     PASSING("passing"),
     PASSWORD("password"),
     PASSWORD_GRACE_TIME("password_grace_time"),

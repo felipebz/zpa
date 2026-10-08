@@ -127,4 +127,144 @@ class CreateShardedTableTest : RuleTest() {
         assertThatAst(range.getDescendants(DdlGrammar.PARTITION_BY_DIRECTORY)).isEmpty()
         assertThatAst(range.getDescendants(DdlGrammar.PARTITION_BY_RANGE)).hasSize(1)
     }
+
+    private val customers = "create sharded table customers (custno number not null, name varchar2(50) not null, " +
+        "signup date default null, class varchar2(3) not null, constraint cust_pk primary key(custno,name))"
+
+    @Test
+    fun matchesTheDocumentedPartitionsetStatement() {
+        assertThat(p).matches(
+            """CREATE SHARDED TABLE customers (
+                custno         NUMBER NOT NULL,
+                name           VARCHAR2(50) NOT NULL,
+                signup         DATE DEFAULT NULL,
+                class          VARCHAR2(3) NOT NULL,
+            CONSTRAINT cust_pk PRIMARY KEY(custno,name))
+            PARTITIONSET BY LIST (class)
+            PARTITION BY CONSISTENT HASH (custno,name)
+            PARTITIONS AUTO
+            (PARTITIONSET gold VALUES ('gld') TABLESPACE SET tbs1,
+             PARTITIONSET silver VALUES ('slv') TABLESPACE SET tbs2);""")
+    }
+
+    @Test
+    fun matchesPartitionsetAndConsistentHashForms() {
+        listOf(
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset gold values ('gld'))",
+            "partitionset by list (class) partition by consistent hash (custno, name) partitions auto " +
+                "(partitionset gold values ('gld', 'g2') tablespace set t1, partitionset other values (default) tablespace set t2)",
+            "partitionset by range (class) partition by consistent hash (custno) partitions auto " +
+                "(partitionset p1 values less than ('M') tablespace set t1, partitionset p2 values less than (maxvalue))",
+            "partitionset by range (class, signup) partition by consistent hash (custno, name) partitions auto " +
+                "(partitionset p1 values less than (10, 100) tablespace set t1, partitionset p2 values less than (20, 200))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto " +
+                "(partitionset gold values ('gld') tablespace set t1 lob (signup) store as (cache))",
+            "partition by consistent hash (custno, name) partitions auto tablespace set ts1",
+            "partition by consistent hash (custno) tablespace set ts1", "partition by consistent hash (custno) partitions auto",
+            "partition by consistent hash (custno)",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a')) enable row movement",
+            // Oracle reports multi-column list partitionsets only after parsing (ORA-02514).
+            "partitionset by list (class, class2) partition by consistent hash (custno, name) partitions auto " +
+                "(partitionset silver values (('SLV', 1), ('BRZ', 2)) tablespace set ts1, " +
+                "partitionset gold values (('GLD', 3), ('OTH', 4)) tablespace set ts2)",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values (('a')))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values ((null, 1)))",
+        ).forEach {
+            val source = "$customers $it"
+            assertThat(p).describedAs(source).matches(source)
+        }
+    }
+
+    @Test
+    fun rejectsMalformedPartitionsetAndConsistentHashForms() {
+        listOf(
+            "partitionset by list (class) partition by consistent hash (custno) (partitionset g values ('a'))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto ()",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a'),)",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto " +
+                "(partitionset g values ('a') partitionset h values ('b'))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g)",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values 'a')",
+            "partitionset by list (class,) partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list () partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (()))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', 1))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', 1)))) ",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a' 1)))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', 1) ('b', 2)))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', 1),))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', ), ('b', 2)))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto (partitionset g values (('a', (1)))))",
+            "partitionset by list (class, class2) partition by consistent hash (custno) partitions auto " +
+                "(partitionset g values (('a', 1)) partitionset h values (('b', 2)))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partition g values ('a'))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset values ('a'))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a') tablespace t1)",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a') tablespace set)",
+            "partitionset by list (class) partition by hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class) partition by consistent (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class) partition by consistent hash () partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class) partition by consistent hash custno partitions auto (partitionset g values ('a'))",
+            "partitionset by list class partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by listx (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset list (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class) partitions auto (partitionset g values ('a'))",
+            "partitionset by range (class) partition by consistent hash (custno) partitions auto (partitionset g values ('a'))",
+            "partitionset by list (class) partition by consistent hash (custno) partitions auto (partitionset g values less than (1))",
+            "partition by consistent hash custno partitions auto", "partition by consistent hash () partitions auto",
+            "partition by consistent (custno) partitions auto", "partition by consistent hash (custno) partitions manual",
+            "partition by consistent hash (custno) partitions auto foo",
+        ).forEach {
+            val source = "$customers $it"
+            assertThat(p).describedAs(source).notMatches(source)
+        }
+    }
+
+    @Test
+    fun keepsPartitionsetAndConsistentHashOutOfOrdinaryTables() {
+        listOf(
+            "create table t (a number, b varchar2(3)) partitionset by list (b) partition by consistent hash (a) partitions auto " +
+                "(partitionset g values ('a') tablespace set t1)",
+            "create table t (a number) partition by consistent hash (a) partitions auto tablespace set ts1",
+            "create table t (a number) partition by consistent hash (a)",
+            "create global temporary table t (a number) partition by consistent hash (a)",
+            "create private temporary table ora\$ptt_t (a number) partition by consistent hash (a)",
+        ).forEach { assertThat(p).describedAs(it).notMatches(it) }
+    }
+
+    @Test
+    fun buildsPartitionsetAndConsistentHashStructure() {
+        val partitionset = p.parse(
+            "$customers partitionset by list (class) partition by consistent hash (custno, name) partitions auto " +
+                "(partitionset gold values ('gld') tablespace set tbs1, partitionset silver values ('slv') tablespace set tbs2);")
+        val list = partitionset.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)!!
+        assertThatAst(list.texts()).containsExactly(
+            "partitionset", "by", "list", "(", "class", ")", "partition", "by", "consistent", "hash", "(", "custno", ",", "name", ")",
+            "partitions", "auto", "(", "partitionset", "gold", "values", "(", "'gld'", ")", "tablespace", "set", "tbs1", ",",
+            "partitionset", "silver", "values", "(", "'slv'", ")", "tablespace", "set", "tbs2", ")")
+        assertThatAst(list.getChildren(DdlGrammar.LIST_VALUES_CLAUSE)).hasSize(2)
+        assertThatAst(list.getChildren(DdlGrammar.PARTITIONSET_TUPLE_VALUES_CLAUSE)).isEmpty()
+
+        val tuples = p.parse(
+            "$customers partitionset by list (class, class2) partition by consistent hash (custno) partitions auto " +
+                "(partitionset silver values (('SLV', 1), ('BRZ', 2)) tablespace set ts1);")
+        val tupleList = tuples.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)!!
+        assertThatAst(tupleList.getChildren(DdlGrammar.LIST_VALUES_CLAUSE)).isEmpty()
+        assertThatAst(tupleList.getFirstChild(DdlGrammar.PARTITIONSET_TUPLE_VALUES_CLAUSE).texts()).containsExactly(
+            "values", "(", "(", "'SLV'", ",", "1", ")", ",", "(", "'BRZ'", ",", "2", ")", ")")
+        assertThatAst(partitionset.getDescendants(DdlGrammar.PARTITION_BY_LIST)).isEmpty()
+        assertThatAst(partitionset.getDescendants(DdlGrammar.PARTITION_BY_CONSISTENT_HASH)).isEmpty()
+
+        val range = p.parse(
+            "$customers partitionset by range (class) partition by consistent hash (custno) partitions auto " +
+                "(partitionset p1 values less than (10));")
+        assertThatAst(range.getDescendants(DdlGrammar.PARTITIONSET_BY_RANGE)).hasSize(1)
+        assertThatAst(range.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_RANGE)!!.getChildren(DdlGrammar.RANGE_VALUES_CLAUSE)).hasSize(1)
+
+        val consistent = p.parse("$customers partition by consistent hash (custno) partitions auto tablespace set ts1;")
+        assertThatAst(consistent.getFirstDescendant(DdlGrammar.PARTITION_BY_CONSISTENT_HASH)!!.texts()).containsExactly(
+            "partition", "by", "consistent", "hash", "(", "custno", ")", "partitions", "auto", "tablespace", "set", "ts1")
+        assertThatAst(consistent.getDescendants(DdlGrammar.PARTITIONSET_BY_LIST)).isEmpty()
+    }
 }
