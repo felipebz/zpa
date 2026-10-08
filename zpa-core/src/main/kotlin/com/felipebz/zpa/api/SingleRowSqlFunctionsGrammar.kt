@@ -758,10 +758,20 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
 
             b.rule(JSON_OBJECT_ENTRY).define(
                 b.firstOf(
-                    b.sequence(b.optional(KEY), EXPRESSION, b.firstOf(VALUE, IS), EXPRESSION),
-                    b.sequence(EXPRESSION, b.optional(COLON, EXPRESSION))
-                ),
-                b.optional(FORMAT, JSON)
+                    b.sequence(
+                        b.requireContext(DUALITY_VIEW_CONTEXT, true),
+                        b.firstOf(
+                            b.sequence(UNNEST, LPARENTHESIS, DmlGrammar.SELECT_EXPRESSION, RPARENTHESIS),
+                            b.sequence(EXPRESSION, AS, FLEX, b.optional(COLUMN))),
+                        b.optional(DdlGrammar.DUALITY_VIEW_COLUMN_TAGS)),
+                    b.sequence(
+                        b.firstOf(
+                            b.sequence(b.optional(KEY), EXPRESSION, b.firstOf(VALUE, IS), EXPRESSION),
+                            b.sequence(EXPRESSION, b.optional(COLON, EXPRESSION))
+                        ),
+                        b.optional(FORMAT, JSON),
+                        b.optional(b.requireContext(DUALITY_VIEW_CONTEXT, true), DdlGrammar.DUALITY_VIEW_COLUMN_TAGS))
+                )
             )
 
             b.rule(JSON_SCALAR_EXPRESSION).define(

@@ -478,7 +478,8 @@ enum class DmlGrammar : GrammarRuleKey {
                                 ROW_PATTERN_CLAUSE
                             )
                         ),
-                        b.optional(tableAlias, b.optional(FLASHBACK_QUERY_CLAUSE))
+                        b.optional(tableAlias, b.optional(FLASHBACK_QUERY_CLAUSE)),
+                        b.optional(b.requireContext(DUALITY_VIEW_CONTEXT, true), DdlGrammar.DUALITY_VIEW_TABLE_TAGS)
                     ),
                     VALUES_EXPRESSION_CLAUSE
                 )
@@ -930,7 +931,9 @@ enum class DmlGrammar : GrammarRuleKey {
                         SELECT, b.optional(b.firstOf(ALL, DISTINCT, UNIQUE)), SELECT_COLUMN, b.zeroOrMore(COMMA, SELECT_COLUMN),
                         b.optional(INTO_CLAUSE),
                         b.optional(FROM_CLAUSE),
-                        b.optional(WHERE_CLAUSE),
+                        b.optional(
+                            WHERE_CLAUSE,
+                            b.optional(b.requireContext(DUALITY_VIEW_CONTEXT, true), SUBQUERY_RESTRICTION_CLAUSE)),
                         b.optional(HIERARCHICAL_QUERY_CLAUSE),
                         b.optional(b.firstOf(
                             b.sequence(GROUP_BY_CLAUSE, b.optional(HAVING_CLAUSE)),

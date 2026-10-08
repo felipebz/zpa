@@ -130,8 +130,7 @@ class CreateJsonRelationalDualityViewTest : RuleTest() {
     }
 
     @Test
-    fun leavesTheSqlDefinitionAndOrdinaryViewsAlone() {
-        assertThat(p).notMatches("create json relational duality view v as select json {'_id': t.id} from t with insert")
+    fun leavesOrdinaryViewsAlone() {
         listOf(
             "create view v as select student from t;",
             "create or replace view v as select 1 x from dual with read only;",

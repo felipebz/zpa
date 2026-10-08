@@ -36,3 +36,8 @@ internal val RETURNING_VALUE_CONTEXT: ContextKey<Boolean> = ContextKey()
  * before the index maintenance clause.
  */
 internal val CONTAINER_MAP_CONTEXT: ContextKey<Boolean> = ContextKey()
+
+/**
+ * Set inside the SQL definition of a JSON relational duality view, where table and field annotations are legal.
+ */
+internal val DUALITY_VIEW_CONTEXT: ContextKey<Boolean> = ContextKey()

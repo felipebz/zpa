@@ -349,6 +349,8 @@ enum class DdlGrammar : GrammarRuleKey {
     CREATE_TABLE,
     CREATE_SCHEMA,
     CREATE_JSON_RELATIONAL_DUALITY_VIEW,
+    DUALITY_VIEW_TABLE_TAGS,
+    DUALITY_VIEW_COLUMN_TAGS,
     INDEX_ORGANIZED_TABLE_CLAUSE,
     HEAP_ORGANIZED_TABLE_CLAUSE,
     EXTERNAL_TABLE_CLAUSE,
@@ -3422,7 +3424,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.optional(SEMICOLON))
 
             // Oracle 26 rejects the parenthesized graphql_query of the diagram (ORA-00928) and accepts only the
-            // bare form; OR REPLACE and IF NOT EXISTS cannot be combined (ORA-11541). The SQL definition is not covered.
+            // bare form; OR REPLACE and IF NOT EXISTS cannot be combined (ORA-11541).
             val dualityViewEditionability = b.optional(b.firstOf(EDITIONABLE, NONEDITIONABLE))
             val dualityViewKind = b.sequence(JSON, b.optional(RELATIONAL), DUALITY, VIEW)
             b.rule(CREATE_JSON_RELATIONAL_DUALITY_VIEW).define(
@@ -3433,8 +3435,19 @@ enum class DdlGrammar : GrammarRuleKey {
                 UNIT_NAME,
                 b.optional(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS),
                 b.optional(b.firstOf(ENABLE, DISABLE), LOGICAL, REPLICATION),
-                AS, PlSqlTokenType.GRAPHQL_DUALITY_SOURCE,
+                AS,
+                b.firstOf(
+                    PlSqlTokenType.GRAPHQL_DUALITY_SOURCE,
+                    b.withContext(DUALITY_VIEW_CONTEXT, true, DmlGrammar.SELECT_EXPRESSION)),
                 b.optional(SEMICOLON))
+
+            // Repeated and conflicting tags are rejected by Oracle only after parsing (ORA-40947, ORA-40934 for
+            // conflicts), but ORA-40934 also reports unknown tags, so only the documented words are accepted.
+            val checkTag = b.sequence(b.firstOf(CHECK, NOCHECK), b.optional(ETAG))
+            b.rule(DUALITY_VIEW_COLUMN_TAGS).define(
+                WITH, b.oneOrMore(b.firstOf(checkTag, UPDATE, NOUPDATE)))
+            b.rule(DUALITY_VIEW_TABLE_TAGS).define(
+                WITH, b.oneOrMore(b.firstOf(checkTag, INSERT, NOINSERT, UPDATE, NOUPDATE, DELETE, NODELETE)))
 
             b.rule(DDL_COMMAND).define(b.firstOf(
                 DDL_COMMENT,
