@@ -277,6 +277,10 @@ enum class DdlGrammar : GrammarRuleKey {
     PDB_DEFAULT_TABLESPACE_FILES,
     PDB_ROLES_CLAUSE,
     PDB_KEYSTORE_CLAUSE,
+    PDB_REKEY_CLAUSE,
+    PDB_CLONE_OPTION,
+    PDB_CONTAINER_MAP_CLAUSE,
+    PDB_CONTAINER_MAP_ADD_PARTITIONS,
     PDB_REFRESH_MODE_CLAUSE,
     PDB_RELOCATE_CLAUSE,
     PDB_USING_SNAPSHOT,
@@ -2648,9 +2652,10 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(directorySplitDescription(), COMMA,
                                 directorySplitDescription())),
                         RPARENTHESIS)),
-                b.optional(SPLIT_NESTED_TABLE_PART),
-                b.optional(UPDATE_INDEX_CLAUSES),
-                b.optional(parallelClause()),
+                b.optional(b.nextNot(b.requireContext(CONTAINER_MAP_CONTEXT, true)), SPLIT_NESTED_TABLE_PART),
+                b.firstOf(
+                    b.sequence(UPDATE_INDEX_CLAUSES, b.optional(parallelClause())),
+                    b.optional(b.nextNot(b.requireContext(CONTAINER_MAP_CONTEXT, true)), parallelClause())),
                 b.optional(ONLINE))
 
             fun addRangePartition() = b.sequence(PARTITION, b.optional(IDENTIFIER_NAME),
@@ -5054,9 +5059,37 @@ enum class DdlGrammar : GrammarRuleKey {
                     EXTENT_MANAGEMENT_CLAUSE)))
             b.rule(PDB_ROLES_CLAUSE).define(
                 ROLES, EQUALS, LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
-            b.rule(PDB_KEYSTORE_CLAUSE).define(
-                KEYSTORE, KEYSTORE_IDENTIFIED_BY,
-                b.optional(b.firstOf(b.sequence(NO, REKEY), b.sequence(REKEY, USING, CHARACTER_LITERAL))))
+            b.rule(PDB_KEYSTORE_CLAUSE).define(KEYSTORE, KEYSTORE_IDENTIFIED_BY)
+            // Clone-only and independent of KEYSTORE. Oracle parses the algorithm as any token and validates it
+            // afterwards (ORA-28339); a quoted or bare name is accepted here.
+            b.rule(PDB_REKEY_CLAUSE).define(
+                b.firstOf(
+                    b.sequence(NO, REKEY),
+                    b.sequence(REKEY, b.optional(USING, b.firstOf(CHARACTER_LITERAL, IDENTIFIER_NAME)))))
+            // Oracle parses the ALTER TABLE partition operations here and rejects their index maintenance clauses
+            // only afterwards (ORA-30566). ADD is local because the ALTER TABLE rule models range partitions only.
+            val listValue = b.firstOf(LITERAL, NULL)
+            val listValues = b.firstOf(
+                b.sequence(listValue, b.zeroOrMore(COMMA, listValue)),
+                b.sequence(
+                    LPARENTHESIS, listValue, b.zeroOrMore(COMMA, listValue), RPARENTHESIS,
+                    b.zeroOrMore(COMMA, LPARENTHESIS, listValue, b.zeroOrMore(COMMA, listValue), RPARENTHESIS)))
+            val rangeValue = b.firstOf(MAXVALUE, METHOD_CALL, LITERAL)
+            val addPartition = b.sequence(
+                PARTITION, b.optional(IDENTIFIER_NAME),
+                b.optional(b.firstOf(
+                    b.sequence(VALUES, LESS, THAN, LPARENTHESIS, rangeValue, b.zeroOrMore(COMMA, rangeValue), RPARENTHESIS),
+                    b.sequence(VALUES, LPARENTHESIS, b.firstOf(DEFAULT, listValues), RPARENTHESIS))),
+                TABLE_PARTITION_DESCRIPTION)
+            b.rule(PDB_CONTAINER_MAP_ADD_PARTITIONS).define(
+                ADD, addPartition, b.zeroOrMore(COMMA, addPartition),
+                b.optional(b.firstOf(NOPARALLEL, b.sequence(PARALLEL, b.optional(INTEGER_LITERAL)))),
+                b.optional(UPDATE_INDEX_CLAUSES))
+            b.rule(PDB_CONTAINER_MAP_CLAUSE).define(
+                CONTAINER_MAP, UPDATE,
+                LPARENTHESIS,
+                b.firstOf(PDB_CONTAINER_MAP_ADD_PARTITIONS, b.withContext(CONTAINER_MAP_CONTEXT, true, SPLIT_TABLE_PARTITION)),
+                RPARENTHESIS)
             b.rule(PDB_REFRESH_MODE_CLAUSE).define(
                 REFRESH, MODE,
                 b.firstOf(MANUAL, b.sequence(EVERY, number, b.firstOf(MINUTES, HOURS)), NONE))
@@ -5073,6 +5106,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(PARALLEL, b.optional(number)),
                 PDB_STORAGE_CLAUSE, PDB_SERVICE_NAME_CONVERT, PDB_PATH_PREFIX,
                 PDB_TEMPFILE_REUSE, PDB_USER_TABLESPACES, PDB_STANDBYS, PDB_LOGGING, PDB_CREATE_FILE_DEST,
+                PDB_CONTAINER_MAP_CLAUSE,
                 b.sequence(HOST, EQUALS, CHARACTER_LITERAL),
                 b.sequence(PORT, EQUALS, number))
             val commonOptions = b.firstOf(commonWithoutFileNameConvert, PDB_FILE_NAME_CONVERT)
@@ -5081,27 +5115,38 @@ enum class DdlGrammar : GrammarRuleKey {
                 ADMIN, USER, IDENTIFIER_NAME, KEYSTORE_PASSWORD_IDENTIFIED_BY,
                 b.optional(PDB_ROLES_CLAUSE),
                 b.zeroOrMore(b.firstOf(
-                    commonOptions,
+                    commonOptions, PDB_KEYSTORE_CLAUSE,
                     b.sequence(PDB_DEFAULT_TABLESPACE, b.optional(PDB_DEFAULT_TABLESPACE_FILES)))))
 
             val dblink = b.sequence(REMOTE, IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME))
-            val cloneOptions = b.firstOf(
-                commonOptions, PDB_DEFAULT_TABLESPACE, b.sequence(SNAPSHOT, COPY), b.sequence(NO, DATA),
-                PDB_KEYSTORE_CLAUSE)
+            b.rule(PDB_CLONE_OPTION).define(
+                b.firstOf(
+                    commonOptions, PDB_DEFAULT_TABLESPACE, b.sequence(SNAPSHOT, COPY), b.sequence(NO, DATA),
+                    PDB_KEYSTORE_CLAUSE)).skip()
+            val cloneOptions = PDB_CLONE_OPTION
+            // NO REKEY and REKEY may each repeat but cannot be mixed (a syntax error), so they take one slot.
+            fun withRekey(options: Any): Any {
+                fun rekeyOf(first: PlSqlKeyword) = b.sequence(b.next(first), PDB_REKEY_CLAUSE)
+                return b.sequence(
+                    b.zeroOrMore(options),
+                    b.optional(b.firstOf(
+                        b.sequence(rekeyOf(NO), b.zeroOrMore(b.firstOf(options, rekeyOf(NO)))),
+                        b.sequence(rekeyOf(REKEY), b.zeroOrMore(b.firstOf(options, rekeyOf(REKEY)))))))
+            }
             b.rule(PDB_CLONE).define(
                 b.firstOf(
                     b.sequence(
                         b.optional(AS, PROXY), FROM, IDENTIFIER_NAME, dblink, b.optional(PDB_USING_SNAPSHOT),
-                        b.zeroOrMore(b.firstOf(cloneOptions, PDB_REFRESH_MODE_CLAUSE, PDB_RELOCATE_CLAUSE))),
+                        withRekey(b.firstOf(cloneOptions, PDB_REFRESH_MODE_CLAUSE, PDB_RELOCATE_CLAUSE))),
                     b.sequence(
                         b.optional(AS, PROXY), FROM, IDENTIFIER_NAME, b.optional(PDB_USING_SNAPSHOT),
-                        b.zeroOrMore(cloneOptions))))
+                        withRekey(cloneOptions))))
 
             // COPY, MOVE and NOCOPY share one slot (mixing them is a syntax error), and NOCOPY also rejects a
             // FILE_NAME_CONVERT with file names in either order. FILE_NAME_CONVERT = NONE may precede NOCOPY.
             val xmlOptions = b.firstOf(
                 commonWithoutFileNameConvert, PDB_DEFAULT_TABLESPACE, PDB_SOURCE_FILE_NAME_CONVERT,
-                PDB_SOURCE_FILE_DIRECTORY, PDB_DECRYPT_CLAUSE)
+                PDB_SOURCE_FILE_DIRECTORY, PDB_DECRYPT_CLAUSE, PDB_KEYSTORE_CLAUSE)
             val xmlOptionsWithFileNameConvert = b.firstOf(xmlOptions, PDB_FILE_NAME_CONVERT)
             val fileNameConvertNone = b.sequence(b.next(FILE_NAME_CONVERT, EQUALS, NONE), PDB_FILE_NAME_CONVERT)
             b.rule(PDB_FROM_XML).define(

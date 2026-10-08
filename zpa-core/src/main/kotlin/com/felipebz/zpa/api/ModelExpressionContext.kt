@@ -30,3 +30,9 @@ internal val MODEL_EXPRESSION_CONTEXT: ContextKey<Boolean> = ContextKey()
  * Set inside the static RETURNING list of INSERT, UPDATE and DELETE, where OLD and NEW may qualify an operand.
  */
 internal val RETURNING_VALUE_CONTEXT: ContextKey<Boolean> = ContextKey()
+
+/**
+ * Set inside CONTAINER_MAP UPDATE (...), where SPLIT PARTITION takes no nested table part and no PARALLEL clause
+ * before the index maintenance clause.
+ */
+internal val CONTAINER_MAP_CONTEXT: ContextKey<Boolean> = ContextKey()

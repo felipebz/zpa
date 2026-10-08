@@ -140,7 +140,7 @@ class CreatePluggableDatabaseTest : RuleTest() {
             "p1 $admin host = h", "p1 $admin port = '1'", "p1 $admin file_name_convert = none x",
             "p1 $admin file_name_convert = none,", "p1 $admin filesystem_like_logging", "p1 $admin enable snapshot manual",
             "p1 $admin nocopy", "p1 $admin copy", "p1 $admin as clone", "p1 $admin source_file_name_convert = none",
-            "p1 $admin decrypt using s", "p1 $admin snapshot copy", "p1 $admin no data", "p1 $admin keystore identified by kp",
+            "p1 $admin decrypt using s", "p1 $admin snapshot copy", "p1 $admin no data",
             "p1 $admin refresh mode manual", "p1 $admin relocate", "p.q $admin", "p1 $admin pdb2"
         )
     }
@@ -205,7 +205,7 @@ class CreatePluggableDatabaseTest : RuleTest() {
             "p1 from src as clone", "p1 from src admin user a identified by p", "p1 from src roles = (dba)",
             "p1 from src source_file_name_convert = none", "p1 from src decrypt using s", "p1 from src filesystem_like_logging",
             "p1 from src keystore", "p1 from src keystore identified by", "p1 from src keystore identified by 'kp'",
-            "p1 from src keystore identified by kp rekey using aes256", "p1 from src keystore identified by kp no rekey rekey using 'x'",
+            "p1 from src keystore identified by kp no rekey rekey using 'x'",
             "p1 as proxy", "p1 as proxy src@lnk", "p1 proxy from src@lnk"
         )
     }
@@ -236,7 +236,7 @@ class CreatePluggableDatabaseTest : RuleTest() {
             "p1 $xml source_file_name_convert = ('a')", "p1 $xml source_file_directory = d", "p1 $xml decrypt using 's'",
             "p1 $xml decrypt using", "p1 $xml decrypt", "p1 $xml admin user a identified by p", "p1 $xml roles = (dba)",
             "p1 $xml filesystem_like_logging", "p1 $xml enable snapshot manual", "p1 $xml snapshot copy", "p1 $xml no data",
-            "p1 $xml keystore identified by k", "p1 $xml refresh mode manual", "p1 $xml relocate"
+            "p1 $xml refresh mode manual", "p1 $xml relocate"
         )
     }
 
@@ -347,5 +347,154 @@ class CreatePluggableDatabaseTest : RuleTest() {
         val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)!!
         assertThatAst(xml.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "as", "clone", "using", "'c.xml'", "nocopy", "tempfile")
+    }
+
+    @Test
+    fun matchesKeystoreInEveryCreationMode() {
+        matches(
+            "p1 $admin keystore identified by kp", "p1 $admin keystore identified by external store",
+            "p1 $admin tempfile reuse keystore identified by kp default tablespace t",
+            "p1 $xml nocopy keystore identified by kp decrypt using s", "p1 $xml decrypt using s keystore identified by kp nocopy",
+            "p1 as clone $xml keystore identified by external store", "p1 $xml keystore identified by kp copy file_name_convert = none",
+            "p1 $admin keystore identified by a keystore identified by b",
+            "CDB1_PDB2 USING '/tmp/cdb1_pdb2.xml' NOCOPY KEYSTORE IDENTIFIED BY keystore_password DECRYPT USING transport_secret"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedOrRekeyKeystoreOutsideClones() {
+        notMatches(
+            "p1 $admin keystore", "p1 $admin keystore identified by", "p1 $admin keystore identified by 'kp'",
+            "p1 $admin keystore identifed by kp", "p1 $admin keystore identified by kp no rekey",
+            "p1 $admin keystore identified by kp rekey using 'a'", "p1 $xml keystore identified by kp no rekey",
+            "p1 $xml keystore identified by kp rekey using 'a'", "p1 $xml keystore", "p1 $xml keystore identified by"
+        )
+    }
+
+    @Test
+    fun matchesContainerMapUpdates() {
+        val add = "container_map update (add partition q values less than (100))"
+        matches(
+            "p1 $admin $add", "p1 $admin file_name_convert = ('a', 'b') $add", "p1 $admin $add file_name_convert = ('a', 'b')",
+            "p1 $admin $add tempfile reuse storage unlimited", "p1 from src $add", "p1 as proxy from src@l $add", "p1 $xml nocopy $add",
+            "p1 $admin container_map update (add partition values less than (maxvalue))",
+            "p1 $admin container_map update (add partition q values less than (100), partition r values less than (200))",
+            "p1 $admin container_map update (add partition q values less than (100) tablespace t)",
+            "p1 $admin container_map update (split partition q at (50) into (partition q, partition r))",
+            "p1 $admin container_map update (split partition q at (50))",
+            "p1 $admin container_map update (split partition q values (1, 2) into (partition q, partition r))",
+            "p1 $admin container_map update (split partition q into (partition q values less than (50), partition r))",
+            "p1 $admin $add keystore identified by kp", "p1 $admin $add $add"
+        )
+    }
+
+    @Test
+    fun rejectsMalformedContainerMapUpdates() {
+        notMatches(
+            "p1 container_map update (add partition q values less than (100))", "p1 $admin container_map",
+            "p1 $admin container_map update", "p1 $admin container_map update ()",
+            "p1 $admin container_map (add partition q values less than (100))",
+            "p1 $admin container_map update add partition q values less than (100)",
+            "p1 $admin container_map update (add partition q values less than (100)",
+            "p1 $admin container_map update (drop partition q)", "p1 $admin container_map update (merge partitions a, b into partition c)",
+            "p1 $admin container_map update (split partition q at (50) into (partition q, partition r)"
+        )
+    }
+
+    @Test
+    fun buildsKeystoreAndContainerMapNodes() {
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        val tree = p.parse(
+            "create pluggable database a using 'a.xml' nocopy keystore identified by kp decrypt using s;\n" +
+                "create pluggable database b admin user u identified by p " +
+                "container_map update (split partition q at (50) into (partition q, partition r));\n" +
+                "create pluggable database d admin user u identified by p " +
+                "container_map update (add partition q values ('a') tablespace t);\n" +
+                "create pluggable database c from a keystore identified by kp no rekey;\n")
+        val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)!!
+        assertThatAst(xml.children.map { it.name }).containsExactly(
+            "USING", "CHARACTER_LITERAL", "NOCOPY", "PDB_KEYSTORE_CLAUSE", "PDB_DECRYPT_CLAUSE")
+        assertThatAst(xml.getFirstDescendant(DdlGrammar.PDB_KEYSTORE_CLAUSE)!!.children.map { it.name })
+            .containsExactly("KEYSTORE", "IDENTIFIED", "BY", "IDENTIFIER_NAME")
+        val map = tree.getFirstDescendant(DdlGrammar.PDB_CONTAINER_MAP_CLAUSE)!!
+        assertThatAst(map.children.map { it.name }).containsExactly(
+            "CONTAINER_MAP", "UPDATE", "LPARENTHESIS", "SPLIT_TABLE_PARTITION", "RPARENTHESIS")
+        assertThatAst(tree.getDescendants(DdlGrammar.PDB_KEYSTORE_CLAUSE)).hasSize(2)
+        val rekey = tree.getFirstDescendant(DdlGrammar.PDB_REKEY_CLAUSE)!!
+        assertThatAst(rekey.children.map { it.name }).containsExactly("NO", "REKEY")
+        val clone = tree.getFirstDescendant(DdlGrammar.PDB_CLONE)!!
+        assertThatAst(clone.children.map { it.name }).containsExactly(
+            "FROM", "IDENTIFIER_NAME", "PDB_KEYSTORE_CLAUSE", "PDB_REKEY_CLAUSE")
+    }
+
+    @Test
+    fun matchesRekeyAsIndependentCloneOptions() {
+        matches(
+            "p1 from src no rekey", "p1 from src keystore identified by kp no rekey", "p1 from src no rekey keystore identified by kp",
+            "p1 from src keystore identified by kp file_name_convert = ('a', 'b') no rekey",
+            "p1 from src keystore identified by kp tempfile reuse no rekey", "p1 from src no rekey tempfile reuse no rekey",
+            "p1 from src rekey", "p1 from src rekey tempfile reuse", "p1 from src rekey using 'AES256'", "p1 from src rekey using aes256",
+            "p1 from src rekey using definitely_not_an_algorithm keystore identified by kp",
+            "p1 from src keystore identified by kp rekey using 'AES256' tempfile reuse",
+            "p1 from src rekey rekey", "p1 from src rekey using 'a' rekey using 'b'", "p1 from src no rekey no rekey",
+            "p1 from src no data no rekey", "p1 from src@l no rekey", "p1 from src@l keystore identified by kp rekey using aes256",
+            "p1 as proxy from src@l no rekey", "p1 from src@l no rekey refresh mode manual", "p1 from src@l refresh mode manual rekey"
+        )
+    }
+
+    @Test
+    fun rejectsMixedOrMalformedRekeyAndRekeyOutsideClones() {
+        notMatches(
+            "p1 from src no rekey rekey", "p1 from src no rekey rekey using 'a'", "p1 from src rekey no rekey",
+            "p1 from src rekey using 'a' no rekey", "p1 from src no rekey tempfile reuse rekey using 'a'", "p1 from src no",
+            "p1 from src rekey using", "p1 from src rekey using 1", "p1 from src rekey using a.b", "p1 from src rekey using 'a' 'b'",
+            "p1 from src rekey 'a'", "p1 from src rekey using ('a')",
+            "p1 $admin no rekey", "p1 $admin rekey", "p1 $admin rekey using 'a'", "p1 $xml nocopy no rekey", "p1 $xml nocopy rekey using 'a'"
+        )
+    }
+
+    @Test
+    fun matchesContainerMapAddPartitionShapes() {
+        listOf(
+            "add partition", "add partition q", "add partition q, partition r", "add partition q values ('a')",
+            "add partition q values ('a', 'b')", "add partition q values (default)", "add partition q values (null, 'a')",
+            "add partition q values (('a', 1), ('b', 2))", "add partition q values ('a'), partition r values ('b')",
+            "add partition q values less than (1), partition r values ('b')", "add partition q tablespace t",
+            "add partition q values less than (100) tablespace t compress", "add partition q values ('a') (subpartition s)",
+            "add partition q values less than (100) update indexes", "add partition q values ('a') update indexes",
+            "add partition q values less than (100) parallel 2", "add partition q values less than (100) noparallel",
+            "add partition q values less than (100) parallel 2 update indexes",
+            "add partition q values less than (100, 'z')", "add partition values ('a')",
+        ).forEach { matches("p1 $admin container_map update ($it)") }
+    }
+
+    @Test
+    fun rejectsMalformedContainerMapAddPartitions() {
+        listOf(
+            "add partition q values", "add partition q values less", "add partition q values less than", "add partition q values less than ()",
+            "add partition q values ()", "add partition q values 1", "add partition q values less than (100),",
+            "add partition q before r", "add partition q values less than (100) online", "add partition q hash",
+            "add q values less than (100)", "add partitions 2", "add partition q values less than (100) partition r values less than (200)",
+        ).forEach { notMatches("p1 $admin container_map update ($it)") }
+    }
+
+    @Test
+    fun matchesContainerMapSplitSuffixesOracleParses() {
+        listOf(
+            "split partition q at (50) online", "split partition q at (50) into (partition q, partition r) online",
+            "split partition q values (1) into (partition q, partition r) online",
+            "split partition q at (50) update indexes", "split partition q at (50) update global indexes parallel 2 online",
+        ).forEach { matches("p1 $admin container_map update ($it)") }
+    }
+
+    @Test
+    fun rejectsContainerMapSplitSuffixesOracleRejects() {
+        listOf(
+            "split partition q at (50) parallel 2", "split partition q at (50) noparallel",
+            "split partition q at (50) into (partition q, partition r) parallel 2",
+            "split partition q at (50) into (partition q, partition r) nested table n store as s",
+            "split partition q at (50) into (partition q, partition r) online parallel 2",
+            "split partition q at (50) into (partition q, partition r) foo",
+        ).forEach { notMatches("p1 $admin container_map update ($it)") }
     }
 }
