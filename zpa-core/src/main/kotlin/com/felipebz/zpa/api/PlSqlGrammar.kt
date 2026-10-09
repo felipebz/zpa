@@ -106,6 +106,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
     IN_EXPRESSION,
     EXISTS_EXPRESSION,
     UNARY_EXPRESSION,
+    PARENTHESIS_ADMISSION,
     COLLATE_EXPRESSION,
     SUFFIXED_UNARY_EXPRESSION,
     RETURNING_VALUE_EXPRESSION,
@@ -1168,10 +1169,25 @@ enum class PlSqlGrammar : GrammarRuleKey {
 
             b.rule(COLLATE_EXPRESSION).define(COLLATE, IDENTIFIER_NAME)
 
+            // Every alternative of UNARY_EXPRESSION that starts with a parenthesis needs one of these shapes. The rule
+            // exists so that a malformed operand is parsed once instead of once per alternative, and it is a rule
+            // (not a bare lookahead) because the error location is only recorded when a rule frame is unwound.
+            b.rule(PARENTHESIS_ADMISSION).define(
+                LPARENTHESIS,
+                b.firstOf(
+                    b.sequence(
+                        b.next(b.firstOf(SELECT, WITH, LPARENTHESIS)),
+                        b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
+                        RPARENTHESIS),
+                    b.sequence(
+                        EXPRESSION,
+                        b.firstOf(AS, b.sequence(b.zeroOrMore(COMMA, EXPRESSION), RPARENTHESIS))))).skip()
+
             b.rule(UNARY_EXPRESSION).define(b.firstOf(
                     RETURNING_VALUE_EXPRESSION,
                     b.sequence(
                         b.nextNot(b.requireContext(RETURNING_VALUE_CONTEXT, true), b.firstOf(OLD, NEW)),
+                        b.firstOf(b.nextNot(LPARENTHESIS), b.next(PARENTHESIS_ADMISSION)),
                         b.firstOf(
                             b.sequence(PLUS, UNARY_EXPRESSION),
                             b.sequence(MINUS, UNARY_EXPRESSION),
