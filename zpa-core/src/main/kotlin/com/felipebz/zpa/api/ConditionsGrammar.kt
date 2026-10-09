@@ -311,40 +311,45 @@ enum class ConditionsGrammar : GrammarRuleKey {
             b.rule(CONDITION).define(
                 b.firstOf(
                     OVERLAPS_CONDITION,
-                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
                     b.sequence(
-                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
-                        BOOLEAN_TEST_CONDITION
-                    ),
-                    b.sequence(
-                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
-                        FLOATING_POINT_CONDITION
-                    ),
-                    b.sequence(
-                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), DANGLING),
-                        IS_DANGLING_CONDITION
-                    ),
-                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
-                    b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
-                    b.sequence(
-                        b.next(
-                            VECTOR_DISTANCE_EXPRESSION,
-                            b.firstOf(
-                                b.sequence(IS, b.optional(NOT), A, SET),
-                                b.sequence(IS, b.optional(NOT), EMPTY),
-                                b.sequence(b.optional(NOT), MEMBER, b.optional(OF)),
-                                b.sequence(b.optional(NOT), SUBMULTISET, b.optional(OF))
+                        b.next(VECTOR_DISTANCE_EXPRESSION),
+                        b.firstOf(
+                            b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, RELATIONAL_OPERATOR), RELATIONAL_CONDITION),
+                            b.sequence(
+                                b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NULL_LITERAL, PlSqlGrammar.BOOLEAN_LITERAL)),
+                                BOOLEAN_TEST_CONDITION
+                            ),
+                            b.sequence(
+                                b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), b.firstOf(NAN, INFINITE)),
+                                FLOATING_POINT_CONDITION
+                            ),
+                            b.sequence(
+                                b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), DANGLING),
+                                IS_DANGLING_CONDITION
+                            ),
+                            b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), LIKE), LIKE_CONDITION),
+                            b.sequence(b.next(VECTOR_DISTANCE_EXPRESSION, b.optional(NOT), BETWEEN), BETWEEN_CONDITION),
+                            b.sequence(
+                                b.next(
+                                    VECTOR_DISTANCE_EXPRESSION,
+                                    b.firstOf(
+                                        b.sequence(IS, b.optional(NOT), A, SET),
+                                        b.sequence(IS, b.optional(NOT), EMPTY),
+                                        b.sequence(b.optional(NOT), MEMBER, b.optional(OF)),
+                                        b.sequence(b.optional(NOT), SUBMULTISET, b.optional(OF))
+                                    )
+                                ),
+                                MULTISET_CONDITION
+                            ),
+                            b.sequence(
+                                b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), JSON),
+                                IS_JSON_CONDITION
+                            ),
+                            b.sequence(
+                                b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), OF),
+                                IS_OF_CONDITION
                             )
-                        ),
-                        MULTISET_CONDITION
-                    ),
-                    b.sequence(
-                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), JSON),
-                        IS_JSON_CONDITION
-                    ),
-                    b.sequence(
-                        b.next(VECTOR_DISTANCE_EXPRESSION, IS, b.optional(NOT), OF),
-                        IS_OF_CONDITION
+                        )
                     ),
                     JSON_EQUAL_CONDITION,
                     JSON_EXISTS_CONDITION,
