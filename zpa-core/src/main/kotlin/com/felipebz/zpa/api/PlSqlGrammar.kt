@@ -1218,13 +1218,23 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(VECTOR_DISTANCE_EXPRESSION).define(
                     CONCATENATION_EXPRESSION, b.zeroOrMore(VECTOR_DISTANCE_OPERATOR, CONCATENATION_EXPRESSION)).skipIfOneChild()
 
+            // Every alternative below except the JSON conditions and the graph predicate starts with a
+            // VECTOR_DISTANCE_EXPRESSION, and failures are not memoized, so a single lookahead keeps a malformed
+            // operand from being parsed once per alternative.
             b.rule(COMPARISON_EXPRESSION).define(b.firstOf(
-                    ConditionsGrammar.CONDITION,
-                    // IS PRESENT is defined by Oracle only for MODEL expressions.
-                    MODEL_PRESENT_CONDITION,
-                    // IS [NOT] SOURCE OF / DESTINATION OF / LABELED exist only inside GRAPH_TABLE.
-                    GraphTableGrammar.GRAPH_ELEMENT_PREDICATE,
-                    IN_EXPRESSION)).skipIfOneChild()
+                    b.sequence(
+                        b.next(VECTOR_DISTANCE_EXPRESSION),
+                        b.firstOf(
+                            ConditionsGrammar.CONDITION,
+                            // IS PRESENT is defined by Oracle only for MODEL expressions.
+                            MODEL_PRESENT_CONDITION,
+                            // IS [NOT] SOURCE OF / DESTINATION OF / LABELED exist only inside GRAPH_TABLE.
+                            GraphTableGrammar.GRAPH_ELEMENT_PREDICATE,
+                            IN_EXPRESSION)),
+                    ConditionsGrammar.JSON_EQUAL_CONDITION,
+                    ConditionsGrammar.JSON_EXISTS_CONDITION,
+                    ConditionsGrammar.JSON_TEXTCONTAINS_CONDITION,
+                    GraphTableGrammar.GRAPH_ELEMENT_PREDICATE)).skipIfOneChild()
 
             b.rule(NOT_EXPRESSION).define(b.optional(NOT), COMPARISON_EXPRESSION).skipIfOneChild()
             b.rule(AND_EXPRESSION).define(NOT_EXPRESSION, b.zeroOrMore(AND, NOT_EXPRESSION)).skipIfOneChild()
