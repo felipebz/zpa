@@ -75,20 +75,20 @@ class ProjectSnapshotRetentionTest {
 
         val snapshot = ProjectSnapshots.prepare(inputs, false)
 
-        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_WITH_FAILURES)
-        assertThat(snapshot.getAttemptedFileCount()).isEqualTo(2)
-        assertThat(snapshot.getSuccessfulFileCount()).isEqualTo(1)
-        assertThat(snapshot.getFileIds()).containsExactly("facts.sql", "failed.sql")
-        assertThat(snapshot.getFailures()).hasSize(1)
-        assertThat(snapshot.getFailures().single().getExceptionType()).isEqualTo(exception.javaClass.name)
+        assertThat(snapshot.preparationState).isEqualTo(ProjectPreparationState.PREPARED_WITH_FAILURES)
+        assertThat(snapshot.attemptedFileCount).isEqualTo(2)
+        assertThat(snapshot.successfulFileCount).isEqualTo(1)
+        assertThat(snapshot.fileIds).containsExactly("facts.sql", "failed.sql")
+        assertThat(snapshot.failures).hasSize(1)
+        assertThat(snapshot.failures.single().exceptionType).isEqualTo(exception.javaClass.name)
 
         val roots = linkedMapOf<String, Any?>(
             "snapshot" to snapshot,
-            "metadata.preparationState" to snapshot.getPreparationState(),
-            "metadata.attemptedFileCount" to snapshot.getAttemptedFileCount(),
-            "metadata.successfulFileCount" to snapshot.getSuccessfulFileCount(),
-            "metadata.failures" to snapshot.getFailures(),
-            "metadata.fileIds" to snapshot.getFileIds()
+            "metadata.preparationState" to snapshot.preparationState,
+            "metadata.attemptedFileCount" to snapshot.attemptedFileCount,
+            "metadata.successfulFileCount" to snapshot.successfulFileCount,
+            "metadata.failures" to snapshot.failures,
+            "metadata.fileIds" to snapshot.fileIds
         )
         val reachable = auditGraph(
             roots,
@@ -106,6 +106,45 @@ class ProjectSnapshotRetentionTest {
         assertThat(reachable.filterIsInstance<SourceRange>()).isNotEmpty()
         assertThat(reachable.filterIsInstance<QualifiedName>()).isNotEmpty()
         assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+    }
+
+    @Test
+    fun declarationViewsIdsAndInventoriesRetainOnlyDurableFacts() {
+        val sourceMarker = "inventory-retention-comment-5b0c4d4e-8c1f-4f6e-a1de-0d58d9a9bb11"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE inv AS TYPE row_t IS RECORD (id NUMBER); FUNCTION lookup(v IN row_t) RETURN NUMBER; END inv;"
+        val reader = ProjectSourceReader { source }
+        val failedReader = ProjectSourceReader { throw IllegalStateException("failure: $sourceMarker") }
+        val input = ProjectSourceInput.ofReader("inv.sql", reader)
+        val failedInput = ProjectSourceInput.ofReader("failed.sql", failedReader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input, failedInput), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, failedReader, input, failedInput)
+
+        val all = snapshot.declarations
+        val wholeList = all
+        val view = all[1]
+        val idAlone = view.id
+        val perFile = snapshot.declarationsFor("inv.sql")
+        val byName = snapshot.findDeclarations(ProjectQualifiedName.of("inv", "lookup"))
+        assertThat(byName.status).isEqualTo(ProjectInventory.Status.INCOMPLETE_INDEX)
+        assertThat(byName.declarations).hasSize(1)
+
+        val roots = mapOf<String, Any?>(
+            "view" to view, "id" to idAlone, "wholeProject" to wholeList,
+            "perFile" to perFile, "byName" to byName
+        )
+        val reachable = auditGraph(roots, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<ProjectDeclaration>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+
+        // An ID alone must not reach the snapshot, index or any retained fact.
+        val idReachable = auditGraph(mapOf("id" to idAlone), forbidden, sourceMarker)
+        assertThat(idReachable.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(idReachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(idReachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
     }
 
     @Test

@@ -43,6 +43,16 @@ sealed interface ProjectDeclaration {
     val sourceRange: SourceRange
 }
 
+/** The full qualified name under which this fact is indexed for exact-name lookup. */
+fun ProjectDeclaration.qualifiedName(): QualifiedName = when (this) {
+    is PackageDeclaration -> name
+    is StandaloneTypeDeclaration -> name
+    is PackageTypeDeclaration -> owner.append(name)
+    is PackageSubtypeDeclaration -> owner.append(name)
+    is PackageSubprogramDeclaration -> owner.append(name)
+    is SequenceDeclaration -> name
+}
+
 data class PackageDeclaration(
     val name: QualifiedName,
     override val role: DeclarationRole,

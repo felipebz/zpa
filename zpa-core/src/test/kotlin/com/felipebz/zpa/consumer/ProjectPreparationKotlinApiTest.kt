@@ -35,11 +35,11 @@ class ProjectPreparationKotlinApiTest {
     fun preparingNoSourcesProducesAPreparedEmptySnapshot() {
         val snapshot = ProjectSnapshots.prepare(emptyList<ProjectSourceInput>())
 
-        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_EMPTY)
-        assertThat(snapshot.getAttemptedFileCount()).isZero()
-        assertThat(snapshot.getSuccessfulFileCount()).isZero()
-        assertThat(snapshot.getFailures()).isEmpty()
-        assertThat(snapshot.getFileIds()).isEmpty()
+        assertThat(snapshot.preparationState).isEqualTo(ProjectPreparationState.PREPARED_EMPTY)
+        assertThat(snapshot.attemptedFileCount).isZero()
+        assertThat(snapshot.successfulFileCount).isZero()
+        assertThat(snapshot.failures).isEmpty()
+        assertThat(snapshot.fileIds).isEmpty()
     }
 
     @Test
@@ -56,11 +56,11 @@ class ProjectPreparationKotlinApiTest {
 
         val snapshot = ProjectSnapshots.prepare(listOf(textBlock, readerBlock), false)
 
-        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_EMPTY)
-        assertThat(snapshot.getAttemptedFileCount()).isEqualTo(2)
-        assertThat(snapshot.getSuccessfulFileCount()).isEqualTo(2)
-        assertThat(snapshot.getFailures()).isEmpty()
-        assertThat(snapshot.getFileIds()).containsExactly("a_reader_block.sql", "z_text_block.sql")
+        assertThat(snapshot.preparationState).isEqualTo(ProjectPreparationState.PREPARED_EMPTY)
+        assertThat(snapshot.attemptedFileCount).isEqualTo(2)
+        assertThat(snapshot.successfulFileCount).isEqualTo(2)
+        assertThat(snapshot.failures).isEmpty()
+        assertThat(snapshot.fileIds).containsExactly("a_reader_block.sql", "z_text_block.sql")
         assertThat(reads.get()).isEqualTo(1)
     }
 
@@ -76,13 +76,13 @@ class ProjectPreparationKotlinApiTest {
             false
         )
 
-        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_WITH_FAILURES)
-        assertThat(snapshot.getAttemptedFileCount()).isEqualTo(2)
-        assertThat(snapshot.getSuccessfulFileCount()).isEqualTo(1)
-        assertThat(snapshot.getFileIds()).containsExactly("broken.sql", "empty.sql")
-        assertThat(snapshot.getFailures()).hasSize(1)
-        val failure = snapshot.getFailures().single()
-        assertThat(failure.getFileId()).isEqualTo("broken.sql")
-        assertThat(failure.getExceptionType()).isEqualTo(IOException::class.java.name)
+        assertThat(snapshot.preparationState).isEqualTo(ProjectPreparationState.PREPARED_WITH_FAILURES)
+        assertThat(snapshot.attemptedFileCount).isEqualTo(2)
+        assertThat(snapshot.successfulFileCount).isEqualTo(1)
+        assertThat(snapshot.fileIds).containsExactly("broken.sql", "empty.sql")
+        assertThat(snapshot.failures).hasSize(1)
+        val failure = snapshot.failures.single()
+        assertThat(failure.fileId).isEqualTo("broken.sql")
+        assertThat(failure.exceptionType).isEqualTo(IOException::class.java.name)
     }
 }

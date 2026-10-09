@@ -36,17 +36,29 @@ class ProjectSymbolIndexBuilder {
     }
 
     fun build(): ProjectSymbolIndex {
-        val declarations = declarationsByFile.entries
-            .sortedBy { it.key.value }
-            .flatMap { it.value }
-            .sortedWith(ProjectSymbolIndex.declarationComparator)
-        val frozenDeclarationsByFile = declarationsByFile.entries
-            .sortedBy { it.key.value }
-            .associate { (fileId, facts) ->
-                fileId to immutableList(facts.sortedWith(ProjectSymbolIndex.declarationComparator))
-            }
-        return ProjectSymbolIndex(frozenDeclarationsByFile.keys.toList(), declarations, frozenDeclarationsByFile)
+        val sortedFiles = declarationsByFile.entries.sortedBy { it.key.value }
+        // Ordinals are positions in each file's frozen sequence; duplicate facts, including the
+        // same reference inserted twice, remain distinct occurrences.
+        val occurrencesByFile = sortedFiles.associate { (fileId, facts) ->
+            fileId to immutableList(
+                facts.sortedWith(ProjectSymbolIndex.declarationComparator)
+                    .mapIndexed { ordinal, fact -> IndexedDeclaration(fact, ordinal) }
+            )
+        }
+        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile)
     }
+}
+
+/**
+ * One canonical indexed declaration occurrence: the authoritative fact plus its zero-based
+ * ordinal in its file's frozen declaration sequence. Identity is by reference; it deliberately
+ * has no value equality, so equal facts remain separate occurrences.
+ */
+class IndexedDeclaration internal constructor(
+    val declaration: ProjectDeclaration,
+    val ordinal: Int
+) {
+    val fileId: FileId get() = declaration.fileId
 }
 
 /**
@@ -57,15 +69,21 @@ class ProjectSymbolIndexBuilder {
  */
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
-    declarations: List<ProjectDeclaration>,
-    fileDeclarations: Map<FileId, List<ProjectDeclaration>>
+    fileOccurrences: Map<FileId, List<IndexedDeclaration>>
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
-    val declarations: List<ProjectDeclaration> = immutableList(declarations)
-    private val declarationsByFile: Map<FileId, List<ProjectDeclaration>> = fileDeclarations.toMap()
+    private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
+
+    /** All canonical occurrences in deterministic file, then per-file order. */
+    val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
+    val declarations: List<ProjectDeclaration> = immutableList(occurrences.map { it.declaration })
 
     /** Returns the frozen declarations belonging to exactly one source file. */
-    internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> = declarationsByFile[fileId].orEmpty()
+    internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> =
+        immutableList(occurrencesFor(fileId).map { it.declaration })
+
+    /** Returns the frozen occurrences belonging to exactly one source file. */
+    fun occurrencesFor(fileId: FileId): List<IndexedDeclaration> = occurrencesByFile[fileId].orEmpty()
 
     private val packagesByName = this.declarations
         .filterIsInstance<PackageDeclaration>()
@@ -97,16 +115,12 @@ class ProjectSymbolIndex internal constructor(
 
     fun findSequences(name: QualifiedName): List<SequenceDeclaration> = sequencesByName[name].orEmpty()
 
-    fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> = declarations.filter { declaration ->
-        when (declaration) {
-            is PackageDeclaration -> declaration.name == name
-            is StandaloneTypeDeclaration -> declaration.name == name
-            is PackageTypeDeclaration -> declaration.owner.append(declaration.name) == name
-            is PackageSubtypeDeclaration -> declaration.owner.append(declaration.name) == name
-            is PackageSubprogramDeclaration -> declaration.owner.append(declaration.name) == name
-            is SequenceDeclaration -> declaration.name == name
-        }
-    }
+    fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> =
+        findOccurrences(name).map { it.declaration }
+
+    /** Exact-name matches as canonical occurrences, in index order, without resolution. */
+    fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
+        occurrences.filter { it.declaration.qualifiedName() == name }
 
     companion object {
         internal val declarationComparator = compareBy<ProjectDeclaration>(
@@ -117,7 +131,7 @@ class ProjectSymbolIndex internal constructor(
             { declarationOrderingKey(it) }
         )
 
-        internal fun empty() = ProjectSymbolIndex(emptyList(), emptyList(), emptyMap())
+        internal fun empty() = ProjectSymbolIndex(emptyList(), emptyMap())
 
         private fun typeKey(declaration: ProjectTypeDeclaration): Pair<QualifiedName?, OracleIdentifier> =
             declaration.qualifiedName.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName) to
