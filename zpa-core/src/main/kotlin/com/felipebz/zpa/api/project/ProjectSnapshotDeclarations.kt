@@ -29,7 +29,11 @@ import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.project.qualifiedName
 import java.util.Collections
 import java.util.Optional
+import com.felipebz.zpa.project.PackageFunctionDeclaration
+import com.felipebz.zpa.project.PackageProcedureDeclaration
 import com.felipebz.zpa.project.PackageSubtypeDeclaration
+import com.felipebz.zpa.project.ParameterMode
+import com.felipebz.zpa.project.ProjectParameter
 import com.felipebz.zpa.project.PackageTypeDeclaration
 import com.felipebz.zpa.project.ProjectRecordField
 import com.felipebz.zpa.project.StandaloneTypeDeclaration
@@ -54,6 +58,8 @@ internal object ProjectSnapshotDeclarations {
                 is StandaloneTypeDeclaration -> BackedStandaloneTypeView(id, fact)
                 is PackageTypeDeclaration -> BackedPackageTypeView(id, fact)
                 is PackageSubtypeDeclaration -> BackedSubtypeView(id, fact)
+                is PackageProcedureDeclaration -> BackedPackageProcedureView(id, fact)
+                is PackageFunctionDeclaration -> BackedPackageFunctionView(id, fact)
                 else -> BackedDeclarationView(id, fact)
             }
         }
@@ -113,6 +119,40 @@ internal object ProjectSnapshotDeclarations {
         override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(subtypeFact.owner)
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(subtypeFact.name)
         override val baseType: ProjectTypeReference get() = ProjectTypeReference.from(subtypeFact.baseType)
+    }
+
+    private class BackedPackageProcedureView(id: ProjectDeclarationId, private val procedure: PackageProcedureDeclaration) :
+        BackedDeclarationView(id, procedure), ProjectPackageSubprogramView {
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(procedure.name)
+        override val packageOwner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(procedure.owner)
+        override val parameters: List<ProjectParameterView> = procedure.parameters.toParameterViews()
+    }
+
+    private class BackedPackageFunctionView(id: ProjectDeclarationId, private val function: PackageFunctionDeclaration) :
+        BackedDeclarationView(id, function), ProjectPackageSubprogramView, ProjectFunctionView {
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(function.name)
+        override val packageOwner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(function.owner)
+        override val parameters: List<ProjectParameterView> = function.parameters.toParameterViews()
+        override val returnType: ProjectTypeReference get() = ProjectTypeReference.from(function.returnType)
+        override val isDeterministic: Boolean get() = function.deterministic
+    }
+
+    private fun List<ProjectParameter>.toParameterViews(): List<ProjectParameterView> =
+        Collections.unmodifiableList(map { BackedParameterView(it) })
+
+    private class BackedParameterView(private val parameter: ProjectParameter) : ProjectParameterView {
+        override val name: ProjectIdentifier get() = ProjectIdentifier.wrap(parameter.name)
+        override val ordinal: Int get() = parameter.ordinal
+        override val mode: ProjectParameterMode
+            get() = when (parameter.mode) {
+                ParameterMode.IN -> ProjectParameterMode.IN
+                ParameterMode.OUT -> ProjectParameterMode.OUT
+                ParameterMode.IN_OUT -> ProjectParameterMode.IN_OUT
+            }
+        override val isNocopy: Boolean get() = parameter.nocopy
+        override val typeRef: ProjectTypeReference get() = ProjectTypeReference.from(parameter.typeRef)
+        override val isDefaultPresent: Boolean get() = parameter.defaultPresent
+        override val sourceRange: ProjectSourceRange get() = parameter.sourceRange.toPublic()
     }
 
     private class BackedRecordFieldView(private val fieldFact: ProjectRecordField) : ProjectRecordFieldView {

@@ -23,7 +23,12 @@ import com.felipebz.zpa.api.project.ProjectDeclarationId;
 import com.felipebz.zpa.api.project.ProjectDeclarationKind;
 import com.felipebz.zpa.api.project.ProjectDeclarationRole;
 import com.felipebz.zpa.api.project.ProjectDeclarationView;
+import com.felipebz.zpa.api.project.ProjectFunctionView;
 import com.felipebz.zpa.api.project.ProjectInventory;
+import com.felipebz.zpa.api.project.ProjectPackageSubprogramView;
+import com.felipebz.zpa.api.project.ProjectParameterMode;
+import com.felipebz.zpa.api.project.ProjectParameterView;
+import com.felipebz.zpa.api.project.ProjectSubprogramView;
 import com.felipebz.zpa.api.project.ProjectPackageTypeView;
 import com.felipebz.zpa.api.project.ProjectRecordFieldView;
 import com.felipebz.zpa.api.project.ProjectShapedTypeView;
@@ -129,5 +134,36 @@ class ProjectDeclarationInventoryJavaApiTest {
         ProjectShapedTypeView bare = (ProjectShapedTypeView) snapshot
             .findDeclarations(ProjectQualifiedName.of("bare")).getDeclarations().get(0);
         assertThat(bare.getShape()).isEmpty();
+    }
+
+    @Test
+    void inspectsCallableFacetsWithInstanceof() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(ProjectSourceInput.ofText("c.sql",
+            "CREATE PACKAGE c AS PROCEDURE pr(a IN NUMBER, b IN OUT NOCOPY VARCHAR2 DEFAULT 'x'); "
+                + "FUNCTION fn(z NUMBER) RETURN NUMBER DETERMINISTIC; END c;")));
+        int procedures = 0, functions = 0;
+        for (ProjectDeclarationView view : snapshot.getDeclarations()) {
+            if (!(view instanceof ProjectPackageSubprogramView)) {
+                continue;
+            }
+            ProjectPackageSubprogramView callable = (ProjectPackageSubprogramView) view;
+            assertThat(callable.getPackageOwner().getLast().getOriginalSpelling()).isEqualTo("c");
+            List<ProjectParameterView> parameters = ((ProjectSubprogramView) callable).getParameters();
+            assertThatThrownBy(parameters::clear).isInstanceOf(UnsupportedOperationException.class);
+            if (view instanceof ProjectFunctionView) {
+                functions++;
+                ProjectFunctionView function = (ProjectFunctionView) view;
+                assertThat(function.isDeterministic()).isTrue();
+                assertThat(function.getReturnType().getName().getLast().getOriginalSpelling()).isEqualTo("NUMBER");
+                assertThat(parameters.get(0).getOrdinal()).isEqualTo(1);
+            } else {
+                procedures++;
+                assertThat(parameters.get(1).getMode()).isEqualTo(ProjectParameterMode.IN_OUT);
+                assertThat(parameters.get(1).isNocopy()).isTrue();
+                assertThat(parameters.get(1).isDefaultPresent()).isTrue();
+                assertThat(parameters.get(0).isDefaultPresent()).isFalse();
+            }
+        }
+        assertThat(new int[] {procedures, functions}).containsExactly(1, 1);
     }
 }

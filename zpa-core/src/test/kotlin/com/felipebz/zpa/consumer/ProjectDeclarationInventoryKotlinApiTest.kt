@@ -23,6 +23,9 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectDeclarationKind
 import com.felipebz.zpa.api.project.ProjectInventory
 import com.felipebz.zpa.api.project.ProjectPackageTypeView
+import com.felipebz.zpa.api.project.ProjectFunctionView
+import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
+import com.felipebz.zpa.api.project.ProjectParameterMode
 import com.felipebz.zpa.api.project.ProjectQualifiedName
 import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.project.ProjectTypeShape
@@ -65,5 +68,23 @@ class ProjectDeclarationInventoryKotlinApiTest {
         val ref = type.recordFields[1].typeRef
         assertThat(ref.kind).isEqualTo(ProjectTypeReference.Kind.ANCHORED)
         assertThat(ref.anchor.orElseThrow()).isEqualTo(ProjectTypeReference.Anchor.ROWTYPE)
+    }
+
+    @Test
+    fun inspectsCallableSignaturesThroughGenericInventory() {
+        val snapshot = ProjectSnapshots.prepare(
+            listOf(ProjectSourceInput.ofText("c.sql",
+                "CREATE PACKAGE c AS PROCEDURE pr(a IN NUMBER, b OUT NOCOPY VARCHAR2 DEFAULT 'x'); " +
+                    "FUNCTION fn RETURN NUMBER DETERMINISTIC; END c;"))
+        )
+        val callables = snapshot.declarations.filterIsInstance<ProjectPackageSubprogramView>()
+        assertThat(callables.map { it.packageOwner.toString() }).containsOnly("c")
+        val proc = callables.single { it !is ProjectFunctionView }
+        assertThat(proc.parameters.map { it.mode }).containsExactly(ProjectParameterMode.IN, ProjectParameterMode.OUT)
+        assertThat(proc.parameters[1].isNocopy).isTrue()
+        assertThat(proc.parameters[1].isDefaultPresent).isTrue()
+        val fn = callables.filterIsInstance<ProjectFunctionView>().single()
+        assertThat(fn.isDeterministic).isTrue()
+        assertThat(fn.returnType.name.last.originalSpelling).isEqualTo("NUMBER")
     }
 }

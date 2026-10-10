@@ -184,6 +184,43 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun callableViewsParametersAndReferencesRetainOnlyDurableFacts() {
+        val sourceMarker = "callable-retention-6a8e2f10-77c1-4d0b-b0a4-1f3c9e5d2b77"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE cv AS PROCEDURE pr(a IN NUMBER, b OUT NOCOPY e.c%TYPE DEFAULT NULL); " +
+            "FUNCTION fn(x REF o) RETURN NUMBER DETERMINISTIC; END cv;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("cv.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+
+        val proc = snapshot.findDeclarations(ProjectQualifiedName.of("cv", "pr")).declarations.single()
+            as ProjectPackageSubprogramView
+        val fn = snapshot.findDeclarations(ProjectQualifiedName.of("cv", "fn")).declarations.single()
+            as ProjectFunctionView
+        val roots = mapOf<String, Any?>(
+            "proc" to proc, "fn" to fn, "procParams" to proc.parameters, "fnParams" to fn.parameters,
+            "paramRefs" to proc.parameters.map { it.typeRef }, "return" to fn.returnType,
+            "owner" to proc.packageOwner, "modes" to proc.parameters.map { it.mode }
+        )
+        val reachable = auditGraph(roots, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageFunctionDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectParameter>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectTypeReference>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+
+        val standalone = auditGraph(
+            mapOf("refs" to proc.parameters.map { it.typeRef } + fn.returnType), forbidden, sourceMarker
+        )
+        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.TypeRef>()).isEmpty()
+        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+    }
+
+    @Test
     fun auditFollowsContainersPrivateAnyFieldsAndCapturedLambdaFieldsByIdentity() {
         val sentinel = Any()
         val capture = { sentinel }
