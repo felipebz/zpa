@@ -35,16 +35,16 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
     fun char(offset: Int): Int = code.intAt(offset)
 
     fun followsAsOrIs(): Boolean {
-        val type = output.tokens.lastOrNull()?.type
+        val type = output.lastToken?.type
         return type == PlSqlKeyword.AS || type == PlSqlKeyword.IS
     }
 
     fun followsCreateOrReplace(): Boolean {
-        val tokens = output.tokens
-        val size = tokens.size
-        if (size >= 1 && tokens[size - 1].type == PlSqlKeyword.CREATE) return true
-        return size >= 3 && tokens[size - 1].type == PlSqlKeyword.REPLACE &&
-            tokens[size - 2].type == PlSqlKeyword.OR && tokens[size - 3].type == PlSqlKeyword.CREATE
+        val size = output.tokenCount
+        fun type(position: Int) = output.tokenAtOrNull(position)?.type
+        if (size >= 1 && type(size - 1) == PlSqlKeyword.CREATE) return true
+        return size >= 3 && type(size - 1) == PlSqlKeyword.REPLACE &&
+            type(size - 2) == PlSqlKeyword.OR && type(size - 3) == PlSqlKeyword.CREATE
     }
 
     fun isWhitespace(offset: Int): Boolean = char(offset).let { it > 0 && Character.isWhitespace(it) }

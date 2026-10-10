@@ -20,7 +20,6 @@
 package com.felipebz.zpa.lexer
 
 import com.felipebz.flr.api.GenericTokenType
-import com.felipebz.flr.api.Token
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
@@ -33,8 +32,8 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         val first = code.peek()
         if (first != '"'.code && first != '_'.code && !Character.isLetter(first)) return false
-        if (output.tokens.lastOrNull()?.type != PlSqlKeyword.AS) return false
-        if (!followsDualityViewHeader(output.tokens)) return false
+        if (output.lastToken?.type != PlSqlKeyword.AS) return false
+        if (!followsDualityViewHeader(output)) return false
 
         val scan = RawCodeScanner(code, output)
         if (scan.word(0, "select") >= 0) return false
@@ -177,10 +176,10 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
         return -1
     }
 
-    private fun followsDualityViewHeader(tokens: List<Token>): Boolean {
-        var index = tokens.size - 2
+    private fun followsDualityViewHeader(output: LexerOutput): Boolean {
+        var index = output.tokenCount - 2
 
-        fun type(position: Int) = tokens.getOrNull(position)?.type
+        fun type(position: Int) = output.tokenAtOrNull(position)?.type
         fun isName(position: Int) = type(position).let {
             it == GenericTokenType.IDENTIFIER || (it is PlSqlKeyword && !it.isReserved)
         }
