@@ -20,7 +20,6 @@
 package com.felipebz.zpa.lexer
 
 import com.felipebz.flr.api.GenericTokenType
-import com.felipebz.flr.api.Token
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
@@ -37,7 +36,7 @@ class WrappedSourceChannel : Channel<LexerOutput> {
         val scan = RawCodeScanner(code, output)
         val wrappedEnd = scan.word(0, "wrapped")
         if (wrappedEnd < 0 || !scan.isWhitespace(wrappedEnd)) return false
-        if (!followsWrappableUnitHeader(output.tokens)) return false
+        if (!followsWrappableUnitHeader(output)) return false
 
         var textStart = wrappedEnd
         while (scan.isWhitespace(textStart)) textStart++
@@ -49,10 +48,10 @@ class WrappedSourceChannel : Channel<LexerOutput> {
         return true
     }
 
-    private fun followsWrappableUnitHeader(tokens: List<Token>): Boolean {
-        var index = tokens.size - 1
+    private fun followsWrappableUnitHeader(output: LexerOutput): Boolean {
+        var index = output.tokenCount - 1
 
-        fun type(position: Int) = tokens.getOrNull(position)?.type
+        fun type(position: Int) = output.tokenAtOrNull(position)?.type
         fun isName(position: Int) = type(position).let {
             it == GenericTokenType.IDENTIFIER || (it is PlSqlKeyword && !it.isReserved)
         }
