@@ -24,6 +24,12 @@ import com.felipebz.zpa.api.project.ProjectDeclarationKind;
 import com.felipebz.zpa.api.project.ProjectDeclarationRole;
 import com.felipebz.zpa.api.project.ProjectDeclarationView;
 import com.felipebz.zpa.api.project.ProjectInventory;
+import com.felipebz.zpa.api.project.ProjectPackageTypeView;
+import com.felipebz.zpa.api.project.ProjectRecordFieldView;
+import com.felipebz.zpa.api.project.ProjectShapedTypeView;
+import com.felipebz.zpa.api.project.ProjectSubtypeView;
+import com.felipebz.zpa.api.project.ProjectTypeReference;
+import com.felipebz.zpa.api.project.ProjectTypeShape;
 import com.felipebz.zpa.api.project.ProjectQualifiedName;
 import com.felipebz.zpa.api.project.ProjectSnapshot;
 import com.felipebz.zpa.api.project.ProjectSnapshots;
@@ -90,5 +96,38 @@ class ProjectDeclarationInventoryJavaApiTest {
             .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> ProjectQualifiedName.of("a", "b").getSegments().clear())
             .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void inspectsSpecializedTypeViewsWithInstanceof() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(
+            ProjectSourceInput.ofText("t.sql",
+                "CREATE PACKAGE t AS TYPE r IS RECORD (a NUMBER, b x.y%TYPE, c REF o); SUBTYPE s IS q.base; END t;"),
+            ProjectSourceInput.ofText("o.sql", "CREATE TYPE o_t AS OBJECT (id NUMBER); CREATE TYPE bare;")
+        ));
+        int packageTypes = 0, subtypes = 0, shaped = 0;
+        for (ProjectDeclarationView view : snapshot.getDeclarations()) {
+            if (view instanceof ProjectPackageTypeView) {
+                ProjectPackageTypeView type = (ProjectPackageTypeView) view;
+                packageTypes++;
+                assertThat(type.getShape()).contains(ProjectTypeShape.RECORD);
+                List<ProjectRecordFieldView> fields = type.getRecordFields();
+                assertThat(fields).hasSize(3);
+                assertThat(fields.get(1).getTypeRef().getAnchor()).contains(ProjectTypeReference.Anchor.TYPE);
+                assertThat(fields.get(2).getTypeRef().getKind()).isEqualTo(ProjectTypeReference.Kind.REF);
+                assertThat(fields.get(0).getTypeRef().getAnchor()).isEmpty();
+                assertThatThrownBy(() -> fields.remove(0)).isInstanceOf(UnsupportedOperationException.class);
+            } else if (view instanceof ProjectSubtypeView) {
+                subtypes++;
+                assertThat(((ProjectSubtypeView) view).getBaseType().getKind())
+                    .isEqualTo(ProjectTypeReference.Kind.NAMED);
+            } else if (view instanceof ProjectShapedTypeView) {
+                shaped++;
+            }
+        }
+        assertThat(new int[] {packageTypes, subtypes, shaped}).containsExactly(1, 1, 2);
+        ProjectShapedTypeView bare = (ProjectShapedTypeView) snapshot
+            .findDeclarations(ProjectQualifiedName.of("bare")).getDeclarations().get(0);
+        assertThat(bare.getShape()).isEmpty();
     }
 }

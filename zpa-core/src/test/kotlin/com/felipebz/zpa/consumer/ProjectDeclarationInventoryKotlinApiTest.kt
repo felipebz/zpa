@@ -22,7 +22,10 @@ package com.felipebz.zpa.consumer
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectDeclarationKind
 import com.felipebz.zpa.api.project.ProjectInventory
+import com.felipebz.zpa.api.project.ProjectPackageTypeView
 import com.felipebz.zpa.api.project.ProjectQualifiedName
+import com.felipebz.zpa.api.project.ProjectTypeReference
+import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.project.ProjectSnapshots
 import com.felipebz.zpa.api.project.ProjectSourceInput
 import org.assertj.core.api.Assertions.assertThat
@@ -48,5 +51,19 @@ class ProjectDeclarationInventoryKotlinApiTest {
         assertThat(byId[function.id]!!.qualifiedName).isEqualTo(function.qualifiedName)
         assertThat(snapshot.declarationsFor("seq.sql").declarations.single().kind)
             .isEqualTo(ProjectDeclarationKind.SEQUENCE)
+    }
+
+    @Test
+    fun inspectsSpecializedTypeViewsWithOrdinaryTypeChecks() {
+        val snapshot = ProjectSnapshots.prepare(
+            listOf(ProjectSourceInput.ofText("t.sql",
+                "CREATE PACKAGE t AS TYPE r IS RECORD (a NUMBER, b x.y%ROWTYPE); END t;"))
+        )
+        val type = snapshot.declarations.filterIsInstance<ProjectPackageTypeView>().single()
+        assertThat(type.shape.orElseThrow()).isEqualTo(ProjectTypeShape.RECORD)
+        assertThat(type.recordFields.map { it.name.originalSpelling }).containsExactly("a", "b")
+        val ref = type.recordFields[1].typeRef
+        assertThat(ref.kind).isEqualTo(ProjectTypeReference.Kind.ANCHORED)
+        assertThat(ref.anchor.orElseThrow()).isEqualTo(ProjectTypeReference.Anchor.ROWTYPE)
     }
 }

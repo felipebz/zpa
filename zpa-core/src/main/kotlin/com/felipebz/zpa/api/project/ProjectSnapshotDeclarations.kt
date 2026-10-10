@@ -28,6 +28,12 @@ import com.felipebz.zpa.project.ProjectSymbolIndex
 import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.project.qualifiedName
 import java.util.Collections
+import java.util.Optional
+import com.felipebz.zpa.project.PackageSubtypeDeclaration
+import com.felipebz.zpa.project.PackageTypeDeclaration
+import com.felipebz.zpa.project.ProjectRecordField
+import com.felipebz.zpa.project.StandaloneTypeDeclaration
+import com.felipebz.zpa.project.ProjectTypeShape as FactShape
 import com.felipebz.zpa.project.ProjectDeclarationKind as FactKind
 
 /** Projects public declaration views from canonical index occurrences. */
@@ -43,17 +49,23 @@ internal object ProjectSnapshotDeclarations {
         if (fileId.isBlank()) emptyList() else index.occurrencesFor(FileId(fileId))
 
     private fun view(scope: ProjectSnapshotScope, occurrence: IndexedDeclaration): ProjectDeclarationView =
-        BackedDeclarationView(
-            ProjectDeclarationId.create(scope, occurrence.fileId.value, occurrence.ordinal),
-            occurrence.declaration
-        )
+        ProjectDeclarationId.create(scope, occurrence.fileId.value, occurrence.ordinal).let { id ->
+            when (val fact = occurrence.declaration) {
+                is StandaloneTypeDeclaration -> BackedStandaloneTypeView(id, fact)
+                is PackageTypeDeclaration -> BackedPackageTypeView(id, fact)
+                is PackageSubtypeDeclaration -> BackedSubtypeView(id, fact)
+                else -> BackedDeclarationView(id, fact)
+            }
+        }
 
     /** Retains only the issued ID and the authoritative fact; never the snapshot or index. */
-    private class BackedDeclarationView(
+    private open class BackedDeclarationView(
         override val id: ProjectDeclarationId,
-        private val fact: ProjectDeclaration
+        fact: ProjectDeclaration
     ) : ProjectDeclarationView {
-                override val kind: ProjectDeclarationKind
+        private val fact: ProjectDeclaration = fact
+
+        override val kind: ProjectDeclarationKind
             get() = when (fact.kind) {
             FactKind.PACKAGE -> ProjectDeclarationKind.PACKAGE
             FactKind.PACKAGE_BODY -> ProjectDeclarationKind.PACKAGE_BODY
@@ -82,5 +94,44 @@ internal object ProjectSnapshotDeclarations {
         override fun toString() = "$kind $qualifiedName [$id]"
     }
 
-    private fun SourceRange.toPublic() = ProjectSourceRange.create(fileId.value, startLine, startColumn, endLine, endColumn)
+    private class BackedStandaloneTypeView(id: ProjectDeclarationId, fact: StandaloneTypeDeclaration) :
+        BackedDeclarationView(id, fact), ProjectShapedTypeView {
+        override val shape: Optional<ProjectTypeShape> = fact.shape.toPublicShape()
+    }
+
+    private class BackedPackageTypeView(id: ProjectDeclarationId, private val typeFact: PackageTypeDeclaration) :
+        BackedDeclarationView(id, typeFact), ProjectPackageTypeView {
+        override val shape: Optional<ProjectTypeShape> = typeFact.shape.toPublicShape()
+        override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(typeFact.owner)
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(typeFact.name)
+        override val recordFields: List<ProjectRecordFieldView> =
+            Collections.unmodifiableList(typeFact.recordFields.map { BackedRecordFieldView(it) })
+    }
+
+    private class BackedSubtypeView(id: ProjectDeclarationId, private val subtypeFact: PackageSubtypeDeclaration) :
+        BackedDeclarationView(id, subtypeFact), ProjectSubtypeView {
+        override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(subtypeFact.owner)
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(subtypeFact.name)
+        override val baseType: ProjectTypeReference get() = ProjectTypeReference.from(subtypeFact.baseType)
+    }
+
+    private class BackedRecordFieldView(private val fieldFact: ProjectRecordField) : ProjectRecordFieldView {
+        override val name: ProjectIdentifier get() = ProjectIdentifier.wrap(fieldFact.name)
+        override val ordinal: Int get() = fieldFact.ordinal
+        override val typeRef: ProjectTypeReference get() = ProjectTypeReference.from(fieldFact.typeRef)
+        override val sourceRange: ProjectSourceRange get() = fieldFact.sourceRange.toPublic()
+    }
+
+    private fun FactShape?.toPublicShape(): Optional<ProjectTypeShape> = Optional.ofNullable(
+        when (this) {
+            null -> null
+            FactShape.RECORD -> ProjectTypeShape.RECORD
+            FactShape.OBJECT -> ProjectTypeShape.OBJECT
+            FactShape.COLLECTION -> ProjectTypeShape.COLLECTION
+            FactShape.REF_CURSOR -> ProjectTypeShape.REF_CURSOR
+        }
+    )
 }
+
+@OptIn(ZpaExperimentalApi::class)
+internal fun SourceRange.toPublic() = ProjectSourceRange.create(fileId.value, startLine, startColumn, endLine, endColumn)

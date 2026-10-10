@@ -148,6 +148,42 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun typeViewsFieldsAndReferencesRetainOnlyDurableFacts() {
+        val sourceMarker = "type-view-retention-1f0c9d7a-3a52-4e54-93a8-0d1d3d5e7a10"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE tv AS TYPE r IS RECORD (a NUMBER, b e.c%TYPE, c REF o); SUBTYPE s IS tv2.t; END tv;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("tv.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+
+        val type = snapshot.findDeclarations(ProjectQualifiedName.of("tv", "r")).declarations.single()
+            as ProjectPackageTypeView
+        val subtype = snapshot.findDeclarations(ProjectQualifiedName.of("tv", "s")).declarations.single()
+            as ProjectSubtypeView
+        val fields = type.recordFields
+        val roots = mapOf<String, Any?>(
+            "type" to type, "fields" to fields, "field" to fields[1], "typeRefs" to fields.map { it.typeRef },
+            "shape" to type.shape, "base" to subtype.baseType, "subtype" to subtype
+        )
+        val reachable = auditGraph(roots, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<PackageTypeDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectRecordField>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectTypeReference>()).hasSize(4)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+
+        val idOnly = auditGraph(mapOf("id" to type.id), forbidden, sourceMarker)
+        assertThat(idOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        // Public type-reference values carry only names, ranges and enums.
+        val refOnly = auditGraph(mapOf("ref" to fields[1].typeRef), forbidden, sourceMarker)
+        assertThat(refOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(refOnly.filterIsInstance<com.felipebz.zpa.project.TypeRef>()).isEmpty()
+    }
+
+    @Test
     fun auditFollowsContainersPrivateAnyFieldsAndCapturedLambdaFieldsByIdentity() {
         val sentinel = Any()
         val capture = { sentinel }
