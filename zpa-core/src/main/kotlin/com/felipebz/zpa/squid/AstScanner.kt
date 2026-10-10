@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @OptIn(ZpaExperimentalApi::class)
-class AstScanner(private val checks: Collection<PlSqlVisitor>,
+class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlVisitor>,
                  private val formsMetadata: FormsMetadata?,
                  isErrorRecoveryEnabled: Boolean,
                  charset: Charset = StandardCharsets.UTF_8,
@@ -58,6 +58,11 @@ class AstScanner(private val checks: Collection<PlSqlVisitor>,
         createProjectAnalysis(projectAnalysisContext)
     )
 
+    /** Java-friendly variant of [scanFile]: [FileId] is an inline class, so Java cannot call it directly. */
+    fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor>, fileId: String): AstScannerResult =
+        scanFile(inputFile, extraVisitors, FileId(fileId))
+
+    @JvmOverloads
     fun scanFile(
         inputFile: PlSqlFile,
         extraVisitors: List<PlSqlVisitor> = emptyList(),
