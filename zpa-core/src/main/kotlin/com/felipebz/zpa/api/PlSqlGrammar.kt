@@ -1259,6 +1259,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
             b.rule(BOOLEAN_EXPRESSION).define(OR_EXPRESSION).skip()
 
             b.rule(EXPRESSION).define(BOOLEAN_EXPRESSION).skipIfOneChild()
+            // ARGUMENT and POSITIONAL_CHOICE_OPTION replace this memo at the same position before QUALIFIED_EXPRESSION
+            // asks for the expression again; without retention incomplete nested calls parse in exponential time.
+            b.rule(EXPRESSION).enableMemoRetention()
         }
 
         private fun simpleCaseBranches(b: PlSqlGrammarBuilder, result: Any): Any = b.oneOrMore(
