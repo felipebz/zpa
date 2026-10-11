@@ -29,12 +29,6 @@ import com.felipebz.zpa.project.extraction.*
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 
-/** Words that may follow a datatype name in the strict standalone datatype check. */
-private val DATATYPE_CONTINUATIONS = setOf(
-    "CHAR", "BYTE", "VARYING", "PRECISION", "RAW", "WITH", "LOCAL", "TIME", "ZONE", "TO",
-    "YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND", "CHARACTER", "NATIONAL"
-)
-
 private val EXTERNAL_PARAMETER_PROPERTIES = listOf("LENGTH", "DURATION", "MAXLEN", "CHARSETID", "CHARSETFORM")
 
 /** Standalone-only return-type terminators (the package set lacks AGGREGATE, ORDER and CLUSTER). */
@@ -119,6 +113,8 @@ class ProjectDeclarationExtractor(
     ) {
         private val stream = TokenStream(fileId, tokens)
         private val bounds = UnitBounds(stream)
+        private val datatypeShape = DatatypeShape(stream)
+        private val typeReferences = TypeReferences(stream)
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -338,36 +334,7 @@ class ProjectDeclarationExtractor(
                 typeRef = type, defaultPresent = defaultIndex != null, sourceRange = range(start, endExclusive - 1))
         }
 
-        /**
-         * Conservative datatype shape: `name[.name…] [%TYPE|%ROWTYPE]`, `REF name[.name]`, or a
-         * name followed only by balanced groups and words from [DATATYPE_CONTINUATIONS]. Anything
-         * else (an extra free identifier, punctuation, unknown words) is rejected: no fact.
-         */
-        private fun strictDatatype(start: Int, endExclusive: Int): Boolean {
-            if (start >= endExclusive) return false
-            var index = start
-            val ref = isKeyword(index, "REF")
-            if (ref) index++
-            if (!isNameBefore(index, endExclusive)) return false
-            index++
-            while (isPunctuator(index, PlSqlPunctuator.DOT) && isNameBefore(index + 1, endExclusive)) index += 2
-            if (index == endExclusive) return true
-            if (ref) return false
-            if (isPunctuator(index, PlSqlPunctuator.MOD)) {
-                return index + 2 == endExclusive && (isKeyword(index + 1, "TYPE") || isKeyword(index + 1, "ROWTYPE"))
-            }
-            while (index < endExclusive) {
-                index = when {
-                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> {
-                        val close = strictClose(index, endExclusive) ?: return false
-                        close + 1
-                    }
-                    tokens[index].type is PlSqlKeyword && valueAt(index) in DATATYPE_CONTINUATIONS -> index + 1
-                    else -> return false
-                }
-            }
-            return true
-        }
+        private fun strictDatatype(start: Int, endExclusive: Int): Boolean = datatypeShape.strictDatatype(start, endExclusive)
 
         private class PropertyScan(val next: Int, val deterministic: Boolean, val terminal: Boolean)
 
@@ -1319,105 +1286,11 @@ class ProjectDeclarationExtractor(
             return ParsedUnit(emptyList(), nextCreate ?: tokens.size)
         }
 
-        private fun typeShape(start: Int, end: Int): ProjectTypeShape? {
-            val values = tokens.subList(start, (end + 1).coerceAtMost(tokens.size)).map { value(it) }
-            return when {
-                "RECORD" in values -> ProjectTypeShape.RECORD
-                "OBJECT" in values -> ProjectTypeShape.OBJECT
-                "VARRAY" in values || "TABLE" in values -> ProjectTypeShape.COLLECTION
-                "REF" in values && "CURSOR" in values -> ProjectTypeShape.REF_CURSOR
-                else -> null
-            }
-        }
+        private fun typeShape(start: Int, end: Int): ProjectTypeShape? = typeReferences.typeShape(start, end)
 
-        private fun typeReference(start: Int, endExclusive: Int): TypeRef? {
-            if (start >= endExclusive || start >= tokens.size) return null
-            val end = endExclusive.coerceAtMost(tokens.size)
-            val selected = tokens.subList(start, end)
-            val percent = selected.indexOfFirst { value(it) == "%" }
-            val ref = valueAt(start) == "REF"
-            val nameStart = if (ref) 1 else 0
-            val nameTokens = if (percent >= 0) {
-                selected.subList(nameStart, percent)
-            } else {
-                selected.subList(nameStart, selected.size)
-            }
-            val name = qualifiedSegments(nameTokens) ?: return null
-            val sourceRange = range(start, end - 1)
-            if (percent >= 0) {
-                val anchor = when (valueAt(start + percent + 1)) {
-                    "TYPE" -> TypeAnchor.TYPE
-                    "ROWTYPE" -> TypeAnchor.ROWTYPE
-                    else -> null
-                }
-                if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
-            }
-            if (ref) return RefTypeRef(name, sourceRange)
-            val headerTypeIdentity = normalizedHeaderTypeIdentity(selected)
-            return if (headerTypeIdentity == null) {
-                NamedTypeRef(name, sourceRange)
-            } else {
-                NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
-            }
-        }
-
-        /**
-         * Keeps the complete datatype token sequence for callable-heading correlation.
-         * Token boundaries are length encoded so punctuation and adjacent words cannot
-         * collapse into the same identity. Lexer trivia is not part of this sequence.
-         */
-        private fun normalizedHeaderTypeIdentity(selected: List<Token>): String? {
-            if (isPlainQualifiedName(selected)) return null
-            return selected.joinToString(separator = "") { token ->
-                val part = normalizedHeaderToken(token)
-                "${part.length}:$part;"
-            }
-        }
-
-        private fun isPlainQualifiedName(selected: List<Token>): Boolean {
-            var index = 0
-            if (!isNameAt(selected, index)) return false
-            while (true) {
-                index++
-                if (valueAt(selected, index) != "." || !isNameAt(selected, index + 1)) {
-                    return index == selected.size
-                }
-                index += 2
-            }
-        }
-
-        private fun normalizedHeaderToken(token: Token): String = when (val type = token.type) {
-            GenericTokenType.IDENTIFIER -> "identifier:${QualifiedName(identifier(token)).lookupKey()}"
-            is PlSqlKeyword -> if (type.isReserved) {
-                "keyword:${value(token)}"
-            } else {
-                "identifier:${QualifiedName(identifier(token)).lookupKey()}"
-            }
-            else -> "token:${token.originalValue}"
-        }
+        private fun typeReference(start: Int, endExclusive: Int): TypeRef? = typeReferences.typeReference(start, endExclusive)
 
         private fun qualifiedName(start: Int): Pair<QualifiedName, Int>? = stream.qualifiedName(start)
-
-        private fun qualifiedSegments(tokens: List<Token>): QualifiedName? {
-            val segments = mutableListOf<OracleIdentifier>()
-            var index = 0
-            if (tokens.isEmpty() || !isName(tokens[0])) return null
-            while (index < tokens.size && isName(tokens[index])) {
-                segments += identifier(tokens[index])
-                index++
-                if (index < tokens.size && tokens[index].value == "." && isNameAt(tokens, index + 1)) {
-                    index++
-                } else {
-                    break
-                }
-            }
-            return segments.takeIf { it.isNotEmpty() }?.let(::QualifiedName)
-        }
-
-        private fun isNameAt(tokens: List<Token>, index: Int) = index in tokens.indices && isName(tokens[index])
-
-        private fun valueAt(tokens: List<Token>, index: Int): String =
-            if (index in tokens.indices) value(tokens[index]) else ""
 
         private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? = stream.identifierAt(start)
 
