@@ -367,4 +367,123 @@ class ProjectApiKotlinConsumerTest {
         )
         ProjectDeclarationKind.entries.forEach { assertThat(describe(it)).isNotBlank() }
     }
+
+    // ---- Nested records, collection elements and bounded type descriptions ----
+
+    private fun types(vararg inputs: ProjectSourceInput): ProjectSnapshot = ProjectSnapshots.prepare(inputs.toList(), false)
+
+    private fun declarationId(snapshot: ProjectSnapshot, vararg qualified: String): ProjectDeclarationId =
+        snapshot.findDeclarations(n(*qualified)).declarations.single().id
+
+    // Deliberately exhaustive and without an else branch: this stops compiling when an enum grows.
+    private fun label(status: ProjectTypeDescription.Status): String = when (status) {
+        ProjectTypeDescription.Status.DECLARED_TYPE -> "declared"
+        ProjectTypeDescription.Status.BUILT_IN -> "built-in"
+        ProjectTypeDescription.Status.UNRESOLVED_NAME -> "unresolved"
+        ProjectTypeDescription.Status.ANCHORED_REFERENCE -> "anchored"
+        ProjectTypeDescription.Status.REF_REFERENCE -> "ref"
+        ProjectTypeDescription.Status.CYCLE -> "cycle"
+    }
+
+    private fun label(category: ProjectBuiltInTypeCategory): String = when (category) {
+        ProjectBuiltInTypeCategory.NUMERIC -> "numeric"
+        ProjectBuiltInTypeCategory.CHARACTER -> "character"
+        ProjectBuiltInTypeCategory.LOB -> "lob"
+        ProjectBuiltInTypeCategory.BOOLEAN -> "boolean"
+        ProjectBuiltInTypeCategory.DATE -> "date"
+        ProjectBuiltInTypeCategory.JSON -> "json"
+    }
+
+    @Test
+    fun nestedRecordsAreDescribedOneLevelAtATime() {
+        val snapshot = types(counted("db/types_nested.sql", "types_nested.sql"))
+        val p = n("p")
+        val outerResolution = snapshot.resolveNamedType(n("outer_t"), p)
+        assertThat(outerResolution.status).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED)
+        val outer = outerResolution.declaration.get() as ProjectPackageTypeView
+        assertThat(outer.shape.get()).isEqualTo(ProjectTypeShape.RECORD)
+        val child = outer.recordFields.single()
+        assertThat(child.name.originalSpelling).isEqualTo("child")
+        assertThat(child.typeRef.name).isEqualTo(n("inner_t"))
+
+        val inner = snapshot.describeType(child.typeRef, outer.owner)
+        assertThat(label(inner.status)).isEqualTo("declared")
+        assertThat(inner.declaration.get().id).isEqualTo(declarationId(snapshot, "p", "inner_t"))
+        val innerType = inner.declaration.get() as ProjectPackageTypeView
+        assertThat(innerType.shape.get()).isEqualTo(ProjectTypeShape.RECORD)
+        assertThat(inner.terminalReference.get().sourceRange).isEqualTo(child.typeRef.sourceRange)
+
+        val field = innerType.recordFields.single()
+        assertThat(field.typeRef.name).isEqualTo(n("amount"))
+        val amount = snapshot.describeType(field.typeRef, innerType.owner)
+        assertThat(label(amount.status)).isEqualTo("built-in")
+        assertThat(label(amount.builtInCategory.get())).isEqualTo("numeric")
+        assertThat(amount.subtypes.map { it.qualifiedName }).containsExactly(n("p", "amount"), n("p", "money"))
+        assertThat(amount.subtypes.map { it.id }).containsExactly(declarationId(snapshot, "p", "amount"), declarationId(snapshot, "p", "money"))
+        assertThatThrownBy { (amount.subtypes as MutableList<*>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+        assertThat(snapshot.describeType(n("amount"), p).subtypes.map { it.id }).isEqualTo(amount.subtypes.map { it.id })
+        assertThat(snapshot.describeType(n("NUMBER"), p).terminalReference).isEmpty
+    }
+
+    @Test
+    fun collectionElementsLeadToRecordDeclarationsAndFields() {
+        val snapshot = types(counted("db/types_collections.sql", "types_collections.sql"))
+        val p = n("p")
+        listOf("rows_t", "small_rows_t").forEach { collection ->
+            val view = snapshot.resolveNamedType(n(collection), p).declaration.get() as ProjectShapedTypeView
+            assertThat(view.shape.get()).isEqualTo(ProjectTypeShape.COLLECTION)
+            val element = view.elementType.get()
+            assertThat(element.kind).isEqualTo(ProjectTypeReference.Kind.NAMED)
+            assertThat(element.name).isEqualTo(n("rec_t"))
+            val described = snapshot.describeType(element, p)
+            assertThat(label(described.status)).isEqualTo("declared")
+            val record = described.declaration.get() as ProjectPackageTypeView
+            assertThat(record.qualifiedName).isEqualTo(n("p", "rec_t"))
+            assertThat(record.shape.get()).isEqualTo(ProjectTypeShape.RECORD)
+            assertThat(record.id).isEqualTo(declarationId(snapshot, "p", "rec_t"))
+            assertThat(record.recordFields.map { it.name.originalSpelling }).containsExactly("id", "label")
+            assertThat(snapshot.describeType(record.recordFields[0].typeRef, p).builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+            assertThat(snapshot.describeType(record.recordFields[1].typeRef, p).builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.CHARACTER)
+        }
+        assertThat((snapshot.resolveNamedType(n("rec_t"), p).declaration.get() as ProjectShapedTypeView).elementType).isEmpty
+
+        val ids = snapshot.resolveNamedType(n("ids")).declaration.get() as ProjectShapedTypeView
+        assertThat(snapshot.describeType(ids.elementType.get(), null).builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+        val foreign = snapshot.resolveNamedType(n("foreign_rows")).declaration.get() as ProjectShapedTypeView
+        val external = snapshot.describeType(foreign.elementType.get(), null)
+        assertThat(label(external.status)).isEqualTo("unresolved")
+        assertThat(external.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+    }
+
+    @Test
+    fun descriptionsStopConservatively() {
+        val snapshot = types(counted("db/types_nested.sql", "types_nested.sql"))
+        val p = n("p")
+        val fields = (snapshot.resolveNamedType(n("stop_t"), p).declaration.get() as ProjectPackageTypeView).recordFields
+        val external = snapshot.describeType(fields[0].typeRef, p)
+        assertThat(external.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME)
+        assertThat(external.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+        assertThat(snapshot.describeType(fields[1].typeRef, p).status).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE)
+        assertThat(snapshot.describeType(fields[2].typeRef, p).terminalReference.get().anchor.get()).isEqualTo(ProjectTypeReference.Anchor.ROWTYPE)
+        assertThat(snapshot.describeType(fields[3].typeRef, p).status).isEqualTo(ProjectTypeDescription.Status.REF_REFERENCE)
+        val cycle = snapshot.describeType(n("c1"), p)
+        assertThat(label(cycle.status)).isEqualTo("cycle")
+        assertThat(cycle.subtypes.map { it.localName.originalSpelling }).containsExactly("c1", "c2")
+    }
+
+    @Test
+    fun duplicatesAndFailedSourcesAreReportedThroughTheNamedResolution() {
+        val duplicate = types(counted("db/a.sql", "types_nested.sql"), counted("db/b.sql", "types_nested.sql"))
+        val ambiguous = duplicate.describeType(n("amount"), n("p"))
+        assertThat(ambiguous.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME)
+        assertThat(ambiguous.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.AMBIGUOUS)
+        assertThat(ambiguous.resolution.get().candidates).hasSize(2)
+        assertThat(ambiguous.subtypes).isEmpty()
+
+        val failed = types(counted("db/types_nested.sql", "types_nested.sql"), failing("db/broken.sql"))
+        val incomplete = failed.describeType(n("amount"), n("p"))
+        assertThat(incomplete.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.INCOMPLETE_INDEX)
+        assertThat(incomplete.resolution.get().failures).hasSize(1)
+        assertThat(failed.describeType(n("NUMBER"), n("p")).builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+    }
 }

@@ -565,4 +565,152 @@ class ProjectApiJavaConsumerTest {
         assertThat(ProjectDeclarationKind.PACKAGE_VARIABLE.ordinal()).isEqualTo(10);
         assertThat(ProjectDeclarationKind.PACKAGE_CONSTANT.ordinal()).isEqualTo(11);
     }
+
+    // ---- Nested records, collection elements and bounded type descriptions ----
+
+    private static ProjectSnapshot types(ProjectSourceInput... inputs) {
+        return ProjectSnapshots.prepare(List.of(inputs), false);
+    }
+
+    private static ProjectDeclarationId declarationId(ProjectSnapshot snapshot, String... qualified) {
+        List<ProjectDeclarationView> found = snapshot.findDeclarations(name(qualified)).getDeclarations();
+        assertThat(found).hasSize(1);
+        return found.get(0).getId();
+    }
+
+    // Deliberately exhaustive and without a default branch: this stops compiling when an enum grows.
+    private static String label(ProjectTypeDescription.Status status) {
+        return switch (status) {
+            case DECLARED_TYPE -> "declared";
+            case BUILT_IN -> "built-in";
+            case UNRESOLVED_NAME -> "unresolved";
+            case ANCHORED_REFERENCE -> "anchored";
+            case REF_REFERENCE -> "ref";
+            case CYCLE -> "cycle";
+        };
+    }
+
+    private static String label(ProjectBuiltInTypeCategory category) {
+        return switch (category) {
+            case NUMERIC -> "numeric";
+            case CHARACTER -> "character";
+            case LOB -> "lob";
+            case BOOLEAN -> "boolean";
+            case DATE -> "date";
+            case JSON -> "json";
+        };
+    }
+
+    @Test
+    void nestedRecordsAreDescribedOneLevelAtATime() {
+        ProjectSnapshot snapshot = types(counted("db/types_nested.sql", "types_nested.sql"));
+        ProjectQualifiedName p = name("p");
+
+        ProjectNamedTypeResolution outerResolution = snapshot.resolveNamedType(name("outer_t"), p);
+        assertThat(outerResolution.getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED);
+        ProjectPackageTypeView outer = (ProjectPackageTypeView) outerResolution.getDeclaration().orElseThrow();
+        assertThat(outer.getShape()).contains(ProjectTypeShape.RECORD);
+        assertThat(outer.getRecordFields()).hasSize(1);
+        ProjectRecordFieldView child = outer.getRecordFields().get(0);
+        assertThat(child.getName().getOriginalSpelling()).isEqualTo("child");
+        assertThat(child.getTypeRef().getName()).isEqualTo(name("inner_t"));
+
+        ProjectTypeDescription inner = snapshot.describeType(child.getTypeRef(), outer.getOwner());
+        assertThat(label(inner.getStatus())).isEqualTo("declared");
+        assertThat(inner.getDeclaration().orElseThrow().getId()).isEqualTo(declarationId(snapshot, "p", "inner_t"));
+        ProjectPackageTypeView innerType = (ProjectPackageTypeView) inner.getDeclaration().orElseThrow();
+        assertThat(innerType.getShape()).contains(ProjectTypeShape.RECORD);
+        assertThat(inner.getSubtypes()).isEmpty();
+        assertThat(inner.getTerminalReference().orElseThrow().getSourceRange()).isEqualTo(child.getTypeRef().getSourceRange());
+
+        ProjectRecordFieldView n = innerType.getRecordFields().get(0);
+        assertThat(n.getTypeRef().getName()).isEqualTo(name("amount"));
+        ProjectTypeDescription amount = snapshot.describeType(n.getTypeRef(), innerType.getOwner());
+        assertThat(label(amount.getStatus())).isEqualTo("built-in");
+        assertThat(label(amount.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+        assertThat(amount.getSubtypes()).extracting(ProjectSubtypeView::getQualifiedName).containsExactly(name("p", "amount"), name("p", "money"));
+        assertThat(amount.getSubtypes()).extracting(ProjectSubtypeView::getId)
+            .containsExactly(declarationId(snapshot, "p", "amount"), declarationId(snapshot, "p", "money"));
+        assertThat(amount.getTerminalReference().orElseThrow().getName()).isEqualTo(name("NUMBER"));
+        assertThatThrownBy(() -> amount.getSubtypes().clear()).isInstanceOf(UnsupportedOperationException.class);
+        // The name-only overload gives the same alias chain but has no source range for the initial name.
+        ProjectTypeDescription byName = snapshot.describeType(name("amount"), p);
+        assertThat(byName.getSubtypes()).extracting(ProjectSubtypeView::getId).isEqualTo(
+            amount.getSubtypes().stream().map(ProjectSubtypeView::getId).toList());
+        assertThat(snapshot.describeType(name("NUMBER"), p).getTerminalReference()).isEmpty();
+    }
+
+    @Test
+    void collectionElementsLeadToRecordDeclarationsAndFields() {
+        ProjectSnapshot snapshot = types(counted("db/types_collections.sql", "types_collections.sql"));
+        ProjectQualifiedName p = name("p");
+        for (String collection : List.of("rows_t", "small_rows_t")) {
+            ProjectShapedTypeView view = (ProjectShapedTypeView) snapshot.resolveNamedType(name(collection), p).getDeclaration().orElseThrow();
+            assertThat(view.getShape()).contains(ProjectTypeShape.COLLECTION);
+            ProjectTypeReference element = view.getElementType().orElseThrow();
+            assertThat(element.getKind()).isEqualTo(ProjectTypeReference.Kind.NAMED);
+            assertThat(element.getName()).isEqualTo(name("rec_t"));
+            ProjectTypeDescription described = snapshot.describeType(element, p);
+            assertThat(label(described.getStatus())).isEqualTo("declared");
+            ProjectPackageTypeView record = (ProjectPackageTypeView) described.getDeclaration().orElseThrow();
+            assertThat(record.getQualifiedName()).isEqualTo(name("p", "rec_t"));
+            assertThat(record.getShape()).contains(ProjectTypeShape.RECORD);
+            assertThat(record.getId()).isEqualTo(declarationId(snapshot, "p", "rec_t"));
+            assertThat(record.getRecordFields()).extracting(f -> f.getName().getOriginalSpelling()).containsExactly("id", "label");
+            assertThat(label(snapshot.describeType(record.getRecordFields().get(0).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+            assertThat(label(snapshot.describeType(record.getRecordFields().get(1).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("character");
+        }
+        // A record has no element; bounds and index domains are not part of the contract.
+        assertThat(((ProjectShapedTypeView) snapshot.resolveNamedType(name("rec_t"), p).getDeclaration().orElseThrow()).getElementType()).isEmpty();
+        assertThat(Arrays.stream(ProjectShapedTypeView.class.getMethods()).map(java.lang.reflect.Method::getName))
+            .containsExactlyInAnyOrder("getShape", "getElementType", "getId", "getKind", "getRole", "getQualifiedName", "getFileId", "getSourceRange");
+
+        // Standalone collections use the standalone namespace (null package context).
+        ProjectShapedTypeView ids = (ProjectShapedTypeView) snapshot.resolveNamedType(name("ids")).getDeclaration().orElseThrow();
+        assertThat(label(snapshot.describeType(ids.getElementType().orElseThrow(), null).getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+        ProjectShapedTypeView foreign = (ProjectShapedTypeView) snapshot.resolveNamedType(name("foreign_rows")).getDeclaration().orElseThrow();
+        ProjectTypeDescription external = snapshot.describeType(foreign.getElementType().orElseThrow(), null);
+        assertThat(label(external.getStatus())).isEqualTo("unresolved");
+        assertThat(external.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+    }
+
+    @Test
+    void descriptionsStopConservatively() {
+        ProjectSnapshot snapshot = types(counted("db/types_nested.sql", "types_nested.sql"));
+        ProjectQualifiedName p = name("p");
+        ProjectPackageTypeView stop = (ProjectPackageTypeView) snapshot.resolveNamedType(name("stop_t"), p).getDeclaration().orElseThrow();
+        List<ProjectRecordFieldView> fields = stop.getRecordFields();
+        ProjectTypeDescription external = snapshot.describeType(fields.get(0).getTypeRef(), p);
+        assertThat(label(external.getStatus())).isEqualTo("unresolved");
+        assertThat(external.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+        assertThat(external.getDeclaration()).isEmpty();
+        assertThat(snapshot.describeType(fields.get(1).getTypeRef(), p).getStatus()).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE);
+        assertThat(snapshot.describeType(fields.get(2).getTypeRef(), p).getTerminalReference().orElseThrow().getAnchor())
+            .contains(ProjectTypeReference.Anchor.ROWTYPE);
+        assertThat(snapshot.describeType(fields.get(3).getTypeRef(), p).getStatus()).isEqualTo(ProjectTypeDescription.Status.REF_REFERENCE);
+
+        ProjectTypeDescription cycle = snapshot.describeType(name("c1"), p);
+        assertThat(label(cycle.getStatus())).isEqualTo("cycle");
+        assertThat(cycle.getSubtypes()).extracting(s -> s.getLocalName().getOriginalSpelling()).containsExactly("c1", "c2");
+    }
+
+    @Test
+    void duplicatesAndFailedSourcesAreReportedThroughTheNamedResolution() {
+        ProjectSnapshot duplicate = types(counted("db/a.sql", "types_nested.sql"), counted("db/b.sql", "types_nested.sql"));
+        ProjectTypeDescription ambiguous = duplicate.describeType(name("amount"), name("p"));
+        assertThat(ambiguous.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME);
+        assertThat(ambiguous.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.AMBIGUOUS);
+        assertThat(ambiguous.getResolution().orElseThrow().getCandidates()).hasSize(2);
+        assertThat(ambiguous.getSubtypes()).isEmpty();
+
+        ProjectSnapshot failed = types(counted("db/types_nested.sql", "types_nested.sql"), failing("db/broken.sql"));
+        ProjectTypeDescription incomplete = failed.describeType(name("amount"), name("p"));
+        assertThat(incomplete.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME);
+        assertThat(incomplete.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.INCOMPLETE_INDEX);
+        assertThat(incomplete.getResolution().orElseThrow().getFailures()).hasSize(1);
+        // A built-in needs no complete project.
+        ProjectTypeDescription builtIn = failed.describeType(name("NUMBER"), name("p"));
+        assertThat(builtIn.getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
+        assertThat(builtIn.getBuiltInCategory()).contains(ProjectBuiltInTypeCategory.NUMERIC);
+    }
 }
