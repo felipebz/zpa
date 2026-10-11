@@ -19,34 +19,12 @@
  */
 package com.felipebz.zpa.consumer;
 
-import com.felipebz.zpa.api.project.ProjectDeclarationId;
-import com.felipebz.zpa.api.project.ProjectDeclarationKind;
-import com.felipebz.zpa.api.project.ProjectDeclarationRole;
-import com.felipebz.zpa.api.project.ProjectDeclarationView;
-import com.felipebz.zpa.api.project.ProjectFunctionView;
-import com.felipebz.zpa.api.project.ProjectIdentifier;
-import com.felipebz.zpa.api.project.ProjectInventory;
-import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation;
-import com.felipebz.zpa.api.project.ProjectNamedTypeResolution;
-import com.felipebz.zpa.api.project.ProjectTypeDeclarationView;
-import com.felipebz.zpa.api.project.ProjectPackageSubprogramView;
-import com.felipebz.zpa.api.project.ProjectParameterMode;
-import com.felipebz.zpa.api.project.ProjectParameterView;
-import com.felipebz.zpa.api.project.ProjectSubprogramView;
-import com.felipebz.zpa.api.project.ProjectPackageTypeView;
-import com.felipebz.zpa.api.project.ProjectRecordFieldView;
-import com.felipebz.zpa.api.project.ProjectShapedTypeView;
-import com.felipebz.zpa.api.project.ProjectSubtypeView;
-import com.felipebz.zpa.api.project.ProjectTypeReference;
-import com.felipebz.zpa.api.project.ProjectTypeShape;
-import com.felipebz.zpa.api.project.ProjectQualifiedName;
-import com.felipebz.zpa.api.project.ProjectSnapshot;
-import com.felipebz.zpa.api.project.ProjectSnapshots;
-import com.felipebz.zpa.api.project.ProjectSourceInput;
+import com.felipebz.zpa.api.project.*;
+import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -138,6 +116,7 @@ class ProjectDeclarationInventoryJavaApiTest {
         ProjectShapedTypeView bare = (ProjectShapedTypeView) snapshot
             .findDeclarations(ProjectQualifiedName.of("bare")).getDeclarations().get(0);
         assertThat(bare.getShape()).isEmpty();
+        assertThat(bare.getElementType()).isEmpty();
     }
 
     @Test

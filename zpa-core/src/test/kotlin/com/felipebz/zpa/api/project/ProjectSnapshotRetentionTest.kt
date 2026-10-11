@@ -171,6 +171,39 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun collectionElementReferencesRetainOnlyDurableFacts() {
+        val sourceMarker = "element-view-retention-4e7a1c90-5b2d-4c1f-9a63-7d0e2f8b1c55"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE ev AS TYPE r IS RECORD (a NUMBER); TYPE rows_t IS TABLE OF r INDEX BY PLS_INTEGER; " +
+            "TYPE a_t IS VARRAY(3) OF e.c%TYPE; END ev;\n/\nCREATE TYPE ids AS TABLE OF app.obj_t;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("ev.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+
+        val rows = snapshot.findDeclarations(ProjectQualifiedName.of("ev", "rows_t")).declarations.single() as ProjectPackageTypeView
+        val array = snapshot.findDeclarations(ProjectQualifiedName.of("ev", "a_t")).declarations.single() as ProjectPackageTypeView
+        val ids = snapshot.findDeclarations(ProjectQualifiedName.of("ids")).declarations.single() as ProjectShapedTypeView
+        val elements = listOf(rows.elementType.get(), array.elementType.get(), ids.elementType.get())
+        val reachable = auditGraph(
+            mapOf<String, Any?>("rows" to rows, "array" to array, "ids" to ids, "elements" to elements),
+            forbidden, sourceMarker
+        )
+        assertThat(reachable.filterIsInstance<PackageTypeDeclaration>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<StandaloneTypeDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+
+        // A public element reference alone reaches no internal fact, TypeRef, snapshot, index or source.
+        val referenceOnly = auditGraph(mapOf<String, Any?>("elements" to elements), forbidden, sourceMarker)
+        assertThat(referenceOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(referenceOnly.filterIsInstance<TypeRef>()).isEmpty()
+        assertThat(referenceOnly.filterIsInstance<ProjectSnapshot>()).isEmpty()
+    }
+
+    @Test
     fun packageValueViewsRetainOnlyDurableFacts() {
         val sourceMarker = "value-view-retention-9c3e1b52-4d6a-4f0e-8a77-2b5d7e1c9f03"
         val source = "-- $sourceMarker\n" +

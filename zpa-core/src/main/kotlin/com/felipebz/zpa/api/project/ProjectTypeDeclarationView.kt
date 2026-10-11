@@ -20,7 +20,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import java.util.Optional
+import java.util.*
 
 /** A type declaration occurrence (standalone type, package type or package subtype). */
 @ZpaExperimentalApi
@@ -31,6 +31,9 @@ interface ProjectTypeDeclarationView : ProjectDeclarationView
 interface ProjectShapedTypeView : ProjectTypeDeclarationView {
     /** Empty when the extractor retained no classification; this does not mean the type is invalid. */
     val shape: Optional<ProjectTypeShape>
+
+    /** Direct, unresolved collection element type; empty when absent or unsupported. */
+    val elementType: Optional<ProjectTypeReference>
 }
 
 /** Package specification TYPE declaration. */

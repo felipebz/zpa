@@ -95,11 +95,13 @@ internal object ProjectSnapshotDeclarations {
     private class BackedStandaloneTypeView(id: ProjectDeclarationId, fact: StandaloneTypeDeclaration) :
         BackedDeclarationView(id, fact), ProjectShapedTypeView {
         override val shape: Optional<ProjectTypeShape> = fact.shape.toPublicShape()
+        override val elementType: Optional<ProjectTypeReference> = fact.elementType.toPublicReference()
     }
 
     private class BackedPackageTypeView(id: ProjectDeclarationId, private val typeFact: PackageTypeDeclaration) :
         BackedDeclarationView(id, typeFact), ProjectPackageTypeView {
         override val shape: Optional<ProjectTypeShape> = typeFact.shape.toPublicShape()
+        override val elementType: Optional<ProjectTypeReference> = typeFact.elementType.toPublicReference()
         override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(typeFact.owner)
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(typeFact.name)
         override val recordFields: List<ProjectRecordFieldView> =
@@ -176,6 +178,9 @@ internal object ProjectSnapshotDeclarations {
         override val typeRef: ProjectTypeReference get() = ProjectTypeReference.from(fieldFact.typeRef)
         override val sourceRange: ProjectSourceRange get() = fieldFact.sourceRange.toPublic()
     }
+
+    private fun TypeRef?.toPublicReference(): Optional<ProjectTypeReference> =
+        Optional.ofNullable(this?.let { ProjectTypeReference.from(it) })
 
     private fun FactShape?.toPublicShape(): Optional<ProjectTypeShape> = Optional.ofNullable(
         when (this) {
