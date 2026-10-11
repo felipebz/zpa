@@ -295,6 +295,51 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun specificationCorrelationsRetainOnlyDurableFacts() {
+        val sourceMarker = "correlation-retention-4c1a7e92-6b03-4d15-9e7a-2f8d0b5c3a61"
+        val spec = "-- $sourceMarker\nCREATE PACKAGE cr AS PROCEDURE go(a NUMBER); END cr;"
+        val body = "CREATE PACKAGE BODY cr AS PROCEDURE go(a NUMBER) IS BEGIN NULL; END; END cr;"
+        val readers = listOf(ProjectSourceReader { spec }, ProjectSourceReader { spec }, ProjectSourceReader { body })
+        val inputs = listOf(
+            ProjectSourceInput.ofReader("s1.sql", readers[0]), ProjectSourceInput.ofReader("s2.sql", readers[1]),
+            ProjectSourceInput.ofReader("b.sql", readers[2])
+        )
+        val failed = ProjectSourceInput.ofReader("f.sql", ProjectSourceReader { throw IllegalStateException(sourceMarker) })
+        val resolvedSnap = ProjectSnapshots.prepare(listOf(inputs[0], inputs[2]), false)
+        val ambiguousSnap = ProjectSnapshots.prepare(inputs, false)
+        val incompleteSnap = ProjectSnapshots.prepare(inputs + failed, false)
+        val field = ProjectSnapshot::class.java.getDeclaredField("preparationResult").apply { isAccessible = true }
+        val snaps = listOf(resolvedSnap, ambiguousSnap, incompleteSnap)
+        val forbidden = snaps + snaps.flatMap {
+            val r = field.get(it) as com.felipebz.zpa.project.ProjectIndexPreparationResult
+            listOf(r, r.index)
+        } + readers + inputs + failed + spec + body
+
+        fun corr(s: ProjectSnapshot) = s.correlateSpecification(
+            s.declarations.filterIsInstance<ProjectPackageSubprogramView>().single { it.role == ProjectDeclarationRole.BODY }.id
+        )
+        val resolved = corr(resolvedSnap)
+        val ambiguous = corr(ambiguousSnap)
+        val incomplete = corr(incompleteSnap)
+        assertThat(resolved.status).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED)
+        assertThat(ambiguous.status).isEqualTo(ProjectSpecificationCorrelation.Status.AMBIGUOUS)
+        assertThat(incomplete.status).isEqualTo(ProjectSpecificationCorrelation.Status.INCOMPLETE)
+
+        val reachable = auditGraph(
+            mapOf("resolved" to resolved, "ambiguous" to ambiguous, "incomplete" to incomplete), forbidden, sourceMarker
+        )
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(8)
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSubprogramSpecificationResolver>()).isEmpty()
+
+        val idOnly = auditGraph(mapOf("id" to resolved.candidates.single().id), forbidden, sourceMarker)
+        assertThat(idOnly.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+        assertThat(idOnly.filterIsInstance<ProjectSnapshot>()).isEmpty()
+    }
+
+    @Test
     fun auditFollowsContainersPrivateAnyFieldsAndCapturedLambdaFieldsByIdentity() {
         val sentinel = Any()
         val capture = { sentinel }

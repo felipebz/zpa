@@ -37,8 +37,8 @@ internal class ProjectSubprogramSpecificationResolver(
 
             is ProjectAnalysisContext.State.Prepared -> {
                 val candidates = state.result.index
-                    .findSubprograms(body.owner, body.name)
-                    .filter { it.matchesSpecification(body) }
+                    .findSpecificationOccurrences(body)
+                    .map { it.declaration as PackageSubprogramDeclaration }
 
                 if (state.result.failures.isNotEmpty()) {
                     ProjectSubprogramSpecificationResolution.Incomplete(
@@ -57,6 +57,14 @@ internal class ProjectSubprogramSpecificationResolver(
         }
     }
 }
+
+/**
+ * Canonical specification occurrences matching [body], in index order. The resolver and the
+ * public same-snapshot correlation share this single selection.
+ */
+internal fun ProjectSymbolIndex.findSpecificationOccurrences(body: PackageSubprogramDeclaration): List<IndexedDeclaration> =
+    findSubprogramOccurrences(body.owner, body.name)
+        .filter { (it.declaration as PackageSubprogramDeclaration).matchesSpecification(body) }
 
 private fun PackageSubprogramDeclaration.matchesSpecification(body: PackageSubprogramDeclaration): Boolean =
     role == DeclarationRole.SPECIFICATION && headerIdentity() == body.headerIdentity()

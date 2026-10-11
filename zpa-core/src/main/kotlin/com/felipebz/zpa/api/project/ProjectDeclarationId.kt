@@ -41,6 +41,9 @@ class ProjectDeclarationId private constructor(
 
     override fun hashCode(): Int = Objects.hash(System.identityHashCode(scope), fileId, ordinal)
 
+    @JvmSynthetic
+    internal fun isIssuedBy(snapshotScope: ProjectSnapshotScope): Boolean = scope === snapshotScope
+
     override fun toString(): String = "$fileId#$ordinal"
 
     internal companion object {

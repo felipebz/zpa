@@ -21,7 +21,10 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.IndexedDeclaration
+import com.felipebz.zpa.project.DeclarationRole
+import com.felipebz.zpa.project.PackageSubprogramDeclaration
 import com.felipebz.zpa.project.ProjectIndexPreparationResult
+import com.felipebz.zpa.project.findSpecificationOccurrences
 import com.felipebz.zpa.project.ProjectTypeNameLookup
 import java.util.Collections
 
@@ -125,6 +128,30 @@ class ProjectSnapshot private constructor(
         val occurrences = preparationResult.index.findSubprogramOccurrences(packageOwner.name, name.identifier)
         val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectPackageSubprogramView }
         return ProjectInventory.of(candidates, failures)
+    }
+
+    /**
+     * Correlates the package-body procedure/function occurrence [bodyId] with specification
+     * occurrences of this same snapshot, using the existing exact heading matching.
+     *
+     * @throws NullPointerException if [bodyId] is null
+     * @throws IllegalArgumentException if the ID was issued by another snapshot, names no
+     *   occurrence, or does not identify a package procedure/function with role BODY
+     */
+    fun correlateSpecification(bodyId: ProjectDeclarationId): ProjectSpecificationCorrelation {
+        require(bodyId.isIssuedBy(scope)) { "Declaration ID was not issued by this snapshot" }
+        val occurrence = ProjectSnapshotDeclarations.occurrencesFor(preparationResult.index, bodyId.fileId)
+            .getOrNull(bodyId.ordinal)
+        requireNotNull(occurrence) { "Declaration ID names no indexed occurrence" }
+        val fact = occurrence.declaration
+        require(fact is PackageSubprogramDeclaration && fact.role == DeclarationRole.BODY) {
+            "Specification correlation requires a package procedure/function BODY declaration"
+        }
+        val body = ProjectSnapshotDeclarations.views(scope, listOf(occurrence)).single() as ProjectPackageSubprogramView
+        val candidates = ProjectSnapshotDeclarations
+            .views(scope, preparationResult.index.findSpecificationOccurrences(fact))
+            .map { it as ProjectPackageSubprogramView }
+        return ProjectSpecificationCorrelation.of(body, candidates, failures)
     }
 
     private fun inventory(occurrences: List<IndexedDeclaration>): ProjectInventory<ProjectDeclarationView> {

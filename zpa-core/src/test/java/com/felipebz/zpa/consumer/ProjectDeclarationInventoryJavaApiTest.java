@@ -26,6 +26,7 @@ import com.felipebz.zpa.api.project.ProjectDeclarationView;
 import com.felipebz.zpa.api.project.ProjectFunctionView;
 import com.felipebz.zpa.api.project.ProjectIdentifier;
 import com.felipebz.zpa.api.project.ProjectInventory;
+import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation;
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution;
 import com.felipebz.zpa.api.project.ProjectTypeDeclarationView;
 import com.felipebz.zpa.api.project.ProjectPackageSubprogramView;
@@ -211,5 +212,26 @@ class ProjectDeclarationInventoryJavaApiTest {
         assertThatThrownBy(() -> inventory.getDeclarations().clear()).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> snapshot.findPackageSubprograms(null, ProjectIdentifier.fromSource("run")))
             .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void correlatesBodyWithSpecificationUsingBodyId() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(
+            ProjectSourceInput.ofText("s.sql", "CREATE PACKAGE m AS PROCEDURE go(a NUMBER); END m;"),
+            ProjectSourceInput.ofText("b.sql", "CREATE PACKAGE BODY m AS PROCEDURE go(a NUMBER) IS BEGIN NULL; END; END m;")));
+        ProjectDeclarationId bodyId = snapshot.getDeclarations().stream()
+            .filter(d -> d.getRole() == ProjectDeclarationRole.BODY)
+            .filter(d -> d instanceof ProjectPackageSubprogramView)
+            .findFirst().orElseThrow().getId();
+        ProjectSpecificationCorrelation correlation = snapshot.correlateSpecification(bodyId);
+        assertThat(correlation.getStatus()).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED);
+        assertThat(correlation.getBody().getId()).isEqualTo(bodyId);
+        ProjectPackageSubprogramView spec = correlation.getSpecification().orElseThrow();
+        assertThat(spec.getRole()).isEqualTo(ProjectDeclarationRole.SPECIFICATION);
+        assertThat(correlation.getCandidates().get(0).getId()).isEqualTo(spec.getId());
+        assertThat(correlation.getFailures()).isEmpty();
+        assertThatThrownBy(() -> correlation.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> snapshot.correlateSpecification(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> snapshot.correlateSpecification(spec.getId())).isInstanceOf(IllegalArgumentException.class);
     }
 }

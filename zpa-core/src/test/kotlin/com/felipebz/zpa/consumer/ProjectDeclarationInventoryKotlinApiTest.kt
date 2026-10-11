@@ -28,7 +28,9 @@ import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
 import com.felipebz.zpa.api.project.ProjectParameterMode
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
 import com.felipebz.zpa.api.project.ProjectIdentifier
+import com.felipebz.zpa.api.project.ProjectDeclarationRole
 import com.felipebz.zpa.api.project.ProjectQualifiedName
+import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation
 import com.felipebz.zpa.api.project.ProjectSubtypeView
 import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.project.ProjectTypeShape
@@ -120,5 +122,21 @@ class ProjectDeclarationInventoryKotlinApiTest {
         assertThat(inventory.declarations.single { it !is ProjectFunctionView }.parameters).hasSize(1)
         assertThat(inventory.declarations.map { it.id })
             .isEqualTo(snapshot.findDeclarations(ProjectQualifiedName.of("k", "run")).declarations.map { it.id })
+    }
+
+    @Test
+    fun correlatesBodyWithSpecificationUsingBodyId() {
+        val snapshot = ProjectSnapshots.prepare(listOf(
+            ProjectSourceInput.ofText("s.sql", "CREATE PACKAGE m AS PROCEDURE go(a NUMBER); END m;"),
+            ProjectSourceInput.ofText("b.sql", "CREATE PACKAGE BODY m AS PROCEDURE go(a NUMBER) IS BEGIN NULL; END; END m;")
+        ))
+        val bodyId = snapshot.declarations.filterIsInstance<ProjectPackageSubprogramView>()
+            .single { it.role == ProjectDeclarationRole.BODY }.id
+        val correlation = snapshot.correlateSpecification(bodyId)
+        assertThat(correlation.status).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED)
+        assertThat(correlation.body.id).isEqualTo(bodyId)
+        assertThat(correlation.specification.get().role).isEqualTo(ProjectDeclarationRole.SPECIFICATION)
+        assertThat(correlation.specification.get().id).isEqualTo(correlation.candidates.single().id)
+        assertThat(correlation.failures).isEmpty()
     }
 }
