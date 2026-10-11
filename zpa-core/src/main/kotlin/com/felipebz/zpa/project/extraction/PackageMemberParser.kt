@@ -40,7 +40,8 @@ internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
 internal class PackageMemberParser(
     private val stream: TokenStream,
     private val typeReferences: TypeReferences,
-    private val collectionElements: CollectionElementSyntax
+    private val collectionElements: CollectionElementSyntax,
+    private val datatypeShape: DatatypeShape
 ) {
     fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
         val name = stream.identifierAt(index + 1) ?: return null
@@ -88,7 +89,11 @@ internal class PackageMemberParser(
         val name = stream.identifierAt(index + 1) ?: return null
         val isIndex = stream.firstAtTopLevel(name.second, setOf("IS")) ?: return null
         val end = stream.semicolonAfter(index + 1)
-        val typeEnd = stream.firstAtTopLevel(isIndex + 1, setOf("RANGE"), end) ?: end
+        // The base datatype stops at a top-level NOT NULL, NULL or RANGE keyword; delimiters that cannot be
+        // matched keep the previous boundary (the first top-level RANGE, else the semicolon).
+        val typeEnd = datatypeShape.datatypeEnd(isIndex + 1, end) {
+            stream.isKeyword(it, "NOT") || stream.isKeyword(it, "NULL") || stream.isKeyword(it, "RANGE")
+        } ?: stream.firstAtTopLevel(isIndex + 1, setOf("RANGE"), end) ?: end
         val type = typeReferences.typeReference(isIndex + 1, typeEnd) ?: return null
         val declaration = PackageSubtypeDeclaration(owner, name.first, type, stream.fileId, stream.range(index, end))
         return ParsedDeclaration(declaration, end + 1)

@@ -38,7 +38,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>) {
     private val bodyBoundaries = BodyBoundaryScanner(stream)
     private val initializerShape = InitializerShape(stream)
     private val packageValues = PackageValueRecognizer(stream, datatypeShape, typeReferences, initializerShape)
-    private val memberParser = PackageMemberParser(stream, typeReferences, collectionElements)
+    private val memberParser = PackageMemberParser(stream, typeReferences, collectionElements, datatypeShape)
     private val callableProperties = CallableProperties(stream)
     private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
     private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences)
