@@ -115,6 +115,7 @@ class ProjectDeclarationExtractor(
         private val bounds = UnitBounds(stream)
         private val datatypeShape = DatatypeShape(stream)
         private val typeReferences = TypeReferences(stream)
+        private val schemaUnits = SchemaUnitExtractor(stream, typeReferences)
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -553,24 +554,7 @@ class ProjectDeclarationExtractor(
             return index + 2
         }
 
-        private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
-            // CREATE SEQUENCE has no OR REPLACE or EDITIONABLE prefix in the supported
-            // grammar. Keep extraction aligned with that grammar even though parseCreate
-            // handles those prefixes for other schema objects.
-            if (sequenceIndex != create + 1) return null
-
-            val ifNotExists = valueAt(sequenceIndex + 1) == "IF" &&
-                valueAt(sequenceIndex + 2) == "NOT" && valueAt(sequenceIndex + 3) == "EXISTS"
-            val nameIndex = if (ifNotExists) sequenceIndex + 4 else sequenceIndex + 1
-            val parsedName = qualifiedName(nameIndex) ?: return null
-            if (parsedName.first.segments.size !in 1..2) return null
-
-            val end = semicolonAfter(parsedName.second)
-            return ParsedUnit(
-                listOf(SequenceDeclaration(parsedName.first, fileId, range(create, end))),
-                end + 1
-            )
-        }
+        private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? = schemaUnits.parseSequence(create, sequenceIndex)
 
         private fun parsePackage(create: Int, packageIndex: Int, orReplace: Boolean): ParsedUnit? {
             // The shared dispatch is value based; require real CREATE/PACKAGE tokens (and a prefix that
@@ -1274,17 +1258,9 @@ class ProjectDeclarationExtractor(
             )
         }
 
-        private fun parseStandaloneType(create: Int, typeIndex: Int): ParsedUnit? {
-            val name = qualifiedName(typeIndex + 1) ?: return null
-            val end = semicolonAfter(typeIndex + 1)
-            val declaration = StandaloneTypeDeclaration(name.first, typeShape(typeIndex, end), fileId, range(create, end))
-            return ParsedUnit(listOf(declaration), end + 1)
-        }
+        private fun parseStandaloneType(create: Int, typeIndex: Int): ParsedUnit? = schemaUnits.parseStandaloneType(create, typeIndex)
 
-        private fun parseTypeBody(typeIndex: Int): ParsedUnit {
-            val nextCreate = nextValue(typeIndex + 2, "CREATE")
-            return ParsedUnit(emptyList(), nextCreate ?: tokens.size)
-        }
+        private fun parseTypeBody(typeIndex: Int): ParsedUnit = schemaUnits.parseTypeBody(typeIndex)
 
         private fun typeShape(start: Int, end: Int): ProjectTypeShape? = typeReferences.typeShape(start, end)
 
@@ -1313,8 +1289,6 @@ class ProjectDeclarationExtractor(
         private fun valueAt(index: Int) = stream.valueAt(index)
         private fun value(token: Token) = stream.value(token)
 
-        private data class ParsedUnit(val declarations: List<ProjectDeclaration>, val nextIndex: Int)
-        private data class ParsedDeclaration(val declaration: ProjectDeclaration, val nextIndex: Int)
         private data class ParsedBodySubprogram(
             val declaration: ProjectDeclaration?,
             val nextIndex: Int
