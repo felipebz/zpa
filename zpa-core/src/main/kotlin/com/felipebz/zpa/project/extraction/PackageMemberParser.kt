@@ -34,10 +34,10 @@ internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
 )
 
 /**
- * Legacy (value-based) parsers for package types, subtypes, subprogram headings and their parameters. The same
+ * Value-based, permissive parsers for package types, subtypes, subprogram headings and their parameters. The same
  * instance serves package specifications and package bodies.
  */
-internal class LegacyMemberParser(private val stream: TokenStream, private val typeReferences: TypeReferences) {
+internal class PackageMemberParser(private val stream: TokenStream, private val typeReferences: TypeReferences) {
     fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
         val name = stream.identifierAt(index + 1) ?: return null
         val end = stream.semicolonAfter(index + 1)

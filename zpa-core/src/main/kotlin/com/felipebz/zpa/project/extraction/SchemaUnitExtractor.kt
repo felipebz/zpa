@@ -22,7 +22,7 @@ package com.felipebz.zpa.project.extraction
 import com.felipebz.zpa.project.SequenceDeclaration
 import com.felipebz.zpa.project.StandaloneTypeDeclaration
 
-/** `CREATE SEQUENCE` and `CREATE [OR REPLACE] TYPE [BODY]` units, recognized with the legacy (value-based) operations. */
+/** `CREATE SEQUENCE` and `CREATE [OR REPLACE] TYPE [BODY]` units, recognized with the value-based token operations. */
 internal class SchemaUnitExtractor(private val stream: TokenStream, private val typeReferences: TypeReferences) {
     fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
         // CREATE SEQUENCE has no OR REPLACE or EDITIONABLE prefix in the supported

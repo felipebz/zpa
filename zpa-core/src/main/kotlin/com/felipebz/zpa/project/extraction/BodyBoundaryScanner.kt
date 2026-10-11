@@ -35,7 +35,7 @@ internal enum class BlockKind {
 }
 
 /**
- * Legacy (value-based) boundary scanning of subprogram bodies and implementations: BEGIN/END/CASE block
+ * Value-based boundary scanning of subprogram bodies and implementations: BEGIN/END/CASE block
  * tracking and nested-subprogram skipping. It only identifies token indices and never produces facts.
  */
 internal class BodyBoundaryScanner(private val stream: TokenStream) {

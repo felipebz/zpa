@@ -26,17 +26,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 
-/** Legacy package member parsers called directly on hand-lexed fragments, and through a specification and a body. */
-class LegacyMemberParserTest {
+/** Package member parsers called directly on hand-lexed fragments, and through a specification and a body. */
+class PackageMemberParserTest {
     private val fileId = FileId("members.sql")
     private val owner = QualifiedName(OracleIdentifier.fromSource("p"))
 
-    private class Parser(val stream: TokenStream, val parser: LegacyMemberParser)
+    private class Parser(val stream: TokenStream, val parser: PackageMemberParser)
 
     private fun parser(text: String): Parser {
         val tokens = PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text)
         val stream = TokenStream(fileId, tokens)
-        return Parser(stream, LegacyMemberParser(stream, TypeReferences(stream)))
+        return Parser(stream, PackageMemberParser(stream, TypeReferences(stream)))
     }
 
     @Test

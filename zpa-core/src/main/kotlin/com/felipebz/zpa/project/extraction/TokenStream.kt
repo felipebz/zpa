@@ -31,7 +31,7 @@ import java.util.*
 /**
  * Read-only, per-extraction view of one lexed file: its identity and the lexer's token list (never copied,
  * never retained beyond the extraction that created it). It only holds the primitive accessors shared by every
- * extraction path; strict (token-type) and legacy (value-based) operations live in separate extension files.
+ * extraction path; strict (token-type) and value-based operations live in separate extension files.
  */
 internal class TokenStream(val fileId: FileId, val tokens: List<Token>) {
     fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean =

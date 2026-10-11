@@ -37,7 +37,7 @@ internal class PackageSpecificationExtractor(
     private val stream: TokenStream,
     private val bounds: UnitBounds,
     private val packageValues: PackageValueRecognizer,
-    private val memberParser: LegacyMemberParser
+    private val memberParser: PackageMemberParser
 ) {
     /**
      * Package specification, bounded by the unit limit and validated with token types.
@@ -79,7 +79,7 @@ internal class PackageSpecificationExtractor(
                 // variable falls through to the member parsers.
                 (packageValues.parseSpecificationValue(cursor, declarationEnd.index, owner)
                     ?: parseSpecificationMember(cursor, owner)
-                        // Agreement rule: the member parser (legacy scanner) must end exactly where the
+                        // Agreement rule: the member parser (value-based) must end exactly where the
                         // strict scanner ends the declaration; any disagreement drops the declaration.
                         ?.takeIf { it.nextIndex == declarationEnd.index + 1 })
                     ?.let { members += it.declaration }

@@ -22,13 +22,13 @@ package com.felipebz.zpa.project.extraction
 import com.felipebz.zpa.project.*
 
 /**
- * Legacy (value-based) extraction of the subprograms of a package body. Like the code it was moved from, the walk is
+ * Value-based extraction of the subprograms of a package body. Like the code it was moved from, the walk is
  * bounded by the end of the token list, not by the unit boundaries.
  */
 internal class PackageBodyExtractor(
     private val stream: TokenStream,
     private val bodyBoundaries: BodyBoundaryScanner,
-    private val memberParser: LegacyMemberParser,
+    private val memberParser: PackageMemberParser,
     private val typeReferences: TypeReferences
 ) {
     fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {

@@ -23,8 +23,9 @@ import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 
 /*
- * Legacy (value based) operations over a [TokenStream]: string comparison on upper-cased token values, EOF
- * fallbacks and parenthesis-only matching. Their current behavior is deliberate and preserved.
+ * Value-based token operations used by permissive declaration parsing: they compare upper-cased token values instead of
+ * token types. These operations intentionally preserve historical EOF fallbacks and delimiter-matching behavior
+ * (parenthesis-only matching, last-token fallbacks).
  * Moved verbatim from the original single-class extractor.
  */
 
