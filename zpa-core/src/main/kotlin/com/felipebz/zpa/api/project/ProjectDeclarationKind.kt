@@ -26,6 +26,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
  * categories. `PACKAGE_BODY` is representable but the current extractor does not emit it;
  * `STANDALONE_PROCEDURE` and `STANDALONE_FUNCTION` are standalone schema-level callables
  * (`CREATE PROCEDURE` / `CREATE FUNCTION`), never members of a package.
+ * `PACKAGE_VARIABLE` and `PACKAGE_CONSTANT` are variables and constants declared in a package specification.
  */
 @ZpaExperimentalApi
 enum class ProjectDeclarationKind {
@@ -38,5 +39,7 @@ enum class ProjectDeclarationKind {
     PACKAGE_FUNCTION,
     SEQUENCE,
     STANDALONE_PROCEDURE,
-    STANDALONE_FUNCTION
+    STANDALONE_FUNCTION,
+    PACKAGE_VARIABLE,
+    PACKAGE_CONSTANT
 }
