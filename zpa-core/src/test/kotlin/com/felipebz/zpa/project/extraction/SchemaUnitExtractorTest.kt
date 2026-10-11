@@ -33,7 +33,8 @@ class SchemaUnitExtractorTest {
     private fun extractor(text: String): Pair<SchemaUnitExtractor, TokenStream> {
         val tokens = PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text)
         val stream = TokenStream(fileId, tokens)
-        return SchemaUnitExtractor(stream, TypeReferences(stream)) to stream
+        val references = TypeReferences(stream)
+        return SchemaUnitExtractor(stream, references, UnitBounds(stream), CollectionElementSyntax(stream, DatatypeShape(stream), references)) to stream
     }
 
     @Test

@@ -46,11 +46,19 @@ data class StandaloneTypeDeclaration(
     val name: QualifiedName,
     val shape: ProjectTypeShape?,
     override val fileId: FileId,
-    override val sourceRange: SourceRange
+    override val sourceRange: SourceRange,
+    /** Direct element type syntax of a COLLECTION, when the extractor admitted it. Unresolved. */
+    val elementType: TypeRef? = null
 ) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE
     override val qualifiedName: QualifiedName = name
+
+    init {
+        require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
+            "Only COLLECTION declarations may contain an element type"
+        }
+    }
 }
 
 class PackageTypeDeclaration(

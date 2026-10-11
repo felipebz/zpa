@@ -162,7 +162,8 @@ class ProjectSymbolIndex internal constructor(
         private fun declarationOrderingKey(declaration: ProjectDeclaration): String =
             declarationIdentityKey(declaration) + ":" + declaration.role + ":" + when (declaration) {
                 is PackageDeclaration -> ""
-                is StandaloneTypeDeclaration -> declaration.shape.toString()
+                is StandaloneTypeDeclaration -> declaration.shape.toString() +
+                    (declaration.elementType?.let { ":element:" + it.structuralKey() } ?: "")
                 is PackageTypeDeclaration -> declaration.shape.toString() + declaration.recordFields.joinToString("|") {
                     "${it.ordinal}:${it.name.originalSpelling}:${it.typeRef.structuralKey()}"
                 }  +
