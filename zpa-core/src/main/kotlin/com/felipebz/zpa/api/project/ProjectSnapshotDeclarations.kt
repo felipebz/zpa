@@ -81,6 +81,8 @@ internal object ProjectSnapshotDeclarations {
             FactKind.PACKAGE_PROCEDURE -> ProjectDeclarationKind.PACKAGE_PROCEDURE
             FactKind.PACKAGE_FUNCTION -> ProjectDeclarationKind.PACKAGE_FUNCTION
             FactKind.SEQUENCE -> ProjectDeclarationKind.SEQUENCE
+            FactKind.STANDALONE_PROCEDURE -> ProjectDeclarationKind.STANDALONE_PROCEDURE
+            FactKind.STANDALONE_FUNCTION -> ProjectDeclarationKind.STANDALONE_FUNCTION
         }
 
         override val role: ProjectDeclarationRole

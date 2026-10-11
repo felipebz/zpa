@@ -23,7 +23,9 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
 /**
  * Category of the retained Project System fact, not an enumeration of Oracle declaration
- * categories. `PACKAGE_BODY` is representable but the current extractor does not emit it.
+ * categories. `PACKAGE_BODY` is representable but the current extractor does not emit it;
+ * `STANDALONE_PROCEDURE` and `STANDALONE_FUNCTION` are standalone schema-level callables
+ * (`CREATE PROCEDURE` / `CREATE FUNCTION`), never members of a package.
  */
 @ZpaExperimentalApi
 enum class ProjectDeclarationKind {
@@ -34,5 +36,7 @@ enum class ProjectDeclarationKind {
     PACKAGE_SUBTYPE,
     PACKAGE_PROCEDURE,
     PACKAGE_FUNCTION,
-    SEQUENCE
+    SEQUENCE,
+    STANDALONE_PROCEDURE,
+    STANDALONE_FUNCTION
 }

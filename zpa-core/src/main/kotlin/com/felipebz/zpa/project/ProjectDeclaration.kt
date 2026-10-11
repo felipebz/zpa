@@ -33,7 +33,9 @@ enum class ProjectDeclarationKind {
     PACKAGE_SUBTYPE,
     PACKAGE_PROCEDURE,
     PACKAGE_FUNCTION,
-    SEQUENCE
+    SEQUENCE,
+    STANDALONE_PROCEDURE,
+    STANDALONE_FUNCTION
 }
 
 sealed interface ProjectDeclaration {
@@ -51,6 +53,8 @@ fun ProjectDeclaration.qualifiedName(): QualifiedName = when (this) {
     is PackageSubtypeDeclaration -> owner.append(name)
     is PackageSubprogramDeclaration -> owner.append(name)
     is SequenceDeclaration -> name
+    is StandaloneProcedureDeclaration -> name
+    is StandaloneFunctionDeclaration -> name
 }
 
 data class PackageDeclaration(

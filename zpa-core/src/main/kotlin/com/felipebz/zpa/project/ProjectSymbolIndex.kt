@@ -153,6 +153,8 @@ class ProjectSymbolIndex internal constructor(
             is PackageSubtypeDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}:${declaration.baseType.structuralKey()}"
             is PackageSubprogramDeclaration -> declaration.overloadIdentity().toString()
             is SequenceDeclaration -> declaration.name.lookupKey()
+            is StandaloneProcedureDeclaration -> declaration.name.lookupKey()
+            is StandaloneFunctionDeclaration -> declaration.name.lookupKey()
         }
 
         /** Stable tie-breaker only; source spelling and rule metadata do not define identity. */
@@ -167,6 +169,9 @@ class ProjectSymbolIndex internal constructor(
                 is PackageProcedureDeclaration -> declaration.parameters.orderingKey()
                 is PackageFunctionDeclaration -> declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey()
                 is SequenceDeclaration -> ""
+                is StandaloneProcedureDeclaration -> declaration.parameters.orderingKey()
+                is StandaloneFunctionDeclaration ->
+                    declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey() + ":" + declaration.deterministic
             }
 
         private fun List<ProjectParameter>.orderingKey(): String = joinToString("|") {
