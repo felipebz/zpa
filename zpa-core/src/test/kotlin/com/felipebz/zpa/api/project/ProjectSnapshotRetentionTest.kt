@@ -27,29 +27,15 @@ import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
-import com.felipebz.zpa.project.PackageFunctionDeclaration
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectDeclaration
-import com.felipebz.zpa.project.ProjectDeclarationSourceExtractor
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectParameter
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.ProjectSymbolIndexBuilder
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.TypeRef
+import com.felipebz.zpa.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import java.lang.reflect.Array as ReflectArray
 import java.lang.reflect.Modifier
 import java.nio.Buffer
-import java.util.Collections
-import java.util.IdentityHashMap
-import java.util.Optional
-import java.util.Queue
+import java.util.*
 import java.util.stream.BaseStream
+import java.lang.reflect.Array as ReflectArray
 
 @OptIn(ZpaExperimentalApi::class)
 class ProjectSnapshotRetentionTest {
@@ -472,6 +458,16 @@ class ProjectSnapshotRetentionTest {
             .hasMessageContaining(sentinel.javaClass.name)
     }
 
+    @Test
+    fun auditRejectsExtractionComponentsReachableFromAGraph() {
+        val tokens = com.felipebz.zpa.project.extraction.TokenStream(com.felipebz.zpa.project.FileId("f.sql"), emptyList())
+        assertThatThrownBy {
+            auditGraph(mapOf("holder" to OpaqueFieldHolder(tokens)), emptyList(), "unused-source-marker")
+        }.isInstanceOf(AssertionError::class.java)
+            .hasMessageContaining("Forbidden transient object")
+            .hasMessageContaining("com.felipebz.zpa.project.extraction.TokenStream")
+    }
+
     private class OpaqueFieldHolder(private val payload: Any)
 
     /**
@@ -558,7 +554,8 @@ class ProjectSnapshotRetentionTest {
             name.startsWith("com.felipebz.zpa.checks.") ||
             name.startsWith("com.felipebz.zpa.api.checks.") ||
             name.startsWith("com.felipebz.zpa.api.syntax.") ||
-            name.startsWith("com.felipebz.zpa.project.ProjectDeclarationExtractor$")
+            name.startsWith("com.felipebz.zpa.project.ProjectDeclarationExtractor$") ||
+            name.startsWith("com.felipebz.zpa.project.extraction.")
     }
 
     private fun isInspectableApplicationType(type: Class<*>): Boolean =

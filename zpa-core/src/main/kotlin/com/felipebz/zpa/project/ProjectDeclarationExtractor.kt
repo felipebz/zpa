@@ -25,9 +25,9 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.lexer.PlSqlLexer
+import com.felipebz.zpa.project.extraction.*
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
-import java.util.*
 
 /** Words that may follow a datatype name in the strict standalone datatype check. */
 private val DATATYPE_CONTINUATIONS = setOf(
@@ -117,6 +117,9 @@ class ProjectDeclarationExtractor(
         private val fileId: FileId,
         private val tokens: List<Token>
     ) {
+        private val stream = TokenStream(fileId, tokens)
+        private val bounds = UnitBounds(stream)
+
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
             var cursor = 0
@@ -154,35 +157,13 @@ class ProjectDeclarationExtractor(
         // or punctuators, so keywords are checked with isKeyword and punctuators with isPunctuator.
         // Any doubt yields null (no fact, nothing consumed): incomplete coverage beats a wrong fact.
 
-        /** Sorted indices of unit boundaries: real CREATE keywords, lone-line `/` and EOF. Built once. */
-        private val unitBoundaries: IntArray by lazy {
-            tokens.indices.filter {
-                isKeyword(it, "CREATE") || isLoneSlash(it) || tokens[it].type == GenericTokenType.EOF
-            }.toIntArray()
-        }
+        private fun unitLimit(create: Int): Int = bounds.unitLimit(create)
 
-        private fun isLoneSlash(index: Int): Boolean {
-            if (!isPunctuator(index, PlSqlPunctuator.DIVISION)) return false
-            val token = tokens[index]
-            val previousOnEarlierLine = index == 0 || tokens[index - 1].endLine < token.line
-            val next = tokens.getOrNull(index + 1)
-            val nextOnLaterLine = next == null || next.type == GenericTokenType.EOF || next.line > token.endLine
-            return previousOnEarlierLine && nextOnLaterLine
-        }
+        private fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean = stream.isPunctuator(index, punctuator)
 
-        /** First boundary strictly after [create]; scans of that unit never reach it. */
-        private fun unitLimit(create: Int): Int {
-            var position = Arrays.binarySearch(unitBoundaries, create + 1)
-            if (position < 0) position = -position - 1
-            return if (position < unitBoundaries.size) unitBoundaries[position] else tokens.size
-        }
+        private fun tokenTypeAt(index: Int) = stream.tokenTypeAt(index)
 
-        private fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean =
-            index in tokens.indices && tokens[index].type === punctuator
-
-        private fun tokenTypeAt(index: Int) = if (index in tokens.indices) tokens[index].type else null
-
-        private fun isNameBefore(index: Int, limit: Int) = index < limit && index in tokens.indices && isName(tokens[index])
+        private fun isNameBefore(index: Int, limit: Int) = stream.isNameBefore(index, limit)
 
         private fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? {
             if (!isKeyword(create, "CREATE")) return null
@@ -272,19 +253,7 @@ class ProjectDeclarationExtractor(
             return null
         }
 
-        /** One or two name segments joined by a real `.`; a third segment is a failure. */
-        private fun strictQualifiedName(start: Int, limit: Int): Pair<QualifiedName, Int>? {
-            if (!isNameBefore(start, limit)) return null
-            val segments = mutableListOf(identifier(tokens[start]))
-            var index = start + 1
-            if (isPunctuator(index, PlSqlPunctuator.DOT)) {
-                if (!isNameBefore(index + 1, limit)) return null
-                segments += identifier(tokens[index + 1])
-                index += 2
-                if (isPunctuator(index, PlSqlPunctuator.DOT)) return null
-            }
-            return QualifiedName(segments) to index
-        }
+        private fun strictQualifiedName(start: Int, limit: Int): Pair<QualifiedName, Int>? = stream.strictQualifiedName(start, limit)
 
         /** `[TIMESTAMP 'literal'] [SHARING = METADATA|NONE]`; returns the next index or null. */
         private fun skipUnitOptions(start: Int, limit: Int): Int? {
@@ -303,59 +272,15 @@ class ProjectDeclarationExtractor(
             return index.takeIf { it < limit }
         }
 
-        private fun isOpener(index: Int) =
-            isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) || isPunctuator(index, PlSqlPunctuator.LBRACKET)
+        private fun isOpener(index: Int) = stream.isOpener(index)
 
-        private fun isCloser(index: Int) =
-            isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) || isPunctuator(index, PlSqlPunctuator.RBRACKET)
+        private fun isCloser(index: Int) = stream.isCloser(index)
 
-        private fun closerFor(opener: Int) =
-            if (isPunctuator(opener, PlSqlPunctuator.LPARENTHESIS)) PlSqlPunctuator.RPARENTHESIS else PlSqlPunctuator.RBRACKET
+        private fun closerFor(opener: Int) = stream.closerFor(opener)
 
-        /**
-         * Index of the `)` matching the `(` at [open], or null when nesting is unbalanced or crossed
-         * (`(` must close with `)`, `[` with `]`) before [limit], or a `;`/CREATE appears inside.
-         * Never falls back to the end of the file.
-         */
-        private fun strictClose(open: Int, limit: Int): Int? {
-            if (!isPunctuator(open, PlSqlPunctuator.LPARENTHESIS)) return null
-            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
-            for (index in open until limit.coerceAtMost(tokens.size)) {
-                when {
-                    isOpener(index) -> expected.addLast(closerFor(index))
-                    isCloser(index) -> {
-                        if (expected.removeLastOrNull() !== tokens[index].type) return null
-                        if (expected.isEmpty()) return index
-                    }
-                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) || isKeyword(index, "CREATE") -> return null
-                }
-            }
-            return null
-        }
+        private fun strictClose(open: Int, limit: Int): Int? = stream.strictClose(open, limit)
 
-        /**
-         * Depth-0 comma-separated parts of `(open, close)`; null for `()`, any empty part, or any
-         * crossed or unmatched delimiter (nesting is re-validated, not assumed from [close]).
-         */
-        private fun splitStrict(open: Int, close: Int): List<IntRange>? {
-            if (close == open + 1 || strictClose(open, close + 1) != close) return null
-            val parts = mutableListOf<IntRange>()
-            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
-            var partStart = open + 1
-            for (index in open + 1..close) {
-                if (index == close || (expected.isEmpty() && isPunctuator(index, PlSqlPunctuator.COMMA))) {
-                    if (partStart >= index) return null
-                    parts += partStart until index
-                    partStart = index + 1
-                    continue
-                }
-                when {
-                    isOpener(index) -> expected.addLast(closerFor(index))
-                    isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return null
-                }
-            }
-            return parts.takeIf { expected.isEmpty() }
-        }
+        private fun splitStrict(open: Int, close: Int): List<IntRange>? = stream.splitStrict(open, close)
 
         private sealed interface StrictParameters {
             /** No parameter list: a valid empty signature. */
@@ -502,30 +427,11 @@ class ProjectDeclarationExtractor(
             return if (end < limit && isPunctuator(end, PlSqlPunctuator.SEMICOLON)) PropertyScan(end, deterministic, true) else null
         }
 
-        /**
-         * `( item {, item} )` starting at [open], where [item] returns the index after one item or
-         * null. Requires at least one item, real commas and a real closing parenthesis.
-         */
-        private inline fun delimitedListEnd(open: Int, limit: Int, item: (Int) -> Int?): Int? {
-            if (!isPunctuator(open, PlSqlPunctuator.LPARENTHESIS)) return null
-            var index = open + 1
-            while (true) {
-                index = item(index) ?: return null
-                if (index >= limit) return null
-                if (isPunctuator(index, PlSqlPunctuator.RPARENTHESIS)) return index + 1
-                if (!isPunctuator(index, PlSqlPunctuator.COMMA)) return null
-                index++
-            }
-        }
+        private inline fun delimitedListEnd(open: Int, limit: Int, item: (Int) -> Int?): Int? = stream.delimitedListEnd(open, limit, item)
 
-        private fun nameEnd(index: Int, limit: Int): Int? = if (isNameBefore(index, limit)) index + 1 else null
+        private fun nameEnd(index: Int, limit: Int): Int? = stream.nameEnd(index, limit)
 
-        /** `name {. name}` of any length (object references in RELIES_ON). */
-        private fun strictQualifiedNameAnyLength(start: Int, limit: Int): Int? {
-            var index = nameEnd(start, limit) ?: return null
-            while (isPunctuator(index, PlSqlPunctuator.DOT)) index = nameEnd(index + 1, limit) ?: return null
-            return index
-        }
+        private fun strictQualifiedNameAnyLength(start: Int, limit: Int): Int? = stream.strictQualifiedNameAnyLength(start, limit)
 
         /** Accessor of ACCESSIBLE BY: `[FUNCTION|PROCEDURE|PACKAGE|TRIGGER|TYPE] unit_name`. */
         private fun accessorEnd(start: Int): Int? {
@@ -664,9 +570,7 @@ class ProjectDeclarationExtractor(
             return null
         }
 
-        private fun isUnquotedWord(index: Int, word: String): Boolean =
-            index in tokens.indices && tokens[index].type == GenericTokenType.IDENTIFIER &&
-                tokens[index].originalValue.equals(word, ignoreCase = true)
+        private fun isUnquotedWord(index: Int, word: String): Boolean = stream.isUnquotedWord(index, word)
 
         /** `LANGUAGE name[.name] [PURE] <inline source>` or `MODULE name[.name] [ENV name[.name]] SIGNATURE 'str'`. */
         private fun mleSpecificationEnd(start: Int, limit: Int): Int? {
@@ -1254,8 +1158,7 @@ class ProjectDeclarationExtractor(
         private fun isCaseStart(index: Int): Boolean =
             isKeyword(index, "CASE") && !isKeyword(index - 1, "END")
 
-        private fun isKeyword(index: Int, keyword: String): Boolean =
-            index in tokens.indices && tokens[index].type is PlSqlKeyword && valueAt(index) == keyword
+        private fun isKeyword(index: Int, keyword: String): Boolean = stream.isKeyword(index, keyword)
 
         private fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
             val name = identifierAt(index + 1) ?: return null
@@ -1493,17 +1396,7 @@ class ProjectDeclarationExtractor(
             else -> "token:${token.originalValue}"
         }
 
-        private fun qualifiedName(start: Int): Pair<QualifiedName, Int>? {
-            val first = identifierAt(start) ?: return null
-            val segments = mutableListOf(first.first)
-            var cursor = first.second
-            while (valueAt(cursor) == ".") {
-                val next = identifierAt(cursor + 1) ?: break
-                segments += next.first
-                cursor = next.second
-            }
-            return QualifiedName(segments) to cursor
-        }
+        private fun qualifiedName(start: Int): Pair<QualifiedName, Int>? = stream.qualifiedName(start)
 
         private fun qualifiedSegments(tokens: List<Token>): QualifiedName? {
             val segments = mutableListOf<OracleIdentifier>()
@@ -1526,68 +1419,26 @@ class ProjectDeclarationExtractor(
         private fun valueAt(tokens: List<Token>, index: Int): String =
             if (index in tokens.indices) value(tokens[index]) else ""
 
-        private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? {
-            if (start !in tokens.indices || !isName(tokens[start])) return null
-            return identifier(tokens[start]) to start + 1
-        }
+        private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? = stream.identifierAt(start)
 
-        private fun identifier(token: Token) = OracleIdentifier.fromToken(token.originalValue, token.value)
+        private fun identifier(token: Token) = stream.identifier(token)
 
-        private fun firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? {
-            var depth = 0
-            for (index in start until endExclusive.coerceAtMost(tokens.size)) {
-                when (valueAt(index)) {
-                    "(", "[" -> depth++
-                    ")", "]" -> depth--
-                }
-                if (depth == 0 && valueAt(index) in wanted) return index
-            }
-            return null
-        }
+        private fun firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? = stream.firstAtTopLevel(start, wanted, endExclusive)
 
-        private fun matching(open: Int): Int {
-            var depth = 0
-            for (index in open until tokens.size) {
-                when (valueAt(index)) {
-                    "(" -> depth++
-                    ")" -> {
-                        depth--
-                        if (depth == 0) return index
-                    }
-                }
-            }
-            return tokens.lastIndex
-        }
+        private fun matching(open: Int): Int = stream.matching(open)
 
-        private fun semicolonAfter(start: Int): Int {
-            var depth = 0
-            for (index in start until tokens.size) {
-                when (valueAt(index)) {
-                    "(", "[" -> depth++
-                    ")", "]" -> depth--
-                    ";" -> if (depth == 0) return index
-                }
-            }
-            return tokens.lastIndex.coerceAtLeast(start)
-        }
+        private fun semicolonAfter(start: Int): Int = stream.semicolonAfter(start)
 
         private fun skipToSemicolon(start: Int) = semicolonAfter(start) + 1
 
-        private fun nextValue(start: Int, wanted: String): Int? =
-            (start until tokens.size).firstOrNull { valueAt(it) == wanted }
+        private fun nextValue(start: Int, wanted: String): Int? = stream.nextValue(start, wanted)
 
-        private fun range(start: Int, end: Int): SourceRange {
-            val first = tokens[start.coerceIn(0, tokens.lastIndex)]
-            val last = tokens[end.coerceIn(0, tokens.lastIndex)]
-            return SourceRange(fileId, first.line, first.column, last.endLine, last.endColumn)
-        }
+        private fun range(start: Int, end: Int): SourceRange = stream.range(start, end)
 
-        private fun isName(token: Token): Boolean =
-            token.type == GenericTokenType.IDENTIFIER ||
-                (token.type is PlSqlKeyword && !(token.type as PlSqlKeyword).isReserved)
+        private fun isName(token: Token): Boolean = stream.isName(token)
 
-        private fun valueAt(index: Int) = if (index in tokens.indices) tokens[index].value.uppercase(Locale.ROOT) else ""
-        private fun value(token: Token) = token.value.uppercase(Locale.ROOT)
+        private fun valueAt(index: Int) = stream.valueAt(index)
+        private fun value(token: Token) = stream.value(token)
 
         private data class ParsedUnit(val declarations: List<ProjectDeclaration>, val nextIndex: Int)
         private data class ParsedDeclaration(val declaration: ProjectDeclaration, val nextIndex: Int)
