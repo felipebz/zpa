@@ -22,10 +22,24 @@ package com.felipebz.zpa.project
 import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.lexer.PlSqlLexer
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 import java.util.*
+
+/** Words that may follow a datatype name in the strict standalone datatype check. */
+private val DATATYPE_CONTINUATIONS = setOf(
+    "CHAR", "BYTE", "VARYING", "PRECISION", "RAW", "WITH", "LOCAL", "TIME", "ZONE", "TO",
+    "YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND", "CHARACTER", "NATIONAL"
+)
+
+private val EXTERNAL_PARAMETER_PROPERTIES = listOf("LENGTH", "DURATION", "MAXLEN", "CHARSETID", "CHARSETFORM")
+
+private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
+
+private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
 
 private val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
     "DETERMINISTIC",
@@ -86,10 +100,478 @@ class ProjectDeclarationExtractor(
             if (valueAt(index) == "EDITIONABLE" || valueAt(index) == "NONEDITIONABLE") index++
             return when (valueAt(index)) {
                 "PACKAGE" -> parsePackage(create, index, orReplace)
+                // The strict standalone path re-validates the whole prefix with token types.
+                "PROCEDURE" -> parseStandaloneProcedure(create)
                 "SEQUENCE" -> parseSequence(create, index)
                 "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(index) else parseStandaloneType(create, index)
                 else -> null
             }
+        }
+
+        // ---- Strict standalone callable path (S2). It never uses the value-based helpers for
+        // structural decisions: quoted identifiers expose unquoted values that look like keywords
+        // or punctuators, so keywords are checked with isKeyword and punctuators with isPunctuator.
+        // Any doubt yields null (no fact, nothing consumed): incomplete coverage beats a wrong fact.
+
+        /** Sorted indices of unit boundaries: real CREATE keywords, lone-line `/` and EOF. Built once. */
+        private val unitBoundaries: IntArray by lazy {
+            tokens.indices.filter {
+                isKeyword(it, "CREATE") || isLoneSlash(it) || tokens[it].type == GenericTokenType.EOF
+            }.toIntArray()
+        }
+
+        private fun isLoneSlash(index: Int): Boolean {
+            if (!isPunctuator(index, PlSqlPunctuator.DIVISION)) return false
+            val token = tokens[index]
+            val previousOnEarlierLine = index == 0 || tokens[index - 1].endLine < token.line
+            val next = tokens.getOrNull(index + 1)
+            val nextOnLaterLine = next == null || next.type == GenericTokenType.EOF || next.line > token.endLine
+            return previousOnEarlierLine && nextOnLaterLine
+        }
+
+        /** First boundary strictly after [create]; scans of that unit never reach it. */
+        private fun unitLimit(create: Int): Int {
+            var position = Arrays.binarySearch(unitBoundaries, create + 1)
+            if (position < 0) position = -position - 1
+            return if (position < unitBoundaries.size) unitBoundaries[position] else tokens.size
+        }
+
+        private fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean =
+            index in tokens.indices && tokens[index].type === punctuator
+
+        private fun tokenTypeAt(index: Int) = if (index in tokens.indices) tokens[index].type else null
+
+        private fun isNameBefore(index: Int, limit: Int) = index < limit && index in tokens.indices && isName(tokens[index])
+
+        private fun parseStandaloneProcedure(create: Int): ParsedUnit? {
+            if (!isKeyword(create, "CREATE")) return null
+            val limit = unitLimit(create)
+            var index = create + 1
+            val orReplace = isKeyword(index, "OR") && isKeyword(index + 1, "REPLACE")
+            if (orReplace) index += 2
+            if (isKeyword(index, "EDITIONABLE") || isKeyword(index, "NONEDITIONABLE")) index++
+            if (!isKeyword(index, "PROCEDURE")) return null
+            index++
+            if (isKeyword(index, "IF")) {
+                // IF NOT EXISTS cannot be combined with OR REPLACE (ORA-11541).
+                if (orReplace || !isKeyword(index + 1, "NOT") || !isKeyword(index + 2, "EXISTS")) return null
+                index += 3
+            }
+            val name = strictQualifiedName(index, limit) ?: return null
+            index = skipUnitOptions(name.second, limit) ?: return null
+            if (isKeyword(index, "WRAPPED")) {
+                // The lexer makes the whole payload one opaque WRAPPED_SOURCE token. No signature
+                // can be recovered, so the unit is skipped without a fact.
+                return if (index + 1 < limit && tokenTypeAt(index + 1) === PlSqlTokenType.WRAPPED_SOURCE) {
+                    ParsedUnit(emptyList(), index + 2)
+                } else {
+                    null
+                }
+            }
+            val parameters = when (val parsed = parseParametersStrict(index, limit)) {
+                StrictParameters.Absent -> emptyList()
+                StrictParameters.Failed -> return null
+                is StrictParameters.Parsed -> {
+                    index = parsed.next
+                    parsed.parameters
+                }
+            }
+            index = skipPropertiesStrict(index, limit) ?: return null
+            if (!isKeyword(index, "IS") && !isKeyword(index, "AS")) return null
+            val end = strictImplementationEnd(index + 1, limit) ?: return null
+            return ParsedUnit(
+                listOf(StandaloneProcedureDeclaration(name.first, parameters, fileId, range(create, end))),
+                end + 1
+            )
+        }
+
+        /** One or two name segments joined by a real `.`; a third segment is a failure. */
+        private fun strictQualifiedName(start: Int, limit: Int): Pair<QualifiedName, Int>? {
+            if (!isNameBefore(start, limit)) return null
+            val segments = mutableListOf(identifier(tokens[start]))
+            var index = start + 1
+            if (isPunctuator(index, PlSqlPunctuator.DOT)) {
+                if (!isNameBefore(index + 1, limit)) return null
+                segments += identifier(tokens[index + 1])
+                index += 2
+                if (isPunctuator(index, PlSqlPunctuator.DOT)) return null
+            }
+            return QualifiedName(segments) to index
+        }
+
+        /** `[TIMESTAMP 'literal'] [SHARING = METADATA|NONE]`; returns the next index or null. */
+        private fun skipUnitOptions(start: Int, limit: Int): Int? {
+            var index = start
+            if (isKeyword(index, "TIMESTAMP")) {
+                if (tokenTypeAt(index + 1) !== PlSqlTokenType.STRING_LITERAL) return null
+                index += 2
+            } else if (tokenTypeAt(index) === PlSqlTokenType.TIMESTAMP_LITERAL) {
+                index++
+            }
+            if (isKeyword(index, "SHARING")) {
+                if (!isPunctuator(index + 1, PlSqlPunctuator.EQUALS)) return null
+                if (!isKeyword(index + 2, "METADATA") && !isKeyword(index + 2, "NONE")) return null
+                index += 3
+            }
+            return index.takeIf { it < limit }
+        }
+
+        private fun isOpener(index: Int) =
+            isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) || isPunctuator(index, PlSqlPunctuator.LBRACKET)
+
+        private fun isCloser(index: Int) =
+            isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) || isPunctuator(index, PlSqlPunctuator.RBRACKET)
+
+        private fun closerFor(opener: Int) =
+            if (isPunctuator(opener, PlSqlPunctuator.LPARENTHESIS)) PlSqlPunctuator.RPARENTHESIS else PlSqlPunctuator.RBRACKET
+
+        /**
+         * Index of the `)` matching the `(` at [open], or null when nesting is unbalanced or crossed
+         * (`(` must close with `)`, `[` with `]`) before [limit], or a `;`/CREATE appears inside.
+         * Never falls back to the end of the file.
+         */
+        private fun strictClose(open: Int, limit: Int): Int? {
+            if (!isPunctuator(open, PlSqlPunctuator.LPARENTHESIS)) return null
+            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+            for (index in open until limit.coerceAtMost(tokens.size)) {
+                when {
+                    isOpener(index) -> expected.addLast(closerFor(index))
+                    isCloser(index) -> {
+                        if (expected.removeLastOrNull() !== tokens[index].type) return null
+                        if (expected.isEmpty()) return index
+                    }
+                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) || isKeyword(index, "CREATE") -> return null
+                }
+            }
+            return null
+        }
+
+        /**
+         * Depth-0 comma-separated parts of `(open, close)`; null for `()`, any empty part, or any
+         * crossed or unmatched delimiter (nesting is re-validated, not assumed from [close]).
+         */
+        private fun splitStrict(open: Int, close: Int): List<IntRange>? {
+            if (close == open + 1 || strictClose(open, close + 1) != close) return null
+            val parts = mutableListOf<IntRange>()
+            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+            var partStart = open + 1
+            for (index in open + 1..close) {
+                if (index == close || (expected.isEmpty() && isPunctuator(index, PlSqlPunctuator.COMMA))) {
+                    if (partStart >= index) return null
+                    parts += partStart until index
+                    partStart = index + 1
+                    continue
+                }
+                when {
+                    isOpener(index) -> expected.addLast(closerFor(index))
+                    isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return null
+                }
+            }
+            return parts.takeIf { expected.isEmpty() }
+        }
+
+        private sealed interface StrictParameters {
+            /** No parameter list: a valid empty signature. */
+            object Absent : StrictParameters
+            /** Every part parsed; ordinals are 1..n in declaration order. */
+            class Parsed(val parameters: List<ProjectParameter>, val next: Int) : StrictParameters
+            /** Any part or the list structure is invalid: the whole unit must be rejected. */
+            object Failed : StrictParameters
+        }
+
+        private fun parseParametersStrict(start: Int, limit: Int): StrictParameters {
+            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return StrictParameters.Absent
+            val close = strictClose(start, limit) ?: return StrictParameters.Failed
+            val parts = splitStrict(start, close) ?: return StrictParameters.Failed
+            val parameters = parts.mapIndexed { position, part ->
+                parseParameterStrict(part.first, part.last + 1, position + 1) ?: return StrictParameters.Failed
+            }
+            return StrictParameters.Parsed(immutableList(parameters), close + 1)
+        }
+
+        /** `name [IN] (OUT [NOCOPY] datatype | datatype [(DEFAULT|:=) expression])`, fully consumed. */
+        private fun parseParameterStrict(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
+            if (!isNameBefore(start, endExclusive)) return null
+            var cursor = start + 1
+            var mode = ParameterMode.IN
+            if (isKeyword(cursor, "IN")) cursor++
+            var nocopy = false
+            if (isKeyword(cursor, "OUT")) {
+                mode = if (mode == ParameterMode.IN && isKeyword(cursor - 1, "IN")) ParameterMode.IN_OUT else ParameterMode.OUT
+                cursor++
+                if (isKeyword(cursor, "NOCOPY")) {
+                    nocopy = true
+                    cursor++
+                }
+            } else if (isKeyword(cursor, "NOCOPY")) {
+                return null
+            }
+            var defaultIndex: Int? = null
+            var depth = 0
+            for (index in cursor until endExclusive) {
+                when {
+                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> depth++
+                    isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) -> depth--
+                    depth == 0 && (isKeyword(index, "DEFAULT") || isPunctuator(index, PlSqlPunctuator.ASSIGNMENT)) -> {
+                        defaultIndex = index
+                        break
+                    }
+                }
+            }
+            if (defaultIndex != null && (mode != ParameterMode.IN || defaultIndex + 1 >= endExclusive)) return null
+            val typeEnd = defaultIndex ?: endExclusive
+            if (!strictDatatype(cursor, typeEnd)) return null
+            val type = typeReference(cursor, typeEnd) ?: return null
+            return ProjectParameter(name = identifier(tokens[start]), ordinal = ordinal, mode = mode, nocopy = nocopy,
+                typeRef = type, defaultPresent = defaultIndex != null, sourceRange = range(start, endExclusive - 1))
+        }
+
+        /**
+         * Conservative datatype shape: `name[.name…] [%TYPE|%ROWTYPE]`, `REF name[.name]`, or a
+         * name followed only by balanced groups and words from [DATATYPE_CONTINUATIONS]. Anything
+         * else (an extra free identifier, punctuation, unknown words) is rejected: no fact.
+         */
+        private fun strictDatatype(start: Int, endExclusive: Int): Boolean {
+            if (start >= endExclusive) return false
+            var index = start
+            val ref = isKeyword(index, "REF")
+            if (ref) index++
+            if (!isNameBefore(index, endExclusive)) return false
+            index++
+            while (isPunctuator(index, PlSqlPunctuator.DOT) && isNameBefore(index + 1, endExclusive)) index += 2
+            if (index == endExclusive) return true
+            if (ref) return false
+            if (isPunctuator(index, PlSqlPunctuator.MOD)) {
+                return index + 2 == endExclusive && (isKeyword(index + 1, "TYPE") || isKeyword(index + 1, "ROWTYPE"))
+            }
+            while (index < endExclusive) {
+                index = when {
+                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> {
+                        val close = strictClose(index, endExclusive) ?: return false
+                        close + 1
+                    }
+                    tokens[index].type is PlSqlKeyword && valueAt(index) in DATATYPE_CONTINUATIONS -> index + 1
+                    else -> return false
+                }
+            }
+            return true
+        }
+
+        /**
+         * Skips subprogram properties (grammar `subprogramProperty`, any order). Each clause's
+         * mandatory structure is verified; anything unknown or malformed yields null.
+         */
+        private fun skipPropertiesStrict(start: Int, limit: Int): Int? {
+            var index = start
+            while (index < limit) {
+                index = when {
+                    isKeyword(index, "DETERMINISTIC") || isKeyword(index, "SHARD_ENABLE") -> index + 1
+                    isKeyword(index, "PIPELINED") -> {
+                        var next = index + 1
+                        if ((isKeyword(next, "ROW") || isKeyword(next, "TABLE")) && isKeyword(next + 1, "POLYMORPHIC")) next += 2
+                        // PIPELINED ... USING ends the declaration with `;`, which a procedure cannot do.
+                        if (isKeyword(next, "USING")) return null
+                        next
+                    }
+                    isKeyword(index, "SQL_MACRO") -> sqlMacroEnd(index + 1, limit) ?: return null
+                    isKeyword(index, "PARALLEL_ENABLE") -> parallelEnableEnd(index + 1, limit) ?: return null
+                    isKeyword(index, "ORDER") || isKeyword(index, "CLUSTER") -> streamingEnd(index, limit) ?: return null
+                    isKeyword(index, "RESULT_CACHE") ->
+                        if (isKeyword(index + 1, "RELIES_ON")) {
+                            delimitedListEnd(index + 2, limit) { strictQualifiedNameAnyLength(it, limit) } ?: return null
+                        } else {
+                            index + 1
+                        }
+                    isKeyword(index, "AUTHID") ->
+                        if (isKeyword(index + 1, "CURRENT_USER") || isKeyword(index + 1, "DEFINER")) index + 2 else return null
+                    isKeyword(index, "DEFAULT") ->
+                        if (isKeyword(index + 1, "COLLATION") && isKeyword(index + 2, "USING_NLS_COMP")) index + 3 else return null
+                    isKeyword(index, "ACCESSIBLE") ->
+                        if (isKeyword(index + 1, "BY")) delimitedListEnd(index + 2, limit, ::accessorEnd) ?: return null else return null
+                    else -> return index
+                }
+            }
+            return null
+        }
+
+        /**
+         * `( item {, item} )` starting at [open], where [item] returns the index after one item or
+         * null. Requires at least one item, real commas and a real closing parenthesis.
+         */
+        private inline fun delimitedListEnd(open: Int, limit: Int, item: (Int) -> Int?): Int? {
+            if (!isPunctuator(open, PlSqlPunctuator.LPARENTHESIS)) return null
+            var index = open + 1
+            while (true) {
+                index = item(index) ?: return null
+                if (index >= limit) return null
+                if (isPunctuator(index, PlSqlPunctuator.RPARENTHESIS)) return index + 1
+                if (!isPunctuator(index, PlSqlPunctuator.COMMA)) return null
+                index++
+            }
+        }
+
+        private fun nameEnd(index: Int, limit: Int): Int? = if (isNameBefore(index, limit)) index + 1 else null
+
+        /** `name {. name}` of any length (object references in RELIES_ON). */
+        private fun strictQualifiedNameAnyLength(start: Int, limit: Int): Int? {
+            var index = nameEnd(start, limit) ?: return null
+            while (isPunctuator(index, PlSqlPunctuator.DOT)) index = nameEnd(index + 1, limit) ?: return null
+            return index
+        }
+
+        /** Accessor of ACCESSIBLE BY: `[FUNCTION|PROCEDURE|PACKAGE|TRIGGER|TYPE] unit_name`. */
+        private fun accessorEnd(start: Int): Int? {
+            val limit = tokens.size
+            val index = if (UNIT_KINDS.any { isKeyword(start, it) }) start + 1 else start
+            return strictQualifiedName(index, limit)?.second
+        }
+
+        /** `[( [TYPE =>] (TABLE|SCALAR) )]`. */
+        private fun sqlMacroEnd(start: Int, limit: Int): Int? {
+            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return start
+            var index = start + 1
+            if (isKeyword(index, "TYPE")) {
+                if (!isPunctuator(index + 1, PlSqlPunctuator.ASSOCIATION)) return null
+                index += 2
+            }
+            if (!isKeyword(index, "TABLE") && !isKeyword(index, "SCALAR")) return null
+            return if (index + 1 < limit && isPunctuator(index + 1, PlSqlPunctuator.RPARENTHESIS)) index + 2 else null
+        }
+
+        /**
+         * `[( PARTITION name BY (ANY | (HASH|RANGE|VALUE) (name {, name})) [streaming] )]`.
+         */
+        private fun parallelEnableEnd(start: Int, limit: Int): Int? {
+            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return start
+            if (!isKeyword(start + 1, "PARTITION") || nameEnd(start + 2, limit) == null || !isKeyword(start + 3, "BY")) return null
+            var index = start + 4
+            index = when {
+                isKeyword(index, "ANY") -> index + 1
+                isKeyword(index, "HASH") || isKeyword(index, "RANGE") || isKeyword(index, "VALUE") ->
+                    delimitedListEnd(index + 1, limit) { nameEnd(it, limit) } ?: return null
+                else -> return null
+            }
+            if (isKeyword(index, "ORDER") || isKeyword(index, "CLUSTER")) index = streamingEnd(index, limit) ?: return null
+            return if (index < limit && isPunctuator(index, PlSqlPunctuator.RPARENTHESIS)) index + 1 else null
+        }
+
+        /** `(ORDER|CLUSTER) name BY ( name {, name} )`. */
+        private fun streamingEnd(start: Int, limit: Int): Int? {
+            if (nameEnd(start + 1, limit) == null || !isKeyword(start + 2, "BY")) return null
+            return delimitedListEnd(start + 3, limit) { nameEnd(it, limit) }
+        }
+
+        /** End (a real `;` below [limit]) of the body or call specification starting at [start]. */
+        private fun strictImplementationEnd(start: Int, limit: Int): Int? {
+            if (start >= limit) return null
+            val end = when {
+                isKeyword(start, "LANGUAGE") && isKeyword(start + 1, "JAVA") ->
+                    if (isKeyword(start + 2, "NAME") && tokenTypeAt(start + 3) === PlSqlTokenType.STRING_LITERAL) start + 4 else return null
+                isKeyword(start, "LANGUAGE") || isKeyword(start, "EXTERNAL") -> cSpecificationEnd(start, limit) ?: return null
+                isKeyword(start, "MLE") -> mleSpecificationEnd(start + 1, limit) ?: return null
+                // A quoted identifier spelled like a call-specification keyword is not one.
+                tokens[start].type == GenericTokenType.IDENTIFIER && valueAt(start) in CALL_SPECIFICATION_WORDS -> return null
+                else -> implementationEnd(start, limit) ?: return null
+            }
+            return end.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
+        }
+
+        /**
+         * `(LANGUAGE C | EXTERNAL) [NAME id] LIBRARY id [NAME id] [AGENT IN (id {, id})]
+         * [WITH CONTEXT] [PARAMETERS (param {, param})]`, returning the index of the `;`.
+         * `C` is lexed as an identifier; a quoted `"C"` is not accepted. External parameters are
+         * checked conservatively: each part must be non-empty words only (no punctuation).
+         */
+        private fun cSpecificationEnd(start: Int, limit: Int): Int? {
+            var index = when {
+                isKeyword(start, "EXTERNAL") -> start + 1
+                isKeyword(start, "LANGUAGE") && isUnquotedWord(start + 1, "C") -> start + 2
+                else -> return null
+            }
+            if (isKeyword(index, "NAME")) index = nameEnd(index + 1, limit) ?: return null
+            if (!isKeyword(index, "LIBRARY")) return null
+            index = nameEnd(index + 1, limit) ?: return null
+            if (isKeyword(index, "NAME")) index = nameEnd(index + 1, limit) ?: return null
+            if (isKeyword(index, "AGENT")) {
+                if (!isKeyword(index + 1, "IN")) return null
+                index = delimitedListEnd(index + 2, limit) { nameEnd(it, limit) } ?: return null
+            }
+            if (isKeyword(index, "WITH")) {
+                if (!isKeyword(index + 1, "CONTEXT")) return null
+                index += 2
+            }
+            if (isKeyword(index, "PARAMETERS")) index = delimitedListEnd(index + 1, limit) { externalParameterEnd(it, limit) } ?: return null
+            return index.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
+        }
+
+        /**
+         * One `EXTERNAL_PARAMETER`, following the grammar's ordered alternatives:
+         * `CONTEXT` | `SELF (TDO | property)` | `(RETURN | name) [property] [BY REFERENCE] [datatype]`.
+         * Returns the index after the parameter; the caller requires a real `,` or `)` there.
+         * The optional datatype must pass [strictDatatype]; anything else rejects the unit.
+         */
+        private fun externalParameterEnd(start: Int, limit: Int): Int? {
+            if (start >= limit) return null
+            // CONTEXT is a complete parameter; if anything else follows it is an ordinary (unreserved)
+            // name, as the grammar's third alternative allows (e.g. `CONTEXT x`).
+            if (isKeyword(start, "CONTEXT") && (isPunctuator(start + 1, PlSqlPunctuator.COMMA) ||
+                    isPunctuator(start + 1, PlSqlPunctuator.RPARENTHESIS))) return start + 1
+            if (isKeyword(start, "SELF")) {
+                // `SELF (TDO | property)` must end the parameter; otherwise SELF is an ordinary name.
+                val selfEnd = if (isKeyword(start + 1, "TDO")) start + 2 else externalParameterPropertyEnd(start + 1)
+                if (selfEnd != null && (isPunctuator(selfEnd, PlSqlPunctuator.COMMA) ||
+                        isPunctuator(selfEnd, PlSqlPunctuator.RPARENTHESIS))) return selfEnd
+            }
+            if (!isKeyword(start, "RETURN") && !isNameBefore(start, limit)) return null
+            var index = start + 1
+            index = externalParameterPropertyEnd(index) ?: index
+            if (isKeyword(index, "BY")) {
+                if (!isKeyword(index + 1, "REFERENCE")) return null
+                index += 2
+            }
+            val datatypeEnd = externalDatatypeEnd(index, limit) ?: return null
+            if (datatypeEnd > index && !strictDatatype(index, datatypeEnd)) return null
+            return datatypeEnd
+        }
+
+        /** `INDICATOR [STRUCT | TDO]` | `LENGTH` | `DURATION` | `MAXLEN` | `CHARSETID` | `CHARSETFORM`. */
+        private fun externalParameterPropertyEnd(index: Int): Int? = when {
+            isKeyword(index, "INDICATOR") ->
+                if (isKeyword(index + 1, "STRUCT") || isKeyword(index + 1, "TDO")) index + 2 else index + 1
+            EXTERNAL_PARAMETER_PROPERTIES.any { isKeyword(index, it) } -> index + 1
+            else -> null
+        }
+
+        /** Index of the depth-0 `,` or `)` ending a datatype slice that starts at [start]. */
+        private fun externalDatatypeEnd(start: Int, limit: Int): Int? {
+            var index = start
+            while (index < limit) {
+                when {
+                    isPunctuator(index, PlSqlPunctuator.COMMA) || isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) -> return index
+                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> index = (strictClose(index, limit) ?: return null) + 1
+                    isCloser(index) || isOpener(index) || isPunctuator(index, PlSqlPunctuator.SEMICOLON) -> return null
+                    else -> index++
+                }
+            }
+            return null
+        }
+
+        private fun isUnquotedWord(index: Int, word: String): Boolean =
+            index in tokens.indices && tokens[index].type == GenericTokenType.IDENTIFIER &&
+                tokens[index].originalValue.equals(word, ignoreCase = true)
+
+        /** `LANGUAGE name[.name] [PURE] <inline source>` or `MODULE name[.name] [ENV name[.name]] SIGNATURE 'str'`. */
+        private fun mleSpecificationEnd(start: Int, limit: Int): Int? {
+            if (isKeyword(start, "LANGUAGE")) {
+                var index = strictQualifiedName(start + 1, limit)?.second ?: return null
+                if (isKeyword(index, "PURE")) index++
+                return if (tokenTypeAt(index) === PlSqlTokenType.MLE_INLINE_SOURCE) index + 1 else null
+            }
+            if (!isKeyword(start, "MODULE")) return null
+            var index = strictQualifiedName(start + 1, limit)?.second ?: return null
+            if (isKeyword(index, "ENV")) index = strictQualifiedName(index + 1, limit)?.second ?: return null
+            if (!isKeyword(index, "SIGNATURE") || tokenTypeAt(index + 1) !== PlSqlTokenType.STRING_LITERAL) return null
+            return index + 2
         }
 
         private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
