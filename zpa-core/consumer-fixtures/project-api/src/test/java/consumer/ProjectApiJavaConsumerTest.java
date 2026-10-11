@@ -1,38 +1,13 @@
 package consumer;
 
-import com.felipebz.zpa.api.project.ProjectDeclarationId;
-import com.felipebz.zpa.api.project.ProjectDeclarationKind;
-import com.felipebz.zpa.api.project.ProjectDeclarationRole;
-import com.felipebz.zpa.api.project.ProjectSubprogramView;
-import com.felipebz.zpa.api.project.ProjectDeclarationView;
-import com.felipebz.zpa.api.project.ProjectFunctionView;
-import com.felipebz.zpa.api.project.ProjectIdentifier;
-import com.felipebz.zpa.api.project.ProjectInventory;
-import com.felipebz.zpa.api.project.ProjectNamedTypeResolution;
-import com.felipebz.zpa.api.project.ProjectPackageSubprogramView;
-import com.felipebz.zpa.api.project.ProjectPackageTypeView;
-import com.felipebz.zpa.api.project.ProjectParameterMode;
-import com.felipebz.zpa.api.project.ProjectParameterView;
-import com.felipebz.zpa.api.project.ProjectPreparationState;
-import com.felipebz.zpa.api.project.ProjectQualifiedName;
-import com.felipebz.zpa.api.project.ProjectRecordFieldView;
-import com.felipebz.zpa.api.project.ProjectSnapshot;
-import com.felipebz.zpa.api.project.ProjectSnapshots;
-import com.felipebz.zpa.api.project.ProjectSourceInput;
-import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation;
-import com.felipebz.zpa.api.project.ProjectSubtypeView;
-import com.felipebz.zpa.api.project.ProjectTypeReference;
-import com.felipebz.zpa.api.project.ProjectTypeShape;
+import com.felipebz.zpa.api.project.*;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -392,5 +367,202 @@ class ProjectApiJavaConsumerTest {
         assertThat(correlation.getStatus()).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED);
         assertThat(correlation.getCandidates()).extracting(ProjectDeclarationView::getId).doesNotContain(standalone.getId());
         assertThatThrownBy(() -> snapshot.correlateSpecification(standalone.getId())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ---- Package variables and constants ----
+
+    private static ProjectSnapshot config() {
+        return ProjectSnapshots.prepare(List.of(
+            counted("db/config_spec.sql", "config_spec.sql"), counted("db/config_duplicate.sql", "config_duplicate.sql"),
+            counted("db/shop_spec.sql", "shop_spec.sql"), counted("db/shop_body.sql", "shop_body.sql")), false);
+    }
+
+    private static List<ProjectPackageValueView> values(ProjectSnapshot snapshot, String file) {
+        List<ProjectPackageValueView> result = new ArrayList<>();
+        for (ProjectDeclarationView view : snapshot.declarationsFor(file).getDeclarations()) {
+            if (view instanceof ProjectPackageValueView value) {
+                result.add(value);
+            }
+        }
+        return result;
+    }
+
+    private static ProjectPackageValueView value(ProjectSnapshot snapshot, String file, String localName) {
+        return values(snapshot, file).stream()
+            .filter(v -> v.getLocalName().equals(ProjectIdentifier.fromSource(localName))).findFirst().orElseThrow();
+    }
+
+    @Test
+    void exposesVariablesAndConstantsWithTheirDeclaredTypes() {
+        ProjectSnapshot snapshot = config();
+        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_WITH_DECLARATIONS);
+        List<ProjectPackageValueView> values = values(snapshot, "db/config_spec.sql");
+        assertThat(values).extracting(v -> v.getLocalName().getOriginalSpelling()).containsExactly(
+            "g", "c", "\"Mixed Case\"", "anchor_source", "anchor_copy", "row_copy", "external_value", "ref_value");
+
+        ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "g");
+        ProjectPackageValueView c = value(snapshot, "db/config_spec.sql", "c");
+        assertThat(g.getKind()).isEqualTo(ProjectDeclarationKind.PACKAGE_VARIABLE);
+        assertThat(c.getKind()).isEqualTo(ProjectDeclarationKind.PACKAGE_CONSTANT);
+        assertThat(g.isConstant()).isFalse();
+        assertThat(c.isConstant()).isTrue();
+        assertThat(values).extracting(ProjectPackageValueView::getRole).containsOnly(ProjectDeclarationRole.SPECIFICATION);
+        assertThat(values).extracting(ProjectPackageValueView::getOwner).containsOnly(name("app", "config"));
+        assertThat(g.getQualifiedName()).isEqualTo(name("app", "config", "g"));
+        assertThat(g.getFileId()).isEqualTo("db/config_spec.sql");
+        ProjectSourceRange range = g.getSourceRange();
+        assertThat(range.getFileId()).isEqualTo("db/config_spec.sql");
+        assertThat(range.getStartLine()).isEqualTo(2);
+        assertThat(c.getSourceRange().getStartLine()).isEqualTo(3);
+
+        assertThat(g.getTypeRef().getKind()).isEqualTo(ProjectTypeReference.Kind.NAMED);
+        assertThat(g.getTypeRef().getName()).isEqualTo(name("NUMBER"));
+        assertThat(g.getTypeRef().getAnchor()).isEmpty();
+        assertThat(c.getTypeRef().getName()).isEqualTo(name("VARCHAR2"));
+        assertThat(c.getTypeRef().getSourceRange().getStartLine()).isEqualTo(3);
+    }
+
+    @Test
+    void quotedAndUnquotedIdentifiersKeepTheirSemantics() {
+        ProjectSnapshot snapshot = config();
+        ProjectPackageValueView mixed = value(snapshot, "db/config_spec.sql", "\"Mixed Case\"");
+        assertThat(mixed.getLocalName().isQuoted()).isTrue();
+        assertThat(mixed.getLocalName()).isNotEqualTo(ProjectIdentifier.fromSource("mixed case"));
+        assertThat(snapshot.findDeclarations(name("app", "config", "\"Mixed Case\"")).getDeclarations()).hasSize(1);
+        assertThat(snapshot.findDeclarations(name("app", "config", "mixed_case")).getDeclarations()).isEmpty();
+        ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "G");
+        assertThat(g.getLocalName().isQuoted()).isFalse();
+        assertThat(g.getLocalName()).isEqualTo(ProjectIdentifier.fromSource("g"));
+    }
+
+    @Test
+    void externalAnchoredAndRefTypesRemainUnresolvedSyntax() {
+        ProjectSnapshot snapshot = config();
+        ProjectTypeReference external = value(snapshot, "db/config_spec.sql", "external_value").getTypeRef();
+        assertThat(external.getKind()).isEqualTo(ProjectTypeReference.Kind.NAMED);
+        assertThat(external.getName()).isEqualTo(name("ext_schema", "external_type"));
+        assertThat(external.getAnchor()).isEmpty();
+
+        ProjectTypeReference anchored = value(snapshot, "db/config_spec.sql", "anchor_copy").getTypeRef();
+        assertThat(anchored.getKind()).isEqualTo(ProjectTypeReference.Kind.ANCHORED);
+        assertThat(anchored.getAnchor()).contains(ProjectTypeReference.Anchor.TYPE);
+        assertThat(anchored.getName()).isEqualTo(name("anchor_source"));
+
+        ProjectTypeReference row = value(snapshot, "db/config_spec.sql", "row_copy").getTypeRef();
+        assertThat(row.getKind()).isEqualTo(ProjectTypeReference.Kind.ANCHORED);
+        assertThat(row.getAnchor()).contains(ProjectTypeReference.Anchor.ROWTYPE);
+        assertThat(row.getName()).isEqualTo(name("orders"));
+
+        ProjectTypeReference ref = value(snapshot, "db/config_spec.sql", "ref_value").getTypeRef();
+        assertThat(ref.getKind()).isEqualTo(ProjectTypeReference.Kind.REF);
+        assertThat(ref.getName()).isEqualTo(name("ext_schema", "obj_t"));
+
+        // The anchor is not followed, even though anchor_source is declared in the same specification.
+        assertThat(snapshot.resolveNamedType(name("anchor_source"), name("app", "config")).getStatus())
+            .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+        assertThat(snapshot.resolveNamedType(name("external_type"), name("ext_schema")).getStatus())
+            .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+    }
+
+    @Test
+    void inventoryPathsShareIdsAndDuplicateSpecificationsStayDistinct() {
+        ProjectSnapshot snapshot = config();
+        ProjectQualifiedName g = name("app", "config", "g");
+        List<ProjectPackageValueView> byName = new ArrayList<>();
+        for (ProjectDeclarationView view : snapshot.findDeclarations(g).getDeclarations()) {
+            if (view instanceof ProjectPackageValueView value) {
+                byName.add(value);
+            }
+        }
+        assertThat(byName).extracting(ProjectPackageValueView::getFileId)
+            .containsExactlyInAnyOrder("db/config_spec.sql", "db/config_duplicate.sql");
+        assertThat(byName).extracting(ProjectPackageValueView::getId).doesNotHaveDuplicates();
+        for (ProjectPackageValueView found : byName) {
+            ProjectPackageValueView viaFile = value(snapshot, found.getFileId(), "g");
+            assertThat(viaFile.getId()).isEqualTo(found.getId());
+            assertThat(snapshot.getDeclarations()).extracting(ProjectDeclarationView::getId).contains(found.getId());
+        }
+        ProjectPackageValueView duplicate = value(snapshot, "db/config_duplicate.sql", "g");
+        assertThat(duplicate.getTypeRef().getName()).isEqualTo(name("VARCHAR2"));
+        // The same package name is not deduplicated.
+        assertThat(snapshot.findDeclarations(name("app", "config")).getDeclarations())
+            .extracting(ProjectDeclarationView::getKind)
+            .containsExactly(ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE);
+        assertThat(snapshot.findDeclarations(name("app", "config", "missing")).getDeclarations()).isEmpty();
+        assertThat(snapshot.findDeclarations(name("app", "config", "missing")).getStatus())
+            .isEqualTo(ProjectInventory.Status.COMPLETE);
+    }
+
+    @Test
+    void valuesDoNotEnterTypeOrSubprogramSurfaces() {
+        ProjectSnapshot snapshot = config();
+        ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "g");
+        assertThat((Object) g).isNotInstanceOf(ProjectTypeDeclarationView.class);
+        assertThat((Object) g).isNotInstanceOf(ProjectSubprogramView.class);
+        assertThat((Object) g).isNotInstanceOf(ProjectPackageSubprogramView.class);
+
+        // A procedure with the same textual name is a separate occurrence and the only package subprogram candidate.
+        List<ProjectPackageSubprogramView> candidates = snapshot
+            .findPackageSubprograms(name("app", "config"), ProjectIdentifier.fromSource("g")).getDeclarations();
+        assertThat(candidates).hasSize(1);
+        assertThat(candidates.get(0).getKind()).isEqualTo(ProjectDeclarationKind.PACKAGE_PROCEDURE);
+        assertThat(candidates.get(0).getId()).isNotEqualTo(g.getId());
+        assertThat(snapshot.findDeclarations(name("app", "config", "g")).getDeclarations()).hasSize(3);
+
+        ProjectNamedTypeResolution type = snapshot.resolveNamedType(name("rec_t"), name("app", "config"));
+        assertThat(type.getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED);
+        assertThat(type.getDeclaration().orElseThrow()).isInstanceOf(ProjectPackageTypeView.class);
+
+        assertThatThrownBy(() -> snapshot.correlateSpecification(g.getId())).isInstanceOf(IllegalArgumentException.class);
+        // Existing shop queries are unchanged by the new values.
+        assertThat(snapshot.findPackageSubprograms(name("shop"), ProjectIdentifier.fromSource("place")).getDeclarations())
+            .hasSize(3);
+    }
+
+    @Test
+    void valueViewsExposeNoMutationSurface() {
+        ProjectSnapshot snapshot = config();
+        assertThatThrownBy(() -> snapshot.declarationsFor("db/config_spec.sql").getDeclarations().clear())
+            .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> snapshot.findDeclarations(name("app", "config", "g")).getDeclarations().remove(0))
+            .isInstanceOf(UnsupportedOperationException.class);
+        ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "g");
+        assertThat(ProjectPackageValueView.class.getMethods()).extracting(java.lang.reflect.Method::getName)
+            .noneMatch(n -> n.startsWith("set"));
+        assertThat(g.getOwner().getSegments()).isUnmodifiable();
+        assertThat(g.getId()).isEqualTo(value(snapshot, "db/config_spec.sql", "g").getId());
+        assertThat(g.getId().hashCode()).isEqualTo(value(snapshot, "db/config_spec.sql", "g").getId().hashCode());
+    }
+
+    private static String describe(ProjectDeclarationKind kind) {
+        // Deliberately exhaustive and without a default branch: this stops compiling when the enum grows.
+        return switch (kind) {
+            case PACKAGE -> "package";
+            case PACKAGE_BODY -> "package body";
+            case STANDALONE_TYPE -> "standalone type";
+            case PACKAGE_TYPE -> "package type";
+            case PACKAGE_SUBTYPE -> "package subtype";
+            case PACKAGE_PROCEDURE -> "package procedure";
+            case PACKAGE_FUNCTION -> "package function";
+            case SEQUENCE -> "sequence";
+            case STANDALONE_PROCEDURE -> "standalone procedure";
+            case STANDALONE_FUNCTION -> "standalone function";
+            case PACKAGE_VARIABLE -> "package variable";
+            case PACKAGE_CONSTANT -> "package constant";
+        };
+    }
+
+    @Test
+    void declarationKindEnumHasTheDocumentedConstantsInOrder() {
+        assertThat(ProjectDeclarationKind.values()).extracting(Enum::name).containsExactly(
+            "PACKAGE", "PACKAGE_BODY", "STANDALONE_TYPE", "PACKAGE_TYPE", "PACKAGE_SUBTYPE", "PACKAGE_PROCEDURE",
+            "PACKAGE_FUNCTION", "SEQUENCE", "STANDALONE_PROCEDURE", "STANDALONE_FUNCTION", "PACKAGE_VARIABLE",
+            "PACKAGE_CONSTANT");
+        for (ProjectDeclarationKind kind : ProjectDeclarationKind.values()) {
+            assertThat(describe(kind)).isNotBlank();
+        }
+        assertThat(describe(ProjectDeclarationKind.PACKAGE_VARIABLE)).isEqualTo("package variable");
+        assertThat(ProjectDeclarationKind.PACKAGE_VARIABLE.ordinal()).isEqualTo(10);
+        assertThat(ProjectDeclarationKind.PACKAGE_CONSTANT.ordinal()).isEqualTo(11);
     }
 }

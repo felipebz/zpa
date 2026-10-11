@@ -1,27 +1,7 @@
 package consumer
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.ProjectDeclarationId
-import com.felipebz.zpa.api.project.ProjectDeclarationKind
-import com.felipebz.zpa.api.project.ProjectDeclarationRole
-import com.felipebz.zpa.api.project.ProjectFunctionView
-import com.felipebz.zpa.api.project.ProjectIdentifier
-import com.felipebz.zpa.api.project.ProjectInventory
-import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
-import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
-import com.felipebz.zpa.api.project.ProjectPackageTypeView
-import com.felipebz.zpa.api.project.ProjectParameterMode
-import com.felipebz.zpa.api.project.ProjectPreparationState
-import com.felipebz.zpa.api.project.ProjectQualifiedName
-import com.felipebz.zpa.api.project.ProjectSnapshot
-import com.felipebz.zpa.api.project.ProjectSnapshots
-import com.felipebz.zpa.api.project.ProjectSourceInput
-import com.felipebz.zpa.api.project.ProjectSourceReader
-import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation
-import com.felipebz.zpa.api.project.ProjectSubprogramView
-import com.felipebz.zpa.api.project.ProjectSubtypeView
-import com.felipebz.zpa.api.project.ProjectTypeReference
-import com.felipebz.zpa.api.project.ProjectTypeShape
+import com.felipebz.zpa.api.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -258,5 +238,133 @@ class ProjectApiKotlinConsumerTest {
         assertThat(correlation.status).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED)
         assertThat(correlation.candidates.map { it.id }).doesNotContain(standalone.id)
         assertThatThrownBy { snapshot.correlateSpecification(standalone.id) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    // ---- Package variables and constants ----
+
+    private fun config(): ProjectSnapshot = ProjectSnapshots.prepare(
+        listOf(
+            counted("db/config_spec.sql", "config_spec.sql"), counted("db/config_duplicate.sql", "config_duplicate.sql"),
+            counted("db/shop_spec.sql", "shop_spec.sql"), counted("db/shop_body.sql", "shop_body.sql")
+        ), false
+    )
+
+    private fun ProjectSnapshot.valuesIn(file: String): List<ProjectPackageValueView> =
+        declarationsFor(file).declarations.filterIsInstance<ProjectPackageValueView>()
+
+    private fun ProjectSnapshot.value(file: String, localName: String): ProjectPackageValueView =
+        valuesIn(file).single { it.localName == id(localName) }
+
+    @Test
+    fun exposesVariablesAndConstantsWithTheirDeclaredTypes() {
+        val snapshot = config()
+        val values = snapshot.valuesIn("db/config_spec.sql")
+        assertThat(values.map { it.localName.originalSpelling }).containsExactly(
+            "g", "c", "\"Mixed Case\"", "anchor_source", "anchor_copy", "row_copy", "external_value", "ref_value"
+        )
+        val g = snapshot.value("db/config_spec.sql", "g")
+        val c = snapshot.value("db/config_spec.sql", "c")
+        assertThat(g.kind).isEqualTo(ProjectDeclarationKind.PACKAGE_VARIABLE)
+        assertThat(c.kind).isEqualTo(ProjectDeclarationKind.PACKAGE_CONSTANT)
+        assertThat(g.isConstant).isFalse()
+        assertThat(c.isConstant).isTrue()
+        assertThat(values.map { it.role }).containsOnly(ProjectDeclarationRole.SPECIFICATION)
+        assertThat(values.map { it.owner }).containsOnly(n("app", "config"))
+        assertThat(g.qualifiedName).isEqualTo(n("app", "config", "g"))
+        assertThat(g.sourceRange.fileId).isEqualTo("db/config_spec.sql")
+        assertThat(g.sourceRange.startLine).isEqualTo(2)
+        assertThat(g.typeRef.kind).isEqualTo(ProjectTypeReference.Kind.NAMED)
+        assertThat(g.typeRef.name).isEqualTo(n("NUMBER"))
+        assertThat(c.typeRef.name).isEqualTo(n("VARCHAR2"))
+        assertThat(c.typeRef.sourceRange.startLine).isEqualTo(3)
+    }
+
+    @Test
+    fun quotedNamesAndUnresolvedTypeSyntax() {
+        val snapshot = config()
+        val mixed = snapshot.value("db/config_spec.sql", "\"Mixed Case\"")
+        assertThat(mixed.localName.isQuoted).isTrue()
+        assertThat(mixed.localName).isNotEqualTo(id("mixed case"))
+        assertThat(snapshot.findDeclarations(n("app", "config", "mixed_case")).declarations).isEmpty()
+
+        val external = snapshot.value("db/config_spec.sql", "external_value").typeRef
+        assertThat(external.kind).isEqualTo(ProjectTypeReference.Kind.NAMED)
+        assertThat(external.name).isEqualTo(n("ext_schema", "external_type"))
+        assertThat(external.anchor).isEmpty
+        val anchored = snapshot.value("db/config_spec.sql", "anchor_copy").typeRef
+        assertThat(anchored.kind).isEqualTo(ProjectTypeReference.Kind.ANCHORED)
+        assertThat(anchored.anchor).contains(ProjectTypeReference.Anchor.TYPE)
+        assertThat(anchored.name).isEqualTo(n("anchor_source"))
+        val row = snapshot.value("db/config_spec.sql", "row_copy").typeRef
+        assertThat(row.anchor).contains(ProjectTypeReference.Anchor.ROWTYPE)
+        assertThat(row.name).isEqualTo(n("orders"))
+        val ref = snapshot.value("db/config_spec.sql", "ref_value").typeRef
+        assertThat(ref.kind).isEqualTo(ProjectTypeReference.Kind.REF)
+        assertThat(ref.name).isEqualTo(n("ext_schema", "obj_t"))
+        assertThat(snapshot.resolveNamedType(n("anchor_source"), n("app", "config")).status)
+            .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+    }
+
+    @Test
+    fun inventoryPathsShareIdsAndDuplicatesStayDistinct() {
+        val snapshot = config()
+        val byName = snapshot.findDeclarations(n("app", "config", "g")).declarations
+        val values = byName.filterIsInstance<ProjectPackageValueView>()
+        assertThat(values.map { it.fileId }).containsExactlyInAnyOrder("db/config_spec.sql", "db/config_duplicate.sql")
+        assertThat(values.map { it.id }).doesNotHaveDuplicates()
+        values.forEach { found ->
+            assertThat(snapshot.value(found.fileId, "g").id).isEqualTo(found.id)
+            assertThat(snapshot.declarations.map { it.id }).contains(found.id)
+        }
+        assertThat(byName).hasSize(3)
+        assertThat(snapshot.findDeclarations(n("app", "config")).declarations.map { it.kind })
+            .containsExactly(ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE)
+        assertThat(snapshot.findDeclarations(n("app", "config", "missing")).declarations).isEmpty()
+        // The Java and Kotlin consumers observe the same declared types.
+        assertThat(snapshot.value("db/config_duplicate.sql", "g").typeRef.name).isEqualTo(n("VARCHAR2"))
+    }
+
+    @Test
+    fun valuesAreNeitherTypesNorSubprograms() {
+        val snapshot = config()
+        val g = snapshot.value("db/config_spec.sql", "g")
+        assertThat(g is ProjectTypeDeclarationView).isFalse()
+        assertThat(g is ProjectSubprogramView).isFalse()
+        assertThat(g is ProjectPackageSubprogramView).isFalse()
+        val candidates = snapshot.findPackageSubprograms(n("app", "config"), id("g")).declarations
+        assertThat(candidates.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE_PROCEDURE)
+        assertThat(candidates.single().id).isNotEqualTo(g.id)
+        val type = snapshot.resolveNamedType(n("rec_t"), n("app", "config"))
+        assertThat(type.status).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED)
+        assertThat(type.declaration.get()).isInstanceOf(ProjectPackageTypeView::class.java)
+        assertThatThrownBy { snapshot.correlateSpecification(g.id) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(snapshot.findPackageSubprograms(n("shop"), id("place")).declarations).hasSize(3)
+        assertThatThrownBy { (snapshot.declarations as MutableList<*>).clear() }
+            .isInstanceOf(UnsupportedOperationException::class.java)
+    }
+
+    private fun describe(kind: ProjectDeclarationKind): String = when (kind) {
+        // Deliberately exhaustive and without an else branch: this stops compiling when the enum grows.
+        ProjectDeclarationKind.PACKAGE -> "package"
+        ProjectDeclarationKind.PACKAGE_BODY -> "package body"
+        ProjectDeclarationKind.STANDALONE_TYPE -> "standalone type"
+        ProjectDeclarationKind.PACKAGE_TYPE -> "package type"
+        ProjectDeclarationKind.PACKAGE_SUBTYPE -> "package subtype"
+        ProjectDeclarationKind.PACKAGE_PROCEDURE -> "package procedure"
+        ProjectDeclarationKind.PACKAGE_FUNCTION -> "package function"
+        ProjectDeclarationKind.SEQUENCE -> "sequence"
+        ProjectDeclarationKind.STANDALONE_PROCEDURE -> "standalone procedure"
+        ProjectDeclarationKind.STANDALONE_FUNCTION -> "standalone function"
+        ProjectDeclarationKind.PACKAGE_VARIABLE -> "package variable"
+        ProjectDeclarationKind.PACKAGE_CONSTANT -> "package constant"
+    }
+
+    @Test
+    fun declarationKindEnumHasTheDocumentedConstantsInOrder() {
+        assertThat(ProjectDeclarationKind.entries.map { it.name }).containsExactly(
+            "PACKAGE", "PACKAGE_BODY", "STANDALONE_TYPE", "PACKAGE_TYPE", "PACKAGE_SUBTYPE", "PACKAGE_PROCEDURE",
+            "PACKAGE_FUNCTION", "SEQUENCE", "STANDALONE_PROCEDURE", "STANDALONE_FUNCTION", "PACKAGE_VARIABLE", "PACKAGE_CONSTANT"
+        )
+        ProjectDeclarationKind.entries.forEach { assertThat(describe(it)).isNotBlank() }
     }
 }
