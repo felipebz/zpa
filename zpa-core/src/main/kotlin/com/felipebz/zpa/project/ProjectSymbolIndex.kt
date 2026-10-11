@@ -85,6 +85,11 @@ class ProjectSymbolIndex internal constructor(
     /** Returns the frozen occurrences belonging to exactly one source file. */
     fun occurrencesFor(fileId: FileId): List<IndexedDeclaration> = occurrencesByFile[fileId].orEmpty()
 
+    // Built once from the frozen canonical list: every kind, duplicates and canonical order preserved.
+    private val occurrencesByQualifiedName: Map<QualifiedName, List<IndexedDeclaration>> = this.occurrences
+        .groupBy { it.declaration.qualifiedName() }
+        .mapValues { (_, values) -> immutableList(values) }
+
     private val packagesByName = this.declarations
         .filterIsInstance<PackageDeclaration>()
         .groupBy { it.name }
@@ -128,7 +133,7 @@ class ProjectSymbolIndex internal constructor(
 
     /** Exact-name matches as canonical occurrences, in index order, without resolution. */
     fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
-        occurrences.filter { it.declaration.qualifiedName() == name }
+        occurrencesByQualifiedName[name].orEmpty()
 
     companion object {
         internal val declarationComparator = compareBy<ProjectDeclaration>(

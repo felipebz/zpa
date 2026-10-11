@@ -252,4 +252,80 @@ class ProjectSymbolIndexTest {
         assertThat(first.declarationsFor(firstFile)).containsExactlyElementsOf(second.declarationsFor(firstFile))
         assertThat(first.declarationsFor(secondFile)).containsExactlyElementsOf(second.declarationsFor(secondFile))
     }
+
+    private fun indexOf(concurrent: Boolean, files: List<Pair<String, String>>) = ProjectIndexPreparation().prepare(
+        files.map { (name, text) -> ProjectSource(FileId(name), ProjectSourceReader { text }) }, concurrent
+    ).index
+
+    private fun reference(index: ProjectSymbolIndex, name: QualifiedName) = index.occurrences.filter { it.declaration.qualifiedName() == name }
+
+    private fun assertMatchesLinearReference(index: ProjectSymbolIndex) {
+        val names = index.occurrences.map { it.declaration.qualifiedName() }.distinct() +
+            QualifiedName(OracleIdentifier.fromSource("absent")) + QualifiedName(listOf(OracleIdentifier.fromSource("p"), OracleIdentifier.fromSource("absent")))
+        names.forEach { name ->
+            val indexed = index.findOccurrences(name)
+            val expected = reference(index, name)
+            assertThat(indexed).describedAs(name.toString()).hasSameSizeAs(expected)
+            indexed.zip(expected).forEach { (a, b) -> assertThat(a).isSameAs(b) }
+            assertThat(index.findDeclarations(name)).isEqualTo(expected.map { it.declaration })
+        }
+    }
+
+    @Test
+    fun exactNameLookupMatchesTheLinearReferenceForEveryKindAndName() {
+        val files = listOf(
+            "b.sql" to """
+                CREATE PACKAGE p AS
+                  g NUMBER;
+                  "Mixed" NUMBER;
+                  c CONSTANT NUMBER := 1;
+                  TYPE t IS RECORD (a NUMBER);
+                  SUBTYPE s IS NUMBER;
+                  PROCEDURE g;
+                  PROCEDURE work(a NUMBER);
+                  PROCEDURE work(a DATE);
+                  FUNCTION f RETURN NUMBER;
+                END p;
+                /
+                CREATE PACKAGE BODY p AS PROCEDURE work(a NUMBER) IS BEGIN NULL; END; END p;
+                /
+                CREATE SEQUENCE seq;
+                /
+                CREATE TYPE st AS TABLE OF NUMBER;
+                /
+                CREATE PROCEDURE standalone_proc IS BEGIN NULL; END;
+            """.trimIndent(),
+            "a.sql" to "CREATE PACKAGE p AS g DATE; \"MIXED\" NUMBER; TYPE t IS RECORD (a NUMBER); END p;\n/\nCREATE SEQUENCE seq;\n/\nCREATE PACKAGE app.q AS x NUMBER; END q;"
+        )
+        val serial = indexOf(false, files)
+        assertMatchesLinearReference(serial)
+        assertMatchesLinearReference(indexOf(true, files))
+        assertMatchesLinearReference(indexOf(false, files.reversed()))
+        assertThat(indexOf(true, files).occurrences.map { it.fileId.value to it.ordinal }).isEqualTo(serial.occurrences.map { it.fileId.value to it.ordinal })
+
+        fun name(vararg s: String) = QualifiedName(s.map(OracleIdentifier::fromSource))
+        // Values and subprograms sharing a qualified name, in canonical order, across duplicate files.
+        val g = serial.findOccurrences(name("p", "g"))
+        assertThat(g.map { it.declaration.kind }).containsExactly(
+            ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_PROCEDURE
+        )
+        assertThat(g.map { it.fileId.value }).containsExactly("a.sql", "b.sql", "b.sql")
+        // Quoted and unquoted identifiers stay distinct; qualified and standalone names use the same map.
+        assertThat(serial.findOccurrences(name("p", "mixed"))).isEmpty()
+        assertThat(serial.findOccurrences(QualifiedName(listOf(OracleIdentifier.fromSource("p"), OracleIdentifier.fromSource("\"Mixed\""))))).hasSize(1)
+        assertThat(serial.findOccurrences(QualifiedName(listOf(OracleIdentifier.fromSource("p"), OracleIdentifier.fromSource("\"MIXED\""))))).hasSize(1)
+        assertThat(serial.findOccurrences(name("seq")).map { it.fileId.value }).containsExactly("a.sql", "b.sql")
+        assertThat(serial.findOccurrences(name("st")).single().declaration).isInstanceOf(StandaloneTypeDeclaration::class.java)
+        assertThat(serial.findOccurrences(name("app", "q", "x"))).hasSize(1)
+        assertThat(serial.findOccurrences(name("p", "work"))).hasSize(3)
+        assertThat(serial.findOccurrences(name("nothing"))).isEmpty()
+        assertThatThrownBy { (serial.findOccurrences(name("seq")) as MutableList<IndexedDeclaration>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+    }
+
+    @Test
+    fun exactNameLookupOnAnEmptyIndex() {
+        val empty = ProjectSymbolIndexBuilder().build()
+        assertThat(empty.findOccurrences(QualifiedName(OracleIdentifier.fromSource("p")))).isEmpty()
+        assertThat(empty.findDeclarations(QualifiedName(OracleIdentifier.fromSource("p")))).isEmpty()
+    }
 }
