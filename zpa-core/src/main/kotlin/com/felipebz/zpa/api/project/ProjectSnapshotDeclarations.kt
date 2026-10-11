@@ -174,4 +174,5 @@ internal object ProjectSnapshotDeclarations {
 }
 
 @OptIn(ZpaExperimentalApi::class)
+@JvmSynthetic
 internal fun SourceRange.toPublic() = ProjectSourceRange.create(fileId.value, startLine, startColumn, endLine, endColumn)

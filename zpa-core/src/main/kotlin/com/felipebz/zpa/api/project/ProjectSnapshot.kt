@@ -45,7 +45,7 @@ class ProjectSnapshot private constructor(
     fileIds: List<String>
 ) {
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
-    private val scope = ProjectSnapshotScope()
+    private val scope = ProjectSnapshotScope.issue()
 
     val attemptedFileCount: Int get() = preparationResult.attemptedFileCount
 

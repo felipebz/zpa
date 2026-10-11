@@ -1,0 +1,4 @@
+CREATE OR REPLACE PACKAGE shop AS
+  TYPE order_t IS RECORD (id NUMBER);
+END shop;
+/

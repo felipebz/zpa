@@ -379,6 +379,34 @@ class ProjectSnapshotRetentionTest {
         assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(2)
     }
 
+    @Test
+    fun unpreparedScanSnapshotAndItsResultsRetainNothingTransient() {
+        val sourceMarker = "unprepared-retention-0f6b3a28-d1c5-47e9-8a14-5b7e9c2d4f60"
+        val body = "-- $sourceMarker\nCREATE PACKAGE BODY ur AS PROCEDURE go IS BEGIN NULL; END go; END ur;"
+        val check = CapturingCheck()
+        val file = object : PlSqlFile {
+            override fun contents() = body
+            override fun fileName() = "b.sql"
+            override fun path() = java.nio.file.Path.of("b.sql")
+            override fun type() = PlSqlFile.Type.MAIN
+        }
+        com.felipebz.zpa.squid.AstScanner(emptyList(), null, true, java.nio.charset.StandardCharsets.UTF_8)
+            .scanFile(file, listOf(check), com.felipebz.zpa.project.FileId("b.sql"))
+        val snapshot = check.snapshot!!
+        val roots = mapOf<String, Any?>(
+            "snapshot" to snapshot,
+            "declarations" to snapshot.declarations,
+            "perFile" to snapshot.declarationsFor("b.sql"),
+            "byName" to snapshot.findDeclarations(ProjectQualifiedName.of("ur", "go")),
+            "type" to snapshot.resolveNamedType(ProjectQualifiedName.of("t"), ProjectQualifiedName.of("ur")),
+            "subprograms" to snapshot.findPackageSubprograms(ProjectQualifiedName.of("ur"), ProjectIdentifier.fromSource("go"))
+        )
+        val reachable = auditGraph(roots, listOf(check.analysis!!, check, body, check.node!!), sourceMarker)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectAnalysis>()).isEmpty()
+    }
+
     private class CapturingCheck : PlSqlCheck() {
         var snapshot: ProjectSnapshot? = null
         var analysis: ProjectAnalysis? = null
