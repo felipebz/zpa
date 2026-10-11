@@ -19,7 +19,6 @@
  */
 package com.felipebz.zpa.project
 
-import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
@@ -28,16 +27,8 @@ import com.felipebz.zpa.project.extraction.*
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 
-/** Standalone-only return-type terminators (the package set lacks AGGREGATE, ORDER and CLUSTER). */
-private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
-    "DETERMINISTIC", "PIPELINED", "SQL_MACRO", "PARALLEL_ENABLE", "ORDER", "CLUSTER", "SHARD_ENABLE",
-    "RESULT_CACHE", "AUTHID", "DEFAULT", "ACCESSIBLE", "AGGREGATE", "IS", "AS"
-)
-
 /** Sentinel returned by [packageHeaderEnd] for a wrapped unit. */
 private const val WRAPPED_UNIT = -2
-
-private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
 
 /**
  * Extracts the small, project-relevant declaration slice without constructing an AST.
@@ -74,6 +65,9 @@ class ProjectDeclarationExtractor(
         private val memberParser = LegacyMemberParser(stream, typeReferences)
         private val callableProperties = CallableProperties(stream)
         private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
+        private val standaloneCallables = StandaloneCallableExtractor(
+            stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
+        )
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -107,11 +101,6 @@ class ProjectDeclarationExtractor(
             }
         }
 
-        // ---- Strict standalone callable path. It never uses the value-based helpers for
-        // structural decisions: quoted identifiers expose unquoted values that look like keywords
-        // or punctuators, so keywords are checked with isKeyword and punctuators with isPunctuator.
-        // Any doubt yields null (no fact, nothing consumed): incomplete coverage beats a wrong fact.
-
         private fun unitLimit(create: Int): Int = bounds.unitLimit(create)
 
         private fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean = stream.isPunctuator(index, punctuator)
@@ -120,201 +109,15 @@ class ProjectDeclarationExtractor(
 
         private fun isNameBefore(index: Int, limit: Int) = stream.isNameBefore(index, limit)
 
-        private fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? {
-            if (!isKeyword(create, "CREATE")) return null
-            val limit = unitLimit(create)
-            var index = create + 1
-            val orReplace = isKeyword(index, "OR") && isKeyword(index + 1, "REPLACE")
-            if (orReplace) index += 2
-            if (isKeyword(index, "EDITIONABLE") || isKeyword(index, "NONEDITIONABLE")) index++
-            if (!isKeyword(index, if (function) "FUNCTION" else "PROCEDURE")) return null
-            index++
-            if (isKeyword(index, "IF")) {
-                // IF NOT EXISTS cannot be combined with OR REPLACE (ORA-11541).
-                if (orReplace || !isKeyword(index + 1, "NOT") || !isKeyword(index + 2, "EXISTS")) return null
-                index += 3
-            }
-            val name = strictQualifiedName(index, limit) ?: return null
-            index = skipUnitOptions(name.second, limit) ?: return null
-            if (isKeyword(index, "WRAPPED")) {
-                // The lexer makes the whole payload one opaque WRAPPED_SOURCE token. No signature
-                // can be recovered, so the unit is skipped without a fact.
-                return if (index + 1 < limit && tokenTypeAt(index + 1) === PlSqlTokenType.WRAPPED_SOURCE) {
-                    ParsedUnit(emptyList(), index + 2)
-                } else {
-                    null
-                }
-            }
-            val parameters = when (val parsed = parseParametersStrict(index, limit)) {
-                StrictParameters.Absent -> emptyList()
-                StrictParameters.Failed -> return null
-                is StrictParameters.Parsed -> {
-                    index = parsed.next
-                    parsed.parameters
-                }
-            }
-            if (!function) {
-                index = skipPropertiesStrict(index, limit, function = false)?.next ?: return null
-                if (!isKeyword(index, "IS") && !isKeyword(index, "AS")) return null
-                val end = strictImplementationEnd(index + 1, limit) ?: return null
-                return ParsedUnit(
-                    listOf(StandaloneProcedureDeclaration(name.first, parameters, fileId, range(create, end))),
-                    end + 1
-                )
-            }
-
-            // Function: RETURN datatype, properties, then an implementation or a terminal `;`.
-            if (!isKeyword(index, "RETURN")) return null
-            val typeStart = index + 1
-            val typeEnd = returnTypeEnd(typeStart, limit) ?: return null
-            if (!strictDatatype(typeStart, typeEnd)) return null
-            val returnType = typeReference(typeStart, typeEnd) ?: return null
-            val properties = skipPropertiesStrict(typeEnd, limit, function = true) ?: return null
-            index = properties.next
-            val end = when {
-                properties.terminal -> index
-                isKeyword(index, "IS") || isKeyword(index, "AS") -> strictImplementationEnd(index + 1, limit) ?: return null
-                isPunctuator(index, PlSqlPunctuator.SEMICOLON) -> index // body-less declaration
-                else -> return null
-            }
-            if (end >= limit || !isPunctuator(end, PlSqlPunctuator.SEMICOLON)) return null
-            return ParsedUnit(
-                listOf(
-                    StandaloneFunctionDeclaration(
-                        name.first, parameters, returnType, fileId, range(create, end),
-                        deterministic = properties.deterministic
-                    )
-                ),
-                end + 1
-            )
-        }
-
-        /**
-         * End (exclusive) of the return datatype: the first depth-0 token that is a real keyword in
-         * [STANDALONE_RETURN_TYPE_TERMINATORS] or a real `;`. Balanced parentheses are skipped; any other
-         * delimiter, a missing terminator before [limit] or an empty slice yields null.
-         */
-        private fun returnTypeEnd(start: Int, limit: Int): Int? {
-            var index = start
-            while (index < limit) {
-                when {
-                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> index = (strictClose(index, limit) ?: return null) + 1
-                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) ||
-                        STANDALONE_RETURN_TYPE_TERMINATORS.any { isKeyword(index, it) } -> return index.takeIf { it > start }
-                    isOpener(index) || isCloser(index) -> return null
-                    else -> index++
-                }
-            }
-            return null
-        }
+        private fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? = standaloneCallables.parseStandaloneCallable(create, function)
 
         private fun strictQualifiedName(start: Int, limit: Int): Pair<QualifiedName, Int>? = stream.strictQualifiedName(start, limit)
-
-        /** `[TIMESTAMP 'literal'] [SHARING = METADATA|NONE]`; returns the next index or null. */
-        private fun skipUnitOptions(start: Int, limit: Int): Int? {
-            var index = start
-            if (isKeyword(index, "TIMESTAMP")) {
-                if (tokenTypeAt(index + 1) !== PlSqlTokenType.STRING_LITERAL) return null
-                index += 2
-            } else if (tokenTypeAt(index) === PlSqlTokenType.TIMESTAMP_LITERAL) {
-                index++
-            }
-            if (isKeyword(index, "SHARING")) {
-                if (!isPunctuator(index + 1, PlSqlPunctuator.EQUALS)) return null
-                if (!isKeyword(index + 2, "METADATA") && !isKeyword(index + 2, "NONE")) return null
-                index += 3
-            }
-            return index.takeIf { it < limit }
-        }
 
         private fun isOpener(index: Int) = stream.isOpener(index)
 
         private fun isCloser(index: Int) = stream.isCloser(index)
 
         private fun closerFor(opener: Int) = stream.closerFor(opener)
-
-        private fun strictClose(open: Int, limit: Int): Int? = stream.strictClose(open, limit)
-
-        private fun splitStrict(open: Int, close: Int): List<IntRange>? = stream.splitStrict(open, close)
-
-        private sealed interface StrictParameters {
-            /** No parameter list: a valid empty signature. */
-            object Absent : StrictParameters
-            /** Every part parsed; ordinals are 1..n in declaration order. */
-            class Parsed(val parameters: List<ProjectParameter>, val next: Int) : StrictParameters
-            /** Any part or the list structure is invalid: the whole unit must be rejected. */
-            object Failed : StrictParameters
-        }
-
-        private fun parseParametersStrict(start: Int, limit: Int): StrictParameters {
-            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return StrictParameters.Absent
-            val close = strictClose(start, limit) ?: return StrictParameters.Failed
-            val parts = splitStrict(start, close) ?: return StrictParameters.Failed
-            val parameters = parts.mapIndexed { position, part ->
-                parseParameterStrict(part.first, part.last + 1, position + 1) ?: return StrictParameters.Failed
-            }
-            return StrictParameters.Parsed(immutableList(parameters), close + 1)
-        }
-
-        /** `name [IN] (OUT [NOCOPY] datatype | datatype [(DEFAULT|:=) expression])`, fully consumed. */
-        private fun parseParameterStrict(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
-            if (!isNameBefore(start, endExclusive)) return null
-            var cursor = start + 1
-            var mode = ParameterMode.IN
-            if (isKeyword(cursor, "IN")) cursor++
-            var nocopy = false
-            if (isKeyword(cursor, "OUT")) {
-                mode = if (mode == ParameterMode.IN && isKeyword(cursor - 1, "IN")) ParameterMode.IN_OUT else ParameterMode.OUT
-                cursor++
-                if (isKeyword(cursor, "NOCOPY")) {
-                    nocopy = true
-                    cursor++
-                }
-            } else if (isKeyword(cursor, "NOCOPY")) {
-                return null
-            }
-            var defaultIndex: Int? = null
-            var depth = 0
-            for (index in cursor until endExclusive) {
-                when {
-                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> depth++
-                    isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) -> depth--
-                    depth == 0 && (isKeyword(index, "DEFAULT") || isPunctuator(index, PlSqlPunctuator.ASSIGNMENT)) -> {
-                        defaultIndex = index
-                        break
-                    }
-                }
-            }
-            if (defaultIndex != null && (mode != ParameterMode.IN || defaultIndex + 1 >= endExclusive)) return null
-            val typeEnd = defaultIndex ?: endExclusive
-            if (!strictDatatype(cursor, typeEnd)) return null
-            val type = typeReference(cursor, typeEnd) ?: return null
-            return ProjectParameter(name = identifier(tokens[start]), ordinal = ordinal, mode = mode, nocopy = nocopy,
-                typeRef = type, defaultPresent = defaultIndex != null, sourceRange = range(start, endExclusive - 1))
-        }
-
-        private fun strictDatatype(start: Int, endExclusive: Int): Boolean = datatypeShape.strictDatatype(start, endExclusive)
-
-        private fun skipPropertiesStrict(start: Int, limit: Int, function: Boolean): PropertyScan? = callableProperties.skipPropertiesStrict(start, limit, function)
-
-        /** End (a real `;` below [limit]) of the body or call specification starting at [start]. */
-        private fun strictImplementationEnd(start: Int, limit: Int): Int? {
-            if (start >= limit) return null
-            val end = when {
-                isKeyword(start, "LANGUAGE") && isKeyword(start + 1, "JAVA") ->
-                    if (isKeyword(start + 2, "NAME") && tokenTypeAt(start + 3) === PlSqlTokenType.STRING_LITERAL) start + 4 else return null
-                isKeyword(start, "LANGUAGE") || isKeyword(start, "EXTERNAL") -> cSpecificationEnd(start, limit) ?: return null
-                isKeyword(start, "MLE") -> mleSpecificationEnd(start + 1, limit) ?: return null
-                // A quoted identifier spelled like a call-specification keyword is not one.
-                tokens[start].type == GenericTokenType.IDENTIFIER && valueAt(start) in CALL_SPECIFICATION_WORDS -> return null
-                else -> implementationEnd(start, limit) ?: return null
-            }
-            return end.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
-        }
-
-        private fun cSpecificationEnd(start: Int, limit: Int): Int? = callSpecifications.cSpecificationEnd(start, limit)
-
-        private fun mleSpecificationEnd(start: Int, limit: Int): Int? = callSpecifications.mleSpecificationEnd(start, limit)
 
         private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? = schemaUnits.parseSequence(create, sequenceIndex)
 
@@ -598,8 +401,6 @@ class ProjectDeclarationExtractor(
 
         private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? = stream.identifierAt(start)
 
-        private fun identifier(token: Token) = stream.identifier(token)
-
         private fun firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? = stream.firstAtTopLevel(start, wanted, endExclusive)
 
         private fun matching(open: Int): Int = stream.matching(open)
@@ -615,8 +416,6 @@ class ProjectDeclarationExtractor(
         private fun isName(token: Token): Boolean = stream.isName(token)
 
         private fun valueAt(index: Int) = stream.valueAt(index)
-        private fun value(token: Token) = stream.value(token)
-
         private data class ParsedBodySubprogram(
             val declaration: ProjectDeclaration?,
             val nextIndex: Int
