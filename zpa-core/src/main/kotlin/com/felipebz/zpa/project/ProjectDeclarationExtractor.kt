@@ -65,6 +65,7 @@ class ProjectDeclarationExtractor(
         private val memberParser = LegacyMemberParser(stream, typeReferences)
         private val callableProperties = CallableProperties(stream)
         private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
+        private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences)
         private val standaloneCallables = StandaloneCallableExtractor(
             stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
         )
@@ -277,109 +278,8 @@ class ProjectDeclarationExtractor(
 
         private fun parseSpecificationValue(start: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? = packageValues.parseSpecificationValue(start, semicolon, owner)
 
-        private fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {
-            val header = firstAtTopLevel(afterName, setOf("IS", "AS")) ?: return null
-            val parsed = parsePackageBodySubprograms(header + 1, owner)
-            return ParsedUnit(parsed.declarations, parsed.end + 1)
-        }
+        private fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? = packageBodies.parsePackageBody(owner, afterName)
 
-        private fun parsePackageBodySubprograms(start: Int, owner: QualifiedName): ParsedPackageBody {
-            val result = mutableListOf<ProjectDeclaration>()
-            var cursor = start
-            val blocks = mutableListOf<BlockKind>()
-            while (cursor < tokens.size) {
-                if (blocks.isEmpty() && isSubprogramKeyword(cursor)) {
-                    val parsed = parseBodySubprogram(cursor, tokens.size, owner)
-                    if (parsed != null) {
-                        parsed.declaration?.let(result::add)
-                        cursor = parsed.nextIndex
-                        continue
-                    }
-                }
-
-                when {
-                    isCaseStart(cursor) -> blocks += BlockKind.CASE
-                    isKeyword(cursor, "BEGIN") -> {
-                        if (blocks.isEmpty()) {
-                            val end = executableBlockEnd(cursor, tokens.size) ?: tokens.lastIndex
-                            return ParsedPackageBody(immutableList(result), end)
-                        }
-                        blocks += BlockKind.BEGIN
-                    }
-                    isKeyword(cursor, "END") -> when {
-                        isKeyword(cursor + 1, "IF") || isKeyword(cursor + 1, "LOOP") -> Unit
-                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                        blocks.lastOrNull() == BlockKind.BEGIN -> blocks.removeAt(blocks.lastIndex)
-                        blocks.isEmpty() -> return ParsedPackageBody(immutableList(result), semicolonAfter(cursor))
-                    }
-                }
-                cursor++
-            }
-            return ParsedPackageBody(immutableList(result), tokens.lastIndex)
-        }
-
-        private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
-            val function = valueAt(index) == "FUNCTION"
-            val name = identifierAt(index + 1) ?: return null
-            var cursor = name.second
-            val parameters: List<ProjectParameter>
-            if (valueAt(cursor) == "(") {
-                val close = matching(cursor)
-                if (close >= end) return null
-                parameters = parseParameters(cursor + 1, close)
-                cursor = close + 1
-            } else {
-                parameters = emptyList()
-            }
-
-            val header = firstBodyHeaderDelimiter(cursor, end) ?: return null
-            if (header.kind == BodyHeaderDelimiterKind.FORWARD_DECLARATION) {
-                return ParsedBodySubprogram(null, header.index + 1)
-            }
-
-            val implementationEnd = implementationEnd(header.index + 1, end) ?: return null
-            val declaration = if (function) {
-                val returnIndex = firstAtTopLevel(cursor, setOf("RETURN"), header.index)
-                    ?: return null
-                val modifier = firstAtTopLevel(
-                    returnIndex + 1,
-                    FUNCTION_RETURN_TYPE_TERMINATORS,
-                    header.index
-                )
-                val returnType = typeReference(returnIndex + 1, modifier ?: header.index)
-                    ?: return null
-                PackageFunctionDeclaration(
-                    owner,
-                    name.first,
-                    parameters,
-                    returnType,
-                    fileId,
-                    range(index, implementationEnd),
-                    DeclarationRole.BODY
-                )
-            } else {
-                PackageProcedureDeclaration(
-                    owner,
-                    name.first,
-                    parameters,
-                    fileId,
-                    range(index, implementationEnd),
-                    DeclarationRole.BODY
-                )
-            }
-            return ParsedBodySubprogram(declaration, implementationEnd + 1)
-        }
-
-        private fun firstBodyHeaderDelimiter(start: Int, end: Int): BodyHeaderDelimiter? = bodyBoundaries.firstBodyHeaderDelimiter(start, end)
-
-        private fun implementationEnd(start: Int, end: Int): Int? = bodyBoundaries.implementationEnd(start, end)
-
-
-        private fun executableBlockEnd(start: Int, end: Int): Int? = bodyBoundaries.executableBlockEnd(start, end)
-
-        private fun isSubprogramKeyword(index: Int): Boolean = bodyBoundaries.isSubprogramKeyword(index)
-
-        private fun isCaseStart(index: Int): Boolean = bodyBoundaries.isCaseStart(index)
 
         private fun isKeyword(index: Int, keyword: String): Boolean = stream.isKeyword(index, keyword)
 
@@ -389,21 +289,11 @@ class ProjectDeclarationExtractor(
 
         private fun parseSubprogram(index: Int, owner: QualifiedName): ParsedDeclaration? = memberParser.parseSubprogram(index, owner)
 
-        private fun parseParameters(start: Int, close: Int): List<ProjectParameter> = memberParser.parseParameters(start, close)
-
         private fun parseStandaloneType(create: Int, typeIndex: Int): ParsedUnit? = schemaUnits.parseStandaloneType(create, typeIndex)
 
         private fun parseTypeBody(typeIndex: Int): ParsedUnit = schemaUnits.parseTypeBody(typeIndex)
 
-        private fun typeReference(start: Int, endExclusive: Int): TypeRef? = typeReferences.typeReference(start, endExclusive)
-
         private fun qualifiedName(start: Int): Pair<QualifiedName, Int>? = stream.qualifiedName(start)
-
-        private fun identifierAt(start: Int): Pair<OracleIdentifier, Int>? = stream.identifierAt(start)
-
-        private fun firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? = stream.firstAtTopLevel(start, wanted, endExclusive)
-
-        private fun matching(open: Int): Int = stream.matching(open)
 
         private fun semicolonAfter(start: Int): Int = stream.semicolonAfter(start)
 
@@ -416,13 +306,5 @@ class ProjectDeclarationExtractor(
         private fun isName(token: Token): Boolean = stream.isName(token)
 
         private fun valueAt(index: Int) = stream.valueAt(index)
-        private data class ParsedBodySubprogram(
-            val declaration: ProjectDeclaration?,
-            val nextIndex: Int
-        )
-        private data class ParsedPackageBody(
-            val declarations: List<ProjectDeclaration>,
-            val end: Int
-        )
     }
 }
