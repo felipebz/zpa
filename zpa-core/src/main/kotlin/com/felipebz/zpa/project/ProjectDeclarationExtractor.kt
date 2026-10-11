@@ -116,6 +116,7 @@ class ProjectDeclarationExtractor(
         private val datatypeShape = DatatypeShape(stream)
         private val typeReferences = TypeReferences(stream)
         private val schemaUnits = SchemaUnitExtractor(stream, typeReferences)
+        private val bodyBoundaries = BodyBoundaryScanner(stream)
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -1012,102 +1013,16 @@ class ProjectDeclarationExtractor(
             return ParsedBodySubprogram(declaration, implementationEnd + 1)
         }
 
-        private fun firstBodyHeaderDelimiter(start: Int, end: Int): BodyHeaderDelimiter? {
-            var depth = 0
-            for (index in start until end.coerceAtMost(tokens.size)) {
-                when (valueAt(index)) {
-                    "(", "[" -> depth++
-                    ")", "]" -> depth--
-                }
-                if (depth == 0) {
-                    when (valueAt(index)) {
-                        "IS", "AS" -> return BodyHeaderDelimiter(BodyHeaderDelimiterKind.IMPLEMENTATION, index)
-                        ";" -> return BodyHeaderDelimiter(BodyHeaderDelimiterKind.FORWARD_DECLARATION, index)
-                    }
-                }
-            }
-            return null
-        }
+        private fun firstBodyHeaderDelimiter(start: Int, end: Int): BodyHeaderDelimiter? = bodyBoundaries.firstBodyHeaderDelimiter(start, end)
 
-        private fun implementationEnd(start: Int, end: Int): Int? {
-            if (valueAt(start) == "LANGUAGE" || valueAt(start) == "EXTERNAL") {
-                return semicolonAfter(start).coerceAtMost(end)
-            }
-            val blocks = mutableListOf<BlockKind>()
-            var bodyStarted = false
-            var index = start
-            while (index < end.coerceAtMost(tokens.size)) {
-                if (!bodyStarted && isSubprogramKeyword(index)) {
-                    val nestedEnd = bodySubprogramEnd(index, end)
-                    if (nestedEnd != null) {
-                        index = nestedEnd + 1
-                        continue
-                    }
-                }
-                when {
-                    isKeyword(index, "BEGIN") -> {
-                        bodyStarted = true
-                        blocks += BlockKind.BEGIN
-                    }
-                    isCaseStart(index) -> blocks += BlockKind.CASE
-                    isKeyword(index, "END") -> when {
-                        isKeyword(index + 1, "IF") || isKeyword(index + 1, "LOOP") -> Unit
-                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                        blocks.lastOrNull() == BlockKind.BEGIN -> {
-                            blocks.removeAt(blocks.lastIndex)
-                            if (bodyStarted && blocks.isEmpty()) return semicolonAfter(index).coerceAtMost(end)
-                        }
-                        else -> return null
-                    }
-                }
-                index++
-            }
-            return null
-        }
+        private fun implementationEnd(start: Int, end: Int): Int? = bodyBoundaries.implementationEnd(start, end)
 
-        private fun bodySubprogramEnd(index: Int, end: Int): Int? {
-            val name = identifierAt(index + 1) ?: return null
-            var cursor = name.second
-            if (valueAt(cursor) == "(") {
-                val close = matching(cursor)
-                if (close >= end) return null
-                cursor = close + 1
-            }
-            val header = firstBodyHeaderDelimiter(cursor, end) ?: return null
-            return if (header.kind == BodyHeaderDelimiterKind.FORWARD_DECLARATION) {
-                header.index
-            } else {
-                implementationEnd(header.index + 1, end)
-            }
-        }
 
-        private fun executableBlockEnd(start: Int, end: Int): Int? {
-            val blocks = mutableListOf<BlockKind>()
-            var index = start
-            while (index < end.coerceAtMost(tokens.size)) {
-                when {
-                    isKeyword(index, "BEGIN") -> blocks += BlockKind.BEGIN
-                    isCaseStart(index) -> blocks += BlockKind.CASE
-                    isKeyword(index, "END") -> when {
-                        isKeyword(index + 1, "IF") || isKeyword(index + 1, "LOOP") -> Unit
-                        blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                        blocks.lastOrNull() == BlockKind.BEGIN -> {
-                            blocks.removeAt(blocks.lastIndex)
-                            if (blocks.isEmpty()) return semicolonAfter(index).coerceAtMost(end)
-                        }
-                        else -> return null
-                    }
-                }
-                index++
-            }
-            return null
-        }
+        private fun executableBlockEnd(start: Int, end: Int): Int? = bodyBoundaries.executableBlockEnd(start, end)
 
-        private fun isSubprogramKeyword(index: Int): Boolean =
-            isKeyword(index, "PROCEDURE") || isKeyword(index, "FUNCTION")
+        private fun isSubprogramKeyword(index: Int): Boolean = bodyBoundaries.isSubprogramKeyword(index)
 
-        private fun isCaseStart(index: Int): Boolean =
-            isKeyword(index, "CASE") && !isKeyword(index - 1, "END")
+        private fun isCaseStart(index: Int): Boolean = bodyBoundaries.isCaseStart(index)
 
         private fun isKeyword(index: Int, keyword: String): Boolean = stream.isKeyword(index, keyword)
 
@@ -1297,17 +1212,5 @@ class ProjectDeclarationExtractor(
             val declarations: List<ProjectDeclaration>,
             val end: Int
         )
-        private data class BodyHeaderDelimiter(
-            val kind: BodyHeaderDelimiterKind,
-            val index: Int
-        )
-        private enum class BodyHeaderDelimiterKind {
-            IMPLEMENTATION,
-            FORWARD_DECLARATION
-        }
-        private enum class BlockKind {
-            BEGIN,
-            CASE
-        }
     }
 }
