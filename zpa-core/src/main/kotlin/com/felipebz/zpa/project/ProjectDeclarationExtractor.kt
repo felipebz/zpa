@@ -28,8 +28,6 @@ import com.felipebz.zpa.project.extraction.*
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 
-private val EXTERNAL_PARAMETER_PROPERTIES = listOf("LENGTH", "DURATION", "MAXLEN", "CHARSETID", "CHARSETFORM")
-
 /** Standalone-only return-type terminators (the package set lacks AGGREGATE, ORDER and CLUSTER). */
 private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
     "DETERMINISTIC", "PIPELINED", "SQL_MACRO", "PARALLEL_ENABLE", "ORDER", "CLUSTER", "SHARD_ENABLE",
@@ -38,8 +36,6 @@ private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
 
 /** Sentinel returned by [packageHeaderEnd] for a wrapped unit. */
 private const val WRAPPED_UNIT = -2
-
-private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
 
 private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
 
@@ -76,6 +72,8 @@ class ProjectDeclarationExtractor(
         private val initializerShape = InitializerShape(stream)
         private val packageValues = PackageValueRecognizer(stream, datatypeShape, typeReferences, initializerShape)
         private val memberParser = LegacyMemberParser(stream, typeReferences)
+        private val callableProperties = CallableProperties(stream)
+        private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -297,111 +295,7 @@ class ProjectDeclarationExtractor(
 
         private fun strictDatatype(start: Int, endExclusive: Int): Boolean = datatypeShape.strictDatatype(start, endExclusive)
 
-        private class PropertyScan(val next: Int, val deterministic: Boolean, val terminal: Boolean)
-
-        /**
-         * Skips subprogram properties (grammar `subprogramProperty`, any order). Each clause's
-         * mandatory structure is verified; anything unknown or malformed yields null. For a
-         * [function], `PIPELINED ... USING ref ;` and `AGGREGATE USING ref ;` are terminal forms
-         * (`next` is then the real `;`); a procedure cannot end this way, so they are rejected.
-         */
-        private fun skipPropertiesStrict(start: Int, limit: Int, function: Boolean): PropertyScan? {
-            var index = start
-            var deterministic = false
-            while (index < limit) {
-                index = when {
-                    isKeyword(index, "DETERMINISTIC") -> {
-                        deterministic = true
-                        index + 1
-                    }
-                    isKeyword(index, "SHARD_ENABLE") -> index + 1
-                    isKeyword(index, "PIPELINED") -> {
-                        var next = index + 1
-                        if ((isKeyword(next, "ROW") || isKeyword(next, "TABLE")) && isKeyword(next + 1, "POLYMORPHIC")) next += 2
-                        if (isKeyword(next, "USING")) {
-                            if (!function) return null
-                            return terminalUsing(next, limit, deterministic)
-                        }
-                        next
-                    }
-                    isKeyword(index, "AGGREGATE") -> {
-                        if (!function || !isKeyword(index + 1, "USING")) return null
-                        return terminalUsing(index + 1, limit, deterministic)
-                    }
-                    isKeyword(index, "SQL_MACRO") -> sqlMacroEnd(index + 1, limit) ?: return null
-                    isKeyword(index, "PARALLEL_ENABLE") -> parallelEnableEnd(index + 1, limit) ?: return null
-                    isKeyword(index, "ORDER") || isKeyword(index, "CLUSTER") -> streamingEnd(index, limit) ?: return null
-                    isKeyword(index, "RESULT_CACHE") ->
-                        if (isKeyword(index + 1, "RELIES_ON")) {
-                            delimitedListEnd(index + 2, limit) { strictQualifiedNameAnyLength(it, limit) } ?: return null
-                        } else {
-                            index + 1
-                        }
-                    isKeyword(index, "AUTHID") ->
-                        if (isKeyword(index + 1, "CURRENT_USER") || isKeyword(index + 1, "DEFINER")) index + 2 else return null
-                    isKeyword(index, "DEFAULT") ->
-                        if (isKeyword(index + 1, "COLLATION") && isKeyword(index + 2, "USING_NLS_COMP")) index + 3 else return null
-                    isKeyword(index, "ACCESSIBLE") ->
-                        if (isKeyword(index + 1, "BY")) delimitedListEnd(index + 2, limit, ::accessorEnd) ?: return null else return null
-                    else -> return PropertyScan(index, deterministic, false)
-                }
-            }
-            return null
-        }
-
-        /** `USING object_reference ;` at [using]; the reference is a conservative name path. */
-        private fun terminalUsing(using: Int, limit: Int, deterministic: Boolean): PropertyScan? {
-            val end = strictQualifiedNameAnyLength(using + 1, limit) ?: return null
-            return if (end < limit && isPunctuator(end, PlSqlPunctuator.SEMICOLON)) PropertyScan(end, deterministic, true) else null
-        }
-
-        private inline fun delimitedListEnd(open: Int, limit: Int, item: (Int) -> Int?): Int? = stream.delimitedListEnd(open, limit, item)
-
-        private fun nameEnd(index: Int, limit: Int): Int? = stream.nameEnd(index, limit)
-
-        private fun strictQualifiedNameAnyLength(start: Int, limit: Int): Int? = stream.strictQualifiedNameAnyLength(start, limit)
-
-        /** Accessor of ACCESSIBLE BY: `[FUNCTION|PROCEDURE|PACKAGE|TRIGGER|TYPE] unit_name`. */
-        private fun accessorEnd(start: Int): Int? {
-            val limit = tokens.size
-            val index = if (UNIT_KINDS.any { isKeyword(start, it) }) start + 1 else start
-            return strictQualifiedName(index, limit)?.second
-        }
-
-        /** `[( [TYPE =>] (TABLE|SCALAR) )]`. */
-        private fun sqlMacroEnd(start: Int, limit: Int): Int? {
-            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return start
-            var index = start + 1
-            if (isKeyword(index, "TYPE")) {
-                if (!isPunctuator(index + 1, PlSqlPunctuator.ASSOCIATION)) return null
-                index += 2
-            }
-            if (!isKeyword(index, "TABLE") && !isKeyword(index, "SCALAR")) return null
-            return if (index + 1 < limit && isPunctuator(index + 1, PlSqlPunctuator.RPARENTHESIS)) index + 2 else null
-        }
-
-        /**
-         * `[( PARTITION name BY (ANY | (HASH|RANGE|VALUE) (name {, name})) [streaming] )]`.
-         */
-        private fun parallelEnableEnd(start: Int, limit: Int): Int? {
-            if (!isPunctuator(start, PlSqlPunctuator.LPARENTHESIS)) return start
-            if (!isKeyword(start + 1, "PARTITION") || nameEnd(start + 2, limit) == null || !isKeyword(start + 3, "BY")) return null
-            var index = start + 4
-            index = when {
-                isKeyword(index, "ANY") -> index + 1
-                isKeyword(index, "HASH") || isKeyword(index, "RANGE") || isKeyword(index, "VALUE") ->
-                    delimitedListEnd(index + 1, limit) { nameEnd(it, limit) } ?: return null
-                else -> return null
-            }
-            if (isKeyword(index, "ORDER") || isKeyword(index, "CLUSTER")) index = streamingEnd(index, limit) ?: return null
-            return if (index < limit && isPunctuator(index, PlSqlPunctuator.RPARENTHESIS)) index + 1 else null
-        }
-
-        /** `(ORDER|CLUSTER) name BY ( name {, name} )`. */
-        private fun streamingEnd(start: Int, limit: Int): Int? {
-            if (nameEnd(start + 1, limit) == null || !isKeyword(start + 2, "BY")) return null
-            return delimitedListEnd(start + 3, limit) { nameEnd(it, limit) }
-        }
+        private fun skipPropertiesStrict(start: Int, limit: Int, function: Boolean): PropertyScan? = callableProperties.skipPropertiesStrict(start, limit, function)
 
         /** End (a real `;` below [limit]) of the body or call specification starting at [start]. */
         private fun strictImplementationEnd(start: Int, limit: Int): Int? {
@@ -418,101 +312,9 @@ class ProjectDeclarationExtractor(
             return end.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
         }
 
-        /**
-         * `(LANGUAGE C | EXTERNAL) [NAME id] LIBRARY id [NAME id] [AGENT IN (id {, id})]
-         * [WITH CONTEXT] [PARAMETERS (param {, param})]`, returning the index of the `;`.
-         * `C` is lexed as an identifier; a quoted `"C"` is not accepted. External parameters are
-         * validated structurally against the grammar (see [externalParameterEnd]), not accepted as arbitrary words.
-         */
-        private fun cSpecificationEnd(start: Int, limit: Int): Int? {
-            var index = when {
-                isKeyword(start, "EXTERNAL") -> start + 1
-                isKeyword(start, "LANGUAGE") && isUnquotedWord(start + 1, "C") -> start + 2
-                else -> return null
-            }
-            if (isKeyword(index, "NAME")) index = nameEnd(index + 1, limit) ?: return null
-            if (!isKeyword(index, "LIBRARY")) return null
-            index = nameEnd(index + 1, limit) ?: return null
-            if (isKeyword(index, "NAME")) index = nameEnd(index + 1, limit) ?: return null
-            if (isKeyword(index, "AGENT")) {
-                if (!isKeyword(index + 1, "IN")) return null
-                index = delimitedListEnd(index + 2, limit) { nameEnd(it, limit) } ?: return null
-            }
-            if (isKeyword(index, "WITH")) {
-                if (!isKeyword(index + 1, "CONTEXT")) return null
-                index += 2
-            }
-            if (isKeyword(index, "PARAMETERS")) index = delimitedListEnd(index + 1, limit) { externalParameterEnd(it, limit) } ?: return null
-            return index.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
-        }
+        private fun cSpecificationEnd(start: Int, limit: Int): Int? = callSpecifications.cSpecificationEnd(start, limit)
 
-        /**
-         * One `EXTERNAL_PARAMETER`, following the grammar's ordered alternatives:
-         * `CONTEXT` | `SELF (TDO | property)` | `(RETURN | name) [property] [BY REFERENCE] [datatype]`.
-         * Returns the index after the parameter; the caller requires a real `,` or `)` there.
-         * The optional datatype must pass [strictDatatype]; anything else rejects the unit.
-         */
-        private fun externalParameterEnd(start: Int, limit: Int): Int? {
-            if (start >= limit) return null
-            // CONTEXT is a complete parameter; if anything else follows it is an ordinary (unreserved)
-            // name, as the grammar's third alternative allows (e.g. `CONTEXT x`).
-            if (isKeyword(start, "CONTEXT") && (isPunctuator(start + 1, PlSqlPunctuator.COMMA) ||
-                    isPunctuator(start + 1, PlSqlPunctuator.RPARENTHESIS))) return start + 1
-            if (isKeyword(start, "SELF")) {
-                // `SELF (TDO | property)` must end the parameter; otherwise SELF is an ordinary name.
-                val selfEnd = if (isKeyword(start + 1, "TDO")) start + 2 else externalParameterPropertyEnd(start + 1)
-                if (selfEnd != null && (isPunctuator(selfEnd, PlSqlPunctuator.COMMA) ||
-                        isPunctuator(selfEnd, PlSqlPunctuator.RPARENTHESIS))) return selfEnd
-            }
-            if (!isKeyword(start, "RETURN") && !isNameBefore(start, limit)) return null
-            var index = start + 1
-            index = externalParameterPropertyEnd(index) ?: index
-            if (isKeyword(index, "BY")) {
-                if (!isKeyword(index + 1, "REFERENCE")) return null
-                index += 2
-            }
-            val datatypeEnd = externalDatatypeEnd(index, limit) ?: return null
-            if (datatypeEnd > index && !strictDatatype(index, datatypeEnd)) return null
-            return datatypeEnd
-        }
-
-        /** `INDICATOR [STRUCT | TDO]` | `LENGTH` | `DURATION` | `MAXLEN` | `CHARSETID` | `CHARSETFORM`. */
-        private fun externalParameterPropertyEnd(index: Int): Int? = when {
-            isKeyword(index, "INDICATOR") ->
-                if (isKeyword(index + 1, "STRUCT") || isKeyword(index + 1, "TDO")) index + 2 else index + 1
-            EXTERNAL_PARAMETER_PROPERTIES.any { isKeyword(index, it) } -> index + 1
-            else -> null
-        }
-
-        /** Index of the depth-0 `,` or `)` ending a datatype slice that starts at [start]. */
-        private fun externalDatatypeEnd(start: Int, limit: Int): Int? {
-            var index = start
-            while (index < limit) {
-                when {
-                    isPunctuator(index, PlSqlPunctuator.COMMA) || isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) -> return index
-                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> index = (strictClose(index, limit) ?: return null) + 1
-                    isCloser(index) || isOpener(index) || isPunctuator(index, PlSqlPunctuator.SEMICOLON) -> return null
-                    else -> index++
-                }
-            }
-            return null
-        }
-
-        private fun isUnquotedWord(index: Int, word: String): Boolean = stream.isUnquotedWord(index, word)
-
-        /** `LANGUAGE name[.name] [PURE] <inline source>` or `MODULE name[.name] [ENV name[.name]] SIGNATURE 'str'`. */
-        private fun mleSpecificationEnd(start: Int, limit: Int): Int? {
-            if (isKeyword(start, "LANGUAGE")) {
-                var index = strictQualifiedName(start + 1, limit)?.second ?: return null
-                if (isKeyword(index, "PURE")) index++
-                return if (tokenTypeAt(index) === PlSqlTokenType.MLE_INLINE_SOURCE) index + 1 else null
-            }
-            if (!isKeyword(start, "MODULE")) return null
-            var index = strictQualifiedName(start + 1, limit)?.second ?: return null
-            if (isKeyword(index, "ENV")) index = strictQualifiedName(index + 1, limit)?.second ?: return null
-            if (!isKeyword(index, "SIGNATURE") || tokenTypeAt(index + 1) !== PlSqlTokenType.STRING_LITERAL) return null
-            return index + 2
-        }
+        private fun mleSpecificationEnd(start: Int, limit: Int): Int? = callSpecifications.mleSpecificationEnd(start, limit)
 
         private fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? = schemaUnits.parseSequence(create, sequenceIndex)
 
