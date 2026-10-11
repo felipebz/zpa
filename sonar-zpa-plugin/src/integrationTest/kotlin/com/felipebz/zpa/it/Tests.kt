@@ -39,7 +39,7 @@ object Tests {
                 if (zipFile != null) {
                     setZipFile(File(zipFile))
                 } else {
-                    setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[25.8]"))
+                    setSonarVersion(System.getProperty("sonar.runtimeVersion", "LATEST_RELEASE[26.8]"))
                 }
             }
             .setOrchestratorProperty("orchestrator.artifactory.url", "https://repo1.maven.org/maven2")
@@ -55,7 +55,7 @@ object Tests {
 
     fun createSonarScanner(): SonarScanner =
         SonarScanner.create()
-            .setScannerVersion("7.0.2.4839")
+            .setScannerVersion("8.1.0.6389");
 
     fun newWsClient(orchestrator: Orchestrator): WsClient =
         WsClientFactories.getDefault()
