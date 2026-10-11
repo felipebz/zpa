@@ -24,6 +24,7 @@ import com.felipebz.zpa.api.project.ProjectDeclarationKind;
 import com.felipebz.zpa.api.project.ProjectDeclarationRole;
 import com.felipebz.zpa.api.project.ProjectDeclarationView;
 import com.felipebz.zpa.api.project.ProjectFunctionView;
+import com.felipebz.zpa.api.project.ProjectIdentifier;
 import com.felipebz.zpa.api.project.ProjectInventory;
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution;
 import com.felipebz.zpa.api.project.ProjectTypeDeclarationView;
@@ -186,5 +187,29 @@ class ProjectDeclarationInventoryJavaApiTest {
             .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
         assertThatThrownBy(() -> qualified.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> snapshot.resolveNamedType(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void findsPackageSubprogramCandidates() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(ProjectSourceInput.ofText("k.sql",
+            "CREATE PACKAGE k AS PROCEDURE run(a NUMBER); FUNCTION run RETURN NUMBER; END k;")));
+        ProjectInventory<ProjectPackageSubprogramView> inventory =
+            snapshot.findPackageSubprograms(ProjectQualifiedName.of("k"), ProjectIdentifier.fromSource("run"));
+        assertThat(inventory.getStatus()).isEqualTo(ProjectInventory.Status.COMPLETE);
+        assertThat(inventory.getDeclarations()).hasSize(2);
+        int functions = 0;
+        for (ProjectPackageSubprogramView candidate : inventory.getDeclarations()) {
+            if (candidate instanceof ProjectFunctionView) {
+                functions++;
+                assertThat(((ProjectFunctionView) candidate).getReturnType().getKind())
+                    .isEqualTo(ProjectTypeReference.Kind.NAMED);
+            } else {
+                assertThat(candidate.getParameters()).hasSize(1);
+            }
+        }
+        assertThat(functions).isEqualTo(1);
+        assertThatThrownBy(() -> inventory.getDeclarations().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> snapshot.findPackageSubprograms(null, ProjectIdentifier.fromSource("run")))
+            .isInstanceOf(NullPointerException.class);
     }
 }

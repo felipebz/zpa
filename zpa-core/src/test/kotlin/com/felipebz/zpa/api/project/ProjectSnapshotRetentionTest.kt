@@ -260,6 +260,41 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun packageSubprogramInventoriesRetainOnlyDurableFacts() {
+        val sourceMarker = "inventory-callable-retention-9b3e1d57-0c2a-4f88-a1b6-7d4e2c9f0a13"
+        val source = "-- $sourceMarker\nCREATE PACKAGE ci AS PROCEDURE go(a IN NUMBER); FUNCTION go RETURN NUMBER; END ci;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("c.sql", reader)
+        val failed = ProjectSourceInput.ofReader("f.sql", ProjectSourceReader { throw IllegalStateException(sourceMarker) })
+        val complete = ProjectSnapshots.prepare(listOf(input), false)
+        val incompleteSnapshot = ProjectSnapshots.prepare(listOf(input, failed), false)
+        val field = ProjectSnapshot::class.java.getDeclaredField("preparationResult").apply { isAccessible = true }
+        val forbidden = listOf(
+            complete, incompleteSnapshot, field.get(complete), field.get(incompleteSnapshot),
+            (field.get(complete) as com.felipebz.zpa.project.ProjectIndexPreparationResult).index,
+            (field.get(incompleteSnapshot) as com.felipebz.zpa.project.ProjectIndexPreparationResult).index,
+            source, reader, input, failed
+        )
+        val owner = ProjectQualifiedName.of("ci")
+        val name = ProjectIdentifier.fromSource("go")
+        val full = complete.findPackageSubprograms(owner, name)
+        val partial = incompleteSnapshot.findPackageSubprograms(owner, name)
+        assertThat(full.status).isEqualTo(ProjectInventory.Status.COMPLETE)
+        assertThat(partial.status).isEqualTo(ProjectInventory.Status.INCOMPLETE_INDEX)
+
+        val reachable = auditGraph(mapOf("full" to full, "partial" to partial), forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageFunctionDeclaration>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+
+        val idOnly = auditGraph(mapOf("id" to full.declarations.first().id), forbidden, sourceMarker)
+        assertThat(idOnly.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+        assertThat(idOnly.filterIsInstance<ProjectSnapshot>()).isEmpty()
+    }
+
+    @Test
     fun auditFollowsContainersPrivateAnyFieldsAndCapturedLambdaFieldsByIdentity() {
         val sentinel = Any()
         val capture = { sentinel }

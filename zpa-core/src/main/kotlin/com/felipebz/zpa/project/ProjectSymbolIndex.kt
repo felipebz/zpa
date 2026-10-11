@@ -95,10 +95,10 @@ class ProjectSymbolIndex internal constructor(
         .groupBy { typeKey(it.declaration as ProjectTypeDeclaration) }
         .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
-    private val subprogramsByOwnerAndName = this.declarations
-        .filterIsInstance<PackageSubprogramDeclaration>()
-        .groupBy { it.owner to it.name }
-        .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
+    private val subprogramOccurrencesByOwnerAndName = this.occurrences
+        .filter { it.declaration is PackageSubprogramDeclaration }
+        .groupBy { (it.declaration as PackageSubprogramDeclaration).let { fact -> fact.owner to fact.name } }
+        .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
     private val sequencesByName = this.declarations
         .filterIsInstance<SequenceDeclaration>()
@@ -115,7 +115,11 @@ class ProjectSymbolIndex internal constructor(
         typeOccurrencesByOwnerAndName[owner to name].orEmpty()
 
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
-        subprogramsByOwnerAndName[owner to name].orEmpty().filterIsInstance<PackageSubprogramDeclaration>()
+        findSubprogramOccurrences(owner, name).map { it.declaration as PackageSubprogramDeclaration }
+
+    /** Canonical occurrences behind [findSubprograms], in the same order. */
+    internal fun findSubprogramOccurrences(owner: QualifiedName, name: OracleIdentifier): List<IndexedDeclaration> =
+        subprogramOccurrencesByOwnerAndName[owner to name].orEmpty()
 
     fun findSequences(name: QualifiedName): List<SequenceDeclaration> = sequencesByName[name].orEmpty()
 

@@ -27,6 +27,7 @@ import com.felipebz.zpa.api.project.ProjectFunctionView
 import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
 import com.felipebz.zpa.api.project.ProjectParameterMode
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
+import com.felipebz.zpa.api.project.ProjectIdentifier
 import com.felipebz.zpa.api.project.ProjectQualifiedName
 import com.felipebz.zpa.api.project.ProjectSubtypeView
 import com.felipebz.zpa.api.project.ProjectTypeReference
@@ -103,5 +104,21 @@ class ProjectDeclarationInventoryKotlinApiTest {
         val missing = snapshot.resolveNamedType(ProjectQualifiedName.of("s"), null)
         assertThat(missing.status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
         assertThat(missing.candidates).isEmpty()
+    }
+
+    @Test
+    fun findsPackageSubprogramCandidates() {
+        val snapshot = ProjectSnapshots.prepare(
+            listOf(ProjectSourceInput.ofText("k.sql",
+                "CREATE PACKAGE k AS PROCEDURE run(a NUMBER); FUNCTION run RETURN NUMBER; END k;"))
+        )
+        val inventory = snapshot.findPackageSubprograms(ProjectQualifiedName.of("k"), ProjectIdentifier.fromSource("run"))
+        assertThat(inventory.status).isEqualTo(ProjectInventory.Status.COMPLETE)
+        assertThat(inventory.declarations).hasSize(2)
+        assertThat(inventory.declarations.filterIsInstance<ProjectFunctionView>().single().returnType.name.last.originalSpelling)
+            .isEqualTo("NUMBER")
+        assertThat(inventory.declarations.single { it !is ProjectFunctionView }.parameters).hasSize(1)
+        assertThat(inventory.declarations.map { it.id })
+            .isEqualTo(snapshot.findDeclarations(ProjectQualifiedName.of("k", "run")).declarations.map { it.id })
     }
 }

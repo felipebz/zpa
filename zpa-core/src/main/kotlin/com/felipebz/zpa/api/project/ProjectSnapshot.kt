@@ -108,6 +108,25 @@ class ProjectSnapshot private constructor(
         return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
     }
 
+    /**
+     * Exact inventory of package procedures and functions declared with exactly this package
+     * owner and local name: specifications and bodies, overloads and duplicates, in index order.
+     * This is not call resolution: nothing is filtered, paired, deduplicated or ranked, and a
+     * body without a specification is not thereby private or public. An empty inventory is not
+     * proof that the callable is absent from Oracle.
+     */
+    fun findPackageSubprograms(
+        packageOwner: ProjectQualifiedName,
+        name: ProjectIdentifier
+    ): ProjectInventory<ProjectPackageSubprogramView> {
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) {
+            return ProjectInventory.notPrepared()
+        }
+        val occurrences = preparationResult.index.findSubprogramOccurrences(packageOwner.name, name.identifier)
+        val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectPackageSubprogramView }
+        return ProjectInventory.of(candidates, failures)
+    }
+
     private fun inventory(occurrences: List<IndexedDeclaration>): ProjectInventory<ProjectDeclarationView> {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectInventory.notPrepared()
