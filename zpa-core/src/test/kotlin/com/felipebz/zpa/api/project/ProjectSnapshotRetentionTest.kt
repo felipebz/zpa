@@ -204,6 +204,37 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun valueResolutionsRetainOnlyDurableFacts() {
+        val sourceMarker = "value-resolution-retention-6d1f3a92-7e48-4b0c-a5d9-1c8e2b40f7a3"
+        val source = "-- $sourceMarker\nCREATE PACKAGE vr AS g NUMBER; d NUMBER; d DATE; PROCEDURE only_proc; END vr;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("vr.sql", reader)
+        val failedReader = ProjectSourceReader { throw IllegalStateException("failure: $sourceMarker") }
+        val failedInput = ProjectSourceInput.ofReader("bad.sql", failedReader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input, failedInput), false)
+        val complete = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input, failedReader, failedInput)
+        val owner = ProjectQualifiedName.of("vr")
+        fun r(s: ProjectSnapshot, n: String) = s.resolvePackageValue(ProjectQualifiedName.of(n), owner)
+        val results = mapOf(
+            "resolved" to r(complete, "g"), "ambiguous" to r(complete, "d"), "notFound" to r(complete, "only_proc"),
+            "incomplete" to r(snapshot, "g")
+        )
+        assertThat(results.values.map { it.status }).containsExactly(
+            ProjectValueResolution.Status.RESOLVED, ProjectValueResolution.Status.AMBIGUOUS,
+            ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT, ProjectValueResolution.Status.INCOMPLETE_INDEX
+        )
+        val reachable = auditGraph(results, forbidden + complete, sourceMarker)
+        assertThat(reachable.filterIsInstance<PackageValueDeclaration>()).isNotEmpty()
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+    }
+
+    @Test
     fun typeDescriptionsRetainOnlyDurableFacts() {
         val sourceMarker = "description-retention-2b8d6e41-93c7-4a50-8e1b-5c4f0a7d9e26"
         val source = "-- $sourceMarker\n" +

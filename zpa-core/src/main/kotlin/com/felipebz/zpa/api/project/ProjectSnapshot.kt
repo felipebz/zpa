@@ -127,6 +127,25 @@ class ProjectSnapshot private constructor(
         ProjectTypeDescriber.describe(this, reference.name, reference, packageOwner)
 
     /**
+     * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
+     * explicit [packageOwner] (with a null owner there is no value namespace to search: nothing is inferred and no
+     * package is scanned); a qualified name uses its own prefix and ignores [packageOwner] for candidate selection
+     * (the supplied owner is still reported in the result). [ProjectValueResolution.candidates] holds every known
+     * declaration with the effective qualified name, of any kind, in index order; only a package value is an eligible
+     * target. An unprepared snapshot gives `NOT_PREPARED`, then any preparation failure gives `INCOMPLETE_INDEX`
+     * (even without candidates or owner); `NOT_FOUND_IN_PROJECT` is not proof about Oracle. No scope rules, field
+     * paths or `%TYPE` interpretation are applied.
+     */
+    fun resolvePackageValue(name: ProjectQualifiedName, packageOwner: ProjectQualifiedName?): ProjectValueResolution {
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) {
+            return ProjectValueResolution.notPrepared(name, packageOwner)
+        }
+        val effective = if (name.name.segments.size == 1) packageOwner?.name?.append(name.name.last) else name.name
+        val occurrences = effective?.let { preparationResult.index.findOccurrences(it) }.orEmpty()
+        return ProjectValueResolution.of(name, packageOwner, ProjectSnapshotDeclarations.views(scope, occurrences), failures)
+    }
+
+    /**
      * Exact inventory of package procedures and functions declared with exactly this package
      * owner and local name: specifications and bodies, overloads and duplicates, in index order.
      * This is not call resolution: nothing is filtered, paired, deduplicated or ranked, and a
