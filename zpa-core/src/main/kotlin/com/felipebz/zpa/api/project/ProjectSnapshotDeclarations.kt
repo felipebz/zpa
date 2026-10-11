@@ -32,6 +32,8 @@ import java.util.Optional
 import com.felipebz.zpa.project.PackageFunctionDeclaration
 import com.felipebz.zpa.project.PackageProcedureDeclaration
 import com.felipebz.zpa.project.PackageSubtypeDeclaration
+import com.felipebz.zpa.project.StandaloneFunctionDeclaration
+import com.felipebz.zpa.project.StandaloneProcedureDeclaration
 import com.felipebz.zpa.project.ParameterMode
 import com.felipebz.zpa.project.ProjectParameter
 import com.felipebz.zpa.project.PackageTypeDeclaration
@@ -60,6 +62,8 @@ internal object ProjectSnapshotDeclarations {
                 is PackageSubtypeDeclaration -> BackedSubtypeView(id, fact)
                 is PackageProcedureDeclaration -> BackedPackageProcedureView(id, fact)
                 is PackageFunctionDeclaration -> BackedPackageFunctionView(id, fact)
+                is StandaloneProcedureDeclaration -> BackedStandaloneProcedureView(id, fact)
+                is StandaloneFunctionDeclaration -> BackedStandaloneFunctionView(id, fact)
                 else -> BackedDeclarationView(id, fact)
             }
         }
@@ -134,6 +138,21 @@ internal object ProjectSnapshotDeclarations {
         BackedDeclarationView(id, function), ProjectPackageSubprogramView, ProjectFunctionView {
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(function.name)
         override val packageOwner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(function.owner)
+        override val parameters: List<ProjectParameterView> = function.parameters.toParameterViews()
+        override val returnType: ProjectTypeReference get() = ProjectTypeReference.from(function.returnType)
+        override val isDeterministic: Boolean get() = function.deterministic
+    }
+
+    /** Standalone callables are never package members: no `packageOwner`, no schema inference. */
+    private class BackedStandaloneProcedureView(id: ProjectDeclarationId, private val procedure: StandaloneProcedureDeclaration) :
+        BackedDeclarationView(id, procedure), ProjectSubprogramView {
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(procedure.name.last)
+        override val parameters: List<ProjectParameterView> = procedure.parameters.toParameterViews()
+    }
+
+    private class BackedStandaloneFunctionView(id: ProjectDeclarationId, private val function: StandaloneFunctionDeclaration) :
+        BackedDeclarationView(id, function), ProjectFunctionView {
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(function.name.last)
         override val parameters: List<ProjectParameterView> = function.parameters.toParameterViews()
         override val returnType: ProjectTypeReference get() = ProjectTypeReference.from(function.returnType)
         override val isDeterministic: Boolean get() = function.deterministic

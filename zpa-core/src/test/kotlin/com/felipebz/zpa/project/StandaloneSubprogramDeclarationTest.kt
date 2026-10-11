@@ -24,6 +24,7 @@ import com.felipebz.zpa.api.project.ProjectDeclarationRole
 import com.felipebz.zpa.api.project.ProjectFunctionView
 import com.felipebz.zpa.api.project.ProjectIdentifier
 import com.felipebz.zpa.api.project.ProjectInventory
+import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
 import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.project.ProjectQualifiedName
 import com.felipebz.zpa.api.project.ProjectSnapshot
@@ -149,8 +150,8 @@ class StandaloneSubprogramDeclarationTest {
         val view = inventory.declarations.first()
         assertThat(view.role).isEqualTo(ProjectDeclarationRole.STANDALONE)
         assertThat(view.qualifiedName).isEqualTo(ProjectQualifiedName.of("app", "f"))
-        // Increment 1 keeps the generic view: no callable facets yet.
-        assertThat(view).isNotInstanceOf(ProjectSubprogramView::class.java).isNotInstanceOf(ProjectFunctionView::class.java)
+        // Standalone callables expose the reusable callable facets, never package membership.
+        assertThat(view).isInstanceOf(ProjectFunctionView::class.java).isNotInstanceOf(ProjectPackageSubprogramView::class.java)
         assertThat(snapshot.declarationsFor("s.sql").declarations.map { it.kind })
             .containsExactly(PublicKind.STANDALONE_PROCEDURE, PublicKind.STANDALONE_FUNCTION)
         assertThat(snapshot.declarations.map { it.id }).contains(view.id)
