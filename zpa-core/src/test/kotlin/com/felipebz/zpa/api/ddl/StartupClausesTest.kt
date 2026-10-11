@@ -95,7 +95,7 @@ class StartupClausesTest : RuleTest() {
                 "alter database open read only;\nalter database add logfile group 3 ('a.log') size 1m;\n")
         assertThatAst(tree.getDescendants(DdlGrammar.ALTER_DATABASE)).hasSize(4)
         assertThatAst(tree.getDescendants(DdlGrammar.STARTUP_CLAUSES)).hasSize(3)
-        val first = tree.getFirstDescendant(DdlGrammar.ALTER_DATABASE)!!
+        val first = tree.getFirstDescendant(DdlGrammar.ALTER_DATABASE)
         assertThatAst(first.getChildren(DdlGrammar.STARTUP_CLAUSES)).hasSize(1)
         assertThatAst(first.getChildren(DdlGrammar.LOGFILE_CLAUSES)).isEmpty()
     }

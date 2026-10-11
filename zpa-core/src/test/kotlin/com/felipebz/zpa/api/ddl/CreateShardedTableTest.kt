@@ -238,7 +238,7 @@ class CreateShardedTableTest : RuleTest() {
         val partitionset = p.parse(
             "$customers partitionset by list (class) partition by consistent hash (custno, name) partitions auto " +
                 "(partitionset gold values ('gld') tablespace set tbs1, partitionset silver values ('slv') tablespace set tbs2);")
-        val list = partitionset.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)!!
+        val list = partitionset.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)
         assertThatAst(list.texts()).containsExactly(
             "partitionset", "by", "list", "(", "class", ")", "partition", "by", "consistent", "hash", "(", "custno", ",", "name", ")",
             "partitions", "auto", "(", "partitionset", "gold", "values", "(", "'gld'", ")", "tablespace", "set", "tbs1", ",",
@@ -249,7 +249,7 @@ class CreateShardedTableTest : RuleTest() {
         val tuples = p.parse(
             "$customers partitionset by list (class, class2) partition by consistent hash (custno) partitions auto " +
                 "(partitionset silver values (('SLV', 1), ('BRZ', 2)) tablespace set ts1);")
-        val tupleList = tuples.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)!!
+        val tupleList = tuples.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_LIST)
         assertThatAst(tupleList.getChildren(DdlGrammar.LIST_VALUES_CLAUSE)).isEmpty()
         assertThatAst(tupleList.getFirstChild(DdlGrammar.PARTITIONSET_TUPLE_VALUES_CLAUSE).texts()).containsExactly(
             "values", "(", "(", "'SLV'", ",", "1", ")", ",", "(", "'BRZ'", ",", "2", ")", ")")
@@ -260,10 +260,10 @@ class CreateShardedTableTest : RuleTest() {
             "$customers partitionset by range (class) partition by consistent hash (custno) partitions auto " +
                 "(partitionset p1 values less than (10));")
         assertThatAst(range.getDescendants(DdlGrammar.PARTITIONSET_BY_RANGE)).hasSize(1)
-        assertThatAst(range.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_RANGE)!!.getChildren(DdlGrammar.RANGE_VALUES_CLAUSE)).hasSize(1)
+        assertThatAst(range.getFirstDescendant(DdlGrammar.PARTITIONSET_BY_RANGE).getChildren(DdlGrammar.RANGE_VALUES_CLAUSE)).hasSize(1)
 
         val consistent = p.parse("$customers partition by consistent hash (custno) partitions auto tablespace set ts1;")
-        assertThatAst(consistent.getFirstDescendant(DdlGrammar.PARTITION_BY_CONSISTENT_HASH)!!.texts()).containsExactly(
+        assertThatAst(consistent.getFirstDescendant(DdlGrammar.PARTITION_BY_CONSISTENT_HASH).texts()).containsExactly(
             "partition", "by", "consistent", "hash", "(", "custno", ")", "partitions", "auto", "tablespace", "set", "ts1")
         assertThatAst(consistent.getDescendants(DdlGrammar.PARTITIONSET_BY_LIST)).isEmpty()
     }

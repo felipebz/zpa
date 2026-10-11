@@ -152,7 +152,7 @@ class ManagedStandbyRecoveryTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.MANAGED_STANDBY_RECOVERY)).hasSize(2)
         assertThatAst(tree.getDescendants(DdlGrammar.RECOVER_TO_LOGICAL_STANDBY)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.GENERAL_RECOVERY)).hasSize(1)
-        val first = tree.getFirstDescendant(DdlGrammar.MANAGED_STANDBY_RECOVERY)!!
+        val first = tree.getFirstDescendant(DdlGrammar.MANAGED_STANDBY_RECOVERY)
         assertThatAst(first.children.map { it.tokenOriginalValue.lowercase() })
             .containsExactly("recover", "managed", "standby", "database", "disconnect", "parallel", "2")
     }

@@ -117,7 +117,7 @@ class JsonOptionsTest : RuleTest() {
     @Test
     fun buildsJsonSerializeOptionTokens() {
         val tree = p.parse("json_serialize(d ascii truncate pretty ordered truncate)")
-        val serialize = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SERIALIZE_EXPRESSION)!!
+        val serialize = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SERIALIZE_EXPRESSION)
         assertThatAst(serialize.children.map { it.tokenOriginalValue.lowercase() })
             .containsExactly("json_serialize", "(", "d", "ascii", "truncate", "pretty", "ordered", "truncate", ")")
     }

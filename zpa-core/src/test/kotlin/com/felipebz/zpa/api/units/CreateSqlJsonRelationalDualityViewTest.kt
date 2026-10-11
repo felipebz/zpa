@@ -189,19 +189,19 @@ class CreateSqlJsonRelationalDualityViewTest : RuleTest() {
         val tree = p.parse(view(
             "select json {'_id': o.oid with noupdate, o.dt as flex, unnest (select json {'cid': c.cid} from c c where c.cid = o.cid)} " +
                 "from o o with insert check etag where o.oid > 1 with check option"))
-        val duality = tree.getFirstDescendant(DdlGrammar.CREATE_JSON_RELATIONAL_DUALITY_VIEW)!!
+        val duality = tree.getFirstDescendant(DdlGrammar.CREATE_JSON_RELATIONAL_DUALITY_VIEW)
         assertThatAst(duality.children.map { it.name }).containsExactly(
             "CREATE", "JSON", "RELATIONAL", "DUALITY", "VIEW", "UNIT_NAME", "AS", "SELECT_EXPRESSION", "SEMICOLON")
-        val entries = duality.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_OBJECT_EXPRESSION)!!
+        val entries = duality.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_OBJECT_EXPRESSION)
             .getDescendants(SingleRowSqlFunctionsGrammar.JSON_OBJECT_ENTRY)
         assertThatAst(entries.map { e -> e.children.map { it.name } }.take(3)).containsExactly(
             listOf("LITERAL", "COLON", "MEMBER_EXPRESSION", "DUALITY_VIEW_COLUMN_TAGS"),
             listOf("MEMBER_EXPRESSION", "AS", "FLEX"),
             listOf("UNNEST", "LPARENTHESIS", "SELECT_EXPRESSION", "RPARENTHESIS"))
-        val tags = duality.getFirstDescendant(DdlGrammar.DUALITY_VIEW_COLUMN_TAGS)!!
+        val tags = duality.getFirstDescendant(DdlGrammar.DUALITY_VIEW_COLUMN_TAGS)
         assertThatAst(tags.children.map { it.name }).containsExactly("WITH", "NOUPDATE")
         val query = duality.getFirstChild(DmlGrammar.SELECT_EXPRESSION).getFirstChild(DmlGrammar.QUERY_BLOCK)
-        val table = query.getFirstChild(DmlGrammar.FROM_CLAUSE).getFirstDescendant(DdlGrammar.DUALITY_VIEW_TABLE_TAGS)!!
+        val table = query.getFirstChild(DmlGrammar.FROM_CLAUSE).getFirstDescendant(DdlGrammar.DUALITY_VIEW_TABLE_TAGS)
         assertThatAst(table.children.map { it.name }).containsExactly("WITH", "INSERT", "CHECK", "ETAG")
         assertThatAst(query.children.map { it.name }).containsExactly(
             "SELECT", "SELECT_COLUMN", "FROM_CLAUSE", "WHERE_CLAUSE", "WITH", "CHECK", "OPTION")

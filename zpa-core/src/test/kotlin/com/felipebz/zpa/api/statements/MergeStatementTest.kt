@@ -256,7 +256,7 @@ class MergeStatementTest : RuleTest() {
 
     @Test
     fun buildsMergeWithoutUsingNodes() {
-        val merge = p.parse("merge into t x on (x.id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);").getFirstDescendant(DmlGrammar.MERGE_EXPRESSION)!!
+        val merge = p.parse("merge into t x on (x.id = :i) when matched then update set a = :a when not matched then insert (id, a) values (:i, :a);").getFirstDescendant(DmlGrammar.MERGE_EXPRESSION)
         assertThatAst(merge.children.map { it.tokenOriginalValue.lowercase() }.take(4)).containsExactly("merge", "into", "t", "x")
         assertThatAst(merge.hasDirectChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)).isFalse()
         assertThatAst(merge.hasDirectChildren(DmlGrammar.MERGE_UPDATE_CLAUSE, DmlGrammar.MERGE_INSERT_CLAUSE)).isTrue()

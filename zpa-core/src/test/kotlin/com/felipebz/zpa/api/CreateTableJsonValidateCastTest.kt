@@ -74,7 +74,7 @@ class CreateTableJsonValidateCastTest : RuleTest() {
     @Test
     fun buildsColumnDefinitionTokens() {
         val tree = p.parse("create table t (j json validate cast using '{}' not null)")
-        val column = tree.getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)!!
+        val column = tree.getFirstDescendant(DdlGrammar.TABLE_COLUMN_DEFINITION)
         assertThatAst(column.children.map { it.tokenOriginalValue.lowercase() })
             .containsSubsequence("j", "json", "validate", "cast", "using", "'{}'", "not")
     }

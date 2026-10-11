@@ -151,7 +151,7 @@ class JsonTableTest : RuleTest() {
 
     @Test
     fun buildsCustomDatatypeReturnTypeAsObjectInstance() {
-        val node = p.parse(column("a schema_name.t path '$.a'")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)!!
+        val node = p.parse(column("a schema_name.t path '$.a'")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)
         val instance = node.getFirstChild(SingleRowSqlFunctionsGrammar.JSON_VALUE_RETURN_TYPE)
             .getFirstChild(SingleRowSqlFunctionsGrammar.JSON_VALUE_RETURN_OBJECT_INSTANCE)
         assertThatAst(instance.getFirstChild(PlSqlGrammar.CUSTOM_DATATYPE).tokens.map { it.originalValue }).containsExactly("schema_name", ".", "t")
@@ -175,11 +175,11 @@ class JsonTableTest : RuleTest() {
 
     @Test
     fun buildsNativeJsonColumnWithoutWrapperNodes() {
-        val value = p.parse(column("a json path '$.a' type (strict)")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)!!
+        val value = p.parse(column("a json path '$.a' type (strict)")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)
         assertThatAst(value.children.map { it.name }).containsExactly(
             "IDENTIFIER_NAME", "JSON_VALUE_RETURN_TYPE", "PATH", "JSON_PATH", "JSON_TYPE_CLAUSE")
-        assertThatAst(value.getFirstDescendant(PlSqlGrammar.JSON_DATATYPE)!!.tokens.map { it.originalValue }).containsExactly("json")
-        val query = p.parse(column("a json with wrapper path '$.a'")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_QUERY_COLUMN)!!
+        assertThatAst(value.getFirstDescendant(PlSqlGrammar.JSON_DATATYPE).tokens.map { it.originalValue }).containsExactly("json")
+        val query = p.parse(column("a json with wrapper path '$.a'")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_QUERY_COLUMN)
         assertThatAst(query.children.map { it.name }).containsExactly(
             "IDENTIFIER_NAME", "JSON_VALUE_RETURN_TYPE", "JSON_QUERY_WRAPPER_CLAUSE", "PATH", "JSON_PATH")
     }

@@ -130,10 +130,10 @@ class JsonTransformSetOperationTest : RuleTest() {
     @Test
     fun buildsOperationNodes() {
         val tree = p.parse("json_transform(d, add_set '\$.a' = 2 ignore on missing ignore if present, remove_set '\$.b' = path '\$.c' ignore if absent)")
-        val add = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_ADD_SET_OPERATION)!!
+        val add = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_ADD_SET_OPERATION)
         assertThatAst(add.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "add_set", "'\$.a'", "=", "2", "ignore", "on", "missing", "ignore", "if", "present")
-        val remove = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_REMOVE_SET_OPERATION)!!
+        val remove = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_REMOVE_SET_OPERATION)
         assertThatAst(remove.children.map { it.name }).containsExactly(
             "REMOVE_SET", "STRING_LITERAL", "EQUALS", "JSON_RHS_EXPRESSION", "IGNORE", "IF", "ABSENT")
         assertThatAst(tree.getDescendants(SingleRowSqlFunctionsGrammar.JSON_TRANSFORM_OPERATION)).hasSize(2)

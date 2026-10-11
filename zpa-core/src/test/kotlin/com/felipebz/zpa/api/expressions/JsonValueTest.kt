@@ -149,7 +149,7 @@ class JsonValueTest : RuleTest() {
     @Test
     fun buildsHandlerNodesWithoutExtraWrappers() {
         val call = p.parse(handlers("null on empty error on mismatch default -1 on error"))
-            .getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_EXPRESSION)!!
+            .getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_EXPRESSION)
         assertThatAst(call.children.map { it.name }).containsSubsequence(
             "JSON_VALUE_RETURNING_CLAUSE", "JSON_VALUE_ERROR_EMPTY_CLAUSES")
         val wrapper = call.getFirstChild(SingleRowSqlFunctionsGrammar.JSON_VALUE_ERROR_EMPTY_CLAUSES)
@@ -159,7 +159,7 @@ class JsonValueTest : RuleTest() {
         assertThatAst(onError.children.map { it.name }).containsExactly("DEFAULT", "UNARY_EXPRESSION", "ON", "ERROR")
         assertThatAst(onError.getFirstChild(PlSqlGrammar.UNARY_EXPRESSION).children.map { it.name })
             .containsExactly("MINUS", "LITERAL")
-        val plain = p.parse(handlers("default 1 on error")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_ON_ERROR_CLAUSE)!!
+        val plain = p.parse(handlers("default 1 on error")).getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_ON_ERROR_CLAUSE)
         assertThatAst(plain.children.map { it.name }).containsExactly("DEFAULT", "LITERAL", "ON", "ERROR")
     }
 }

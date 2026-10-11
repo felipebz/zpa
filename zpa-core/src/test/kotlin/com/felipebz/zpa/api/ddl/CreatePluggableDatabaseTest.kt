@@ -344,7 +344,7 @@ class CreatePluggableDatabaseTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_FILE_NAME_CONVERT)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_REFRESH_MODE_CLAUSE)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_TEMPFILE_REUSE)).hasSize(1)
-        val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)!!
+        val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)
         assertThatAst(xml.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "as", "clone", "using", "'c.xml'", "nocopy", "tempfile")
     }
@@ -411,18 +411,18 @@ class CreatePluggableDatabaseTest : RuleTest() {
                 "create pluggable database d admin user u identified by p " +
                 "container_map update (add partition q values ('a') tablespace t);\n" +
                 "create pluggable database c from a keystore identified by kp no rekey;\n")
-        val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)!!
+        val xml = tree.getFirstDescendant(DdlGrammar.PDB_FROM_XML)
         assertThatAst(xml.children.map { it.name }).containsExactly(
             "USING", "CHARACTER_LITERAL", "NOCOPY", "PDB_KEYSTORE_CLAUSE", "PDB_DECRYPT_CLAUSE")
-        assertThatAst(xml.getFirstDescendant(DdlGrammar.PDB_KEYSTORE_CLAUSE)!!.children.map { it.name })
+        assertThatAst(xml.getFirstDescendant(DdlGrammar.PDB_KEYSTORE_CLAUSE).children.map { it.name })
             .containsExactly("KEYSTORE", "IDENTIFIED", "BY", "IDENTIFIER_NAME")
-        val map = tree.getFirstDescendant(DdlGrammar.PDB_CONTAINER_MAP_CLAUSE)!!
+        val map = tree.getFirstDescendant(DdlGrammar.PDB_CONTAINER_MAP_CLAUSE)
         assertThatAst(map.children.map { it.name }).containsExactly(
             "CONTAINER_MAP", "UPDATE", "LPARENTHESIS", "SPLIT_TABLE_PARTITION", "RPARENTHESIS")
         assertThatAst(tree.getDescendants(DdlGrammar.PDB_KEYSTORE_CLAUSE)).hasSize(2)
-        val rekey = tree.getFirstDescendant(DdlGrammar.PDB_REKEY_CLAUSE)!!
+        val rekey = tree.getFirstDescendant(DdlGrammar.PDB_REKEY_CLAUSE)
         assertThatAst(rekey.children.map { it.name }).containsExactly("NO", "REKEY")
-        val clone = tree.getFirstDescendant(DdlGrammar.PDB_CLONE)!!
+        val clone = tree.getFirstDescendant(DdlGrammar.PDB_CLONE)
         assertThatAst(clone.children.map { it.name }).containsExactly(
             "FROM", "IDENTIFIER_NAME", "PDB_KEYSTORE_CLAUSE", "PDB_REKEY_CLAUSE")
     }

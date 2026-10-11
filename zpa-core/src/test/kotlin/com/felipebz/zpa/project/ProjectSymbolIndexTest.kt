@@ -222,9 +222,9 @@ class ProjectSymbolIndexTest {
         assertThat(index.declarationsFor(secondFile)).containsExactlyElementsOf(secondFacts)
         val unknownFileFacts = index.declarationsFor(FileId("unknown.sql"))
         assertThat(unknownFileFacts).isEmpty()
-        assertThatThrownBy { (unknownFileFacts as java.util.List<ProjectDeclaration>).add(firstFacts.first()) }
+        assertThatThrownBy { (unknownFileFacts as MutableList<ProjectDeclaration>).add(firstFacts.first()) }
             .isInstanceOf(UnsupportedOperationException::class.java)
-        assertThatThrownBy { (perFile as java.util.List<ProjectDeclaration>).clear() }
+        assertThatThrownBy { (perFile as MutableList<ProjectDeclaration>).clear() }
             .isInstanceOf(UnsupportedOperationException::class.java)
     }
 

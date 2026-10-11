@@ -159,7 +159,7 @@ class JsonTypeClauseTest : RuleTest() {
         val tree = p.parse(column("a number path '\$.a' type (strict) null on error, b number exists path '\$.b' type (lax)"))
         assertThatAst(tree.getDescendants(SingleRowSqlFunctionsGrammar.JSON_TYPE_CLAUSE).map { it.tokens.map { t -> t.originalValue } })
             .containsExactly(listOf("type", "(", "strict", ")"), listOf("type", "(", "lax", ")"))
-        val value = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)!!
+        val value = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_VALUE_COLUMN)
         assertThatAst(value.children.map { it.name }).containsExactly(
             "IDENTIFIER_NAME", "JSON_VALUE_RETURN_TYPE", "PATH", "JSON_PATH", "JSON_TYPE_CLAUSE", "JSON_VALUE_ERROR_EMPTY_CLAUSES")
     }

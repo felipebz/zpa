@@ -71,8 +71,8 @@ class ProjectSubprogramSpecificationResolverTest {
         assertThat(result).isEqualTo(ProjectSubprogramSpecificationResolution.Resolved(body, specification))
         assertThat((specification as PackageFunctionDeclaration).returnType.structuralKey())
             .isEqualTo((body as PackageFunctionDeclaration).returnType.structuralKey())
-        assertThat((specification as PackageFunctionDeclaration).deterministic).isTrue
-        assertThat((body as PackageFunctionDeclaration).deterministic).isFalse
+        assertThat(specification.deterministic).isTrue
+        assertThat(body.deterministic).isFalse
         assertThat(specification.sourceRange).isNotEqualTo(body.sourceRange)
     }
 

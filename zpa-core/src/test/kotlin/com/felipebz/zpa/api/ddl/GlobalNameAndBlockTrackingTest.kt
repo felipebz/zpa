@@ -119,7 +119,7 @@ class GlobalNameAndBlockTrackingTest : RuleTest() {
         assertThatAst(tree.getDescendants(DdlGrammar.RENAME_GLOBAL_NAME_CLAUSE)).hasSize(1)
         assertThatAst(tree.getDescendants(DdlGrammar.BLOCK_CHANGE_TRACKING_CLAUSE)).hasSize(2)
         assertThatAst(tree.getDescendants(DdlGrammar.STARTUP_CLAUSES)).hasSize(1)
-        val global = tree.getFirstDescendant(DdlGrammar.RENAME_GLOBAL_NAME_CLAUSE)!!
+        val global = tree.getFirstDescendant(DdlGrammar.RENAME_GLOBAL_NAME_CLAUSE)
         assertThatAst(global.children.map { it.tokenOriginalValue }).containsExactly(
             "rename", "global_name", "to", "demo", ".", "world", ".", "example", ".", "com")
         val tracking = tree.getDescendants(DdlGrammar.BLOCK_CHANGE_TRACKING_CLAUSE)

@@ -144,10 +144,10 @@ class JsonTransformHandlersTest : RuleTest() {
     @Test
     fun buildsOperationNodes() {
         val tree = p.parse("json_transform(d, rename '\$.a' = 'b' error on missing, append '\$.c' = 1 create on mismatch)")
-        val rename = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_RENAME_OPERATION)!!
+        val rename = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_RENAME_OPERATION)
         assertThatAst(rename.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "rename", "'\$.a'", "=", "'b'", "error", "on", "missing")
-        val append = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_APPEND_OPERATION)!!
+        val append = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_APPEND_OPERATION)
         assertThatAst(append.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "append", "'\$.c'", "=", "1", "create", "on", "mismatch")
     }
@@ -155,7 +155,7 @@ class JsonTransformHandlersTest : RuleTest() {
     @Test
     fun keepsGenericHandlerTokensDirectlyInTheOperation() {
         val tree = p.parse("json_transform(d, set '\$.a' = 1 replace on existing create on missing)")
-        val set = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SET_OPERATION)!!
+        val set = tree.getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SET_OPERATION)
         assertThatAst(set.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "set", "'\$.a'", "=", "1", "replace", "on", "existing", "create", "on", "missing")
         assertThatAst(tree.getDescendants(SingleRowSqlFunctionsGrammar.JSON_TRANSFORM_HANDLER)).isEmpty()
@@ -178,7 +178,7 @@ class JsonTransformHandlersTest : RuleTest() {
             "sort '\$.a' remove nulls order by '\$.b' ignore on missing remove on null",
         )
         val sort = p.parse("json_transform(d, sort '\$.a' remove nulls remove on null)")
-            .getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SORT_OPERATION)!!
+            .getFirstDescendant(SingleRowSqlFunctionsGrammar.JSON_SORT_OPERATION)
         assertThatAst(sort.children.map { it.tokenOriginalValue.lowercase() }).containsExactly(
             "sort", "'\$.a'", "remove", "nulls", "remove", "on", "null")
     }
