@@ -18,6 +18,7 @@ import com.felipebz.zpa.api.project.ProjectSnapshots
 import com.felipebz.zpa.api.project.ProjectSourceInput
 import com.felipebz.zpa.api.project.ProjectSourceReader
 import com.felipebz.zpa.api.project.ProjectSpecificationCorrelation
+import com.felipebz.zpa.api.project.ProjectSubprogramView
 import com.felipebz.zpa.api.project.ProjectSubtypeView
 import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.project.ProjectTypeShape
@@ -184,5 +185,78 @@ class ProjectApiKotlinConsumerTest {
         assertThatThrownBy { mutable.clear() }.isInstanceOf(UnsupportedOperationException::class.java)
         assertThatThrownBy { mutable.iterator().apply { next() }.remove() }
             .isInstanceOf(UnsupportedOperationException::class.java)
+    }
+
+    private fun standalone(): ProjectSnapshot = ProjectSnapshots.prepare(listOf(counted("db/standalone.sql", "standalone.sql")), false)
+
+    @Test
+    fun standaloneCallablesExposeCallableFacetsWithoutPackageMembership() {
+        val snapshot = standalone()
+        assertThat(snapshot.preparationState).isEqualTo(ProjectPreparationState.PREPARED_WITH_DECLARATIONS)
+        assertThat(snapshot.declarations.map { it.kind }).containsExactly(
+            ProjectDeclarationKind.STANDALONE_PROCEDURE, ProjectDeclarationKind.STANDALONE_FUNCTION,
+            ProjectDeclarationKind.STANDALONE_FUNCTION, ProjectDeclarationKind.STANDALONE_FUNCTION,
+            ProjectDeclarationKind.STANDALONE_PROCEDURE)
+        snapshot.declarations.forEach {
+            assertThat(it is ProjectSubprogramView).isTrue()
+            assertThat(it is ProjectPackageSubprogramView).isFalse()
+            assertThat(it.role).isEqualTo(ProjectDeclarationRole.STANDALONE)
+        }
+        val sync = snapshot.findDeclarations(n("app", "sync_orders")).declarations.first() as ProjectSubprogramView
+        assertThat(sync is ProjectFunctionView).isFalse()
+        assertThat(sync.localName).isEqualTo(id("sync_orders"))
+        assertThat(sync.qualifiedName).isEqualTo(n("app", "sync_orders"))
+        assertThat(sync.parameters.map { it.name.originalSpelling }).containsExactly("id", "note", "level_", "col", "total")
+        assertThat(sync.parameters.map { it.ordinal }).containsExactly(1, 2, 3, 4, 5)
+        assertThat(sync.parameters.map { it.mode }).containsExactly(ProjectParameterMode.IN, ProjectParameterMode.IN_OUT,
+            ProjectParameterMode.IN, ProjectParameterMode.IN, ProjectParameterMode.OUT)
+        assertThat(sync.parameters.map { it.isNocopy }).containsExactly(false, true, false, false, false)
+        assertThat(sync.parameters.map { it.isDefaultPresent }).containsExactly(false, false, true, false, false)
+        assertThat(sync.parameters[3].typeRef.anchor.orElseThrow()).isEqualTo(ProjectTypeReference.Anchor.TYPE)
+        assertThat(sync.parameters[0].sourceRange.startLine).isEqualTo(2)
+
+        val tax = snapshot.findDeclarations(n("tax")).declarations.first()
+        assertThat(tax is ProjectPackageSubprogramView).isFalse()
+        tax as ProjectFunctionView
+        assertThat(tax.isDeterministic).isTrue()
+        assertThat(tax.returnType.name).isEqualTo(n("NUMBER"))
+        assertThat((snapshot.findDeclarations(n("now_text")).declarations.first() as ProjectFunctionView).isDeterministic).isFalse()
+
+        val quoted = snapshot.findDeclarations(n("\"Audit\"", "\"Log Event\"")).declarations.first() as ProjectSubprogramView
+        assertThat(quoted.localName.originalSpelling).isEqualTo("\"Log Event\"")
+        assertThat(quoted.localName.isQuoted).isTrue()
+        assertThat(snapshot.findDeclarations(n("Log Event")).declarations).isEmpty()
+
+        assertThat(snapshot.declarationsFor("db/standalone.sql").declarations.map { it.id })
+            .isEqualTo(snapshot.declarations.map { it.id })
+        assertThat(snapshot.findDeclarations(n("tax")).declarations.first().id).isEqualTo(tax.id)
+        @Suppress("UNCHECKED_CAST")
+        assertThatThrownBy { (tax.parameters as MutableList<Any?>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+        assertThatThrownBy { snapshot.correlateSpecification(tax.id) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy { snapshot.correlateSpecification(sync.id) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun standaloneFunctionAndPackageMemberWithTheSameAuthoredNameStayDistinct() {
+        val snapshot = ProjectSnapshots.prepare(listOf(
+            counted("db/standalone.sql", "standalone.sql"), counted("db/app_package.sql", "app_package.sql"),
+            counted("db/app_package_body.sql", "app_package_body.sql")), false)
+        val both = snapshot.findDeclarations(n("app", "f")).declarations
+        assertThat(both.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE_FUNCTION,
+            ProjectDeclarationKind.PACKAGE_FUNCTION, ProjectDeclarationKind.STANDALONE_FUNCTION)
+        assertThat(both.map { it.id }).doesNotHaveDuplicates()
+        val standalone = both[2]
+        assertThat(standalone is ProjectFunctionView).isTrue()
+        assertThat(standalone is ProjectPackageSubprogramView).isFalse()
+        both.take(2).forEach {
+            assertThat((it as ProjectPackageSubprogramView).packageOwner).isEqualTo(n("app"))
+        }
+        val members = snapshot.findPackageSubprograms(n("app"), id("f"))
+        assertThat(members.declarations.map { it.id }).hasSize(2).doesNotContain(standalone.id)
+        val bodyId = members.declarations.single { it.role == ProjectDeclarationRole.BODY }.id
+        val correlation = snapshot.correlateSpecification(bodyId)
+        assertThat(correlation.status).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED)
+        assertThat(correlation.candidates.map { it.id }).doesNotContain(standalone.id)
+        assertThatThrownBy { snapshot.correlateSpecification(standalone.id) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 }

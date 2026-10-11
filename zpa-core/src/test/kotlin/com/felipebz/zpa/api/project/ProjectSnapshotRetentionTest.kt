@@ -424,6 +424,40 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun standaloneViewsParametersAndReferencesRetainOnlyDurableFacts() {
+        val sourceMarker = "standalone-retention-3b9d6a15-82f4-4c7e-a0d1-6e5f2b8c1d40"
+        val source = "-- $sourceMarker\nCREATE PROCEDURE sp(a IN NUMBER, b OUT NOCOPY t.c%TYPE) IS BEGIN NULL; END;\n/\n" +
+            "CREATE FUNCTION sf(x NUMBER DEFAULT 1) RETURN REF o DETERMINISTIC IS BEGIN RETURN NULL; END;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("st.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult").apply { isAccessible = true }
+        val result = resultField.get(snapshot) as com.felipebz.zpa.project.ProjectIndexPreparationResult
+        val forbidden = listOf(snapshot, resultField.get(snapshot), result.index, source, reader, input)
+
+        val procedure = snapshot.findDeclarations(ProjectQualifiedName.of("sp")).declarations.single() as ProjectSubprogramView
+        val function = snapshot.findDeclarations(ProjectQualifiedName.of("sf")).declarations.single() as ProjectFunctionView
+        val roots = mapOf<String, Any?>(
+            "procedure" to procedure, "function" to function, "procedureParameters" to procedure.parameters,
+            "functionParameters" to function.parameters, "parameterRefs" to procedure.parameters.map { it.typeRef },
+            "return" to function.returnType, "localName" to procedure.localName, "qualifiedName" to function.qualifiedName
+        )
+        val reachable = auditGraph(roots, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.StandaloneProcedureDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.StandaloneFunctionDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectParameter>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+
+        // Projected references and IDs are independent of the internal TypeRef and of the facts.
+        val standalone = auditGraph(
+            mapOf("refs" to procedure.parameters.map { it.typeRef } + function.returnType, "id" to procedure.id), forbidden, sourceMarker
+        )
+        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.TypeRef>()).isEmpty()
+        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+    }
+
+    @Test
     fun auditFollowsContainersPrivateAnyFieldsAndCapturedLambdaFieldsByIdentity() {
         val sentinel = Any()
         val capture = { sentinel }

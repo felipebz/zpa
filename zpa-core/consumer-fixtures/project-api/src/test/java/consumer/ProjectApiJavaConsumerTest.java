@@ -3,6 +3,7 @@ package consumer;
 import com.felipebz.zpa.api.project.ProjectDeclarationId;
 import com.felipebz.zpa.api.project.ProjectDeclarationKind;
 import com.felipebz.zpa.api.project.ProjectDeclarationRole;
+import com.felipebz.zpa.api.project.ProjectSubprogramView;
 import com.felipebz.zpa.api.project.ProjectDeclarationView;
 import com.felipebz.zpa.api.project.ProjectFunctionView;
 import com.felipebz.zpa.api.project.ProjectIdentifier;
@@ -290,5 +291,106 @@ class ProjectApiJavaConsumerTest {
         assertThat(ProjectQualifiedName.of("a.b").getSegments()).hasSize(1);
         assertThat(ProjectQualifiedName.of("\"a.b\"", "c").getSegments()).hasSize(2);
         assertThatThrownBy(() -> ProjectIdentifier.fromSource("")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static ProjectSnapshot standalone() {
+        return ProjectSnapshots.prepare(List.of(counted("db/standalone.sql", "standalone.sql")), false);
+    }
+
+    @Test
+    void standaloneCallablesExposeCallableFacetsWithoutPackageMembership() {
+        ProjectSnapshot snapshot = standalone();
+        assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_WITH_DECLARATIONS);
+        assertThat(snapshot.getDeclarations()).extracting(ProjectDeclarationView::getKind).containsExactly(
+            ProjectDeclarationKind.STANDALONE_PROCEDURE, ProjectDeclarationKind.STANDALONE_FUNCTION,
+            ProjectDeclarationKind.STANDALONE_FUNCTION, ProjectDeclarationKind.STANDALONE_FUNCTION,
+            ProjectDeclarationKind.STANDALONE_PROCEDURE);
+        for (ProjectDeclarationView view : snapshot.getDeclarations()) {
+            assertThat(view).isInstanceOf(ProjectSubprogramView.class).isNotInstanceOf(ProjectPackageSubprogramView.class);
+            assertThat(view.getRole()).isEqualTo(ProjectDeclarationRole.STANDALONE);
+        }
+
+        ProjectSubprogramView sync = (ProjectSubprogramView) snapshot.findDeclarations(name("app", "sync_orders"))
+            .getDeclarations().get(0);
+        assertThat(sync).isNotInstanceOf(ProjectFunctionView.class);
+        assertThat(sync.getQualifiedName()).isEqualTo(name("app", "sync_orders"));
+        assertThat(sync.getLocalName()).isEqualTo(ProjectIdentifier.fromSource("sync_orders"));
+        List<ProjectParameterView> parameters = sync.getParameters();
+        assertThat(parameters).extracting(p -> p.getName().getOriginalSpelling())
+            .containsExactly("id", "note", "level_", "col", "total");
+        assertThat(parameters).extracting(ProjectParameterView::getOrdinal).containsExactly(1, 2, 3, 4, 5);
+        assertThat(parameters).extracting(ProjectParameterView::getMode).containsExactly(
+            ProjectParameterMode.IN, ProjectParameterMode.IN_OUT, ProjectParameterMode.IN,
+            ProjectParameterMode.IN, ProjectParameterMode.OUT);
+        assertThat(parameters).extracting(ProjectParameterView::isNocopy).containsExactly(false, true, false, false, false);
+        assertThat(parameters).extracting(ProjectParameterView::isDefaultPresent).containsExactly(false, false, true, false, false);
+        assertThat(parameters.get(3).getTypeRef().getAnchor()).contains(ProjectTypeReference.Anchor.TYPE);
+        assertThat(parameters.get(3).getTypeRef().getName()).isEqualTo(name("orders", "note"));
+        assertThat(parameters.get(0).getSourceRange().getFileId()).isEqualTo("db/standalone.sql");
+        assertThat(parameters.get(0).getSourceRange().getStartLine()).isEqualTo(2);
+
+        ProjectFunctionView tax = (ProjectFunctionView) snapshot.findDeclarations(name("tax")).getDeclarations().get(0);
+        assertThat(tax).isInstanceOf(ProjectSubprogramView.class).isNotInstanceOf(ProjectPackageSubprogramView.class);
+        assertThat(tax.isDeterministic()).isTrue();
+        assertThat(tax.getReturnType().getName()).isEqualTo(name("NUMBER"));
+        assertThat(tax.getParameters()).hasSize(2);
+        ProjectFunctionView nowText = (ProjectFunctionView) snapshot.findDeclarations(name("now_text")).getDeclarations().get(0);
+        assertThat(nowText.isDeterministic()).isFalse();
+        assertThat(nowText.getParameters()).isEmpty();
+
+        ProjectSubprogramView quoted = (ProjectSubprogramView) snapshot.findDeclarations(name("\"Audit\"", "\"Log Event\""))
+            .getDeclarations().get(0);
+        assertThat(quoted.getLocalName().getOriginalSpelling()).isEqualTo("\"Log Event\"");
+        assertThat(quoted.getLocalName().isQuoted()).isTrue();
+        assertThat(quoted.getQualifiedName().getSegments()).hasSize(2);
+        // Authored name only: the first segment is neither a package owner nor an inferred schema.
+        assertThat(snapshot.findDeclarations(name("Log Event")).getDeclarations()).isEmpty();
+
+        // Canonical IDs across query paths; mutation is rejected.
+        assertThat(snapshot.declarationsFor("db/standalone.sql").getDeclarations()).extracting(ProjectDeclarationView::getId)
+            .isEqualTo(snapshot.getDeclarations().stream().map(ProjectDeclarationView::getId).toList());
+        assertThat(snapshot.findDeclarations(name("tax")).getDeclarations().get(0).getId()).isEqualTo(tax.getId());
+        assertThatThrownBy(() -> tax.getParameters().clear()).isInstanceOf(UnsupportedOperationException.class);
+        Iterator<ProjectParameterView> iterator = sync.getParameters().iterator();
+        iterator.next();
+        assertThatThrownBy(iterator::remove).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> snapshot.getDeclarations().clear()).isInstanceOf(UnsupportedOperationException.class);
+
+        // Standalone declarations are never correlation inputs.
+        assertThatThrownBy(() -> snapshot.correlateSpecification(tax.getId())).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> snapshot.correlateSpecification(sync.getId())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void standaloneFunctionAndPackageMemberWithTheSameAuthoredNameStayDistinct() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(
+            counted("db/standalone.sql", "standalone.sql"), counted("db/app_package.sql", "app_package.sql"),
+            counted("db/app_package_body.sql", "app_package_body.sql")), false);
+        List<ProjectDeclarationView> both = snapshot.findDeclarations(name("app", "f")).getDeclarations();
+        assertThat(both).extracting(ProjectDeclarationView::getKind).containsExactly(
+            ProjectDeclarationKind.PACKAGE_FUNCTION, ProjectDeclarationKind.PACKAGE_FUNCTION,
+            ProjectDeclarationKind.STANDALONE_FUNCTION);
+        assertThat(both).extracting(ProjectDeclarationView::getId).doesNotHaveDuplicates();
+        ProjectDeclarationView standalone = both.get(2);
+        assertThat(standalone).isInstanceOf(ProjectFunctionView.class).isNotInstanceOf(ProjectPackageSubprogramView.class);
+        assertThat(standalone.getRole()).isEqualTo(ProjectDeclarationRole.STANDALONE);
+        for (ProjectDeclarationView member : both.subList(0, 2)) {
+            assertThat(member).isInstanceOf(ProjectFunctionView.class).isInstanceOf(ProjectPackageSubprogramView.class);
+            assertThat(((ProjectPackageSubprogramView) member).getPackageOwner()).isEqualTo(name("app"));
+        }
+
+        ProjectInventory<ProjectPackageSubprogramView> members =
+            snapshot.findPackageSubprograms(name("app"), ProjectIdentifier.fromSource("f"));
+        assertThat(members.getDeclarations()).extracting(ProjectDeclarationView::getId)
+            .doesNotContain(standalone.getId()).hasSize(2);
+        assertThat(members.getDeclarations()).extracting(ProjectDeclarationView::getRole)
+            .containsExactlyInAnyOrder(ProjectDeclarationRole.BODY, ProjectDeclarationRole.SPECIFICATION);
+        // Package-only correlation still works for the body and never mentions the standalone function.
+        ProjectDeclarationId bodyId = members.getDeclarations().stream()
+            .filter(m -> m.getRole() == ProjectDeclarationRole.BODY).findFirst().orElseThrow().getId();
+        ProjectSpecificationCorrelation correlation = snapshot.correlateSpecification(bodyId);
+        assertThat(correlation.getStatus()).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED);
+        assertThat(correlation.getCandidates()).extracting(ProjectDeclarationView::getId).doesNotContain(standalone.getId());
+        assertThatThrownBy(() -> snapshot.correlateSpecification(standalone.getId())).isInstanceOf(IllegalArgumentException.class);
     }
 }
