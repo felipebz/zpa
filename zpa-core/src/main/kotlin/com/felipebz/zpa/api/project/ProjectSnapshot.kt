@@ -20,15 +20,8 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.project.IndexedDeclaration
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.PackageSubprogramDeclaration
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparationResult
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.findSpecificationOccurrences
-import com.felipebz.zpa.project.ProjectTypeNameLookup
-import java.util.Collections
+import com.felipebz.zpa.project.*
+import java.util.*
 
 /**
  * Immutable metadata facade retaining the existing authoritative preparation result/index.
@@ -112,6 +105,26 @@ class ProjectSnapshot private constructor(
         val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectTypeDeclarationView }
         return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
     }
+
+    /**
+     * Bounded description of a type [name]: follows package subtype aliases only and classifies recognized built-in
+     * names, using the lookup rules of [resolveNamedType]. [packageOwner] has the same meaning as there (one-segment
+     * names use it, or the standalone namespace when null; qualified names use their own prefix; no schema inference,
+     * no fallback); pass the owner of the declaration that contains the name, not a guess from file paths. A name has
+     * no source range, so [ProjectTypeDescription.terminalReference] is empty when the query stops at the initial name.
+     */
+    fun describeType(name: ProjectQualifiedName, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
+        ProjectTypeDescriber.describe(this, name, null, packageOwner)
+
+    /**
+     * As the name overload for a retained [reference] (a field, element, subtype base, return or value type), keeping
+     * the distinction between named, anchored (`%TYPE`/`%ROWTYPE`, [ProjectTypeDescription.Status.ANCHORED_REFERENCE])
+     * and `REF` ([ProjectTypeDescription.Status.REF_REFERENCE]) references; the latter two are never resolved, even
+     * when their name matches a project type. [packageOwner] should be the owner of the declaration holding the
+     * reference.
+     */
+    fun describeType(reference: ProjectTypeReference, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
+        ProjectTypeDescriber.describe(this, reference.name, reference, packageOwner)
 
     /**
      * Exact inventory of package procedures and functions declared with exactly this package

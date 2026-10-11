@@ -204,6 +204,44 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun typeDescriptionsRetainOnlyDurableFacts() {
+        val sourceMarker = "description-retention-2b8d6e41-93c7-4a50-8e1b-5c4f0a7d9e26"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE dv AS SUBTYPE m IS NUMBER; SUBTYPE a IS m; SUBTYPE t IS a; SUBTYPE x IS ext.t; " +
+            "SUBTYPE c1 IS c2; SUBTYPE c2 IS c1; TYPE r IS RECORD (n t); END dv;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("dv.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+        val owner = ProjectQualifiedName.of("dv")
+        fun describe(name: String) = snapshot.describeType(ProjectQualifiedName.of(name), owner)
+
+        val descriptions = mapOf(
+            "builtIn" to describe("NUMBER"), "chain" to describe("t"), "declared" to describe("r"),
+            "unresolved" to describe("x"), "cycle" to describe("c1")
+        )
+        assertThat(descriptions.values.map { it.status }).containsExactly(
+            ProjectTypeDescription.Status.BUILT_IN, ProjectTypeDescription.Status.BUILT_IN, ProjectTypeDescription.Status.DECLARED_TYPE,
+            ProjectTypeDescription.Status.UNRESOLVED_NAME, ProjectTypeDescription.Status.CYCLE
+        )
+        val reachable = auditGraph(descriptions, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<PackageSubtypeDeclaration>()).isNotEmpty()
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(descriptions.getValue("chain").subtypes).hasSize(3)
+        assertThatThrownBy { (descriptions.getValue("chain").subtypes as MutableList<ProjectSubtypeView>).clear() }
+            .isInstanceOf(UnsupportedOperationException::class.java)
+
+        // The terminal reference of a description reaches no internal fact or TypeRef.
+        val referenceOnly = auditGraph(mapOf<String, Any?>("terminal" to descriptions.getValue("chain").terminalReference), forbidden, sourceMarker)
+        assertThat(referenceOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(referenceOnly.filterIsInstance<TypeRef>()).isEmpty()
+    }
+
+    @Test
     fun packageValueViewsRetainOnlyDurableFacts() {
         val sourceMarker = "value-view-retention-9c3e1b52-4d6a-4f0e-8a77-2b5d7e1c9f03"
         val source = "-- $sourceMarker\n" +
