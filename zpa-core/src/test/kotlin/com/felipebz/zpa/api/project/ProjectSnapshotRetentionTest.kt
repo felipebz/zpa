@@ -171,6 +171,41 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun packageValueViewsRetainOnlyDurableFacts() {
+        val sourceMarker = "value-view-retention-9c3e1b52-4d6a-4f0e-8a77-2b5d7e1c9f03"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE vv AS g e.c%TYPE; k CONSTANT NUMBER := 1; END vv;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("vv.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+
+        val variable = snapshot.findDeclarations(ProjectQualifiedName.of("vv", "g")).declarations.single()
+            as ProjectPackageValueView
+        val constant = snapshot.findDeclarations(ProjectQualifiedName.of("vv", "k")).declarations.single()
+            as ProjectPackageValueView
+        val roots = mapOf<String, Any?>(
+            "variable" to variable, "constant" to constant, "owner" to variable.owner,
+            "localName" to variable.localName, "typeRef" to variable.typeRef, "range" to variable.sourceRange
+        )
+        val reachable = auditGraph(roots, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<PackageValueDeclaration>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<TypeRef>()).isNotEmpty()
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+
+        val idOnly = auditGraph(mapOf("id" to variable.id), forbidden, sourceMarker)
+        assertThat(idOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        val publicValues = auditGraph(
+            mapOf("owner" to variable.owner, "name" to variable.localName, "ref" to variable.typeRef), forbidden, sourceMarker
+        )
+        assertThat(publicValues.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(publicValues.filterIsInstance<TypeRef>()).isEmpty()
+    }
+
+    @Test
     fun callableViewsParametersAndReferencesRetainOnlyDurableFacts() {
         val sourceMarker = "callable-retention-6a8e2f10-77c1-4d0b-b0a4-1f3c9e5d2b77"
         val source = "-- $sourceMarker\n" +

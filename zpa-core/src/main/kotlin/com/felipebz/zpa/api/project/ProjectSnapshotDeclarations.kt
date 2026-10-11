@@ -20,27 +20,10 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.IndexedDeclaration
-import com.felipebz.zpa.project.ProjectDeclaration
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.qualifiedName
-import java.util.Collections
-import java.util.Optional
-import com.felipebz.zpa.project.PackageFunctionDeclaration
-import com.felipebz.zpa.project.PackageProcedureDeclaration
-import com.felipebz.zpa.project.PackageSubtypeDeclaration
-import com.felipebz.zpa.project.StandaloneFunctionDeclaration
-import com.felipebz.zpa.project.StandaloneProcedureDeclaration
-import com.felipebz.zpa.project.ParameterMode
-import com.felipebz.zpa.project.ProjectParameter
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.StandaloneTypeDeclaration
-import com.felipebz.zpa.project.ProjectTypeShape as FactShape
+import com.felipebz.zpa.project.*
+import java.util.*
 import com.felipebz.zpa.project.ProjectDeclarationKind as FactKind
+import com.felipebz.zpa.project.ProjectTypeShape as FactShape
 
 /** Projects public declaration views from canonical index occurrences. */
 @OptIn(ZpaExperimentalApi::class)
@@ -64,6 +47,7 @@ internal object ProjectSnapshotDeclarations {
                 is PackageFunctionDeclaration -> BackedPackageFunctionView(id, fact)
                 is StandaloneProcedureDeclaration -> BackedStandaloneProcedureView(id, fact)
                 is StandaloneFunctionDeclaration -> BackedStandaloneFunctionView(id, fact)
+                is PackageValueDeclaration -> BackedPackageValueView(id, fact)
                 else -> BackedDeclarationView(id, fact)
             }
         }
@@ -143,6 +127,14 @@ internal object ProjectSnapshotDeclarations {
         override val parameters: List<ProjectParameterView> = function.parameters.toParameterViews()
         override val returnType: ProjectTypeReference get() = ProjectTypeReference.from(function.returnType)
         override val isDeterministic: Boolean get() = function.deterministic
+    }
+
+    private class BackedPackageValueView(id: ProjectDeclarationId, private val valueFact: PackageValueDeclaration) :
+        BackedDeclarationView(id, valueFact), ProjectPackageValueView {
+        override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(valueFact.owner)
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(valueFact.name)
+        override val isConstant: Boolean get() = valueFact.constant
+        override val typeRef: ProjectTypeReference get() = ProjectTypeReference.from(valueFact.typeRef)
     }
 
     /** Standalone callables are never package members: no `packageOwner`, no schema inference. */
