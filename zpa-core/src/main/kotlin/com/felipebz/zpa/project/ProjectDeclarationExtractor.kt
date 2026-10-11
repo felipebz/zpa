@@ -43,18 +43,6 @@ private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "
 
 private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
 
-private val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
-    "DETERMINISTIC",
-    "PIPELINED",
-    "PARALLEL_ENABLE",
-    "RESULT_CACHE",
-    "SQL_MACRO",
-    "SHARD_ENABLE",
-    "ACCESSIBLE",
-    "AUTHID",
-    "DEFAULT"
-)
-
 /**
  * Extracts the small, project-relevant declaration slice without constructing an AST.
  * This scanner deliberately understands declaration boundaries only; it does not parse
@@ -87,6 +75,7 @@ class ProjectDeclarationExtractor(
         private val bodyBoundaries = BodyBoundaryScanner(stream)
         private val initializerShape = InitializerShape(stream)
         private val packageValues = PackageValueRecognizer(stream, datatypeShape, typeReferences, initializerShape)
+        private val memberParser = LegacyMemberParser(stream, typeReferences)
 
         fun extract(): List<ProjectDeclaration> {
             val result = mutableListOf<ProjectDeclaration>()
@@ -789,158 +778,17 @@ class ProjectDeclarationExtractor(
 
         private fun isKeyword(index: Int, keyword: String): Boolean = stream.isKeyword(index, keyword)
 
-        private fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
-            val name = identifierAt(index + 1) ?: return null
-            val end = semicolonAfter(index + 1)
-            val shape = typeShape(index, end)
-            val recordFields = if (shape == ProjectTypeShape.RECORD) {
-                parseRecordFields(name.second, end)
-            } else {
-                emptyList()
-            }
-            val declaration = PackageTypeDeclaration(owner, name.first, shape, recordFields, fileId, range(index, end))
-            return ParsedDeclaration(declaration, end + 1)
-        }
+        private fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? = memberParser.parsePackageType(index, owner)
 
-        private fun parseRecordFields(start: Int, end: Int): List<ProjectRecordField> {
-            val record = firstAtTopLevel(start, setOf("RECORD"), end) ?: return emptyList()
-            val open = record + 1
-            if (valueAt(open) != "(") return emptyList()
-            val close = matching(open)
-            if (close > end) return emptyList()
+        private fun parsePackageSubtype(index: Int, owner: QualifiedName): ParsedDeclaration? = memberParser.parsePackageSubtype(index, owner)
 
-            val result = mutableListOf<ProjectRecordField>()
-            forEachDelimitedPart(open + 1, close) { fieldStart, fieldEnd ->
-                parseRecordField(fieldStart, fieldEnd, result.size)?.let(result::add)
-            }
-            return immutableList(result)
-        }
+        private fun parseSubprogram(index: Int, owner: QualifiedName): ParsedDeclaration? = memberParser.parseSubprogram(index, owner)
 
-        private fun parseRecordField(start: Int, endExclusive: Int, ordinal: Int): ProjectRecordField? {
-            val name = identifierAt(start) ?: return null
-            val typeEnd = firstAtTopLevel(
-                name.second,
-                setOf("NOT", "NULL", "DEFAULT", ":="),
-                endExclusive
-            ) ?: endExclusive
-            val typeRef = typeReference(name.second, typeEnd) ?: return null
-            return ProjectRecordField(name.first, ordinal, typeRef, range(start, endExclusive - 1))
-        }
-
-        private fun parsePackageSubtype(index: Int, owner: QualifiedName): ParsedDeclaration? {
-            val name = identifierAt(index + 1) ?: return null
-            val isIndex = firstAtTopLevel(name.second, setOf("IS")) ?: return null
-            val end = semicolonAfter(index + 1)
-            val typeEnd = firstAtTopLevel(isIndex + 1, setOf("RANGE"), end) ?: end
-            val type = typeReference(isIndex + 1, typeEnd) ?: return null
-            val declaration = PackageSubtypeDeclaration(owner, name.first, type, fileId, range(index, end))
-            return ParsedDeclaration(declaration, end + 1)
-        }
-
-        private fun parseSubprogram(index: Int, owner: QualifiedName): ParsedDeclaration? {
-            val function = valueAt(index) == "FUNCTION"
-            val name = identifierAt(index + 1) ?: return null
-            var cursor = name.second
-            val parameters: List<ProjectParameter>
-            if (valueAt(cursor) == "(") {
-                val close = matching(cursor)
-                parameters = parseParameters(cursor + 1, close)
-                cursor = close + 1
-            } else {
-                parameters = emptyList()
-            }
-            val end = semicolonAfter(index)
-            if (function) {
-                val returnIndex = firstAtTopLevel(cursor, setOf("RETURN"), end) ?: return null
-                val modifier = firstAtTopLevel(
-                    returnIndex + 1,
-                    FUNCTION_RETURN_TYPE_TERMINATORS,
-                    end
-                )
-                val deterministic = firstAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
-                val returnType = typeReference(returnIndex + 1, modifier ?: end) ?: return null
-                return ParsedDeclaration(
-                    PackageFunctionDeclaration(
-                        owner,
-                        name.first,
-                        parameters,
-                        returnType,
-                        fileId,
-                        range(index, end),
-                        deterministic = deterministic
-                    ),
-                    end + 1
-                )
-            }
-            return ParsedDeclaration(
-                PackageProcedureDeclaration(owner, name.first, parameters, fileId, range(index, end)),
-                end + 1
-            )
-        }
-
-        private fun parseParameters(start: Int, close: Int): List<ProjectParameter> {
-            val result = mutableListOf<ProjectParameter>()
-            forEachDelimitedPart(start, close) { partStart, partEnd ->
-                parseParameter(partStart, partEnd, result.size + 1)?.let(result::add)
-            }
-            return result.toList()
-        }
-
-        private inline fun forEachDelimitedPart(
-            start: Int,
-            endExclusive: Int,
-            consume: (Int, Int) -> Unit
-        ) {
-            var partStart = start
-            var depth = 0
-            for (index in start..endExclusive) {
-                when (valueAt(index)) {
-                    "(", "[" -> depth++
-                    ")", "]" -> depth--
-                }
-                if ((valueAt(index) == "," && depth == 0) || index == endExclusive) {
-                    if (partStart < index) consume(partStart, index)
-                    partStart = index + 1
-                }
-            }
-        }
-
-        private fun parseParameter(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
-            val name = identifierAt(start) ?: return null
-            var cursor = name.second
-            var mode = ParameterMode.IN
-            if (valueAt(cursor) == "IN") {
-                cursor++
-                if (valueAt(cursor) == "OUT") {
-                    mode = ParameterMode.IN_OUT
-                    cursor++
-                }
-            } else if (valueAt(cursor) == "OUT") {
-                mode = ParameterMode.OUT
-                cursor++
-            }
-            val nocopy = valueAt(cursor) == "NOCOPY"
-            if (nocopy) cursor++
-            val defaultIndex = firstAtTopLevel(cursor, setOf("DEFAULT"), endExclusive)
-            val assignmentIndex = firstAtTopLevel(cursor, setOf(":="), endExclusive)
-            val typeEnd = listOfNotNull(defaultIndex, assignmentIndex).minOrNull() ?: endExclusive
-            val type = typeReference(cursor, typeEnd) ?: return null
-            return ProjectParameter(
-                name.first,
-                ordinal,
-                mode,
-                nocopy,
-                type,
-                defaultIndex != null || assignmentIndex != null,
-                range(start, endExclusive - 1)
-            )
-        }
+        private fun parseParameters(start: Int, close: Int): List<ProjectParameter> = memberParser.parseParameters(start, close)
 
         private fun parseStandaloneType(create: Int, typeIndex: Int): ParsedUnit? = schemaUnits.parseStandaloneType(create, typeIndex)
 
         private fun parseTypeBody(typeIndex: Int): ParsedUnit = schemaUnits.parseTypeBody(typeIndex)
-
-        private fun typeShape(start: Int, end: Int): ProjectTypeShape? = typeReferences.typeShape(start, end)
 
         private fun typeReference(start: Int, endExclusive: Int): TypeRef? = typeReferences.typeReference(start, endExclusive)
 
