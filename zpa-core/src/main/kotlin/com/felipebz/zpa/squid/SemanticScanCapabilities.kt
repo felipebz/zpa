@@ -26,10 +26,4 @@ import com.felipebz.zpa.api.project.ProjectAnalysis
 @OptIn(ZpaExperimentalApi::class)
 internal class SemanticScanCapabilities(
     val projectAnalysis: ProjectAnalysis
-) {
-    companion object {
-        val NOT_PREPARED = SemanticScanCapabilities(
-            createNotPreparedProjectAnalysis()
-        )
-    }
-}
+)

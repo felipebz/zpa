@@ -53,19 +53,6 @@ object ProjectSnapshots {
             ProjectSource(FileId(input.fileId)) { input.read() }
         }
         val result = ProjectIndexPreparation().prepare(preparedSources, concurrent)
-        val preparationState = when (ProjectAnalysisContext.prepared(result).state.kind) {
-            ProjectAnalysisContext.State.Kind.NOT_PREPARED -> ProjectPreparationState.NOT_PREPARED
-            ProjectAnalysisContext.State.Kind.PREPARED_EMPTY -> ProjectPreparationState.PREPARED_EMPTY
-            ProjectAnalysisContext.State.Kind.PREPARED_WITH_DECLARATIONS ->
-                ProjectPreparationState.PREPARED_WITH_DECLARATIONS
-            ProjectAnalysisContext.State.Kind.PREPARED_WITH_FAILURES ->
-                ProjectPreparationState.PREPARED_WITH_FAILURES
-        }
-        return ProjectSnapshot.create(
-            result,
-            preparationState,
-            result.failures.map { ProjectPreparationFailure.create(it.fileId.value, it.exceptionType) },
-            result.index.fileIds.map { it.value }
-        )
+        return ProjectSnapshot.create(ProjectAnalysisContext.prepared(result))
     }
 }

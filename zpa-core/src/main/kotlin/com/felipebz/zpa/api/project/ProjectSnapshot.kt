@@ -23,7 +23,9 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.IndexedDeclaration
 import com.felipebz.zpa.project.DeclarationRole
 import com.felipebz.zpa.project.PackageSubprogramDeclaration
+import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparationResult
+import com.felipebz.zpa.project.ProjectSymbolIndex
 import com.felipebz.zpa.project.findSpecificationOccurrences
 import com.felipebz.zpa.project.ProjectTypeNameLookup
 import java.util.Collections
@@ -162,6 +164,32 @@ class ProjectSnapshot private constructor(
     }
 
     internal companion object {
+        /**
+         * Builds the public snapshot over an already prepared (or unprepared) analysis context.
+         * Nothing is read or extracted: the authoritative result and index are reused directly.
+         * Each call issues a new identity scope, so callers must create it once per scan.
+         */
+        @JvmSynthetic
+        fun create(context: ProjectAnalysisContext): ProjectSnapshot = when (val state = context.state) {
+            ProjectAnalysisContext.State.NotPrepared -> create(
+                ProjectIndexPreparationResult(ProjectSymbolIndex.empty(), 0, emptyList()),
+                ProjectPreparationState.NOT_PREPARED, emptyList(), emptyList()
+            )
+            is ProjectAnalysisContext.State.Prepared -> create(
+                state.result,
+                when (state.kind) {
+                    ProjectAnalysisContext.State.Kind.NOT_PREPARED -> ProjectPreparationState.NOT_PREPARED
+                    ProjectAnalysisContext.State.Kind.PREPARED_EMPTY -> ProjectPreparationState.PREPARED_EMPTY
+                    ProjectAnalysisContext.State.Kind.PREPARED_WITH_DECLARATIONS ->
+                        ProjectPreparationState.PREPARED_WITH_DECLARATIONS
+                    ProjectAnalysisContext.State.Kind.PREPARED_WITH_FAILURES ->
+                        ProjectPreparationState.PREPARED_WITH_FAILURES
+                },
+                state.result.failures.map { ProjectPreparationFailure.create(it.fileId.value, it.exceptionType) },
+                state.result.index.fileIds.map { it.value }
+            )
+        }
+
         @JvmSynthetic
         fun create(
             preparationResult: ProjectIndexPreparationResult,

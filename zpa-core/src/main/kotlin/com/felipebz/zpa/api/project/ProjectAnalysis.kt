@@ -43,6 +43,14 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
 
     private val projectAnalysisContext = contextHolder as? ProjectAnalysisContext
         ?: throw IllegalArgumentException("Unexpected project analysis context")
+    /**
+     * The immutable project snapshot of this analysis run, backed by the already prepared project
+     * index (nothing is read or prepared again). The same instance is returned for the whole run;
+     * a new run issues a new snapshot with its own declaration-ID scope. For a run without a
+     * prepared project the snapshot reports [ProjectPreparationState.NOT_PREPARED].
+     */
+    val snapshot: ProjectSnapshot = ProjectSnapshot.create(projectAnalysisContext)
+
     private val specificationResolver = ProjectSubprogramSpecificationResolver(projectAnalysisContext)
     private val sequenceReferenceResolver = ProjectSequenceReferenceResolver(projectAnalysisContext)
 

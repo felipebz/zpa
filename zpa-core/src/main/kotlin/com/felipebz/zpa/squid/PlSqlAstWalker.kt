@@ -44,8 +44,9 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
     private var lastVisitedToken: Token? = null
 
+    @OptIn(ZpaExperimentalApi::class)
     fun walk(context: PlSqlVisitorContext) {
-        walk(context, SemanticScanCapabilities.NOT_PREPARED)
+        walk(context, SemanticScanCapabilities(createNotPreparedProjectAnalysis()))
     }
 
     @OptIn(ZpaExperimentalApi::class)

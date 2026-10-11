@@ -21,6 +21,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.checks.PlSqlVisitor
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
@@ -337,6 +338,61 @@ class ProjectSnapshotRetentionTest {
         val idOnly = auditGraph(mapOf("id" to resolved.candidates.single().id), forbidden, sourceMarker)
         assertThat(idOnly.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
         assertThat(idOnly.filterIsInstance<ProjectSnapshot>()).isEmpty()
+    }
+
+    @Test
+    fun scanSnapshotDoesNotRetainTheScanAdapterChecksOrAst() {
+        val sourceMarker = "scan-snapshot-retention-8e5d2b60-1a47-4c39-b0f2-3d9a6e1c7f84"
+        val body = "-- $sourceMarker\nCREATE PACKAGE BODY sr AS PROCEDURE go IS BEGIN NULL; END go; END sr;"
+        val spec = "CREATE PACKAGE sr AS PROCEDURE go; END sr;"
+        val reader = ProjectSourceReader { spec }
+        val result = com.felipebz.zpa.project.ProjectIndexPreparation().prepare(
+            listOf(
+                com.felipebz.zpa.project.ProjectSource(com.felipebz.zpa.project.FileId("s.sql")) { spec },
+                com.felipebz.zpa.project.ProjectSource(com.felipebz.zpa.project.FileId("b.sql")) { body }
+            ), concurrent = false
+        )
+        val context = com.felipebz.zpa.project.ProjectAnalysisContext.prepared(result)
+        val check = CapturingCheck()
+        val file = object : PlSqlFile {
+            override fun contents() = body
+            override fun fileName() = "b.sql"
+            override fun path() = java.nio.file.Path.of("b.sql")
+            override fun type() = PlSqlFile.Type.MAIN
+        }
+        com.felipebz.zpa.squid.AstScanner(emptyList(), null, true, java.nio.charset.StandardCharsets.UTF_8, context)
+            .scanFile(file, listOf(check), com.felipebz.zpa.project.FileId("b.sql"))
+        val snapshot = check.snapshot!!
+        val analysis = check.analysis!!
+        val bodyId = snapshot.declarations.first { it.role == ProjectDeclarationRole.BODY }.id
+        val correlation = snapshot.correlateSpecification(bodyId)
+
+        val forbidden = listOf(analysis, check, body, spec, reader, context, check.node!!, check.node!!.token)
+        val reachable = auditGraph(
+            mapOf("snapshot" to snapshot, "correlation" to correlation, "id" to bodyId),
+            forbidden, sourceMarker
+        )
+        assertThat(reachable.filterIsInstance<ProjectAnalysis>()).isEmpty()
+        assertThat(reachable.filterIsInstance<PlSqlCheck>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.flr.api.AstNode>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(2)
+    }
+
+    private class CapturingCheck : PlSqlCheck() {
+        var snapshot: ProjectSnapshot? = null
+        var analysis: ProjectAnalysis? = null
+        var node: com.felipebz.flr.api.AstNode? = null
+
+        init {
+            subscribeTo(com.felipebz.zpa.api.PlSqlGrammar.PROCEDURE_DECLARATION)
+        }
+
+        override fun visitNode(node: com.felipebz.flr.api.AstNode) {
+            this.node = node
+            analysis = projectAnalysis()
+            snapshot = projectAnalysis().snapshot
+        }
     }
 
     @Test
