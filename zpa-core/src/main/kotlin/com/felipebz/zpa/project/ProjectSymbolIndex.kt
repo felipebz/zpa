@@ -165,7 +165,8 @@ class ProjectSymbolIndex internal constructor(
                 is StandaloneTypeDeclaration -> declaration.shape.toString()
                 is PackageTypeDeclaration -> declaration.shape.toString() + declaration.recordFields.joinToString("|") {
                     "${it.ordinal}:${it.name.originalSpelling}:${it.typeRef.structuralKey()}"
-                }
+                }  +
+                    (declaration.elementType?.let { ":element:" + it.structuralKey() } ?: "")
                 is PackageSubtypeDeclaration -> declaration.baseType.structuralKey()
                 is PackageProcedureDeclaration -> declaration.parameters.orderingKey()
                 is PackageFunctionDeclaration -> declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey()

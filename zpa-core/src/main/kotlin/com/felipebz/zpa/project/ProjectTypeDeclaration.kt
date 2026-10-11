@@ -59,7 +59,9 @@ class PackageTypeDeclaration(
     val shape: ProjectTypeShape?,
     recordFields: List<ProjectRecordField>,
     override val fileId: FileId,
-    override val sourceRange: SourceRange
+    override val sourceRange: SourceRange,
+    /** Direct element type syntax of a COLLECTION, when the extractor admitted it. Unresolved. */
+    val elementType: TypeRef? = null
 ) : ProjectTypeDeclaration {
 
     val recordFields: List<ProjectRecordField> = immutableList(recordFields)
@@ -71,16 +73,20 @@ class PackageTypeDeclaration(
         require(shape == ProjectTypeShape.RECORD || recordFields.isEmpty()) {
             "Only RECORD declarations may contain record fields"
         }
+        require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
+            "Only COLLECTION declarations may contain an element type"
+        }
     }
 
     override fun equals(other: Any?): Boolean = other is PackageTypeDeclaration &&
         owner == other.owner && name == other.name && shape == other.shape &&
-        recordFields == other.recordFields && fileId == other.fileId && sourceRange == other.sourceRange
+        recordFields == other.recordFields && elementType == other.elementType &&
+        fileId == other.fileId && sourceRange == other.sourceRange
 
-    override fun hashCode(): Int = listOf(owner, name, shape, recordFields, fileId, sourceRange).hashCode()
+    override fun hashCode(): Int = listOf(owner, name, shape, recordFields, elementType, fileId, sourceRange).hashCode()
 
     override fun toString(): String =
-        "PackageTypeDeclaration($qualifiedName, $shape, $recordFields, $fileId, $sourceRange)"
+        "PackageTypeDeclaration($qualifiedName, $shape, $recordFields, $elementType, $fileId, $sourceRange)"
 }
 
 data class PackageSubtypeDeclaration(

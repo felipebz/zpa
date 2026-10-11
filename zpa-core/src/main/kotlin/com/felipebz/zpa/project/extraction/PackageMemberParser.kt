@@ -37,17 +37,25 @@ internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
  * Value-based, permissive parsers for package types, subtypes, subprogram headings and their parameters. The same
  * instance serves package specifications and package bodies.
  */
-internal class PackageMemberParser(private val stream: TokenStream, private val typeReferences: TypeReferences) {
+internal class PackageMemberParser(
+    private val stream: TokenStream,
+    private val typeReferences: TypeReferences,
+    private val collectionElements: CollectionElementSyntax
+) {
     fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
         val name = stream.identifierAt(index + 1) ?: return null
         val end = stream.semicolonAfter(index + 1)
-        val shape = typeReferences.typeShape(index, end)
+        val collection = if (stream.isKeyword(index + 2, "IS")) collectionElements.parse(index + 2, end) else null
+        val shape = typeReferences.typeShape(index, end) ?: ProjectTypeShape.COLLECTION.takeIf { collection != null }
         val recordFields = if (shape == ProjectTypeShape.RECORD) {
             parseRecordFields(name.second, end)
         } else {
             emptyList()
         }
-        val declaration = PackageTypeDeclaration(owner, name.first, shape, recordFields, stream.fileId, stream.range(index, end))
+        val declaration = PackageTypeDeclaration(
+            owner, name.first, shape, recordFields, stream.fileId, stream.range(index, end),
+            elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION }
+        )
         return ParsedDeclaration(declaration, end + 1)
     }
 

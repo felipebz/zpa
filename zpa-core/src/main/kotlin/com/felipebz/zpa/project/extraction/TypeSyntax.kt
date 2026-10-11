@@ -23,6 +23,7 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.*
 
 /** Words that may follow a datatype name in the strict standalone datatype check. */
@@ -62,6 +63,57 @@ internal class DatatypeShape(private val stream: TokenStream) {
             }
         }
         return true
+    }
+
+    /**
+     * End (exclusive) of the datatype that starts at [start]: the first real token accepted by [isStop] at typed
+     * delimiter depth 0, otherwise [limit]. Null when delimiters are crossed or unbalanced.
+     */
+    fun datatypeEnd(start: Int, limit: Int, isStop: (Int) -> Boolean): Int? {
+        val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+        for (index in start until limit) {
+            when {
+                stream.isOpener(index) -> expected.addLast(stream.closerFor(index))
+                stream.isCloser(index) -> if (expected.removeLastOrNull() !== stream.tokens[index].type) return null
+                expected.isNotEmpty() -> Unit
+                isStop(index) -> return index
+            }
+        }
+        return if (expected.isEmpty()) limit else null
+    }
+
+    /**
+     * [strictDatatype] accepts any balanced group after a type name. For values, every `( ... )` group
+     * must additionally be a list of type arguments: each comma-separated part is `[+|-] (integer | *
+     * | name) [CHAR | BYTE]`, with no nested delimiters. Anything else (`f(a NUMBER)`) is rejected.
+     */
+    fun strictTypeArguments(start: Int, endExclusive: Int): Boolean {
+        var index = start
+        while (index < endExclusive) {
+            if (!stream.isPunctuator(index, PlSqlPunctuator.LPARENTHESIS)) {
+                index++
+                continue
+            }
+            val close = stream.strictClose(index, endExclusive) ?: return false
+            val parts = stream.splitStrict(index, close) ?: return false
+            if (!parts.all(::isTypeArgument)) return false
+            index = close + 1
+        }
+        return true
+    }
+
+    private fun isTypeArgument(part: IntRange): Boolean {
+        var index = part.first
+        if (stream.isPunctuator(index, PlSqlPunctuator.PLUS) || stream.isPunctuator(index, PlSqlPunctuator.MINUS) ||
+            stream.isPunctuator(index, PlSqlPunctuator.SUBTRACTION)
+        ) index++
+        index = when {
+            stream.tokenTypeAt(index) === PlSqlTokenType.INTEGER_LITERAL || stream.isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
+            index <= part.last && stream.isName(stream.tokens[index]) -> index + 1
+            else -> return false
+        }
+        if (index <= part.last && (stream.isKeyword(index, "CHAR") || stream.isKeyword(index, "BYTE"))) index++
+        return index == part.last + 1
     }
 }
 

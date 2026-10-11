@@ -20,7 +20,6 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.zpa.api.PlSqlPunctuator
-import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.PackageValueDeclaration
 import com.felipebz.zpa.project.QualifiedName
 
@@ -49,10 +48,10 @@ internal class PackageValueRecognizer(
         var typeStart = start + 1
         val constant = stream.isKeyword(typeStart, "CONSTANT")
         if (constant) typeStart++
-        val typeEnd = datatypeEnd(typeStart, semicolon) ?: return null
+        val typeEnd = datatypeShape.datatypeEnd(typeStart, semicolon, ::isValueTypeStop) ?: return null
         if (typeEnd == typeStart + 1 && stream.isKeyword(typeStart, "EXCEPTION")) return null
         if (!datatypeShape.strictDatatype(typeStart, typeEnd)) return null
-        if (!strictTypeArguments(typeStart, typeEnd)) return null
+        if (!datatypeShape.strictTypeArguments(typeStart, typeEnd)) return null
         var cursor = typeEnd
         if (stream.isKeyword(cursor, "NOT")) {
             if (!stream.isKeyword(cursor + 1, "NULL")) return null
@@ -71,57 +70,10 @@ internal class PackageValueRecognizer(
         return ParsedDeclaration(declaration, semicolon + 1)
     }
 
-    /**
-     * End (exclusive) of the datatype that starts at [start]: the first real `NOT`, `NULL`, `DEFAULT` or
-     * `:=` at typed delimiter depth 0, otherwise [limit]. Null when delimiters are crossed or unbalanced.
-     */
-    private fun datatypeEnd(start: Int, limit: Int): Int? {
-        val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
-        for (index in start until limit) {
-            when {
-                stream.isOpener(index) -> expected.addLast(stream.closerFor(index))
-                stream.isCloser(index) -> if (expected.removeLastOrNull() !== stream.tokens[index].type) return null
-                expected.isNotEmpty() -> Unit
-                stream.isKeyword(index, "NOT") || stream.isKeyword(index, "NULL") || stream.isKeyword(index, "DEFAULT") ||
-                    stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT) -> return index
-            }
-        }
-        return if (expected.isEmpty()) limit else null
-    }
-
-    /**
-     * [strictDatatype] accepts any balanced group after a type name. For values, every `( ... )` group
-     * must additionally be a list of type arguments: each comma-separated part is `[+|-] (integer | *
-     * | name) [CHAR | BYTE]`, with no nested delimiters. Anything else (`f(a NUMBER)`) is rejected.
-     */
-    private fun strictTypeArguments(start: Int, endExclusive: Int): Boolean {
-        var index = start
-        while (index < endExclusive) {
-            if (!stream.isPunctuator(index, PlSqlPunctuator.LPARENTHESIS)) {
-                index++
-                continue
-            }
-            val close = stream.strictClose(index, endExclusive) ?: return false
-            val parts = stream.splitStrict(index, close) ?: return false
-            if (!parts.all(::isTypeArgument)) return false
-            index = close + 1
-        }
-        return true
-    }
-
-    private fun isTypeArgument(part: IntRange): Boolean {
-        var index = part.first
-        if (stream.isPunctuator(index, PlSqlPunctuator.PLUS) || stream.isPunctuator(index, PlSqlPunctuator.MINUS) ||
-            stream.isPunctuator(index, PlSqlPunctuator.SUBTRACTION)
-        ) index++
-        index = when {
-            stream.tokenTypeAt(index) === PlSqlTokenType.INTEGER_LITERAL || stream.isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
-            index <= part.last && stream.isName(stream.tokens[index]) -> index + 1
-            else -> return false
-        }
-        if (index <= part.last && (stream.isKeyword(index, "CHAR") || stream.isKeyword(index, "BYTE"))) index++
-        return index == part.last + 1
-    }
+    /** The datatype of a value stops at its nullability constraint or initializer. */
+    private fun isValueTypeStop(index: Int): Boolean =
+        stream.isKeyword(index, "NOT") || stream.isKeyword(index, "NULL") || stream.isKeyword(index, "DEFAULT") ||
+            stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT)
 
     /**
      * True for the shapes of the grammar's `PRAGMA_DECLARATION`, which precedes `VARIABLE_DECLARATION`:
