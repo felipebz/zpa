@@ -26,7 +26,7 @@ import com.felipebz.zpa.project.QualifiedName
 /*
  * Strict (token-type based) operations over a [TokenStream]. They never compare token values for structure:
  * quoted identifiers expose unquoted values that look like keywords or punctuators, so keywords are checked
- * with `isKeyword` and punctuators with `isPunctuator`. Moved verbatim from the former TokenDeclarationScanner.
+ * with `isKeyword` and punctuators with `isPunctuator`. Moved verbatim from the original single-class extractor.
  */
 
 internal fun TokenStream.isNameBefore(index: Int, limit: Int) = index < limit && index in tokens.indices && isName(tokens[index])

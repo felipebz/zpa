@@ -459,6 +459,16 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun auditRejectsTheUnitDispatcherReachableFromAGraph() {
+        val dispatcher = com.felipebz.zpa.project.extraction.UnitDispatcher(com.felipebz.zpa.project.FileId("f.sql"), emptyList())
+        assertThatThrownBy {
+            auditGraph(mapOf("holder" to OpaqueFieldHolder(dispatcher)), emptyList(), "unused-source-marker")
+        }.isInstanceOf(AssertionError::class.java)
+            .hasMessageContaining("Forbidden transient object")
+            .hasMessageContaining("com.felipebz.zpa.project.extraction.UnitDispatcher")
+    }
+
+    @Test
     fun auditRejectsExtractionComponentsReachableFromAGraph() {
         val tokens = com.felipebz.zpa.project.extraction.TokenStream(com.felipebz.zpa.project.FileId("f.sql"), emptyList())
         assertThatThrownBy {
@@ -554,7 +564,6 @@ class ProjectSnapshotRetentionTest {
             name.startsWith("com.felipebz.zpa.checks.") ||
             name.startsWith("com.felipebz.zpa.api.checks.") ||
             name.startsWith("com.felipebz.zpa.api.syntax.") ||
-            name.startsWith("com.felipebz.zpa.project.ProjectDeclarationExtractor$") ||
             name.startsWith("com.felipebz.zpa.project.extraction.")
     }
 

@@ -25,7 +25,7 @@ import com.felipebz.zpa.project.QualifiedName
 /*
  * Legacy (value based) operations over a [TokenStream]: string comparison on upper-cased token values, EOF
  * fallbacks and parenthesis-only matching. Their current behavior is deliberate and preserved.
- * Moved verbatim from the former TokenDeclarationScanner.
+ * Moved verbatim from the original single-class extractor.
  */
 
 internal fun TokenStream.firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? {
