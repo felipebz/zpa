@@ -33,7 +33,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
-/** S2 Increment 4: typed public views of extracted standalone procedures and functions. */
+/** Typed public views of extracted standalone procedures and functions. */
 @OptIn(ZpaExperimentalApi::class)
 class StandaloneSubprogramViewsTest {
     private fun prepare(vararg files: Pair<String, String>): ProjectSnapshot = ProjectSnapshots.prepare(

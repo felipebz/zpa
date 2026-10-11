@@ -29,7 +29,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 
-/** S2 Increment 3: strict extraction of standalone CREATE FUNCTION units. */
+/** Strict extraction of standalone CREATE FUNCTION units. */
 class StandaloneFunctionExtractionTest {
     private val fileId = FileId("fixture/standalone.sql")
     private val extractor = ProjectDeclarationExtractor()

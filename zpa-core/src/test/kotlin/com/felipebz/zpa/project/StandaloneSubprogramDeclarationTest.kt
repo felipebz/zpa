@@ -35,7 +35,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.project.ProjectDeclarationKind as PublicKind
 
-/** Increment 1 of S2: standalone callable facts built by hand (no extraction yet). */
+/** Standalone callable facts built by hand (independent of source extraction). */
 @OptIn(ZpaExperimentalApi::class)
 class StandaloneSubprogramDeclarationTest {
     private val extractor = ProjectDeclarationExtractor()
