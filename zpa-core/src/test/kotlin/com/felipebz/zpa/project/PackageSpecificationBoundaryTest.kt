@@ -38,14 +38,18 @@ class PackageSpecificationBoundaryTest {
 
     private fun extract(source: String) = extractor.extract(fileId, source)
     private fun packages(source: String) = extract(source).filterIsInstance<PackageDeclaration>()
-    private fun members(source: String) = extract(source).filter { it !is PackageDeclaration }
+    private fun isValue(fact: ProjectDeclaration) = fact is PackageValueDeclaration
+    private fun members(source: String) = extract(source).filter { it !is PackageDeclaration && !isValue(it) }
     private fun parse(source: String) = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
 
     private fun AstNode.range() = SourceRange(fileId, token.line, token.column, lastToken.endLine, lastToken.endColumn)
 
     private fun simpleName(fact: ProjectDeclaration) = fact.qualifiedName().last.originalSpelling
 
-    /** Valid syntax: container range and every existing member agree with the parser. */
+    /**
+     * Valid syntax: container range and every type/subtype/subprogram member agree with the parser.
+     * Value declarations are verified against the parser by the package value extraction tests.
+     */
     private fun assertAgreesWithAst(source: String) {
         val root = parse(source) // throws if the parser rejects the source: the oracle must accept it
         val astPackages = root.getDescendants(PlSqlGrammar.CREATE_PACKAGE)
@@ -67,7 +71,7 @@ class PackageSpecificationBoundaryTest {
                 Triple(kind, child.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenOriginalValue, child.range())
             }
         }
-        val actual = facts.filter { it !is PackageDeclaration }.map { Triple(it.kind, it.qualifiedName().last.originalSpelling, it.sourceRange) }
+        val actual = facts.filter { it !is PackageDeclaration && !isValue(it) }.map { Triple(it.kind, it.qualifiedName().last.originalSpelling, it.sourceRange) }
         assertThat(actual).describedAs(source).isEqualTo(expected)
     }
 
@@ -112,14 +116,17 @@ class PackageSpecificationBoundaryTest {
     }
 
     @Test
-    fun variablesNamedLikeTypeDeclarationKeywordsFabricateNoTypes() {
+    fun variablesNamedLikeTypeDeclarationKeywordsAreValuesNotTypes() {
         listOf(
             "CREATE PACKAGE p AS type NUMBER; PROCEDURE q; END p;",
             "CREATE PACKAGE p AS \"TYPE\" NUMBER; subtype NUMBER; \"SUBTYPE\" NUMBER; PROCEDURE q; END p;",
             "CREATE PACKAGE p AS type NUMBER; TYPE t IS RECORD (a NUMBER); SUBTYPE s IS NUMBER; PROCEDURE q; END p;"
         ).forEach(::assertAgreesWithAst)
         assertThat(extract("CREATE PACKAGE p AS type NUMBER; \"TYPE\" NUMBER; PROCEDURE q; END p;").map { it.kind })
-            .containsExactly(ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE_PROCEDURE)
+            .containsExactly(
+                ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE_VARIABLE,
+                ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_PROCEDURE
+            )
     }
 
     @Test
@@ -153,7 +160,7 @@ class PackageSpecificationBoundaryTest {
     fun wrappedSpecificationsAreSkippedWithoutConsumingFollowingUnits() {
         val source = "CREATE PACKAGE w wrapped\na000000\nabcd AS g NUMBER; END w;\n/\nCREATE PACKAGE q AS h NUMBER; PROCEDURE r; END q;\n/\n"
         val facts = extract(source)
-        assertThat(facts.map { it.qualifiedName().toString() }).containsExactly("q", "q.r")
+        assertThat(facts.map { it.qualifiedName().toString() }).containsExactly("q", "q.h", "q.r")
         assertThat(facts.first().sourceRange.startLine).isEqualTo(5)
         // No name-only fact for the wrapped package, and no members attributed to it.
         assertThat(packages(source).map { it.name.toString() }).doesNotContain("w")
@@ -228,11 +235,5 @@ class PackageSpecificationBoundaryTest {
     @Test
     fun createLessPackageUnitsRemainOutOfScope() {
         assertThat(extract("PACKAGE p IS g NUMBER; PROCEDURE q; END p;")).isEmpty()
-    }
-
-    @Test
-    fun noSpecificationValueFactsAreEmittedYet() {
-        val facts = extract("CREATE PACKAGE p AS g NUMBER; c CONSTANT NUMBER := 1; type NUMBER; case NUMBER; END p;")
-        assertThat(facts.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE)
     }
 }

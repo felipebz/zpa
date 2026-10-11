@@ -46,6 +46,37 @@ private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
 /** Sentinel returned by [packageHeaderEnd] for a wrapped unit. */
 private const val WRAPPED_UNIT = -2
 
+private val PRAGMAS_WITHOUT_ARGUMENTS = listOf("AUTONOMOUS_TRANSACTION", "SERIALLY_REUSABLE", "UDF")
+private val PRAGMAS_WITH_ARGUMENTS = listOf(
+    "EXCEPTION_INIT", "INTERFACE", "RESTRICT_REFERENCES", "DEPRECATE", "SUPPRESSES_WARNING_6009", "COVERAGE"
+)
+
+/** Maximum parenthesis/CASE nesting examined in a package value initializer; deeper is not admitted. */
+private const val MAX_INITIALIZER_NESTING = 64
+
+private val INITIALIZER_NEVER_STARTS = setOf(
+    PlSqlPunctuator.COMMA, PlSqlPunctuator.RPARENTHESIS, PlSqlPunctuator.RBRACKET, PlSqlPunctuator.MULTIPLICATION,
+    PlSqlPunctuator.DIVISION, PlSqlPunctuator.EQUALS, PlSqlPunctuator.GREATERTHAN, PlSqlPunctuator.SINGLE_PIPE,
+    PlSqlPunctuator.DOT, PlSqlPunctuator.MOD, PlSqlPunctuator.ASSIGNMENT, PlSqlPunctuator.ASSOCIATION,
+    PlSqlPunctuator.SEMICOLON, PlSqlPunctuator.EXPONENTIATION
+)
+private val INITIALIZER_NEVER_STARTING_WORDS = setOf(
+    "AND", "OR", "IN", "IS", "LIKE", "BETWEEN", "THEN", "WHEN", "ELSE", "END", "FROM", "AS", "DEFAULT", "OF"
+)
+private val INITIALIZER_NEVER_ENDS = setOf(
+    PlSqlPunctuator.COMMA, PlSqlPunctuator.PLUS, PlSqlPunctuator.MINUS, PlSqlPunctuator.SUBTRACTION,
+    PlSqlPunctuator.MOD, PlSqlPunctuator.DOT, PlSqlPunctuator.DIVISION, PlSqlPunctuator.LPARENTHESIS,
+    PlSqlPunctuator.COLON, PlSqlPunctuator.MULTIPLICATION, PlSqlPunctuator.EQUALS, PlSqlPunctuator.LESSTHAN,
+    PlSqlPunctuator.GREATERTHAN, PlSqlPunctuator.SINGLE_PIPE, PlSqlPunctuator.EXPONENTIATION,
+    PlSqlPunctuator.ASSIGNMENT, PlSqlPunctuator.ASSOCIATION, PlSqlPunctuator.LBRACKET, PlSqlPunctuator.REMOTE
+)
+private val INITIALIZER_NEVER_ENDING_WORDS = setOf(
+    "AND", "OR", "NOT", "IN", "IS", "LIKE", "BETWEEN", "THEN", "WHEN", "ELSE", "FROM", "AS", "OF", "ESCAPE"
+)
+
+/** Non-reserved words that are infix operators: the token after them is at an operand position. */
+private val OPERATOR_WORDS = setOf("MULTISET", "MEMBER", "SUBMULTISET", "ESCAPE", "AT", "LIKEC", "LIKE2", "LIKE4", "EXCEPT", "MINUS")
+
 private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
 
 private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
@@ -735,10 +766,14 @@ class ProjectDeclarationExtractor(
                 }
                 val declarationEnd = specificationDeclarationEnd(cursor, limit) ?: return null
                 if (declarationEnd.terminated) {
-                    parseSpecificationMember(cursor, owner)
-                        // Agreement rule: the member parser (legacy scanner) must end exactly where the
-                        // strict scanner ends the declaration; any disagreement drops the declaration.
-                        ?.takeIf { it.nextIndex == declarationEnd.index + 1 }
+                    // Values are tried first, as the grammar's DECLARE_SECTION does (VARIABLE_DECLARATION precedes
+                    // subprograms, subtypes, cursors and types): anything that is not a complete, strictly valid
+                    // variable falls through to the member parsers.
+                    (parseSpecificationValue(cursor, declarationEnd.index, owner)
+                        ?: parseSpecificationMember(cursor, owner)
+                            // Agreement rule: the member parser (legacy scanner) must end exactly where the
+                            // strict scanner ends the declaration; any disagreement drops the declaration.
+                            ?.takeIf { it.nextIndex == declarationEnd.index + 1 })
                         ?.let { members += it.declaration }
                     cursor = declarationEnd.index + 1
                 } else {
@@ -818,6 +853,215 @@ class ProjectDeclarationExtractor(
                 (isPunctuator(cursor + 2, PlSqlPunctuator.LPARENTHESIS) || isKeyword(cursor + 2, "RETURN")) ->
                 parseSubprogram(cursor, owner)
             else -> null
+        }
+
+        /**
+         * `name [CONSTANT] datatype [NULL | NOT NULL] [(DEFAULT | :=) expression] ;` for the declaration
+         * starting at [start] and ending at the real `;` at [semicolon]. The datatype slice stops at the
+         * first depth-0 `NOT`, `NULL`, `DEFAULT` or `:=` and is fully validated by [strictDatatype] before
+         * [typeReference] runs. The initializer is only shape-checked ([initializerShapeOk]) and never kept.
+         * `PRAGMA` declarations, exceptions (`name EXCEPTION;`) and anything with an unsupported datatype
+         * yield null.
+         */
+        private fun parseSpecificationValue(start: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? {
+            if (!isNameBefore(start, semicolon) || isPragmaDeclaration(start)) return null
+            var typeStart = start + 1
+            val constant = isKeyword(typeStart, "CONSTANT")
+            if (constant) typeStart++
+            val typeEnd = datatypeEnd(typeStart, semicolon) ?: return null
+            if (typeEnd == typeStart + 1 && isKeyword(typeStart, "EXCEPTION")) return null
+            if (!strictDatatype(typeStart, typeEnd)) return null
+            if (!strictTypeArguments(typeStart, typeEnd)) return null
+            var cursor = typeEnd
+            if (isKeyword(cursor, "NOT")) {
+                if (!isKeyword(cursor + 1, "NULL")) return null
+                cursor += 2
+            } else if (isKeyword(cursor, "NULL")) {
+                cursor++
+            }
+            if (cursor < semicolon) {
+                if (!isKeyword(cursor, "DEFAULT") && !isPunctuator(cursor, PlSqlPunctuator.ASSIGNMENT)) return null
+                if (!initializerShapeOk(cursor + 1, semicolon)) return null
+            }
+            val type = typeReference(typeStart, typeEnd) ?: return null
+            val declaration = PackageValueDeclaration(
+                owner, identifier(tokens[start]), constant, type, fileId, range(start, semicolon)
+            )
+            return ParsedDeclaration(declaration, semicolon + 1)
+        }
+
+        /**
+         * End (exclusive) of the datatype that starts at [start]: the first real `NOT`, `NULL`, `DEFAULT` or
+         * `:=` at typed delimiter depth 0, otherwise [limit]. Null when delimiters are crossed or unbalanced.
+         */
+        private fun datatypeEnd(start: Int, limit: Int): Int? {
+            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+            for (index in start until limit) {
+                when {
+                    isOpener(index) -> expected.addLast(closerFor(index))
+                    isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return null
+                    expected.isNotEmpty() -> Unit
+                    isKeyword(index, "NOT") || isKeyword(index, "NULL") || isKeyword(index, "DEFAULT") ||
+                        isPunctuator(index, PlSqlPunctuator.ASSIGNMENT) -> return index
+                }
+            }
+            return if (expected.isEmpty()) limit else null
+        }
+
+        /**
+         * [strictDatatype] accepts any balanced group after a type name. For values, every `( ... )` group
+         * must additionally be a list of type arguments: each comma-separated part is `[+|-] (integer | *
+         * | name) [CHAR | BYTE]`, with no nested delimiters. Anything else (`f(a NUMBER)`) is rejected.
+         */
+        private fun strictTypeArguments(start: Int, endExclusive: Int): Boolean {
+            var index = start
+            while (index < endExclusive) {
+                if (!isPunctuator(index, PlSqlPunctuator.LPARENTHESIS)) {
+                    index++
+                    continue
+                }
+                val close = strictClose(index, endExclusive) ?: return false
+                val parts = splitStrict(index, close) ?: return false
+                if (!parts.all(::isTypeArgument)) return false
+                index = close + 1
+            }
+            return true
+        }
+
+        private fun isTypeArgument(part: IntRange): Boolean {
+            var index = part.first
+            if (isPunctuator(index, PlSqlPunctuator.PLUS) || isPunctuator(index, PlSqlPunctuator.MINUS) ||
+                isPunctuator(index, PlSqlPunctuator.SUBTRACTION)
+            ) index++
+            index = when {
+                tokenTypeAt(index) === PlSqlTokenType.INTEGER_LITERAL || isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
+                index <= part.last && isName(tokens[index]) -> index + 1
+                else -> return false
+            }
+            if (index <= part.last && (isKeyword(index, "CHAR") || isKeyword(index, "BYTE"))) index++
+            return index == part.last + 1
+        }
+
+        /**
+         * True for the shapes of the grammar's `PRAGMA_DECLARATION`, which precedes `VARIABLE_DECLARATION`:
+         * `PRAGMA <name> ;` for the argument-less pragmas and `PRAGMA <name> (` for the others. A variable
+         * named `pragma` with any other type (`pragma NUMBER;`) is a value; `pragma interface(x);` is
+         * excluded conservatively even though it is not a complete pragma.
+         */
+        private fun isPragmaDeclaration(start: Int): Boolean {
+            if (!isKeyword(start, "PRAGMA")) return false
+            if (PRAGMAS_WITHOUT_ARGUMENTS.any { isKeyword(start + 1, it) } && isPunctuator(start + 2, PlSqlPunctuator.SEMICOLON)) return true
+            return PRAGMAS_WITH_ARGUMENTS.any { isKeyword(start + 1, it) } && isPunctuator(start + 2, PlSqlPunctuator.LPARENTHESIS)
+        }
+
+        private class InitializerScan(val limit: Int) {
+            /** `CASE` index to the index after its `END`, or -1 (also while being parsed). */
+            val cases = HashMap<Int, Int>()
+        }
+
+        /**
+         * Conservative admission rule for an initializer in `[start, endExclusive)`; the expression is not
+         * parsed and its grammatical validity is not established. Admitted iff: it is nonempty; it neither
+         * starts nor ends with a token that cannot start/end an operand (`,`, `*`, `AND`, `+`, ...); it has
+         * balanced, correctly nested delimiters; no `;`, `:=`, top-level `,` or `=>`; no empty comma slot;
+         * and every `WHEN`/`THEN`/`ELSE`/`END` belongs to a well-formed `CASE [selector] WHEN c THEN r
+         * {WHEN c THEN r} [ELSE r] END`. A `CASE` token is a CASE expression only where an operand may start,
+         * is not preceded by `.`, and a well-formed structure follows; otherwise it is an ordinary
+         * identifier (`case`, `t.case`, `case(1)`; likewise `function(1)` is just a call). A `CASE` that looks
+         * like an opener but has no well-formed structure leaves its `WHEN`/`END` stray: rejected.
+         */
+        private fun initializerShapeOk(start: Int, endExclusive: Int): Boolean {
+            if (start >= endExclusive || !canStartInitializer(start) || !canEndInitializer(endExclusive - 1)) return false
+            return scanInitializerLevel(start, InitializerScan(endExclusive), allowComma = false, depth = 0) == endExclusive
+        }
+
+        private fun canStartInitializer(index: Int): Boolean = when (val type = tokens[index].type) {
+            is PlSqlPunctuator -> type !in INITIALIZER_NEVER_STARTS
+            is PlSqlKeyword -> !(type.isReserved && valueAt(index) in INITIALIZER_NEVER_STARTING_WORDS)
+            else -> true
+        }
+
+        private fun canEndInitializer(index: Int): Boolean = when (val type = tokens[index].type) {
+            is PlSqlPunctuator -> type !in INITIALIZER_NEVER_ENDS
+            is PlSqlKeyword -> !(valueAt(index) in INITIALIZER_NEVER_ENDING_WORDS)
+            else -> true
+        }
+
+        private fun endsOperand(index: Int): Boolean = when (val type = tokens[index].type) {
+            is PlSqlPunctuator -> type === PlSqlPunctuator.RPARENTHESIS || type === PlSqlPunctuator.RBRACKET
+            is PlSqlKeyword -> valueAt(index) == "NULL" || (!type.isReserved && valueAt(index) !in OPERATOR_WORDS)
+            else -> true
+        }
+
+        /**
+         * Scans one nesting level from [start] and returns the index where it stopped (a `WHEN`, `THEN`,
+         * `ELSE`, `END` or closer that belongs to an enclosing structure, or the limit), or null when the
+         * level contains something that cannot be part of an expression.
+         */
+        private fun scanInitializerLevel(start: Int, scan: InitializerScan, allowComma: Boolean, depth: Int): Int? {
+            if (depth > MAX_INITIALIZER_NESTING) return null
+            var index = start
+            while (index < scan.limit) {
+                when {
+                    isKeyword(index, "WHEN") || isKeyword(index, "THEN") || isKeyword(index, "ELSE") ||
+                        isKeyword(index, "END") || isCloser(index) -> return index
+                    isOpener(index) -> {
+                        val close = scanInitializerLevel(index + 1, scan, allowComma = true, depth = depth + 1) ?: return null
+                        if (close >= scan.limit || tokens[close].type !== closerFor(index)) return null
+                        index = close + 1
+                        continue
+                    }
+                    isKeyword(index, "CASE") && (index == start || (!isPunctuator(index - 1, PlSqlPunctuator.DOT) && !endsOperand(index - 1))) -> {
+                        val end = caseEnd(index, scan, depth)
+                        if (end != null) {
+                            index = end
+                            continue
+                        }
+                    }
+                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) || isPunctuator(index, PlSqlPunctuator.ASSIGNMENT) -> return null
+                    isPunctuator(index, PlSqlPunctuator.ASSOCIATION) && !allowComma -> return null
+                    isPunctuator(index, PlSqlPunctuator.COMMA) -> {
+                        if (!allowComma || index == start || isPunctuator(index - 1, PlSqlPunctuator.COMMA) ||
+                            isPunctuator(index + 1, PlSqlPunctuator.COMMA) || isCloser(index + 1)
+                        ) return null
+                    }
+                }
+                index++
+            }
+            return scan.limit
+        }
+
+        /** Index after the `END` of the `CASE` expression opened at [open], or null when it is not well formed. */
+        private fun caseEnd(open: Int, scan: InitializerScan, depth: Int): Int? {
+            scan.cases[open]?.let { return it.takeIf { end -> end >= 0 } }
+            scan.cases[open] = -1
+            val end = parseCase(open, scan, depth)
+            if (end != null) scan.cases[open] = end
+            return end
+        }
+
+        private fun parseCase(open: Int, scan: InitializerScan, depth: Int): Int? {
+            var index = open + 1
+            if (!isKeyword(index, "WHEN")) {
+                val selectorEnd = scanInitializerLevel(index, scan, allowComma = false, depth = depth + 1) ?: return null
+                if (selectorEnd == index || selectorEnd >= scan.limit || !isKeyword(selectorEnd, "WHEN")) return null
+                index = selectorEnd
+            }
+            while (true) {
+                val thenAt = scanInitializerLevel(index + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+                if (thenAt == index + 1 || thenAt >= scan.limit || !isKeyword(thenAt, "THEN")) return null
+                val after = scanInitializerLevel(thenAt + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+                if (after == thenAt + 1 || after >= scan.limit) return null
+                when {
+                    isKeyword(after, "WHEN") -> index = after
+                    isKeyword(after, "END") -> return after + 1
+                    isKeyword(after, "ELSE") -> {
+                        val endAt = scanInitializerLevel(after + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+                        return if (endAt > after + 1 && endAt < scan.limit && isKeyword(endAt, "END")) endAt + 1 else null
+                    }
+                    else -> return null
+                }
+            }
         }
 
         private fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {

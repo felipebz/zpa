@@ -20,13 +20,7 @@
 package com.felipebz.zpa.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.ProjectDeclarationRole
-import com.felipebz.zpa.api.project.ProjectIdentifier
-import com.felipebz.zpa.api.project.ProjectInventory
-import com.felipebz.zpa.api.project.ProjectPreparationState
-import com.felipebz.zpa.api.project.ProjectQualifiedName
-import com.felipebz.zpa.api.project.ProjectSnapshot
-import com.felipebz.zpa.api.project.ProjectSubprogramView
+import com.felipebz.zpa.api.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -131,12 +125,6 @@ class PackageValueDeclarationTest {
         assertThat(idx.findPackages(name("p", "g"))).isEmpty()
         assertThat(idx.findPackages(name("p"))).hasSize(1)
         assertThat(idx.findSequences(name("p", "g"))).isEmpty()
-    }
-
-    @Test
-    fun extractionDoesNotEmitValuesYet() {
-        val kinds = extractor.extract(FileId("a.sql"), "CREATE PACKAGE p AS g NUMBER; c CONSTANT NUMBER := 1; END p;").map { it.kind }
-        assertThat(kinds).containsExactly(ProjectDeclarationKind.PACKAGE)
     }
 
     @Test
