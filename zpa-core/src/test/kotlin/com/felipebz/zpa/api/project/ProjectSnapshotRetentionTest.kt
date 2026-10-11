@@ -180,7 +180,7 @@ class ProjectSnapshotRetentionTest {
         // Public type-reference values carry only names, ranges and enums.
         val refOnly = auditGraph(mapOf("ref" to fields[1].typeRef), forbidden, sourceMarker)
         assertThat(refOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
-        assertThat(refOnly.filterIsInstance<com.felipebz.zpa.project.TypeRef>()).isEmpty()
+        assertThat(refOnly.filterIsInstance<TypeRef>()).isEmpty()
     }
 
     @Test
@@ -208,16 +208,55 @@ class ProjectSnapshotRetentionTest {
         )
         val reachable = auditGraph(roots, forbidden, sourceMarker)
         assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageProcedureDeclaration>()).hasSize(1)
-        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageFunctionDeclaration>()).hasSize(1)
-        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectParameter>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<PackageFunctionDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectParameter>()).hasSize(3)
         assertThat(reachable.filterIsInstance<ProjectTypeReference>()).hasSize(3)
         assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
 
         val standalone = auditGraph(
             mapOf("refs" to proc.parameters.map { it.typeRef } + fn.returnType), forbidden, sourceMarker
         )
-        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.TypeRef>()).isEmpty()
-        assertThat(standalone.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+        assertThat(standalone.filterIsInstance<TypeRef>()).isEmpty()
+        assertThat(standalone.filterIsInstance<ProjectDeclaration>()).isEmpty()
+    }
+
+    @Test
+    fun namedTypeResolutionsRetainOnlyDurableFacts() {
+        val sourceMarker = "resolution-retention-2d7b9c41-5e0f-4a9e-8c33-9f1e6b0a4d52"
+        val source = "-- $sourceMarker\nCREATE PACKAGE rr AS TYPE t IS RECORD (a NUMBER); END rr;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("a.sql", reader)
+        val dup = ProjectSourceInput.ofReader("b.sql", reader)
+        val failed = ProjectSourceInput.ofReader("f.sql", ProjectSourceReader { throw IllegalStateException(sourceMarker) })
+        val snapshot = ProjectSnapshots.prepare(listOf(input, dup, failed), false)
+        val single = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }
+        val forbidden = listOf(snapshot, single, resultField.get(snapshot), resultField.get(single),
+            (resultField.get(snapshot) as com.felipebz.zpa.project.ProjectIndexPreparationResult).index,
+            source, reader, input, dup, failed)
+
+        val owner = ProjectQualifiedName.of("rr")
+        val resolved = single.resolveNamedType(ProjectQualifiedName.of("t"), owner)
+        val ambiguous = ProjectSnapshots.prepare(listOf(input, dup), false)
+            .resolveNamedType(ProjectQualifiedName.of("rr", "t"))
+        val incomplete = snapshot.resolveNamedType(ProjectQualifiedName.of("rr", "t"))
+        assertThat(resolved.status).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED)
+        assertThat(ambiguous.status).isEqualTo(ProjectNamedTypeResolution.Status.AMBIGUOUS)
+        assertThat(incomplete.status).isEqualTo(ProjectNamedTypeResolution.Status.INCOMPLETE_INDEX)
+
+        val reachable = auditGraph(
+            mapOf("resolved" to resolved, "ambiguous" to ambiguous, "incomplete" to incomplete),
+            forbidden, sourceMarker
+        )
+        assertThat(reachable.filterIsInstance<PackageTypeDeclaration>()).hasSize(5)
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+
+        val idOnly = auditGraph(mapOf("id" to resolved.declaration.get().id), forbidden, sourceMarker)
+        assertThat(idOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(idOnly.filterIsInstance<ProjectSnapshot>()).isEmpty()
     }
 
     @Test

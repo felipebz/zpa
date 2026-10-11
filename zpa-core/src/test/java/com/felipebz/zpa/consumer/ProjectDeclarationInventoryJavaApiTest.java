@@ -25,6 +25,8 @@ import com.felipebz.zpa.api.project.ProjectDeclarationRole;
 import com.felipebz.zpa.api.project.ProjectDeclarationView;
 import com.felipebz.zpa.api.project.ProjectFunctionView;
 import com.felipebz.zpa.api.project.ProjectInventory;
+import com.felipebz.zpa.api.project.ProjectNamedTypeResolution;
+import com.felipebz.zpa.api.project.ProjectTypeDeclarationView;
 import com.felipebz.zpa.api.project.ProjectPackageSubprogramView;
 import com.felipebz.zpa.api.project.ProjectParameterMode;
 import com.felipebz.zpa.api.project.ProjectParameterView;
@@ -165,5 +167,24 @@ class ProjectDeclarationInventoryJavaApiTest {
             }
         }
         assertThat(new int[] {procedures, functions}).containsExactly(1, 1);
+    }
+
+    @Test
+    void resolvesNamedTypesThroughBothOverloads() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(ProjectSourceInput.ofText("t.sql",
+            "CREATE PACKAGE t AS TYPE r IS RECORD (a NUMBER); END t;")));
+        ProjectNamedTypeResolution viaContext =
+            snapshot.resolveNamedType(ProjectQualifiedName.of("r"), ProjectQualifiedName.of("t"));
+        assertThat(viaContext.getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED);
+        ProjectTypeDeclarationView type = viaContext.getDeclaration().orElseThrow();
+        assertThat(type).isInstanceOf(ProjectPackageTypeView.class);
+        assertThat(viaContext.getPackageOwner()).isPresent();
+        ProjectNamedTypeResolution qualified = snapshot.resolveNamedType(ProjectQualifiedName.of("t", "r"));
+        assertThat(qualified.getPackageOwner()).isEmpty();
+        assertThat(qualified.getCandidates().get(0).getId()).isEqualTo(type.getId());
+        assertThat(snapshot.resolveNamedType(ProjectQualifiedName.of("r"), null).getStatus())
+            .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+        assertThatThrownBy(() -> qualified.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> snapshot.resolveNamedType(null)).isInstanceOf(NullPointerException.class);
     }
 }

@@ -32,13 +32,8 @@ class ProjectTypeResolver(
     ): ProjectTypeResolution = when (val state = projectAnalysisContext.state) {
         ProjectAnalysisContext.State.NotPrepared -> ProjectTypeResolution.NotPrepared(reference)
         is ProjectAnalysisContext.State.Prepared -> {
-            val owner = if (reference.name.segments.size == 1) {
-                lookupContext.packageOwner
-            } else {
-                reference.name.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName)
-            }
             val candidates = state.result.index.findTypes(
-                owner,
+                ProjectTypeNameLookup.owner(reference.name, lookupContext.packageOwner),
                 reference.name.last
             )
             if (state.result.failures.isNotEmpty()) {
@@ -52,6 +47,17 @@ class ProjectTypeResolver(
             }
         }
     }
+}
+
+/** Name/context rules shared by the reference-based resolver and the public name-based query. */
+internal object ProjectTypeNameLookup {
+    /** One-segment names use only the explicit package context; qualified names use their own prefix. */
+    fun owner(name: QualifiedName, packageOwner: QualifiedName?): QualifiedName? =
+        if (name.segments.size == 1) {
+            packageOwner
+        } else {
+            name.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName)
+        }
 }
 
 /** Context that can be derived from the current AST without guessing database namespaces. */

@@ -26,7 +26,9 @@ import com.felipebz.zpa.api.project.ProjectPackageTypeView
 import com.felipebz.zpa.api.project.ProjectFunctionView
 import com.felipebz.zpa.api.project.ProjectPackageSubprogramView
 import com.felipebz.zpa.api.project.ProjectParameterMode
+import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
 import com.felipebz.zpa.api.project.ProjectQualifiedName
+import com.felipebz.zpa.api.project.ProjectSubtypeView
 import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.project.ProjectSnapshots
@@ -86,5 +88,20 @@ class ProjectDeclarationInventoryKotlinApiTest {
         val fn = callables.filterIsInstance<ProjectFunctionView>().single()
         assertThat(fn.isDeterministic).isTrue()
         assertThat(fn.returnType.name.last.originalSpelling).isEqualTo("NUMBER")
+    }
+
+    @Test
+    fun resolvesNamedTypesAndComparesIdsWithInventory() {
+        val snapshot = ProjectSnapshots.prepare(
+            listOf(ProjectSourceInput.ofText("t.sql", "CREATE PACKAGE t AS SUBTYPE s IS NUMBER; TYPE r IS RECORD (a NUMBER); END t;"))
+        )
+        val sub = snapshot.resolveNamedType(ProjectQualifiedName.of("s"), ProjectQualifiedName.of("t"))
+        assertThat(sub.status).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED)
+        assertThat(sub.declaration.get()).isInstanceOf(ProjectSubtypeView::class.java)
+        val viaInventory = snapshot.findDeclarations(ProjectQualifiedName.of("t", "s")).declarations.single()
+        assertThat(sub.declaration.get().id).isEqualTo(viaInventory.id)
+        val missing = snapshot.resolveNamedType(ProjectQualifiedName.of("s"), null)
+        assertThat(missing.status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+        assertThat(missing.candidates).isEmpty()
     }
 }

@@ -22,6 +22,7 @@ package com.felipebz.zpa.api.project
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.IndexedDeclaration
 import com.felipebz.zpa.project.ProjectIndexPreparationResult
+import com.felipebz.zpa.project.ProjectTypeNameLookup
 import java.util.Collections
 
 /**
@@ -83,6 +84,29 @@ class ProjectSnapshot private constructor(
      */
     fun findDeclarations(name: ProjectQualifiedName): ProjectInventory<ProjectDeclarationView> =
         inventory(preparationResult.index.findOccurrences(name.name))
+
+    /**
+     * Resolves a structured type name using the existing project rules, without package context.
+     * One-segment names use the standalone namespace; qualified names use their own prefix.
+     * Not a datatype resolver: builtins, subtype bases, anchors and `REF` are not interpreted.
+     */
+    fun resolveNamedType(name: ProjectQualifiedName): ProjectNamedTypeResolution = resolveNamedType(name, null)
+
+    /**
+     * As [resolveNamedType], with explicit package context used only for one-segment names.
+     * A qualified [name] overrides [packageOwner]; there is no fallback to standalone types.
+     */
+    fun resolveNamedType(name: ProjectQualifiedName, packageOwner: ProjectQualifiedName?): ProjectNamedTypeResolution {
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) {
+            return ProjectNamedTypeResolution.notPrepared(name, packageOwner)
+        }
+        val occurrences = preparationResult.index.findTypeOccurrences(
+            ProjectTypeNameLookup.owner(name.name, packageOwner?.name),
+            name.name.last
+        )
+        val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectTypeDeclarationView }
+        return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
+    }
 
     private fun inventory(occurrences: List<IndexedDeclaration>): ProjectInventory<ProjectDeclarationView> {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
