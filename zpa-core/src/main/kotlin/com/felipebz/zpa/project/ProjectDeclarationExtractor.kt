@@ -37,6 +37,12 @@ private val DATATYPE_CONTINUATIONS = setOf(
 
 private val EXTERNAL_PARAMETER_PROPERTIES = listOf("LENGTH", "DURATION", "MAXLEN", "CHARSETID", "CHARSETFORM")
 
+/** Standalone-only return-type terminators (the package set lacks AGGREGATE, ORDER and CLUSTER). */
+private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
+    "DETERMINISTIC", "PIPELINED", "SQL_MACRO", "PARALLEL_ENABLE", "ORDER", "CLUSTER", "SHARD_ENABLE",
+    "RESULT_CACHE", "AUTHID", "DEFAULT", "ACCESSIBLE", "AGGREGATE", "IS", "AS"
+)
+
 private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
 
 private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
@@ -101,7 +107,8 @@ class ProjectDeclarationExtractor(
             return when (valueAt(index)) {
                 "PACKAGE" -> parsePackage(create, index, orReplace)
                 // The strict standalone path re-validates the whole prefix with token types.
-                "PROCEDURE" -> parseStandaloneProcedure(create)
+                "PROCEDURE" -> parseStandaloneCallable(create, function = false)
+                "FUNCTION" -> parseStandaloneCallable(create, function = true)
                 "SEQUENCE" -> parseSequence(create, index)
                 "TYPE" -> if (valueAt(index + 1) == "BODY") parseTypeBody(index) else parseStandaloneType(create, index)
                 else -> null
@@ -143,14 +150,14 @@ class ProjectDeclarationExtractor(
 
         private fun isNameBefore(index: Int, limit: Int) = index < limit && index in tokens.indices && isName(tokens[index])
 
-        private fun parseStandaloneProcedure(create: Int): ParsedUnit? {
+        private fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? {
             if (!isKeyword(create, "CREATE")) return null
             val limit = unitLimit(create)
             var index = create + 1
             val orReplace = isKeyword(index, "OR") && isKeyword(index + 1, "REPLACE")
             if (orReplace) index += 2
             if (isKeyword(index, "EDITIONABLE") || isKeyword(index, "NONEDITIONABLE")) index++
-            if (!isKeyword(index, "PROCEDURE")) return null
+            if (!isKeyword(index, if (function) "FUNCTION" else "PROCEDURE")) return null
             index++
             if (isKeyword(index, "IF")) {
                 // IF NOT EXISTS cannot be combined with OR REPLACE (ORA-11541).
@@ -176,13 +183,59 @@ class ProjectDeclarationExtractor(
                     parsed.parameters
                 }
             }
-            index = skipPropertiesStrict(index, limit) ?: return null
-            if (!isKeyword(index, "IS") && !isKeyword(index, "AS")) return null
-            val end = strictImplementationEnd(index + 1, limit) ?: return null
+            if (!function) {
+                index = skipPropertiesStrict(index, limit, function = false)?.next ?: return null
+                if (!isKeyword(index, "IS") && !isKeyword(index, "AS")) return null
+                val end = strictImplementationEnd(index + 1, limit) ?: return null
+                return ParsedUnit(
+                    listOf(StandaloneProcedureDeclaration(name.first, parameters, fileId, range(create, end))),
+                    end + 1
+                )
+            }
+
+            // Function: RETURN datatype, properties, then an implementation or a terminal `;`.
+            if (!isKeyword(index, "RETURN")) return null
+            val typeStart = index + 1
+            val typeEnd = returnTypeEnd(typeStart, limit) ?: return null
+            if (!strictDatatype(typeStart, typeEnd)) return null
+            val returnType = typeReference(typeStart, typeEnd) ?: return null
+            val properties = skipPropertiesStrict(typeEnd, limit, function = true) ?: return null
+            index = properties.next
+            val end = when {
+                properties.terminal -> index
+                isKeyword(index, "IS") || isKeyword(index, "AS") -> strictImplementationEnd(index + 1, limit) ?: return null
+                isPunctuator(index, PlSqlPunctuator.SEMICOLON) -> index // body-less declaration
+                else -> return null
+            }
+            if (end >= limit || !isPunctuator(end, PlSqlPunctuator.SEMICOLON)) return null
             return ParsedUnit(
-                listOf(StandaloneProcedureDeclaration(name.first, parameters, fileId, range(create, end))),
+                listOf(
+                    StandaloneFunctionDeclaration(
+                        name.first, parameters, returnType, fileId, range(create, end),
+                        deterministic = properties.deterministic
+                    )
+                ),
                 end + 1
             )
+        }
+
+        /**
+         * End (exclusive) of the return datatype: the first depth-0 token that is a real keyword in
+         * [STANDALONE_RETURN_TYPE_TERMINATORS] or a real `;`. Balanced parentheses are skipped; any other
+         * delimiter, a missing terminator before [limit] or an empty slice yields null.
+         */
+        private fun returnTypeEnd(start: Int, limit: Int): Int? {
+            var index = start
+            while (index < limit) {
+                when {
+                    isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> index = (strictClose(index, limit) ?: return null) + 1
+                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) ||
+                        STANDALONE_RETURN_TYPE_TERMINATORS.any { isKeyword(index, it) } -> return index.takeIf { it > start }
+                    isOpener(index) || isCloser(index) -> return null
+                    else -> index++
+                }
+            }
+            return null
         }
 
         /** One or two name segments joined by a real `.`; a third segment is a failure. */
@@ -357,21 +410,36 @@ class ProjectDeclarationExtractor(
             return true
         }
 
+        private class PropertyScan(val next: Int, val deterministic: Boolean, val terminal: Boolean)
+
         /**
          * Skips subprogram properties (grammar `subprogramProperty`, any order). Each clause's
-         * mandatory structure is verified; anything unknown or malformed yields null.
+         * mandatory structure is verified; anything unknown or malformed yields null. For a
+         * [function], `PIPELINED ... USING ref ;` and `AGGREGATE USING ref ;` are terminal forms
+         * (`next` is then the real `;`); a procedure cannot end this way, so they are rejected.
          */
-        private fun skipPropertiesStrict(start: Int, limit: Int): Int? {
+        private fun skipPropertiesStrict(start: Int, limit: Int, function: Boolean): PropertyScan? {
             var index = start
+            var deterministic = false
             while (index < limit) {
                 index = when {
-                    isKeyword(index, "DETERMINISTIC") || isKeyword(index, "SHARD_ENABLE") -> index + 1
+                    isKeyword(index, "DETERMINISTIC") -> {
+                        deterministic = true
+                        index + 1
+                    }
+                    isKeyword(index, "SHARD_ENABLE") -> index + 1
                     isKeyword(index, "PIPELINED") -> {
                         var next = index + 1
                         if ((isKeyword(next, "ROW") || isKeyword(next, "TABLE")) && isKeyword(next + 1, "POLYMORPHIC")) next += 2
-                        // PIPELINED ... USING ends the declaration with `;`, which a procedure cannot do.
-                        if (isKeyword(next, "USING")) return null
+                        if (isKeyword(next, "USING")) {
+                            if (!function) return null
+                            return terminalUsing(next, limit, deterministic)
+                        }
                         next
+                    }
+                    isKeyword(index, "AGGREGATE") -> {
+                        if (!function || !isKeyword(index + 1, "USING")) return null
+                        return terminalUsing(index + 1, limit, deterministic)
                     }
                     isKeyword(index, "SQL_MACRO") -> sqlMacroEnd(index + 1, limit) ?: return null
                     isKeyword(index, "PARALLEL_ENABLE") -> parallelEnableEnd(index + 1, limit) ?: return null
@@ -388,10 +456,16 @@ class ProjectDeclarationExtractor(
                         if (isKeyword(index + 1, "COLLATION") && isKeyword(index + 2, "USING_NLS_COMP")) index + 3 else return null
                     isKeyword(index, "ACCESSIBLE") ->
                         if (isKeyword(index + 1, "BY")) delimitedListEnd(index + 2, limit, ::accessorEnd) ?: return null else return null
-                    else -> return index
+                    else -> return PropertyScan(index, deterministic, false)
                 }
             }
             return null
+        }
+
+        /** `USING object_reference ;` at [using]; the reference is a conservative name path. */
+        private fun terminalUsing(using: Int, limit: Int, deterministic: Boolean): PropertyScan? {
+            val end = strictQualifiedNameAnyLength(using + 1, limit) ?: return null
+            return if (end < limit && isPunctuator(end, PlSqlPunctuator.SEMICOLON)) PropertyScan(end, deterministic, true) else null
         }
 
         /**
@@ -480,7 +554,7 @@ class ProjectDeclarationExtractor(
          * `(LANGUAGE C | EXTERNAL) [NAME id] LIBRARY id [NAME id] [AGENT IN (id {, id})]
          * [WITH CONTEXT] [PARAMETERS (param {, param})]`, returning the index of the `;`.
          * `C` is lexed as an identifier; a quoted `"C"` is not accepted. External parameters are
-         * checked conservatively: each part must be non-empty words only (no punctuation).
+         * validated structurally against the grammar (see [externalParameterEnd]), not accepted as arbitrary words.
          */
         private fun cSpecificationEnd(start: Int, limit: Int): Int? {
             var index = when {
