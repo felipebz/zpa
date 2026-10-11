@@ -43,6 +43,9 @@ private val STANDALONE_RETURN_TYPE_TERMINATORS = listOf(
     "RESULT_CACHE", "AUTHID", "DEFAULT", "ACCESSIBLE", "AGGREGATE", "IS", "AS"
 )
 
+/** Sentinel returned by [packageHeaderEnd] for a wrapped unit. */
+private const val WRAPPED_UNIT = -2
+
 private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
 
 private val CALL_SPECIFICATION_WORDS = setOf("LANGUAGE", "EXTERNAL", "MLE")
@@ -115,7 +118,7 @@ class ProjectDeclarationExtractor(
             }
         }
 
-        // ---- Strict standalone callable path (S2). It never uses the value-based helpers for
+        // ---- Strict standalone callable path. It never uses the value-based helpers for
         // structural decisions: quoted identifiers expose unquoted values that look like keywords
         // or punctuators, so keywords are checked with isKeyword and punctuators with isPunctuator.
         // Any doubt yields null (no fact, nothing consumed): incomplete coverage beats a wrong fact.
@@ -668,44 +671,153 @@ class ProjectDeclarationExtractor(
         }
 
         private fun parsePackage(create: Int, packageIndex: Int, orReplace: Boolean): ParsedUnit? {
-            val body = valueAt(packageIndex + 1) == "BODY"
+            // The shared dispatch is value based; require real CREATE/PACKAGE tokens (and a prefix that
+            // validates with token types) so quoted lookalikes never start a package unit.
+            if (strictPackagePrefix(create) != (packageIndex to orReplace)) return null
+            // `BODY` must be the keyword: `CREATE PACKAGE "BODY" AS ...` is a specification named "BODY".
+            val body = isKeyword(packageIndex + 1, "BODY")
             val kindEnd = if (body) packageIndex + 2 else packageIndex + 1
             // IF NOT EXISTS follows PACKAGE [BODY] and cannot be combined with OR REPLACE (ORA-11541).
-            val ifNotExists = valueAt(kindEnd) == "IF" && valueAt(kindEnd + 1) == "NOT" && valueAt(kindEnd + 2) == "EXISTS"
+            val ifNotExists = if (body) {
+                valueAt(kindEnd) == "IF" && valueAt(kindEnd + 1) == "NOT" && valueAt(kindEnd + 2) == "EXISTS"
+            } else {
+                isKeyword(kindEnd, "IF") && isKeyword(kindEnd + 1, "NOT") && isKeyword(kindEnd + 2, "EXISTS")
+            }
             if (ifNotExists && orReplace) return null
             val nameIndex = if (ifNotExists) kindEnd + 3 else kindEnd
+            if (!body) return parsePackageSpecification(create, nameIndex)
             val name = qualifiedName(nameIndex) ?: return null
-            if (body) {
-                return parsePackageBody(name.first, name.second)
-            }
+            return parsePackageBody(name.first, name.second)
+        }
 
-            val header = firstAtTopLevel(name.second, setOf("IS", "AS")) ?: return null
-            val end = packageEnd(header + 1)
+        /** `CREATE [OR REPLACE] [EDITIONABLE|NONEDITIONABLE] PACKAGE` validated with token types. */
+        private fun strictPackagePrefix(create: Int): Pair<Int, Boolean>? {
+            if (!isKeyword(create, "CREATE")) return null
+            var index = create + 1
+            val orReplace = isKeyword(index, "OR") && isKeyword(index + 1, "REPLACE")
+            if (orReplace) index += 2
+            if (isKeyword(index, "EDITIONABLE") || isKeyword(index, "NONEDITIONABLE")) index++
+            return if (isKeyword(index, "PACKAGE")) index to orReplace else null
+        }
+
+        /**
+         * Package specification, bounded by the unit limit and validated with token types.
+         *
+         * The end of the specification is found by *walking declarations*, not by searching for an
+         * `END`: every declaration ends at its first real `;`, and a real `END` keyword (reserved, so
+         * never an identifier) is the terminator only where a declaration would start. A `CASE ... END`
+         * inside an initializer, a quoted `"END"` or a variable named like a keyword therefore cannot
+         * end the package. A specification that cannot be walked to its own `END [name] ;` before the
+         * unit limit yields no fact at all (never a range to EOF, never the next unit's members).
+         */
+        private fun parsePackageSpecification(create: Int, nameIndex: Int): ParsedUnit? {
+            val limit = unitLimit(create)
+            val name = strictQualifiedName(nameIndex, limit) ?: return null
             val owner = name.first
-            val declarations = mutableListOf<ProjectDeclaration>()
-            declarations += PackageDeclaration(owner, DeclarationRole.SPECIFICATION, fileId, range(create, end))
+            val header = packageHeaderEnd(name.second, limit)
+            if (header == WRAPPED_UNIT) {
+                // One opaque WRAPPED_SOURCE token: nothing can be recovered, and nothing after it is consumed.
+                val wrapped = wrappedPayloadEnd(name.second, limit) ?: return null
+                return ParsedUnit(emptyList(), wrapped + 1)
+            }
+            if (header < 0) return null
+
+            val members = mutableListOf<ProjectDeclaration>()
             var cursor = header + 1
-            while (cursor < end && valueAt(cursor) != "END") {
-                when (valueAt(cursor)) {
-                    "TYPE" -> {
-                        val parsed = parsePackageType(cursor, owner)
-                        if (parsed != null) declarations += parsed.declaration
-                        cursor = parsed?.nextIndex ?: skipToSemicolon(cursor)
-                    }
-                    "SUBTYPE" -> {
-                        val parsed = parsePackageSubtype(cursor, owner)
-                        if (parsed != null) declarations += parsed.declaration
-                        cursor = parsed?.nextIndex ?: skipToSemicolon(cursor)
-                    }
-                    "PROCEDURE", "FUNCTION" -> {
-                        val parsed = parseSubprogram(cursor, owner)
-                        if (parsed != null) declarations += parsed.declaration
-                        cursor = parsed?.nextIndex ?: skipToSemicolon(cursor)
-                    }
-                    else -> cursor = skipToSemicolon(cursor)
+            while (true) {
+                if (cursor >= limit) return null
+                if (isKeyword(cursor, "END")) {
+                    val semicolon = packageTerminatorSemicolon(cursor, limit) ?: return null
+                    val declarations = mutableListOf<ProjectDeclaration>()
+                    declarations += PackageDeclaration(owner, DeclarationRole.SPECIFICATION, fileId, range(create, semicolon))
+                    declarations += members
+                    return ParsedUnit(declarations, semicolon + 1)
+                }
+                val declarationEnd = specificationDeclarationEnd(cursor, limit) ?: return null
+                if (declarationEnd.terminated) {
+                    parseSpecificationMember(cursor, owner)
+                        // Agreement rule: the member parser (legacy scanner) must end exactly where the
+                        // strict scanner ends the declaration; any disagreement drops the declaration.
+                        ?.takeIf { it.nextIndex == declarationEnd.index + 1 }
+                        ?.let { members += it.declaration }
+                    cursor = declarationEnd.index + 1
+                } else {
+                    // Stopped at a reserved PROCEDURE after a missing `;`: the broken declaration yields no
+                    // fact and the following subprogram is still visited.
+                    cursor = declarationEnd.index
                 }
             }
-            return ParsedUnit(declarations, end + 1)
+        }
+
+        /**
+         * Index of the `IS`/`AS` keyword ending the header, [WRAPPED_UNIT] for a wrapped unit, or -1.
+         * Typed delimiters only, bounded by [limit]; a `;` or `END` first means there is no header.
+         */
+        private fun packageHeaderEnd(start: Int, limit: Int): Int {
+            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+            for (index in start until limit.coerceAtMost(tokens.size)) {
+                when {
+                    isOpener(index) -> expected.addLast(closerFor(index))
+                    isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return -1
+                    expected.isNotEmpty() -> Unit
+                    isKeyword(index, "WRAPPED") -> return WRAPPED_UNIT
+                    isKeyword(index, "IS") || isKeyword(index, "AS") -> return index
+                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) || isKeyword(index, "END") -> return -1
+                }
+            }
+            return -1
+        }
+
+        /** Index of the opaque payload of a wrapped unit (`WRAPPED` immediately followed by `WRAPPED_SOURCE`). */
+        private fun wrappedPayloadEnd(start: Int, limit: Int): Int? {
+            val wrapped = (start until limit.coerceAtMost(tokens.size)).firstOrNull { isKeyword(it, "WRAPPED") } ?: return null
+            return (wrapped + 1).takeIf { it < limit && tokenTypeAt(it) === PlSqlTokenType.WRAPPED_SOURCE }
+        }
+
+        /** `;` of `END [name] ;` for the `END` keyword at [end], strictly below [limit]. */
+        private fun packageTerminatorSemicolon(end: Int, limit: Int): Int? {
+            var index = end + 1
+            if (index < limit && isName(tokens[index])) index++
+            return index.takeIf { it < limit && isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
+        }
+
+        private class DeclarationEnd(val index: Int, val terminated: Boolean)
+
+        /**
+         * End of the declaration starting at [start]: its first real `;` at typed delimiter depth 0
+         * (`terminated`), or, after a missing `;`, the reserved `PROCEDURE` that starts the next
+         * subprogram (not terminated). Null when delimiters are crossed/unbalanced or no `;` exists
+         * before [limit]. `FUNCTION` is deliberately not a recovery boundary: it is not reserved and
+         * the parser accepts `g NUMBER := function(1);`.
+         */
+        private fun specificationDeclarationEnd(start: Int, limit: Int): DeclarationEnd? {
+            val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
+            for (index in start until limit.coerceAtMost(tokens.size)) {
+                when {
+                    isOpener(index) -> expected.addLast(closerFor(index))
+                    isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return null
+                    expected.isNotEmpty() -> Unit
+                    isPunctuator(index, PlSqlPunctuator.SEMICOLON) -> return DeclarationEnd(index, true)
+                    index > start && isKeyword(index, "PROCEDURE") -> return DeclarationEnd(index, false)
+                }
+            }
+            return null
+        }
+
+        /**
+         * Existing member parsers, selected by structural lookahead on token types. `type NUMBER;`,
+         * `"TYPE" NUMBER;` and a variable named `function` do not match any member shape.
+         */
+        private fun parseSpecificationMember(cursor: Int, owner: QualifiedName): ParsedDeclaration? = when {
+            isKeyword(cursor, "TYPE") && isNameBefore(cursor + 1, tokens.size) && isKeyword(cursor + 2, "IS") ->
+                parsePackageType(cursor, owner)
+            isKeyword(cursor, "SUBTYPE") && isNameBefore(cursor + 1, tokens.size) && isKeyword(cursor + 2, "IS") ->
+                parsePackageSubtype(cursor, owner)
+            isKeyword(cursor, "PROCEDURE") && isNameBefore(cursor + 1, tokens.size) -> parseSubprogram(cursor, owner)
+            isKeyword(cursor, "FUNCTION") && isNameBefore(cursor + 1, tokens.size) &&
+                (isPunctuator(cursor + 2, PlSqlPunctuator.LPARENTHESIS) || isKeyword(cursor + 2, "RETURN")) ->
+                parseSubprogram(cursor, owner)
+            else -> null
         }
 
         private fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {
@@ -1176,26 +1288,6 @@ class ProjectDeclarationExtractor(
         }
 
         private fun identifier(token: Token) = OracleIdentifier.fromToken(token.originalValue, token.value)
-
-        private fun packageEnd(start: Int): Int {
-            var depth = 0
-            for (index in start until tokens.size) {
-                when (valueAt(index)) {
-                    "(" , "[" -> depth++
-                    ")", "]" -> depth--
-                    "END" -> if (depth == 0 && isPackageTerminator(index)) {
-                        val semi = semicolonAfter(index)
-                        return semi
-                    }
-                }
-            }
-            return tokens.lastIndex
-        }
-
-        private fun isPackageTerminator(index: Int): Boolean {
-            val next = index + 1
-            return valueAt(next) == ";" || (next in tokens.indices && isName(tokens[next]) && valueAt(next + 1) == ";")
-        }
 
         private fun firstAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? {
             var depth = 0
