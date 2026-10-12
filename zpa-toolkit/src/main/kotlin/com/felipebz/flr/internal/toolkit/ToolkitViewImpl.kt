@@ -27,6 +27,7 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
 import com.felipebz.zpa.tooling.SemanticSourceRange
+import com.formdev.flatlaf.util.UIScale
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
@@ -109,7 +110,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     }
 
     private fun initComponents() {
-        setSize(1000, 700)
+        val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+        setSize(minOf(UIScale.scale(1000), screen.width), minOf(UIScale.scale(700), screen.height))
         setLocationRelativeTo(null)
         defaultCloseOperation = EXIT_ON_CLOSE
         astTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
