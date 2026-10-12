@@ -104,8 +104,9 @@ internal object ProjectTypeDescriber {
         holder: ReferenceHolder?,
         steps: Map<ProjectDeclarationId, ProjectDeclarationView>
     ): Anchor {
-        val followed = steps.values.toList()
-        fun stop(why: ProjectTypeDescription.AnchorStop) = Anchor.Stop(ProjectTypeDescription.anchorStopped(followed, reference, why))
+        // The ordered copy is made only when a terminal description is built, never for a successful step.
+        fun followed() = steps.values.toList()
+        fun stop(why: ProjectTypeDescription.AnchorStop) = Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why))
         if (reference.anchor.get() == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE)
         if (holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         val index = snapshot.projectIndex
@@ -142,7 +143,7 @@ internal object ProjectTypeDescriber {
             snapshot.resolvePackageValue(reference.name, null)
         }
         if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
-            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed, lookup, reference))
+            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed(), lookup, reference))
         }
         val value = lookup.value.get()
         // The resolved value must be the only binding of its package: several specifications are not one scope.
