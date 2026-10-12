@@ -23,7 +23,9 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.symbols.Scope
+import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
+import com.felipebz.zpa.tooling.SemanticSourceRange
 import java.awt.Point
 import java.io.File
 
@@ -89,6 +91,18 @@ internal interface ToolkitView {
      */
     fun displaySemantics(inspection: SemanticNodeInspection?)
 
+    /**
+     * Display the overview of everything the Project System captured for the parsed source.
+     *
+     * @param overview the overview, or null when the source is not parsed
+     */
+    fun displayProjectOverview(overview: ProjectOverviewNode?)
+
+    /**
+     * Get the entries currently selected in the project overview.
+     */
+    val selectedProjectOverviewNodes: List<ProjectOverviewNode>
+
     fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long)
 
     /**
@@ -151,11 +165,21 @@ internal interface ToolkitView {
     fun clearSourceCodeHighlights()
 
     /**
+     * Highlight the given source range in the source code editor.
+     */
+    fun highlightSourceRange(range: SemanticSourceRange)
+
+    /**
      * Scroll the source code editor in order to make the given token visible.
      *
      * @param astNode The token to make visible, null will lead to a no operation
      */
     fun scrollSourceCodeTo(astNode: Token?)
+
+    /**
+     * Scroll the source code editor in order to make the given one-based line visible.
+     */
+    fun scrollSourceCodeToLine(line: Int)
 
     /**
      * Disable the XPath evaluate button.
@@ -168,11 +192,11 @@ internal interface ToolkitView {
     fun enableXPathEvaluateButton()
 
     /**
-     * Get the AST node which follows the current source code editor text cursor position.
+     * Get the AST node at the current source code editor text cursor position.
      *
-     * @return The following AST node, or null if there is no such node
+     * @return The AST node at the caret (the token containing it, else the following one), or null if there is no such node
      */
-    val astNodeFollowingCurrentSourceCodeTextCursorPosition: AstNode?
+    val astNodeAtCurrentSourceCodeTextCursorPosition: AstNode?
 
     /**
      * Get the list of nodes currently selected in the abstract syntax tree view.

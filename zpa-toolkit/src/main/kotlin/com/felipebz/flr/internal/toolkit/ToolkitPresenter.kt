@@ -75,6 +75,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayXml("")
         view.displayScope(null)
         view.displaySemantics(null)
+        view.displayProjectOverview(null)
         view.displayStatistics(0, 0, 0, 0)
         view.disableXPathEvaluateButton()
         initConfigurationTab()
@@ -98,6 +99,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             view.displayXml(model.xml)
             view.displayScope(symbolTable.scopes.firstOrNull())
             view.displaySemantics(null)
+            view.displayProjectOverview(model.projectOverview)
             view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
             view.scrollSourceCodeTo(Point(0, 0))
             view.setFocusOnAbstractSyntaxTreeView()
@@ -116,6 +118,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayXml(model.xml)
         view.displayScope(symbolTable.scopes.firstOrNull())
         view.displaySemantics(null)
+        view.displayProjectOverview(model.projectOverview)
         view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
         view.scrollSourceCodeTo(sourceCodeScrollbarPosition)
         view.setFocusOnAbstractSyntaxTreeView()
@@ -152,13 +155,14 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displayScope(null)
         view.displayStatistics(0, 0, 0, 0)
         view.displaySemantics(null)
+        view.displayProjectOverview(null)
         view.clearSourceCodeHighlights()
         view.disableXPathEvaluateButton()
     }
 
     fun onSourceCodeTextCursorMoved() {
         view.clearAstSelections()
-        val astNode = view.astNodeFollowingCurrentSourceCodeTextCursorPosition
+        val astNode = view.astNodeAtCurrentSourceCodeTextCursorPosition
         view.selectAstNode(astNode)
         view.scrollAstTo(astNode)
         view.displaySemantics(astNode?.let { model.inspect(it) })
@@ -190,6 +194,18 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
             view.scrollSourceCodeTo(firstTrivia?.token)
         }
         view.displaySemantics(firstAstNode?.let { model.inspect(it) })
+    }
+
+    fun onProjectOverviewSelectionChanged() {
+        view.clearSourceCodeHighlights()
+        val selected = view.selectedProjectOverviewNodes
+        selected.mapNotNull { it.sourceRange }.forEach { view.highlightSourceRange(it) }
+        selected.firstNotNullOfOrNull { it.sourceRange }?.let { view.scrollSourceCodeToLine(it.startLine) }
+        val astNode = selected.firstNotNullOfOrNull { it.astNode } ?: return
+        view.clearAstSelections()
+        view.selectAstNode(astNode)
+        view.scrollAstTo(astNode)
+        view.displaySemantics(model.inspect(astNode))
     }
 
     fun onSymbolSelectionChanged() {

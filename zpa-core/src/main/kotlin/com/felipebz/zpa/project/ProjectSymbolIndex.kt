@@ -83,7 +83,7 @@ class ProjectSymbolIndex internal constructor(
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
 
     // Name-only standalone coverage: identified standalone callable headings that produced no fact. Never candidates.
-    private val omittedStandaloneCallables: Set<QualifiedName> =
+    internal val omittedStandaloneCallables: Set<QualifiedName> =
         Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 
     /** All canonical occurrences in deterministic file, then per-file order. */

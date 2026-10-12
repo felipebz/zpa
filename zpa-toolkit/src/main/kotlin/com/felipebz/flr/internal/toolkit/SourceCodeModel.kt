@@ -27,6 +27,7 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticInspectionResult
 import com.felipebz.zpa.tooling.SemanticInspectionService
 import java.io.File
@@ -58,6 +59,9 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
     }
 
     fun inspect(node: AstNode) = semanticInspectionResult?.inspect(node)
+
+    val projectOverview: ProjectOverviewNode?
+        get() = semanticInspectionResult?.projectOverview
 
     private fun setSourceCode(sourceCode: String, fileId: FileId) {
         semanticInspectionResult = null

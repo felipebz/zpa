@@ -24,24 +24,9 @@ import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
-import com.felipebz.zpa.project.AnchoredTypeRef
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparationFailure
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
-import com.felipebz.zpa.project.ProjectRecordMemberResolution
-import com.felipebz.zpa.project.ProjectTypeDeclaration
-import com.felipebz.zpa.project.ProjectTypeResolution
-import com.felipebz.zpa.project.RefTypeRef
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.TypeRef
-import com.felipebz.zpa.project.TypeRefSemanticResolution
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.SemanticAnalysisPipeline
-import com.felipebz.zpa.symbols.ScopeImpl
 
 /**
  * Runs ZPA's semantic decoration pipeline and exposes a read-only diagnostic snapshot.
@@ -59,8 +44,10 @@ public class SemanticInspectionService {
         PlSqlAstWalker(visitors.all).walk(PlSqlVisitorContext(root, null, null))
         return SemanticInspectionResult(
             fileId,
+            root,
             visitors.symbolVisitor.symbolTable,
-            projectAnalysisSummary(projectAnalysisContext)
+            projectAnalysisSummary(projectAnalysisContext),
+            projectAnalysisContext
         )
     }
 }
@@ -68,9 +55,16 @@ public class SemanticInspectionService {
 /** A completed semantic analysis that can be queried for diagnostic information per AST node. */
 public class SemanticInspectionResult internal constructor(
     private val fileId: FileId,
+    private val root: AstNode,
     public val symbolTable: SymbolTable,
-    public val projectAnalysis: ProjectAnalysisSummary
+    public val projectAnalysis: ProjectAnalysisSummary,
+    private val projectAnalysisContext: ProjectAnalysisContext
 ) {
+    /** Everything the Project System captured for this file, built on first access. */
+    public val projectOverview: ProjectOverviewNode by lazy {
+        ProjectOverviewBuilder(fileId, root, symbolTable, projectAnalysisContext).build()
+    }
+
     public fun inspect(node: AstNode): SemanticNodeInspection =
         SemanticInspectionMapper.inspect(fileId, node, projectAnalysis)
 }

@@ -24,14 +24,15 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
+import com.felipebz.zpa.tooling.SemanticSourceRange
 import java.awt.*
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import java.awt.geom.Rectangle2D
 import java.io.File
 import java.text.DecimalFormat
-import java.util.*
 import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
@@ -59,6 +60,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val symbolTreeScrollPane = JScrollPane(symbolTree)
     private val semanticsTree = JTree()
     private val semanticsTreeScrollPane = JScrollPane(semanticsTree)
+    private val projectOverviewTree = JTree()
+    private val projectOverviewScrollPane = JScrollPane(projectOverviewTree)
+    private val projectOverviewPanel = JPanel(BorderLayout(0, 2))
+    private val selectedNodePanel = JPanel(BorderLayout(0, 2))
+    private val semanticsSplitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT, projectOverviewPanel, selectedNodePanel)
     private val semanticTreeBuilder = SemanticTreeBuilder()
     private val sourceCodeLabel = JLabel(" Source Code")
     private val sourceCodeEditorPane = NoWrapJTextPane()
@@ -89,6 +95,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val highlighter = DefaultHighlightPainter(Color(220, 240, 255))
     private var sourceCodeTextCursorMovedEventDisabled = false
     private var astSelectionEventDisabled = false
+    private var projectOverviewSelectionEventDisabled = false
     private var isSourceCodeFormatted = false
 
     init {
@@ -109,12 +116,23 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         symbolTree.addTreeSelectionListener {
             presenter.onSymbolSelectionChanged()
         }
+        projectOverviewTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
+        projectOverviewTree.addTreeSelectionListener {
+            if (!projectOverviewSelectionEventDisabled) {
+                presenter.onProjectOverviewSelectionChanged()
+            }
+        }
+        projectOverviewPanel.add(JLabel(" Project overview"), BorderLayout.NORTH)
+        projectOverviewPanel.add(projectOverviewScrollPane, BorderLayout.CENTER)
+        selectedNodePanel.add(JLabel(" Selected node"), BorderLayout.NORTH)
+        selectedNodePanel.add(semanticsTreeScrollPane, BorderLayout.CENTER)
+        semanticsSplitPane.resizeWeight = 0.65
         consoleTextArea.isEditable = false
         consoleTextArea.font = monospacedFont(consoleTextArea.font)
         tabbedPane.tabPlacement = JTabbedPane.TOP
         tabbedPane.add("AST", astTreeScrollPane)
         tabbedPane.add("Symbol table", symbolTreeScrollPane)
-        tabbedPane.add("Semantics", semanticsTreeScrollPane)
+        tabbedPane.add("Semantics", semanticsSplitPane)
         tabbedPane.add("XML", xmlPanel)
         tabbedPane.add("Console", consoleScrollPane)
         tabbedPane.add("Configuration", configurationScrollPane)
@@ -246,6 +264,35 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         if (inspection != null) semanticTreeBuilder.expandPrimary(semanticsTree)
     }
 
+    override fun displayProjectOverview(overview: ProjectOverviewNode?) {
+        try {
+            projectOverviewSelectionEventDisabled = true
+            if (overview == null) {
+                projectOverviewTree.model =
+                    DefaultTreeModel(DefaultMutableTreeNode("Parse the source code to see the project overview"))
+                return
+            }
+            val root = toOverviewTreeNode(overview)
+            projectOverviewTree.model = DefaultTreeModel(root)
+            projectOverviewTree.expandPath(TreePath(root.path))
+            for (section in root.children().asSequence().map { it as DefaultMutableTreeNode }) {
+                projectOverviewTree.expandPath(TreePath(section.path))
+                if (section.userObject.toString().startsWith("Packages (")) {
+                    for (group in section.children().asSequence().map { it as DefaultMutableTreeNode }) {
+                        projectOverviewTree.expandPath(TreePath(group.path))
+                    }
+                }
+            }
+        } finally {
+            projectOverviewSelectionEventDisabled = false
+        }
+    }
+
+    override val selectedProjectOverviewNodes: List<ProjectOverviewNode>
+        get() = projectOverviewTree.selectionPaths.orEmpty().mapNotNull {
+            (it.lastPathComponent as DefaultMutableTreeNode).userObject as? ProjectOverviewNode
+        }
+
     override fun displayStatistics(numberOfCharacters: Int, numberOfLines: Int?, numberOfTokens: Int, parseTime: Long) {
         val format = DecimalFormat("#,###")
         inputSizeLabel.text = "${format.format(numberOfCharacters)} characters, ${format.format(numberOfLines)} lines"
@@ -316,6 +363,18 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         }
     }
 
+    override fun highlightSourceRange(range: SemanticSourceRange) {
+        val startOffset = lineOffsets.getOffset(range.startLine, range.startColumn)
+        val endOffset = lineOffsets.getOffset(range.endLine, range.endColumn)
+        if (endOffset > startOffset) {
+            try {
+                sourceCodeEditorPane.highlighter.addHighlight(startOffset, endOffset, highlighter)
+            } catch (e: BadLocationException) {
+                throw RuntimeException(e)
+            }
+        }
+    }
+
     override fun clearAstSelections() {
         try {
             astSelectionEventDisabled = true
@@ -349,18 +408,20 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     }
 
     override fun scrollSourceCodeTo(astNode: Token?) {
-        if (astNode != null) {
-            val visibleLines =
-                sourceCodeEditorPane.visibleRect.height / sourceCodeEditorPane.getFontMetrics(sourceCodeEditorPane.font).height
-            val line = astNode.line + visibleLines / 2
-            try {
-                sourceCodeEditorPane.scrollRectToVisible(toRectangle(sourceCodeEditorPane.modelToView2D(0)))
-                sourceCodeEditorPane.scrollRectToVisible(
-                    toRectangle(sourceCodeEditorPane.modelToView2D(lineOffsets.getOffset(line,0)))
-                )
-            } catch (e: BadLocationException) {
-                throw RuntimeException(e)
-            }
+        astNode?.let { scrollSourceCodeToLine(it.line) }
+    }
+
+    override fun scrollSourceCodeToLine(line: Int) {
+        val visibleLines =
+            sourceCodeEditorPane.visibleRect.height / sourceCodeEditorPane.getFontMetrics(sourceCodeEditorPane.font).height
+        val targetLine = line + visibleLines / 2
+        try {
+            sourceCodeEditorPane.scrollRectToVisible(toRectangle(sourceCodeEditorPane.modelToView2D(0)))
+            sourceCodeEditorPane.scrollRectToVisible(
+                toRectangle(sourceCodeEditorPane.modelToView2D(lineOffsets.getOffset(targetLine, 0)))
+            )
+        } catch (e: BadLocationException) {
+            throw RuntimeException(e)
         }
     }
 
@@ -372,34 +433,16 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         xpathButton.isEnabled = true
     }
 
-    override val astNodeFollowingCurrentSourceCodeTextCursorPosition: AstNode?
-        get() {
-            val currentOffset = sourceCodeEditorPane.caretPosition
-            return getFollowingAstNode(astTree.model.root as DefaultMutableTreeNode?, currentOffset)
-        }
-
-    private fun getFollowingAstNode(treeNode: DefaultMutableTreeNode?, offset: Int): AstNode? {
-        var followingAstNode: AstNode? = null
-        if (treeNode != null) {
-            val enumeration: Enumeration<*> = treeNode.breadthFirstEnumeration()
-            var nearestOffsetSoFar = Int.MAX_VALUE
-            while (enumeration.hasMoreElements()) {
-                val childTreeNode = enumeration.nextElement() as DefaultMutableTreeNode
-                if (childTreeNode.userObject is AstNode) {
-                    val astNode = childTreeNode.userObject as AstNode
-                    if (astNode.hasToken()) {
-                        val token = astNode.token
-                        val tokenOffset = lineOffsets.getStartOffset(token)
-                        if (tokenOffset in offset until nearestOffsetSoFar) {
-                            nearestOffsetSoFar = tokenOffset
-                            followingAstNode = astNode
-                        }
-                    }
-                }
-            }
-        }
-        return followingAstNode
-    }
+    override val astNodeAtCurrentSourceCodeTextCursorPosition: AstNode?
+        get() = astNodeAtOffset(
+            (astTree.model.root as DefaultMutableTreeNode?)
+                ?.breadthFirstEnumeration()
+                ?.asSequence()
+                ?.mapNotNull { (it as DefaultMutableTreeNode).userObject as? AstNode }
+                ?: emptySequence(),
+            sourceCodeEditorPane.caretPosition,
+            lineOffsets
+        )
 
     override val selectedAstNodes: List<AstNode>
         get() {
@@ -522,6 +565,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             }
             return treeNode
         }
+
+        private fun toOverviewTreeNode(overview: ProjectOverviewNode): DefaultMutableTreeNode =
+            DefaultMutableTreeNode(overview).apply {
+                overview.children.forEach { add(toOverviewTreeNode(it)) }
+            }
 
         private fun getScopeTreeNode(scope: Scope): DefaultMutableTreeNode {
             val treeNode = DefaultMutableTreeNode(scope)

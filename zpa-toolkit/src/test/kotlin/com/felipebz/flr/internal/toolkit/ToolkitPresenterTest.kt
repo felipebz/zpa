@@ -24,14 +24,16 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.toolkit.ConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
+import com.felipebz.zpa.symbols.SymbolTableImpl
+import com.felipebz.zpa.tooling.ProjectOverviewNode
+import com.felipebz.zpa.tooling.SemanticNodeInspection
+import com.felipebz.zpa.tooling.SemanticSourceRange
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
-import com.felipebz.zpa.symbols.SymbolTableImpl
-import com.felipebz.zpa.tooling.SemanticNodeInspection
 import java.awt.Point
 import java.io.File
 import java.io.PrintWriter
@@ -301,6 +303,7 @@ class ToolkitPresenterTest {
         verify(view).displayAst(null)
         verify(view).displayXml("")
         verify(view).displaySemantics(null)
+        verify(view).displayProjectOverview(null)
         verify(view).clearSourceCodeHighlights()
         verify(view).disableXPathEvaluateButton()
     }
@@ -309,7 +312,7 @@ class ToolkitPresenterTest {
     fun onSourceCodeTextCursorMoved() {
         val view = mock<ToolkitView>()
         val astNode = mock<AstNode>()
-        whenever(view.astNodeFollowingCurrentSourceCodeTextCursorPosition).thenReturn(astNode)
+        whenever(view.astNodeAtCurrentSourceCodeTextCursorPosition).thenReturn(astNode)
         val presenter = ToolkitPresenter(mock(), mock())
         presenter.setView(view)
         presenter.onSourceCodeTextCursorMoved()
@@ -340,7 +343,7 @@ class ToolkitPresenterTest {
         val model = mock<SourceCodeModel>()
         val astNode = mock<AstNode>()
         val inspection = mock<SemanticNodeInspection>()
-        whenever(view.astNodeFollowingCurrentSourceCodeTextCursorPosition).thenReturn(astNode)
+        whenever(view.astNodeAtCurrentSourceCodeTextCursorPosition).thenReturn(astNode)
         whenever(model.inspect(astNode)).thenReturn(inspection)
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
@@ -363,6 +366,34 @@ class ToolkitPresenterTest {
 
         presenter.onAstSelectionChanged()
 
+        verify(view).displaySemantics(inspection)
+    }
+
+    @Test
+    fun onProjectOverviewSelectionChanged() {
+        val view = mock<ToolkitView>()
+        val model = mock<SourceCodeModel>()
+        val astNode = mock<AstNode>()
+        val inspection = mock<SemanticNodeInspection>()
+        val firstRange = SemanticSourceRange("file", 3, 2, 3, 10)
+        val secondRange = SemanticSourceRange("file", 7, 4, 7, 12)
+        whenever(view.selectedProjectOverviewNodes).thenReturn(listOf(
+            ProjectOverviewNode("declaration", firstRange, null),
+            ProjectOverviewNode("resolution", secondRange, astNode)
+        ))
+        whenever(model.inspect(astNode)).thenReturn(inspection)
+        val presenter = ToolkitPresenter(mock(), model)
+        presenter.setView(view)
+
+        presenter.onProjectOverviewSelectionChanged()
+
+        verify(view).clearSourceCodeHighlights()
+        verify(view).highlightSourceRange(firstRange)
+        verify(view).highlightSourceRange(secondRange)
+        verify(view).scrollSourceCodeToLine(firstRange.startLine)
+        verify(view).clearAstSelections()
+        verify(view).selectAstNode(astNode)
+        verify(view).scrollAstTo(astNode)
         verify(view).displaySemantics(inspection)
     }
 
