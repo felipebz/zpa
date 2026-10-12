@@ -1,0 +1,4 @@
+CREATE PACKAGE dd AS
+  g NUMBER;
+END dd;
+/

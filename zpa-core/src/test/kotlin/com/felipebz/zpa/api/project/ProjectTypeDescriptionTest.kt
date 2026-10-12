@@ -31,6 +31,7 @@ import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -312,6 +313,14 @@ class ProjectTypeDescriptionTest {
         assertThat(getters["getBuiltInCategory"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory>")
         assertThat(getters["getTerminalReference"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectTypeReference>")
         assertThat(getters["getResolution"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectNamedTypeResolution>")
+        assertThat(getters["getSteps"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectDeclarationView>")
+        assertThat(getters["getValues"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectPackageValueView>")
+        assertThat(getters["getValueResolution"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectValueResolution>")
+        assertThat(getters["getAnchorStop"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectTypeDescription\$AnchorStop>")
+        assertThat((ProjectTypeDescription::class.java.getMethod("getSteps").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectDeclarationView::class.java)
+        assertThat((ProjectTypeDescription::class.java.getMethod("getValues").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectPackageValueView::class.java)
+        assertThat(ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && Modifier.isPublic(it.modifiers) }.map { it.name })
+            .containsExactlyInAnyOrder("getStatus", "getSteps", "getValues", "getSubtypes", "getDeclaration", "getBuiltInCategory", "getTerminalReference", "getResolution", "getValueResolution", "getAnchorStop")
         assertThat((ProjectTypeDescription::class.java.getMethod("getSubtypes").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectSubtypeView::class.java)
         assertThat(ProjectTypeDescription.Status.entries.map { it.ordinal to it.name }).containsExactly(
             0 to "DECLARED_TYPE", 1 to "BUILT_IN", 2 to "UNRESOLVED_NAME", 3 to "ANCHORED_REFERENCE", 4 to "REF_REFERENCE", 5 to "CYCLE",

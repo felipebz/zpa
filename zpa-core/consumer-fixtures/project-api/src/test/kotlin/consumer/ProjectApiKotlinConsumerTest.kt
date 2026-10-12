@@ -492,4 +492,149 @@ class ProjectApiKotlinConsumerTest {
         assertThat(incomplete.resolution.get().failures).hasSize(1)
         assertThat(failed.describeType(n("NUMBER"), n("p")).builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
     }
+
+    // ---- Source-backed %TYPE anchors and package-value lookup ----
+
+    private fun anchors(vararg more: ProjectSourceInput): ProjectSnapshot = ProjectSnapshots.prepare(
+        listOf(
+            counted("db/anchors_p.sql", "anchors_p.sql"), counted("db/anchors_q.sql", "anchors_q.sql"),
+            counted("db/anchors_extra.sql", "anchors_extra.sql")
+        ) + more, false
+    )
+
+    private fun valueOf(snapshot: ProjectSnapshot, owner: String, local: String): ProjectPackageValueView {
+        val resolution = snapshot.resolvePackageValue(n(owner, local), null)
+        assertThat(resolution.status).isEqualTo(ProjectValueResolution.Status.RESOLVED)
+        return resolution.value.get()
+    }
+
+    /** The retained type reference of a package value, described with the value's own owner. */
+    private fun describeValue(snapshot: ProjectSnapshot, owner: String, local: String): ProjectTypeDescription =
+        valueOf(snapshot, owner, local).let { snapshot.describeType(it.typeRef, it.owner) }
+
+    // Deliberately exhaustive and without an else branch.
+    private fun label(stop: ProjectTypeDescription.AnchorStop): String = when (stop) {
+        ProjectTypeDescription.AnchorStop.ROWTYPE -> "rowtype"
+        ProjectTypeDescription.AnchorStop.FIELD_PATH -> "field path"
+        ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE -> "enclosing scope"
+        ProjectTypeDescription.AnchorStop.DECLARED_LATER -> "declared later"
+    }
+
+    private fun label(status: ProjectValueResolution.Status): String = when (status) {
+        ProjectValueResolution.Status.RESOLVED -> "resolved"
+        ProjectValueResolution.Status.AMBIGUOUS -> "ambiguous"
+        ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT -> "not found"
+        ProjectValueResolution.Status.INCOMPLETE_INDEX -> "incomplete"
+        ProjectValueResolution.Status.NOT_PREPARED -> "not prepared"
+    }
+
+    @Test
+    fun packageValuesResolveWithIdentityAndTheirAnchorsAreDescribed() {
+        val snapshot = anchors()
+        val g = snapshot.resolvePackageValue(n("p", "g"), null)
+        assertThat(label(g.status)).isEqualTo("resolved")
+        val value = g.value.get()
+        assertThat(value.id).isEqualTo(declarationId(snapshot, "p", "g"))
+        assertThat(value.typeRef.name).isEqualTo(n("NUMBER"))
+        assertThat(value.sourceRange.fileId).isEqualTo("db/anchors_p.sql")
+        assertThat(value.isConstant).isFalse()
+        assertThat(g.candidates.map { it.id }).containsExactly(value.id)
+        assertThat(g.failures).isEmpty()
+        val constant = snapshot.resolvePackageValue(n("c"), n("p"))
+        assertThat(constant.value.get().isConstant).isTrue()
+        assertThat(constant.packageOwner.get()).isEqualTo(n("p"))
+        assertThatThrownBy { (g.candidates as MutableList<*>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+
+        val a = describeValue(snapshot, "q", "a")
+        assertThat(a.status).isEqualTo(ProjectTypeDescription.Status.BUILT_IN)
+        assertThat(a.builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+        assertThat(a.values.map { it.id }).containsExactly(value.id)
+        assertThat(a.steps.map { it.id }).containsExactly(value.id)
+        assertThat(a.terminalReference.get().sourceRange).isEqualTo(value.typeRef.sourceRange)
+        assertThat(a.valueResolution).isEmpty
+        assertThat(a.anchorStop).isEmpty
+        assertThat(describeValue(snapshot, "q", "b").builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.CHARACTER)
+
+        val chain = describeValue(snapshot, "q", "t3")
+        assertThat(chain.builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+        assertThat(chain.values.map { it.localName.originalSpelling }).containsExactly("third_value", "second_value", "first_value")
+        assertThat(chain.subtypes.map { it.localName.originalSpelling }).containsExactly("numeric_t")
+        assertThat(chain.steps.map { it.id }).containsExactly(
+            declarationId(snapshot, "p", "third_value"), declarationId(snapshot, "p", "second_value"),
+            declarationId(snapshot, "p", "first_value"), declarationId(snapshot, "p", "numeric_t")
+        )
+        assertThat(chain.terminalReference.get().name).isEqualTo(n("NUMBER"))
+        assertThatThrownBy { (chain.steps as MutableList<*>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+        assertThatThrownBy { (chain.values as MutableList<*>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+        assertThatThrownBy { (chain.subtypes as MutableList<*>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
+
+        val record = describeValue(snapshot, "q", "r")
+        assertThat(record.status).isEqualTo(ProjectTypeDescription.Status.DECLARED_TYPE)
+        val recType = record.declaration.get() as ProjectPackageTypeView
+        assertThat(recType.id).isEqualTo(declarationId(snapshot, "p", "rec_t"))
+        assertThat(recType.recordFields.map { it.name.originalSpelling }).containsExactly("id")
+        val rows = describeValue(snapshot, "q", "rs").declaration.get() as ProjectShapedTypeView
+        assertThat(rows.shape.get()).isEqualTo(ProjectTypeShape.COLLECTION)
+        assertThat(rows.elementType.get().name).isEqualTo(n("rec_t"))
+
+        val byName = snapshot.describeType(n("numeric_t"), n("p"))
+        assertThat(byName.status).isEqualTo(ProjectTypeDescription.Status.BUILT_IN)
+        assertThat(byName.subtypes).hasSize(1)
+
+        // A consumer that has already applied its own lexical scope composes the two public queries.
+        val resolved = snapshot.resolvePackageValue(n("p", "second_value"), null).value.get()
+        val composed = snapshot.describeType(resolved.typeRef, resolved.owner)
+        assertThat(composed.values.map { it.id }).containsExactly(declarationId(snapshot, "p", "first_value"))
+        assertThat(composed.builtInCategory.get()).isEqualTo(ProjectBuiltInTypeCategory.NUMERIC)
+    }
+
+    @Test
+    fun sourceBackedLookupAndAnchorsReportConservativeStates() {
+        val snapshot = anchors(counted("db/dd1.sql", "anchors_dup.sql"), counted("db/dd2.sql", "anchors_dup.sql"))
+        val duplicate = snapshot.resolvePackageValue(n("dd", "g"), null)
+        assertThat(label(duplicate.status)).isEqualTo("ambiguous")
+        assertThat(duplicate.value).isEmpty
+        assertThat(duplicate.candidates).hasSize(2)
+        val collision = snapshot.resolvePackageValue(n("dup"), n("k"))
+        assertThat(collision.status).isEqualTo(ProjectValueResolution.Status.AMBIGUOUS)
+        assertThat(collision.candidates.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_PROCEDURE)
+        assertThat(label(snapshot.resolvePackageValue(n("p", "nothing"), null).status)).isEqualTo("not found")
+        assertThat(snapshot.resolvePackageValue(n("g"), null).status).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT)
+
+        val column = describeValue(snapshot, "q", "col")
+        assertThat(column.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_VALUE)
+        assertThat(column.valueResolution.get().status).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT)
+        assertThat(column.anchorStop).isEmpty
+        assertThat(column.terminalReference.get().name).isEqualTo(n("employees", "salary"))
+
+        val row = describeValue(snapshot, "p", "row_ref")
+        assertThat(row.status).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE)
+        assertThat(label(row.anchorStop.get())).isEqualTo("rowtype")
+        assertThat(row.valueResolution).isEmpty
+        assertThat(label(describeValue(snapshot, "p", "field_ref").anchorStop.get())).isEqualTo("field path")
+        assertThat(label(describeValue(snapshot, "p", "later_ref").anchorStop.get())).isEqualTo("declared later")
+        val cap = snapshot.resolveNamedType(n("cap_t"), n("p")).declaration.get() as ProjectPackageTypeView
+        assertThat(label(snapshot.describeType(cap.recordFields[1].typeRef, cap.owner).anchorStop.get())).isEqualTo("enclosing scope")
+
+        val cycle = describeValue(snapshot, "cy1", "x")
+        assertThat(cycle.status).isEqualTo(ProjectTypeDescription.Status.CYCLE)
+        assertThat(cycle.values).hasSize(2)
+        val unknown = describeValue(snapshot, "p", "unknown_ref")
+        assertThat(unknown.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME)
+        assertThat(unknown.values.map { it.localName.originalSpelling }).containsExactly("unknown_value")
+        assertThat(unknown.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+
+        val failed = anchors(failing("db/broken.sql"))
+        val incomplete = failed.resolvePackageValue(n("p", "g"), null)
+        assertThat(label(incomplete.status)).isEqualTo("incomplete")
+        assertThat(incomplete.value).isEmpty
+        assertThat(incomplete.failures).hasSize(1)
+        assertThat(incomplete.candidates).hasSize(1)
+        // With a failed source the consumer's own value is still in the inventory, but the target lookup is incomplete.
+        val own = failed.findDeclarations(n("q", "a")).declarations.single() as ProjectPackageValueView
+        val unresolved = failed.describeType(own.typeRef, own.owner)
+        assertThat(unresolved.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_VALUE)
+        assertThat(unresolved.valueResolution.get().status).isEqualTo(ProjectValueResolution.Status.INCOMPLETE_INDEX)
+        assertThat(failed.describeType(n("NUMBER"), null).status).isEqualTo(ProjectTypeDescription.Status.BUILT_IN)
+    }
 }

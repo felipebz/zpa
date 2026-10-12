@@ -719,4 +719,186 @@ class ProjectApiJavaConsumerTest {
         assertThat(builtIn.getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
         assertThat(builtIn.getBuiltInCategory()).contains(ProjectBuiltInTypeCategory.NUMERIC);
     }
+
+    // ---- Source-backed %TYPE anchors and package-value lookup ----
+
+    private static ProjectSnapshot anchors(ProjectSourceInput... more) {
+        List<ProjectSourceInput> inputs = new ArrayList<>(List.of(counted("db/anchors_p.sql", "anchors_p.sql"),
+            counted("db/anchors_q.sql", "anchors_q.sql"), counted("db/anchors_extra.sql", "anchors_extra.sql")));
+        inputs.addAll(List.of(more));
+        return ProjectSnapshots.prepare(inputs, false);
+    }
+
+    private static ProjectPackageValueView valueOf(ProjectSnapshot snapshot, String owner, String local) {
+        ProjectValueResolution resolution = snapshot.resolvePackageValue(name(owner, local), null);
+        assertThat(resolution.getStatus()).isEqualTo(ProjectValueResolution.Status.RESOLVED);
+        return resolution.getValue().orElseThrow();
+    }
+
+    /** The retained type reference of a package value, described with the value's own owner. */
+    private static ProjectTypeDescription describeValue(ProjectSnapshot snapshot, String owner, String local) {
+        ProjectPackageValueView value = valueOf(snapshot, owner, local);
+        return snapshot.describeType(value.getTypeRef(), value.getOwner());
+    }
+
+    // Deliberately exhaustive and without a default branch.
+    private static String label(ProjectTypeDescription.AnchorStop stop) {
+        return switch (stop) {
+            case ROWTYPE -> "rowtype";
+            case FIELD_PATH -> "field path";
+            case ENCLOSING_SCOPE -> "enclosing scope";
+            case DECLARED_LATER -> "declared later";
+        };
+    }
+
+    private static String label(ProjectValueResolution.Status status) {
+        return switch (status) {
+            case RESOLVED -> "resolved";
+            case AMBIGUOUS -> "ambiguous";
+            case NOT_FOUND_IN_PROJECT -> "not found";
+            case INCOMPLETE_INDEX -> "incomplete";
+            case NOT_PREPARED -> "not prepared";
+        };
+    }
+
+    @Test
+    void packageValuesResolveWithIdentityAndTheirAnchorsAreDescribed() {
+        ProjectSnapshot snapshot = anchors();
+        ProjectValueResolution g = snapshot.resolvePackageValue(name("p", "g"), null);
+        assertThat(label(g.getStatus())).isEqualTo("resolved");
+        ProjectPackageValueView value = g.getValue().orElseThrow();
+        assertThat(value.getId()).isEqualTo(declarationId(snapshot, "p", "g"));
+        assertThat(value.getTypeRef().getName()).isEqualTo(name("NUMBER"));
+        assertThat(value.getSourceRange().getFileId()).isEqualTo("db/anchors_p.sql");
+        assertThat(value.isConstant()).isFalse();
+        assertThat(g.getCandidates()).extracting(ProjectDeclarationView::getId).containsExactly(value.getId());
+        assertThat(g.getFailures()).isEmpty();
+        ProjectValueResolution constant = snapshot.resolvePackageValue(name("c"), name("p"));
+        assertThat(constant.getValue().orElseThrow().isConstant()).isTrue();
+        assertThat(constant.getPackageOwner()).contains(name("p"));
+        assertThatThrownBy(() -> g.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+
+        ProjectTypeDescription a = describeValue(snapshot, "q", "a");
+        assertThat(label(a.getStatus())).isEqualTo("built-in");
+        assertThat(label(a.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+        assertThat(a.getValues()).extracting(ProjectPackageValueView::getId).containsExactly(value.getId());
+        assertThat(a.getSteps()).extracting(ProjectDeclarationView::getId).containsExactly(value.getId());
+        assertThat(a.getTerminalReference().orElseThrow().getSourceRange()).isEqualTo(value.getTypeRef().getSourceRange());
+        assertThat(a.getValueResolution()).isEmpty();
+        assertThat(a.getAnchorStop()).isEmpty();
+        assertThat(label(describeValue(snapshot, "q", "b").getBuiltInCategory().orElseThrow())).isEqualTo("character");
+
+        ProjectTypeDescription chain = describeValue(snapshot, "q", "t3");
+        assertThat(label(chain.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+        assertThat(chain.getValues()).extracting(v -> v.getLocalName().getOriginalSpelling())
+            .containsExactly("third_value", "second_value", "first_value");
+        assertThat(chain.getSubtypes()).extracting(s -> s.getLocalName().getOriginalSpelling()).containsExactly("numeric_t");
+        assertThat(chain.getSteps()).extracting(ProjectDeclarationView::getId).containsExactly(
+            declarationId(snapshot, "p", "third_value"), declarationId(snapshot, "p", "second_value"),
+            declarationId(snapshot, "p", "first_value"), declarationId(snapshot, "p", "numeric_t"));
+        assertThat(chain.getTerminalReference().orElseThrow().getName()).isEqualTo(name("NUMBER"));
+        assertThatThrownBy(() -> chain.getSteps().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> chain.getValues().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> chain.getSubtypes().clear()).isInstanceOf(UnsupportedOperationException.class);
+
+        ProjectTypeDescription record = describeValue(snapshot, "q", "r");
+        assertThat(label(record.getStatus())).isEqualTo("declared");
+        ProjectPackageTypeView recType = (ProjectPackageTypeView) record.getDeclaration().orElseThrow();
+        assertThat(recType.getId()).isEqualTo(declarationId(snapshot, "p", "rec_t"));
+        assertThat(recType.getRecordFields()).extracting(f -> f.getName().getOriginalSpelling()).containsExactly("id");
+        ProjectShapedTypeView rows = (ProjectShapedTypeView) describeValue(snapshot, "q", "rs").getDeclaration().orElseThrow();
+        assertThat(rows.getShape()).contains(ProjectTypeShape.COLLECTION);
+        assertThat(rows.getElementType().orElseThrow().getName()).isEqualTo(name("rec_t"));
+
+        // The name-based overload keeps its S4 meaning (subtype aliases, no anchors).
+        ProjectTypeDescription byName = snapshot.describeType(name("numeric_t"), name("p"));
+        assertThat(byName.getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
+        assertThat(byName.getSubtypes()).hasSize(1);
+
+        // A consumer that has already applied its own lexical scope composes the two public queries.
+        ProjectPackageValueView resolved = snapshot.resolvePackageValue(name("p", "second_value"), null).getValue().orElseThrow();
+        ProjectTypeDescription composed = snapshot.describeType(resolved.getTypeRef(), resolved.getOwner());
+        assertThat(composed.getValues()).extracting(ProjectPackageValueView::getId).containsExactly(declarationId(snapshot, "p", "first_value"));
+        assertThat(label(composed.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+    }
+
+    @Test
+    void sourceBackedLookupAndAnchorsReportConservativeStates() {
+        ProjectSnapshot snapshot = anchors(counted("db/dd1.sql", "anchors_dup.sql"), counted("db/dd2.sql", "anchors_dup.sql"));
+        ProjectValueResolution duplicate = snapshot.resolvePackageValue(name("dd", "g"), null);
+        assertThat(label(duplicate.getStatus())).isEqualTo("ambiguous");
+        assertThat(duplicate.getValue()).isEmpty();
+        assertThat(duplicate.getCandidates()).hasSize(2);
+        ProjectValueResolution collision = snapshot.resolvePackageValue(name("dup"), name("k"));
+        assertThat(collision.getStatus()).isEqualTo(ProjectValueResolution.Status.AMBIGUOUS);
+        assertThat(collision.getCandidates()).extracting(ProjectDeclarationView::getKind)
+            .containsExactly(ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_PROCEDURE);
+        ProjectValueResolution missing = snapshot.resolvePackageValue(name("p", "nothing"), null);
+        assertThat(label(missing.getStatus())).isEqualTo("not found");
+        assertThat(snapshot.resolvePackageValue(name("g"), null).getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
+
+        ProjectTypeDescription column = describeValue(snapshot, "q", "col");
+        assertThat(column.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_VALUE);
+        assertThat(column.getValueResolution().orElseThrow().getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
+        assertThat(column.getAnchorStop()).isEmpty();
+        assertThat(column.getTerminalReference().orElseThrow().getName()).isEqualTo(name("employees", "salary"));
+
+        ProjectTypeDescription row = describeValue(snapshot, "p", "row_ref");
+        assertThat(row.getStatus()).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE);
+        assertThat(label(row.getAnchorStop().orElseThrow())).isEqualTo("rowtype");
+        assertThat(row.getValueResolution()).isEmpty();
+        assertThat(label(describeValue(snapshot, "p", "field_ref").getAnchorStop().orElseThrow())).isEqualTo("field path");
+        assertThat(label(describeValue(snapshot, "p", "later_ref").getAnchorStop().orElseThrow())).isEqualTo("declared later");
+        ProjectPackageTypeView cap = (ProjectPackageTypeView) snapshot.resolveNamedType(name("cap_t"), name("p")).getDeclaration().orElseThrow();
+        ProjectTypeDescription captured = snapshot.describeType(cap.getRecordFields().get(1).getTypeRef(), cap.getOwner());
+        assertThat(label(captured.getAnchorStop().orElseThrow())).isEqualTo("enclosing scope");
+
+        ProjectTypeDescription cycle = describeValue(snapshot, "cy1", "x");
+        assertThat(cycle.getStatus()).isEqualTo(ProjectTypeDescription.Status.CYCLE);
+        assertThat(cycle.getValues()).hasSize(2);
+        ProjectTypeDescription unknown = describeValue(snapshot, "p", "unknown_ref");
+        assertThat(unknown.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME);
+        assertThat(unknown.getValues()).extracting(v -> v.getLocalName().getOriginalSpelling()).containsExactly("unknown_value");
+        assertThat(unknown.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+
+        ProjectSnapshot failed = anchors(failing("db/broken.sql"));
+        ProjectValueResolution incomplete = failed.resolvePackageValue(name("p", "g"), null);
+        assertThat(label(incomplete.getStatus())).isEqualTo("incomplete");
+        assertThat(incomplete.getValue()).isEmpty();
+        assertThat(incomplete.getFailures()).hasSize(1);
+        assertThat(incomplete.getCandidates()).hasSize(1);
+        // With a failed source the consumer's own value is still in the inventory, but the target lookup is incomplete.
+        ProjectPackageValueView own = (ProjectPackageValueView) failed.findDeclarations(name("q", "a")).getDeclarations().get(0);
+        ProjectTypeDescription unresolved = failed.describeType(own.getTypeRef(), own.getOwner());
+        assertThat(unresolved.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_VALUE);
+        assertThat(unresolved.getValueResolution().orElseThrow().getStatus()).isEqualTo(ProjectValueResolution.Status.INCOMPLETE_INDEX);
+        assertThat(failed.describeType(name("NUMBER"), null).getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
+    }
+
+    @Test
+    void theAnchorApiHasTheDocumentedJavaSignatures() throws Exception {
+        Class<ProjectTypeDescription> type = ProjectTypeDescription.class;
+        assertThat(type.getMethod("getSteps").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectDeclarationView>");
+        assertThat(type.getMethod("getValues").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectPackageValueView>");
+        assertThat(type.getMethod("getSubtypes").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectSubtypeView>");
+        assertThat(type.getMethod("getValueResolution").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectValueResolution>");
+        assertThat(type.getMethod("getAnchorStop").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectTypeDescription$AnchorStop>");
+        assertThat(ProjectSnapshot.class.getMethod("resolvePackageValue", ProjectQualifiedName.class, ProjectQualifiedName.class).getReturnType())
+            .isEqualTo(ProjectValueResolution.class);
+        assertThat(ProjectValueResolution.class.getMethod("getValue").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectPackageValueView>");
+        assertThat(ProjectValueResolution.class.getMethod("getCandidates").getGenericReturnType().getTypeName())
+            .isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectDeclarationView>");
+        assertThat(Arrays.stream(ProjectTypeDescription.Status.values()).map(Enum::name)).containsExactly(
+            "DECLARED_TYPE", "BUILT_IN", "UNRESOLVED_NAME", "ANCHORED_REFERENCE", "REF_REFERENCE", "CYCLE", "UNRESOLVED_VALUE");
+        assertThat(Arrays.stream(ProjectTypeDescription.AnchorStop.values()).map(Enum::name))
+            .containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER");
+        assertThat(Arrays.stream(ProjectValueResolution.Status.values()).map(Enum::name)).containsExactly(
+            "RESOLVED", "AMBIGUOUS", "NOT_FOUND_IN_PROJECT", "INCOMPLETE_INDEX", "NOT_PREPARED");
+    }
 }

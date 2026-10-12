@@ -1,0 +1,13 @@
+CREATE PACKAGE k AS
+  dup NUMBER;
+  PROCEDURE dup;
+END k;
+/
+CREATE PACKAGE cy1 AS
+  x cy2.y%TYPE;
+END cy1;
+/
+CREATE PACKAGE cy2 AS
+  y cy1.x%TYPE;
+END cy2;
+/
