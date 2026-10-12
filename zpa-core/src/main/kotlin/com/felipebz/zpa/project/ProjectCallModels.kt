@@ -266,11 +266,12 @@ internal fun callUncertainties(
     target: ProjectCallTarget,
     specifications: List<IndexedDeclaration>,
     memberInPlay: Boolean,
-    standaloneInPlay: Boolean
+    standaloneInPlay: Boolean,
+    standaloneOmitted: Boolean
 ): Set<ProjectCallUncertainty> = EnumSet.noneOf(ProjectCallUncertainty::class.java).apply {
     if (memberInPlay && standaloneInPlay) add(ProjectCallUncertainty.NAMESPACE_COMPETITION)
     if (memberInPlay && specifications.size > 1) add(ProjectCallUncertainty.DUPLICATE_SPECIFICATION)
-    if (memberInPlay && specifications.any {
+    if (standaloneOmitted || memberInPlay && specifications.any {
             val coverage = (it.declaration as PackageDeclaration).callableCoverage
             coverage.unknown || target.name.last.lookupName in coverage.omittedNames
         }) add(ProjectCallUncertainty.PARTIAL_DECLARATIONS)

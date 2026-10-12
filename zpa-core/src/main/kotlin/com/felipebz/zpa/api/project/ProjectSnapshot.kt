@@ -167,9 +167,10 @@ class ProjectSnapshot private constructor(
 
     /**
      * Call candidate discovery for [target] over this snapshot's prepared index, using the project's existing
-     * namespace, specification-coverage and precedence rules. Only package SPECIFICATION and STANDALONE
-     * procedures/functions are candidates; bodies never are. This is not call resolution: no argument is bound and
-     * nothing is selected. No schema, lexical scope or catalog is inferred, and no source is read again.
+     * namespace, coverage and precedence rules. Only package SPECIFICATION and STANDALONE procedures/functions are
+     * candidates; bodies never are, and a standalone heading whose signature was not retained is evidence only. This
+     * is not call resolution: no argument is bound and nothing is selected. No schema, lexical scope or catalog is
+     * inferred, and no source is read again.
      */
     fun findCallCandidates(target: ProjectCallTarget): ProjectCallCandidates {
         val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal())

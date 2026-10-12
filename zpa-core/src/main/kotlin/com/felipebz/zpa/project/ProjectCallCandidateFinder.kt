@@ -42,8 +42,10 @@ internal class ProjectCallCandidateFinder(private val context: ProjectAnalysisCo
                 it.declaration is StandaloneProcedureDeclaration || it.declaration is StandaloneFunctionDeclaration
             }
         } else emptyList()
+        // An identified standalone heading without a fact is namespace evidence and incomplete standalone coverage.
+        val standaloneOmitted = target.permitsStandalone && index.hasOmittedStandaloneCallable(target.name)
         val standaloneInPlay = target.permitsStandalone &&
-            (target.form == ProjectCallTarget.Form.STANDALONE || standalone.isNotEmpty())
+            (target.form == ProjectCallTarget.Form.STANDALONE || standalone.isNotEmpty() || standaloneOmitted)
         val candidates = ArrayList<IndexedDeclaration>()
         if (memberInPlay && specifications.isNotEmpty()) {
             index.findSubprogramOccurrences(requireNotNull(owner), target.name.last).forEach {
@@ -51,7 +53,7 @@ internal class ProjectCallCandidateFinder(private val context: ProjectAnalysisCo
             }
         }
         candidates.addAll(standalone)
-        val uncertainties = callUncertainties(target, specifications, memberInPlay, standaloneInPlay)
+        val uncertainties = callUncertainties(target, specifications, memberInPlay, standaloneInPlay, standaloneOmitted)
         return ProjectCallCandidates(
             callDiscoveryStatus(candidates, uncertainties, specifications, prepared.result.failures, memberInPlay, standaloneInPlay),
             target, candidates, uncertainties, specifications, prepared.result.failures, packageEvidence

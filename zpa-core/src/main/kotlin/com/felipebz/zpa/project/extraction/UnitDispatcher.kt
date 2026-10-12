@@ -22,6 +22,7 @@ package com.felipebz.zpa.project.extraction
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectDeclaration
+import com.felipebz.zpa.project.ProjectFileExtraction
 import com.felipebz.zpa.project.immutableList
 
 /**
@@ -47,7 +48,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
         stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
     )
 
-    fun extract(): List<ProjectDeclaration> {
+    fun extract(): ProjectFileExtraction {
         val result = mutableListOf<ProjectDeclaration>()
         var cursor = 0
         while (cursor < stream.tokens.size) {
@@ -60,7 +61,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
                 cursor = create + 1
             }
         }
-        return immutableList(result)
+        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames)
     }
 
     private fun parseCreate(create: Int): ParsedUnit? {

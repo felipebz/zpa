@@ -45,12 +45,24 @@ internal class StandaloneCallableExtractor(
     private val callSpecifications: CallSpecificationScanner,
     private val bodyBoundaries: BodyBoundaryScanner
 ) {
+    /**
+     * Names of units whose strict `CREATE ... PROCEDURE|FUNCTION name` heading was read but which produced no fact
+     * (wrapped, or a signature or body the extractor cannot represent). A heading without a strict name adds nothing.
+     */
+    val omittedNames: MutableSet<QualifiedName> = HashSet()
+
     fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? {
         if (!stream.isKeyword(create, "CREATE")) return null
         val limit = bounds.unitLimit(create)
         val nameStart = nameStart(create, function) ?: return null
         val name = stream.strictQualifiedName(nameStart, limit) ?: return null
-        var index = skipUnitOptions(name.second, limit) ?: return null
+        val parsed = parseNamedCallable(create, function, name.first, name.second, limit)
+        if (parsed == null || parsed.declarations.isEmpty()) omittedNames += name.first
+        return parsed
+    }
+
+    private fun parseNamedCallable(create: Int, function: Boolean, name: QualifiedName, nameEnd: Int, limit: Int): ParsedUnit? {
+        var index = skipUnitOptions(nameEnd, limit) ?: return null
         if (stream.isKeyword(index, "WRAPPED")) return wrappedUnit(index, limit)
         val parameters = when (val parsed = parseParametersStrict(index, limit)) {
             StrictParameters.Absent -> emptyList()
@@ -61,9 +73,9 @@ internal class StandaloneCallableExtractor(
             }
         }
         return if (function) {
-            parseFunctionTail(create, name.first, parameters, index, limit)
+            parseFunctionTail(create, name, parameters, index, limit)
         } else {
-            parseProcedureTail(create, name.first, parameters, index, limit)
+            parseProcedureTail(create, name, parameters, index, limit)
         }
     }
 

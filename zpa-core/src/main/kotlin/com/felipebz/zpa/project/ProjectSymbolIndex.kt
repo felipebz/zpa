@@ -25,8 +25,12 @@ import java.util.concurrent.ConcurrentHashMap
 /** Collects immutable per-file facts and freezes them into a deterministic index. */
 class ProjectSymbolIndexBuilder {
     private val declarationsByFile = ConcurrentHashMap<FileId, List<ProjectDeclaration>>()
+    private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
 
-    fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) {
+    fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) = add(fileId, declarations, emptySet())
+
+    /** [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact. */
+    internal fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>, omittedStandaloneCallables: Set<QualifiedName>) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
         }
@@ -34,6 +38,7 @@ class ProjectSymbolIndexBuilder {
         require(declarationsByFile.putIfAbsent(fileId, copy) == null) {
             "Declarations for $fileId were added more than once"
         }
+        if (omittedStandaloneCallables.isNotEmpty()) omittedStandaloneCallablesByFile[fileId] = omittedStandaloneCallables
     }
 
     fun build(): ProjectSymbolIndex {
@@ -46,7 +51,8 @@ class ProjectSymbolIndexBuilder {
                     .mapIndexed { ordinal, fact -> IndexedDeclaration(fact, ordinal) }
             )
         }
-        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile)
+        val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
+        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables)
     }
 }
 
@@ -70,10 +76,15 @@ class IndexedDeclaration internal constructor(
  */
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
-    fileOccurrences: Map<FileId, List<IndexedDeclaration>>
+    fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
+    omittedStandaloneCallables: Set<QualifiedName> = emptySet()
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
+
+    // Name-only standalone coverage: identified standalone callable headings that produced no fact. Never candidates.
+    private val omittedStandaloneCallables: Set<QualifiedName> =
+        Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 
     /** All canonical occurrences in deterministic file, then per-file order. */
     val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
@@ -151,7 +162,10 @@ class ProjectSymbolIndex internal constructor(
 
     /** Positive evidence for the package interpretation, including non-package objects of that name. */
     internal fun hasPackageEvidence(name: QualifiedName): Boolean =
-        name in packageOwners || occurrencesByQualifiedName.containsKey(name)
+        name in packageOwners || occurrencesByQualifiedName.containsKey(name) || name in omittedStandaloneCallables
+
+    /** A standalone procedure/function heading of exactly this name was identified but not retained as a fact. */
+    internal fun hasOmittedStandaloneCallable(name: QualifiedName): Boolean = name in omittedStandaloneCallables
 
     companion object {
         internal val declarationComparator = compareBy<ProjectDeclaration>(

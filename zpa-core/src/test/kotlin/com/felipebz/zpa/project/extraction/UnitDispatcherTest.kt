@@ -31,7 +31,8 @@ class UnitDispatcherTest {
     private val fileId = FileId("units.sql")
 
     private fun extract(text: String) =
-        UnitDispatcher(fileId, PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text), DiscardedSourceText(text)).extract()
+        UnitDispatcher(fileId, PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text), DiscardedSourceText(text))
+            .extract().declarations
 
     private fun described(text: String) = extract(text).map { it.kind to it.qualifiedName().toString() }
 
