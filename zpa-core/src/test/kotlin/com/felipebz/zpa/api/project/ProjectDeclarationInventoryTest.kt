@@ -20,13 +20,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.PackageDeclaration
-import com.felipebz.zpa.project.ProjectDeclarationExtractor
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectIndexPreparationResult
-import com.felipebz.zpa.project.ProjectSymbolIndexBuilder
-import com.felipebz.zpa.project.SequenceDeclaration
+import com.felipebz.zpa.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -176,7 +170,11 @@ class ProjectDeclarationInventoryTest {
         assertThat(ProjectIdentifier.fromSource("Foo").hashCode()).isEqualTo(ProjectIdentifier.fromSource("fOO").hashCode())
         assertThat(ProjectIdentifier.fromSource("\"Foo\"")).isNotEqualTo(ProjectIdentifier.fromSource("\"FOO\""))
         assertThat(ProjectIdentifier.fromSource("\"Foo\"")).isEqualTo(ProjectIdentifier.fromSource("\"Foo\""))
-        assertThat(ProjectIdentifier.fromSource("\"FOO\"")).isNotEqualTo(ProjectIdentifier.fromSource("FOO"))
+        assertThat(ProjectIdentifier.fromSource("\"FOO\"")).isEqualTo(ProjectIdentifier.fromSource("FOO"))
+            .hasSameHashCodeAs(ProjectIdentifier.fromSource("foo"))
+        assertThat(ProjectIdentifier.fromSource("\"FOO\"").isQuoted).isTrue()
+        assertThat(ProjectIdentifier.fromSource("\"FOO\"").originalSpelling).isEqualTo("\"FOO\"")
+        assertThat(ProjectIdentifier.fromSource("\"foo\"")).isNotEqualTo(ProjectIdentifier.fromSource("FOO"))
         assertThat(ProjectIdentifier.fromSource("\"Foo\"").isQuoted).isTrue()
         assertThat(ProjectIdentifier.fromSource("Foo").isQuoted).isFalse()
         assertThat(ProjectIdentifier.fromSource("\"Foo\"").originalSpelling).isEqualTo("\"Foo\"")
@@ -273,7 +271,9 @@ class ProjectDeclarationInventoryTest {
         )
         assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("q")).declarations).isEmpty()
         assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("\"Q\"", "P")).declarations).isEmpty()
-        assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("\"P\"", "Q")).declarations).isEmpty()
+        // Quoting style does not matter: "P"."Q" is the normalized name P.Q, and the occurrences stay separate.
+        assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("\"P\"", "\"Q\"")).declarations).hasSize(3)
+        assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("P", "\"q\"")).declarations).isEmpty()
         assertThat(snapshot.findDeclarations(ProjectQualifiedName.of("P", "Q")).status)
             .isEqualTo(ProjectInventory.Status.COMPLETE)
     }

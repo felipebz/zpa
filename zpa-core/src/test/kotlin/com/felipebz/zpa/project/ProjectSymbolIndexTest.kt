@@ -310,8 +310,8 @@ class ProjectSymbolIndexTest {
             ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_PROCEDURE
         )
         assertThat(g.map { it.fileId.value }).containsExactly("a.sql", "b.sql", "b.sql")
-        // Quoted and unquoted identifiers stay distinct; qualified and standalone names use the same map.
-        assertThat(serial.findOccurrences(name("p", "mixed"))).isEmpty()
+        // "MIXED" and mixed are one normalized name; "Mixed" differs by case; qualified and standalone names share the map.
+        assertThat(serial.findOccurrences(name("p", "mixed"))).hasSize(1)
         assertThat(serial.findOccurrences(QualifiedName(listOf(OracleIdentifier.fromSource("p"), OracleIdentifier.fromSource("\"Mixed\""))))).hasSize(1)
         assertThat(serial.findOccurrences(QualifiedName(listOf(OracleIdentifier.fromSource("p"), OracleIdentifier.fromSource("\"MIXED\""))))).hasSize(1)
         assertThat(serial.findOccurrences(name("seq")).map { it.fileId.value }).containsExactly("a.sql", "b.sql")

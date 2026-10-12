@@ -19,7 +19,7 @@
  */
 package com.felipebz.zpa.project
 
-import java.util.Locale
+import java.util.*
 
 /** An Oracle identifier with source spelling and lookup semantics kept separately. */
 class OracleIdentifier private constructor(
@@ -45,11 +45,15 @@ class OracleIdentifier private constructor(
         }
     }
 
-    /** Oracle identity ignores source spelling for unquoted names but not for quoted names. */
-    override fun equals(other: Any?): Boolean =
-        other is OracleIdentifier && quoted == other.quoted && lookupName == other.lookupName
+    /**
+     * Semantic identity is the normalized [lookupName]: an unquoted identifier is upper-cased and a quoted one keeps
+     * its contents, so `run`, `RUN` and `"RUN"` are equal while `"run"` and `"Run"` differ. Source spelling and the
+     * [quoted] flag are presentation and are not part of equality; syntactic decisions that depend on quoting (for
+     * example built-in datatype recognition) must read [quoted] explicitly.
+     */
+    override fun equals(other: Any?): Boolean = other is OracleIdentifier && lookupName == other.lookupName
 
-    override fun hashCode(): Int = 31 * lookupName.hashCode() + quoted.hashCode()
+    override fun hashCode(): Int = lookupName.hashCode()
 
     override fun toString() = originalSpelling
 }
@@ -68,7 +72,11 @@ class QualifiedName(segments: List<OracleIdentifier>) {
 
     fun append(segment: OracleIdentifier) = QualifiedName(segments + segment)
 
-    fun lookupKey() = segments.joinToString(".") { "${it.quoted}:\u0000${it.lookupName}" }
+    /**
+     * Semantic key consistent with [equals]: each segment is its length-delimited normalized name, so the encoding is
+     * injective even when a quoted segment contains dots or digits, and quoting style does not matter.
+     */
+    fun lookupKey() = segments.joinToString(".") { "${it.lookupName.length}:${it.lookupName}" }
 
     override fun toString() = segments.joinToString(".") { it.originalSpelling }
 

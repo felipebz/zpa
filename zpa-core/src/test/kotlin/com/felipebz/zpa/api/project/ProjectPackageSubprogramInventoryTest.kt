@@ -20,18 +20,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.PackageProcedureDeclaration
-import com.felipebz.zpa.project.PackageSubprogramDeclaration
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparationResult
-import com.felipebz.zpa.project.ProjectSubprogramSpecificationResolver
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.ProjectSymbolIndexBuilder
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -91,7 +80,7 @@ class ProjectPackageSubprogramInventoryTest {
         assertThat(s.findPackageSubprograms(pkg("p"), id("nope")).declarations).isEmpty()
         assertThat(s.findPackageSubprograms(pkg("q"), id("run")).declarations).isEmpty()
         assertThat(s.findPackageSubprograms(pkg("x", "p"), id("run")).declarations).isEmpty()
-        assertThat(s.findPackageSubprograms(pkg("p"), id("\"RUN\"")).declarations).isEmpty()
+        assertThat(s.findPackageSubprograms(pkg("p"), id("\"RUN\"")).declarations).hasSize(4) // same normalized name as run
         assertThat(s.findPackageSubprograms(pkg("p"), id("\"Run\"")).declarations).hasSize(1)
         assertThat(s.findPackageSubprograms(pkg("P"), id("RUN")).declarations).hasSize(4)
     }

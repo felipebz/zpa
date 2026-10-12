@@ -103,10 +103,14 @@ class ProjectTypeResolverTest {
             .isEqualTo(ProjectTypeResolution.Resolved(named("\"Foo\""), quotedDeclaration))
         assertThat(resolver.resolve(named("Foo")))
             .isEqualTo(ProjectTypeResolution.Resolved(named("Foo"), unquotedDeclaration))
-        assertThat(resolver.resolve(named("\"P\".\"T\"")))
-            .isEqualTo(ProjectTypeResolution.Resolved(named("\"P\".\"T\""), qualifiedDeclaration))
-        assertThat(resolver.resolve(named("P.\"T\"")))
-            .isEqualTo(ProjectTypeResolution.Resolved(named("P.\"T\""), packageQualifiedDeclaration))
+        // "P"."T" and P."T" normalize to P.T: the qualified standalone type and the package type are both candidates
+        for (written in listOf("\"P\".\"T\"", "P.\"T\"", "p.t")) {
+            val resolution = resolver.resolve(named(written))
+            assertThat(resolution).isInstanceOf(ProjectTypeResolution.Ambiguous::class.java)
+            assertThat((resolution as ProjectTypeResolution.Ambiguous).candidates)
+                .containsExactlyInAnyOrder(qualifiedDeclaration, packageQualifiedDeclaration)
+        }
+        assertThat(resolver.resolve(named("P.\"t\""))).isInstanceOf(ProjectTypeResolution.NotFoundInProject::class.java)
     }
 
     @Test

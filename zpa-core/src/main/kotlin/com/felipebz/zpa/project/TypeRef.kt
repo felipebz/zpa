@@ -48,7 +48,7 @@ class NamedTypeRef private constructor(
         ): NamedTypeRef = NamedTypeRef(name, sourceRange, headerTypeIdentity, Unit)
     }
 
-    override fun structuralKey() = "named:${name.lookupKey()}"
+    override fun structuralKey() = "named:" + name.lookupKey()
 
     // Heading-only syntax is not part of the TypeRef value projection. Keeping it out of
     // equality also preserves the existing AST/project declaration value semantics.

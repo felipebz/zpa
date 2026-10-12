@@ -23,11 +23,12 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.OracleIdentifier
 
 /**
- * One identifier segment. Unquoted identifiers are equal iff their spellings uppercased with
- * `Locale.ROOT` are equal; quoted identifiers are equal iff their contents (without the
- * surrounding quotes) are exactly equal; quoted and unquoted identifiers are never equal.
- * This preserves current Project System name equivalence and is not Oracle-complete validation.
- * The numeric hash algorithm is not a public contract.
+ * One identifier segment. Equality follows Oracle's identifier identity: an unquoted identifier is normalized to its
+ * spelling uppercased with `Locale.ROOT`, a quoted identifier keeps its contents (without the surrounding quotes)
+ * exactly, and two identifiers are equal iff their normalized names are equal. `run`, `RUN` and `"RUN"` are equal;
+ * `"run"` and `"Run"` are different. [originalSpelling] and [isQuoted] describe the source spelling only and do not
+ * take part in equality or [hashCode]. Non-ASCII case conversion follows `Locale.ROOT`, not the database character
+ * set, and this is not Oracle-complete validation. The numeric hash algorithm is not a public contract.
  */
 @ZpaExperimentalApi
 class ProjectIdentifier private constructor(@get:JvmSynthetic internal val identifier: OracleIdentifier) {

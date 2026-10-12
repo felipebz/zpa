@@ -77,8 +77,11 @@ internal object BuiltInTypeRefClassifier {
         if (name.segments.size != 1) return null
         val identifier = name.last
         if (identifier.quoted) return null
+        return classifyLookupName(identifier.lookupName)
+    }
 
-        return when (identifier.lookupName) {
+    private fun classifyLookupName(lookupName: String): PlSqlType? {
+        return when (lookupName) {
             "BINARY_DOUBLE", "BINARY_FLOAT", "BINARY_INTEGER", "DEC", "DECIMAL",
             "DOUBLE", "FLOAT", "INT", "INTEGER", "NATURAL", "NATURALN", "NUMBER",
             "NUMERIC", "PLS_INTEGER", "POSITIVE", "POSITIVEN", "REAL", "SIGNTYPE",

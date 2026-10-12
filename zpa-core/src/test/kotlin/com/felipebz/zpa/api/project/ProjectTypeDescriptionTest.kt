@@ -183,14 +183,14 @@ class ProjectTypeDescriptionTest {
     }
 
     @Test
-    fun quotedNamesKeepTheirDistinction() {
+    fun quotedAndUnquotedSpellingsOfOneNameAreEquivalent() {
         val quoted = snapshot.describeType(n("qq"), p)
         assertThat(quoted.status).isEqualTo(Status.BUILT_IN)
         assertThat(ids(quoted)).isEqualTo(aliases("qq", "\"Q\""))
+        // q2 is declared `IS q`, which is the normalized name Q of SUBTYPE "Q"
         val unquotedBase = snapshot.describeType(n("q2"), p)
-        assertThat(unquotedBase.status).isEqualTo(Status.UNRESOLVED_NAME)
-        assertThat(ids(unquotedBase)).isEqualTo(aliases("q2"))
-        assertThat(unquotedBase.terminalReference.get().name).isEqualTo(n("q"))
+        assertThat(unquotedBase.status).isEqualTo(Status.BUILT_IN)
+        assertThat(ids(unquotedBase)).isEqualTo(aliases("q2", "\"Q\""))
     }
 
     @Test

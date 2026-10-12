@@ -21,9 +21,9 @@ package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.TestPlSqlVisitorRunner
+import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.annotations.ActivatedByDefault
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
@@ -33,9 +33,9 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.SymbolVisitor
-import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -96,7 +96,6 @@ class SequenceNextvalInConditionalResultCheckTest : BaseCheckTest() {
                         CREATE SEQUENCE sequence_two;
                         CREATE SEQUENCE sequence_three;
                         CREATE SEQUENCE owner_name.sequence_one;
-                        CREATE SEQUENCE "SEQUENCE_ONE";
                     """.trimIndent()
                 ),
                 ProjectTestSource("sequence_nextval_in_conditional_result.sql", source)

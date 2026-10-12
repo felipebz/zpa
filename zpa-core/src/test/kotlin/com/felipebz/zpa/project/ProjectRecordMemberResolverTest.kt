@@ -47,13 +47,14 @@ class ProjectRecordMemberResolverTest {
     @Test
     fun preservesOracleIdentifierMatching() {
         val record = record("TYPE t IS RECORD (FIELD NUMBER, \"Field\" NUMBER, \"FIELD\" NUMBER);")
+        assertThat(resolver.resolve(record("TYPE t IS RECORD (FIELD NUMBER, \"Field\" NUMBER);"), OracleIdentifier.fromSource("\"FIELD\"")))
+            .isInstanceOf(ProjectRecordMemberResolution.Resolved::class.java)
 
-        assertThat(resolver.resolve(record, OracleIdentifier.fromSource("field")))
-            .isEqualTo(ProjectRecordMemberResolution.Resolved(record, record.recordFields[0]))
         assertThat(resolver.resolve(record, OracleIdentifier.fromSource("\"Field\"")))
             .isEqualTo(ProjectRecordMemberResolution.Resolved(record, record.recordFields[1]))
-        assertThat(resolver.resolve(record, OracleIdentifier.fromSource("\"FIELD\"")))
-            .isEqualTo(ProjectRecordMemberResolution.Resolved(record, record.recordFields[2]))
+        // "FIELD" is the normalized name FIELD: fields 0 and 2 are the same name for Oracle, so the match is ambiguous
+        assertThat(resolver.resolve(record, OracleIdentifier.fromSource("\"FIELD\""))).isInstanceOf(ProjectRecordMemberResolution.Ambiguous::class.java)
+        assertThat(resolver.resolve(record, OracleIdentifier.fromSource("field"))).isInstanceOf(ProjectRecordMemberResolution.Ambiguous::class.java)
     }
 
     @Test

@@ -21,19 +21,11 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution.Status
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectIndexPreparationResult
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.ProjectSymbolIndexBuilder
-import com.felipebz.zpa.project.ProjectTypeShape as FactShape
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import com.felipebz.zpa.project.ProjectTypeShape as FactShape
 
 @OptIn(ZpaExperimentalApi::class)
 class ProjectNamedTypeResolutionTest {
@@ -94,10 +86,11 @@ class ProjectNamedTypeResolutionTest {
     }
 
     @Test
-    fun quotedAndUnquotedIdentifiersAreDistinct() {
+    fun quotingStyleDoesNotMatterButQuotedCaseDoes() {
         val s = prepare(*fixture)
         assertThat(s.resolveNamedType(n("\"Q\""), n("p")).status).isEqualTo(Status.RESOLVED)
-        assertThat(s.resolveNamedType(n("q"), n("p")).status).isEqualTo(Status.NOT_FOUND_IN_PROJECT)
+        assertThat(s.resolveNamedType(n("q"), n("p")).status).isEqualTo(Status.RESOLVED)
+        assertThat(s.resolveNamedType(n("\"q\""), n("p")).status).isEqualTo(Status.NOT_FOUND_IN_PROJECT)
         assertThat(s.resolveNamedType(n("T"), n("P")).status).isEqualTo(Status.RESOLVED)
     }
 

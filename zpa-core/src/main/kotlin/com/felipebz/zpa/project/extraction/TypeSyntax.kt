@@ -26,6 +26,10 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.*
 
+/** Reserved words retain their syntactic distinction from quoted identifiers in datatype headers. */
+private val RESERVED_KEYWORD_VALUES: Set<String> = PlSqlKeyword.entries
+    .filter { it.isReserved }.mapTo(HashSet()) { it.value.uppercase(java.util.Locale.ROOT) }
+
 /** Words that may follow a datatype name in the strict standalone datatype check. */
 private val DATATYPE_CONTINUATIONS = setOf(
     "CHAR", "BYTE", "VARYING", "PRECISION", "RAW", "WITH", "LOCAL", "TIME", "ZONE", "TO",
@@ -187,7 +191,11 @@ internal class TypeReferences(private val stream: TokenStream) {
     }
 
     private fun normalizedHeaderToken(token: Token): String = when (val type = token.type) {
-        GenericTokenType.IDENTIFIER -> "identifier:${QualifiedName(stream.identifier(token)).lookupKey()}"
+        GenericTokenType.IDENTIFIER -> {
+            val identifier = stream.identifier(token)
+            val prefix = if (identifier.quoted && RESERVED_KEYWORD_VALUES.contains(identifier.lookupName)) "quoted-keyword" else "identifier"
+            "$prefix:${QualifiedName(identifier).lookupKey()}"
+        }
         is PlSqlKeyword -> if (type.isReserved) {
             "keyword:${stream.value(token)}"
         } else {
