@@ -325,6 +325,36 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun writtenAnchorDescriptionsRetainOnlyDurableFactsAndTheRequest() {
+        val sourceMarker = "written-anchor-retention-3f7b9c21-5e04-4a8d-9b16-c2d4e8a0f513"
+        val source = "-- $sourceMarker\nCREATE PACKAGE wr AS g NUMBER; a g%TYPE; c ext.col%TYPE; END wr;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("wr.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+        fun written(anchor: ProjectTypeReference.Anchor, vararg name: String) =
+            snapshot.describeType(ProjectWrittenAnchor.of(ProjectQualifiedName.of(*name), anchor), null)
+        val descriptions = mapOf(
+            "followed" to written(ProjectTypeReference.Anchor.TYPE, "wr", "a"),
+            "retainedStop" to written(ProjectTypeReference.Anchor.TYPE, "wr", "c"),
+            "requestStop" to written(ProjectTypeReference.Anchor.TYPE, "employees", "salary"),
+            "row" to written(ProjectTypeReference.Anchor.ROWTYPE, "employees")
+        )
+        assertThat(descriptions.values.map { it.status }).containsExactly(
+            ProjectTypeDescription.Status.BUILT_IN, ProjectTypeDescription.Status.UNRESOLVED_VALUE,
+            ProjectTypeDescription.Status.UNRESOLVED_VALUE, ProjectTypeDescription.Status.ANCHORED_REFERENCE
+        )
+        assertThat(descriptions.values).allSatisfy { assertThat(it.writtenAnchor).isPresent }
+        val reachable = auditGraph(descriptions, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<ProjectWrittenAnchor>()).hasSize(4)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+    }
+
+    @Test
     fun valueResolutionsRetainOnlyDurableFacts() {
         val sourceMarker = "value-resolution-retention-6d1f3a92-7e48-4b0c-a5d9-1c8e2b40f7a3"
         val source = "-- $sourceMarker\nCREATE PACKAGE vr AS g NUMBER; d NUMBER; d DATE; PROCEDURE only_proc; END vr;"

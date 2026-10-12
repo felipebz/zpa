@@ -119,13 +119,31 @@ class ProjectSnapshot private constructor(
 
     /**
      * As the name overload for a retained [reference] (a field, element, subtype base, return or value type), keeping
-     * the distinction between named, anchored (`%TYPE`/`%ROWTYPE`, [ProjectTypeDescription.Status.ANCHORED_REFERENCE])
-     * and `REF` ([ProjectTypeDescription.Status.REF_REFERENCE]) references; the latter two are never resolved, even
-     * when their name matches a project type. [packageOwner] should be the owner of the declaration holding the
-     * reference.
+     * the distinction between named, anchored and `REF` references. Supported source-backed `%TYPE` anchors are
+     * followed through package values; other anchors stop with [ProjectTypeDescription.Status.ANCHORED_REFERENCE]
+     * (including every `%ROWTYPE`) or [ProjectTypeDescription.Status.UNRESOLVED_VALUE], and `REF` stops with
+     * [ProjectTypeDescription.Status.REF_REFERENCE], even when the name matches a project type. [packageOwner] should
+     * be the owner of the declaration holding the reference.
      */
     fun describeType(reference: ProjectTypeReference, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
         ProjectTypeDescriber.describe(this, reference.name, reference, packageOwner)
+
+    /**
+     * Describes a caller-written `%TYPE`/`%ROWTYPE` [anchor] (one not retained by the index: an anonymous block, a
+     * package body, a local declaration) with the same walk as [describeType] for retained references.
+     *
+     * Precondition, owned by the caller's lexical analysis: the first segment is not bound by a declaration lexically
+     * visible at the reference that this snapshot does not index (locals, parameters, body-private declarations).
+     * [packageOwner] is the package whose specification or body contains the reference, or null. A reference that is
+     * itself an indexed specification fact should be described through its retained [ProjectTypeReference] instead.
+     *
+     * Every result echoes the request in [ProjectTypeDescription.writtenAnchor]. When the walk stops at the written
+     * anchor itself, [ProjectTypeDescription.terminalReference] is empty (no source range is invented); after a value
+     * was followed, it is the genuine retained reference. `%ROWTYPE` always stops at the request, also without owner; a
+     * one-segment `%TYPE` without owner stops with `ENCLOSING_SCOPE`, as there is no package namespace to search.
+     */
+    fun describeType(anchor: ProjectWrittenAnchor, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
+        ProjectTypeDescriber.describe(this, anchor.name, null, packageOwner, anchor)
 
     /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the

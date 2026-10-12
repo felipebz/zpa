@@ -41,12 +41,22 @@ internal object ProjectTypeDescriber {
         class Cycle(val value: ProjectPackageValueView) : Anchor
     }
 
+    /**
+     * Where the anchor of the current step is written: a retained reference with its (possibly unknown) holder, or a
+     * caller-written request (first step only) whose lexical precedence the consumer has already established.
+     */
+    private sealed interface AnchorContext {
+        class Retained(val holder: ReferenceHolder?) : AnchorContext
+        class Written(val owner: QualifiedName?) : AnchorContext
+    }
+
     @JvmSynthetic
     fun describe(
         snapshot: ProjectSnapshot,
         startName: ProjectQualifiedName,
         startReference: ProjectTypeReference?,
-        startOwner: ProjectQualifiedName?
+        startOwner: ProjectQualifiedName?,
+        written: ProjectWrittenAnchor? = null
     ): ProjectTypeDescription {
         val steps = LinkedHashMap<ProjectDeclarationId, ProjectDeclarationView>()
         var name = startName
@@ -54,39 +64,48 @@ internal object ProjectTypeDescriber {
         var owner = startOwner
         var holder: ReferenceHolder? = null
         var holderKnown = false
+        var writtenStep = written != null
         while (true) {
-            when (reference?.kind) {
-                ProjectTypeReference.Kind.REF -> return ProjectTypeDescription.refStopped(steps.values.toList(), reference)
-                ProjectTypeReference.Kind.ANCHORED -> {
-                    if (!holderKnown) holder = ReferenceHolders.find(snapshot.projectIndex, reference)
-                    when (val outcome = anchor(snapshot, reference, holder, steps)) {
-                        is Anchor.Stop -> return outcome.description
-                        is Anchor.Cycle -> return ProjectTypeDescription.cycle(steps.values.toList(), reference)
-                        is Anchor.Follow -> {
-                            val value = outcome.value
-                            steps[value.id] = value
-                            reference = value.typeRef
-                            name = value.typeRef.name
-                            owner = value.owner
-                            holder = snapshot.occurrenceOf(value.id)?.let { ReferenceHolders.of(snapshot.projectIndex, it) }
-                            holderKnown = true
-                            continue
-                        }
-                    }
-                }
-                else -> Unit
+            if (reference?.kind == ProjectTypeReference.Kind.REF) {
+                return ProjectTypeDescription.refStopped(steps.values.toList(), reference, written)
             }
-            category(name)?.let { return ProjectTypeDescription.builtIn(steps.values.toList(), it, reference) }
+            val outcome = when {
+                writtenStep -> {
+                    writtenStep = false
+                    anchor(snapshot, name, written!!.anchor, null, AnchorContext.Written(startOwner?.name), steps, written)
+                }
+                reference?.kind == ProjectTypeReference.Kind.ANCHORED -> {
+                    if (!holderKnown) holder = ReferenceHolders.find(snapshot.projectIndex, reference)
+                    anchor(snapshot, reference.name, reference.anchor.get(), reference, AnchorContext.Retained(holder), steps, written)
+                }
+                else -> null
+            }
+            when (outcome) {
+                is Anchor.Stop -> return outcome.description
+                is Anchor.Cycle -> return ProjectTypeDescription.cycle(steps.values.toList(), reference, written)
+                is Anchor.Follow -> {
+                    val value = outcome.value
+                    steps[value.id] = value
+                    reference = value.typeRef
+                    name = value.typeRef.name
+                    owner = value.owner
+                    holder = snapshot.occurrenceOf(value.id)?.let { ReferenceHolders.of(snapshot.projectIndex, it) }
+                    holderKnown = true
+                    continue
+                }
+                null -> Unit
+            }
+            category(name)?.let { return ProjectTypeDescription.builtIn(steps.values.toList(), it, reference, written) }
             val resolution = snapshot.resolveNamedType(name, owner)
             if (resolution.status != ProjectNamedTypeResolution.Status.RESOLVED) {
-                return ProjectTypeDescription.unresolved(steps.values.toList(), resolution, reference)
+                return ProjectTypeDescription.unresolved(steps.values.toList(), resolution, reference, written)
             }
             val declaration = resolution.declaration.get()
             if (declaration !is ProjectSubtypeView) {
-                return ProjectTypeDescription.declared(steps.values.toList(), declaration, reference)
+                return ProjectTypeDescription.declared(steps.values.toList(), declaration, reference, written)
             }
             if (steps.containsKey(declaration.id)) {
-                return ProjectTypeDescription.cycle(steps.values.toList(), reference)
+                return ProjectTypeDescription.cycle(steps.values.toList(), reference, written)
             }
             steps[declaration.id] = declaration
             reference = declaration.baseType
@@ -97,25 +116,40 @@ internal object ProjectTypeDescriber {
         }
     }
 
-    /** One `%TYPE`/`%ROWTYPE` step: a stop, or the one source value that the anchor names. */
+    /**
+     * One `%TYPE`/`%ROWTYPE` step: a stop, or the one source value that the anchor names. [reference] is null only for
+     * the written request, which has no retained syntax; the guards that need a retained holder (sibling capture,
+     * body scope, declaration order) are the consumer's lexical gate for a written anchor and are skipped.
+     */
     private fun anchor(
         snapshot: ProjectSnapshot,
-        reference: ProjectTypeReference,
-        holder: ReferenceHolder?,
-        steps: Map<ProjectDeclarationId, ProjectDeclarationView>
+        anchorName: ProjectQualifiedName,
+        kind: ProjectTypeReference.Anchor,
+        reference: ProjectTypeReference?,
+        context: AnchorContext,
+        steps: Map<ProjectDeclarationId, ProjectDeclarationView>,
+        written: ProjectWrittenAnchor?
     ): Anchor {
         // The ordered copy is made only when a terminal description is built, never for a successful step.
         fun followed() = steps.values.toList()
-        fun stop(why: ProjectTypeDescription.AnchorStop) = Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why))
-        if (reference.anchor.get() == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE)
-        if (holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+        fun stop(why: ProjectTypeDescription.AnchorStop) =
+            Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why, written))
+        // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
+        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE)
+        val holder = (context as? AnchorContext.Retained)?.holder
+        if (context is AnchorContext.Retained && holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         val index = snapshot.projectIndex
-        val segments = reference.name.name.segments
-        // A sibling record field or parameter captures the first segment before anything in the package.
-        if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-        // Body-private declarations are not facts, so a one-segment name in a body cannot be judged absent.
-        if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-        val owner = holder.owner
+        val segments = anchorName.name.segments
+        if (holder != null) {
+            // A sibling record field or parameter captures the first segment before anything in the package.
+            if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            // Body-private declarations are not facts, so a one-segment name in a body cannot be judged absent.
+            if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+        }
+        val owner = when (context) {
+            is AnchorContext.Retained -> holder!!.owner
+            is AnchorContext.Written -> context.owner
+        }
         if (owner == null) {
             // Standalone declarations have no package scope: only a qualified name can name a package value.
             if (segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
@@ -131,7 +165,7 @@ internal object ProjectTypeDescriber {
             if (segments.size == 1 && captured.isNotEmpty() && !capturedValue) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         }
         // A package-body subprogram may be captured by a private declaration that is not a fact, whatever the qualification.
-        if (owner != null && holder.role == DeclarationRole.BODY)
+        if (owner != null && holder?.role == DeclarationRole.BODY)
             return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         // A shorter qualified package value followed by a field path competes with the fully qualified value.
         for (length in 2 until segments.size) {
@@ -141,12 +175,12 @@ internal object ProjectTypeDescriber {
             }
         }
         val lookup = if (segments.size == 1) {
-            snapshot.resolvePackageValue(reference.name, ProjectQualifiedName.wrap(owner!!))
+            snapshot.resolvePackageValue(anchorName, ProjectQualifiedName.wrap(owner!!))
         } else {
-            snapshot.resolvePackageValue(reference.name, null)
+            snapshot.resolvePackageValue(anchorName, null)
         }
         if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
-            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed(), lookup, reference))
+            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed(), lookup, reference, written))
         }
         val value = lookup.value.get()
         // The resolved value must be the only binding of its package: several specifications are not one scope.
@@ -154,10 +188,12 @@ internal object ProjectTypeDescriber {
             return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         }
         val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-        val valueUnit = ReferenceHolders.unitOf(snapshot.projectIndex, valueOccurrence.declaration, value.owner.name)
-        if (owner != null && holder.role != DeclarationRole.BODY) {
+        // Declaration order applies only within the specification that retains the reference; a written anchor is,
+        // by precondition, not an indexed specification fact.
+        if (holder != null && owner != null && holder.role != DeclarationRole.BODY) {
+            val valueUnit = ReferenceHolders.unitOf(snapshot.projectIndex, valueOccurrence.declaration, value.owner.name)
             if (holder.unit == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-            if (valueUnit != null && valueUnit === holder.unit && !completedBefore(value.sourceRange, reference.sourceRange)) {
+            if (valueUnit != null && valueUnit === holder.unit && !completedBefore(value.sourceRange, reference!!.sourceRange)) {
                 return stop(ProjectTypeDescription.AnchorStop.DECLARED_LATER)
             }
         }

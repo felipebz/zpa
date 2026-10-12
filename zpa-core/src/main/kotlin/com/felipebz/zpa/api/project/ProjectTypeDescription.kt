@@ -40,7 +40,8 @@ class ProjectTypeDescription private constructor(
     terminalReference: ProjectTypeReference?,
     resolution: ProjectNamedTypeResolution?,
     valueResolution: ProjectValueResolution?,
-    anchorStop: AnchorStop?
+    anchorStop: AnchorStop?,
+    writtenAnchor: ProjectWrittenAnchor?
 ) {
     enum class Status {
         /** A non-subtype type declaration was reached: [declaration] is present. */
@@ -99,10 +100,17 @@ class ProjectTypeDescription private constructor(
     /**
      * The last retained reference that was examined, with its real source range: the supplied reference, or the base
      * reference or declared type of the last followed subtype or value; for the anchor stops it is the anchored
-     * reference responsible. Empty when a name-only query stopped at the initial name (a name has no source range and
-     * none is invented).
+     * reference responsible. Empty when a name-only query stopped at the initial name, or when a written-anchor query
+     * stopped at the written anchor itself (then [writtenAnchor] is the responsible anchor). A name or a written anchor
+     * has no source range and none is invented.
      */
     val terminalReference: Optional<ProjectTypeReference> = Optional.ofNullable(terminalReference)
+
+    /**
+     * The request, present for every description produced by [ProjectSnapshot.describeType] with a
+     * [ProjectWrittenAnchor] (whatever the status), and empty for name and retained-reference queries.
+     */
+    val writtenAnchor: Optional<ProjectWrittenAnchor> = Optional.ofNullable(writtenAnchor)
 
     /** Present only for [Status.UNRESOLVED_NAME]: the existing named-type result of the step that did not resolve. */
     val resolution: Optional<ProjectNamedTypeResolution> = Optional.ofNullable(resolution)
@@ -116,6 +124,8 @@ class ProjectTypeDescription private constructor(
     init {
         val targets = (declaration != null) to (builtInCategory != null)
         val noExtras = resolution == null && valueResolution == null && anchorStop == null
+        // A stop at the written request: only a written-anchor query, before any step was followed.
+        val atRequest = terminalReference == null && writtenAnchor != null && steps.isEmpty()
         when (status) {
             Status.DECLARED_TYPE -> require(targets == (true to false) && noExtras) { "Invalid DECLARED_TYPE description" }
             Status.BUILT_IN -> require(targets == (false to true) && noExtras) { "Invalid BUILT_IN description" }
@@ -126,11 +136,15 @@ class ProjectTypeDescription private constructor(
             Status.UNRESOLVED_VALUE -> require(
                 targets == (false to false) && valueResolution != null && resolution == null && anchorStop == null &&
                     valueResolution.status != ProjectValueResolution.Status.RESOLVED &&
-                    terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED
+                    (terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED ||
+                        (atRequest && writtenAnchor!!.anchor == ProjectTypeReference.Anchor.TYPE &&
+                            valueResolution.name == writtenAnchor.name))
             ) { "Invalid UNRESOLVED_VALUE description" }
             Status.ANCHORED_REFERENCE -> require(
                 targets == (false to false) && resolution == null && valueResolution == null && anchorStop != null &&
-                    terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED
+                    (terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED ||
+                        (atRequest && writtenAnchor!!.anchor ==
+                            if (anchorStop == AnchorStop.ROWTYPE) ProjectTypeReference.Anchor.ROWTYPE else ProjectTypeReference.Anchor.TYPE))
             ) { "Invalid ANCHORED_REFERENCE description" }
             Status.REF_REFERENCE -> require(
                 targets == (false to false) && noExtras && terminalReference?.kind == ProjectTypeReference.Kind.REF
@@ -143,31 +157,31 @@ class ProjectTypeDescription private constructor(
 
     internal companion object {
         @JvmSynthetic
-        fun declared(steps: List<ProjectDeclarationView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.DECLARED_TYPE, steps, declaration, null, terminal, null, null, null)
+        fun declared(steps: List<ProjectDeclarationView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.DECLARED_TYPE, steps, declaration, null, terminal, null, null, null, written)
 
         @JvmSynthetic
-        fun builtIn(steps: List<ProjectDeclarationView>, category: ProjectBuiltInTypeCategory, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.BUILT_IN, steps, null, category, terminal, null, null, null)
+        fun builtIn(steps: List<ProjectDeclarationView>, category: ProjectBuiltInTypeCategory, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.BUILT_IN, steps, null, category, terminal, null, null, null, written)
 
         @JvmSynthetic
-        fun unresolved(steps: List<ProjectDeclarationView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.UNRESOLVED_NAME, steps, null, null, terminal, resolution, null, null)
+        fun unresolved(steps: List<ProjectDeclarationView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.UNRESOLVED_NAME, steps, null, null, terminal, resolution, null, null, written)
 
         @JvmSynthetic
-        fun unresolvedValue(steps: List<ProjectDeclarationView>, resolution: ProjectValueResolution, terminal: ProjectTypeReference) =
-            ProjectTypeDescription(Status.UNRESOLVED_VALUE, steps, null, null, terminal, null, resolution, null)
+        fun unresolvedValue(steps: List<ProjectDeclarationView>, resolution: ProjectValueResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.UNRESOLVED_VALUE, steps, null, null, terminal, null, resolution, null, written)
 
         @JvmSynthetic
-        fun anchorStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference, stop: AnchorStop) =
-            ProjectTypeDescription(Status.ANCHORED_REFERENCE, steps, null, null, reference, null, null, stop)
+        fun anchorStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference?, stop: AnchorStop, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.ANCHORED_REFERENCE, steps, null, null, reference, null, null, stop, written)
 
         @JvmSynthetic
-        fun refStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference) =
-            ProjectTypeDescription(Status.REF_REFERENCE, steps, null, null, reference, null, null, null)
+        fun refStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.REF_REFERENCE, steps, null, null, reference, null, null, null, written)
 
         @JvmSynthetic
-        fun cycle(steps: List<ProjectDeclarationView>, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.CYCLE, steps, null, null, terminal, null, null, null)
+        fun cycle(steps: List<ProjectDeclarationView>, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
+            ProjectTypeDescription(Status.CYCLE, steps, null, null, terminal, null, null, null, written)
     }
 }
