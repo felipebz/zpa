@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.project.extraction
 
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.*
 
 internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
@@ -66,14 +67,31 @@ internal class PackageMemberParser(
         if (stream.valueAt(open) != "(") return emptyList()
         val close = stream.matching(open)
         if (close > end) return emptyList()
-
         val result = mutableListOf<ProjectRecordField>()
+
         forEachDelimitedPart(open + 1, close) { fieldStart, fieldEnd ->
             parseRecordField(fieldStart, fieldEnd, result.size)?.let(result::add)
         }
         return immutableList(result)
     }
-
+    private inline fun forEachDelimitedPart(
+        start: Int,
+        endExclusive: Int,
+        consume: (Int, Int) -> Unit
+    ) {
+        var partStart = start
+        var depth = 0
+        for (index in start..endExclusive) {
+            when (stream.valueAt(index)) {
+                "(", "[" -> depth++
+                ")", "]" -> depth--
+            }
+            if ((stream.valueAt(index) == "," && depth == 0) || index == endExclusive) {
+                if (partStart < index) consume(partStart, index)
+                partStart = index + 1
+            }
+        }
+    }
     private fun parseRecordField(start: Int, endExclusive: Int, ordinal: Int): ProjectRecordField? {
         val name = stream.identifierAt(start) ?: return null
         val typeEnd = stream.firstAtTopLevel(
@@ -100,27 +118,28 @@ internal class PackageMemberParser(
     }
 
     fun parseSubprogram(index: Int, owner: QualifiedName): ParsedDeclaration? {
-        val function = stream.valueAt(index) == "FUNCTION"
+        val function = stream.isKeyword(index, "FUNCTION")
         val name = stream.identifierAt(index + 1) ?: return null
         var cursor = name.second
         val parameters: List<ProjectParameter>
-        if (stream.valueAt(cursor) == "(") {
-            val close = stream.matching(cursor)
-            parameters = parseParameters(cursor + 1, close)
+        if (stream.isPunctuator(cursor, PlSqlPunctuator.LPARENTHESIS)) {
+            val close = stream.strictClose(cursor, stream.tokens.size) ?: return null
+            parameters = parseParameters(cursor + 1, close) ?: return null
             cursor = close + 1
         } else {
             parameters = emptyList()
         }
         val end = stream.semicolonAfter(index)
         if (function) {
-            val returnIndex = stream.firstAtTopLevel(cursor, setOf("RETURN"), end) ?: return null
-            val modifier = stream.firstAtTopLevel(
+            val returnIndex = stream.firstKeywordAtTopLevel(cursor, setOf("RETURN"), end) ?: return null
+            val modifier = stream.firstKeywordAtTopLevel(
                 returnIndex + 1,
                 FUNCTION_RETURN_TYPE_TERMINATORS,
                 end
             )
-            val deterministic = stream.firstAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
-            val returnType = typeReferences.typeReference(returnIndex + 1, modifier ?: end) ?: return null
+            val deterministic = stream.firstKeywordAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
+            val returnTypeEnd = modifier ?: end
+            val returnType = typeReferences.functionReturnType(returnIndex + 1, returnTypeEnd) ?: return null
             return ParsedDeclaration(
                 PackageFunctionDeclaration(
                     owner,
@@ -140,52 +159,47 @@ internal class PackageMemberParser(
         )
     }
 
-    fun parseParameters(start: Int, close: Int): List<ProjectParameter> {
+    fun parseParameters(start: Int, close: Int): List<ProjectParameter>? {
+        if (start == close) return emptyList()
         val result = mutableListOf<ProjectParameter>()
-        forEachDelimitedPart(start, close) { partStart, partEnd ->
-            parseParameter(partStart, partEnd, result.size + 1)?.let(result::add)
-        }
-        return result.toList()
-    }
-
-    private inline fun forEachDelimitedPart(
-        start: Int,
-        endExclusive: Int,
-        consume: (Int, Int) -> Unit
-    ) {
+        val expected = ArrayDeque<PlSqlPunctuator>()
         var partStart = start
-        var depth = 0
-        for (index in start..endExclusive) {
-            when (stream.valueAt(index)) {
-                "(", "[" -> depth++
-                ")", "]" -> depth--
-            }
-            if ((stream.valueAt(index) == "," && depth == 0) || index == endExclusive) {
-                if (partStart < index) consume(partStart, index)
-                partStart = index + 1
+        for (index in start until close) {
+            when {
+                stream.isOpener(index) -> expected.addLast(stream.closerFor(index))
+                stream.isCloser(index) -> if (expected.removeLastOrNull() !== stream.tokens[index].type) return null
+                expected.isEmpty() && stream.isPunctuator(index, PlSqlPunctuator.COMMA) -> {
+                    if (partStart == index) return null
+                    result += parseParameter(partStart, index, result.size + 1) ?: return null
+                    partStart = index + 1
+                }
             }
         }
+        if (expected.isNotEmpty() || partStart == close) return null
+        result += parseParameter(partStart, close, result.size + 1) ?: return null
+        return result.toList()
     }
 
     private fun parseParameter(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
         val name = stream.identifierAt(start) ?: return null
         var cursor = name.second
         var mode = ParameterMode.IN
-        if (stream.valueAt(cursor) == "IN") {
+        if (stream.isKeyword(cursor, "IN")) {
             cursor++
-            if (stream.valueAt(cursor) == "OUT") {
+            if (stream.isKeyword(cursor, "OUT")) {
                 mode = ParameterMode.IN_OUT
                 cursor++
             }
-        } else if (stream.valueAt(cursor) == "OUT") {
+        } else if (stream.isKeyword(cursor, "OUT")) {
             mode = ParameterMode.OUT
             cursor++
         }
-        val nocopy = stream.valueAt(cursor) == "NOCOPY"
+        val nocopy = stream.isKeyword(cursor, "NOCOPY")
         if (nocopy) cursor++
-        val defaultIndex = stream.firstAtTopLevel(cursor, setOf("DEFAULT"), endExclusive)
+        val defaultIndex = stream.firstKeywordAtTopLevel(cursor, setOf("DEFAULT"), endExclusive)
         val assignmentIndex = stream.firstAtTopLevel(cursor, setOf(":="), endExclusive)
         val typeEnd = listOfNotNull(defaultIndex, assignmentIndex).minOrNull() ?: endExclusive
+        if (!datatypeShape.strictDatatype(cursor, typeEnd)) return null
         val type = typeReferences.typeReference(cursor, typeEnd) ?: return null
         return ProjectParameter(
             name.first,

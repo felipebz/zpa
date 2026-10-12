@@ -112,7 +112,7 @@ internal class DatatypeShape(private val stream: TokenStream) {
             stream.isPunctuator(index, PlSqlPunctuator.SUBTRACTION)
         ) index++
         index = when {
-            stream.tokenTypeAt(index) === PlSqlTokenType.INTEGER_LITERAL || stream.isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
+            stream.tokens.getOrNull(index)?.type === PlSqlTokenType.INTEGER_LITERAL || stream.isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
             index <= part.last && stream.isName(stream.tokens[index]) -> index + 1
             else -> return false
         }
@@ -138,23 +138,22 @@ internal class TypeReferences(private val stream: TokenStream) {
         if (start >= endExclusive || start >= stream.tokens.size) return null
         val end = endExclusive.coerceAtMost(stream.tokens.size)
         val selected = stream.tokens.subList(start, end)
-        val percent = selected.indexOfFirst { stream.value(it) == "%" }
-        val ref = stream.valueAt(start) == "REF"
+        val percent = (start until end).firstOrNull { stream.isPunctuator(it, PlSqlPunctuator.MOD) }?.minus(start) ?: -1
+        val ref = stream.isKeyword(start, "REF")
         val nameStart = if (ref) 1 else 0
-        val nameTokens = if (percent >= 0) {
-            selected.subList(nameStart, percent)
-        } else {
-            selected.subList(nameStart, selected.size)
-        }
-        val name = qualifiedSegments(nameTokens) ?: return null
+        val nameEnd = if (percent >= 0) percent else selected.size
+        val datatypeTokens = selected.subList(nameStart, nameEnd)
+        val parsedName = qualifiedSegments(datatypeTokens) ?: return null
+        if (percent >= 0 && (ref || parsedName.second != datatypeTokens.size ||
+                percent + 2 != selected.size ||
+                !(stream.isKeyword(start + percent + 1, "TYPE") || stream.isKeyword(start + percent + 1, "ROWTYPE")))
+        ) return null
+        val name = parsedName.first
+        if (ref && !DatatypeShape(stream).strictDatatype(start, end)) return null
         val sourceRange = stream.range(start, end - 1)
         if (percent >= 0) {
-            val anchor = when (stream.valueAt(start + percent + 1)) {
-                "TYPE" -> TypeAnchor.TYPE
-                "ROWTYPE" -> TypeAnchor.ROWTYPE
-                else -> null
-            }
-            if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
+            val anchor = if (stream.isKeyword(start + percent + 1, "TYPE")) TypeAnchor.TYPE else TypeAnchor.ROWTYPE
+            return AnchoredTypeRef(name, anchor, sourceRange)
         }
         if (ref) return RefTypeRef(name, sourceRange)
         val headerTypeIdentity = normalizedHeaderTypeIdentity(selected)
@@ -163,6 +162,30 @@ internal class TypeReferences(private val stream: TokenStream) {
         } else {
             NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
         }
+    }
+    fun functionReturnType(start: Int, endExclusive: Int): TypeRef? {
+        val charset = stream.firstKeywordAtTopLevel(start, setOf("CHARACTER"), endExclusive)
+        if (charset == null || !stream.isKeyword(charset + 1, "SET")) {
+            if (!DatatypeShape(stream).strictDatatype(start, endExclusive)) return null
+            return typeReference(start, endExclusive)
+        }
+        if (!DatatypeShape(stream).strictDatatype(start, charset)) return null
+        val charsetName = charset + 2
+        val nameEnd = stream.strictQualifiedNameAnyLength(charsetName, endExclusive)
+        val charsetSuffixValid = nameEnd == endExclusive || run {
+            val percent = (charsetName until endExclusive)
+                .firstOrNull { stream.isPunctuator(it, PlSqlPunctuator.MOD) } ?: return@run false
+            stream.strictQualifiedNameAnyLength(charsetName, percent) == percent &&
+                percent + 2 == endExclusive && stream.isKeyword(percent + 1, "CHARSET")
+        }
+        if (!charsetSuffixValid) return null
+        val base = typeReference(start, charset) as? NamedTypeRef ?: return null
+        val fullIdentity = normalizedHeaderTypeIdentity(stream.tokens.subList(start, endExclusive)) ?: return null
+        return NamedTypeRef.withHeaderTypeIdentity(
+            base.name,
+            stream.range(start, endExclusive - 1),
+            fullIdentity
+        )
     }
 
     /**
@@ -183,7 +206,7 @@ internal class TypeReferences(private val stream: TokenStream) {
         if (!isNameAt(selected, index)) return false
         while (true) {
             index++
-            if (valueAt(selected, index) != "." || !isNameAt(selected, index + 1)) {
+            if (index !in selected.indices || selected[index].type !== PlSqlPunctuator.DOT || !isNameAt(selected, index + 1)) {
                 return index == selected.size
             }
             index += 2
@@ -204,20 +227,16 @@ internal class TypeReferences(private val stream: TokenStream) {
         else -> "token:${token.originalValue}"
     }
 
-    private fun qualifiedSegments(tokens: List<Token>): QualifiedName? {
+    private fun qualifiedSegments(tokens: List<Token>): Pair<QualifiedName, Int>? {
         val segments = mutableListOf<OracleIdentifier>()
         var index = 0
-        if (tokens.isEmpty() || !stream.isName(tokens[0])) return null
-        while (index < tokens.size && stream.isName(tokens[index])) {
-            segments += stream.identifier(tokens[index])
-            index++
-            if (index < tokens.size && tokens[index].value == "." && isNameAt(tokens, index + 1)) {
-                index++
-            } else {
-                break
-            }
+        if (tokens.isEmpty() || !isNameAt(tokens, index)) return null
+        segments += stream.identifier(tokens[index++])
+        while (index in tokens.indices && tokens[index].type === PlSqlPunctuator.DOT && isNameAt(tokens, index + 1)) {
+            segments += stream.identifier(tokens[index + 1])
+            index += 2
         }
-        return segments.takeIf { it.isNotEmpty() }?.let(::QualifiedName)
+        return QualifiedName(segments) to index
     }
 
     private fun isNameAt(tokens: List<Token>, index: Int) = index in tokens.indices && stream.isName(tokens[index])

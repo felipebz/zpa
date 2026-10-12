@@ -34,7 +34,12 @@ class PackageBodyExtractorTest {
     private class Fixture(text: String, fileId: FileId) {
         val stream = TokenStream(fileId, PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text))
         private val references = TypeReferences(stream)
-        val extractor = PackageBodyExtractor(stream, BodyBoundaryScanner(stream), PackageMemberParser(stream, references, CollectionElementSyntax(stream, DatatypeShape(stream), references), DatatypeShape(stream)), references)
+        private val shape = DatatypeShape(stream)
+        val extractor = PackageBodyExtractor(
+            stream, BodyBoundaryScanner(stream),
+            PackageMemberParser(stream, references, CollectionElementSyntax(stream, shape, references), shape),
+            references
+        )
     }
 
     /** Parses `CREATE PACKAGE BODY p AS ...`: the name `p` is the fourth token, the rest starts right after it. */

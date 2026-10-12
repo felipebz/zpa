@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.project.extraction
 
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.*
 
 /**
@@ -29,7 +30,7 @@ internal class PackageBodyExtractor(
     private val stream: TokenStream,
     private val bodyBoundaries: BodyBoundaryScanner,
     private val memberParser: PackageMemberParser,
-    private val typeReferences: TypeReferences
+    private val typeReferences: TypeReferences,
 ) {
     fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {
         val header = stream.firstAtTopLevel(afterName, setOf("IS", "AS")) ?: return null
@@ -73,14 +74,22 @@ internal class PackageBodyExtractor(
         if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) parseBodySubprogram(cursor, stream.tokens.size, owner) else null
 
     private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
-        val function = stream.valueAt(index) == "FUNCTION"
+        val function = stream.isKeyword(index, "FUNCTION")
         val name = stream.identifierAt(index + 1) ?: return null
         var cursor = name.second
         val parameters: List<ProjectParameter>
-        if (stream.valueAt(cursor) == "(") {
-            val close = stream.matching(cursor)
-            if (close >= end) return null
-            parameters = memberParser.parseParameters(cursor + 1, close)
+        if (stream.isPunctuator(cursor, PlSqlPunctuator.LPARENTHESIS)) {
+            val close = stream.strictClose(cursor, end) ?: return null
+            val parsedParameters = memberParser.parseParameters(cursor + 1, close)
+            if (parsedParameters == null) {
+                val skippedHeader = bodyBoundaries.firstBodyHeaderDelimiter(close + 1, end) ?: return null
+                if (skippedHeader.kind == BodyHeaderDelimiterKind.FORWARD_DECLARATION) {
+                    return ParsedBodySubprogram(null, skippedHeader.index + 1)
+                }
+                val skippedEnd = bodyBoundaries.implementationEnd(skippedHeader.index + 1, end) ?: return null
+                return ParsedBodySubprogram(null, skippedEnd + 1)
+            }
+            parameters = parsedParameters
             cursor = close + 1
         } else {
             parameters = emptyList()
@@ -93,14 +102,15 @@ internal class PackageBodyExtractor(
 
         val implementationEnd = bodyBoundaries.implementationEnd(header.index + 1, end) ?: return null
         val declaration = if (function) {
-            val returnIndex = stream.firstAtTopLevel(cursor, setOf("RETURN"), header.index)
+            val returnIndex = stream.firstKeywordAtTopLevel(cursor, setOf("RETURN"), header.index)
                 ?: return null
-            val modifier = stream.firstAtTopLevel(
+            val modifier = stream.firstKeywordAtTopLevel(
                 returnIndex + 1,
                 FUNCTION_RETURN_TYPE_TERMINATORS,
                 header.index
             )
-            val returnType = typeReferences.typeReference(returnIndex + 1, modifier ?: header.index)
+            val returnTypeEnd = modifier ?: header.index
+            val returnType = typeReferences.functionReturnType(returnIndex + 1, returnTypeEnd)
                 ?: return null
             PackageFunctionDeclaration(
                 owner,

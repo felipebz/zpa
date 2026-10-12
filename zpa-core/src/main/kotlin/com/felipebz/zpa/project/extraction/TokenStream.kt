@@ -26,7 +26,8 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
-import java.util.*
+import java.util.Locale
+import kotlin.collections.ArrayDeque
 
 /**
  * Read-only, per-extraction view of one lexed file: its identity and the lexer's token list (never copied,
@@ -34,14 +35,25 @@ import java.util.*
  * extraction path; strict (token-type) and value-based operations live in separate extension files.
  */
 internal class TokenStream(val fileId: FileId, val tokens: List<Token>) {
+    fun tokenTypeAt(index: Int) = tokens.getOrNull(index)?.type
     fun isPunctuator(index: Int, punctuator: PlSqlPunctuator): Boolean =
         index in tokens.indices && tokens[index].type === punctuator
-
-    fun tokenTypeAt(index: Int) = if (index in tokens.indices) tokens[index].type else null
 
     fun isKeyword(index: Int, keyword: String): Boolean =
         index in tokens.indices && tokens[index].type is PlSqlKeyword && valueAt(index) == keyword
 
+    /** Finds a syntactic keyword at delimiter depth zero; quoted identifiers never match. */
+    fun firstKeywordAtTopLevel(start: Int, wanted: Set<String>, endExclusive: Int = tokens.size): Int? {
+        val expected = ArrayDeque<PlSqlPunctuator>()
+        for (index in start until endExclusive.coerceAtMost(tokens.size)) {
+            when {
+                isOpener(index) -> expected.addLast(closerFor(index))
+                isCloser(index) -> if (expected.removeLastOrNull() !== tokens[index].type) return null
+                expected.isEmpty() && wanted.any { isKeyword(index, it) } -> return index
+            }
+        }
+        return null
+    }
     fun range(start: Int, end: Int): SourceRange {
         val first = tokens[start.coerceIn(0, tokens.lastIndex)]
         val last = tokens[end.coerceIn(0, tokens.lastIndex)]

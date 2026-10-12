@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.project
 
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 /** Collects immutable per-file facts and freezes them into a deterministic index. */
@@ -105,6 +106,19 @@ class ProjectSymbolIndex internal constructor(
         .groupBy { (it.declaration as PackageSubprogramDeclaration).let { fact -> fact.owner to fact.name } }
         .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
+    // Derived lookup evidence, not a second declaration registry. Body-only members count too.
+    private val packageOwners: Set<QualifiedName> = Collections.unmodifiableSet(
+        this.declarations.mapNotNullTo(HashSet()) { declaration ->
+            when (declaration) {
+                is PackageSubprogramDeclaration -> declaration.owner
+                is PackageValueDeclaration -> declaration.owner
+                is PackageTypeDeclaration -> declaration.owner
+                is PackageSubtypeDeclaration -> declaration.owner
+                else -> null
+            }
+        }
+    )
+
     private val sequencesByName = this.declarations
         .filterIsInstance<SequenceDeclaration>()
         .groupBy { it.name }
@@ -134,6 +148,10 @@ class ProjectSymbolIndex internal constructor(
     /** Exact-name matches as canonical occurrences, in index order, without resolution. */
     fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
         occurrencesByQualifiedName[name].orEmpty()
+
+    /** Positive evidence for the package interpretation, including non-package objects of that name. */
+    internal fun hasPackageEvidence(name: QualifiedName): Boolean =
+        name in packageOwners || occurrencesByQualifiedName.containsKey(name)
 
     companion object {
         internal val declarationComparator = compareBy<ProjectDeclaration>(
