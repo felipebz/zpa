@@ -205,8 +205,10 @@ class ProjectTypeDescriptionTest {
 
     @Test
     fun anchoredAndRefReferencesStopWithoutResolution() {
+        // emp.sal%TYPE names no supplied value: the source-backed lookup is reported, not an anchored stop.
         val anchoredViaSubtype = snapshot.describeType(n("anch"), p)
-        assertThat(anchoredViaSubtype.status).isEqualTo(Status.ANCHORED_REFERENCE)
+        assertThat(anchoredViaSubtype.status).isEqualTo(Status.UNRESOLVED_VALUE)
+        assertThat(anchoredViaSubtype.valueResolution.get().status).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT)
         assertThat(ids(anchoredViaSubtype)).isEqualTo(aliases("anch"))
         assertThat(anchoredViaSubtype.terminalReference.get().anchor).isEqualTo(Optional.of(ProjectTypeReference.Anchor.TYPE))
         val ref = snapshot.describeType(n("refd"), p)
@@ -217,6 +219,8 @@ class ProjectTypeDescriptionTest {
         assertThat(matching.kind).isEqualTo(ProjectTypeReference.Kind.ANCHORED)
         val described = snapshot.describeType(matching, p)
         assertThat(described.status).isEqualTo(Status.ANCHORED_REFERENCE)
+        // rec_t is a type of the package, which captures the one-segment name before any value is considered.
+        assertThat(described.anchorStop).isEqualTo(Optional.of(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE))
         assertThat(described.subtypes).isEmpty()
         assertThat(described.declaration).isEmpty
         assertThat(described.terminalReference.get().sourceRange).isEqualTo(matching.sourceRange)
@@ -310,8 +314,10 @@ class ProjectTypeDescriptionTest {
         assertThat(getters["getResolution"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectNamedTypeResolution>")
         assertThat((ProjectTypeDescription::class.java.getMethod("getSubtypes").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectSubtypeView::class.java)
         assertThat(ProjectTypeDescription.Status.entries.map { it.ordinal to it.name }).containsExactly(
-            0 to "DECLARED_TYPE", 1 to "BUILT_IN", 2 to "UNRESOLVED_NAME", 3 to "ANCHORED_REFERENCE", 4 to "REF_REFERENCE", 5 to "CYCLE"
+            0 to "DECLARED_TYPE", 1 to "BUILT_IN", 2 to "UNRESOLVED_NAME", 3 to "ANCHORED_REFERENCE", 4 to "REF_REFERENCE", 5 to "CYCLE",
+            6 to "UNRESOLVED_VALUE"
         )
+        assertThat(ProjectTypeDescription.AnchorStop.entries.map { it.name }).containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER")
         assertThat(Category.entries.map { it.name }).containsExactly("NUMERIC", "CHARACTER", "LOB", "BOOLEAN", "DATE", "JSON")
         val described = snapshot.describeType(n("total"), p)
         assertThatThrownBy { (described.subtypes as MutableList<ProjectSubtypeView>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)

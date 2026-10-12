@@ -383,6 +383,7 @@ class ProjectApiKotlinConsumerTest {
         ProjectTypeDescription.Status.ANCHORED_REFERENCE -> "anchored"
         ProjectTypeDescription.Status.REF_REFERENCE -> "ref"
         ProjectTypeDescription.Status.CYCLE -> "cycle"
+        ProjectTypeDescription.Status.UNRESOLVED_VALUE -> "unresolved value"
     }
 
     private fun label(category: ProjectBuiltInTypeCategory): String = when (category) {
@@ -463,8 +464,13 @@ class ProjectApiKotlinConsumerTest {
         val external = snapshot.describeType(fields[0].typeRef, p)
         assertThat(external.status).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME)
         assertThat(external.resolution.get().status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
-        assertThat(snapshot.describeType(fields[1].typeRef, p).status).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE)
-        assertThat(snapshot.describeType(fields[2].typeRef, p).terminalReference.get().anchor.get()).isEqualTo(ProjectTypeReference.Anchor.ROWTYPE)
+        val column = snapshot.describeType(fields[1].typeRef, p)
+        assertThat(label(column.status)).isEqualTo("unresolved value")
+        assertThat(column.valueResolution.get().status).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT)
+        val row = snapshot.describeType(fields[2].typeRef, p)
+        assertThat(row.status).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE)
+        assertThat(row.anchorStop.get()).isEqualTo(ProjectTypeDescription.AnchorStop.ROWTYPE)
+        assertThat(row.terminalReference.get().anchor.get()).isEqualTo(ProjectTypeReference.Anchor.ROWTYPE)
         assertThat(snapshot.describeType(fields[3].typeRef, p).status).isEqualTo(ProjectTypeDescription.Status.REF_REFERENCE)
         val cycle = snapshot.describeType(n("c1"), p)
         assertThat(label(cycle.status)).isEqualTo("cycle")

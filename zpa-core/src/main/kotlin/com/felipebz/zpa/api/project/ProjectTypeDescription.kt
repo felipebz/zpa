@@ -23,21 +23,24 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import java.util.*
 
 /**
- * Bounded, read-only description of a type name or reference, obtained by following **package subtype aliases only**
- * through the supplied project facts. It is not a datatype graph and not an Oracle type resolver: a description stops
- * at the first non-subtype declaration (its record fields or collection element are not traversed), at a built-in
- * name, at an anchored (`%TYPE`/`%ROWTYPE`) or `REF` reference, at an unresolved lookup or at an alias cycle.
- * [Status.UNRESOLVED_NAME] says only that the supplied project facts do not identify the type uniquely and completely;
- * it is not proof that the source is invalid or that Oracle lacks the type.
+ * Bounded, read-only description of a type name or reference, obtained by following **package subtype aliases and
+ * supported source-backed `%TYPE` anchors (through package variables and constants)** over the supplied project facts.
+ * It is not a datatype graph and not an Oracle type resolver: a description stops at the first non-subtype
+ * declaration (its record fields or collection element are not traversed), at a built-in name, at an anchor this
+ * source-only resolver does not resolve, at `REF` syntax, at an unresolved lookup or at a cycle.
+ * [Status.UNRESOLVED_NAME] and [Status.UNRESOLVED_VALUE] say only that the supplied project facts do not identify the
+ * target uniquely and completely; neither is proof that the source is invalid or that Oracle lacks the object.
  */
 @ZpaExperimentalApi
 class ProjectTypeDescription private constructor(
     val status: Status,
-    subtypes: List<ProjectSubtypeView>,
+    steps: List<ProjectDeclarationView>,
     declaration: ProjectTypeDeclarationView?,
     builtInCategory: ProjectBuiltInTypeCategory?,
     terminalReference: ProjectTypeReference?,
-    resolution: ProjectNamedTypeResolution?
+    resolution: ProjectNamedTypeResolution?,
+    valueResolution: ProjectValueResolution?,
+    anchorStop: AnchorStop?
 ) {
     enum class Status {
         /** A non-subtype type declaration was reached: [declaration] is present. */
@@ -46,21 +49,46 @@ class ProjectTypeDescription private constructor(
         /** A recognized built-in name was reached: [builtInCategory] is present. */
         BUILT_IN,
 
-        /** A named lookup did not resolve uniquely and completely: [resolution] holds the existing result. */
+        /** A named type lookup did not resolve uniquely and completely: [resolution] holds the existing result. */
         UNRESOLVED_NAME,
 
-        /** Interpretation stopped at `%TYPE` or `%ROWTYPE`, which is not resolved here. */
+        /** Interpretation stopped at an anchor that is not resolved from source: [anchorStop] says why. */
         ANCHORED_REFERENCE,
 
         /** Interpretation stopped at Oracle `REF` datatype syntax. */
         REF_REFERENCE,
 
-        /** An already followed subtype occurrence was reached again. */
-        CYCLE
+        /** An already followed value or subtype occurrence was reached again. */
+        CYCLE,
+
+        /** A `%TYPE` anchor named no uniquely and completely identified package value: [valueResolution] holds why. */
+        UNRESOLVED_VALUE
     }
 
-    /** The subtype aliases that were followed, in traversal order, each occurrence once. Runtime-unmodifiable. */
-    val subtypes: List<ProjectSubtypeView> = Collections.unmodifiableList(ArrayList(subtypes))
+    /** Why an anchor was not resolved from source. */
+    enum class AnchorStop {
+        /** `%ROWTYPE`: not resolved from source here. */
+        ROWTYPE,
+
+        /** The name needs a record field path (or a competing field-path interpretation exists). */
+        FIELD_PATH,
+
+        /** A scope this resolver does not model (sibling field, parameter, body-private declaration, non-value
+         * package declaration, unidentifiable reference holder, ambiguous package specification, standalone name). */
+        ENCLOSING_SCOPE,
+
+        /** The value is declared after, or is, the reference in the same package specification. */
+        DECLARED_LATER
+    }
+
+    /** The followed package values and subtypes in traversal order, each occurrence once. Runtime-unmodifiable. */
+    val steps: List<ProjectDeclarationView> = Collections.unmodifiableList(ArrayList(steps))
+
+    /** The value steps of [steps], in order. Runtime-unmodifiable. */
+    val values: List<ProjectPackageValueView> = Collections.unmodifiableList(steps.filterIsInstance<ProjectPackageValueView>())
+
+    /** The subtype steps of [steps], in order. Runtime-unmodifiable. */
+    val subtypes: List<ProjectSubtypeView> = Collections.unmodifiableList(steps.filterIsInstance<ProjectSubtypeView>())
 
     /** Present only for [Status.DECLARED_TYPE]. */
     val declaration: Optional<ProjectTypeDeclarationView> = Optional.ofNullable(declaration)
@@ -70,55 +98,76 @@ class ProjectTypeDescription private constructor(
 
     /**
      * The last retained reference that was examined, with its real source range: the supplied reference, or the base
-     * reference of the last followed subtype. Empty when a name-only query stopped at the initial name (a name has no
-     * source range and none is invented).
+     * reference or declared type of the last followed subtype or value; for the anchor stops it is the anchored
+     * reference responsible. Empty when a name-only query stopped at the initial name (a name has no source range and
+     * none is invented).
      */
     val terminalReference: Optional<ProjectTypeReference> = Optional.ofNullable(terminalReference)
 
     /** Present only for [Status.UNRESOLVED_NAME]: the existing named-type result of the step that did not resolve. */
     val resolution: Optional<ProjectNamedTypeResolution> = Optional.ofNullable(resolution)
 
+    /** Present only for [Status.UNRESOLVED_VALUE]: the existing value lookup result that stopped the walk. */
+    val valueResolution: Optional<ProjectValueResolution> = Optional.ofNullable(valueResolution)
+
+    /** Present only for [Status.ANCHORED_REFERENCE]. */
+    val anchorStop: Optional<AnchorStop> = Optional.ofNullable(anchorStop)
+
     init {
-        val shared = (declaration != null) to (builtInCategory != null)
+        val targets = (declaration != null) to (builtInCategory != null)
+        val noExtras = resolution == null && valueResolution == null && anchorStop == null
         when (status) {
-            Status.DECLARED_TYPE -> require(shared == (true to false) && resolution == null) { "Invalid DECLARED_TYPE description" }
-            Status.BUILT_IN -> require(shared == (false to true) && resolution == null) { "Invalid BUILT_IN description" }
+            Status.DECLARED_TYPE -> require(targets == (true to false) && noExtras) { "Invalid DECLARED_TYPE description" }
+            Status.BUILT_IN -> require(targets == (false to true) && noExtras) { "Invalid BUILT_IN description" }
             Status.UNRESOLVED_NAME -> require(
-                shared == (false to false) && resolution != null && resolution.status != ProjectNamedTypeResolution.Status.RESOLVED
+                targets == (false to false) && resolution != null && valueResolution == null && anchorStop == null &&
+                    resolution.status != ProjectNamedTypeResolution.Status.RESOLVED
             ) { "Invalid UNRESOLVED_NAME description" }
+            Status.UNRESOLVED_VALUE -> require(
+                targets == (false to false) && valueResolution != null && resolution == null && anchorStop == null &&
+                    valueResolution.status != ProjectValueResolution.Status.RESOLVED &&
+                    terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED
+            ) { "Invalid UNRESOLVED_VALUE description" }
             Status.ANCHORED_REFERENCE -> require(
-                shared == (false to false) && resolution == null && terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED
+                targets == (false to false) && resolution == null && valueResolution == null && anchorStop != null &&
+                    terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED
             ) { "Invalid ANCHORED_REFERENCE description" }
             Status.REF_REFERENCE -> require(
-                shared == (false to false) && resolution == null && terminalReference?.kind == ProjectTypeReference.Kind.REF
+                targets == (false to false) && noExtras && terminalReference?.kind == ProjectTypeReference.Kind.REF
             ) { "Invalid REF_REFERENCE description" }
-            Status.CYCLE -> require(shared == (false to false) && resolution == null && subtypes.isNotEmpty()) {
-                "Invalid CYCLE description"
-            }
+            Status.CYCLE -> require(targets == (false to false) && noExtras && steps.isNotEmpty()) { "Invalid CYCLE description" }
         }
     }
 
-    override fun toString(): String = "$status ${subtypes.map { it.qualifiedName }}"
+    override fun toString(): String = "$status ${steps.map { it.qualifiedName }}"
 
     internal companion object {
         @JvmSynthetic
-        fun declared(subtypes: List<ProjectSubtypeView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.DECLARED_TYPE, subtypes, declaration, null, terminal, null)
+        fun declared(steps: List<ProjectDeclarationView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?) =
+            ProjectTypeDescription(Status.DECLARED_TYPE, steps, declaration, null, terminal, null, null, null)
 
         @JvmSynthetic
-        fun builtIn(subtypes: List<ProjectSubtypeView>, category: ProjectBuiltInTypeCategory, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.BUILT_IN, subtypes, null, category, terminal, null)
+        fun builtIn(steps: List<ProjectDeclarationView>, category: ProjectBuiltInTypeCategory, terminal: ProjectTypeReference?) =
+            ProjectTypeDescription(Status.BUILT_IN, steps, null, category, terminal, null, null, null)
 
         @JvmSynthetic
-        fun unresolved(subtypes: List<ProjectSubtypeView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.UNRESOLVED_NAME, subtypes, null, null, terminal, resolution)
+        fun unresolved(steps: List<ProjectDeclarationView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?) =
+            ProjectTypeDescription(Status.UNRESOLVED_NAME, steps, null, null, terminal, resolution, null, null)
 
         @JvmSynthetic
-        fun stopped(status: Status, subtypes: List<ProjectSubtypeView>, reference: ProjectTypeReference) =
-            ProjectTypeDescription(status, subtypes, null, null, reference, null)
+        fun unresolvedValue(steps: List<ProjectDeclarationView>, resolution: ProjectValueResolution, terminal: ProjectTypeReference) =
+            ProjectTypeDescription(Status.UNRESOLVED_VALUE, steps, null, null, terminal, null, resolution, null)
 
         @JvmSynthetic
-        fun cycle(subtypes: List<ProjectSubtypeView>, terminal: ProjectTypeReference?) =
-            ProjectTypeDescription(Status.CYCLE, subtypes, null, null, terminal, null)
+        fun anchorStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference, stop: AnchorStop) =
+            ProjectTypeDescription(Status.ANCHORED_REFERENCE, steps, null, null, reference, null, null, stop)
+
+        @JvmSynthetic
+        fun refStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference) =
+            ProjectTypeDescription(Status.REF_REFERENCE, steps, null, null, reference, null, null, null)
+
+        @JvmSynthetic
+        fun cycle(steps: List<ProjectDeclarationView>, terminal: ProjectTypeReference?) =
+            ProjectTypeDescription(Status.CYCLE, steps, null, null, terminal, null, null, null)
     }
 }

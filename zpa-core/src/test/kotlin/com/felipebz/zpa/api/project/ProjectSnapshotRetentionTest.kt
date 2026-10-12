@@ -204,6 +204,40 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun anchorDescriptionsRetainOnlyDurableFacts() {
+        val sourceMarker = "anchor-retention-8a3c5e17-2d94-4f60-b1a8-6e0d9c7f2b35"
+        val source = "-- $sourceMarker\nCREATE PACKAGE ar AS g NUMBER; a g%TYPE; b a%TYPE; c ext.col%TYPE; d x%ROWTYPE; e1 e2%TYPE; e2 e1%TYPE; END ar;\n/\nCREATE PACKAGE cy1 AS x cy2.y%TYPE; END cy1;\n/\nCREATE PACKAGE cy2 AS y cy1.x%TYPE; END cy2;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("ar.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, input)
+        fun describe(owner: String, name: String): ProjectTypeDescription {
+            val value = snapshot.findDeclarations(ProjectQualifiedName.of(owner, name)).declarations.single() as ProjectPackageValueView
+            return snapshot.describeType(value.typeRef, value.owner)
+        }
+        val descriptions = mapOf(
+            "chain" to describe("ar", "b"), "unresolved" to describe("ar", "c"), "stopped" to describe("ar", "d"),
+            "declaredLater" to describe("ar", "e1"), "cycle" to describe("cy1", "x")
+        )
+        assertThat(descriptions.values.map { it.status }).containsExactly(
+            ProjectTypeDescription.Status.BUILT_IN, ProjectTypeDescription.Status.UNRESOLVED_VALUE,
+            ProjectTypeDescription.Status.ANCHORED_REFERENCE, ProjectTypeDescription.Status.ANCHORED_REFERENCE,
+            ProjectTypeDescription.Status.CYCLE
+        )
+        assertThat(descriptions.getValue("declaredLater").anchorStop).contains(ProjectTypeDescription.AnchorStop.DECLARED_LATER)
+        assertThat(descriptions.getValue("cycle").steps).hasSize(2)
+        val reachable = auditGraph(descriptions, forbidden, sourceMarker)
+        assertThat(reachable.filterIsInstance<PackageValueDeclaration>()).isNotEmpty()
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThatThrownBy { (descriptions.getValue("chain").steps as MutableList<ProjectDeclarationView>).clear() }
+            .isInstanceOf(UnsupportedOperationException::class.java)
+    }
+
+    @Test
     fun valueResolutionsRetainOnlyDurableFacts() {
         val sourceMarker = "value-resolution-retention-6d1f3a92-7e48-4b0c-a5d9-1c8e2b40f7a3"
         val source = "-- $sourceMarker\nCREATE PACKAGE vr AS g NUMBER; d NUMBER; d DATE; PROCEDURE only_proc; END vr;"

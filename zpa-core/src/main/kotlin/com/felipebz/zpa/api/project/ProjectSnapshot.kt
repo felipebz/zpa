@@ -188,6 +188,16 @@ class ProjectSnapshot private constructor(
         return ProjectSpecificationCorrelation.of(body, candidates, failures)
     }
 
+    /** The authoritative index, for the internal description walk only. */
+    @get:JvmSynthetic
+    internal val projectIndex: ProjectSymbolIndex get() = preparationResult.index
+
+    /** The canonical occurrence behind an ID issued by this snapshot, or null. */
+    @JvmSynthetic
+    internal fun occurrenceOf(id: ProjectDeclarationId): IndexedDeclaration? =
+        if (!id.isIssuedBy(scope)) null
+        else ProjectSnapshotDeclarations.occurrencesFor(preparationResult.index, id.fileId).getOrNull(id.ordinal)
+
     private fun inventory(occurrences: List<IndexedDeclaration>): ProjectInventory<ProjectDeclarationView> {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectInventory.notPrepared()

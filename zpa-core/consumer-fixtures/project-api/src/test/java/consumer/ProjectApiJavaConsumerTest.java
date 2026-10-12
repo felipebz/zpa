@@ -587,6 +587,7 @@ class ProjectApiJavaConsumerTest {
             case ANCHORED_REFERENCE -> "anchored";
             case REF_REFERENCE -> "ref";
             case CYCLE -> "cycle";
+            case UNRESOLVED_VALUE -> "unresolved value";
         };
     }
 
@@ -684,9 +685,14 @@ class ProjectApiJavaConsumerTest {
         assertThat(label(external.getStatus())).isEqualTo("unresolved");
         assertThat(external.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
         assertThat(external.getDeclaration()).isEmpty();
-        assertThat(snapshot.describeType(fields.get(1).getTypeRef(), p).getStatus()).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE);
-        assertThat(snapshot.describeType(fields.get(2).getTypeRef(), p).getTerminalReference().orElseThrow().getAnchor())
-            .contains(ProjectTypeReference.Anchor.ROWTYPE);
+        // A source-backed %TYPE that names no supplied value is unresolved, not invalid.
+        ProjectTypeDescription column = snapshot.describeType(fields.get(1).getTypeRef(), p);
+        assertThat(label(column.getStatus())).isEqualTo("unresolved value");
+        assertThat(column.getValueResolution().orElseThrow().getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
+        ProjectTypeDescription row = snapshot.describeType(fields.get(2).getTypeRef(), p);
+        assertThat(row.getStatus()).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE);
+        assertThat(row.getAnchorStop()).contains(ProjectTypeDescription.AnchorStop.ROWTYPE);
+        assertThat(row.getTerminalReference().orElseThrow().getAnchor()).contains(ProjectTypeReference.Anchor.ROWTYPE);
         assertThat(snapshot.describeType(fields.get(3).getTypeRef(), p).getStatus()).isEqualTo(ProjectTypeDescription.Status.REF_REFERENCE);
 
         ProjectTypeDescription cycle = snapshot.describeType(name("c1"), p);
