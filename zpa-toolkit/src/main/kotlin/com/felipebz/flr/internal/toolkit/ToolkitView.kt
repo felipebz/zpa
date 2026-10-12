@@ -56,6 +56,13 @@ internal interface ToolkitView {
     fun pickFileToParse(): File?
 
     /**
+     * Prompt the user for files and folders indexed only by the Project System.
+     *
+     * @return The picked files and folders, or an empty list if the user cancelled
+     */
+    fun pickProjectSources(): List<File>
+
+    /**
      * Display the given HTML highlighted source code in the source code editor.
      * Scrollbars state is undefined after a call to this method.
      *

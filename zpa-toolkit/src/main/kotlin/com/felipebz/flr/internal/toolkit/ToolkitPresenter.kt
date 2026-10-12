@@ -125,6 +125,17 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.enableXPathEvaluateButton()
     }
 
+    fun onProjectSourcesButtonClick() {
+        val picked = view.pickProjectSources()
+        if (picked.isEmpty()) return
+        val property = getConfigurationPropertyByName(PROJECT_SOURCES_PROPERTY_NAME) ?: return
+        val merged = ProjectSourceFiles.merge(property.value, picked)
+        property.value = merged
+        configurationModel.setUpdatedFlag()
+        view.setConfigurationPropertyValue(property.name, merged)
+        view.setConfigurationPropertyErrorMessage(property.name, "")
+    }
+
     fun onXPathEvaluateButtonClick() {
         val xpath = view.xPath ?: return
         val xpathQuery = create<Any>(xpath)

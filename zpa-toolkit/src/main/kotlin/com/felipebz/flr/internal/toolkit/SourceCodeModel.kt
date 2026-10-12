@@ -21,7 +21,6 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
-import com.felipebz.flr.toolkit.ConfigurationModel
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
@@ -30,11 +29,13 @@ import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticInspectionResult
 import com.felipebz.zpa.tooling.SemanticInspectionService
+import com.felipebz.zpa.toolkit.ZpaConfigurationModel
 import java.io.File
 import java.nio.charset.Charset
+import java.nio.file.Files
 import kotlin.system.measureNanoTime
 
-internal class SourceCodeModel(private val configurationModel: ConfigurationModel) {
+internal class SourceCodeModel(private val configurationModel: ZpaConfigurationModel) {
     lateinit var sourceCode: String
         private set
     lateinit var astNode: AstNode
@@ -46,16 +47,17 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
 
     private var semanticInspectionResult: SemanticInspectionResult? = null
     private val currentBufferFileId = FileId("zpa-toolkit://current-buffer")
+    private var currentFileId: FileId = currentBufferFileId
 
     private val semanticInspectionService = SemanticInspectionService()
 
     fun setSourceCode(source: File, charset: Charset) {
-        val fileId = FileId(source.toPath().toAbsolutePath().normalize().toString())
-        setSourceCode(source.readText(charset), fileId)
+        currentFileId = FileId(source.toPath().toAbsolutePath().normalize().toString())
+        setSourceCode(source.readText(charset), currentFileId)
     }
 
     fun setSourceCode(sourceCode: String) {
-        setSourceCode(sourceCode, currentBufferFileId)
+        setSourceCode(sourceCode, currentFileId)
     }
 
     fun inspect(node: AstNode) = semanticInspectionResult?.inspect(node)
@@ -69,9 +71,13 @@ internal class SourceCodeModel(private val configurationModel: ConfigurationMode
             astNode = configurationModel.parser.parse(sourceCode)
         }
         this.sourceCode = sourceCode
+        val charset = configurationModel.charset
+        val projectSources = configurationModel.projectSourceFiles
+            .filter { it.toString() != fileId.value }
+            .map { path -> ProjectSource(FileId(path.toString())) { Files.readString(path, charset) } }
         val preparation = ProjectIndexPreparation().prepare(
-            listOf(ProjectSource(fileId) { sourceCode }),
-            concurrent = false
+            projectSources + ProjectSource(fileId) { sourceCode },
+            concurrent = true
         )
         val result = semanticInspectionService.analyze(
             astNode,

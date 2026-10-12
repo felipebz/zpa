@@ -22,18 +22,19 @@ package com.felipebz.flr.toolkit
 import com.felipebz.flr.internal.toolkit.SourceCodeModel
 import com.felipebz.flr.internal.toolkit.ToolkitPresenter
 import com.felipebz.flr.internal.toolkit.ToolkitViewImpl
+import com.felipebz.zpa.toolkit.ZpaConfigurationModel
 import com.formdev.flatlaf.FlatIntelliJLaf
 import javax.swing.SwingUtilities
 
 /**
- * Creates a Toolkit with a title, and the given [ConfigurationModel].
+ * Creates a Toolkit with a title, and the given [ZpaConfigurationModel].
  *
  * @param title
  * @param configurationModel
  *
  * @since 1.17
  */
-class Toolkit(private val title: String, private val configurationModel: ConfigurationModel) {
+class Toolkit(private val title: String, private val configurationModel: ZpaConfigurationModel) {
     fun run() {
         SwingUtilities.invokeLater {
             FlatIntelliJLaf.setup()

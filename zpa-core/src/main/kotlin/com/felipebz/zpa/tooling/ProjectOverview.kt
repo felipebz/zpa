@@ -50,6 +50,7 @@ internal class ProjectOverviewBuilder(
 ) {
     private val snapshot = ProjectSnapshot.create(context)
     private val declarations = snapshot.declarations
+    private val fileDeclarations = declarations.filter { it.fileId == fileId.value }
 
     fun build(): ProjectOverviewNode = ProjectOverviewNode(
         "Project overview",
@@ -57,17 +58,18 @@ internal class ProjectOverviewBuilder(
         null,
         listOfNotNull(
             preparation(),
+            projectFiles(),
             packages(),
-            section("Standalone types", declarations
+            section("Standalone types", fileDeclarations
                 .filter { it.kind == ProjectDeclarationKind.STANDALONE_TYPE }
                 .map { shapedTypeNode(it as ProjectShapedTypeView, it.qualifiedName.toString(), null, emptyList()) }),
-            section("Standalone procedures and functions", declarations
+            section("Standalone procedures and functions", fileDeclarations
                 .filter {
                     it.kind == ProjectDeclarationKind.STANDALONE_PROCEDURE ||
                         it.kind == ProjectDeclarationKind.STANDALONE_FUNCTION
                 }
                 .map { subprogramNode(it as ProjectSubprogramView, it.qualifiedName.toString(), null) }),
-            section("Sequences", declarations
+            section("Sequences", fileDeclarations
                 .filter { it.kind == ProjectDeclarationKind.SEQUENCE }
                 .map { node("SEQUENCE ${it.qualifiedName}${at(it.sourceRange)}", range(it.sourceRange)) }),
             section("Omitted standalone callables", snapshot.projectIndex.omittedStandaloneCallables
@@ -87,6 +89,17 @@ internal class ProjectOverviewBuilder(
         children = snapshot.failures.map { node("failure: ${it.fileId}: ${it.exceptionType}") }
     )
 
+    private fun projectFiles(): ProjectOverviewNode? = section("Project files", snapshot.fileIds
+        .filter { it != fileId.value }
+        .map { id ->
+            val views = declarations.filter { it.fileId == id }
+            val failure = snapshot.failures.firstOrNull { it.fileId == id }
+            node(
+                if (failure != null) "$id · failed: ${failure.exceptionType}" else "$id · ${views.size} declarations",
+                children = views.map { node("${it.kind} ${it.qualifiedName}${at(it.sourceRange)}", range(it.sourceRange)) }
+            )
+        })
+
     private class Group(
         val range: SemanticSourceRange?,
         val header: List<ProjectOverviewNode>,
@@ -102,7 +115,7 @@ internal class ProjectOverviewBuilder(
     private fun packages(): ProjectOverviewNode? {
         val groups = LinkedHashMap<Any, Group>()
         val specifications = mutableListOf<Pair<ProjectDeclarationView, Group>>()
-        for (view in declarations) {
+        for (view in fileDeclarations) {
             if (view.kind == ProjectDeclarationKind.PACKAGE) {
                 val group = Group(range(view.sourceRange), listOfNotNull(coverageNode(view))) {
                     "PACKAGE ${view.qualifiedName} (specification)${at(view.sourceRange)}"
@@ -380,10 +393,19 @@ internal class ProjectOverviewBuilder(
         ProjectTypeReference.Kind.REF -> "REF ${reference.name}"
     }
 
-    private fun range(range: ProjectSourceRange) =
-        SemanticSourceRange(range.fileId, range.startLine, range.startColumn, range.endLine, range.endColumn)
+    private fun range(range: ProjectSourceRange): SemanticSourceRange? =
+        if (range.fileId != fileId.value) {
+            null
+        } else {
+            SemanticSourceRange(range.fileId, range.startLine, range.startColumn, range.endLine, range.endColumn)
+        }
 
-    private fun at(range: ProjectSourceRange) = " @${range.startLine}:${range.startColumn}"
+    private fun at(range: ProjectSourceRange): String =
+        if (range.fileId != fileId.value) {
+            " @${range.fileId}:${range.startLine}:${range.startColumn}"
+        } else {
+            " @${range.startLine}:${range.startColumn}"
+        }
 
     private fun contains(outer: ProjectSourceRange, inner: ProjectSourceRange): Boolean =
         compareValues(outer.startLine, inner.startLine).let { it < 0 || it == 0 && outer.startColumn <= inner.startColumn } &&

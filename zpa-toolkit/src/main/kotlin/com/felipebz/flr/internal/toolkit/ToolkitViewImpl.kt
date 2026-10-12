@@ -71,6 +71,7 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val sourceCodeEditorScrollPane = JScrollPane(sourceCodeEditorPane)
     private val sourceCodeOpenButton = JButton()
     private val sourceCodeParseButton = JButton()
+    private val projectSourcesButton = JButton()
     private val sourceCodeButtonsPanel = JPanel()
     private val sourceCodePanel = JPanel(BorderLayout(0, 2))
     private val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sourceCodePanel, tabbedPane)
@@ -80,6 +81,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
     private val xpathTextAreaScrollPane = JScrollPane(xpathTextArea)
     private val xpathPanel = JPanel(BorderLayout(10, 2))
     private val fileChooser = JFileChooser()
+    private val projectSourcesChooser = JFileChooser().apply {
+        fileSelectionMode = JFileChooser.FILES_AND_DIRECTORIES
+        isMultiSelectionEnabled = true
+        dialogTitle = "Select project sources"
+    }
     private val xpathButton = JButton()
     private val xpathButtonPanel = JPanel()
     private val statisticsPanel = JPanel(FlowLayout(FlowLayout.LEADING))
@@ -174,8 +180,11 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         sourceCodeOpenButton.addActionListener { presenter.onSourceCodeOpenButtonClick() }
         sourceCodeParseButton.text = "Parse Source Code"
         sourceCodeParseButton.addActionListener { presenter.onSourceCodeParseButtonClick() }
+        projectSourcesButton.text = "Project Sources…"
+        projectSourcesButton.addActionListener { presenter.onProjectSourcesButtonClick() }
         sourceCodeButtonsPanel.add(sourceCodeOpenButton)
         sourceCodeButtonsPanel.add(sourceCodeParseButton)
+        sourceCodeButtonsPanel.add(projectSourcesButton)
         sourceCodePanel.add(sourceCodeLabel, BorderLayout.NORTH)
         sourceCodePanel.add(sourceCodeEditorScrollPane, BorderLayout.CENTER)
         sourceCodePanel.add(sourceCodeButtonsPanel, BorderLayout.SOUTH)
@@ -218,6 +227,14 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             fileChooser.selectedFile
         } else {
             null
+        }
+    }
+
+    override fun pickProjectSources(): List<File> {
+        return if (projectSourcesChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            projectSourcesChooser.selectedFiles.toList()
+        } else {
+            emptyList()
         }
     }
 

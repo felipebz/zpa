@@ -31,6 +31,7 @@ import com.felipebz.zpa.tooling.SemanticSourceRange
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
@@ -38,6 +39,7 @@ import java.awt.Point
 import java.io.File
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 
 class ToolkitPresenterTest {
     @Test
@@ -445,5 +447,35 @@ class ToolkitPresenterTest {
         assertThrows<IllegalArgumentException>("No such configuration property: name") {
             presenter.onConfigurationPropertyFocusLost("name")
         }
+    }
+
+    @Test
+    fun onProjectSourcesButtonClick_appendsPickedSources(@TempDir tempDir: Path) {
+        val view = mock<ToolkitView>()
+        whenever(view.pickProjectSources()).thenReturn(listOf(tempDir.toFile()))
+        val configurationModel = mock<ConfigurationModel>()
+        whenever(configurationModel.properties).thenReturn(listOf(ConfigurationProperty(PROJECT_SOURCES_PROPERTY_NAME, "", "")))
+        val presenter = ToolkitPresenter(configurationModel, mock())
+        presenter.setView(view)
+
+        presenter.onProjectSourcesButtonClick()
+
+        verify(view).setConfigurationPropertyValue(PROJECT_SOURCES_PROPERTY_NAME, tempDir.toAbsolutePath().normalize().toString())
+        verify(view).setConfigurationPropertyErrorMessage(PROJECT_SOURCES_PROPERTY_NAME, "")
+        verify(configurationModel).setUpdatedFlag()
+    }
+
+    @Test
+    fun onProjectSourcesButtonClick_cancelled() {
+        val view = mock<ToolkitView>()
+        whenever(view.pickProjectSources()).thenReturn(emptyList())
+        val configurationModel = mock<ConfigurationModel>()
+        val presenter = ToolkitPresenter(configurationModel, mock())
+        presenter.setView(view)
+
+        presenter.onProjectSourcesButtonClick()
+
+        verify(view, never()).setConfigurationPropertyValue(any(), any())
+        verify(configurationModel, never()).setUpdatedFlag()
     }
 }

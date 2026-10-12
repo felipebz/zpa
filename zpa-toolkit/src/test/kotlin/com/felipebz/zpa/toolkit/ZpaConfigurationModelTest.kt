@@ -67,4 +67,26 @@ class ZpaConfigurationModelTest {
             }
         }
     }
+
+    @Test
+    fun invalidProjectSourcesPropertyFallsBackToDefault() {
+        val oldValue = System.getProperty("sonar.zpa.toolkit.projectSources")
+
+        try {
+            System.setProperty("sonar.zpa.toolkit.projectSources", "/no/such/path")
+            assertThat(ZpaConfigurationModel().projectSourcesProperty.value).isEmpty()
+        } finally {
+            if (oldValue == null) {
+                System.clearProperty("sonar.zpa.toolkit.projectSources")
+            } else {
+                System.setProperty("sonar.zpa.toolkit.projectSources", oldValue)
+            }
+        }
+    }
+
+    @Test
+    fun propertiesAreListedInConfigurationTabOrder() {
+        assertThat(ZpaConfigurationModel().properties.map { it.name })
+            .containsExactly("Charset", "Error recovery", "Project sources", "Project file suffixes")
+    }
 }
