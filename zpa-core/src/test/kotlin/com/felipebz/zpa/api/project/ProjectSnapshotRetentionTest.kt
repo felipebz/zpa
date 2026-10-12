@@ -355,6 +355,40 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun externalMetadataAndLookupsRetainOnlyDescriptors() {
+        val sourceMarker = "external-metadata-retention-7c2e4b19-0d6a-4f3e-8a51-b9e3d7c2f604"
+        val source = "-- $sourceMarker\nCREATE PACKAGE em AS g NUMBER; END em;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("em.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val inputColumns = mutableListOf(
+            ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 8, 0)),
+            ProjectExternalColumn.of("INV", null, null)
+        )
+        val builder = ProjectExternalMetadata.builder("retention").completeSchema("HR")
+            .relation(ProjectExternalRelation.of("HR", "EMPLOYEES", true, inputColumns))
+        val metadata = builder.build()
+        fun id(s: String) = ProjectIdentifier.fromSource(s)
+        val results = mapOf(
+            "metadata" to metadata,
+            "found" to metadata.findColumn(id("hr"), id("employees"), id("id")),
+            "absent" to metadata.findColumn(id("hr"), id("employees"), id("x")),
+            "noRelation" to metadata.findRelation(id("hr"), id("jobs")),
+            "unavailable" to ProjectExternalMetadata.none().findRelation(id("hr"), id("jobs"))
+        )
+        val reachable = auditGraph(results, listOf(snapshot, source, reader, input, builder, inputColumns), sourceMarker)
+        assertThat(reachable.filterIsInstance<ProjectExternalColumn>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectDeclarationView>()).isEmpty()
+        // The source index holds no external descriptor.
+        val index = (ProjectSnapshot::class.java.getDeclaredField("preparationResult").apply { isAccessible = true }
+            .get(snapshot) as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val fromIndex = auditGraph(mapOf("index" to index), emptyList(), "external-metadata-unused-marker")
+        assertThat(fromIndex.filterIsInstance<ProjectExternalRelation>()).isEmpty()
+    }
+
+    @Test
     fun valueResolutionsRetainOnlyDurableFacts() {
         val sourceMarker = "value-resolution-retention-6d1f3a92-7e48-4b0c-a5d9-1c8e2b40f7a3"
         val source = "-- $sourceMarker\nCREATE PACKAGE vr AS g NUMBER; d NUMBER; d DATE; PROCEDURE only_proc; END vr;"
@@ -883,6 +917,6 @@ class ProjectSnapshotRetentionTest {
     private val scalarTypes = setOf(
         Boolean::class.javaObjectType, Byte::class.javaObjectType, Short::class.javaObjectType,
         Int::class.javaObjectType, Long::class.javaObjectType, Float::class.javaObjectType,
-        Double::class.javaObjectType, Char::class.javaObjectType
+        Double::class.javaObjectType, Char::class.javaObjectType, OptionalInt::class.java
     )
 }

@@ -204,13 +204,17 @@ internal object ProjectTypeDescriber {
     private fun completedBefore(value: ProjectSourceRange, reference: ProjectSourceRange): Boolean =
         value.endLine < reference.startLine || (value.endLine == reference.startLine && value.endColumn <= reference.startColumn)
 
-    private fun category(name: ProjectQualifiedName): ProjectBuiltInTypeCategory? = when (BuiltInTypeRefClassifier.classify(name.name)) {
-        PlSqlType.NUMERIC -> ProjectBuiltInTypeCategory.NUMERIC
-        PlSqlType.CHARACTER -> ProjectBuiltInTypeCategory.CHARACTER
-        PlSqlType.LOB -> ProjectBuiltInTypeCategory.LOB
-        PlSqlType.BOOLEAN -> ProjectBuiltInTypeCategory.BOOLEAN
-        PlSqlType.DATE -> ProjectBuiltInTypeCategory.DATE
-        PlSqlType.JSON -> ProjectBuiltInTypeCategory.JSON
-        else -> null
-    }
+    private fun category(name: ProjectQualifiedName): ProjectBuiltInTypeCategory? = builtInCategory(name.name)
+}
+
+/** The public category of a recognized built-in type name, using the existing classifier vocabulary. */
+@OptIn(ZpaExperimentalApi::class)
+internal fun builtInCategory(name: QualifiedName): ProjectBuiltInTypeCategory? = when (BuiltInTypeRefClassifier.classify(name)) {
+    PlSqlType.NUMERIC -> ProjectBuiltInTypeCategory.NUMERIC
+    PlSqlType.CHARACTER -> ProjectBuiltInTypeCategory.CHARACTER
+    PlSqlType.LOB -> ProjectBuiltInTypeCategory.LOB
+    PlSqlType.BOOLEAN -> ProjectBuiltInTypeCategory.BOOLEAN
+    PlSqlType.DATE -> ProjectBuiltInTypeCategory.DATE
+    PlSqlType.JSON -> ProjectBuiltInTypeCategory.JSON
+    else -> null
 }
