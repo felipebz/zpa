@@ -48,28 +48,10 @@ internal class StandaloneCallableExtractor(
     fun parseStandaloneCallable(create: Int, function: Boolean): ParsedUnit? {
         if (!stream.isKeyword(create, "CREATE")) return null
         val limit = bounds.unitLimit(create)
-        var index = create + 1
-        val orReplace = stream.isKeyword(index, "OR") && stream.isKeyword(index + 1, "REPLACE")
-        if (orReplace) index += 2
-        if (stream.isKeyword(index, "EDITIONABLE") || stream.isKeyword(index, "NONEDITIONABLE")) index++
-        if (!stream.isKeyword(index, if (function) "FUNCTION" else "PROCEDURE")) return null
-        index++
-        if (stream.isKeyword(index, "IF")) {
-            // IF NOT EXISTS cannot be combined with OR REPLACE (ORA-11541).
-            if (orReplace || !stream.isKeyword(index + 1, "NOT") || !stream.isKeyword(index + 2, "EXISTS")) return null
-            index += 3
-        }
-        val name = stream.strictQualifiedName(index, limit) ?: return null
-        index = skipUnitOptions(name.second, limit) ?: return null
-        if (stream.isKeyword(index, "WRAPPED")) {
-            // The lexer makes the whole payload one opaque WRAPPED_SOURCE token. No signature
-            // can be recovered, so the unit is skipped without a fact.
-            return if (index + 1 < limit && stream.tokenTypeAt(index + 1) === PlSqlTokenType.WRAPPED_SOURCE) {
-                ParsedUnit(emptyList(), index + 2)
-            } else {
-                null
-            }
-        }
+        val nameStart = nameStart(create, function) ?: return null
+        val name = stream.strictQualifiedName(nameStart, limit) ?: return null
+        var index = skipUnitOptions(name.second, limit) ?: return null
+        if (stream.isKeyword(index, "WRAPPED")) return wrappedUnit(index, limit)
         val parameters = when (val parsed = parseParametersStrict(index, limit)) {
             StrictParameters.Absent -> emptyList()
             StrictParameters.Failed -> return null
@@ -78,24 +60,53 @@ internal class StandaloneCallableExtractor(
                 parsed.parameters
             }
         }
-        if (!function) {
-            index = callableProperties.skipPropertiesStrict(index, limit, function = false)?.next ?: return null
-            if (!stream.isKeyword(index, "IS") && !stream.isKeyword(index, "AS")) return null
-            val end = strictImplementationEnd(index + 1, limit) ?: return null
-            return ParsedUnit(
-                listOf(StandaloneProcedureDeclaration(name.first, parameters, stream.fileId, stream.range(create, end))),
-                end + 1
-            )
+        return if (function) {
+            parseFunctionTail(create, name.first, parameters, index, limit)
+        } else {
+            parseProcedureTail(create, name.first, parameters, index, limit)
         }
+    }
 
-        // Function: RETURN datatype, properties, then an implementation or a terminal `;`.
-        if (!stream.isKeyword(index, "RETURN")) return null
-        val typeStart = index + 1
+    /** `CREATE [OR REPLACE] [EDITIONABLE | NONEDITIONABLE] (FUNCTION | PROCEDURE) [IF NOT EXISTS]`: the index of the name. */
+    private fun nameStart(create: Int, function: Boolean): Int? {
+        var index = create + 1
+        val orReplace = stream.isKeyword(index, "OR") && stream.isKeyword(index + 1, "REPLACE")
+        if (orReplace) index += 2
+        if (stream.isKeyword(index, "EDITIONABLE") || stream.isKeyword(index, "NONEDITIONABLE")) index++
+        if (!stream.isKeyword(index, if (function) "FUNCTION" else "PROCEDURE")) return null
+        index++
+        if (!stream.isKeyword(index, "IF")) return index
+        // IF NOT EXISTS cannot be combined with OR REPLACE (ORA-11541).
+        if (orReplace || !stream.isKeyword(index + 1, "NOT") || !stream.isKeyword(index + 2, "EXISTS")) return null
+        return index + 3
+    }
+
+    /**
+     * The lexer makes the whole payload one opaque WRAPPED_SOURCE token. No signature
+     * can be recovered, so the unit is skipped without a fact.
+     */
+    private fun wrappedUnit(wrapped: Int, limit: Int): ParsedUnit? =
+        if (wrapped + 1 < limit && stream.tokenTypeAt(wrapped + 1) === PlSqlTokenType.WRAPPED_SOURCE) ParsedUnit(emptyList(), wrapped + 2) else null
+
+    private fun parseProcedureTail(create: Int, name: QualifiedName, parameters: List<ProjectParameter>, start: Int, limit: Int): ParsedUnit? {
+        val index = callableProperties.skipPropertiesStrict(start, limit, function = false)?.next ?: return null
+        if (!stream.isKeyword(index, "IS") && !stream.isKeyword(index, "AS")) return null
+        val end = strictImplementationEnd(index + 1, limit) ?: return null
+        return ParsedUnit(
+            listOf(StandaloneProcedureDeclaration(name, parameters, stream.fileId, stream.range(create, end))),
+            end + 1
+        )
+    }
+
+    /** Function: RETURN datatype, properties, then an implementation or a terminal `;`. */
+    private fun parseFunctionTail(create: Int, name: QualifiedName, parameters: List<ProjectParameter>, start: Int, limit: Int): ParsedUnit? {
+        if (!stream.isKeyword(start, "RETURN")) return null
+        val typeStart = start + 1
         val typeEnd = returnTypeEnd(typeStart, limit) ?: return null
         if (!datatypeShape.strictDatatype(typeStart, typeEnd)) return null
         val returnType = typeReferences.typeReference(typeStart, typeEnd) ?: return null
         val properties = callableProperties.skipPropertiesStrict(typeEnd, limit, function = true) ?: return null
-        index = properties.next
+        val index = properties.next
         val end = when {
             properties.terminal -> index
             stream.isKeyword(index, "IS") || stream.isKeyword(index, "AS") -> strictImplementationEnd(index + 1, limit) ?: return null
@@ -106,7 +117,7 @@ internal class StandaloneCallableExtractor(
         return ParsedUnit(
             listOf(
                 StandaloneFunctionDeclaration(
-                    name.first, parameters, returnType, stream.fileId, stream.range(create, end),
+                    name, parameters, returnType, stream.fileId, stream.range(create, end),
                     deterministic = properties.deterministic
                 )
             ),
@@ -169,40 +180,45 @@ internal class StandaloneCallableExtractor(
         return StrictParameters.Parsed(immutableList(parameters), close + 1)
     }
 
-    /** `name [IN] (OUT [NOCOPY] datatype | datatype [(DEFAULT|:=) expression])`, fully consumed. */
-    private fun parseParameterStrict(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
-        if (!stream.isNameBefore(start, endExclusive)) return null
+    private class ParameterPrefix(val mode: ParameterMode, val nocopy: Boolean, val next: Int)
+
+    /** `[IN] [OUT [NOCOPY]]` after the parameter name at [start]; `NOCOPY` without `OUT` is invalid. */
+    private fun parameterPrefix(start: Int): ParameterPrefix? {
         var cursor = start + 1
-        var mode = ParameterMode.IN
         if (stream.isKeyword(cursor, "IN")) cursor++
-        var nocopy = false
-        if (stream.isKeyword(cursor, "OUT")) {
-            mode = if (mode == ParameterMode.IN && stream.isKeyword(cursor - 1, "IN")) ParameterMode.IN_OUT else ParameterMode.OUT
-            cursor++
-            if (stream.isKeyword(cursor, "NOCOPY")) {
-                nocopy = true
-                cursor++
-            }
-        } else if (stream.isKeyword(cursor, "NOCOPY")) {
-            return null
+        if (!stream.isKeyword(cursor, "OUT")) {
+            return if (stream.isKeyword(cursor, "NOCOPY")) null else ParameterPrefix(ParameterMode.IN, false, cursor)
         }
-        var defaultIndex: Int? = null
+        val mode = if (stream.isKeyword(cursor - 1, "IN")) ParameterMode.IN_OUT else ParameterMode.OUT
+        cursor++
+        val nocopy = stream.isKeyword(cursor, "NOCOPY")
+        return ParameterPrefix(mode, nocopy, if (nocopy) cursor + 1 else cursor)
+    }
+
+    /** The first depth-0 `DEFAULT` or `:=` in [from] until [endExclusive], or null. */
+    private fun defaultIndexOf(from: Int, endExclusive: Int): Int? {
         var depth = 0
-        for (index in cursor until endExclusive) {
+        for (index in from until endExclusive) {
             when {
                 stream.isPunctuator(index, PlSqlPunctuator.LPARENTHESIS) -> depth++
                 stream.isPunctuator(index, PlSqlPunctuator.RPARENTHESIS) -> depth--
-                depth == 0 && (stream.isKeyword(index, "DEFAULT") || stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT)) -> {
-                    defaultIndex = index
-                    break
-                }
+                depth == 0 && (stream.isKeyword(index, "DEFAULT") || stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT)) -> return index
             }
         }
-        if (defaultIndex != null && (mode != ParameterMode.IN || defaultIndex + 1 >= endExclusive)) return null
+        return null
+    }
+
+    /** `name [IN] (OUT [NOCOPY] datatype | datatype [(DEFAULT|:=) expression])`, fully consumed. */
+    private fun parseParameterStrict(start: Int, endExclusive: Int, ordinal: Int): ProjectParameter? {
+        if (!stream.isNameBefore(start, endExclusive)) return null
+        val prefix = parameterPrefix(start) ?: return null
+        val cursor = prefix.next
+        val defaultIndex = defaultIndexOf(cursor, endExclusive)
+        if (defaultIndex != null && (prefix.mode != ParameterMode.IN || defaultIndex + 1 >= endExclusive)) return null
         val typeEnd = defaultIndex ?: endExclusive
         if (!datatypeShape.strictDatatype(cursor, typeEnd)) return null
         val type = typeReferences.typeReference(cursor, typeEnd) ?: return null
-        return ProjectParameter(name = stream.identifier(stream.tokens[start]), ordinal = ordinal, mode = mode, nocopy = nocopy,
+        return ProjectParameter(name = stream.identifier(stream.tokens[start]), ordinal = ordinal, mode = prefix.mode, nocopy = prefix.nocopy,
             typeRef = type, defaultPresent = defaultIndex != null, sourceRange = stream.range(start, endExclusive - 1))
     }
 

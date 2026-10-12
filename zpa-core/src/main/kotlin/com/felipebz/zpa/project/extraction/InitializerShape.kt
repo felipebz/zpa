@@ -102,32 +102,49 @@ internal class InitializerShape(private val stream: TokenStream) {
         var index = start
         while (index < scan.limit) {
             when {
-                stream.isKeyword(index, "WHEN") || stream.isKeyword(index, "THEN") || stream.isKeyword(index, "ELSE") ||
-                    stream.isKeyword(index, "END") || stream.isCloser(index) -> return index
+                endsLevel(index) -> return index
                 stream.isOpener(index) -> {
-                    val close = scanInitializerLevel(index + 1, scan, allowComma = true, depth = depth + 1) ?: return null
-                    if (close >= scan.limit || stream.tokens[close].type !== stream.closerFor(index)) return null
-                    index = close + 1
+                    index = nestedLevelEnd(index, scan, depth) ?: return null
                     continue
                 }
-                stream.isKeyword(index, "CASE") && (index == start || (!stream.isPunctuator(index - 1, PlSqlPunctuator.DOT) && !endsOperand(index - 1))) -> {
+                startsCaseExpression(index, start) -> {
                     val end = caseEnd(index, scan, depth)
                     if (end != null) {
                         index = end
                         continue
                     }
                 }
-                stream.isPunctuator(index, PlSqlPunctuator.SEMICOLON) || stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT) -> return null
-                stream.isPunctuator(index, PlSqlPunctuator.ASSOCIATION) && !allowComma -> return null
-                stream.isPunctuator(index, PlSqlPunctuator.COMMA) -> {
-                    if (!allowComma || index == start || stream.isPunctuator(index - 1, PlSqlPunctuator.COMMA) ||
-                        stream.isPunctuator(index + 1, PlSqlPunctuator.COMMA) || stream.isCloser(index + 1)
-                    ) return null
-                }
+                isInvalidAtLevel(index, start, allowComma) -> return null
             }
             index++
         }
         return scan.limit
+    }
+
+    /** A token that closes the current level: it belongs to an enclosing structure. */
+    private fun endsLevel(index: Int): Boolean =
+        stream.isKeyword(index, "WHEN") || stream.isKeyword(index, "THEN") || stream.isKeyword(index, "ELSE") ||
+            stream.isKeyword(index, "END") || stream.isCloser(index)
+
+    /** The index after the closer of the bracketed level opened at [open], or null when it is not balanced. */
+    private fun nestedLevelEnd(open: Int, scan: InitializerScan, depth: Int): Int? {
+        val close = scanInitializerLevel(open + 1, scan, allowComma = true, depth = depth + 1) ?: return null
+        if (close >= scan.limit || stream.tokens[close].type !== stream.closerFor(open)) return null
+        return close + 1
+    }
+
+    private fun startsCaseExpression(index: Int, levelStart: Int): Boolean =
+        stream.isKeyword(index, "CASE") &&
+            (index == levelStart || (!stream.isPunctuator(index - 1, PlSqlPunctuator.DOT) && !endsOperand(index - 1)))
+
+    /** Punctuation that cannot be part of an initializer expression at this level. */
+    private fun isInvalidAtLevel(index: Int, levelStart: Int, allowComma: Boolean): Boolean = when {
+        stream.isPunctuator(index, PlSqlPunctuator.SEMICOLON) || stream.isPunctuator(index, PlSqlPunctuator.ASSIGNMENT) -> true
+        stream.isPunctuator(index, PlSqlPunctuator.ASSOCIATION) -> !allowComma
+        stream.isPunctuator(index, PlSqlPunctuator.COMMA) ->
+            !allowComma || index == levelStart || stream.isPunctuator(index - 1, PlSqlPunctuator.COMMA) ||
+                stream.isPunctuator(index + 1, PlSqlPunctuator.COMMA) || stream.isCloser(index + 1)
+        else -> false
     }
 
     /** Index after the `END` of the `CASE` expression opened at [open], or null when it is not well formed. */
@@ -141,25 +158,36 @@ internal class InitializerShape(private val stream: TokenStream) {
 
     private fun parseCase(open: Int, scan: InitializerScan, depth: Int): Int? {
         var index = open + 1
-        if (!stream.isKeyword(index, "WHEN")) {
-            val selectorEnd = scanInitializerLevel(index, scan, allowComma = false, depth = depth + 1) ?: return null
-            if (selectorEnd == index || selectorEnd >= scan.limit || !stream.isKeyword(selectorEnd, "WHEN")) return null
-            index = selectorEnd
-        }
+        if (!stream.isKeyword(index, "WHEN")) index = caseSelectorEnd(index, scan, depth) ?: return null
         while (true) {
-            val thenAt = scanInitializerLevel(index + 1, scan, allowComma = false, depth = depth + 1) ?: return null
-            if (thenAt == index + 1 || thenAt >= scan.limit || !stream.isKeyword(thenAt, "THEN")) return null
-            val after = scanInitializerLevel(thenAt + 1, scan, allowComma = false, depth = depth + 1) ?: return null
-            if (after == thenAt + 1 || after >= scan.limit) return null
+            val after = whenClauseEnd(index, scan, depth) ?: return null
             when {
                 stream.isKeyword(after, "WHEN") -> index = after
                 stream.isKeyword(after, "END") -> return after + 1
-                stream.isKeyword(after, "ELSE") -> {
-                    val endAt = scanInitializerLevel(after + 1, scan, allowComma = false, depth = depth + 1) ?: return null
-                    return if (endAt > after + 1 && endAt < scan.limit && stream.isKeyword(endAt, "END")) endAt + 1 else null
-                }
+                stream.isKeyword(after, "ELSE") -> return elseEnd(after, scan, depth)
                 else -> return null
             }
         }
+    }
+
+    /** The `WHEN` that follows the selector of a simple `CASE`, or null when the selector is empty or not followed by one. */
+    private fun caseSelectorEnd(start: Int, scan: InitializerScan, depth: Int): Int? {
+        val selectorEnd = scanInitializerLevel(start, scan, allowComma = false, depth = depth + 1) ?: return null
+        if (selectorEnd == start || selectorEnd >= scan.limit || !stream.isKeyword(selectorEnd, "WHEN")) return null
+        return selectorEnd
+    }
+
+    /** `WHEN condition THEN result` at [whenAt]: the index of the token that follows the result. */
+    private fun whenClauseEnd(whenAt: Int, scan: InitializerScan, depth: Int): Int? {
+        val thenAt = scanInitializerLevel(whenAt + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+        if (thenAt == whenAt + 1 || thenAt >= scan.limit || !stream.isKeyword(thenAt, "THEN")) return null
+        val after = scanInitializerLevel(thenAt + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+        return after.takeUnless { it == thenAt + 1 || it >= scan.limit }
+    }
+
+    /** `ELSE result END` at [elseAt]: the index after the `END`. */
+    private fun elseEnd(elseAt: Int, scan: InitializerScan, depth: Int): Int? {
+        val endAt = scanInitializerLevel(elseAt + 1, scan, allowComma = false, depth = depth + 1) ?: return null
+        return if (endAt > elseAt + 1 && endAt < scan.limit && stream.isKeyword(endAt, "END")) endAt + 1 else null
     }
 }

@@ -52,23 +52,27 @@ internal class PackageValueRecognizer(
         if (typeEnd == typeStart + 1 && stream.isKeyword(typeStart, "EXCEPTION")) return null
         if (!datatypeShape.strictDatatype(typeStart, typeEnd)) return null
         if (!datatypeShape.strictTypeArguments(typeStart, typeEnd)) return null
-        var cursor = typeEnd
-        if (stream.isKeyword(cursor, "NOT")) {
-            if (!stream.isKeyword(cursor + 1, "NULL")) return null
-            cursor += 2
-        } else if (stream.isKeyword(cursor, "NULL")) {
-            cursor++
-        }
-        if (cursor < semicolon) {
-            if (!stream.isKeyword(cursor, "DEFAULT") && !stream.isPunctuator(cursor, PlSqlPunctuator.ASSIGNMENT)) return null
-            if (!initializerShape.initializerShapeOk(cursor + 1, semicolon)) return null
-        }
+        val cursor = nullabilityEnd(typeEnd) ?: return null
+        if (!initializerOk(cursor, semicolon)) return null
         val type = typeReferences.typeReference(typeStart, typeEnd) ?: return null
         val declaration = PackageValueDeclaration(
             owner, stream.identifier(stream.tokens[start]), constant, type, stream.fileId, stream.range(start, semicolon)
         )
         return ParsedDeclaration(declaration, semicolon + 1)
     }
+
+    /** `[NULL | NOT NULL]` at [start]: the index after it (unchanged when absent), null for a `NOT` without `NULL`. */
+    private fun nullabilityEnd(start: Int): Int? = when {
+        stream.isKeyword(start, "NOT") -> if (stream.isKeyword(start + 1, "NULL")) start + 2 else null
+        stream.isKeyword(start, "NULL") -> start + 1
+        else -> start
+    }
+
+    /** Whatever remains before the `;` must be a `DEFAULT` or `:=` initializer of an acceptable shape. */
+    private fun initializerOk(cursor: Int, semicolon: Int): Boolean =
+        cursor >= semicolon ||
+            ((stream.isKeyword(cursor, "DEFAULT") || stream.isPunctuator(cursor, PlSqlPunctuator.ASSIGNMENT)) &&
+                initializerShape.initializerShapeOk(cursor + 1, semicolon))
 
     /** The datatype of a value stops at its nullability constraint or initializer. */
     private fun isValueTypeStop(index: Int): Boolean =

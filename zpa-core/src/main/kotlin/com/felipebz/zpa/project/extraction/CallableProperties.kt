@@ -21,6 +21,8 @@ package com.felipebz.zpa.project.extraction
 
 import com.felipebz.zpa.api.PlSqlPunctuator
 
+private const val NOT_A_PROPERTY = -1
+
 private val UNIT_KINDS = listOf("FUNCTION", "PROCEDURE", "PACKAGE", "TRIGGER", "TYPE")
 
 internal class PropertyScan(val next: Int, val deterministic: Boolean, val terminal: Boolean)
@@ -37,45 +39,76 @@ internal class CallableProperties(private val stream: TokenStream) {
         var index = start
         var deterministic = false
         while (index < limit) {
-            index = when {
-                stream.isKeyword(index, "DETERMINISTIC") -> {
-                    deterministic = true
-                    index + 1
-                }
-                stream.isKeyword(index, "SHARD_ENABLE") -> index + 1
-                stream.isKeyword(index, "PIPELINED") -> {
-                    var next = index + 1
-                    if ((stream.isKeyword(next, "ROW") || stream.isKeyword(next, "TABLE")) && stream.isKeyword(next + 1, "POLYMORPHIC")) next += 2
-                    if (stream.isKeyword(next, "USING")) {
-                        if (!function) return null
-                        return terminalUsing(next, limit, deterministic)
-                    }
-                    next
-                }
-                stream.isKeyword(index, "AGGREGATE") -> {
-                    if (!function || !stream.isKeyword(index + 1, "USING")) return null
-                    return terminalUsing(index + 1, limit, deterministic)
-                }
-                stream.isKeyword(index, "SQL_MACRO") -> sqlMacroEnd(index + 1, limit) ?: return null
-                stream.isKeyword(index, "PARALLEL_ENABLE") -> parallelEnableEnd(index + 1, limit) ?: return null
-                stream.isKeyword(index, "ORDER") || stream.isKeyword(index, "CLUSTER") -> streamingEnd(index, limit) ?: return null
-                stream.isKeyword(index, "RESULT_CACHE") ->
-                    if (stream.isKeyword(index + 1, "RELIES_ON")) {
-                        stream.delimitedListEnd(index + 2, limit) { stream.strictQualifiedNameAnyLength(it, limit) } ?: return null
-                    } else {
-                        index + 1
-                    }
-                stream.isKeyword(index, "AUTHID") ->
-                    if (stream.isKeyword(index + 1, "CURRENT_USER") || stream.isKeyword(index + 1, "DEFINER")) index + 2 else return null
-                stream.isKeyword(index, "DEFAULT") ->
-                    if (stream.isKeyword(index + 1, "COLLATION") && stream.isKeyword(index + 2, "USING_NLS_COMP")) index + 3 else return null
-                stream.isKeyword(index, "ACCESSIBLE") ->
-                    if (stream.isKeyword(index + 1, "BY")) stream.delimitedListEnd(index + 2, limit, ::accessorEnd) ?: return null else return null
-                else -> return PropertyScan(index, deterministic, false)
+            if (stream.isKeyword(index, "DETERMINISTIC")) {
+                deterministic = true
+                index++
+                continue
             }
+            val using = terminalUsingClause(index)
+            if (using != null) {
+                if (!function) return null
+                return terminalUsing(using, limit, deterministic)
+            }
+            val next = propertyEnd(index, limit) ?: return null
+            if (next == NOT_A_PROPERTY) return PropertyScan(index, deterministic, false)
+            index = next
         }
         return null
     }
+
+    /**
+     * The index of the `USING` of a terminal `PIPELINED [ROW|TABLE POLYMORPHIC] USING` or `AGGREGATE USING`
+     * clause starting at [index], or null when no terminal clause starts there.
+     */
+    private fun terminalUsingClause(index: Int): Int? {
+        val using = when {
+            stream.isKeyword(index, "PIPELINED") -> pipelinedHeadEnd(index)
+            stream.isKeyword(index, "AGGREGATE") -> index + 1
+            else -> return null
+        }
+        return using.takeIf { stream.isKeyword(it, "USING") }
+    }
+
+    /** `PIPELINED [ROW|TABLE POLYMORPHIC]`: the index after it. */
+    private fun pipelinedHeadEnd(index: Int): Int {
+        val next = index + 1
+        val polymorphic = (stream.isKeyword(next, "ROW") || stream.isKeyword(next, "TABLE")) && stream.isKeyword(next + 1, "POLYMORPHIC")
+        return if (polymorphic) next + 2 else next
+    }
+
+    /**
+     * The index after the non-terminal property clause at [index]; [NOT_A_PROPERTY] when no property starts there
+     * (the scan ends), null when the clause is malformed.
+     */
+    private fun propertyEnd(index: Int, limit: Int): Int? = when {
+        stream.isKeyword(index, "SHARD_ENABLE") -> index + 1
+        stream.isKeyword(index, "PIPELINED") -> pipelinedHeadEnd(index)
+        stream.isKeyword(index, "AGGREGATE") -> null // not followed by USING: see terminalUsingClause
+        stream.isKeyword(index, "SQL_MACRO") -> sqlMacroEnd(index + 1, limit)
+        stream.isKeyword(index, "PARALLEL_ENABLE") -> parallelEnableEnd(index + 1, limit)
+        stream.isKeyword(index, "ORDER") || stream.isKeyword(index, "CLUSTER") -> streamingEnd(index, limit)
+        stream.isKeyword(index, "RESULT_CACHE") -> resultCacheEnd(index, limit)
+        stream.isKeyword(index, "AUTHID") -> authidEnd(index)
+        stream.isKeyword(index, "DEFAULT") -> defaultCollationEnd(index)
+        stream.isKeyword(index, "ACCESSIBLE") -> accessibleByEnd(index, limit)
+        else -> NOT_A_PROPERTY
+    }
+
+    private fun resultCacheEnd(index: Int, limit: Int): Int? =
+        if (stream.isKeyword(index + 1, "RELIES_ON")) {
+            stream.delimitedListEnd(index + 2, limit) { stream.strictQualifiedNameAnyLength(it, limit) }
+        } else {
+            index + 1
+        }
+
+    private fun authidEnd(index: Int): Int? =
+        if (stream.isKeyword(index + 1, "CURRENT_USER") || stream.isKeyword(index + 1, "DEFINER")) index + 2 else null
+
+    private fun defaultCollationEnd(index: Int): Int? =
+        if (stream.isKeyword(index + 1, "COLLATION") && stream.isKeyword(index + 2, "USING_NLS_COMP")) index + 3 else null
+
+    private fun accessibleByEnd(index: Int, limit: Int): Int? =
+        if (stream.isKeyword(index + 1, "BY")) stream.delimitedListEnd(index + 2, limit, ::accessorEnd) else null
 
     /** `USING object_reference ;` at [using]; the reference is a conservative name path. */
     private fun terminalUsing(using: Int, limit: Int, deterministic: Boolean): PropertyScan? {

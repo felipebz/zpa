@@ -74,6 +74,20 @@ class BodyBoundaryScannerTest {
     }
 
     @Test
+    fun closeBlockPopsTheInnermostBlockAndIgnoresEndIfAndEndLoop() {
+        val f = Fixture("END; END IF; END LOOP; END; END;")
+        val blocks = mutableListOf(BlockKind.BEGIN, BlockKind.CASE)
+        assertThat(f.scanner.closeBlock(f.at("END", 1), blocks)).isEqualTo(BlockClose.IGNORED)
+        assertThat(f.scanner.closeBlock(f.at("END", 2), blocks)).isEqualTo(BlockClose.IGNORED)
+        assertThat(blocks).containsExactly(BlockKind.BEGIN, BlockKind.CASE)
+        assertThat(f.scanner.closeBlock(f.at("END", 0), blocks)).isEqualTo(BlockClose.CASE)
+        assertThat(f.scanner.closeBlock(f.at("END", 3), blocks)).isEqualTo(BlockClose.BEGIN)
+        assertThat(blocks).isEmpty()
+        assertThat(f.scanner.closeBlock(f.at("END", 4), blocks)).isEqualTo(BlockClose.UNBALANCED)
+        assertThat(blocks).isEmpty()
+    }
+
+    @Test
     fun unterminatedOrUnbalancedBodiesYieldNull() {
         val unterminated = Fixture("IS BEGIN NULL;")
         assertThat(unterminated.scanner.implementationEnd(1, unterminated.size)).isNull()

@@ -62,26 +62,38 @@ internal class CallSpecificationScanner(private val stream: TokenStream, private
      */
     private fun externalParameterEnd(start: Int, limit: Int): Int? {
         if (start >= limit) return null
-        // CONTEXT is a complete parameter; if anything else follows it is an ordinary (unreserved)
-        // name, as the grammar's third alternative allows (e.g. `CONTEXT x`).
-        if (stream.isKeyword(start, "CONTEXT") && (stream.isPunctuator(start + 1, PlSqlPunctuator.COMMA) ||
-                stream.isPunctuator(start + 1, PlSqlPunctuator.RPARENTHESIS))) return start + 1
-        if (stream.isKeyword(start, "SELF")) {
-            // `SELF (TDO | property)` must end the parameter; otherwise SELF is an ordinary name.
-            val selfEnd = if (stream.isKeyword(start + 1, "TDO")) start + 2 else externalParameterPropertyEnd(start + 1)
-            if (selfEnd != null && (stream.isPunctuator(selfEnd, PlSqlPunctuator.COMMA) ||
-                    stream.isPunctuator(selfEnd, PlSqlPunctuator.RPARENTHESIS))) return selfEnd
-        }
+        contextParameterEnd(start)?.let { return it }
+        selfParameterEnd(start)?.let { return it }
         if (!stream.isKeyword(start, "RETURN") && !stream.isNameBefore(start, limit)) return null
-        var index = start + 1
-        index = externalParameterPropertyEnd(index) ?: index
-        if (stream.isKeyword(index, "BY")) {
-            if (!stream.isKeyword(index + 1, "REFERENCE")) return null
-            index += 2
-        }
+        val afterProperty = externalParameterPropertyEnd(start + 1) ?: (start + 1)
+        val index = byReferenceEnd(afterProperty) ?: return null
         val datatypeEnd = externalDatatypeEnd(index, limit) ?: return null
         if (datatypeEnd > index && !datatypeShape.strictDatatype(index, datatypeEnd)) return null
         return datatypeEnd
+    }
+
+    private fun endsExternalParameter(index: Int): Boolean =
+        stream.isPunctuator(index, PlSqlPunctuator.COMMA) || stream.isPunctuator(index, PlSqlPunctuator.RPARENTHESIS)
+
+    /**
+     * CONTEXT is a complete parameter; if anything else follows it is an ordinary (unreserved)
+     * name, as the grammar's third alternative allows (e.g. `CONTEXT x`).
+     */
+    private fun contextParameterEnd(start: Int): Int? =
+        if (stream.isKeyword(start, "CONTEXT") && endsExternalParameter(start + 1)) start + 1 else null
+
+    /** `SELF (TDO | property)` must end the parameter; otherwise SELF is an ordinary name. */
+    private fun selfParameterEnd(start: Int): Int? {
+        if (!stream.isKeyword(start, "SELF")) return null
+        val selfEnd = if (stream.isKeyword(start + 1, "TDO")) start + 2 else externalParameterPropertyEnd(start + 1)
+        return selfEnd?.takeIf { endsExternalParameter(it) }
+    }
+
+    /** `[BY REFERENCE]` at [index]: the index after it, [index] itself when absent, null for a `BY` without `REFERENCE`. */
+    private fun byReferenceEnd(index: Int): Int? = when {
+        !stream.isKeyword(index, "BY") -> index
+        stream.isKeyword(index + 1, "REFERENCE") -> index + 2
+        else -> null
     }
 
     /** `INDICATOR [STRUCT | TDO]` | `LENGTH` | `DURATION` | `MAXLEN` | `CHARSETID` | `CHARSETFORM`. */

@@ -34,6 +34,14 @@ internal enum class BlockKind {
     CASE
 }
 
+/** What an `END` token did to the stack of open blocks. */
+internal enum class BlockClose {
+    IGNORED,
+    CASE,
+    BEGIN,
+    UNBALANCED
+}
+
 /**
  * Value-based boundary scanning of subprogram bodies and implementations: BEGIN/END/CASE block
  * tracking and nested-subprogram skipping. It only identifies token indices and never produces facts.
@@ -64,12 +72,10 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
         var bodyStarted = false
         var index = start
         while (index < end.coerceAtMost(stream.tokens.size)) {
-            if (!bodyStarted && isSubprogramKeyword(index)) {
-                val nestedEnd = bodySubprogramEnd(index, end)
-                if (nestedEnd != null) {
-                    index = nestedEnd + 1
-                    continue
-                }
+            val nestedEnd = nestedSubprogramEnd(index, end, bodyStarted)
+            if (nestedEnd != null) {
+                index = nestedEnd + 1
+                continue
             }
             when {
                 stream.isKeyword(index, "BEGIN") -> {
@@ -77,19 +83,27 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
                     blocks += BlockKind.BEGIN
                 }
                 isCaseStart(index) -> blocks += BlockKind.CASE
-                stream.isKeyword(index, "END") -> when {
-                    stream.isKeyword(index + 1, "IF") || stream.isKeyword(index + 1, "LOOP") -> Unit
-                    blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                    blocks.lastOrNull() == BlockKind.BEGIN -> {
-                        blocks.removeAt(blocks.lastIndex)
-                        if (bodyStarted && blocks.isEmpty()) return stream.semicolonAfter(index).coerceAtMost(end)
-                    }
-                    else -> return null
+                stream.isKeyword(index, "END") -> {
+                    val closed = closeBlock(index, blocks)
+                    if (closed == BlockClose.UNBALANCED) return null
+                    if (closed == BlockClose.BEGIN && bodyStarted && blocks.isEmpty()) return stream.semicolonAfter(index).coerceAtMost(end)
                 }
             }
             index++
         }
         return null
+    }
+
+    /** The end of a nested subprogram that starts at [index], only before the body of the enclosing one has started. */
+    private fun nestedSubprogramEnd(index: Int, end: Int, bodyStarted: Boolean): Int? =
+        if (!bodyStarted && isSubprogramKeyword(index)) bodySubprogramEnd(index, end) else null
+
+    /** Applies the `END` at [index] to [blocks]: `END IF` and `END LOOP` close nothing, `END` pops the innermost block. */
+    fun closeBlock(index: Int, blocks: MutableList<BlockKind>): BlockClose {
+        if (stream.isKeyword(index + 1, "IF") || stream.isKeyword(index + 1, "LOOP")) return BlockClose.IGNORED
+        val last = blocks.lastOrNull() ?: return BlockClose.UNBALANCED
+        blocks.removeAt(blocks.lastIndex)
+        return if (last == BlockKind.CASE) BlockClose.CASE else BlockClose.BEGIN
     }
 
     fun bodySubprogramEnd(index: Int, end: Int): Int? {

@@ -42,13 +42,11 @@ internal class PackageBodyExtractor(
         var cursor = start
         val blocks = mutableListOf<BlockKind>()
         while (cursor < stream.tokens.size) {
-            if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) {
-                val parsed = parseBodySubprogram(cursor, stream.tokens.size, owner)
-                if (parsed != null) {
-                    parsed.declaration?.let(result::add)
-                    cursor = parsed.nextIndex
-                    continue
-                }
+            val parsed = subprogramAt(cursor, blocks, owner)
+            if (parsed != null) {
+                parsed.declaration?.let(result::add)
+                cursor = parsed.nextIndex
+                continue
             }
 
             when {
@@ -60,17 +58,19 @@ internal class PackageBodyExtractor(
                     }
                     blocks += BlockKind.BEGIN
                 }
-                stream.isKeyword(cursor, "END") -> when {
-                    stream.isKeyword(cursor + 1, "IF") || stream.isKeyword(cursor + 1, "LOOP") -> Unit
-                    blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                    blocks.lastOrNull() == BlockKind.BEGIN -> blocks.removeAt(blocks.lastIndex)
-                    blocks.isEmpty() -> return ParsedPackageBody(immutableList(result), stream.semicolonAfter(cursor))
-                }
+                stream.isKeyword(cursor, "END") ->
+                    if (bodyBoundaries.closeBlock(cursor, blocks) == BlockClose.UNBALANCED) {
+                        return ParsedPackageBody(immutableList(result), stream.semicolonAfter(cursor))
+                    }
             }
             cursor++
         }
         return ParsedPackageBody(immutableList(result), stream.tokens.lastIndex)
     }
+
+    /** The subprogram that starts at [cursor], only outside any block. */
+    private fun subprogramAt(cursor: Int, blocks: List<BlockKind>, owner: QualifiedName): ParsedBodySubprogram? =
+        if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) parseBodySubprogram(cursor, stream.tokens.size, owner) else null
 
     private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
         val function = stream.valueAt(index) == "FUNCTION"
