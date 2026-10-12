@@ -28,7 +28,7 @@ import com.felipebz.zpa.project.immutableList
  * Per-extraction unit discovery and dispatch: finds candidate `CREATE` units by value, selects the extractor, and
  * advances through the token list. It owns the (eagerly built, thread-confined) component graph of one extraction.
  */
-internal class UnitDispatcher(fileId: FileId, tokens: List<Token>) {
+internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText: DiscardedSourceText) {
     private val stream = TokenStream(fileId, tokens)
     private val bounds = UnitBounds(stream)
     private val datatypeShape = DatatypeShape(stream)
@@ -42,7 +42,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>) {
     private val callableProperties = CallableProperties(stream)
     private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
     private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences)
-    private val packageSpecifications = PackageSpecificationExtractor(stream, bounds, packageValues, memberParser)
+    private val packageSpecifications = PackageSpecificationExtractor(stream, bounds, packageValues, memberParser, discardedText)
     private val standaloneCallables = StandaloneCallableExtractor(
         stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
     )

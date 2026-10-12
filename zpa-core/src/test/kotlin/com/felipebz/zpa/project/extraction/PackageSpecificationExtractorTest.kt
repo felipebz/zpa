@@ -36,7 +36,7 @@ class PackageSpecificationExtractorTest {
         private val references = TypeReferences(stream)
         private val members = PackageMemberParser(stream, references, CollectionElementSyntax(stream, DatatypeShape(stream), references), DatatypeShape(stream))
         val extractor = PackageSpecificationExtractor(
-            stream, UnitBounds(stream), PackageValueRecognizer(stream, shape, references, InitializerShape(stream)), members
+            stream, UnitBounds(stream), PackageValueRecognizer(stream, shape, references, InitializerShape(stream)), members, DiscardedSourceText(text)
         )
     }
 

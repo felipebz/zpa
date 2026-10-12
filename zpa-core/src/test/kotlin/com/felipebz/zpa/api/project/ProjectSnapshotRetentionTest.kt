@@ -631,7 +631,7 @@ class ProjectSnapshotRetentionTest {
 
     @Test
     fun auditRejectsTheUnitDispatcherReachableFromAGraph() {
-        val dispatcher = com.felipebz.zpa.project.extraction.UnitDispatcher(com.felipebz.zpa.project.FileId("f.sql"), emptyList())
+        val dispatcher = com.felipebz.zpa.project.extraction.UnitDispatcher(com.felipebz.zpa.project.FileId("f.sql"), emptyList(), com.felipebz.zpa.project.extraction.DiscardedSourceText(""))
         assertThatThrownBy {
             auditGraph(mapOf("holder" to OpaqueFieldHolder(dispatcher)), emptyList(), "unused-source-marker")
         }.isInstanceOf(AssertionError::class.java)

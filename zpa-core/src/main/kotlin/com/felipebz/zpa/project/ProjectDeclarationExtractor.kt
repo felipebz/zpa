@@ -20,6 +20,7 @@
 package com.felipebz.zpa.project
 
 import com.felipebz.zpa.lexer.PlSqlLexer
+import com.felipebz.zpa.project.extraction.DiscardedSourceText
 import com.felipebz.zpa.project.extraction.UnitDispatcher
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
@@ -41,6 +42,6 @@ class ProjectDeclarationExtractor(
 
     override fun extract(fileId: FileId, source: String): List<ProjectDeclaration> {
         val tokens = lexers.get().lex(source)
-        return UnitDispatcher(fileId, tokens).extract()
+        return UnitDispatcher(fileId, tokens, DiscardedSourceText(source)).extract()
     }
 }
