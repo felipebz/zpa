@@ -82,11 +82,11 @@ internal object ReferenceHolders {
      */
     @JvmSynthetic
     fun unitOf(index: ProjectSymbolIndex, fact: ProjectDeclaration, owner: QualifiedName): IndexedDeclaration? =
-        index.findOccurrences(owner).filter {
+        index.findOccurrences(owner).singleOrNull {
             val unit = it.declaration
             unit is PackageDeclaration && unit.role == DeclarationRole.SPECIFICATION && unit.fileId == fact.fileId &&
                 contains(unit.sourceRange, fact.sourceRange)
-        }.singleOrNull()
+        }
 
     private fun contains(outer: SourceRange, inner: SourceRange): Boolean =
         (outer.startLine < inner.startLine || (outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn)) &&

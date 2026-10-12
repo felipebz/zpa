@@ -58,15 +58,15 @@ class ProjectApiJavaConsumerTest {
         assertThat(snapshot.getFileIds()).containsExactly("db/shop_body.sql", "db/shop_spec.sql");
         assertThat(snapshot.getFailures()).isEmpty();
 
-        Map<ProjectDeclarationKind, Integer> kinds = new HashMap<>();
+        Map<ProjectDeclarationKind, Integer> kinds = new EnumMap<>(ProjectDeclarationKind.class);
         for (ProjectDeclarationView view : snapshot.getDeclarations()) {
             kinds.merge(view.getKind(), 1, Integer::sum);
         }
-        assertThat(kinds.get(ProjectDeclarationKind.PACKAGE)).isEqualTo(1);
-        assertThat(kinds.get(ProjectDeclarationKind.PACKAGE_TYPE)).isEqualTo(1);
-        assertThat(kinds.get(ProjectDeclarationKind.PACKAGE_SUBTYPE)).isEqualTo(1);
-        assertThat(kinds.get(ProjectDeclarationKind.PACKAGE_PROCEDURE)).isEqualTo(5);
-        assertThat(kinds.get(ProjectDeclarationKind.PACKAGE_FUNCTION)).isEqualTo(2);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE, 1);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_TYPE, 1);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_SUBTYPE, 1);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_PROCEDURE, 5);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_FUNCTION, 2);
         assertThat(snapshot.declarationsFor("db/shop_spec.sql").getDeclarations()).hasSize(7);
         assertThat(snapshot.declarationsFor("unknown.sql").getDeclarations()).isEmpty();
     }
@@ -109,8 +109,8 @@ class ProjectApiJavaConsumerTest {
         ProjectInventory<ProjectPackageSubprogramView> place =
             snapshot.findPackageSubprograms(name("shop"), ProjectIdentifier.fromSource("place"));
         assertThat(place.getStatus()).isEqualTo(ProjectInventory.Status.COMPLETE);
-        assertThat(place.getDeclarations()).hasSize(3); // two specifications and one body
-        assertThat(place.getDeclarations()).extracting(ProjectPackageSubprogramView::getRole)
+        assertThat(place.getDeclarations()).hasSize(3) // two specifications and one body
+            .extracting(ProjectPackageSubprogramView::getRole)
             .containsExactly(ProjectDeclarationRole.BODY, ProjectDeclarationRole.SPECIFICATION,
                 ProjectDeclarationRole.SPECIFICATION);
         ProjectPackageSubprogramView twoArgs = place.getDeclarations().get(1);
@@ -273,7 +273,7 @@ class ProjectApiJavaConsumerTest {
     }
 
     @Test
-    void standaloneCallablesExposeCallableFacetsWithoutPackageMembership() {
+    void standaloneCallablesAreSubprogramsWithoutPackageMembership() {
         ProjectSnapshot snapshot = standalone();
         assertThat(snapshot.getPreparationState()).isEqualTo(ProjectPreparationState.PREPARED_WITH_DECLARATIONS);
         assertThat(snapshot.getDeclarations()).extracting(ProjectDeclarationView::getKind).containsExactly(
@@ -284,7 +284,11 @@ class ProjectApiJavaConsumerTest {
             assertThat(view).isInstanceOf(ProjectSubprogramView.class).isNotInstanceOf(ProjectPackageSubprogramView.class);
             assertThat(view.getRole()).isEqualTo(ProjectDeclarationRole.STANDALONE);
         }
+    }
 
+    @Test
+    void standaloneProcedureSignaturesExposeModesDefaultsAndAnchors() {
+        ProjectSnapshot snapshot = standalone();
         ProjectSubprogramView sync = (ProjectSubprogramView) snapshot.findDeclarations(name("app", "sync_orders"))
             .getDeclarations().get(0);
         assertThat(sync).isNotInstanceOf(ProjectFunctionView.class);
@@ -303,7 +307,11 @@ class ProjectApiJavaConsumerTest {
         assertThat(parameters.get(3).getTypeRef().getName()).isEqualTo(name("orders", "note"));
         assertThat(parameters.get(0).getSourceRange().getFileId()).isEqualTo("db/standalone.sql");
         assertThat(parameters.get(0).getSourceRange().getStartLine()).isEqualTo(2);
+    }
 
+    @Test
+    void standaloneFunctionsExposeReturnTypeAndDeterminism() {
+        ProjectSnapshot snapshot = standalone();
         ProjectFunctionView tax = (ProjectFunctionView) snapshot.findDeclarations(name("tax")).getDeclarations().get(0);
         assertThat(tax).isInstanceOf(ProjectSubprogramView.class).isNotInstanceOf(ProjectPackageSubprogramView.class);
         assertThat(tax.isDeterministic()).isTrue();
@@ -312,7 +320,11 @@ class ProjectApiJavaConsumerTest {
         ProjectFunctionView nowText = (ProjectFunctionView) snapshot.findDeclarations(name("now_text")).getDeclarations().get(0);
         assertThat(nowText.isDeterministic()).isFalse();
         assertThat(nowText.getParameters()).isEmpty();
+    }
 
+    @Test
+    void quotedStandaloneNamesKeepTheirAuthoredSpelling() {
+        ProjectSnapshot snapshot = standalone();
         ProjectSubprogramView quoted = (ProjectSubprogramView) snapshot.findDeclarations(name("\"Audit\"", "\"Log Event\""))
             .getDeclarations().get(0);
         assertThat(quoted.getLocalName().getOriginalSpelling()).isEqualTo("\"Log Event\"");
@@ -320,18 +332,33 @@ class ProjectApiJavaConsumerTest {
         assertThat(quoted.getQualifiedName().getSegments()).hasSize(2);
         // Authored name only: the first segment is neither a package owner nor an inferred schema.
         assertThat(snapshot.findDeclarations(name("Log Event")).getDeclarations()).isEmpty();
+    }
 
+    @Test
+    void standaloneIdentitiesAreCanonicalAndCollectionsAreImmutable() {
+        ProjectSnapshot snapshot = standalone();
+        ProjectSubprogramView sync = (ProjectSubprogramView) snapshot.findDeclarations(name("app", "sync_orders"))
+            .getDeclarations().get(0);
+        ProjectFunctionView tax = (ProjectFunctionView) snapshot.findDeclarations(name("tax")).getDeclarations().get(0);
         // Canonical IDs across query paths; mutation is rejected.
         assertThat(snapshot.declarationsFor("db/standalone.sql").getDeclarations()).extracting(ProjectDeclarationView::getId)
             .isEqualTo(snapshot.getDeclarations().stream().map(ProjectDeclarationView::getId).toList());
         assertThat(snapshot.findDeclarations(name("tax")).getDeclarations().get(0).getId()).isEqualTo(tax.getId());
-        assertThatThrownBy(() -> tax.getParameters().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectParameterView> taxParameters = tax.getParameters();
+        assertThatThrownBy(taxParameters::clear).isInstanceOf(UnsupportedOperationException.class);
         Iterator<ProjectParameterView> iterator = sync.getParameters().iterator();
         iterator.next();
         assertThatThrownBy(iterator::remove).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> snapshot.getDeclarations().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectDeclarationView> allDeclarations = snapshot.getDeclarations();
+        assertThatThrownBy(allDeclarations::clear).isInstanceOf(UnsupportedOperationException.class);
+    }
 
-        // Standalone declarations are never correlation inputs.
+    @Test
+    void standaloneDeclarationsAreNeverCorrelationInputs() {
+        ProjectSnapshot snapshot = standalone();
+        ProjectSubprogramView sync = (ProjectSubprogramView) snapshot.findDeclarations(name("app", "sync_orders"))
+            .getDeclarations().get(0);
+        ProjectFunctionView tax = (ProjectFunctionView) snapshot.findDeclarations(name("tax")).getDeclarations().get(0);
         assertThatThrownBy(() -> snapshot.correlateSpecification(tax.getId())).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> snapshot.correlateSpecification(sync.getId())).isInstanceOf(IllegalArgumentException.class);
     }
@@ -497,9 +524,9 @@ class ProjectApiJavaConsumerTest {
     void valuesDoNotEnterTypeOrSubprogramSurfaces() {
         ProjectSnapshot snapshot = config();
         ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "g");
-        assertThat((Object) g).isNotInstanceOf(ProjectTypeDeclarationView.class);
-        assertThat((Object) g).isNotInstanceOf(ProjectSubprogramView.class);
-        assertThat((Object) g).isNotInstanceOf(ProjectPackageSubprogramView.class);
+        assertThat((Object) g).isNotInstanceOf(ProjectTypeDeclarationView.class)
+            .isNotInstanceOf(ProjectSubprogramView.class)
+            .isNotInstanceOf(ProjectPackageSubprogramView.class);
 
         // A procedure with the same textual name is a separate occurrence and the only package subprogram candidate.
         List<ProjectPackageSubprogramView> candidates = snapshot
@@ -522,16 +549,18 @@ class ProjectApiJavaConsumerTest {
     @Test
     void valueViewsExposeNoMutationSurface() {
         ProjectSnapshot snapshot = config();
-        assertThatThrownBy(() -> snapshot.declarationsFor("db/config_spec.sql").getDeclarations().clear())
+        List<ProjectDeclarationView> fileDeclarations = snapshot.declarationsFor("db/config_spec.sql").getDeclarations();
+        assertThatThrownBy(fileDeclarations::clear)
             .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> snapshot.findDeclarations(name("app", "config", "g")).getDeclarations().remove(0))
+        List<ProjectDeclarationView> valueDeclarations = snapshot.findDeclarations(name("app", "config", "g")).getDeclarations();
+        assertThatThrownBy(() -> valueDeclarations.remove(0))
             .isInstanceOf(UnsupportedOperationException.class);
         ProjectPackageValueView g = value(snapshot, "db/config_spec.sql", "g");
         assertThat(ProjectPackageValueView.class.getMethods()).extracting(java.lang.reflect.Method::getName)
             .noneMatch(n -> n.startsWith("set"));
         assertThat(g.getOwner().getSegments()).isUnmodifiable();
-        assertThat(g.getId()).isEqualTo(value(snapshot, "db/config_spec.sql", "g").getId());
-        assertThat(g.getId().hashCode()).isEqualTo(value(snapshot, "db/config_spec.sql", "g").getId().hashCode());
+        ProjectDeclarationId sameId = value(snapshot, "db/config_spec.sql", "g").getId();
+        assertThat(g.getId()).isEqualTo(sameId).hasSameHashCodeAs(sameId);
     }
 
     private static String describe(ProjectDeclarationKind kind) {
@@ -633,7 +662,8 @@ class ProjectApiJavaConsumerTest {
         assertThat(amount.getSubtypes()).extracting(ProjectSubtypeView::getId)
             .containsExactly(declarationId(snapshot, "p", "amount"), declarationId(snapshot, "p", "money"));
         assertThat(amount.getTerminalReference().orElseThrow().getName()).isEqualTo(name("NUMBER"));
-        assertThatThrownBy(() -> amount.getSubtypes().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectSubtypeView> amountSubtypes = amount.getSubtypes();
+        assertThatThrownBy(amountSubtypes::clear).isInstanceOf(UnsupportedOperationException.class);
         // The name-only overload gives the same alias chain but has no source range for the initial name.
         ProjectTypeDescription byName = snapshot.describeType(name("amount"), p);
         assertThat(byName.getSubtypes()).extracting(ProjectSubtypeView::getId).isEqualTo(
@@ -653,13 +683,13 @@ class ProjectApiJavaConsumerTest {
             assertThat(element.getName()).isEqualTo(name("rec_t"));
             ProjectTypeDescription described = snapshot.describeType(element, p);
             assertThat(label(described.getStatus())).isEqualTo("declared");
-            ProjectPackageTypeView record = (ProjectPackageTypeView) described.getDeclaration().orElseThrow();
-            assertThat(record.getQualifiedName()).isEqualTo(name("p", "rec_t"));
-            assertThat(record.getShape()).contains(ProjectTypeShape.RECORD);
-            assertThat(record.getId()).isEqualTo(declarationId(snapshot, "p", "rec_t"));
-            assertThat(record.getRecordFields()).extracting(f -> f.getName().getOriginalSpelling()).containsExactly("id", "label");
-            assertThat(label(snapshot.describeType(record.getRecordFields().get(0).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
-            assertThat(label(snapshot.describeType(record.getRecordFields().get(1).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("character");
+            ProjectPackageTypeView recordType = (ProjectPackageTypeView) described.getDeclaration().orElseThrow();
+            assertThat(recordType.getQualifiedName()).isEqualTo(name("p", "rec_t"));
+            assertThat(recordType.getShape()).contains(ProjectTypeShape.RECORD);
+            assertThat(recordType.getId()).isEqualTo(declarationId(snapshot, "p", "rec_t"));
+            assertThat(recordType.getRecordFields()).extracting(f -> f.getName().getOriginalSpelling()).containsExactly("id", "label");
+            assertThat(label(snapshot.describeType(recordType.getRecordFields().get(0).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
+            assertThat(label(snapshot.describeType(recordType.getRecordFields().get(1).getTypeRef(), p).getBuiltInCategory().orElseThrow())).isEqualTo("character");
         }
         // A record has no element; bounds and index domains are not part of the contract.
         assertThat(((ProjectShapedTypeView) snapshot.resolveNamedType(name("rec_t"), p).getDeclaration().orElseThrow()).getElementType()).isEmpty();
@@ -762,7 +792,7 @@ class ProjectApiJavaConsumerTest {
     }
 
     @Test
-    void packageValuesResolveWithIdentityAndTheirAnchorsAreDescribed() {
+    void packageValueLookupResolvesWithIdentityAndImmutableCandidates() {
         ProjectSnapshot snapshot = anchors();
         ProjectValueResolution g = snapshot.resolvePackageValue(name("p", "g"), null);
         assertThat(label(g.getStatus())).isEqualTo("resolved");
@@ -776,8 +806,14 @@ class ProjectApiJavaConsumerTest {
         ProjectValueResolution constant = snapshot.resolvePackageValue(name("c"), name("p"));
         assertThat(constant.getValue().orElseThrow().isConstant()).isTrue();
         assertThat(constant.getPackageOwner()).contains(name("p"));
-        assertThatThrownBy(() -> g.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectDeclarationView> candidates = g.getCandidates();
+        assertThatThrownBy(candidates::clear).isInstanceOf(UnsupportedOperationException.class);
+    }
 
+    @Test
+    void anchoredValuesDescribeBuiltInTerminalsWithProvenance() {
+        ProjectSnapshot snapshot = anchors();
+        ProjectPackageValueView value = snapshot.resolvePackageValue(name("p", "g"), null).getValue().orElseThrow();
         ProjectTypeDescription a = describeValue(snapshot, "q", "a");
         assertThat(label(a.getStatus())).isEqualTo("built-in");
         assertThat(label(a.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
@@ -787,7 +823,11 @@ class ProjectApiJavaConsumerTest {
         assertThat(a.getValueResolution()).isEmpty();
         assertThat(a.getAnchorStop()).isEmpty();
         assertThat(label(describeValue(snapshot, "q", "b").getBuiltInCategory().orElseThrow())).isEqualTo("character");
+    }
 
+    @Test
+    void anchorChainsKeepOrderedProvenanceAndImmutableLists() {
+        ProjectSnapshot snapshot = anchors();
         ProjectTypeDescription chain = describeValue(snapshot, "q", "t3");
         assertThat(label(chain.getBuiltInCategory().orElseThrow())).isEqualTo("numeric");
         assertThat(chain.getValues()).extracting(v -> v.getLocalName().getOriginalSpelling())
@@ -797,19 +837,30 @@ class ProjectApiJavaConsumerTest {
             declarationId(snapshot, "p", "third_value"), declarationId(snapshot, "p", "second_value"),
             declarationId(snapshot, "p", "first_value"), declarationId(snapshot, "p", "numeric_t"));
         assertThat(chain.getTerminalReference().orElseThrow().getName()).isEqualTo(name("NUMBER"));
-        assertThatThrownBy(() -> chain.getSteps().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> chain.getValues().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> chain.getSubtypes().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectDeclarationView> steps = chain.getSteps();
+        List<ProjectPackageValueView> values = chain.getValues();
+        List<ProjectSubtypeView> subtypes = chain.getSubtypes();
+        assertThatThrownBy(steps::clear).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(values::clear).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(subtypes::clear).isInstanceOf(UnsupportedOperationException.class);
+    }
 
-        ProjectTypeDescription record = describeValue(snapshot, "q", "r");
-        assertThat(label(record.getStatus())).isEqualTo("declared");
-        ProjectPackageTypeView recType = (ProjectPackageTypeView) record.getDeclaration().orElseThrow();
+    @Test
+    void recordAndCollectionTerminalsAreDescribedThroughTheirViews() {
+        ProjectSnapshot snapshot = anchors();
+        ProjectTypeDescription recordDescription = describeValue(snapshot, "q", "r");
+        assertThat(label(recordDescription.getStatus())).isEqualTo("declared");
+        ProjectPackageTypeView recType = (ProjectPackageTypeView) recordDescription.getDeclaration().orElseThrow();
         assertThat(recType.getId()).isEqualTo(declarationId(snapshot, "p", "rec_t"));
         assertThat(recType.getRecordFields()).extracting(f -> f.getName().getOriginalSpelling()).containsExactly("id");
         ProjectShapedTypeView rows = (ProjectShapedTypeView) describeValue(snapshot, "q", "rs").getDeclaration().orElseThrow();
         assertThat(rows.getShape()).contains(ProjectTypeShape.COLLECTION);
         assertThat(rows.getElementType().orElseThrow().getName()).isEqualTo(name("rec_t"));
+    }
 
+    @Test
+    void nameBasedDescriptionKeepsSubtypeMeaningAndComposesWithValueLookup() {
+        ProjectSnapshot snapshot = anchors();
         // The name-based overload keeps its S4 meaning (subtype aliases, no anchors).
         ProjectTypeDescription byName = snapshot.describeType(name("numeric_t"), name("p"));
         assertThat(byName.getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
@@ -823,7 +874,7 @@ class ProjectApiJavaConsumerTest {
     }
 
     @Test
-    void sourceBackedLookupAndAnchorsReportConservativeStates() {
+    void ambiguousAndMissingValueLookupsReportConservativeStates() {
         ProjectSnapshot snapshot = anchors(counted("db/dd1.sql", "anchors_dup.sql"), counted("db/dd2.sql", "anchors_dup.sql"));
         ProjectValueResolution duplicate = snapshot.resolvePackageValue(name("dd", "g"), null);
         assertThat(label(duplicate.getStatus())).isEqualTo("ambiguous");
@@ -836,7 +887,11 @@ class ProjectApiJavaConsumerTest {
         ProjectValueResolution missing = snapshot.resolvePackageValue(name("p", "nothing"), null);
         assertThat(label(missing.getStatus())).isEqualTo("not found");
         assertThat(snapshot.resolvePackageValue(name("g"), null).getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
+    }
 
+    @Test
+    void unresolvedAndStoppedAnchorsExplainWhyTheyStop() {
+        ProjectSnapshot snapshot = anchors(counted("db/dd1.sql", "anchors_dup.sql"), counted("db/dd2.sql", "anchors_dup.sql"));
         ProjectTypeDescription column = describeValue(snapshot, "q", "col");
         assertThat(column.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_VALUE);
         assertThat(column.getValueResolution().orElseThrow().getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
@@ -852,7 +907,11 @@ class ProjectApiJavaConsumerTest {
         ProjectPackageTypeView cap = (ProjectPackageTypeView) snapshot.resolveNamedType(name("cap_t"), name("p")).getDeclaration().orElseThrow();
         ProjectTypeDescription captured = snapshot.describeType(cap.getRecordFields().get(1).getTypeRef(), cap.getOwner());
         assertThat(label(captured.getAnchorStop().orElseThrow())).isEqualTo("enclosing scope");
+    }
 
+    @Test
+    void cyclesAndUnknownNamesKeepTheValuesFollowedSoFar() {
+        ProjectSnapshot snapshot = anchors(counted("db/dd1.sql", "anchors_dup.sql"), counted("db/dd2.sql", "anchors_dup.sql"));
         ProjectTypeDescription cycle = describeValue(snapshot, "cy1", "x");
         assertThat(cycle.getStatus()).isEqualTo(ProjectTypeDescription.Status.CYCLE);
         assertThat(cycle.getValues()).hasSize(2);
@@ -860,7 +919,10 @@ class ProjectApiJavaConsumerTest {
         assertThat(unknown.getStatus()).isEqualTo(ProjectTypeDescription.Status.UNRESOLVED_NAME);
         assertThat(unknown.getValues()).extracting(v -> v.getLocalName().getOriginalSpelling()).containsExactly("unknown_value");
         assertThat(unknown.getResolution().orElseThrow().getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
+    }
 
+    @Test
+    void failedSourcesMakeValueLookupAndAnchorsIncomplete() {
         ProjectSnapshot failed = anchors(failing("db/broken.sql"));
         ProjectValueResolution incomplete = failed.resolvePackageValue(name("p", "g"), null);
         assertThat(label(incomplete.getStatus())).isEqualTo("incomplete");

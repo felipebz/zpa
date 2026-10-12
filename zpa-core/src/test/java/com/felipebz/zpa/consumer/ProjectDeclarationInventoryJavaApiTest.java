@@ -77,12 +77,13 @@ class ProjectDeclarationInventoryJavaApiTest {
         assertThat(map).hasSize(6);
         assertThatThrownBy(() -> first.getDeclarations().clear())
             .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> first.declarationsFor("seq.sql").getDeclarations().clear())
-            .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> first.declarationsFor("seq.sql").getFailures().add(null))
-            .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> ProjectQualifiedName.of("a", "b").getSegments().clear())
-            .isInstanceOf(UnsupportedOperationException.class);
+        ProjectInventory<ProjectDeclarationView> fileInventory = first.declarationsFor("seq.sql");
+        List<ProjectDeclarationView> fileDeclarations = fileInventory.getDeclarations();
+        List<ProjectPreparationFailure> fileFailures = fileInventory.getFailures();
+        assertThatThrownBy(fileDeclarations::clear).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> fileFailures.add(null)).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectIdentifier> segments = ProjectQualifiedName.of("a", "b").getSegments();
+        assertThatThrownBy(segments::clear).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -165,7 +166,8 @@ class ProjectDeclarationInventoryJavaApiTest {
         assertThat(qualified.getCandidates().get(0).getId()).isEqualTo(type.getId());
         assertThat(snapshot.resolveNamedType(ProjectQualifiedName.of("r"), null).getStatus())
             .isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT);
-        assertThatThrownBy(() -> qualified.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectTypeDeclarationView> qualifiedCandidates = qualified.getCandidates();
+        assertThatThrownBy(qualifiedCandidates::clear).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> snapshot.resolveNamedType(null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -188,8 +190,10 @@ class ProjectDeclarationInventoryJavaApiTest {
             }
         }
         assertThat(functions).isEqualTo(1);
-        assertThatThrownBy(() -> inventory.getDeclarations().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> snapshot.findPackageSubprograms(null, ProjectIdentifier.fromSource("run")))
+        List<ProjectPackageSubprogramView> inventoryDeclarations = inventory.getDeclarations();
+        assertThatThrownBy(inventoryDeclarations::clear).isInstanceOf(UnsupportedOperationException.class);
+        ProjectIdentifier run = ProjectIdentifier.fromSource("run");
+        assertThatThrownBy(() -> snapshot.findPackageSubprograms(null, run))
             .isInstanceOf(NullPointerException.class);
     }
 
@@ -200,7 +204,7 @@ class ProjectDeclarationInventoryJavaApiTest {
             ProjectSourceInput.ofText("b.sql", "CREATE PACKAGE BODY m AS PROCEDURE go(a NUMBER) IS BEGIN NULL; END; END m;")));
         ProjectDeclarationId bodyId = snapshot.getDeclarations().stream()
             .filter(d -> d.getRole() == ProjectDeclarationRole.BODY)
-            .filter(d -> d instanceof ProjectPackageSubprogramView)
+            .filter(ProjectPackageSubprogramView.class::isInstance)
             .findFirst().orElseThrow().getId();
         ProjectSpecificationCorrelation correlation = snapshot.correlateSpecification(bodyId);
         assertThat(correlation.getStatus()).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED);
@@ -209,7 +213,8 @@ class ProjectDeclarationInventoryJavaApiTest {
         assertThat(spec.getRole()).isEqualTo(ProjectDeclarationRole.SPECIFICATION);
         assertThat(correlation.getCandidates().get(0).getId()).isEqualTo(spec.getId());
         assertThat(correlation.getFailures()).isEmpty();
-        assertThatThrownBy(() -> correlation.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectPackageSubprogramView> correlationCandidates = correlation.getCandidates();
+        assertThatThrownBy(correlationCandidates::clear).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> snapshot.correlateSpecification(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> snapshot.correlateSpecification(spec.getId())).isInstanceOf(IllegalArgumentException.class);
     }

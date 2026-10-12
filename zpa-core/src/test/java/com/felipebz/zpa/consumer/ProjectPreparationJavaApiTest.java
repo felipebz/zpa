@@ -19,12 +19,7 @@
  */
 package com.felipebz.zpa.consumer;
 
-import com.felipebz.zpa.api.project.ProjectPreparationFailure;
-import com.felipebz.zpa.api.project.ProjectPreparationState;
-import com.felipebz.zpa.api.project.ProjectSnapshot;
-import com.felipebz.zpa.api.project.ProjectSnapshots;
-import com.felipebz.zpa.api.project.ProjectSourceInput;
-import com.felipebz.zpa.api.project.ProjectSourceReader;
+import com.felipebz.zpa.api.project.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -49,9 +44,11 @@ class ProjectPreparationJavaApiTest {
         assertThat(snapshot.getSuccessfulFileCount()).isEqualTo(1);
         assertThat(snapshot.getFileIds()).containsExactly("package.sql");
         assertThat(snapshot.getFailures()).isEmpty();
-        assertThatThrownBy(() -> snapshot.getFileIds().add("other.sql"))
+        List<String> fileIds = snapshot.getFileIds();
+        List<ProjectPreparationFailure> failures = snapshot.getFailures();
+        assertThatThrownBy(() -> fileIds.add("other.sql"))
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> snapshot.getFailures().add(null))
+        assertThatThrownBy(() -> failures.add(null))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -94,9 +91,11 @@ class ProjectPreparationJavaApiTest {
             assertThat(snapshot.getFailures()).extracting(ProjectPreparationFailure::getExceptionType)
                     .containsExactly(IOException.class.getName(), IOException.class.getName());
         }
-        assertThatThrownBy(() -> serial.getFailures().clear())
+        List<ProjectPreparationFailure> serialFailures = serial.getFailures();
+        List<String> serialFileIds = serial.getFileIds();
+        assertThatThrownBy(serialFailures::clear)
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> serial.getFileIds().set(0, "replacement.sql"))
+        assertThatThrownBy(() -> serialFileIds.set(0, "replacement.sql"))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThat(declarationReads.get()).isEqualTo(2);
         assertThat(firstFailureReads.get()).isEqualTo(2);

@@ -1,5 +1,3 @@
-import org.gradle.api.attributes.LibraryElements
-
 // Independent consumer of the packaged zpa-core artifact. This is a normal, non-published subproject:
 // it only applies the Kotlin/testing conventions (no license, publishing or JReleaser conventions).
 plugins {
@@ -21,6 +19,7 @@ listOf(configurations.testCompileClasspath, configurations.testRuntimeClasspath)
 }
 
 val verifyPackagedZpaCore = tasks.register("verifyPackagedZpaCore") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Fails unless consumer compilation and runtime use the packaged zpa-core JAR."
     val compileClasspath = configurations.testCompileClasspath.get()
     val runtimeClasspath = configurations.testRuntimeClasspath.get()
