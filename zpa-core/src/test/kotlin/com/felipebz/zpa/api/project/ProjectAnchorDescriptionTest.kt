@@ -215,13 +215,13 @@ class ProjectAnchorDescriptionTest {
         val fn = snapshot.findDeclarations(n("p", "fn")).declarations.single() as ProjectFunctionView
         stop(snapshot.describeType(fn.returnType, p), AnchorStop.ENCLOSING_SCOPE) // conservative: parameter c
 
-        // Standalone: no package scope, only qualified names; body-held: one-segment names cannot be judged.
+        // Standalone: no package scope, only qualified names; package-body subprograms: private declarations are not facts, so no anchor can be judged.
         val standalone = snapshot.findDeclarations(n("sp")).declarations.single() as ProjectSubprogramView
         stop(snapshot.describeType(standalone.parameters[0].typeRef, null), AnchorStop.ENCLOSING_SCOPE)
         assertThat(snapshot.describeType(standalone.parameters[1].typeRef, null).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
         val body = snapshot.findPackageSubprograms(n("bp"), ProjectIdentifier.fromSource("w")).declarations.single { it.role == ProjectDeclarationRole.BODY }
         stop(snapshot.describeType(body.parameters[0].typeRef, n("bp")), AnchorStop.ENCLOSING_SCOPE)
-        assertThat(snapshot.describeType(body.parameters[1].typeRef, n("bp")).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
+        stop(snapshot.describeType(body.parameters[1].typeRef, n("bp")), AnchorStop.ENCLOSING_SCOPE) // private declarations are not facts
     }
 
     @Test

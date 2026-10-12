@@ -130,6 +130,9 @@ internal object ProjectTypeDescriber {
             }
             if (segments.size == 1 && captured.isNotEmpty() && !capturedValue) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         }
+        // A package-body subprogram may be captured by a private declaration that is not a fact, whatever the qualification.
+        if (owner != null && holder.role == DeclarationRole.BODY)
+            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
         // A shorter qualified package value followed by a field path competes with the fully qualified value.
         for (length in 2 until segments.size) {
             val prefix = QualifiedName(segments.subList(0, length))
