@@ -22,6 +22,7 @@ package com.felipebz.zpa.api.project
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.*
 import java.util.*
+import com.felipebz.zpa.project.ProjectCallKind as InternalCallKind
 
 /**
  * Immutable metadata facade retaining the existing authoritative preparation result/index.
@@ -171,15 +172,33 @@ class ProjectSnapshot private constructor(
      * nothing is selected. No schema, lexical scope or catalog is inferred, and no source is read again.
      */
     fun findCallCandidates(target: ProjectCallTarget): ProjectCallCandidates {
-        // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
-        val context = if (preparationState == ProjectPreparationState.NOT_PREPARED) {
+        val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal())
+        return ProjectCallCandidates.of(result, target, scope, failures)
+    }
+
+    /**
+     * Structural resolution of a call to [target] with [arguments] in a [kind] context: [findCallCandidates], then
+     * kind and positional/named/mixed association against each candidate's retained formals, with omitted defaults.
+     * An invalid argument notation is reported before anything else. Datatypes and actual expressions are never
+     * considered, and nothing is chosen by position: one APPLICABLE candidate of the requested kind under a certain
+     * target is [ProjectCallResolution.Status.RESOLVED], several are AMBIGUOUS.
+     */
+    fun resolveCall(target: ProjectCallTarget, kind: ProjectCallKind, arguments: ProjectCallArguments): ProjectCallResolution {
+        val internalKind = when (kind) {
+            ProjectCallKind.PROCEDURE -> InternalCallKind.PROCEDURE
+            ProjectCallKind.FUNCTION -> InternalCallKind.FUNCTION
+        }
+        val result = ProjectCallBinder(callContext()).resolve(target.toInternal(), internalKind, arguments.internal)
+        return ProjectCallResolution.of(result, target, kind, arguments, scope, failures)
+    }
+
+    // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
+    private fun callContext(): ProjectAnalysisContext =
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             ProjectAnalysisContext.NOT_PREPARED
         } else {
             ProjectAnalysisContext.prepared(preparationResult)
         }
-        val result = ProjectCallCandidateFinder(context).find(target.toInternal())
-        return ProjectCallCandidates.of(result, target, scope, failures)
-    }
 
     /**
      * Correlates the package-body procedure/function occurrence [bodyId] with specification

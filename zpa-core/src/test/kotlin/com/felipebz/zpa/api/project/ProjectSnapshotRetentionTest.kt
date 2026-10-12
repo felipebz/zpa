@@ -243,6 +243,54 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun callResolutionRetainsOnlyRequestValuesAndDurableFacts() {
+        val sourceMarker = "call-resolution-retention-3b9e1f42-7c5d-4a8e-b6f0-2d4c8a1e9f73"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE r AS PROCEDURE run(a NUMBER, b NUMBER DEFAULT 1); PROCEDURE run(c NUMBER); END r;\n/\n" +
+            "CREATE PACKAGE BODY r AS PROCEDURE run(c NUMBER) IS BEGIN NULL; END; END r;"
+        val reader = ProjectSourceReader { source }
+        val failedReader = ProjectSourceReader { throw IllegalStateException("failure: $sourceMarker") }
+        val input = ProjectSourceInput.ofReader("calls.sql", reader)
+        val failedInput = ProjectSourceInput.ofReader("failed.sql", failedReader)
+        val target = ProjectCallTarget.packageMember(ProjectQualifiedName.of("r"), ProjectIdentifier.fromSource("run"))
+        val arguments = ProjectCallArguments.of(listOf(ProjectCallArgument.named(ProjectIdentifier.fromSource("a"))))
+        val forbiddenFor = { snapshot: ProjectSnapshot ->
+            val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+                .apply { isAccessible = true }.get(snapshot)
+            val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+            listOf(snapshot, resultField, index, source, reader, failedReader, input, failedInput)
+        }
+
+        val resolved = ProjectSnapshots.prepare(listOf(input), false)
+        val result = resolved.resolveCall(target, ProjectCallKind.PROCEDURE, arguments)
+        assertThat(result.status).isEqualTo(ProjectCallResolution.Status.RESOLVED)
+        val incomplete = ProjectSnapshots.prepare(listOf(input, failedInput), false)
+            .resolveCall(target, ProjectCallKind.PROCEDURE, arguments)
+        assertThat(incomplete.status).isEqualTo(ProjectCallResolution.Status.INCOMPLETE_INDEX)
+
+        val reachable = auditGraph(mapOf<String, Any?>("result" to result), forbiddenFor(resolved), sourceMarker)
+        // The two specification overloads and the package specification as evidence; never the body.
+        assertThat(reachable.filterIsInstance<PackageProcedureDeclaration>()).hasSize(2)
+        assertThat(reachable.filterIsInstance<PackageDeclaration>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectDeclaration>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectDeclaration>().map { it.role }).containsOnly(DeclarationRole.SPECIFICATION)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectAnalysisContext>()).isEmpty()
+        assertThat(reachable.filterIsInstance<IndexedDeclaration>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectCallResolution>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectCallCandidate>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectArgumentBinding>()).isEmpty()
+        val incompleteReachable = auditGraph(mapOf<String, Any?>("incomplete" to incomplete), listOf(source, reader, failedReader), sourceMarker)
+        assertThat(incompleteReachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+        assertThat(incompleteReachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+
+        // A request holds only identifiers.
+        val request = auditGraph(mapOf<String, Any?>("target" to target, "arguments" to arguments), emptyList(), sourceMarker)
+        assertThat(request.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(request.filterIsInstance<ProjectSnapshot>()).isEmpty()
+    }
+
+    @Test
     fun anchorDescriptionsRetainOnlyDurableFacts() {
         val sourceMarker = "anchor-retention-8a3c5e17-2d94-4f60-b1a8-6e0d9c7f2b35"
         val source = "-- $sourceMarker\nCREATE PACKAGE ar AS g NUMBER; a g%TYPE; b a%TYPE; c ext.col%TYPE; d x%ROWTYPE; e1 e2%TYPE; e2 e1%TYPE; END ar;\n/\nCREATE PACKAGE cy1 AS x cy2.y%TYPE; END cy1;\n/\nCREATE PACKAGE cy2 AS y cy1.x%TYPE; END cy2;"
