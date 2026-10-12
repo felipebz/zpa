@@ -861,7 +861,7 @@ class ProjectApiJavaConsumerTest {
     @Test
     void nameBasedDescriptionKeepsSubtypeMeaningAndComposesWithValueLookup() {
         ProjectSnapshot snapshot = anchors();
-        // The name-based overload keeps its S4 meaning (subtype aliases, no anchors).
+        // The name-based overload follows subtype aliases only; a name has no anchor to follow.
         ProjectTypeDescription byName = snapshot.describeType(name("numeric_t"), name("p"));
         assertThat(byName.getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
         assertThat(byName.getSubtypes()).hasSize(1);

@@ -29,7 +29,7 @@ import java.util.*
 import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory as Category
 import com.felipebz.zpa.api.project.ProjectValueResolution.Status as ValueStatus
 
-/** Source-backed `%TYPE` traversal; the scope rules follow the Oracle probes recorded in the S5 design. */
+/** Source-backed `%TYPE` traversal; the scope rules follow behavior verified on Oracle. */
 @OptIn(ZpaExperimentalApi::class)
 class ProjectAnchorDescriptionTest {
     private val pSpec = """
