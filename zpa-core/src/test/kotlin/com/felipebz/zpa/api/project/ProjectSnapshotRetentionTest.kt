@@ -204,6 +204,45 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun callTargetsAndCandidateDiscoveryRetainOnlyDurableFacts() {
+        val sourceMarker = "call-discovery-retention-8d2f6b1e-4c7a-4f0e-9b3d-6a1e5c2d7f90"
+        val source = "-- $sourceMarker\n" +
+            "CREATE PACKAGE x AS PROCEDURE run(a NUMBER); " +
+            "FUNCTION run(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING x; END x;\n/\n" +
+            "CREATE PACKAGE BODY x AS PROCEDURE run(a NUMBER) IS BEGIN NULL; END; END x;\n/\n" +
+            "CREATE PROCEDURE x.run IS BEGIN NULL; END;"
+        val reader = ProjectSourceReader { source }
+        val failedReader = ProjectSourceReader { throw IllegalStateException("failure: $sourceMarker") }
+        val input = ProjectSourceInput.ofReader("calls.sql", reader)
+        val failedInput = ProjectSourceInput.ofReader("failed.sql", failedReader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input, failedInput), false)
+        val resultField = ProjectSnapshot::class.java.getDeclaredField("preparationResult")
+            .apply { isAccessible = true }.get(snapshot)
+        val index = (resultField as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val forbidden = listOf(snapshot, resultField, index, source, reader, failedReader, input, failedInput)
+
+        val target = ProjectCallTarget.written(ProjectQualifiedName.of("x", "run"))
+        val result = snapshot.findCallCandidates(target)
+        assertThat(result.status).isEqualTo(ProjectCallCandidates.Status.INCOMPLETE_INDEX)
+        assertThat(result.candidates).hasSize(2)
+
+        val reachable = auditGraph(mapOf<String, Any?>("result" to result), forbidden, sourceMarker)
+        // The specification member, the standalone and the package specification; never the body.
+        assertThat(reachable.filterIsInstance<ProjectDeclaration>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<ProjectDeclaration>().map { it.role }).doesNotContain(DeclarationRole.BODY)
+        assertThat(reachable.filterIsInstance<ProjectPreparationFailure>()).hasSize(1)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectAnalysisContext>()).isEmpty()
+        assertThat(reachable.filterIsInstance<IndexedDeclaration>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectCallCandidates>()).isEmpty()
+
+        // A request value holds only its form and names.
+        val targetOnly = auditGraph(mapOf<String, Any?>("target" to target), forbidden, sourceMarker)
+        assertThat(targetOnly.filterIsInstance<ProjectDeclaration>()).isEmpty()
+        assertThat(targetOnly.filterIsInstance<com.felipebz.zpa.project.ProjectCallTarget>()).isEmpty()
+    }
+
+    @Test
     fun anchorDescriptionsRetainOnlyDurableFacts() {
         val sourceMarker = "anchor-retention-8a3c5e17-2d94-4f60-b1a8-6e0d9c7f2b35"
         val source = "-- $sourceMarker\nCREATE PACKAGE ar AS g NUMBER; a g%TYPE; b a%TYPE; c ext.col%TYPE; d x%ROWTYPE; e1 e2%TYPE; e2 e1%TYPE; END ar;\n/\nCREATE PACKAGE cy1 AS x cy2.y%TYPE; END cy1;\n/\nCREATE PACKAGE cy2 AS y cy1.x%TYPE; END cy2;"

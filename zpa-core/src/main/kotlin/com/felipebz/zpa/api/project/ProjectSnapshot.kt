@@ -165,6 +165,23 @@ class ProjectSnapshot private constructor(
     }
 
     /**
+     * Call candidate discovery for [target] over this snapshot's prepared index, using the project's existing
+     * namespace, specification-coverage and precedence rules. Only package SPECIFICATION and STANDALONE
+     * procedures/functions are candidates; bodies never are. This is not call resolution: no argument is bound and
+     * nothing is selected. No schema, lexical scope or catalog is inferred, and no source is read again.
+     */
+    fun findCallCandidates(target: ProjectCallTarget): ProjectCallCandidates {
+        // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
+        val context = if (preparationState == ProjectPreparationState.NOT_PREPARED) {
+            ProjectAnalysisContext.NOT_PREPARED
+        } else {
+            ProjectAnalysisContext.prepared(preparationResult)
+        }
+        val result = ProjectCallCandidateFinder(context).find(target.toInternal())
+        return ProjectCallCandidates.of(result, target, scope, failures)
+    }
+
+    /**
      * Correlates the package-body procedure/function occurrence [bodyId] with specification
      * occurrences of this same snapshot, using the existing exact heading matching.
      *
