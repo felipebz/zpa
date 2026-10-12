@@ -121,6 +121,10 @@ internal class PackageSpecificationExtractor(
                 }
             hasTopLevelCallableKeyword(start + 1, end) -> gaps += CallableCoverageGap.SWALLOWED_CALLABLE_HEADER
         }
+        // A dropped callable heading missing its `;` can absorb the next heading, which then has no fact of its own.
+        if ((stream.isKeyword(start, "PROCEDURE") || stream.isKeyword(start, "FUNCTION")) &&
+            hasTopLevelCallableKeyword(start + 2, end)
+        ) gaps += CallableCoverageGap.SWALLOWED_CALLABLE_HEADER
     }
 
     /** `FUNCTION name (` or `FUNCTION name RETURN`: the shape the member parser selects for a function. */

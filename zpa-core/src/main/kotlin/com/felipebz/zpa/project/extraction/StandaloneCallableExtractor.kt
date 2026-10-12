@@ -103,8 +103,7 @@ internal class StandaloneCallableExtractor(
         if (!stream.isKeyword(start, "RETURN")) return null
         val typeStart = start + 1
         val typeEnd = returnTypeEnd(typeStart, limit) ?: return null
-        if (!datatypeShape.strictDatatype(typeStart, typeEnd)) return null
-        val returnType = typeReferences.typeReference(typeStart, typeEnd) ?: return null
+        val returnType = typeReferences.declaredType(typeStart, typeEnd) ?: return null
         val properties = callableProperties.skipPropertiesStrict(typeEnd, limit, function = true) ?: return null
         val index = properties.next
         val end = when {
@@ -216,8 +215,7 @@ internal class StandaloneCallableExtractor(
         val defaultIndex = defaultIndexOf(cursor, endExclusive)
         if (defaultIndex != null && (prefix.mode != ParameterMode.IN || defaultIndex + 1 >= endExclusive)) return null
         val typeEnd = defaultIndex ?: endExclusive
-        if (!datatypeShape.strictDatatype(cursor, typeEnd)) return null
-        val type = typeReferences.typeReference(cursor, typeEnd) ?: return null
+        val type = typeReferences.declaredType(cursor, typeEnd) ?: return null
         return ProjectParameter(name = stream.identifier(stream.tokens[start]), ordinal = ordinal, mode = prefix.mode, nocopy = prefix.nocopy,
             typeRef = type, defaultPresent = defaultIndex != null, sourceRange = stream.range(start, endExclusive - 1))
     }

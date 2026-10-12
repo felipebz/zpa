@@ -110,7 +110,7 @@ internal class PackageBodyExtractor(
                 header.index
             )
             val returnTypeEnd = modifier ?: header.index
-            val returnType = typeReferences.functionReturnType(returnIndex + 1, returnTypeEnd)
+            val returnType = typeReferences.declaredType(returnIndex + 1, returnTypeEnd)
                 ?: return null
             PackageFunctionDeclaration(
                 owner,

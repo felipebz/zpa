@@ -163,7 +163,13 @@ internal class TypeReferences(private val stream: TokenStream) {
             NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
         }
     }
-    fun functionReturnType(start: Int, endExclusive: Int): TypeRef? {
+
+    /**
+     * A complete declared datatype slice `[start, endExclusive)`: a strict datatype, optionally followed by
+     * `CHARACTER SET name` or `CHARACTER SET name%CHARSET`. Used wherever Oracle allows that clause (formals, function
+     * returns, record fields, subtypes). Anything else after the datatype rejects the slice.
+     */
+    fun declaredType(start: Int, endExclusive: Int): TypeRef? {
         val charset = stream.firstKeywordAtTopLevel(start, setOf("CHARACTER"), endExclusive)
         if (charset == null || !stream.isKeyword(charset + 1, "SET")) {
             if (!DatatypeShape(stream).strictDatatype(start, endExclusive)) return null

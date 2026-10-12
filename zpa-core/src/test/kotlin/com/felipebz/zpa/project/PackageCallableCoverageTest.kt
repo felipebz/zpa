@@ -153,6 +153,21 @@ class PackageCallableCoverageTest {
     }
 
     @Test
+    fun droppedCallableHeadingThatAbsorbsTheNextHeadingMakesCoverageUnknown() {
+        // `f` misses its `;`, so the dropped declaration also contains the heading of `g`, which has no fact.
+        val swallowing = "CREATE PACKAGE p AS FUNCTION f RETURN NUMBER FUNCTION g RETURN NUMBER; PROCEDURE ok; END p;"
+        assertThat(facts(swallowing).map { it.qualifiedName().toString() }).containsExactly("p.ok")
+        assertThat(coverage(swallowing).omittedNames).containsExactly("F")
+        assertThat(coverage(swallowing).gaps).containsExactly(SWALLOWED_CALLABLE_HEADER)
+        // Valid neighbours and clauses with nested callable keywords are unaffected.
+        assertThat(coverage("CREATE PACKAGE p AS FUNCTION f(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p; " +
+            "FUNCTION g RETURN NUMBER ACCESSIBLE BY (FUNCTION caller); PROCEDURE ok; END p;"))
+            .isEqualTo(PackageCallableCoverage(listOf("F"), emptyList()))
+        assertThat(coverage("CREATE PACKAGE p AS PROCEDURE broken(a NUMBER, b IN OUT); PROCEDURE ok; END p;"))
+            .isEqualTo(PackageCallableCoverage(listOf("BROKEN"), emptyList()))
+    }
+
+    @Test
     fun unretainedUnitsCarryNoMarker() {
         assertThat(specs("CREATE OR REPLACE PACKAGE w WRAPPED\na000000\nabcd\n/\n")).isEmpty()
         assertThat(specs("CREATE PACKAGE u AS PROCEDURE a;")).isEmpty()

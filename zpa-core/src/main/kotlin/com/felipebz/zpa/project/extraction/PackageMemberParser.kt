@@ -99,7 +99,7 @@ internal class PackageMemberParser(
             setOf("NOT", "NULL", "DEFAULT", ":="),
             endExclusive
         ) ?: endExclusive
-        val typeRef = typeReferences.typeReference(name.second, typeEnd) ?: return null
+        val typeRef = typeReferences.declaredType(name.second, typeEnd) ?: return null
         return ProjectRecordField(name.first, ordinal, typeRef, stream.range(start, endExclusive - 1))
     }
 
@@ -112,7 +112,7 @@ internal class PackageMemberParser(
         val typeEnd = datatypeShape.datatypeEnd(isIndex + 1, end) {
             stream.isKeyword(it, "NOT") || stream.isKeyword(it, "NULL") || stream.isKeyword(it, "RANGE")
         } ?: stream.firstAtTopLevel(isIndex + 1, setOf("RANGE"), end) ?: end
-        val type = typeReferences.typeReference(isIndex + 1, typeEnd) ?: return null
+        val type = typeReferences.declaredType(isIndex + 1, typeEnd) ?: return null
         val declaration = PackageSubtypeDeclaration(owner, name.first, type, stream.fileId, stream.range(index, end))
         return ParsedDeclaration(declaration, end + 1)
     }
@@ -139,7 +139,7 @@ internal class PackageMemberParser(
             )
             val deterministic = stream.firstKeywordAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
             val returnTypeEnd = modifier ?: end
-            val returnType = typeReferences.functionReturnType(returnIndex + 1, returnTypeEnd) ?: return null
+            val returnType = typeReferences.declaredType(returnIndex + 1, returnTypeEnd) ?: return null
             return ParsedDeclaration(
                 PackageFunctionDeclaration(
                     owner,
@@ -199,8 +199,7 @@ internal class PackageMemberParser(
         val defaultIndex = stream.firstKeywordAtTopLevel(cursor, setOf("DEFAULT"), endExclusive)
         val assignmentIndex = stream.firstAtTopLevel(cursor, setOf(":="), endExclusive)
         val typeEnd = listOfNotNull(defaultIndex, assignmentIndex).minOrNull() ?: endExclusive
-        if (!datatypeShape.strictDatatype(cursor, typeEnd)) return null
-        val type = typeReferences.typeReference(cursor, typeEnd) ?: return null
+        val type = typeReferences.declaredType(cursor, typeEnd) ?: return null
         return ProjectParameter(
             name.first,
             ordinal,
