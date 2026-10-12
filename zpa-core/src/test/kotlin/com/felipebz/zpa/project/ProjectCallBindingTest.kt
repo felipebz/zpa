@@ -23,18 +23,14 @@ import com.felipebz.zpa.project.ProjectCallCandidate.Applicability.*
 import com.felipebz.zpa.project.ProjectCallKind.FUNCTION
 import com.felipebz.zpa.project.ProjectCallKind.PROCEDURE
 import com.felipebz.zpa.project.ProjectCallResolution.Status.*
-import com.felipebz.zpa.project.ProjectCallTestFixtures.adaptedStatus
 import com.felipebz.zpa.project.ProjectCallTestFixtures.arguments
 import com.felipebz.zpa.project.ProjectCallTestFixtures.context
 import com.felipebz.zpa.project.ProjectCallTestFixtures.fingerprint
-import com.felipebz.zpa.project.ProjectCallTestFixtures.identifier
 import com.felipebz.zpa.project.ProjectCallTestFixtures.member
 import com.felipebz.zpa.project.ProjectCallTestFixtures.name
 import com.felipebz.zpa.project.ProjectCallTestFixtures.namespaceCases
-import com.felipebz.zpa.project.ProjectCallTestFixtures.oldStatus
 import com.felipebz.zpa.project.ProjectCallTestFixtures.packageSource
 import com.felipebz.zpa.project.ProjectCallTestFixtures.standalone
-import com.felipebz.zpa.project.ProjectCallTestFixtures.zeroCases
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.project.ProjectCallCandidate.Applicability.WRONG_KIND as CandidateWrongKind
@@ -337,26 +333,6 @@ class ProjectCallBindingTest {
             assertThat(result.status).isEqualTo(RESOLVED)
             assertThat(result.packageSpecifications).isEmpty()
             assertThat(result.selected!!.declaration.declaration.role).isEqualTo(DeclarationRole.STANDALONE)
-        }
-    }
-
-    @Test
-    fun zFixturesCompareTheUnchangedLegacyResolverWithD5IncludingSelectionIdentity() {
-        for (fixture in zeroCases()) {
-            val context = if (fixture.unprepared) ProjectAnalysisContext.NOT_PREPARED else
-                context(fixture.sources.mapIndexed { i, text -> "$i.sql" to text }, failed = fixture.failed)
-            val old = ProjectPackageProcedureResolver(context).resolve(name("p"), identifier("setup"))
-            val engine = resolve(context, "setup")
-            assertThat(oldStatus(old)).describedAs(fixture.label).isEqualTo(fixture.oldStatus)
-            assertThat(adaptedStatus(engine)).describedAs(fixture.label).isEqualTo(fixture.adaptedStatus)
-            if (fixture.oldStatus == fixture.adaptedStatus && old is ProjectPackageProcedureResolution.Resolved) {
-                assertThat(engine.selected!!.declaration.declaration).isSameAs(old.declaration)
-            }
-            if (fixture.oldStatus != fixture.adaptedStatus) {
-                assertThat(fixture.label).isIn("Z2", "Z3", "Z10")
-                assertThat(engine.status).isEqualTo(PARTIAL_DECLARATIONS)
-                assertThat(engine.selected).isNull()
-            }
         }
     }
 

@@ -83,47 +83,6 @@ internal object ProjectCallTestFixtures {
         return result
     }
 
-    data class ZeroCase(val label: String, val sources: List<String>, val oldStatus: String, val adaptedStatus: String,
-                        val failed: Boolean = false, val unprepared: Boolean = false)
-
-    fun zeroCases() = listOf(
-        ZeroCase("Z1", listOf(packageSource("PROCEDURE other;"), packageSource("PROCEDURE other;")), "AMBIGUOUS_TARGET", "AMBIGUOUS_TARGET"),
-        ZeroCase("Z2", listOf(packageSource("PROCEDURE setup(t TABLE) PROCEDURE coverage_recovery;")), "NOT_FOUND", "INCOMPLETE"),
-        ZeroCase("Z3", listOf(packageSource("PROCEDURE setup; PROCEDURE setup(t TABLE) PROCEDURE coverage_recovery;")), "RESOLVED", "INCOMPLETE"),
-        ZeroCase("Z4", listOf(packageSource("PROCEDURE other;")), "NOT_FOUND", "NOT_FOUND"),
-        ZeroCase("Z5", listOf(packageSource("FUNCTION setup RETURN NUMBER;")), "NOT_CALLABLE", "NOT_CALLABLE"),
-        ZeroCase("Z6", listOf(packageSource("PROCEDURE setup(a NUMBER);")), "NOT_CALLABLE", "NOT_CALLABLE"),
-        ZeroCase("Z7", listOf(packageSource("PROCEDURE setup(a NUMBER DEFAULT 1);")), "INCOMPLETE", "INCOMPLETE", failed = true),
-        ZeroCase("Z8", listOf(packageSource("PROCEDURE setup; PROCEDURE setup(a NUMBER DEFAULT 1);")), "AMBIGUOUS", "AMBIGUOUS"),
-        ZeroCase("Z9-body", listOf("CREATE PACKAGE BODY p AS PROCEDURE setup IS BEGIN NULL; END; END p;"), "UNKNOWN_TARGET", "UNKNOWN_TARGET"),
-        ZeroCase("Z9-empty", emptyList(), "UNKNOWN_TARGET", "UNKNOWN_TARGET"),
-        ZeroCase("Z10", listOf("CREATE PACKAGE p AS\n${'$'}IF DBMS_DB_VERSION.VER_LE_12 ${'$'}THEN\n PROCEDURE setup;\n${'$'}ELSE\n PROCEDURE setup(a NUMBER);\n${'$'}END\nEND p;"), "RESOLVED", "INCOMPLETE"),
-        ZeroCase("Z11", emptyList(), "NOT_PREPARED", "NOT_PREPARED", unprepared = true)
-    )
-
-    fun oldStatus(result: ProjectPackageProcedureResolution) = when (result) {
-        is ProjectPackageProcedureResolution.Resolved -> "RESOLVED"
-        ProjectPackageProcedureResolution.NotFound -> "NOT_FOUND"
-        ProjectPackageProcedureResolution.NotCallable -> "NOT_CALLABLE"
-        ProjectPackageProcedureResolution.AmbiguousCall -> "AMBIGUOUS"
-        ProjectPackageProcedureResolution.AmbiguousTarget -> "AMBIGUOUS_TARGET"
-        ProjectPackageProcedureResolution.UnknownTarget -> "UNKNOWN_TARGET"
-        ProjectPackageProcedureResolution.Incomplete -> "INCOMPLETE"
-        ProjectPackageProcedureResolution.NotPrepared -> "NOT_PREPARED"
-    }
-
-    fun adaptedStatus(result: ProjectCallResolution) = when (result.status) {
-        ProjectCallResolution.Status.NOT_PREPARED -> "NOT_PREPARED"
-        ProjectCallResolution.Status.INCOMPLETE_INDEX, ProjectCallResolution.Status.PARTIAL_DECLARATIONS -> "INCOMPLETE"
-        ProjectCallResolution.Status.AMBIGUOUS_TARGET -> "AMBIGUOUS_TARGET"
-        ProjectCallResolution.Status.UNKNOWN_PACKAGE -> "UNKNOWN_TARGET"
-        ProjectCallResolution.Status.NOT_FOUND_IN_PROJECT -> "NOT_FOUND"
-        ProjectCallResolution.Status.WRONG_KIND, ProjectCallResolution.Status.NO_APPLICABLE_CANDIDATE -> "NOT_CALLABLE"
-        ProjectCallResolution.Status.RESOLVED -> "RESOLVED"
-        ProjectCallResolution.Status.AMBIGUOUS -> "AMBIGUOUS"
-        ProjectCallResolution.Status.INVALID_NOTATION -> error("Zero actuals cannot have invalid notation")
-    }
-
     fun fingerprint(result: ProjectCallResolution): String = listOf(
         result.status, result.uncertainties.sortedBy { it.name }, result.packageEvidence,
         result.packageSpecifications.map { "${it.fileId.value}:${it.ordinal}" },

@@ -391,4 +391,37 @@ class FunctionShouldBeDeterministicCheckTest : BaseCheckTest() {
             FunctionShouldBeDeterministicCheck()
         )
     }
+
+    @Test
+    fun doesNotTreatBuiltinsAsUnshadowedWhenTheSpecificationMayHideADeclaration() {
+        // TRIM is declared in the specification by a header the project index cannot retain, so the
+        // specification does not prove that the package declares no TRIM.
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "maybe_shadow_spec.sql",
+                    """
+                    CREATE PACKAGE maybe_shadow AS
+                      FUNCTION TRIM(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING maybe_shadow;
+                      FUNCTION candidate_text(p_value VARCHAR2) RETURN VARCHAR2;
+                    END maybe_shadow;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "maybe_shadow_body.sql",
+                    """
+                    CREATE PACKAGE BODY maybe_shadow AS
+                      FUNCTION candidate_text(p_value VARCHAR2) RETURN VARCHAR2 IS
+                      BEGIN
+                        RETURN TRIM(p_value);
+                      END candidate_text;
+                    END maybe_shadow;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
 }

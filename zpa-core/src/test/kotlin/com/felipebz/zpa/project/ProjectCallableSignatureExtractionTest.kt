@@ -261,7 +261,7 @@ class ProjectCallableSignatureExtractionTest {
         val owner = ProjectCallTestFixtures.name("p")
         val callable = ProjectCallTestFixtures.identifier("run")
         val legacy = ProjectPackageProcedureResolver(context).resolve(owner, callable)
-        assertThat(ProjectCallTestFixtures.oldStatus(legacy)).isEqualTo("AMBIGUOUS_TARGET")
+        assertThat(legacy).isEqualTo(ProjectPackageProcedureResolution.AmbiguousTarget)
         val structural = ProjectCallBinder(context).resolve(
             ProjectCallTestFixtures.member(),
             ProjectCallKind.PROCEDURE,

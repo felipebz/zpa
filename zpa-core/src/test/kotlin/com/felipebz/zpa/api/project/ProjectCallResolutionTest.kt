@@ -168,7 +168,7 @@ class ProjectCallResolutionTest {
             assertThat(it.applicability).isEqualTo(DUPLICATE_BINDING)
             assertThat(it.rejectedArgumentOrdinal.asInt).isEqualTo(2)
         }
-        // P47: a duplicate binding for one overload is a valid call of another.
+        // A duplicate binding for one overload is a valid call of another.
         val m = resolve(pkg, member("p", "m"), PROCEDURE, args(null, "a"))
         assertThat(m.status).isEqualTo(Status.RESOLVED)
         assertThat(m.candidates.map { it.applicability }).containsExactly(DUPLICATE_BINDING, APPLICABLE)

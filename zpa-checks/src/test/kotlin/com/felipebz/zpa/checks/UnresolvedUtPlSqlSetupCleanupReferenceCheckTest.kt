@@ -41,6 +41,63 @@ class UnresolvedUtPlSqlSetupCleanupReferenceCheckTest : BaseCheckTest() {
         )
     }
 
+    @Test
+    fun doesNotReportReferencesIntoSpecificationsWithUnretainedCallables() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "gap_suite.pks",
+                    """
+                    CREATE PACKAGE gap_suite AS
+                      -- %suite
+
+                      -- %beforeall(conditional_pkg.setup)
+
+                      -- %beforeall(skipped_pkg.setup)
+
+                      -- Noncompliant@+1 {{This utPLSQL setup/cleanup reference "helper_pkg.setup" does not resolve to a callable package procedure.}}
+                      -- %beforeall(helper_pkg.setup)
+
+                      -- %test
+                      PROCEDURE some_test;
+                    END gap_suite;
+                    """.trimIndent()
+                ),
+                // Conditional compilation: which callables the specification declares cannot be bounded.
+                ProjectTestSource(
+                    "conditional_pkg.pks",
+                    """
+                    CREATE PACKAGE conditional_pkg AS
+                      ${'$'}IF DBMS_DB_VERSION.VER_LE_12 ${'$'}THEN
+                      PROCEDURE legacy_setup;
+                      ${'$'}END
+                      PROCEDURE other;
+                    END conditional_pkg;
+                    """.trimIndent()
+                ),
+                // A header named setup that the project index cannot retain.
+                ProjectTestSource(
+                    "skipped_pkg.pks",
+                    """
+                    CREATE PACKAGE skipped_pkg AS
+                      FUNCTION setup(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING skipped_pkg;
+                    END skipped_pkg;
+                    """.trimIndent()
+                ),
+                // The same absence without a coverage gap is still reported.
+                ProjectTestSource(
+                    "helper_pkg.pks",
+                    """
+                    CREATE PACKAGE helper_pkg AS
+                      PROCEDURE other;
+                    END helper_pkg;
+                    """.trimIndent()
+                )
+            ),
+            UnresolvedUtPlSqlSetupCleanupReferenceCheck()
+        )
+    }
+
     private companion object {
         private val testPackageSpecification = """
             CREATE PACKAGE test_pkg AS
