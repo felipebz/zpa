@@ -21,7 +21,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.DatatypeCompatibility.*
-import com.felipebz.zpa.api.project.DatatypeFamily.*
+import com.felipebz.zpa.api.project.ProjectDatatypeFamily.*
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import org.assertj.core.api.Assertions.assertThat
@@ -68,20 +68,20 @@ class DatatypeFamiliesTest {
         ROWID to setOf(NUMERIC, CLOB, BLOB, RAW, DATETIME, INTERVAL, BOOLEAN, JSON, COMPOSITE),
         COMPOSITE to setOf(NUMERIC, CHARACTER, CLOB, BLOB, RAW, DATETIME, INTERVAL, BOOLEAN, JSON, ROWID)
     )
-    private val unknown = mapOf(
-        NUMERIC to setOf(BOOLEAN), CHARACTER to setOf(BOOLEAN), BOOLEAN to setOf(NUMERIC, CHARACTER),
-        INTERVAL to setOf(INTERVAL), COMPOSITE to setOf(COMPOSITE)
-    )
+    /** Depends on PLSQL_IMPLICIT_CONVERSION_BOOL (measured both ways). */
+    private val environment = mapOf(NUMERIC to setOf(BOOLEAN), CHARACTER to setOf(BOOLEAN), BOOLEAN to setOf(NUMERIC, CHARACTER))
+    private val unknown = mapOf(INTERVAL to setOf(INTERVAL), COMPOSITE to setOf(COMPOSITE))
 
-    private fun expected(actual: DatatypeFamily, formal: DatatypeFamily) = when (formal) {
+    private fun expected(actual: ProjectDatatypeFamily, formal: ProjectDatatypeFamily) = when (formal) {
         in incompatible.getValue(actual) -> INCOMPATIBLE
+        in environment[actual].orEmpty() -> ENVIRONMENT_DEPENDENT
         in unknown[actual].orEmpty() -> UNKNOWN
         else -> COMPATIBLE
     }
 
     @Test
     fun everyCellOfTheRelationMatchesTheMeasurement() {
-        for (actual in DatatypeFamily.entries) for (formal in DatatypeFamily.entries) {
+        for (actual in ProjectDatatypeFamily.entries) for (formal in ProjectDatatypeFamily.entries) {
             assertThat(DatatypeFamilies.compatibility(actual, formal)).describedAs("$actual -> $formal").isEqualTo(expected(actual, formal))
         }
     }
@@ -114,8 +114,8 @@ class DatatypeFamiliesTest {
         assertThat(c("TIMESTAMP", "INTERVAL")).isEqualTo(INCOMPATIBLE)
         assertThat(c("INTERVAL", "DATE")).isEqualTo(INCOMPATIBLE)
         assertThat(c("INTERVAL", "INTERVAL")).isEqualTo(UNKNOWN)
-        assertThat(c("BOOLEAN", "NUMBER")).isEqualTo(UNKNOWN)
-        assertThat(c("VARCHAR2", "BOOLEAN")).isEqualTo(UNKNOWN)
+        assertThat(c("BOOLEAN", "NUMBER")).isEqualTo(ENVIRONMENT_DEPENDENT)
+        assertThat(c("VARCHAR2", "BOOLEAN")).isEqualTo(ENVIRONMENT_DEPENDENT)
         assertThat(c("BOOLEAN", "DATE")).isEqualTo(INCOMPATIBLE)
         assertThat(c("JSON", "VARCHAR2")).isEqualTo(INCOMPATIBLE)
         assertThat(c("VARCHAR2", "JSON")).isEqualTo(INCOMPATIBLE)
@@ -167,6 +167,20 @@ class DatatypeFamiliesTest {
         assertThat(ext("EMP_T", "HR")).isNull()
     }
 
+    @Test
+    fun onlyKnownTextSpellingsClassify() {
+        listOf("TIMESTAMP SOMETHING", "INTERVAL CUSTOM", "TIMESTAMP WITH ZONE", "INTERVAL DAY TO MONTH", "LONG RAW",
+            "VARCHAR2(", "NUMBER(10,2) X", "NUMBER(abc)", "\"NUMBER\"", "SYS.NUMBER", "NUMBER-1", "TIMESTAMP(6) WITH TIME ZONE EXTRA").forEach {
+            assertThat(DatatypeFamilies.ofTypeName(it)).describedAs(it).isNull()
+        }
+        assertThat(ext("TIMESTAMP SOMETHING")).isNull()
+        assertThat(ext("INTERVAL CUSTOM")).isNull()
+        assertThat(DatatypeFamilies.ofTypeName("varchar2(30 char)")).isEqualTo(CHARACTER)
+        assertThat(DatatypeFamilies.ofTypeName("NUMBER(*, 0)")).isEqualTo(NUMERIC)
+        assertThat(DatatypeFamilies.ofTypeName("double precision")).isEqualTo(NUMERIC)
+        assertThat(DatatypeFamilies.ofTypeName("timestamp(3)  with   local time zone")).isEqualTo(DATETIME)
+    }
+
     // Descriptions through the existing source walk and external composition.
 
     private val hr = ProjectIdentifier.fromSource("HR")
@@ -196,7 +210,7 @@ class DatatypeFamiliesTest {
         END p;
     """.trimIndent()
 
-    private fun families(snapshot: ProjectSnapshot, metadata: ProjectExternalMetadata): Map<String, DatatypeFamily?> {
+    private fun families(snapshot: ProjectSnapshot, metadata: ProjectExternalMetadata): Map<String, ProjectDatatypeFamily?> {
         val run = snapshot.findDeclarations(ProjectQualifiedName.of("p", "run")).declarations.single() as ProjectSubprogramView
         return run.parameters.associate { p ->
             val d = snapshot.describeExternalType(p.typeRef, ProjectQualifiedName.of("p"), metadata, hr)

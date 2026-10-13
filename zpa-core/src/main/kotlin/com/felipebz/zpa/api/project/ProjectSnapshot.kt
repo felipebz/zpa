@@ -246,6 +246,25 @@ class ProjectSnapshot private constructor(
         return ProjectCallResolution.of(result, target, kind, arguments, scope, failures)
     }
 
+    /**
+     * Narrows a [structural] resolution issued by this snapshot with per-actual datatype evidence: [argumentTypes] has
+     * one element per written actual (`structural.arguments.arguments`, same order). Each applicable candidate's own
+     * bindings are compared with its formals, described with [describeExternalType] under [metadata] (which may be
+     * [ProjectExternalMetadata.none]) and [currentSchema]; a candidate is removed only when a binding is proven
+     * incompatible on Oracle. The structural result, its candidates and bindings are reused, never recomputed; nothing
+     * is ranked or chosen by order, and default expressions are not evaluated. Without evidence the structural
+     * RESOLVED/AMBIGUOUS outcome is kept.
+     *
+     * @throws IllegalArgumentException if a candidate was issued by another snapshot, if the list size differs from the
+     * number of written actuals, or if it contains null
+     */
+    fun narrowCall(
+        structural: ProjectCallResolution,
+        argumentTypes: List<ProjectArgumentType>,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(this, structural, argumentTypes, metadata, currentSchema)
+
     // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
     private fun callContext(): ProjectAnalysisContext =
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {

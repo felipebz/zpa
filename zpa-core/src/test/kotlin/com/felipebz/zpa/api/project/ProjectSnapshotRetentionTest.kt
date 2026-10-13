@@ -389,6 +389,40 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun typedCallResolutionsRetainOnlyStructuralResultsAndClassifications() {
+        val sourceMarker = "typed-call-retention-6c2a9e41-3b7d-4f05-8e19-d4a0b7c3e256"
+        val source = "-- $sourceMarker\nCREATE PACKAGE tc AS PROCEDURE pick(x NUMBER); PROCEDURE pick(x employees.hired%TYPE); END tc;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("tc.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val columns = mutableListOf(ProjectExternalColumn.of("HIRED", 1, ProjectExternalDatatype.of("DATE", null, null, null, null, null)))
+        val builder = ProjectExternalMetadata.builder("retention").completeSchema("HR").relation(ProjectExternalRelation.of("HR", "EMPLOYEES", true, columns))
+        val metadata = builder.build()
+        val hr = ProjectIdentifier.fromSource("HR")
+        val structural = snapshot.resolveCall(
+            ProjectCallTarget.packageMember(ProjectQualifiedName.of("tc"), ProjectIdentifier.fromSource("pick")), ProjectCallKind.PROCEDURE,
+            ProjectCallArguments.of(listOf(ProjectCallArgument.positional()))
+        )
+        val description = snapshot.describeExternalType(
+            ProjectWrittenAnchor.of(ProjectQualifiedName.of("employees", "hired"), ProjectTypeReference.Anchor.TYPE), null, metadata, hr
+        )
+        val described = ProjectArgumentType.described(description)
+        val types = mutableListOf(described)
+        val typed = snapshot.narrowCall(structural, types, metadata, hr)
+        assertThat(typed.status).isEqualTo(ProjectTypedCallResolution.Status.RESOLVED)
+        val reachable = auditGraph(
+            mapOf("typed" to typed, "described" to described),
+            listOf(snapshot, source, reader, input, builder, columns, metadata, description, types), sourceMarker
+        )
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectExternalMetadata>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectExternalTypeDescription>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectTypeDescription>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectCallResolution>()).containsExactly(structural)
+    }
+
+    @Test
     fun externalTypeDescriptionsRetainOnlyDescriptionsAndDescriptors() {
         val sourceMarker = "external-type-retention-1e7c4a93-5b20-4f8d-9c61-3a0e8d2b7f45"
         val source = "-- $sourceMarker\nCREATE PACKAGE et AS TYPE rows_t IS TABLE OF employees%ROWTYPE; g NUMBER; " +
