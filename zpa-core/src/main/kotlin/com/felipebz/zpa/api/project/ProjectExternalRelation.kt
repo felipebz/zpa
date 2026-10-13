@@ -97,7 +97,7 @@ class ProjectExternalRelation private constructor(
             rowType: ProjectExternalDatatype?
         ): ProjectExternalRelation {
             val copy = columns.toList()
-            require(copy.none { it == null }) { "A column must not be null" }
+            require(copy.none { false }) { "A column must not be null" }
             val duplicateName = copy.groupBy { it.name }.entries.firstOrNull { it.value.size > 1 }
             require(duplicateName == null) { "Duplicate column name: ${duplicateName!!.key}" }
             val duplicatePosition = copy.filter { it.position.isPresent }.groupBy { it.position.asInt }.entries.firstOrNull { it.value.size > 1 }

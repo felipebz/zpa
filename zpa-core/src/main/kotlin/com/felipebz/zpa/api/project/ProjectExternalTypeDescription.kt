@@ -120,7 +120,7 @@ class ProjectExternalTypeDescription private constructor(
                 "Invalid SCHEMA_CONTEXT_MISSING description"
             }
             Status.INCOMPLETE -> require(anchored() && externalCandidates.isEmpty() && (lookupStatus == ProjectExternalLookup.Status.NOT_COVERED ||
-                (lookupStatus == ProjectExternalLookup.Status.FOUND && !lookup!!.relation.get().isColumnsComplete))) { "Invalid INCOMPLETE description" }
+                (lookupStatus == ProjectExternalLookup.Status.FOUND && !lookup.relation.get().isColumnsComplete))) { "Invalid INCOMPLETE description" }
             Status.RELATION_NOT_FOUND -> require(anchored() && lookupStatus == ProjectExternalLookup.Status.RELATION_NOT_FOUND && externalCandidates.isEmpty()) {
                 "Invalid RELATION_NOT_FOUND description"
             }

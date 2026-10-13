@@ -137,13 +137,13 @@ class ProjectTypeDescription private constructor(
                 targets == (false to false) && valueResolution != null && resolution == null && anchorStop == null &&
                     valueResolution.status != ProjectValueResolution.Status.RESOLVED &&
                     (terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED ||
-                        (atRequest && writtenAnchor!!.anchor == ProjectTypeReference.Anchor.TYPE &&
+                        (atRequest && writtenAnchor.anchor == ProjectTypeReference.Anchor.TYPE &&
                             valueResolution.name == writtenAnchor.name))
             ) { "Invalid UNRESOLVED_VALUE description" }
             Status.ANCHORED_REFERENCE -> require(
                 targets == (false to false) && resolution == null && valueResolution == null && anchorStop != null &&
                     (terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED ||
-                        (atRequest && writtenAnchor!!.anchor ==
+                        (atRequest && writtenAnchor.anchor ==
                             if (anchorStop == AnchorStop.ROWTYPE) ProjectTypeReference.Anchor.ROWTYPE else ProjectTypeReference.Anchor.TYPE))
             ) { "Invalid ANCHORED_REFERENCE description" }
             Status.REF_REFERENCE -> require(

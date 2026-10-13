@@ -146,7 +146,7 @@ private class Composition(
         val owner = if (trace.written) packageOwner?.name else holder?.owner
         if (owner != null) {
             val retainedInSpec = holder != null && holder.role == DeclarationRole.SPECIFICATION
-            val unit = if (retainedInSpec) holder!!.unit else singleSpecification(owner)
+            val unit = if (retainedInSpec) holder.unit else singleSpecification(owner)
             if (unit == null) {
                 uncertain = true
             } else {

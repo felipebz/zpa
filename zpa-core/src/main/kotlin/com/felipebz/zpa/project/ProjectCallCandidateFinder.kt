@@ -33,7 +33,7 @@ internal class ProjectCallCandidateFinder(private val context: ProjectAnalysisCo
         val memberInPlay = owner != null &&
             (target.form == ProjectCallTarget.Form.PACKAGE_MEMBER || packageEvidence)
         val specifications = if (memberInPlay) {
-            index.findOccurrences(requireNotNull(owner)).filter {
+            index.findOccurrences(owner).filter {
                 it.declaration is PackageDeclaration && it.declaration.role == DeclarationRole.SPECIFICATION
             }
         } else emptyList()
@@ -48,7 +48,7 @@ internal class ProjectCallCandidateFinder(private val context: ProjectAnalysisCo
             (target.form == ProjectCallTarget.Form.STANDALONE || standalone.isNotEmpty() || standaloneOmitted)
         val candidates = ArrayList<IndexedDeclaration>()
         if (memberInPlay && specifications.isNotEmpty()) {
-            index.findSubprogramOccurrences(requireNotNull(owner), target.name.last).forEach {
+            index.findSubprogramOccurrences(owner, target.name.last).forEach {
                 if (it.declaration.role == DeclarationRole.SPECIFICATION) candidates.add(it)
             }
         }
