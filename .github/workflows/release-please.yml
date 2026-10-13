@@ -314,7 +314,7 @@ jobs:
           - 26.2.0.119303
           - 26.3.0.120487
           - 26.9.0.129388
-          - 26.10.0.132816
+          - 26.10.0.133078
     env:
       RELEASE_SHA: ${{ needs.prepare_release.outputs.release_sha }}
       RELEASE_VERSION: ${{ needs.prepare_release.outputs.release_version }}
