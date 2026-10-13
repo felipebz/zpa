@@ -64,16 +64,20 @@ internal object ReferenceHolders {
 
     private fun holder(index: ProjectSymbolIndex, occurrence: IndexedDeclaration, capturing: List<OracleIdentifier>): ReferenceHolder {
         val fact = occurrence.declaration
-        val owner = when (fact) {
-            is PackageValueDeclaration -> fact.owner
-            is PackageSubtypeDeclaration -> fact.owner
-            is PackageTypeDeclaration -> fact.owner
-            is PackageProcedureDeclaration -> fact.owner
-            is PackageFunctionDeclaration -> fact.owner
-            else -> null
-        }
+        val owner = ownerOf(fact)
         val unit = owner?.let { unitOf(index, fact, it) }
         return ReferenceHolder(fact, owner, fact.role, capturing, unit)
+    }
+
+    /** The package that declares [fact], or null for standalone declarations and packages themselves. */
+    @JvmSynthetic
+    fun ownerOf(fact: ProjectDeclaration): QualifiedName? = when (fact) {
+        is PackageValueDeclaration -> fact.owner
+        is PackageSubtypeDeclaration -> fact.owner
+        is PackageTypeDeclaration -> fact.owner
+        is PackageProcedureDeclaration -> fact.owner
+        is PackageFunctionDeclaration -> fact.owner
+        else -> null
     }
 
     /**

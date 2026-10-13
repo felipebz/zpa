@@ -146,6 +146,41 @@ class ProjectSnapshot private constructor(
         ProjectTypeDescriber.describe(this, anchor.name, null, packageOwner, anchor)
 
     /**
+     * Composes [describeType] for [name] with supplied external relation [metadata]. [currentSchema] is the schema in
+     * which the referencing unit compiles; it is needed only for unqualified relation readings (null gives
+     * [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there). The source description is unchanged and
+     * returned in [ProjectExternalTypeDescription.source].
+     */
+    fun describeExternalType(
+        name: ProjectQualifiedName,
+        packageOwner: ProjectQualifiedName?,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): ProjectExternalTypeDescription =
+        ProjectExternalTypeDescriber.describe(this, name, null, packageOwner, null, metadata, currentSchema)
+
+    /** As the name overload, for a retained [reference] (see [describeType] for the reference overload). */
+    fun describeExternalType(
+        reference: ProjectTypeReference,
+        packageOwner: ProjectQualifiedName?,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): ProjectExternalTypeDescription =
+        ProjectExternalTypeDescriber.describe(this, reference.name, reference, packageOwner, null, metadata, currentSchema)
+
+    /**
+     * As the name overload, for a caller-written [anchor], with the same lexical precondition as the written
+     * [describeType] overload: the caller has excluded local, parameter and body-private captures.
+     */
+    fun describeExternalType(
+        anchor: ProjectWrittenAnchor,
+        packageOwner: ProjectQualifiedName?,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): ProjectExternalTypeDescription =
+        ProjectExternalTypeDescriber.describe(this, anchor.name, null, packageOwner, anchor, metadata, currentSchema)
+
+    /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
      * explicit [packageOwner] (with a null owner there is no value namespace to search: nothing is inferred and no
      * package is scanned); a qualified name uses its own prefix and ignores [packageOwner] for candidate selection
@@ -252,6 +287,11 @@ class ProjectSnapshot private constructor(
     internal fun occurrenceOf(id: ProjectDeclarationId): IndexedDeclaration? =
         if (!id.isIssuedBy(scope)) null
         else ProjectSnapshotDeclarations.occurrencesFor(preparationResult.index, id.fileId).getOrNull(id.ordinal)
+
+    /** Views of indexed occurrences, issued by this snapshot. */
+    @JvmSynthetic
+    internal fun viewsOf(occurrences: List<IndexedDeclaration>): List<ProjectDeclarationView> =
+        ProjectSnapshotDeclarations.views(scope, occurrences)
 
     private fun inventory(occurrences: List<IndexedDeclaration>): ProjectInventory<ProjectDeclarationView> {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {

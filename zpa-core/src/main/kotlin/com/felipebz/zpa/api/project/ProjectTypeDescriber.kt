@@ -21,10 +21,23 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.project.BuiltInTypeRefClassifier
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.PackageDeclaration
-import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.*
+
+/** Why an anchor step stopped; recorded only for composition, never part of a public result. */
+internal enum class AnchorStopCause {
+    ROWTYPE, NO_HOLDER, SIBLING, BODY_SCOPE, NO_PACKAGE_SCOPE, PACKAGE_MEMBER, PREFIX_VALUE, PACKAGE_UNIT, DECLARED_LATER
+}
+
+/**
+ * Optional, call-local record of the last anchor step: its holder, whether it was the written request, and why it
+ * stopped with the declarations responsible. Filled by [ProjectTypeDescriber.describe]; it never changes the result.
+ */
+internal class AnchorTrace {
+    var holder: ReferenceHolder? = null
+    var written: Boolean = false
+    var cause: AnchorStopCause? = null
+    var captors: List<IndexedDeclaration> = emptyList()
+}
 
 /**
  * One finite, iterative walk over subtype aliases and supported source-backed `%TYPE` anchors. Named steps go through
@@ -56,7 +69,8 @@ internal object ProjectTypeDescriber {
         startName: ProjectQualifiedName,
         startReference: ProjectTypeReference?,
         startOwner: ProjectQualifiedName?,
-        written: ProjectWrittenAnchor? = null
+        written: ProjectWrittenAnchor? = null,
+        trace: AnchorTrace? = null
     ): ProjectTypeDescription {
         val steps = LinkedHashMap<ProjectDeclarationId, ProjectDeclarationView>()
         var name = startName
@@ -72,11 +86,11 @@ internal object ProjectTypeDescriber {
             val outcome = when {
                 writtenStep -> {
                     writtenStep = false
-                    anchor(snapshot, name, written!!.anchor, null, AnchorContext.Written(startOwner?.name), steps, written)
+                    anchor(snapshot, name, written!!.anchor, null, AnchorContext.Written(startOwner?.name), steps, written, trace)
                 }
                 reference?.kind == ProjectTypeReference.Kind.ANCHORED -> {
                     if (!holderKnown) holder = ReferenceHolders.find(snapshot.projectIndex, reference)
-                    anchor(snapshot, reference.name, reference.anchor.get(), reference, AnchorContext.Retained(holder), steps, written)
+                    anchor(snapshot, reference.name, reference.anchor.get(), reference, AnchorContext.Retained(holder), steps, written, trace)
                 }
                 else -> null
             }
@@ -128,23 +142,31 @@ internal object ProjectTypeDescriber {
         reference: ProjectTypeReference?,
         context: AnchorContext,
         steps: Map<ProjectDeclarationId, ProjectDeclarationView>,
-        written: ProjectWrittenAnchor?
+        written: ProjectWrittenAnchor?,
+        trace: AnchorTrace?
     ): Anchor {
         // The ordered copy is made only when a terminal description is built, never for a successful step.
         fun followed() = steps.values.toList()
-        fun stop(why: ProjectTypeDescription.AnchorStop) =
-            Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why, written))
-        // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
-        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE)
+        fun stop(why: ProjectTypeDescription.AnchorStop, cause: AnchorStopCause, captors: List<IndexedDeclaration> = emptyList()): Anchor.Stop {
+            trace?.cause = cause
+            trace?.captors = captors
+            return Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why, written))
+        }
         val holder = (context as? AnchorContext.Retained)?.holder
-        if (context is AnchorContext.Retained && holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+        trace?.holder = holder
+        trace?.written = context is AnchorContext.Written
+        trace?.cause = null
+        trace?.captors = emptyList()
+        // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
+        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
+        if (context is AnchorContext.Retained && holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)
         val index = snapshot.projectIndex
         val segments = anchorName.name.segments
         if (holder != null) {
             // A sibling record field or parameter captures the first segment before anything in the package.
-            if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.SIBLING)
             // Body-private declarations are not facts, so a one-segment name in a body cannot be judged absent.
-            if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
         }
         val owner = when (context) {
             is AnchorContext.Retained -> holder!!.owner
@@ -152,7 +174,7 @@ internal object ProjectTypeDescriber {
         }
         if (owner == null) {
             // Standalone declarations have no package scope: only a qualified name can name a package value.
-            if (segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            if (segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_PACKAGE_SCOPE)
         } else {
             // A declaration of the holder's package named like the first segment captures it (positive scope evidence,
             // independent of the preparation state): a value of the package makes a qualified name a field path, and a
@@ -160,18 +182,24 @@ internal object ProjectTypeDescriber {
             val captured = index.findOccurrences(owner.append(segments.first()))
             val capturedValue = captured.any { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }
             if (segments.size >= 2 && captured.isNotEmpty()) {
-                return stop(if (capturedValue) ProjectTypeDescription.AnchorStop.FIELD_PATH else ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+                return stop(
+                    if (capturedValue) ProjectTypeDescription.AnchorStop.FIELD_PATH else ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE,
+                    AnchorStopCause.PACKAGE_MEMBER, captured
+                )
             }
-            if (segments.size == 1 && captured.isNotEmpty() && !capturedValue) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            if (segments.size == 1 && captured.isNotEmpty() && !capturedValue) {
+                return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_MEMBER, captured)
+            }
         }
         // A package-body subprogram may be captured by a private declaration that is not a fact, whatever the qualification.
         if (owner != null && holder?.role == DeclarationRole.BODY)
-            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
         // A shorter qualified package value followed by a field path competes with the fully qualified value.
         for (length in 2 until segments.size) {
             val prefix = QualifiedName(segments.subList(0, length))
-            if (index.findOccurrences(prefix).any { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }) {
-                return stop(ProjectTypeDescription.AnchorStop.FIELD_PATH)
+            val values = index.findOccurrences(prefix).filter { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }
+            if (values.isNotEmpty()) {
+                return stop(ProjectTypeDescription.AnchorStop.FIELD_PATH, AnchorStopCause.PREFIX_VALUE, values)
             }
         }
         val lookup = if (segments.size == 1) {
@@ -185,16 +213,16 @@ internal object ProjectTypeDescriber {
         val value = lookup.value.get()
         // The resolved value must be the only binding of its package: several specifications are not one scope.
         if (index.findOccurrences(value.owner.name).count { val d = it.declaration; d is PackageDeclaration && d.role == DeclarationRole.SPECIFICATION } != 1) {
-            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
         }
-        val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+        val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
         // Declaration order applies only within the specification that retains the reference; a written anchor is,
         // by precondition, not an indexed specification fact.
         if (holder != null && owner != null && holder.role != DeclarationRole.BODY) {
             val valueUnit = ReferenceHolders.unitOf(snapshot.projectIndex, valueOccurrence.declaration, value.owner.name)
-            if (holder.unit == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
+            if (holder.unit == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
             if (valueUnit != null && valueUnit === holder.unit && !completedBefore(value.sourceRange, reference!!.sourceRange)) {
-                return stop(ProjectTypeDescription.AnchorStop.DECLARED_LATER)
+                return stop(ProjectTypeDescription.AnchorStop.DECLARED_LATER, AnchorStopCause.DECLARED_LATER, listOf(valueOccurrence))
             }
         }
         if (steps.containsKey(value.id)) return Anchor.Cycle(value)

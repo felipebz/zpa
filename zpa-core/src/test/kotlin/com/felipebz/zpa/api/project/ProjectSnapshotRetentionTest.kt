@@ -389,6 +389,40 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun externalTypeDescriptionsRetainOnlyDescriptionsAndDescriptors() {
+        val sourceMarker = "external-type-retention-1e7c4a93-5b20-4f8d-9c61-3a0e8d2b7f45"
+        val source = "-- $sourceMarker\nCREATE PACKAGE et AS TYPE rows_t IS TABLE OF employees%ROWTYPE; g NUMBER; " +
+            "CURSOR c RETURN rows_t; TYPE c_rows IS TABLE OF c%ROWTYPE; END et;\n/\nCREATE PACKAGE eq AS x et.g%TYPE; END eq;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("et.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val columns = mutableListOf(ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 8, 0)))
+        val builder = ProjectExternalMetadata.builder("retention").completeSchema("HR")
+            .relation(ProjectExternalRelation.of("HR", "EMPLOYEES", true, columns))
+            .relation(ProjectExternalRelation.of("HR", "ET", true, columns))
+        val metadata = builder.build()
+        val hr = ProjectIdentifier.fromSource("HR")
+        fun element(name: String) = (snapshot.findDeclarations(ProjectQualifiedName.of("et", name)).declarations.single() as ProjectShapedTypeView).elementType.get()
+        val x = snapshot.findDeclarations(ProjectQualifiedName.of("eq", "x")).declarations.single() as ProjectPackageValueView
+        val results = mapOf(
+            "resolved" to snapshot.describeExternalType(element("rows_t"), ProjectQualifiedName.of("et"), metadata, hr),
+            "captured" to snapshot.describeExternalType(element("c_rows"), ProjectQualifiedName.of("et"), metadata, hr),
+            "conflict" to snapshot.describeExternalType(x.typeRef, ProjectQualifiedName.of("eq"), metadata, hr),
+            "written" to snapshot.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of("employees"), ProjectTypeReference.Anchor.ROWTYPE), null, metadata, hr),
+            "unavailable" to snapshot.describeExternalType(element("rows_t"), ProjectQualifiedName.of("et"), ProjectExternalMetadata.none(), hr)
+        )
+        assertThat(results.mapValues { it.value.status.name }).containsEntry("resolved", "RESOLVED").containsEntry("captured", "NOT_EXTERNAL")
+            .containsEntry("conflict", "CONFLICT").containsEntry("written", "RESOLVED").containsEntry("unavailable", "UNAVAILABLE")
+        val reachable = auditGraph(results, listOf(snapshot, source, reader, input, builder, columns, metadata), sourceMarker)
+        assertThat(reachable.filterIsInstance<ProjectSnapshot>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectExternalMetadata>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ReferenceHolder>()).isEmpty()
+        assertThat(reachable.filterIsInstance<AnchorTrace>()).isEmpty()
+        assertThat(reachable.filterIsInstance<ProjectExternalRelation>()).isNotEmpty()
+    }
+
+    @Test
     fun memberNameCoverageRetainsOnlyNamesAndRanges() {
         val sourceMarker = "member-name-retention-5a8c2e71-9d34-4b6f-a0e2-7c1b3d9f4e58"
         val source = "-- $sourceMarker\nCREATE PACKAGE mn AS CURSOR c RETURN t; e EXCEPTION; g NUMBER b; " +
