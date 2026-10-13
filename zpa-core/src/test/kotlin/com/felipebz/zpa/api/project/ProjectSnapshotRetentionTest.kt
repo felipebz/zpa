@@ -389,6 +389,27 @@ class ProjectSnapshotRetentionTest {
     }
 
     @Test
+    fun memberNameCoverageRetainsOnlyNamesAndRanges() {
+        val sourceMarker = "member-name-retention-5a8c2e71-9d34-4b6f-a0e2-7c1b3d9f4e58"
+        val source = "-- $sourceMarker\nCREATE PACKAGE mn AS CURSOR c RETURN t; e EXCEPTION; g NUMBER b; " +
+            "TYPE rows_t IS TABLE OF c%ROWTYPE; \$IF \$\$x \$THEN \$END END mn;"
+        val reader = ProjectSourceReader { source }
+        val input = ProjectSourceInput.ofReader("mn.sql", reader)
+        val snapshot = ProjectSnapshots.prepare(listOf(input), false)
+        val index = (ProjectSnapshot::class.java.getDeclaredField("preparationResult").apply { isAccessible = true }
+            .get(snapshot) as com.felipebz.zpa.project.ProjectIndexPreparationResult).index
+        val spec = index.declarations.filterIsInstance<com.felipebz.zpa.project.PackageDeclaration>().single()
+        val unit = index.occurrencesFor(spec.fileId).single { it.declaration === spec }
+        val evidence = com.felipebz.zpa.project.PackageMemberNames.at(
+            index, unit, com.felipebz.zpa.project.OracleIdentifier.fromSource("c"), null
+        )
+        val reachable = auditGraph(mapOf("coverage" to spec.memberNames!!, "evidence" to evidence), listOf(snapshot, source, reader, input), sourceMarker)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageMemberName>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
+    }
+
+    @Test
     fun valueResolutionsRetainOnlyDurableFacts() {
         val sourceMarker = "value-resolution-retention-6d1f3a92-7e48-4b0c-a5d9-1c8e2b40f7a3"
         val source = "-- $sourceMarker\nCREATE PACKAGE vr AS g NUMBER; d NUMBER; d DATE; PROCEDURE only_proc; END vr;"

@@ -46,22 +46,96 @@ internal class DiscardedSourceText(private val source: String) {
      * gap holds only whitespace and comment trivia.
      */
     fun firstGap(tokens: List<Token>, from: Int, to: Int): CallableCoverageGap? {
-        var previousEnd = end(tokens[from]) ?: return CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS
+        var first: CallableCoverageGap? = null
+        visitGaps(tokens, from, to) { kind, _, _, _ ->
+            first = kind
+            false
+        }
+        return first
+    }
+
+    /**
+     * Every kind of discarded text between `tokens[from]` and `tokens[to]`, and the tokens lying between the first and
+     * the last conditional-compilation directive that opens or closes a branch. The lexer drops `$IF … $THEN`,
+     * `$ELSIF/$ELSE … $END`, `$ERROR … $END` and `$END` but keeps the tokens of a `$THEN` branch, so those tokens may be
+     * absent for Oracle. A self-contained directive text (`$IF c $THEN $END`, `$ERROR … $END`) bounds no branch.
+     * Scanning stops at an unlocatable token ([CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS]).
+     */
+    fun scan(tokens: List<Token>, from: Int, to: Int): Scan {
+        val kinds = mutableSetOf<CallableCoverageGap>()
+        var firstConditional = -1
+        var lastConditional = -1
+        var boundaries = 0
+        visitGaps(tokens, from, to) { kind, before, segmentStart, segmentEnd ->
+            kinds += kind
+            if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && !selfContained(segmentStart, segmentEnd)) {
+                if (firstConditional < 0) firstConditional = before
+                lastConditional = before
+                boundaries++
+            }
+            true
+        }
+        // A lone boundary (its pair lies outside the region) cannot bound a branch: everything is conditional.
+        val conditionalTokens = when (boundaries) {
+            0 -> null
+            1 -> (from + 1) until to
+            else -> firstConditional until lastConditional
+        }
+        return Scan(kinds, conditionalTokens?.takeUnless { it.isEmpty() })
+    }
+
+    /** [kinds] of discarded text; [conditionalTokens] are the indexes of tokens inside the conditional span, if any. */
+    class Scan(val kinds: Set<CallableCoverageGap>, val conditionalTokens: IntRange?)
+
+    /** Every `$END` in the text closes a `$IF`/`$ERROR` opened earlier in the same text, and none stays open. */
+    private fun selfContained(from: Int, to: Int): Boolean {
+        var depth = 0
+        for (match in DIRECTIVE.findAll(source.substring(from, to))) {
+            depth += if (match.groupValues[1].equals("end", ignoreCase = true)) -1 else 1
+            if (depth < 0) return false
+        }
+        return depth == 0
+    }
+
+    /** Calls [visit] with each discarded kind, the index of the token right after it and the text offsets, until false. */
+    private inline fun visitGaps(tokens: List<Token>, from: Int, to: Int, visit: (CallableCoverageGap, Int, Int, Int) -> Boolean) {
+        var previousEnd = end(tokens[from]) ?: run {
+            visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, from, 0, 0)
+            return
+        }
         for (index in from + 1..to) {
             val token = tokens[index]
-            val start = start(token) ?: return CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS
+            val start = start(token) ?: run {
+                visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, 0, 0)
+                return
+            }
             var cursor = previousEnd
             for (trivia in token.trivia) {
                 for (piece in trivia.tokens) {
-                    val pieceStart = start(piece) ?: return CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS
-                    classify(cursor, pieceStart)?.let { return it }
+                    val pieceStart = start(piece) ?: run {
+                        visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, 0, 0)
+                        return
+                    }
+                    if (!visitSegment(cursor, pieceStart, index, visit)) return
                     cursor = maxOf(cursor, pieceStart + piece.originalValue.length)
                 }
             }
-            classify(cursor, start)?.let { return it }
+            if (!visitSegment(cursor, start, index, visit)) return
             previousEnd = start + token.originalValue.length
         }
-        return null
+    }
+
+    /**
+     * Visits the kind of one discarded segment, then conditional compilation again when a `$` follows another kind in
+     * the same segment (for example `&x $END`), so the conditional span never misses a directive.
+     */
+    private inline fun visitSegment(from: Int, to: Int, before: Int, visit: (CallableCoverageGap, Int, Int, Int) -> Boolean): Boolean {
+        val kind = classify(from, to) ?: return true
+        if (!visit(kind, before, from, to)) return false
+        if (kind != CallableCoverageGap.CONDITIONAL_COMPILATION && source.substring(from, to).contains('$')) {
+            return visit(CallableCoverageGap.CONDITIONAL_COMPILATION, before, from, to)
+        }
+        return true
     }
 
     private fun classify(from: Int, to: Int): CallableCoverageGap? {
@@ -84,5 +158,10 @@ internal class DiscardedSourceText(private val source: String) {
         if (token.line < 1 || token.line > lineStarts.size) return null
         val offset = lineStarts[token.line - 1] + token.column
         return offset.takeIf { it <= source.length && source.startsWith(token.originalValue, it) }
+    }
+
+    private companion object {
+        /** `$IF`, `$ERROR` and `$END` directives, not inquiry directives such as `$$if_flag`. */
+        val DIRECTIVE = Regex("(?i)(?<![\$\\w])\\$(if|error|end)(?!\\w)")
     }
 }

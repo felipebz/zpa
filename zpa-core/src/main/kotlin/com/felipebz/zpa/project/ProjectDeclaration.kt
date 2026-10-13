@@ -66,7 +66,12 @@ data class PackageDeclaration(
     override val fileId: FileId,
     override val sourceRange: SourceRange,
     /** Callable coverage of this occurrence's declaration region; always supplied by the extractor, never assumed. */
-    val callableCoverage: PackageCallableCoverage
+    val callableCoverage: PackageCallableCoverage,
+    /**
+     * Member-name coverage of a specification's declaration region (names of declarations without facts, and gaps);
+     * null when not recorded (package bodies), which never counts as complete.
+     */
+    val memberNames: PackageMemberNameCoverage? = null
 ) : ProjectDeclaration {
     init {
         require(role == DeclarationRole.SPECIFICATION || role == DeclarationRole.BODY)
