@@ -1,0 +1,81 @@
+name: Oracle metadata
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - zpa-oracle-metadata/**
+      - zpa-core/src/main/kotlin/com/felipebz/zpa/api/project/**
+      - gradle/libs.versions.toml
+      - .github/workflows/oracle-metadata.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - zpa-oracle-metadata/**
+      - zpa-core/src/main/kotlin/com/felipebz/zpa/api/project/**
+      - gradle/libs.versions.toml
+      - .github/workflows/oracle-metadata.yml
+  schedule:
+    # Weekly, to notice changes in the database image or the JDBC driver that no pull request triggers.
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: 21
+  ORACLE_IMAGE: gvenzl/oracle-free:23.26.3-slim-faststart@sha256:f5ff19033860d662c821cb04eb10483fa94f14f78eae252d054291ea07028093
+
+permissions:
+  contents: read
+
+jobs:
+  oracle-integration-tests:
+    name: Oracle metadata integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+
+      - name: Start Oracle AI Database Free
+        run: |
+          # Throwaway container on an ephemeral runner: the admin password is generated per run and masked.
+          password="$(openssl rand -hex 16)"
+          echo "::add-mask::$password"
+          echo "ZPA_ORACLE_ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
+          docker run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD="$password" "$ORACLE_IMAGE"
+          for _ in $(seq 1 90); do
+            if docker exec oracle healthcheck.sh > /dev/null 2>&1; then
+              echo "Oracle is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Oracle did not become ready" >&2
+          docker logs oracle 2>&1 | tail -50
+          exit 1
+
+      - name: Run Oracle metadata integration tests
+        run: ./gradlew :zpa-oracle-metadata:oracleIntegrationTest
+        env:
+          ZPA_ORACLE_JDBC_URL: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+          ZPA_ORACLE_ADMIN_USER: system
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: oracle-metadata-test-reports
+          path: zpa-oracle-metadata/build/reports/tests/oracleIntegrationTest/
+          retention-days: 7
+          if-no-files-found: ignore

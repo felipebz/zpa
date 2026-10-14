@@ -42,8 +42,9 @@ class ProjectExternalDatatype private constructor(
     enum class LengthSemantics { BYTE, CHAR }
 
     /**
-     * `DATA_TYPE_OWNER` as an exact dictionary name, preserved as supplied: present for user-defined and owned system
-     * types (Oracle 26ai reports `SYS` for `XMLTYPE`).
+     * `DATA_TYPE_OWNER` as an exact dictionary name, preserved as supplied.
+     * For named types, the value may reflect how the type was referenced
+     * in the column declaration, including through a synonym.
      */
     val typeOwner: Optional<ProjectIdentifier> = Optional.ofNullable(typeOwner)
 
