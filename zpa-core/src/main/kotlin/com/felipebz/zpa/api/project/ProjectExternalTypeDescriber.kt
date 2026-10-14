@@ -91,31 +91,60 @@ private class Composition(
         }
     }
 
+    /** Step 5 result: a decided outcome, or the open scope (owner and whether a capture is not excluded). */
+    private sealed interface ScopeResult {
+        class Decided(val outcome: Outcome) : ScopeResult
+        class Open(val owner: QualifiedName?, val uncertain: Boolean) : ScopeResult
+    }
+
     private fun decide(): Outcome {
         val stepFacts = source.steps.mapNotNull { factOf(it) }
         val walkFacts = stepFacts + listOfNotNull(source.declaration.orElse(null)?.let { factOf(it) })
         val referenceFacts = listOfNotNull(startHolder?.fact)
 
         // 2. A followed anchor is a positive source interpretation; a found relation reading of it competes.
-        if (available) {
-            followedAnchors().firstNotNullOfOrNull { (anchor, value) ->
-                competing(anchor.name).takeIf { it.isNotEmpty() }?.let { found -> Triple(anchor, value, found) }
-            }?.let { (anchor, _, found) ->
-                val values = followedAnchors().filter { competing(it.first.name).isNotEmpty() }.map { it.second }
-                return conflict(anchor, values, found, stepFacts + referenceFacts)
-            }
-        }
+        followedConflict(stepFacts, referenceFacts)?.let { return it }
 
         // 3. Terminal classification.
         val stopped = stoppedAnchor()
+        terminalOutcome(stopped, stepFacts, walkFacts, referenceFacts)?.let { return it }
+        val anchor = stopped ?: return Outcome(Status.NOT_EXTERNAL, dependencies = walkFacts)
+
+        // 4. Shape.
+        val reading = reading(anchor) ?: return Outcome(Status.NOT_EXTERNAL, anchor)
+        val first = anchor.name.segments.first()
+
+        // 5. Proven source capture, or a same-named member that makes Oracle reject the anchor.
+        val scope = when (val result = sourceScope(anchor, first, stepFacts)) {
+            is ScopeResult.Decided -> return result.outcome
+            is ScopeResult.Open -> result
+        }
+
+        val captors = possibleCaptors(anchor, scope.owner)
+        return outcomeAfterScope(anchor, reading, first, captors, scope.uncertain, stepFacts, referenceFacts)
+    }
+
+    /** Step 2. */
+    private fun followedConflict(stepFacts: List<ProjectDeclaration>, referenceFacts: List<ProjectDeclaration>): Outcome? {
+        if (!available) return null
+        val followed = followedAnchors()
+        val (anchor, found) = followed.firstNotNullOfOrNull { (anchor, _) ->
+            competing(anchor.name).takeIf { it.isNotEmpty() }?.let { anchor to it }
+        } ?: return null
+        val values = followed.filter { competing(it.first.name).isNotEmpty() }.map { it.second }
+        return conflict(anchor, values, found, stepFacts + referenceFacts)
+    }
+
+    /** Step 3: a terminal outcome, or null when the classification continues with step 4. */
+    private fun terminalOutcome(
+        stopped: WrittenName?,
+        stepFacts: List<ProjectDeclaration>,
+        walkFacts: List<ProjectDeclaration>,
+        referenceFacts: List<ProjectDeclaration>
+    ): Outcome? {
         when (source.status) {
             ProjectTypeDescription.Status.ANCHORED_REFERENCE -> when (trace.cause) {
-                AnchorStopCause.PREFIX_VALUE -> {
-                    val values = snapshot.viewsOf(trace.captors)
-                    val found = if (available && stopped != null) competing(stopped.name) else emptyList()
-                    if (found.isNotEmpty()) return conflict(stopped!!, values, found, stepFacts + trace.captors.map { it.declaration } + referenceFacts)
-                    return Outcome(Status.NOT_EXTERNAL, stopped, sourceCandidates = values, dependencies = stepFacts + trace.captors.map { it.declaration })
-                }
+                AnchorStopCause.PREFIX_VALUE -> return prefixValueOutcome(stopped, stepFacts, referenceFacts)
                 AnchorStopCause.DECLARED_LATER ->
                     return Outcome(Status.NOT_EXTERNAL, stopped, sourceCandidates = snapshot.viewsOf(trace.captors),
                         dependencies = stepFacts + trace.captors.map { it.declaration })
@@ -130,41 +159,71 @@ private class Composition(
             }
             else -> return Outcome(Status.NOT_EXTERNAL, dependencies = walkFacts)
         }
-        val anchor = stopped ?: return Outcome(Status.NOT_EXTERNAL, dependencies = walkFacts)
+        return null
+    }
 
-        // 4. Shape.
-        val reading = reading(anchor) ?: return Outcome(Status.NOT_EXTERNAL, anchor)
-        val first = anchor.name.segments.first()
+    /** Step 3, an anchor stopped by a shorter qualified package value. */
+    private fun prefixValueOutcome(stopped: WrittenName?, stepFacts: List<ProjectDeclaration>, referenceFacts: List<ProjectDeclaration>): Outcome {
+        val values = snapshot.viewsOf(trace.captors)
+        val found = if (available && stopped != null) competing(stopped.name) else emptyList()
+        if (found.isNotEmpty()) return conflict(stopped!!, values, found, stepFacts + trace.captors.map { it.declaration } + referenceFacts)
+        return Outcome(Status.NOT_EXTERNAL, stopped, sourceCandidates = values, dependencies = stepFacts + trace.captors.map { it.declaration })
+    }
 
-        // 5. Proven source capture, or a same-named member that makes Oracle reject the anchor.
+    /** Step 5. */
+    private fun sourceScope(anchor: WrittenName, first: ProjectIdentifier, stepFacts: List<ProjectDeclaration>): ScopeResult {
         var uncertain = trace.cause == AnchorStopCause.NO_HOLDER || trace.cause == AnchorStopCause.PACKAGE_UNIT
         val holder = if (trace.written) null else trace.holder
         if (!trace.written && holder == null) uncertain = true
         if (holder != null && holder.capturingNames.contains(first.identifier)) {
-            return Outcome(Status.NOT_EXTERNAL, anchor, sourceCandidates = viewOf(holder.fact), dependencies = stepFacts)
+            return ScopeResult.Decided(Outcome(Status.NOT_EXTERNAL, anchor, sourceCandidates = viewOf(holder.fact), dependencies = stepFacts))
         }
         val owner = if (trace.written) packageOwner?.name else holder?.owner
-        if (owner != null) {
-            val retainedInSpec = holder != null && holder.role == DeclarationRole.SPECIFICATION
-            val unit = if (retainedInSpec) holder.unit else singleSpecification(owner)
-            if (unit == null) {
-                uncertain = true
-            } else {
-                val position = if (retainedInSpec) anchor.reference?.sourceRange?.let(::internalRange) else null
-                val evidence = PackageMemberNames.at(index, unit, first.identifier, position)
-                when (evidence.status) {
-                    MemberNameStatus.DECLARED_BEFORE, MemberNameStatus.REJECTED -> {
-                        val members = memberViews(owner, first.identifier, unit, evidence)
-                        return Outcome(Status.NOT_EXTERNAL, anchor, sourceCandidates = members, dependencies = members.mapNotNull { factOf(it) })
-                    }
-                    MemberNameStatus.NOT_DECLARED -> if (trace.cause == AnchorStopCause.PACKAGE_MEMBER) uncertain = true
-                    MemberNameStatus.UNKNOWN -> uncertain = true
-                }
-            }
-            if (holder?.role == DeclarationRole.BODY) uncertain = true
-        }
+        val member = owner?.let { packageMemberScope(it, holder, anchor, first) }
+        if (member is ScopeResult.Decided) return member
+        if (member is ScopeResult.Open && member.uncertain) uncertain = true
+        return ScopeResult.Open(owner, uncertain)
+    }
 
-        val captors = possibleCaptors(anchor, owner)
+    /** Step 5, the holder's package: whether this check alone makes the scope uncertain. */
+    private fun packageMemberScope(owner: QualifiedName, holder: ReferenceHolder?, anchor: WrittenName, first: ProjectIdentifier): ScopeResult {
+        val retainedInSpec = holder != null && holder.role == DeclarationRole.SPECIFICATION
+        val unit = if (retainedInSpec) holder.unit else singleSpecification(owner)
+        var uncertain = unit == null
+        if (unit != null) {
+            when (val evidence = memberNameEvidence(owner, unit, retainedInSpec, anchor, first)) {
+                is ScopeResult.Decided -> return evidence
+                is ScopeResult.Open -> uncertain = evidence.uncertain
+            }
+        }
+        if (holder?.role == DeclarationRole.BODY) uncertain = true
+        return ScopeResult.Open(owner, uncertain)
+    }
+
+    /** Step 5, the package member-name evidence for the first segment in [unit]. */
+    private fun memberNameEvidence(owner: QualifiedName, unit: IndexedDeclaration, retainedInSpec: Boolean, anchor: WrittenName, first: ProjectIdentifier): ScopeResult {
+        val position = if (retainedInSpec) anchor.reference?.sourceRange?.let(::internalRange) else null
+        val evidence = PackageMemberNames.at(index, unit, first.identifier, position)
+        return when (evidence.status) {
+            MemberNameStatus.DECLARED_BEFORE, MemberNameStatus.REJECTED -> {
+                val members = memberViews(owner, first.identifier, unit, evidence)
+                ScopeResult.Decided(Outcome(Status.NOT_EXTERNAL, anchor, sourceCandidates = members, dependencies = members.mapNotNull { factOf(it) }))
+            }
+            MemberNameStatus.NOT_DECLARED -> ScopeResult.Open(owner, trace.cause == AnchorStopCause.PACKAGE_MEMBER)
+            MemberNameStatus.UNKNOWN -> ScopeResult.Open(owner, true)
+        }
+    }
+
+    /** Steps 6–13. */
+    private fun outcomeAfterScope(
+        anchor: WrittenName,
+        reading: Reading,
+        first: ProjectIdentifier,
+        captors: List<ProjectDeclarationView>,
+        uncertain: Boolean,
+        stepFacts: List<ProjectDeclaration>,
+        referenceFacts: List<ProjectDeclaration>
+    ): Outcome {
         // 6. Source completeness.
         if (snapshot.failures.isNotEmpty() || snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) {
             return inconclusive(Status.SOURCE_INCOMPLETE, anchor, reading, captors)
@@ -182,6 +241,18 @@ private class Composition(
         // 10. Lookups.
         val lookup = lookup(reading)
         val relationName = reading.name!!
+        currentSchemaCapture(anchor, reading, first, relationName, lookup, captors)?.let { return it }
+        return lookupOutcome(anchor, reading, relationName, lookup, captors, stepFacts, referenceFacts)
+    }
+
+    private fun currentSchemaCapture(
+        anchor: WrittenName,
+        reading: Reading,
+        first: ProjectIdentifier,
+        relationName: ProjectQualifiedName,
+        lookup: ProjectExternalLookup,
+        captors: List<ProjectDeclarationView>
+    ): Outcome? {
         // 11. Schema-qualified readings: a current-schema relation named like the qualifier captures it, or competes.
         if (reading.qualified && currentSchema != null) {
             val current = metadata.findRelation(currentSchema, first)
@@ -193,6 +264,18 @@ private class Composition(
                 return Outcome(Status.CAPTURE_NOT_EXCLUDED, anchor, relationName, lookup, captors, listOf(currentRelation))
             }
         }
+        return null
+    }
+
+    private fun lookupOutcome(
+        anchor: WrittenName,
+        reading: Reading,
+        relationName: ProjectQualifiedName,
+        lookup: ProjectExternalLookup,
+        captors: List<ProjectDeclarationView>,
+        stepFacts: List<ProjectDeclaration>,
+        referenceFacts: List<ProjectDeclaration>
+    ): Outcome {
         // 12. Lookup outcome.
         when (lookup.status) {
             ProjectExternalLookup.Status.NOT_COVERED -> return Outcome(Status.INCOMPLETE, anchor, relationName, lookup, captors)

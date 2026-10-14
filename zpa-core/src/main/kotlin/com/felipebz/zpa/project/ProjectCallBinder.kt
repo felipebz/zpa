@@ -94,13 +94,7 @@ internal class ProjectCallBinder(context: ProjectAnalysisContext) {
             bound[formalIndex] = true
             formalIndices[index] = formalIndex
         }
-        val missing = ArrayList<ProjectParameter>()
-        val omitted = ArrayList<ProjectParameter>()
-        for ((index, parameter) in parameters.withIndex()) {
-            if (!bound[index]) {
-                if (parameter.defaultPresent) omitted.add(parameter) else missing.add(parameter)
-            }
-        }
+        val (omitted, missing) = parameters.filterIndexed { index, _ -> !bound[index] }.partition { it.defaultPresent }
         if (missing.isNotEmpty()) {
             return ProjectCallCandidate(
                 occurrence, kind, arguments, ProjectCallCandidate.Applicability.MISSING_REQUIRED,

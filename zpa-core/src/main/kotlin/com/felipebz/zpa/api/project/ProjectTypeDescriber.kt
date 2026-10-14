@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectTypeDescriber.anchor
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.project.*
 
@@ -111,16 +112,8 @@ internal object ProjectTypeDescriber {
             }
             category(name)?.let { return ProjectTypeDescription.builtIn(steps.values.toList(), it, reference, written) }
             val resolution = snapshot.resolveNamedType(name, owner)
-            if (resolution.status != ProjectNamedTypeResolution.Status.RESOLVED) {
-                return ProjectTypeDescription.unresolved(steps.values.toList(), resolution, reference, written)
-            }
-            val declaration = resolution.declaration.get()
-            if (declaration !is ProjectSubtypeView) {
-                return ProjectTypeDescription.declared(steps.values.toList(), declaration, reference, written)
-            }
-            if (steps.containsKey(declaration.id)) {
-                return ProjectTypeDescription.cycle(steps.values.toList(), reference, written)
-            }
+            terminalResolution(resolution, steps, reference, written)?.let { return it }
+            val declaration = resolution.declaration.get() as ProjectSubtypeView
             steps[declaration.id] = declaration
             reference = declaration.baseType
             name = declaration.baseType.name
@@ -128,6 +121,26 @@ internal object ProjectTypeDescriber {
             holder = snapshot.occurrenceOf(declaration.id)?.let { ReferenceHolders.of(snapshot.projectIndex, it) }
             holderKnown = true
         }
+    }
+
+    /** A resolution that ends the walk (unresolved, not a subtype, or an already visited subtype), or null to follow. */
+    private fun terminalResolution(
+        resolution: ProjectNamedTypeResolution,
+        steps: Map<ProjectDeclarationId, ProjectDeclarationView>,
+        reference: ProjectTypeReference?,
+        written: ProjectWrittenAnchor?
+    ): ProjectTypeDescription? {
+        if (resolution.status != ProjectNamedTypeResolution.Status.RESOLVED) {
+            return ProjectTypeDescription.unresolved(steps.values.toList(), resolution, reference, written)
+        }
+        val declaration = resolution.declaration.get()
+        if (declaration !is ProjectSubtypeView) {
+            return ProjectTypeDescription.declared(steps.values.toList(), declaration, reference, written)
+        }
+        if (steps.containsKey(declaration.id)) {
+            return ProjectTypeDescription.cycle(steps.values.toList(), reference, written)
+        }
+        return null
     }
 
     /**
@@ -145,41 +158,87 @@ internal object ProjectTypeDescriber {
         written: ProjectWrittenAnchor?,
         trace: AnchorTrace?
     ): Anchor {
-        // The ordered copy is made only when a terminal description is built, never for a successful step.
-        fun followed() = steps.values.toList()
-        fun stop(why: ProjectTypeDescription.AnchorStop, cause: AnchorStopCause, captors: List<IndexedDeclaration> = emptyList()): Anchor.Stop {
-            trace?.cause = cause
-            trace?.captors = captors
-            return Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why, written))
-        }
+        val step = AnchorStep(snapshot, reference, steps, written, trace)
         val holder = (context as? AnchorContext.Retained)?.holder
         trace?.holder = holder
         trace?.written = context is AnchorContext.Written
         trace?.cause = null
         trace?.captors = emptyList()
         // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
-        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
-        if (context is AnchorContext.Retained && holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)
+        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return step.stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
+        if (context is AnchorContext.Retained && holder == null) return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)
         val index = snapshot.projectIndex
         val segments = anchorName.name.segments
-        if (holder != null) {
-            // A sibling record field or parameter captures the first segment before anything in the package.
-            if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.SIBLING)
-            // Body-private declarations are not facts, so a one-segment name in a body cannot be judged absent.
-            if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
-        }
+        step.holderStop(holder, segments)?.let { return it }
         val owner = when (context) {
             is AnchorContext.Retained -> holder!!.owner
             is AnchorContext.Written -> context.owner
         }
-        if (owner == null) {
-            // Standalone declarations have no package scope: only a qualified name can name a package value.
-            if (segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_PACKAGE_SCOPE)
+        step.packageScopeStop(owner, holder, segments)?.let { return it }
+        step.prefixValueStop(segments)?.let { return it }
+        val lookup = if (segments.size == 1) {
+            snapshot.resolvePackageValue(anchorName, ProjectQualifiedName.wrap(owner!!))
         } else {
+            snapshot.resolvePackageValue(anchorName, null)
+        }
+        if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
+            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(step.followed(), lookup, reference, written))
+        }
+        val value = lookup.value.get()
+        // The resolved value must be the only binding of its package: several specifications are not one scope.
+        if (index.findOccurrences(value.owner.name).count { val d = it.declaration; d is PackageDeclaration && d.role == DeclarationRole.SPECIFICATION } != 1) {
+            return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
+        }
+        val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
+        step.declarationOrderStop(holder, owner, value, valueOccurrence)?.let { return it }
+        if (steps.containsKey(value.id)) return Anchor.Cycle(value)
+        return Anchor.Follow(value)
+    }
+
+    /** The stop checks of one [anchor] step, sharing the step's reference, walk and trace. */
+    private class AnchorStep(
+        private val snapshot: ProjectSnapshot,
+        private val reference: ProjectTypeReference?,
+        private val steps: Map<ProjectDeclarationId, ProjectDeclarationView>,
+        private val written: ProjectWrittenAnchor?,
+        private val trace: AnchorTrace?
+    ) {
+        // The ordered copy is made only when a terminal description is built, never for a successful step.
+        fun followed() = steps.values.toList()
+
+        fun stop(why: ProjectTypeDescription.AnchorStop, cause: AnchorStopCause, captors: List<IndexedDeclaration> = emptyList()): Anchor.Stop {
+            trace?.cause = cause
+            trace?.captors = captors
+            return Anchor.Stop(ProjectTypeDescription.anchorStopped(followed(), reference, why, written))
+        }
+
+        fun holderStop(holder: ReferenceHolder?, segments: List<OracleIdentifier>): Anchor.Stop? {
+            if (holder == null) return null
+            // A sibling record field or parameter captures the first segment before anything in the package.
+            if (holder.capturingNames.any { it == segments.first() }) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.SIBLING)
+            // Body-private declarations are not facts, so a one-segment name in a body cannot be judged absent.
+            if (holder.role == DeclarationRole.BODY && segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
+            return null
+        }
+
+        fun packageScopeStop(owner: QualifiedName?, holder: ReferenceHolder?, segments: List<OracleIdentifier>): Anchor.Stop? {
+            if (owner == null) {
+                // Standalone declarations have no package scope: only a qualified name can name a package value.
+                if (segments.size == 1) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_PACKAGE_SCOPE)
+            } else {
+                packageMemberStop(owner, segments)?.let { return it }
+            }
+            // A package-body subprogram may be captured by a private declaration that is not a fact, whatever the qualification.
+            if (owner != null && holder?.role == DeclarationRole.BODY)
+                return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
+            return null
+        }
+
+        private fun packageMemberStop(owner: QualifiedName, segments: List<OracleIdentifier>): Anchor.Stop? {
             // A declaration of the holder's package named like the first segment captures it (positive scope evidence,
             // independent of the preparation state): a value of the package makes a qualified name a field path, and a
             // package declaration that is not a value makes the anchor invalid, so neither becomes a project lookup.
-            val captured = index.findOccurrences(owner.append(segments.first()))
+            val captured = snapshot.projectIndex.findOccurrences(owner.append(segments.first()))
             val capturedValue = captured.any { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }
             if (segments.size >= 2 && captured.isNotEmpty()) {
                 return stop(
@@ -190,43 +249,33 @@ internal object ProjectTypeDescriber {
             if (segments.size == 1 && captured.isNotEmpty() && !capturedValue) {
                 return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_MEMBER, captured)
             }
+            return null
         }
-        // A package-body subprogram may be captured by a private declaration that is not a fact, whatever the qualification.
-        if (owner != null && holder?.role == DeclarationRole.BODY)
-            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.BODY_SCOPE)
-        // A shorter qualified package value followed by a field path competes with the fully qualified value.
-        for (length in 2 until segments.size) {
-            val prefix = QualifiedName(segments.subList(0, length))
-            val values = index.findOccurrences(prefix).filter { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }
-            if (values.isNotEmpty()) {
-                return stop(ProjectTypeDescription.AnchorStop.FIELD_PATH, AnchorStopCause.PREFIX_VALUE, values)
+
+        fun prefixValueStop(segments: List<OracleIdentifier>): Anchor.Stop? {
+            // A shorter qualified package value followed by a field path competes with the fully qualified value.
+            for (length in 2 until segments.size) {
+                val prefix = QualifiedName(segments.subList(0, length))
+                val values = snapshot.projectIndex.findOccurrences(prefix).filter { it.declaration is com.felipebz.zpa.project.PackageValueDeclaration }
+                if (values.isNotEmpty()) {
+                    return stop(ProjectTypeDescription.AnchorStop.FIELD_PATH, AnchorStopCause.PREFIX_VALUE, values)
+                }
             }
+            return null
         }
-        val lookup = if (segments.size == 1) {
-            snapshot.resolvePackageValue(anchorName, ProjectQualifiedName.wrap(owner!!))
-        } else {
-            snapshot.resolvePackageValue(anchorName, null)
-        }
-        if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
-            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed(), lookup, reference, written))
-        }
-        val value = lookup.value.get()
-        // The resolved value must be the only binding of its package: several specifications are not one scope.
-        if (index.findOccurrences(value.owner.name).count { val d = it.declaration; d is PackageDeclaration && d.role == DeclarationRole.SPECIFICATION } != 1) {
-            return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
-        }
-        val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
-        // Declaration order applies only within the specification that retains the reference; a written anchor is,
-        // by precondition, not an indexed specification fact.
-        if (holder != null && owner != null && holder.role != DeclarationRole.BODY) {
-            val valueUnit = ReferenceHolders.unitOf(snapshot.projectIndex, valueOccurrence.declaration, value.owner.name)
-            if (holder.unit == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
-            if (valueUnit != null && valueUnit === holder.unit && !completedBefore(value.sourceRange, reference!!.sourceRange)) {
-                return stop(ProjectTypeDescription.AnchorStop.DECLARED_LATER, AnchorStopCause.DECLARED_LATER, listOf(valueOccurrence))
+
+        fun declarationOrderStop(holder: ReferenceHolder?, owner: QualifiedName?, value: ProjectPackageValueView, valueOccurrence: IndexedDeclaration): Anchor.Stop? {
+            // Declaration order applies only within the specification that retains the reference; a written anchor is,
+            // by precondition, not an indexed specification fact.
+            if (holder != null && owner != null && holder.role != DeclarationRole.BODY) {
+                val valueUnit = ReferenceHolders.unitOf(snapshot.projectIndex, valueOccurrence.declaration, value.owner.name)
+                if (holder.unit == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
+                if (valueUnit != null && valueUnit === holder.unit && !completedBefore(value.sourceRange, reference!!.sourceRange)) {
+                    return stop(ProjectTypeDescription.AnchorStop.DECLARED_LATER, AnchorStopCause.DECLARED_LATER, listOf(valueOccurrence))
+                }
             }
+            return null
         }
-        if (steps.containsKey(value.id)) return Anchor.Cycle(value)
-        return Anchor.Follow(value)
     }
 
     private fun completedBefore(value: ProjectSourceRange, reference: ProjectSourceRange): Boolean =

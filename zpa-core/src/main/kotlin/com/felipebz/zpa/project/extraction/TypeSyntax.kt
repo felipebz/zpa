@@ -144,23 +144,29 @@ internal class TypeReferences(private val stream: TokenStream) {
         val nameEnd = if (percent >= 0) percent else selected.size
         val datatypeTokens = selected.subList(nameStart, nameEnd)
         val parsedName = qualifiedSegments(datatypeTokens) ?: return null
-        if (percent >= 0 && (ref || parsedName.second != datatypeTokens.size ||
-                percent + 2 != selected.size ||
-                !(stream.isKeyword(start + percent + 1, "TYPE") || stream.isKeyword(start + percent + 1, "ROWTYPE")))
-        ) return null
+        val anchor = anchorSuffix(start, percent, selected.size)
+        if (percent >= 0 && (ref || parsedName.second != datatypeTokens.size || anchor == null)) return null
         val name = parsedName.first
         if (ref && !DatatypeShape(stream).strictDatatype(start, end)) return null
         val sourceRange = stream.range(start, end - 1)
-        if (percent >= 0) {
-            val anchor = if (stream.isKeyword(start + percent + 1, "TYPE")) TypeAnchor.TYPE else TypeAnchor.ROWTYPE
-            return AnchoredTypeRef(name, anchor, sourceRange)
-        }
+        if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
         if (ref) return RefTypeRef(name, sourceRange)
         val headerTypeIdentity = normalizedHeaderTypeIdentity(selected)
         return if (headerTypeIdentity == null) {
             NamedTypeRef(name, sourceRange)
         } else {
             NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
+        }
+    }
+
+    /** The `%TYPE`/`%ROWTYPE` anchor when the `%` at [percent] is followed by exactly one anchor keyword, else null. */
+    private fun anchorSuffix(start: Int, percent: Int, size: Int): TypeAnchor? {
+        if (percent < 0 || percent + 2 != size) return null
+        val index = start + percent + 1
+        return when {
+            stream.isKeyword(index, "TYPE") -> TypeAnchor.TYPE
+            stream.isKeyword(index, "ROWTYPE") -> TypeAnchor.ROWTYPE
+            else -> null
         }
     }
 
