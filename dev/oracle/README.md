@@ -8,14 +8,14 @@ schema while working on the ZPA grammar.
 Start Oracle Free:
 
 ```bash
-podman run -d --name oracle-free \
+podman run -d --name oracle-free -p 1521:1521 \
   -e ORACLE_PASSWORD=oracle \
   -e APP_USER=zpa_probe \
   -e APP_USER_PASSWORD=zpa_probe \
   docker.io/gvenzl/oracle-free:full-faststart
 ```
 
-This creates the `zpa_probe` user in `FREEPDB1`.
+This creates the `zpa_probe` user in `FREEPDB1` and publishes the listener on `localhost:1521`.
 
 Create the probe configuration:
 
@@ -123,6 +123,61 @@ set:
 ```bash
 ORACLE_CLIENT=sqlplus
 ```
+
+## Windows (PowerShell)
+
+`oracle-probe.ps1` is a PowerShell equivalent with the same configuration,
+output, and exit codes. It works with Windows PowerShell 5.1 and PowerShell 7.
+
+Create the configuration (same format and default location,
+`%USERPROFILE%\.config\zpa\oracle-probe.env`):
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME\.config\zpa" | Out-Null
+Copy-Item dev\oracle\oracle-probe.env.example "$HOME\.config\zpa\oracle-probe.env"
+```
+
+Check connectivity (`--ping` and `-Ping` are equivalent):
+
+```powershell
+.\dev\oracle\oracle-probe.ps1 --ping
+```
+
+Run probes by piping SQL to stdin:
+
+```powershell
+'select 1 from dual;' | .\dev\oracle\oracle-probe.ps1
+
+@'
+create table t (
+  id  number,
+  grp number
+);
+
+select listagg(id) over (order by grp)
+from t;
+'@ | .\dev\oracle\oracle-probe.ps1
+
+Get-Content probe.sql -Raw | .\dev\oracle\oracle-probe.ps1
+```
+
+Use an alternate configuration file:
+
+```powershell
+$env:ZPA_ORACLE_PROBE_CONFIG = 'C:\path\to\oracle-probe.env'
+```
+
+If script execution is blocked, run it with
+`powershell -ExecutionPolicy Bypass -File dev\oracle\oracle-probe.ps1 ...`.
+
+Differences from the bash script:
+
+- probes are serialized with an exclusive lock file, by default
+  `%TEMP%\zpa-oracle-probe-<user>.lock` (`flock` is not required);
+- the client's stdout and stderr are captured separately and printed with
+  stdout first, so their relative order is not preserved;
+- SQL is sent to the client as UTF-8 with `LF` line endings;
+- the exit code is in `$LASTEXITCODE`.
 
 ## Configuration
 
