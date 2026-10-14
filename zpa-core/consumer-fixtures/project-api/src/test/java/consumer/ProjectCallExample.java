@@ -43,7 +43,7 @@ final class ProjectCallExample {
                 + arguments.getInvalidArgumentOrdinal().getAsInt());
             case AMBIGUOUS_TARGET, PARTIAL_DECLARATIONS -> report.add("target not settled: " + resolution.getUncertainties());
             case INCOMPLETE_INDEX -> report.add("unknown: sources failed " + resolution.getFailures().stream()
-                .map(f -> f.getFileId()).collect(Collectors.toList()));
+                .map(ProjectPreparationFailure::getFileId).toList());
             case UNKNOWN_PACKAGE, NOT_FOUND_IN_PROJECT -> report.add("not in the supplied sources");
             case NOT_PREPARED -> report.add("no project was prepared");
         }
