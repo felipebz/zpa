@@ -23,19 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.PackageFunctionDeclaration
-import com.felipebz.zpa.project.PackageProcedureDeclaration
-import com.felipebz.zpa.project.PackageSubprogramDeclaration
-import com.felipebz.zpa.project.ProjectPackageProcedureResolution
-import com.felipebz.zpa.project.ProjectPackageProcedureResolver
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectSequenceReferenceResolution
-import com.felipebz.zpa.project.ProjectSequenceReferenceResolver
-import com.felipebz.zpa.project.ProjectSubprogramSpecificationResolution
-import com.felipebz.zpa.project.ProjectSubprogramSpecificationResolver
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.QualifiedName
-import kotlin.jvm.JvmSynthetic
+import com.felipebz.zpa.project.*
 
 /** Read-only project information available to a custom check during one analysis run. */
 @ZpaExperimentalApi
@@ -50,6 +38,13 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
      * prepared project the snapshot reports [ProjectPreparationState.NOT_PREPARED].
      */
     val snapshot: ProjectSnapshot = ProjectSnapshot.create(projectAnalysisContext)
+
+    /**
+     * External metadata supplied for this run, with its compilation-schema rule; [ProjectExternalContext.none] when
+     * the run has none. Use it with [snapshot]: `snapshot.describeExternalType(reference, owner,
+     * externalContext.metadata, externalContext.compilationSchema(unitName).orElse(null))`.
+     */
+    val externalContext: ProjectExternalContext get() = projectAnalysisContext.externalContext
 
     private val specificationResolver = ProjectSubprogramSpecificationResolver(projectAnalysisContext)
     private val sequenceReferenceResolver = ProjectSequenceReferenceResolver(projectAnalysisContext)
