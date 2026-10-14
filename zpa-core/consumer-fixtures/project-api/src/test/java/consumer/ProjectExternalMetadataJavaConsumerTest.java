@@ -119,4 +119,16 @@ class ProjectExternalMetadataJavaConsumerTest {
         assertThat(Arrays.stream(ProjectExternalLookup.Status.values()).map(Enum::name))
             .containsExactly("FOUND", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND", "NOT_COVERED", "UNAVAILABLE");
     }
+
+    @Test
+    void nullColumnElementsAreRejectedWithIllegalArgumentException() {
+        List<ProjectExternalColumn> columns = new ArrayList<>();
+        columns.add(ProjectExternalColumn.of("ID", 1, null));
+        columns.add(null);
+        assertThatThrownBy(() -> ProjectExternalRelation.of("HR", "EMPLOYEES", true, columns))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("index 1");
+        ProjectExternalDatatype rowType = ProjectExternalDatatype.of("EMP_T", "HR", null, null, null, null);
+        assertThatThrownBy(() -> ProjectExternalRelation.objectTable("HR", "EMP_OT", rowType, true, columns))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
 }

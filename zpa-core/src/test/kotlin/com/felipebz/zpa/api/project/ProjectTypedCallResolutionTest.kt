@@ -157,6 +157,20 @@ class ProjectTypedCallResolutionTest {
     }
 
     @Test
+    fun anAbsentRelationIsNotEvidenceAgainstAFormal() {
+        // dual.dummy%TYPE compiles on Oracle although complete HR-style metadata without DUAL reports RELATION_NOT_FOUND.
+        val source = spec("PROCEDURE pick(x dual.dummy%TYPE);", "PROCEDURE pick(x DATE);")
+        val s = prepare("p.sql" to source)
+        val formal = (s.findDeclarations(ProjectQualifiedName.of("p", "pick")).declarations.first() as ProjectSubprogramView).parameters.single()
+        assertThat(s.describeExternalType(formal.typeRef, ProjectQualifiedName.of("p"), md, hr).status)
+            .isEqualTo(ProjectExternalTypeDescription.Status.RELATION_NOT_FOUND)
+        val c = call(source, "pick", listOf(positional()), listOf(ProjectArgumentType.builtIn("VARCHAR2")))
+        assertThat(c.typed.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(c.typed.evaluations.first().bindings.single().unknownReason).contains(UnknownReason.FORMAL_INCONCLUSIVE)
+        assertThat(c.typed.evaluations.map { it.outcome }).containsOnly(ProjectCandidateCompatibility.Outcome.RETAINED)
+    }
+
+    @Test
     fun anchoredFormalsFollowTheSuppliedMetadata() {
         val source = spec("PROCEDURE pick(x employees.salary%TYPE);", "PROCEDURE pick(x DATE);", "PROCEDURE odd(x employees.odd%TYPE);", "PROCEDURE odd(x DATE);")
         val date = listOf(ProjectArgumentType.builtIn("DATE"))

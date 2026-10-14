@@ -72,7 +72,12 @@ class ProjectExternalTypeDescription private constructor(
         /** The supplied metadata neither confirms nor refutes the reading (coverage not declared, or partial columns). */
         INCOMPLETE,
 
-        /** The relation is absent under declared complete schema coverage. */
+        /**
+         * The relation is absent from the supplied metadata of its schema under declared complete schema coverage.
+         * Oracle may still resolve the written name through a private or public synonym or another name-resolution
+         * path the metadata does not model (for example `dual.dummy%TYPE`), so this is not proof that the reference
+         * is invalid.
+         */
         RELATION_NOT_FOUND,
 
         /** The column is absent under declared complete column coverage. */
