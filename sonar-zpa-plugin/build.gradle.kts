@@ -16,12 +16,80 @@ dependencies {
     implementation(libs.woodstox)
     implementation(project(":zpa-core"))
     implementation(project(":zpa-checks"))
+    // Optional Oracle metadata acquisition; the Oracle JDBC driver itself is never bundled (users supply it).
+    implementation(project(":zpa-oracle-metadata"))
     compileOnly(libs.sonar.plugin.api)
     compileOnly(libs.sonar.plugin.api.impl)
 }
 
+// The Oracle JDBC driver used by the database-backed tests. It is passed to them as a JAR path and kept off their class
+// path, so that they load it as users do (sonar.zpa.oracle.driverPath); it is never part of the plugin.
+val oracleJdbcDriver by configurations.creating {
+    isTransitive = false
+}
+
+// A test-only custom-rules plugin whose check consumes the external metadata, compiled against the relocated API of the
+// shaded plugin JAR exactly as third-party rule plugins are.
+val oracleProbePlugin by sourceSets.creating
+
+dependencies {
+    oracleJdbcDriver(libs.ojdbc)
+    "oracleProbePluginCompileOnly"(libs.sonar.plugin.api)
+    "oracleProbePluginCompileOnly"(files(tasks.named("shadowJar")))
+}
+
+val oracleProbePluginJar = tasks.register<Jar>("oracleProbePluginJar") {
+    from(oracleProbePlugin.output)
+    archiveBaseName.set("zpa-oracle-probe-plugin")
+    destinationDirectory.set(layout.buildDirectory.dir("oracle-probe-plugin"))
+    manifest {
+        attributes(mapOf(
+            "Plugin-ChildFirstClassLoader" to "false",
+            "Plugin-Class" to "com.felipebz.zpa.probe.OracleProbePlugin",
+            "Plugin-Description" to "Test only",
+            "Plugin-Display-Version" to project.version,
+            "Plugin-Key" to "zpaoracleprobe",
+            "Plugin-Name" to "ZPA Oracle metadata probe (test only)",
+            "Plugin-Version" to project.version,
+            "Sonar-Version" to libs.versions.min.sonarqubeapi,
+            "SonarLint-Supported" to "false",
+            "Plugin-RequiredForLanguages" to "plsqlopen"
+        ))
+    }
+}
+
 testing {
     suites {
+        // Database-backed tests: never part of `check`/`build`; they need an Oracle instance (see README.md).
+        register<JvmTestSuite>("oracleIntegrationTest") {
+            useJUnitJupiter(libs.versions.junit.get())
+            dependencies {
+                implementation(files(sourceSets.main.get().output, sourceSets.test.get().output))
+                implementation(libs.sonar.ws)
+                implementation(libs.sonar.orchestrator)
+            }
+            targets.all {
+                testTask.configure {
+                    description = "Runs the Oracle database integration tests (requires ZPA_ORACLE_* environment variables)."
+                    val shadow = tasks.named<ShadowJar>("shadowJar")
+                    dependsOn(shadow, oracleProbePluginJar)
+                    val launcher = javaToolchains.launcherFor {
+                        languageVersion.set(JavaLanguageVersion.of(21))
+                    }
+                    javaLauncher.set(launcher)
+                    environment("JAVA_HOME", launcher.get().metadata.installationPath.asFile.toString())
+                    systemProperty("java.awt.headless", "true")
+                    systemProperty("zpa.oracle.driverJar", oracleJdbcDriver.singleFile.absolutePath)
+                    systemProperty("zpa.plugin.jar", shadow.get().archiveFile.get().asFile.absolutePath)
+                    systemProperty("zpa.probePlugin.jar", oracleProbePluginJar.get().archiveFile.get().asFile.absolutePath)
+                    System.getProperty("sonar.zipFile")?.let { systemProperty("sonar.zipFile", it) }
+                    outputs.upToDateWhen { false }
+                    testLogging {
+                        showStandardStreams = true
+                    }
+                }
+            }
+        }
         register<JvmTestSuite>("integrationTest") {
             dependencies {
                 implementation(libs.assertj)
@@ -50,6 +118,14 @@ testing {
             }
         }
     }
+}
+
+configurations["oracleIntegrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
+configurations["oracleIntegrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+
+// The database-backed tests use the sensor's internal test hooks (environment, acquirer), as the unit tests do.
+kotlin.target.compilations.named("oracleIntegrationTest") {
+    associateWith(kotlin.target.compilations.getByName("main"))
 }
 
 val shadowJar = tasks.named<ShadowJar>("shadowJar") {

@@ -1,0 +1,16 @@
+<profile>
+    <name>oracle-probe-profile</name>
+    <language>plsqlopen</language>
+    <rules>
+        <rule>
+            <repositoryKey>plsql</repositoryKey>
+            <key>EmptyBlock</key>
+            <priority>MAJOR</priority>
+        </rule>
+        <rule>
+            <repositoryKey>zpa-oracle-probe</repositoryKey>
+            <key>ExternalTypeProbe</key>
+            <priority>INFO</priority>
+        </rule>
+    </rules>
+</profile>

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test
 import org.sonar.api.Plugin
 import org.sonar.api.SonarEdition
 import org.sonar.api.SonarQubeSide
+import org.sonar.api.config.PropertyDefinition
 import org.sonar.api.internal.SonarRuntimeImpl
 import org.sonar.api.utils.Version
 
@@ -36,6 +37,15 @@ class PlSqlPluginTest {
         val plugin = PlSqlPlugin()
         plugin.define(context)
         assertThat(context.extensions).hasSize(12)
+    }
+
+    @Test
+    fun oracleAnalysisParametersAreNotDeclaredAsSettings() {
+        val context = Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(25, 8), SonarQubeSide.SERVER, SonarEdition.COMMUNITY))
+        PlSqlPlugin().define(context)
+        // Declared properties are offered in the server's settings; connection details must come from the analysis only.
+        assertThat(context.extensions.filterIsInstance<PropertyDefinition>().map { it.key() })
+            .noneMatch { it.startsWith("sonar.zpa.oracle.") }
     }
 
 }

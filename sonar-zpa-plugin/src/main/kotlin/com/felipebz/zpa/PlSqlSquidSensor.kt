@@ -19,6 +19,24 @@
  */
 package com.felipebz.zpa
 
+import com.felipebz.zpa.api.ZpaRulesDefinition
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectExternalContext
+import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.checks.CheckList
+import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.oracle.JdbcOracleMetadataAcquirer
+import com.felipebz.zpa.oracle.OracleMetadataAcquirer
+import com.felipebz.zpa.oracle.OracleMetadataSettings
+import com.felipebz.zpa.project.*
+import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
+import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
+import com.felipebz.zpa.squid.PlSqlAstScanner
+import com.felipebz.zpa.squid.PlSqlConfiguration
+import com.felipebz.zpa.squid.ProgressReport
+import com.felipebz.zpa.symbols.ObjectLocator
+import com.felipebz.zpa.utils.log.Logger
+import com.felipebz.zpa.utils.log.Loggers
 import org.sonar.api.batch.rule.ActiveRules
 import org.sonar.api.batch.sensor.Sensor
 import org.sonar.api.batch.sensor.SensorContext
@@ -26,25 +44,9 @@ import org.sonar.api.batch.sensor.SensorDescriptor
 import org.sonar.api.config.Configuration
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.FileLinesContextFactory
-import com.felipebz.zpa.checks.CheckList
-import com.felipebz.zpa.metadata.FormsMetadata
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectDeclarationExtractor
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.ProjectSourceReader
-import com.felipebz.zpa.squid.PlSqlConfiguration
-import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
-import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
-import com.felipebz.zpa.squid.PlSqlAstScanner
-import com.felipebz.zpa.squid.ProgressReport
-import com.felipebz.zpa.symbols.ObjectLocator
-import com.felipebz.zpa.utils.log.Logger
-import com.felipebz.zpa.utils.log.Loggers
-import com.felipebz.zpa.api.ZpaRulesDefinition
 import java.util.concurrent.TimeUnit
 
+@OptIn(ZpaExperimentalApi::class)
 class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, settings: Configuration, private val noSonarFilter: NoSonarFilter,
                                                  private val fileLinesContextFactory: FileLinesContextFactory,
                                                  customRulesDefinition: Array<ZpaRulesDefinition>? = null,
@@ -62,6 +64,14 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
     private val formsMetadata = FormsMetadata.loadFromFile(settings.get(PlSqlPlugin.Companion.FORMS_METADATA_KEY)
         .orElse(null))
 
+    private val configuration = settings
+
+    /** Scanner process environment, from which the database password is read. Replaced by tests only. */
+    internal var environment: (String) -> String? = System::getenv
+
+    /** Database access, used only when Oracle metadata is configured. Replaced by tests only. */
+    internal var oracleMetadataAcquirer: OracleMetadataAcquirer = JdbcOracleMetadataAcquirer()
+
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("ZPA").onlyOnLanguage(PlSql.Companion.KEY)
     }
@@ -70,8 +80,16 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         val fs = context.fileSystem()
         val inputFiles = fs.inputFiles(fs.predicates().hasLanguage(PlSql.Companion.KEY)).toList()
 
+        // Configured explicitly or not at all: without sonar.zpa.oracle.url nothing connects. Acquired once, in the
+        // scanner, before preparation and scanning; failures (MessageException, sanitized) fail the analysis.
+        val oracleSettings = OracleMetadataSettings.from(configuration, environment, fs.baseDir().toPath())
+        val compilationSchema = OracleMetadataSettings.compilationSchema(configuration)
+        val externalMetadata = oracleSettings?.let { settings ->
+            oracleMetadataAcquirer.acquire(settings).also { logger.info("ZPA Oracle metadata: ${it.summary}") }.metadata
+        }
+
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
-        val projectAnalysisContext = ProjectAnalysisContext.prepared(
+        val preparedContext = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation(
                 ProjectDeclarationExtractor(PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled))
             ).prepare(
@@ -84,6 +102,14 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
                 concurrent = isConcurrentModeEnabled
             )
         )
+        // Only the detached, immutable metadata reaches the scanner workers; the prepared index is shared as is.
+        val projectAnalysisContext = if (externalMetadata == null && compilationSchema == null) {
+            preparedContext
+        } else {
+            preparedContext.withExternalContext(
+                ProjectExternalContext.of(externalMetadata ?: ProjectExternalMetadata.none(), compilationSchema)
+            )
+        }
         val scanner = PlSqlAstScanner(
             context,
             checks,
