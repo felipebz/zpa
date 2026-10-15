@@ -28,10 +28,10 @@ import com.felipebz.flr.impl.channel.RegexpChannelBuilder.o2n
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.or
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.regexp
 import com.felipebz.flr.impl.channel.UnknownCharacterChannel
-import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.squid.PlSqlConfiguration
 
 object PlSqlLexer {
     private val NUMBER_LITERAL = "(?is)(?:" + or(
@@ -82,14 +82,8 @@ object PlSqlLexer {
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIME_LITERAL, TIME_LITERAL), 't'))
             .withChannel(IdentifierChannel(PlSqlKeyword.entries.toTypedArray()))
             .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
-            .withChannel(BlackHoleChannel("(?is)" + or(
-                "\\s&&?$SIMPLE_IDENTIFIER",
-                "\\\$if.*?\\\$then",
-                "\\\$elsif.*?\\\$end",
-                "\\\$else.*?\\\$end",
-                "\\\$error.*?\\\$end",
-                "\\\$end"
-            )))
+            .withChannel(BlackHoleChannel("(?is)\\s&&?$SIMPLE_IDENTIFIER"))
+            .withChannel(ConditionalCompilationChannel())
             .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(UnknownCharacterChannel())
             .build()
