@@ -469,7 +469,10 @@ internal object LocalSemanticModelBuilder {
 
         private fun typeUse(datatype: AstNode, lookupRegion: RegionDraft): LocalTypeUse {
             val tokens = datatype.tokens
-            return LocalTypeUse(TypeReferences(TokenStream(fileId, tokens)).declaredType(0, tokens.size), range(datatype), lookupRegion.id)
+            val typeRef = TypeReferences(TokenStream(fileId, tokens)).declaredType(0, tokens.size)
+            // The written type's range is the TypeRef's own range: share the instance instead of holding an equal copy.
+            val range = range(datatype).let { if (typeRef?.sourceRange == it) typeRef.sourceRange else it }
+            return LocalTypeUse(typeRef, range, lookupRegion.id)
         }
 
         private fun gap(kind: LocalGapKind, node: AstNode) = LocalCoverageGap(kind, node.type.toString(), range(node))

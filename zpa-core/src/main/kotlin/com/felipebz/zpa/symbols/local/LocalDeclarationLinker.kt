@@ -49,7 +49,8 @@ internal class LocalDeclarationLinker(private val regions: List<RegionDraft>, pr
     /**
      * Links specifications and bodies of packages and object types, then each specification heading to its
      * implementation in the linked body. A unit pair is linked only when the file holds exactly one specification
-     * and exactly one body with the same written unit name; headings use the forward-link signature key (which
+     * and exactly one body with the same written unit name. An incomplete type (`CREATE TYPE t;`) does not count as
+     * a specification: it is the same object that a later complete definition completes. Wrapped units count. Headings use the forward-link signature key (which
      * includes the method kind). Grouping by key in hash maps: linear, and order never decides.
      */
     fun linkUnits() {
@@ -62,6 +63,7 @@ internal class LocalDeclarationLinker(private val regions: List<RegionDraft>, pr
                 else -> continue
             }
             val unit = draft.details as LocalUnit
+            if (unit.form == LocalUnitForm.INCOMPLETE) continue
             val family = if (draft.kind == LocalDeclarationKind.PACKAGE || draft.kind == LocalDeclarationKind.PACKAGE_BODY) "package" else "type"
             target.getOrPut(family + "|" + unit.unitName.lookupKey()) { ArrayList() } += draft
         }

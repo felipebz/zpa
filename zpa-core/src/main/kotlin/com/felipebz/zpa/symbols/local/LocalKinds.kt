@@ -33,8 +33,10 @@ internal enum class LocalRegionKind {
     /**
      * A procedure or function with a body: its parameters and its local declarations. Inside a member method of an
      * object type (see [LocalSubprogram.implicitSelf]) a resolver must also consider the implicit `SELF` and the
-     * attributes and methods of the type's specification, reachable without the `SELF.` qualifier. That rule is
-     * documented by Oracle (Object-Relational Developer's Guide, "Object Methods"), not probed.
+     * attributes and methods of the type's specification (and of its supertypes), reachable without the `SELF.`
+     * qualifier. Documented by Oracle (Object-Relational Developer's Guide, "Object Methods") and observed on Oracle
+     * 26ai: the method's parameters and locals hide same-named attributes, and an attribute hides a same-named schema
+     * object.
      */
     SUBPROGRAM,
 
@@ -89,7 +91,7 @@ internal enum class LocalRegionKind {
 
     /**
      * An object type specification: its attributes and its method and constructor headings. Every rule about how
-     * methods see attributes and `SELF` is documented by Oracle, not probed (see [SUBPROGRAM]).
+     * methods see attributes and `SELF` is documented by Oracle and observed on Oracle 26ai (see [SUBPROGRAM]).
      */
     OBJECT_TYPE,
 
@@ -98,7 +100,7 @@ internal enum class LocalRegionKind {
      * attributes are not declarations of this region: they come from the linked specification ([LocalUnit.counterpart])
      * or, when the specification is not in the file, from elsewhere and are not represented here. Inside a member
      * method a resolver must also consider `SELF` and the attributes and methods of the specification; documented by
-     * Oracle, not probed.
+     * Oracle and observed on Oracle 26ai (see [SUBPROGRAM]).
      */
     TYPE_BODY
 }

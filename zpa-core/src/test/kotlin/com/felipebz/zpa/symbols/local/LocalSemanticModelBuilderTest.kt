@@ -865,7 +865,7 @@ class LocalSemanticModelBuilderTest {
         val model = build("DECLARE\n  SUBTYPE t IS t;\nBEGIN\n  NULL;\nEND;\n")
         val t = model.declarations.single()
         assertThat(t.type!!.lookupRegion).isEqualTo(t.region)
-        assertThat(contains(t.range, t.type!!.range)).isTrue()
+        assertThat(contains(t.range, t.type.range)).isTrue()
     }
 
     private fun unit(model: LocalSemanticModel, kind: LocalDeclarationKind, index: Int = 0) =
@@ -1012,8 +1012,8 @@ class LocalSemanticModelBuilderTest {
         assertThat(bi.correlationNames.toString()).isEqualTo("new=NEW old=OLD parent=PARENT")
         val ref = model.declarations[2].details as LocalTrigger
         assertThat(ref.correlationNames!!.new).isEqualTo(OracleIdentifier.fromSource("n"))
-        assertThat(ref.correlationNames!!.old).isEqualTo(OracleIdentifier.fromSource("o"))
-        assertThat(ref.correlationNames!!.parent).isEqualTo(OracleIdentifier.fromSource("PARENT"))
+        assertThat(ref.correlationNames.old).isEqualTo(OracleIdentifier.fromSource("o"))
+        assertThat(ref.correlationNames.parent).isEqualTo(OracleIdentifier.fromSource("PARENT"))
         // The region of tr5_ref starts at BEGIN, after FOLLOWS.
         assertThat(model.region(LocalRegionId(2)).range.startLine).isEqualTo(11)
         assertWellNested(model)
@@ -1185,7 +1185,7 @@ class LocalSemanticModelBuilderTest {
         assertThat(namesType.unitName).isEqualTo(qualified("scott", "names"))
         assertThat(names.isNotNull).isTrue()
         assertThat((later.details as LocalUnit).form).isEqualTo(LocalUnitForm.INCOMPLETE)
-        assertThat((later.details as LocalUnit).region).isNull()
+        assertThat(later.details.region).isNull()
         assertThat((emp.details as LocalUnit).supertype).isEqualTo(qualified("scott", "person_t"))
         assertWellNested(model)
     }
@@ -1204,6 +1204,41 @@ class LocalSemanticModelBuilderTest {
         } finally {
             pool.shutdown()
         }
+    }
+
+    @Test
+    fun anIncompleteTypeDoesNotBlockTheLinkOfItsCompleteDefinition() {
+        val model = build(
+            """
+            create type node_t;
+            /
+            create or replace type node_t as object (next_id number, member function size_of return number);
+            /
+            create type body node_t as
+              member function size_of return number is begin return 1; end;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 OBJECT_TYPE node_t, D1 OBJECT_TYPE node_t, D4 TYPE_BODY node_t] ALL_ITEMS_EXTRACTED",
+            "R1 OBJECT_TYPE(CREATE_TYPE) parent=R0 [D2 ATTRIBUTE next_id, D3 FUNCTION size_of] ALL_ITEMS_EXTRACTED",
+            "R2 TYPE_BODY(CREATE_TYPE_BODY) parent=R0 [D5 FUNCTION size_of] ALL_ITEMS_EXTRACTED",
+            "R3 SUBPROGRAM(FUNCTION_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED"
+        )
+        val incomplete = model.declarations[0].details as LocalUnit
+        assertThat(incomplete.form).isEqualTo(LocalUnitForm.INCOMPLETE)
+        assertThat(incomplete.counterpart).isNull()
+        assertThat((model.declarations[1].details as LocalUnit).counterpart).isEqualTo(LocalRegionId(2))
+        assertThat(unit(model, LocalDeclarationKind.TYPE_BODY).counterpart).isEqualTo(LocalRegionId(1))
+        assertThat(model.declarations[3].subprogram().specificationCounterpart).isEqualTo(LocalDeclarationId(5))
+        assertThat(model.declarations[5].subprogram().specificationCounterpart).isEqualTo(LocalDeclarationId(3))
+        // Two complete specifications still block the link.
+        val twoComplete = build(
+            "create type t as object (a number);\n/\ncreate or replace type t as object (a number);\n/\ncreate type body t as member procedure m is begin null; end; end;\n/\n"
+        )
+        assertThat(unit(twoComplete, LocalDeclarationKind.TYPE_BODY).counterpart).isNull()
+        assertWellNested(model)
     }
 
     @Test

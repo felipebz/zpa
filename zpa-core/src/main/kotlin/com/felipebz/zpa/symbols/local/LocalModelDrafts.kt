@@ -22,7 +22,6 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
-import java.util.*
 
 /*
  * Construction-only state of [LocalSemanticModelBuilder]: mutable drafts of regions and declarations, frozen into the
@@ -78,4 +77,5 @@ internal fun freeze(fileId: FileId, regions: List<RegionDraft>, declarations: Li
     return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations), completeness)
 }
 
-internal fun <T> frozenList(values: List<T>): List<T> = Collections.unmodifiableList(ArrayList(values))
+/** An immutable copy; compact (no wrapper, a shared instance when empty), which matters for many small region lists. */
+internal fun <T> frozenList(values: List<T>): List<T> = java.util.List.copyOf(values)

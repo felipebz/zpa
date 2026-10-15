@@ -106,10 +106,12 @@ internal data class LocalSubprogram(
     val methodKind: LocalMethodKind?,
     /**
      * The mode of the implicit `SELF` parameter of a member method, which has no source text and is therefore not a
-     * declaration: IN for member functions (MAP and ORDER included), IN OUT for member procedures — documented by
-     * Oracle, not probed — and IN OUT for constructors, taken from the grammar's explicit form (`SELF IN OUT t`), since
-     * the documentation does not state it. Null for static methods, for non-members, and when `SELF` is written as a
-     * parameter.
+     * declaration: IN for member functions (MAP and ORDER included), IN OUT for member procedures (documented by
+     * Oracle; observed on Oracle 26ai: assigning an attribute fails with PLS-00363 in a member function and succeeds
+     * in a member procedure), and IN OUT for constructors, taken from the grammar's explicit form (`SELF IN OUT t`),
+     * since the documentation does not state it; Oracle accepts attribute assignments in constructors, which does not
+     * distinguish OUT from IN OUT. Null for static methods (no `SELF`: PLS-00201, and PLS-00588 for an unqualified
+     * attribute), for non-members, and when `SELF` is written as a parameter.
      */
     val implicitSelf: ParameterMode?
 ) : LocalDeclarationDetails
@@ -192,7 +194,9 @@ internal class LocalUnit(
     /**
      * The region of the linked specification (on a body) or body (on a specification). Linked only when the file holds
      * exactly one specification and exactly one body with the same written unit name, compared segment by segment
-     * (`scott.pk` and `pk` differ: the schema is unknown). Order never decides.
+     * (`scott.pk` and `pk` differ: the schema is unknown). An incomplete type (`CREATE TYPE t;`) is not counted as a
+     * specification, since a complete `CREATE TYPE t AS OBJECT` in the same file completes the same object; it is
+     * never linked itself. Wrapped units count but, having no region, are never linked. Order never decides.
      */
     val counterpart: LocalRegionId?,
     /** The written supertype of an `UNDER` object type. */
