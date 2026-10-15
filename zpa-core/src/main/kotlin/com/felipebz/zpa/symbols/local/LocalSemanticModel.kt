@@ -19,10 +19,7 @@
  */
 package com.felipebz.zpa.symbols.local
 
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.TypeRef
+import com.felipebz.zpa.project.*
 
 /*
  * Per-file local semantic model: the lexical regions of one parsed file and the declarations they own, as immutable,
@@ -43,21 +40,64 @@ internal value class LocalDeclarationId(val ordinal: Int) {
 }
 
 internal enum class LocalRegionKind {
-    /** The whole file: the root, holding the top-level units. It declares nothing itself. */
+    /**
+     * The whole file: the root. It holds the top-level units: standalone subprograms are its declarations, and so are
+     * the labels of top-level blocks. It is not an Oracle region (standalone units live in a schema, and a top-level
+     * block's label is visible only inside the block), so a resolver must treat it specially.
+     */
     FILE,
 
-    /** A `[DECLARE \u2026] BEGIN \u2026 END` block, top-level or nested in a statement list. */
+    /** A `[DECLARE …] BEGIN … END` block, top-level or nested in a statement list. */
     ANONYMOUS_BLOCK,
 
+    /** A procedure or function with a body: its parameters and its local declarations. */
+    SUBPROGRAM,
+
+    /** A cursor with parameters: the parameters, visible in its query. */
+    CURSOR,
+
+    /** A FOR loop, from `FOR` to `END LOOP;`: its indices, visible in the iteration controls too. */
+    FOR_LOOP,
+
+    /** A FORALL statement: its index. */
+    FORALL,
+
+    /** An iterator choice of a qualified expression (`FOR i IN … => …`): its indices. */
+    ITERATOR,
+
     /**
-     * A construct that forms a lexical region the model does not extract yet (subprograms, FOR loops, packages,
-     * triggers, type bodies\u2026). Kept so that regions nested in it have their true parent; its own declarations are
-     * not extracted.
+     * A SQL query whose `WITH` clause declares PL/SQL functions or procedures, from `WITH` to the end of the query.
+     * It holds those subprograms as declarations, in source order; each one with a body forms a nested SUBPROGRAM
+     * region. Its extraction state concerns these PL/SQL declarations only: the names of the factoring clauses
+     * (`WITH x AS (…)`) are SQL names and are not recorded. There is no Oracle evidence yet on which names of the
+     * enclosing PL/SQL are visible inside these functions, nor on how the `WITH` subprograms see each other; a
+     * resolver must not assume either way. A `WITH` subprogram is never linked to a forward declaration.
+     */
+    SQL_WITH,
+
+    /**
+     * A construct that forms a lexical region the model does not extract yet (packages, triggers and their sections,
+     * object types and type bodies, type constructors). Kept so that regions nested in it have their true parent;
+     * its own declarations are not extracted.
      */
     UNMODELED
 }
 
-internal enum class LocalDeclarationKind { VARIABLE, SUBTYPE }
+internal enum class LocalDeclarationKind {
+    VARIABLE,
+    SUBTYPE,
+    PROCEDURE,
+    FUNCTION,
+    PARAMETER,
+    LOOP_INDEX,
+    LABEL,
+    EXCEPTION,
+    CURSOR,
+    CURSOR_PARAMETER,
+    RECORD_TYPE,
+    COLLECTION_TYPE,
+    REF_CURSOR_TYPE
+}
 
 /** How much of a region's own declarations the builder extracted. Never a statement that the list is complete. */
 internal enum class LocalExtraction {
@@ -72,11 +112,8 @@ internal enum class LocalExtraction {
 }
 
 internal enum class LocalGapKind {
-    /** A declaration item of a form the model does not extract (exception, cursor, subprogram, record type\u2026). */
+    /** A declaration item of a form the model does not extract. */
     UNSUPPORTED_DECLARATION,
-
-    /** A `<<label>>`: a declaration of the region holding the labeled statement or block, not extracted yet. */
-    LABEL,
 
     /** Source the parser skipped while recovering from a syntax error; it may have held declarations. */
     PARSE_RECOVERY
@@ -99,12 +136,142 @@ internal enum class LocalCompleteness {
     PARSE_RECOVERY_OBSERVED
 }
 
+/**
+ * A written datatype and where a resolver must look it up: in [lookupRegion], at the start of [range]. The
+ * declarations declared earlier than this type use are those of [lookupRegion] whose range ends before [range]
+ * starts. Every other declaration of that region is still visible (a name declared anywhere in a region hides outer
+ * names for the whole region) but is not declared earlier: a reference to it is an order case, not a binding. In
+ * particular the declaration that owns the type never counts as earlier: in `SUBTYPE t IS t` or `x x%TYPE` the
+ * declaration's range contains its type's range.
+ *
+ * The region is not always the one owning the declaration: parameter types are looked up in the region enclosing the
+ * subprogram, a function's RETURN type in the function's own region. With the "ends before" rule:
+ * - a function's parameters end before its RETURN type, so they are earlier;
+ * - a subprogram's own declaration does not end before its parameter types, so a parameter typed with the
+ *   subprogram's name is not an earlier binding;
+ * - a record field typed with its record's name (`TYPE r IS RECORD (a NUMBER, b r%TYPE)`) is not earlier either.
+ */
+internal class LocalTypeUse(
+    /** The written datatype as unresolved syntax, or null when it cannot be represented as a [TypeRef]. */
+    val typeRef: TypeRef?,
+    val range: SourceRange,
+    val lookupRegion: LocalRegionId
+) {
+    override fun toString() = "${typeRef?.name ?: "?"} from $lookupRegion"
+}
+
+/** Facts specific to some declaration kinds. */
+internal sealed interface LocalDeclarationDetails
+
+internal enum class LocalSubprogramForm {
+    /** A body (`IS … BEGIN … END`): the subprogram forms a [LocalRegionKind.SUBPROGRAM] region. */
+    BODY,
+
+    /** No body: a forward declaration in a block or subprogram; a standalone unit without a body (`AGGREGATE USING`). */
+    HEADING_ONLY,
+
+    /** `IS LANGUAGE …` / `IS EXTERNAL …`. */
+    CALL_SPECIFICATION,
+
+    /** Wrapped source: nothing of the heading is visible. */
+    WRAPPED
+}
+
+internal class LocalParameter(
+    val name: OracleIdentifier,
+    val nameRange: SourceRange,
+    /** One-based, as in [com.felipebz.zpa.project.ProjectParameter]. */
+    val ordinal: Int,
+    val mode: ParameterMode,
+    val isNocopy: Boolean,
+    val hasDefault: Boolean,
+    /** Looked up in the region enclosing the subprogram. */
+    val type: LocalTypeUse?
+) : LocalDeclarationDetails {
+    override fun toString() = "$ordinal $name $mode"
+}
+
+internal class LocalSubprogram(
+    /** As written: `scott.p` for a standalone unit, the single name for a nested one. */
+    val unitName: QualifiedName,
+    val form: LocalSubprogramForm,
+    /** In ordinal order, for every form (empty when wrapped). */
+    val parameters: List<LocalParameter>,
+    /** The RETURN type of a function, looked up in the function's own region when it has a body. */
+    val returnType: LocalTypeUse?,
+    /** The region formed by a [LocalSubprogramForm.BODY]. */
+    val body: LocalRegionId?,
+    /** A forward declaration and its body, linked both ways when the match is unique (see the builder). */
+    val counterpart: LocalDeclarationId?
+) : LocalDeclarationDetails
+
+internal enum class LocalMutability { MUTABLE, IMMUTABLE }
+
+internal class LocalLoopIndex(
+    /** `MUTABLE` / `IMMUTABLE` when written. */
+    val mutability: LocalMutability?,
+    /**
+     * True when no type is written: the type comes from the iteration control (numeric range, collection, cursor
+     * row…), which the model does not infer.
+     */
+    val isTypeImplicit: Boolean
+) : LocalDeclarationDetails
+
+internal class LocalLabel(
+    /** The region formed by the labeled statement or block, if it forms one. */
+    val labeled: LocalRegionId?
+) : LocalDeclarationDetails
+
+internal class LocalCursor(
+    /** The [LocalRegionKind.CURSOR] region holding the parameters, when there are parameters. */
+    val parameters: LocalRegionId?,
+    /** No `IS SELECT …`: a forward cursor declaration. It is not linked to its definition. */
+    val isForward: Boolean,
+    /** The RETURN type, looked up in the region holding the cursor. */
+    val returnType: LocalTypeUse?
+) : LocalDeclarationDetails
+
+internal class LocalCursorParameter(
+    /** One-based. */
+    val ordinal: Int
+) : LocalDeclarationDetails
+
+internal class LocalRecordField(
+    val name: OracleIdentifier,
+    val nameRange: SourceRange,
+    /** Looked up in the region holding the record type. */
+    val type: LocalTypeUse?,
+    val isNotNull: Boolean,
+    val hasDefault: Boolean
+) {
+    override fun toString() = "$name ${type ?: ""}"
+}
+
+internal class LocalRecordType(
+    /** In written order. Fields are facts of the type, not declarations of any region. */
+    val fields: List<LocalRecordField>
+) : LocalDeclarationDetails
+
+internal enum class LocalCollectionForm { NESTED_TABLE, ASSOCIATIVE_ARRAY, VARRAY }
+
+internal class LocalCollectionType(
+    /** The element type is the declaration's [LocalDeclaration.type]. */
+    val form: LocalCollectionForm,
+    /** The `INDEX BY` type of an associative array, looked up in the region holding the type. */
+    val indexType: LocalTypeUse?
+) : LocalDeclarationDetails
+
+internal class LocalRefCursorType(
+    /** The RETURN type of a strong ref cursor; null for a weak one. */
+    val returnType: LocalTypeUse?
+) : LocalDeclarationDetails
+
 internal class LocalRegion(
     val id: LocalRegionId,
     /** Null only for the [LocalRegionKind.FILE] root. */
     val parent: LocalRegionId?,
     val kind: LocalRegionKind,
-    /** The grammar rule that forms the region (`BLOCK_STATEMENT`, `FOR_STATEMENT`\u2026; the root's is `FILE`). */
+    /** The grammar rule that forms the region (`BLOCK_STATEMENT`, `FOR_STATEMENT`…; the root's is `FILE`). */
     val syntax: String,
     /** From the region's first token (after any label, which belongs to the enclosing region) to its last. */
     val range: SourceRange,
@@ -125,21 +292,25 @@ internal class LocalDeclaration(
     val position: Int,
     val kind: LocalDeclarationKind,
     val name: OracleIdentifier,
-    /** The declaration item, from its first token to its terminating semicolon. */
+    /** The declaration item, from its first token to its last. */
     val range: SourceRange,
     val nameRange: SourceRange,
-    /** Where the declared datatype is written. */
-    val typeRange: SourceRange,
     /**
-     * The written datatype as unresolved syntax, or null when it cannot be represented as a [TypeRef]. A name such as
-     * `NUMBER` is only a written name here: a local declaration may shadow it.
+     * The declared datatype of a variable, subtype, parameter, cursor parameter or loop index, or the element type
+     * of a collection type. A name such as `NUMBER` is only a written name here: a local declaration may shadow it.
+     * Kind-specific types (RETURN, INDEX BY, fields) are in [details].
      */
-    val typeRef: TypeRef?,
+    val type: LocalTypeUse?,
     /** `CONSTANT` (variables only). */
     val isConstant: Boolean,
-    /** `NOT NULL`. */
-    val isNotNull: Boolean
+    /** `NOT NULL` on the declared type (or on the element type of a collection). */
+    val isNotNull: Boolean,
+    /** A default value (`:=` or `DEFAULT`). */
+    val hasDefault: Boolean,
+    val details: LocalDeclarationDetails?
 ) {
+    val typeRef: TypeRef? get() = type?.typeRef
+
     override fun toString() = "$kind $name $id in $region"
 }
 
