@@ -43,14 +43,15 @@ class LocalSemanticModelBuilderTest {
 
     private fun build(source: String, fileId: String = "block.sql", recovery: Boolean = false): LocalSemanticModel {
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, recovery)).parse(source)
-        return LocalSemanticModelBuilder.build(root, FileId(fileId))
+        return LocalSemanticModelBuilder.build(root, FileId(fileId), source)
     }
 
     /** A compact, comparable projection of the whole model: one line per region with its declarations. */
     private fun outline(model: LocalSemanticModel): List<String> = model.regions.map { region ->
         val declarations = model.declarationsOf(region.id).joinToString(", ") { "${it.id} ${it.kind} ${it.name}" }
         "${region.id} ${region.kind}(${region.syntax}) parent=${region.parent} [$declarations] ${region.extraction}" +
-            region.gaps.joinToString("") { " gap:${it.kind}:${it.syntax}" }
+            region.gaps.joinToString("") { " gap:${it.kind}:${it.syntax}" } +
+            if (region.completeness.isComplete) "" else " ${region.completeness}"
     }
 
     private fun blocks(model: LocalSemanticModel) = model.regions.filter { it.kind == LocalRegionKind.ANONYMOUS_BLOCK }
@@ -74,7 +75,7 @@ class LocalSemanticModelBuilderTest {
             "R0 FILE(FILE) parent=null [] ALL_ITEMS_EXTRACTED",
             "R1 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R0 [D0 SUBTYPE amount_t, D1 VARIABLE v, D2 VARIABLE c, D3 SUBTYPE code_t] ALL_ITEMS_EXTRACTED"
         )
-        assertThat(model.completeness).isEqualTo(LocalCompleteness.NOT_ESTABLISHED)
+        assertThat(model.regions).allSatisfy { assertThat(it.completeness).isSameAs(LocalRegionCompleteness.COMPLETE) }
         val (amount, v, c, code) = model.declarations
         assertThat(amount.typeRef).isEqualTo(NamedTypeRef(qualified("DATE"), amount.type!!.range))
         assertThat(v.typeRef!!.name).isEqualTo(qualified("amount_t"))
@@ -316,17 +317,14 @@ class LocalSemanticModelBuilderTest {
         // Recovery detaches the broken declarative part (holding `pkg`) from BEGIN ... END: the block that remains
         // looks valid and declares nothing, yet `pkg` was written.
         val model = build("DECLARE\n  pkg NUMBER;\n  ??? garbage;\nBEGIN\n  pkg.processar(1);\nEND;\n/\n", recovery = true)
-        assertThat(model.completeness).isEqualTo(LocalCompleteness.PARSE_RECOVERY_OBSERVED)
+        assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).contains(LocalIncompleteness.PARSE_RECOVERY) }
         assertThat(model.declarations.map { it.name.lookupName }).doesNotContain("PKG")
         assertThat(model.root.gaps.map { it.kind }).contains(LocalGapKind.PARSE_RECOVERY)
         assertThat(model.root.extraction).isEqualTo(LocalExtraction.PARTIAL)
-        // The surviving block's own AST shows nothing missing: only the file-level evidence reveals the hazard.
+        // The surviving block's own AST shows nothing missing: only the recovery evidence reveals the hazard.
         assertThat(blocks(model).single().extraction).isEqualTo(LocalExtraction.ALL_ITEMS_EXTRACTED)
         assertThat(blocks(model).single().declarations).isEmpty()
-        // Without recovery there is still no completeness claim: conditional compilation is invisible in the tree.
-        val clean = build("DECLARE\n  v DATE;\n  \$IF \$\$debug \$THEN pkg NUMBER; \$END\nBEGIN\n  NULL;\nEND;\n")
-        assertThat(clean.completeness).isEqualTo(LocalCompleteness.NOT_ESTABLISHED)
-        assertThat(LocalCompleteness.entries).noneMatch { it.name.contains("COMPLETE") && !it.name.contains("NOT") }
+        assertThat(blocks(model).single().completeness.isComplete).isFalse()
     }
 
     @Test
@@ -336,7 +334,7 @@ class LocalSemanticModelBuilderTest {
             "  TYPE aa IS TABLE OF VARCHAR2(10) INDEX BY PLS_INTEGER;\n  TYPE rc IS REF CURSOR;\n" +
             "  PROCEDURE q(a IN OUT NOCOPY NUMBER);\n  PROCEDURE q(a IN OUT NOCOPY NUMBER) IS BEGIN NULL; END;\n" +
             "  FUNCTION f(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;\n" +
-            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN NULL; END;\n  FOR i IN 1 .. 2 LOOP NULL; END LOOP;\nEND;\n" +
+            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN NULL; END;\n  FOR i IN 1 .. 2 LOOP \$IF \$\$x \$THEN NULL; \$END END LOOP;\nEND;\n" +
             "/\ncreate package pk is procedure a; end;\n/\ncreate package body pk is procedure a is begin null; end; end;\n/\n" +
             "create trigger trg before insert on t referencing new as n for each row begin null; end;\n/\n" +
             "create type ot as object (x number, member procedure m);\n/\ncreate type body ot as member procedure m is begin null; end; end;\n/\n"
@@ -345,6 +343,7 @@ class LocalSemanticModelBuilderTest {
             .contains("LocalCursor", "LocalCursorParameter", "LocalRecordType", "LocalCollectionType", "LocalRefCursorType", "LocalSubprogram", "LocalParameter", "LocalLabel", "LocalLoopIndex", "LocalUnit", "LocalTrigger")
         assertThat(model.declarations.mapNotNull { (it.details as? LocalTrigger)?.correlationNames }).hasSize(1)
         val reached = reachable(model)
+        assertThat(reached.filterIsInstance<LocalRegionCompleteness>().flatMap { it.reasons }).contains(LocalIncompleteness.CONDITIONAL_COMPILATION)
         assertThat(reached.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()
         assertThat(reached.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") || it.contains("amount_t IS") || it.contains("garbage") }
         assertThat(reached.map { it.javaClass.name }.filter { it.startsWith("com.felipebz.flr") || it.contains(".symbols.") && !it.contains(".symbols.local.") })
@@ -383,15 +382,14 @@ class LocalSemanticModelBuilderTest {
     }
 
     @Test
-    fun conditionalCompilationIsInvisibleToTheModel() {
-        // Known #436 hazard, pinned as current behavior: the lexer keeps the $THEN branch and drops the rest, so `pkg`
-        // looks like an ordinary declaration, `other` is absent, and the block still claims ALL_ITEMS_EXTRACTED.
-        // #436 must change this test.
+    fun conditionalCompilationMakesTheRegionIncomplete() {
+        // The lexer keeps the $THEN branch and drops the rest, so `pkg` looks like an ordinary declaration and `other`
+        // is absent: the extraction is complete for the kept tokens, but the region is not.
         val model = build("DECLARE v DATE; \$IF \$\$debug \$THEN pkg NUMBER; \$ELSE other NUMBER; \$END BEGIN NULL; END;\n/\n")
         val block = blocks(model).single()
         assertThat(model.declarationsOf(block.id).map { it.name.lookupName }).containsExactly("V", "PKG")
         assertThat(block.extraction).isEqualTo(LocalExtraction.ALL_ITEMS_EXTRACTED)
-        assertThat(model.completeness).isEqualTo(LocalCompleteness.NOT_ESTABLISHED)
+        assertThat(block.completeness.reasons).containsExactly(LocalIncompleteness.CONDITIONAL_COMPILATION)
     }
 
     private fun subprogram(model: LocalSemanticModel, name: String, index: Int = 0) =
@@ -1192,11 +1190,12 @@ class LocalSemanticModelBuilderTest {
 
     @Test
     fun unitModelsAreDeterministicAndIndependent() {
-        val source = "create package p is procedure a; end;\n/\ncreate package body p is procedure a is begin null; end; end;\n/\n" +
+        val source = "create package p is procedure a; end;\n/\ncreate package body p is procedure a is begin \$if \$\$x \$then null; \$end end; end;\n/\n" +
             "create trigger t for update on x compound trigger g number; before each row is l number; begin null; end before each row; end t;\n/\n" +
             "create type o as object (a number, member function f return number);\n/\ncreate type body o as member function f return number is begin return a; end; end;\n/\n"
         val full = { model: LocalSemanticModel -> outline(model) + model.declarations.map { "${it.id} ${(it.details as? LocalUnit)?.counterpart} ${(it.details as? LocalSubprogram)?.specificationCounterpart}" } }
         val expected = full(build(source))
+        assertThat(expected).anyMatch { it.contains("INCOMPLETE[CONDITIONAL_COMPILATION]") }
         val pool = Executors.newFixedThreadPool(4)
         try {
             val results = (1..16).map { i -> pool.submit(Callable { full(build(if (i % 2 == 0) source else "BEGIN NULL; END;\n", "f$i.sql")) }) }.map { it.get() }

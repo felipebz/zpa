@@ -59,12 +59,18 @@ internal class DeclarationDraft(
 )
 
 /** Freezes the drafts of one build call into the immutable model. */
-internal fun freeze(fileId: FileId, regions: List<RegionDraft>, declarations: List<DeclarationDraft>, recovered: Boolean): LocalSemanticModel {
+internal fun freeze(
+    fileId: FileId,
+    regions: List<RegionDraft>,
+    declarations: List<DeclarationDraft>,
+    completeness: List<LocalRegionCompleteness>
+): LocalSemanticModel {
     val frozenRegions = regions.map { draft ->
         val extraction = if (draft.gaps.isNotEmpty()) LocalExtraction.PARTIAL else LocalExtraction.ALL_ITEMS_EXTRACTED
         LocalRegion(
             draft.id, draft.parent?.id, draft.kind, draft.syntax, draft.range,
-            frozenList(draft.declarations), frozenList(draft.children), extraction, frozenList(draft.gaps)
+            frozenList(draft.declarations), frozenList(draft.children), extraction, frozenList(draft.gaps),
+            completeness[draft.id.ordinal]
         )
     }
     val frozenDeclarations = declarations.map {
@@ -73,8 +79,7 @@ internal fun freeze(fileId: FileId, regions: List<RegionDraft>, declarations: Li
             it.isConstant, it.isNotNull, it.hasDefault, it.details
         )
     }
-    val completeness = if (recovered) LocalCompleteness.PARSE_RECOVERY_OBSERVED else LocalCompleteness.NOT_ESTABLISHED
-    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations), completeness)
+    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations))
 }
 
 /** An immutable copy; compact (no wrapper, a shared instance when empty), which matters for many small region lists. */

@@ -19,7 +19,9 @@
  */
 package com.felipebz.zpa.project.extraction
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.CallableCoverageGap
 
@@ -49,7 +51,7 @@ internal class DiscardedSourceText(private val source: String) {
      */
     fun firstGap(tokens: List<Token>, from: Int, to: Int): CallableCoverageGap? {
         var first: CallableCoverageGap? = null
-        visitGaps(tokens, from, to) { kind, _, _ ->
+        visitGaps(tokens, from, to) { kind, _, _, _ ->
             first = kind
             false
         }
@@ -69,7 +71,7 @@ internal class DiscardedSourceText(private val source: String) {
         var firstConditional = -1
         var lastConditional = -1
         var boundaries = 0
-        visitGaps(tokens, from, to) { kind, before, boundsBranch ->
+        visitGaps(tokens, from, to) { kind, before, boundsBranch, _ ->
             kinds += kind
             if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && boundsBranch) {
                 if (firstConditional < 0) firstConditional = before
@@ -87,29 +89,82 @@ internal class DiscardedSourceText(private val source: String) {
         return Scan(kinds, conditionalTokens?.takeUnless { it.isEmpty() })
     }
 
+    /**
+     * Every discarded gap of the file whose tokens are [tokens], in order, with the index of the token right after it:
+     * before the first token, between tokens and after the last one. The `EOF` token's position is not checked (it has
+     * no text), but its trivia is read. Conditional-compilation trivia is not included (read its token types instead);
+     * a `CONDITIONAL_COMPILATION` segment here is a `$` left in a gap. Stops after an
+     * [CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS] segment.
+     */
+    fun fileSegments(tokens: List<Token>): List<Segment> {
+        val segments = ArrayList<Segment>()
+        val last = tokens.indexOfLast { it.type !== GenericTokenType.EOF }
+        if (last < 0) {
+            edgeSegment(0, tokens.flatMap { it.trivia }, source.length, maxOf(0, tokens.size - 1), segments)
+            return segments
+        }
+        val first = start(tokens[0])
+        if (first == null) {
+            segments += Segment(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, 0)
+            return segments
+        }
+        if (!edgeSegment(0, tokens[0].trivia, first, 0, segments)) return segments
+        var verified = true
+        visitGaps(tokens, 0, last) { kind, before, _, trivia ->
+            if (kind == CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS) verified = false
+            if (!trivia) segments += Segment(kind, before)
+            true
+        }
+        if (verified) {
+            val trailing = tokens.subList(last + 1, tokens.size)
+            edgeSegment(end(tokens[last])!!, trailing.flatMap { it.trivia }, source.length, last + 1, segments)
+        }
+        return segments
+    }
+
+    /** Classifies the text from [from] to [to] around [trivia]; false when a trivia piece cannot be located. */
+    private fun edgeSegment(from: Int, trivia: List<Trivia>, to: Int, before: Int, segments: MutableList<Segment>): Boolean {
+        var cursor = from
+        for (piece in trivia.flatMap { it.tokens }) {
+            val pieceStart = start(piece)
+            if (pieceStart == null) {
+                segments += Segment(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, before)
+                return false
+            }
+            classify(cursor, pieceStart)?.let { segments += Segment(it, before) }
+            cursor = maxOf(cursor, pieceStart + piece.originalValue.length)
+        }
+        classify(cursor, to)?.let { segments += Segment(it, before) }
+        return true
+    }
+
+    /** A discarded gap of [kind] lying right before `tokens[before]`. */
+    class Segment(val kind: CallableCoverageGap, val before: Int)
+
     /** [kinds] of discarded text; [conditionalTokens] are the indexes of tokens inside the conditional span, if any. */
     class Scan(val kinds: Set<CallableCoverageGap>, val conditionalTokens: IntRange?)
 
     /**
-     * Calls [visit] with each discarded kind, the index of the token right after it and whether it bounds a kept
-     * conditional-compilation branch, until false.
+     * Calls [visit] with each discarded kind, the index of the token right after it, whether it bounds a kept
+     * conditional-compilation branch and whether it comes from conditional-compilation trivia (rather than a gap),
+     * until false.
      */
-    private inline fun visitGaps(tokens: List<Token>, from: Int, to: Int, visit: (CallableCoverageGap, Int, Boolean) -> Boolean) {
+    private inline fun visitGaps(tokens: List<Token>, from: Int, to: Int, visit: (CallableCoverageGap, Int, Boolean, Boolean) -> Boolean) {
         var previousEnd = end(tokens[from]) ?: run {
-            visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, from, false)
+            visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, from, false, false)
             return
         }
         for (index in from + 1..to) {
             val token = tokens[index]
             val start = start(token) ?: run {
-                visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false)
+                visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false, false)
                 return
             }
             var cursor = previousEnd
             for (trivia in token.trivia) {
                 for (piece in trivia.tokens) {
                     val pieceStart = start(piece) ?: run {
-                        visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false)
+                        visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false, false)
                         return
                     }
                     if (!visitSegment(cursor, pieceStart, index, visit)) return
@@ -118,7 +173,7 @@ internal class DiscardedSourceText(private val source: String) {
                         PlSqlTokenType.CONDITIONAL_DIRECTIVE -> false
                         else -> null
                     }
-                    if (boundsBranch != null && !visit(CallableCoverageGap.CONDITIONAL_COMPILATION, index, boundsBranch)) return
+                    if (boundsBranch != null && !visit(CallableCoverageGap.CONDITIONAL_COMPILATION, index, boundsBranch, true)) return
                     cursor = maxOf(cursor, pieceStart + piece.originalValue.length)
                 }
             }
@@ -131,9 +186,9 @@ internal class DiscardedSourceText(private val source: String) {
      * Visits the kind of one discarded segment. Conditional-compilation text is never a gap (the lexer reports it as
      * trivia); a `$` found here is a conservative fallback and counts as a branch boundary.
      */
-    private inline fun visitSegment(from: Int, to: Int, before: Int, visit: (CallableCoverageGap, Int, Boolean) -> Boolean): Boolean {
+    private inline fun visitSegment(from: Int, to: Int, before: Int, visit: (CallableCoverageGap, Int, Boolean, Boolean) -> Boolean): Boolean {
         val kind = classify(from, to) ?: return true
-        return visit(kind, before, kind == CallableCoverageGap.CONDITIONAL_COMPILATION)
+        return visit(kind, before, kind == CallableCoverageGap.CONDITIONAL_COMPILATION, false)
     }
 
     private fun classify(from: Int, to: Int): CallableCoverageGap? {

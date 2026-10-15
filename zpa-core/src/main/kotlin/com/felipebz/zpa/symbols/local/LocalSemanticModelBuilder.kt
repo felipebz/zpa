@@ -58,20 +58,24 @@ internal object LocalSemanticModelBuilder {
 
     private val SELF = OracleIdentifier.fromSource("SELF")
 
-    fun build(root: AstNode, fileId: FileId): LocalSemanticModel = Construction(fileId).build(root)
+    /**
+     * Builds the model of the file whose parse tree is [root]. [source] is the text given to the parser; it lets the
+     * completeness evidence rule out discarded text. Without it every region is incomplete
+     * ([LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE]).
+     */
+    fun build(root: AstNode, fileId: FileId, source: String?): LocalSemanticModel = Construction(fileId).build(root, source)
 
     private class Construction(private val fileId: FileId) {
         private val regions = ArrayList<RegionDraft>()
         private val declarations = ArrayList<DeclarationDraft>()
-        private var recovered = false
 
-        fun build(root: AstNode): LocalSemanticModel {
+        fun build(root: AstNode, source: String?): LocalSemanticModel {
             val file = open(null, LocalRegionKind.FILE, "FILE", LocalSyntax.fileRange(fileId, root))
             walk(root, file)
             val linker = LocalDeclarationLinker(regions, declarations)
             linker.linkForwardDeclarations()
             linker.linkUnits()
-            return freeze(fileId, regions, declarations, recovered)
+            return freeze(fileId, regions, declarations, LocalCompletenessEvidence.of(root, source).attribute(regions))
         }
 
         private fun open(parent: RegionDraft?, kind: LocalRegionKind, syntax: String, range: SourceRange): RegionDraft {
@@ -114,7 +118,6 @@ internal object LocalSemanticModelBuilder {
         private fun visit(node: AstNode, region: RegionDraft) {
             when (node.type) {
                 PlSqlGrammar.RECOVERY -> {
-                    recovered = true
                     region.gaps += gap(LocalGapKind.PARSE_RECOVERY, node)
                 }
                 PlSqlGrammar.BLOCK_STATEMENT -> regionWithBody(node, region, LocalRegionKind.ANONYMOUS_BLOCK)
