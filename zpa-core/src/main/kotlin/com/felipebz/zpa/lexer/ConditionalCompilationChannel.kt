@@ -25,6 +25,7 @@ import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
 
 /**
  * Removes PL/SQL selection and error directives (`$IF … $THEN … $ELSIF … $ELSE … $END`, `$ERROR … $END`) from the
@@ -44,11 +45,13 @@ import com.felipebz.zpa.api.PlSqlTokenType
  * `$END` closes one level. On malformed input (no `$THEN`, no matching `$END`) it consumes nothing and the `$` falls
  * through to the following channels, so the parser reports the error where it is.
  */
-class ConditionalCompilationChannel : Channel<LexerOutput> {
+class ConditionalCompilationChannel @JvmOverloads constructor(
+    private val settings: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE
+) : Channel<LexerOutput> {
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         if (code.peek() != '$'.code) return false
-        val scanner = Scanner(code)
+        val scanner = Scanner(code, settings)
         val directive = scanner.directiveAt(0) ?: return false
         var type = PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY
         val end = when (directive.kind) {
@@ -81,7 +84,10 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
 
     private class Directive(val kind: Kind, val end: Int)
 
-    private class Scanner(private val code: CodeReader) {
+    /** One branch of a selection: where its text starts, its condition text (null for `$ELSE`), and whether it is only `$ERROR`. */
+    private class Branch(val start: Int, val condition: String?, val errorOnly: Boolean)
+
+    private class Scanner(private val code: CodeReader, private val settings: ConditionalCompilationSettings) {
         /** The end of the `$IF … $END` scanned by the last [selection] call; equal to its result when nothing is kept. */
         var lastSelectionEnd = -1
 
@@ -205,13 +211,18 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
             return Step(null, position + 1, true)
         }
 
-        /** The position after the `$THEN` of a condition starting at [position], or -1. */
-        private fun afterThen(position: Int): Int {
+        /** The condition text starting at [position] and the position after its `$THEN`, or null. */
+        private fun condition(position: Int): Pair<String, Int>? {
             var p = position
             while (true) {
-                val step = step(p) ?: return -1
+                val step = step(p) ?: return null
                 val directive = step.directive
-                if (directive != null) return if (directive.kind == Kind.THEN) directive.end else -1
+                if (directive != null) {
+                    if (directive.kind != Kind.THEN) return null
+                    val text = StringBuilder()
+                    for (i in position until p) text.appendCodePoint(char(i))
+                    return text.toString() to directive.end
+                }
                 p = step.end
             }
         }
@@ -236,9 +247,10 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
          * to remove: up to the start of the kept branch, or through `$END` when no branch is kept. -1 if malformed.
          */
         fun selection(position: Int): Int {
-            var branchStart = afterThen(position)
-            if (branchStart < 0) return -1
-            var selected = -1
+            val first = condition(position) ?: return -1
+            var branchCondition: String? = first.first
+            var branchStart = first.second
+            val branches = ArrayList<Branch>()
             while (true) {
                 var p = branchStart
                 var depth = 0
@@ -263,13 +275,40 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
                     }
                     p = step.end
                 }
-                if (selected < 0 && !(items == 1 && firstIsError)) selected = branchStart
-                branchStart = when (terminator.kind) {
-                    Kind.END -> { lastSelectionEnd = terminator.end; return if (selected >= 0) selected else terminator.end }
-                    Kind.ELSIF -> afterThen(terminator.end).also { if (it < 0) return -1 }
-                    else -> terminator.end
+                branches += Branch(branchStart, branchCondition, items == 1 && firstIsError)
+                when (terminator.kind) {
+                    Kind.END -> {
+                        lastSelectionEnd = terminator.end
+                        return select(branches)?.start ?: terminator.end
+                    }
+                    Kind.ELSIF -> {
+                        val next = condition(terminator.end) ?: return -1
+                        branchCondition = next.first
+                        branchStart = next.second
+                    }
+                    else -> {
+                        branchCondition = null
+                        branchStart = terminator.end
+                    }
                 }
             }
         }
+
+        /** The kept branch, or null when nothing is kept. */
+        private fun select(branches: List<Branch>): Branch? {
+            if (!settings.isActive) return firstNotErrorOnly(branches)
+            for ((index, branch) in branches.withIndex()) {
+                val condition = branch.condition ?: return branch.takeUnless { it.errorOnly }
+                when (ConditionalCompilationEvaluator.evaluate(condition, settings)) {
+                    ConditionResult.TRUE -> return branch.takeUnless { it.errorOnly }
+                    ConditionResult.FALSE, ConditionResult.NULL -> Unit
+                    // Earlier branches are proven not TRUE; the rest cannot be decided.
+                    ConditionResult.UNKNOWN -> return firstNotErrorOnly(branches.subList(index, branches.size))
+                }
+            }
+            return null
+        }
+
+        private fun firstNotErrorOnly(branches: List<Branch>) = branches.firstOrNull { !it.errorOnly }
     }
 }

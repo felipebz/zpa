@@ -68,6 +68,21 @@ class PlSqlPlugin : Plugin {
                 .type(PropertyType.BOOLEAN)
                 .defaultValue("true")
                 .build(),
+            PropertyDefinition.builder(CCFLAGS_KEY)
+                .name("Conditional compilation flags")
+                .description("PLSQL_CCFLAGS used to compile the code, e.g. 'debug:TRUE, level:2'. When this or the database " +
+                    "version is set, \$IF conditions are evaluated as Oracle does; otherwise they are not evaluated.")
+                .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
+                .build(),
+            PropertyDefinition.builder(DATABASE_VERSION_KEY)
+                .name("Target database version")
+                .description("Database version the code is compiled for (DBMS_DB_VERSION), e.g. '19' or '12.2'.")
+                .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
+                .build(),
 
             PlSql::class.java,
             PlSqlProfile::class.java,
@@ -113,6 +128,8 @@ class PlSqlPlugin : Plugin {
         internal const val FORMS_METADATA_KEY = "sonar.zpa.forms.metadata"
         internal const val ERROR_RECOVERY_KEY = "sonar.zpa.errorRecoveryEnabled"
         internal const val CONCURRENT_EXECUTION_KEY = "sonar.zpa.concurrentExecution"
+        internal const val CCFLAGS_KEY = "sonar.zpa.ccflags"
+        internal const val DATABASE_VERSION_KEY = "sonar.zpa.databaseVersion"
     }
 
 }

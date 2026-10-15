@@ -87,6 +87,6 @@ class ZpaConfigurationModelTest {
     @Test
     fun propertiesAreListedInConfigurationTabOrder() {
         assertThat(ZpaConfigurationModel().properties.map { it.name })
-            .containsExactly("Charset", "Error recovery", "Project sources", "Project file suffixes")
+            .containsExactly("Charset", "Error recovery", "Conditional compilation flags", "Database version", "Project sources", "Project file suffixes")
     }
 }

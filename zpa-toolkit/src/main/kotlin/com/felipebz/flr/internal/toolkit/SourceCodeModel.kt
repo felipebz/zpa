@@ -24,6 +24,7 @@ import com.felipebz.flr.impl.ast.AstXmlPrinter
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectDeclarationExtractor
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.tooling.ProjectOverviewNode
@@ -75,7 +76,7 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
         val projectSources = configurationModel.projectSourceFiles
             .filter { it.toString() != fileId.value }
             .map { path -> ProjectSource(FileId(path.toString())) { Files.readString(path, charset) } }
-        val preparation = ProjectIndexPreparation().prepare(
+        val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(configurationModel.configuration)).prepare(
             projectSources + ProjectSource(fileId) { sourceCode },
             concurrent = true
         )

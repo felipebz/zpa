@@ -28,6 +28,7 @@ import com.felipebz.flr.toolkit.ConfigurationProperty
 import com.felipebz.flr.toolkit.ValidationCallback
 import com.felipebz.flr.toolkit.Validators
 import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.utils.log.Loggers
 import java.io.File
@@ -56,8 +57,22 @@ class ZpaConfigurationModel : AbstractConfigurationModel() {
         getValidPropertyOrDefaultValue(PROJECT_FILE_SUFFIXES_PROPERTY_KEY, "sql,pkg,pks,pkb", ProjectSourceFiles::validateSuffixes),
         ValidationCallback(ProjectSourceFiles::validateSuffixes))
 
+    internal var ccflagsProperty = ConfigurationProperty("Conditional compilation flags",
+        "PLSQL_CCFLAGS used to compile the code, e.g. 'debug:TRUE, level:2' (empty: \$IF conditions are not evaluated)",
+        getValidPropertyOrDefaultValue(CCFLAGS_PROPERTY_KEY, "", ::validateFlags),
+        ValidationCallback(::validateFlags))
+
+    internal var databaseVersionProperty = ConfigurationProperty("Database version",
+        "Database version the code is compiled for (DBMS_DB_VERSION), e.g. '19' or '12.2'",
+        getValidPropertyOrDefaultValue(DATABASE_VERSION_PROPERTY_KEY, "", ::validateVersion),
+        ValidationCallback(::validateVersion))
+
     internal val configuration: PlSqlConfiguration
-        get() = PlSqlConfiguration(Charset.forName(charsetProperty.value), errorRecoveryProperty.value.toBoolean())
+        get() = PlSqlConfiguration(
+            Charset.forName(charsetProperty.value),
+            errorRecoveryProperty.value.toBoolean(),
+            ConditionalCompilationSettings.of(ccflagsProperty.value, databaseVersionProperty.value)
+        )
 
     internal val projectSourceFiles: List<Path>
         get() = ProjectSourceFiles.collect(projectSourcesProperty.value, projectFileSuffixesProperty.value)
@@ -66,7 +81,7 @@ class ZpaConfigurationModel : AbstractConfigurationModel() {
         get() = Charset.forName(charsetProperty.value)
 
     override val properties: List<ConfigurationProperty>
-        get() = listOf(charsetProperty, errorRecoveryProperty, projectSourcesProperty, projectFileSuffixesProperty)
+        get() = listOf(charsetProperty, errorRecoveryProperty, ccflagsProperty, databaseVersionProperty, projectSourcesProperty, projectFileSuffixesProperty)
 
     override fun doGetParser(): Parser<Grammar> = PlSqlParser.create(configuration)
 
@@ -76,6 +91,19 @@ class ZpaConfigurationModel : AbstractConfigurationModel() {
         private const val ERROR_RECOVERY_PROPERTY_KEY = "sonar.zpa.errorRecoveryEnabled"
         private const val PROJECT_SOURCES_PROPERTY_KEY = "sonar.zpa.toolkit.projectSources"
         private const val PROJECT_FILE_SUFFIXES_PROPERTY_KEY = "sonar.plsqlopen.file.suffixes"
+        private const val CCFLAGS_PROPERTY_KEY = "sonar.zpa.ccflags"
+        private const val DATABASE_VERSION_PROPERTY_KEY = "sonar.zpa.databaseVersion"
+
+        private fun validateFlags(value: String): String = validate { ConditionalCompilationSettings.of(value, null) }
+
+        private fun validateVersion(value: String): String = validate { ConditionalCompilationSettings.of(null, value) }
+
+        private fun validate(parse: () -> Unit): String = try {
+            parse()
+            ""
+        } catch (e: IllegalArgumentException) {
+            e.message ?: "Invalid value"
+        }
 
         internal fun getPropertyOrDefaultValue(propertyKey: String, defaultValue: String): String {
             val propertyValue = System.getProperty(propertyKey)

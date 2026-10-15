@@ -83,7 +83,7 @@ object PlSqlLexer {
             .withChannel(IdentifierChannel(PlSqlKeyword.entries.toTypedArray()))
             .withChannel(QuotedIdentifierChannel(QUOTED_IDENTIFIER, SIMPLE_IDENTIFIER))
             .withChannel(BlackHoleChannel("(?is)\\s&&?$SIMPLE_IDENTIFIER"))
-            .withChannel(ConditionalCompilationChannel())
+            .withChannel(ConditionalCompilationChannel(conf.conditionalCompilation))
             .withChannel(PunctuatorChannel(*PlSqlPunctuator.entries.toTypedArray()))
             .withChannel(UnknownCharacterChannel())
             .build()

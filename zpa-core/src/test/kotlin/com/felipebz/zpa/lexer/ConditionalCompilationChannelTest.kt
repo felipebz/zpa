@@ -24,6 +24,7 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -227,5 +228,76 @@ class ConditionalCompilationChannelTest {
     fun emptyFirstBranchIsStillSelected() {
         assertThatThrownBy { parse("CREATE PROCEDURE p IS BEGIN \$IF \$\$legacy \$THEN \$ELSE NULL; \$END END;") }
             .isInstanceOf(RecognitionException::class.java)
+    }
+
+    // ---- CC3: evaluation with configured flags and database version ----
+
+    private fun settings(flags: String = "", version: String? = null) = ConditionalCompilationSettings.of(flags, version)
+
+    private fun kept(body: String, settings: ConditionalCompilationSettings): String {
+        val values = PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, false, settings)).lex("BEGIN\n$body\nEND;")
+            .filter { it.type !== GenericTokenType.EOF }.map { it.originalValue }
+        return values.drop(1).dropLast(2).joinToString(" ")
+    }
+
+    @Test
+    fun unsetInquiryDirectiveIsNullWhenConfigured() {
+        val logger = "\$IF \$\$no_op \$THEN null; \$ELSE x := 1; \$END"
+        assertThat(kept(logger)).isEqualTo("null ;")
+        assertThat(kept(logger, settings(version = "19"))).isEqualTo("x := 1 ;")
+        assertThat(kept(logger, settings("no_op:true"))).isEqualTo("null ;")
+    }
+
+    @Test
+    fun emptyFirstBranchIsNotSelectedWhenTheConditionIsDecided() {
+        val source = "CREATE PROCEDURE p IS BEGIN \$IF \$\$legacy \$THEN \$ELSE NULL; \$END END;"
+        for (active in listOf(settings(version = "19"), settings("other:1"), settings("legacy:false"))) {
+            PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false, active)).parse(source)
+        }
+    }
+
+    @Test
+    fun literalConditionsAreEvaluatedOnlyWhenConfigured() {
+        val body = "\$IF FALSE \$THEN a; \$ELSIF TRUE \$THEN b; \$END"
+        assertThat(kept(body)).isEqualTo("a ;")
+        assertThat(kept(body, settings(version = "19"))).isEqualTo("b ;")
+        assertThat(kept("\$IF FALSE \$THEN a; \$ELSIF NULL \$THEN b; \$ELSE c; \$END", settings("x:1"))).isEqualTo("c ;")
+        assertThat(kept("\$IF FALSE \$THEN a; \$ELSIF NULL \$THEN b; \$END", settings("x:1"))).isEmpty()
+    }
+
+    @Test
+    fun anUnknownConditionAppliesTheDefaultPolicyFromThatBranchOn() {
+        val body = "\$IF \$\$x = 1 \$THEN a; \$ELSIF my_pkg.c \$THEN b; \$ELSE c; \$END"
+        assertThat(kept(body, settings("x:2"))).isEqualTo("b ;")
+        assertThat(kept(body, settings("x:1"))).isEqualTo("a ;")
+        // From the unknown branch on, $ERROR-only branches are still skipped.
+        assertThat(kept("\$IF \$\$x = 1 \$THEN a; \$ELSIF my_pkg.c \$THEN \$ERROR 'no' \$END \$ELSE c; \$END", settings("x:2")))
+            .isEqualTo("c ;")
+    }
+
+    @Test
+    fun aDecidedErrorOnlyBranchKeepsNothing() {
+        val body = "\$IF \$\$x = 1 \$THEN \$ERROR 'unsupported' \$END \$ELSE c; \$END"
+        assertThat(kept(body)).isEqualTo("c ;")
+        assertThat(kept(body, settings("x:1"))).isEmpty()
+        assertThat(kept("\$IF \$\$x = 1 \$THEN a; \$ELSE \$ERROR 'unsupported' \$END \$END", settings("x:2"))).isEmpty()
+    }
+
+    @Test
+    fun databaseVersionConstants() {
+        val body = "\$IF DBMS_DB_VERSION.VER_LE_11 \$THEN old; \$ELSE new; \$END"
+        assertThat(kept(body, settings(version = "19"))).isEqualTo("new ;")
+        assertThat(kept(body, settings(version = "11.2"))).isEqualTo("old ;")
+        // No version: unknown, so the default policy keeps the first branch.
+        assertThat(kept(body, settings("debug:true"))).isEqualTo("old ;")
+    }
+
+    @Test
+    fun decidedSelectionsKeepTheirTrivia() {
+        val tokens = PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, false, settings("x:2")))
+            .lex("BEGIN\n\$IF \$\$x = 1 \$THEN a; \$ELSE b; \$END\nEND;")
+        val b = tokens.first { it.originalValue == "b" }
+        assertThat(b.trivia.single().token.originalValue).isEqualTo("\$IF \$\$x = 1 \$THEN a; \$ELSE")
+        assertThat(b.trivia.single().token.type).isEqualTo(com.felipebz.zpa.api.PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY)
     }
 }

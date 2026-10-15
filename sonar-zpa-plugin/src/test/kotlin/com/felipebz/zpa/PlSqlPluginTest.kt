@@ -36,7 +36,7 @@ class PlSqlPluginTest {
         val context = Plugin.Context(SonarRuntimeImpl.forSonarQube(Version.create(6, 0), SonarQubeSide.SERVER, SonarEdition.COMMUNITY))
         val plugin = PlSqlPlugin()
         plugin.define(context)
-        assertThat(context.extensions).hasSize(12)
+        assertThat(context.extensions).hasSize(14)
     }
 
     @Test

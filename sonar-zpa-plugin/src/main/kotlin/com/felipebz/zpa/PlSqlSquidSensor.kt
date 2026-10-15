@@ -31,6 +31,7 @@ import com.felipebz.zpa.oracle.OracleMetadataSettings
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
 import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
 import com.felipebz.zpa.squid.PlSqlAstScanner
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.squid.ProgressReport
@@ -44,6 +45,7 @@ import org.sonar.api.batch.sensor.SensorDescriptor
 import org.sonar.api.config.Configuration
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.FileLinesContextFactory
+import org.sonar.api.utils.MessageException
 import java.util.concurrent.TimeUnit
 
 @OptIn(ZpaExperimentalApi::class)
@@ -72,6 +74,23 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
     /** Database access, used only when Oracle metadata is configured. Replaced by tests only. */
     internal var oracleMetadataAcquirer: OracleMetadataAcquirer = JdbcOracleMetadataAcquirer()
 
+    private fun conditionalCompilationSettings(): ConditionalCompilationSettings {
+        fun read(key: String) = configuration.get(key).orElse(null)
+        val flags = try {
+            read(PlSqlPlugin.CCFLAGS_KEY)?.takeIf { it.isNotBlank() }?.let { ConditionalCompilationSettings.parseFlags(it) }.orEmpty()
+        } catch (e: IllegalArgumentException) {
+            throw MessageException.of("Invalid value of ${PlSqlPlugin.CCFLAGS_KEY}: ${e.message}")
+        }
+        val version = try {
+            read(PlSqlPlugin.DATABASE_VERSION_KEY)?.takeIf { it.isNotBlank() }?.let { ConditionalCompilationSettings.parseVersion(it) }
+        } catch (e: IllegalArgumentException) {
+            throw MessageException.of("Invalid value of ${PlSqlPlugin.DATABASE_VERSION_KEY}: ${e.message}")
+        }
+        val settings = ConditionalCompilationSettings(flags, version)
+        if (settings.isActive) logger.info("ZPA conditional compilation: $settings")
+        return settings
+    }
+
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("ZPA").onlyOnLanguage(PlSql.Companion.KEY)
     }
@@ -79,6 +98,11 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
     override fun execute(context: SensorContext) {
         val fs = context.fileSystem()
         val inputFiles = fs.inputFiles(fs.predicates().hasLanguage(PlSql.Companion.KEY)).toList()
+
+        // Read before any work, so that an invalid value fails the analysis up front. Lexing for the project index and
+        // for the AST must select the same conditional compilation branches, so both get the same settings.
+        val conditionalCompilation = conditionalCompilationSettings()
+        val lexerConfiguration = PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled, conditionalCompilation)
 
         // Configured explicitly or not at all: without sonar.zpa.oracle.url nothing connects. Acquired once, in the
         // scanner, before preparation and scanning; failures (MessageException, sanitized) fail the analysis.
@@ -91,7 +115,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
         val preparedContext = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation(
-                ProjectDeclarationExtractor(PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled))
+                ProjectDeclarationExtractor(lexerConfiguration)
             ).prepare(
                 inputFiles.map { inputFile ->
                     ProjectSource(
@@ -117,7 +141,8 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
             formsMetadata,
             isErrorRecoveryEnabled,
             fileLinesContextFactory,
-            projectAnalysisContext
+            projectAnalysisContext,
+            conditionalCompilation
         )
 
         progressReport.start(inputFiles.map { it.toString() })

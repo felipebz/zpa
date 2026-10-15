@@ -52,10 +52,12 @@ class PlSqlAstScanner(private val context: SensorContext,
                       formsMetadata: FormsMetadata?,
                       isErrorRecoveryEnabled: Boolean,
                       private val fileLinesContextFactory: FileLinesContextFactory?,
-                      projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) {
+                      projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED,
+                      conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE) {
 
-    private val astScanner: AstScanner =
-        AstScanner(checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding(), projectAnalysisContext)
+    private val astScanner: AstScanner = AstScanner(
+        checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding(), projectAnalysisContext, conditionalCompilation
+    )
 
     private lateinit var plsqlChecks: PlSqlChecks
 
@@ -65,14 +67,16 @@ class PlSqlAstScanner(private val context: SensorContext,
                 formsMetadata: FormsMetadata?,
                 isErrorRecoveryEnabled: Boolean,
                 fileLinesContextFactory: FileLinesContextFactory,
-                projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED) : this(
+                projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED,
+                conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE) : this(
         context,
         checks.all(),
         noSonarFilter,
         formsMetadata,
         isErrorRecoveryEnabled,
         fileLinesContextFactory,
-        projectAnalysisContext
+        projectAnalysisContext,
+        conditionalCompilation
     ) {
         this.plsqlChecks = checks
     }
