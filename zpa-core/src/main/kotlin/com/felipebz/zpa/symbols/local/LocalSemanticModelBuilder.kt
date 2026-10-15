@@ -20,11 +20,9 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.GenericTokenType
-import com.felipebz.zpa.api.DmlGrammar
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.api.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.extraction.TokenStream
 import com.felipebz.zpa.project.extraction.TypeReferences
@@ -44,8 +42,9 @@ internal object LocalSyntax {
  *
  * In the grammar, `BLOCK_STATEMENT` occurs only as the body of `ANONYMOUS_BLOCK` (a top-level block) and as a
  * `STATEMENT` alternative (a nested block); both form a region. Subprograms form a region only when they have a body.
- * Packages, triggers, object types and type constructors are [LocalRegionKind.UNMODELED]: nothing is extracted from
- * them, but the subprogram bodies, blocks and loops they contain are.
+ * Packages, package bodies, triggers (and compound-trigger timing points), object types and type bodies form regions
+ * holding their declarations. `ALTER TYPE` is not traversed: its member specs are changes to an existing type, not
+ * declarations of the file, and it holds no PL/SQL body.
  */
 internal object LocalSemanticModelBuilder {
     private val SUBPROGRAMS = setOf(
@@ -61,19 +60,24 @@ internal object LocalSemanticModelBuilder {
         PlSqlGrammar.SEQUENCE_ITERATOR_CHOICE
     )
 
-    private val UNMODELED_REGIONS = setOf(
-        PlSqlGrammar.CREATE_PACKAGE,
-        PlSqlGrammar.CREATE_PACKAGE_BODY,
-        PlSqlGrammar.CREATE_TRIGGER,
-        PlSqlGrammar.COMPOUND_TRIGGER_BLOCK,
-        PlSqlGrammar.TIMING_POINT_SECTION,
-        PlSqlGrammar.CREATE_TYPE,
-        PlSqlGrammar.CREATE_TYPE_BODY,
-        PlSqlGrammar.TYPE_CONSTRUCTOR
+    private val TRIGGER_ALTERNATIVES = setOf(
+        PlSqlGrammar.SIMPLE_DML_TRIGGER,
+        PlSqlGrammar.INSTEAD_OF_DML_TRIGGER,
+        PlSqlGrammar.COMPOUND_DML_TRIGGER,
+        PlSqlGrammar.SYSTEM_TRIGGER
     )
 
     /** Regions whose forward subprogram declarations are linked to their bodies. */
-    private val FORWARD_SCOPES = setOf(LocalRegionKind.ANONYMOUS_BLOCK, LocalRegionKind.SUBPROGRAM)
+    private val FORWARD_SCOPES = setOf(
+        LocalRegionKind.ANONYMOUS_BLOCK, LocalRegionKind.SUBPROGRAM, LocalRegionKind.PACKAGE_BODY,
+        LocalRegionKind.TRIGGER, LocalRegionKind.TIMING_POINT
+    )
+
+    private val DEFAULT_CORRELATION_NAMES = LocalCorrelationNames(
+        OracleIdentifier.fromSource("NEW"), OracleIdentifier.fromSource("OLD"), OracleIdentifier.fromSource("PARENT")
+    )
+
+    private val SELF = OracleIdentifier.fromSource("SELF")
 
     fun build(root: AstNode, fileId: FileId): LocalSemanticModel = Construction(fileId).build(root)
 
@@ -87,7 +91,6 @@ internal object LocalSemanticModelBuilder {
         val declarations = ArrayList<LocalDeclarationId>()
         val children = ArrayList<LocalRegionId>()
         val gaps = ArrayList<LocalCoverageGap>()
-        val modeled get() = kind != LocalRegionKind.UNMODELED
     }
 
     private class DeclarationDraft(
@@ -115,6 +118,7 @@ internal object LocalSemanticModelBuilder {
             val file = open(null, LocalRegionKind.FILE, "FILE", fileRange(root))
             walk(root, file)
             linkForwardDeclarations()
+            linkUnits()
             return freeze()
         }
 
@@ -137,7 +141,6 @@ internal object LocalSemanticModelBuilder {
             hasDefault: Boolean = false,
             details: LocalDeclarationDetails? = null
         ): DeclarationDraft {
-            check(region.modeled) { "No declarations are extracted from unmodeled regions" }
             val draft = DeclarationDraft(
                 LocalDeclarationId(declarations.size), region, region.declarations.size, kind, name, range, nameRange,
                 type, isConstant, isNotNull, hasDefault, details
@@ -166,13 +169,21 @@ internal object LocalSemanticModelBuilder {
                 PlSqlGrammar.FOR_STATEMENT -> regionWithBody(node, region, LocalRegionKind.FOR_LOOP)
                 PlSqlGrammar.FORALL_STATEMENT -> forall(node, region)
                 in ITERATOR_CHOICES -> regionWithBody(node, region, LocalRegionKind.ITERATOR)
-                in SUBPROGRAMS -> subprogram(node, region)
-                in UNMODELED_REGIONS -> regionWithBody(node, region, LocalRegionKind.UNMODELED)
+                in SUBPROGRAMS, PlSqlGrammar.TYPE_CONSTRUCTOR -> subprogram(node, region)
+                PlSqlGrammar.CREATE_PACKAGE -> unit(node, region, LocalDeclarationKind.PACKAGE, LocalRegionKind.PACKAGE_SPEC)
+                PlSqlGrammar.CREATE_PACKAGE_BODY -> unit(node, region, LocalDeclarationKind.PACKAGE_BODY, LocalRegionKind.PACKAGE_BODY)
+                PlSqlGrammar.CREATE_TYPE_BODY -> unit(node, region, LocalDeclarationKind.TYPE_BODY, LocalRegionKind.TYPE_BODY)
+                PlSqlGrammar.CREATE_TYPE -> createType(node, region)
+                PlSqlGrammar.CREATE_TRIGGER -> trigger(node, region)
+                PlSqlGrammar.TYPE_ATTRIBUTE -> declare(
+                    region, LocalDeclarationKind.ATTRIBUTE, node, node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME),
+                    node.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, region) }, isNotNull = notNull(node)
+                )
+                PlSqlGrammar.ALTER_TYPE -> Unit
                 PlSqlGrammar.ITERATOR -> iterator(node, region)
                 // A label of a statement that forms no region: a declaration of the region holding the statement.
-                PlSqlGrammar.LABEL -> if (region.modeled) declareLabel(node, region, null)
-                PlSqlGrammar.DECLARE_SECTION ->
-                    if (region.modeled) node.children.forEach { declarationItem(it, region) } else walk(node, region)
+                PlSqlGrammar.LABEL -> declareLabel(node, region, null)
+                PlSqlGrammar.DECLARE_SECTION -> node.children.forEach { declarationItem(it, region) }
                 else -> {
                     val with = node.getFirstChildOrNull(DmlGrammar.WITH_CLAUSE)
                     if (with != null && with.children.any { it.type in SUBPROGRAMS }) sqlWith(node, with, region) else walk(node, region)
@@ -198,8 +209,7 @@ internal object LocalSemanticModelBuilder {
          * enclosing region, linked to the new region; the region starts after them.
          */
         private fun regionWithBody(node: AstNode, enclosing: RegionDraft, kind: LocalRegionKind): RegionDraft? {
-            val labels = node.children.filter { it.type === PlSqlGrammar.LABEL }
-                .mapNotNull { if (enclosing.modeled) declareLabel(it, enclosing, null) else null }
+            val labels = node.children.filter { it.type === PlSqlGrammar.LABEL }.map { declareLabel(it, enclosing, null) }
             val content = node.children.filter { it.type !== PlSqlGrammar.LABEL }
             val first = content.firstOrNull() ?: return null
             val range = SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn)
@@ -215,7 +225,7 @@ internal object LocalSemanticModelBuilder {
         /** The iterands of a FOR loop or an iterator choice, as indices of the region the loop forms. */
         private fun iterator(node: AstNode, region: RegionDraft) {
             for (child in node.children) {
-                if (child.type !== PlSqlGrammar.ITERAND_DECLARATION || !region.modeled) {
+                if (child.type !== PlSqlGrammar.ITERAND_DECLARATION) {
                     visit(child, region)
                     continue
                 }
@@ -236,8 +246,7 @@ internal object LocalSemanticModelBuilder {
         }
 
         private fun forall(node: AstNode, enclosing: RegionDraft) {
-            val labels = node.children.filter { it.type === PlSqlGrammar.LABEL }
-                .mapNotNull { if (enclosing.modeled) declareLabel(it, enclosing, null) else null }
+            val labels = node.children.filter { it.type === PlSqlGrammar.LABEL }.map { declareLabel(it, enclosing, null) }
             val content = node.children.filter { it.type !== PlSqlGrammar.LABEL }
             val first = content.first()
             val region = open(enclosing, LocalRegionKind.FORALL, node.type.toString(),
@@ -249,46 +258,198 @@ internal object LocalSemanticModelBuilder {
         }
 
         /**
-         * A procedure or function. It is a declaration of [enclosing] when that region is extracted; with a body it
-         * forms a SUBPROGRAM region holding its parameters and local declarations. Parameter types are looked up in
-         * [enclosing]; a RETURN type in the subprogram's own region when it has one.
+         * A procedure, function or object type constructor, declared in [enclosing]; with a body it forms a SUBPROGRAM
+         * region holding its parameters and local declarations. Parameter types are looked up in [enclosing]; a RETURN
+         * type in the subprogram's own region when it has one.
          */
         private fun subprogram(node: AstNode, enclosing: RegionDraft) {
             val standalone = node.type === PlSqlGrammar.CREATE_PROCEDURE || node.type === PlSqlGrammar.CREATE_FUNCTION
+            val constructor = node.type === PlSqlGrammar.TYPE_CONSTRUCTOR
             val nameNode = if (standalone) node.getFirstChild(PlSqlGrammar.UNIT_NAME) else node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-            val unitName = QualifiedName(
-                if (standalone) nameNode.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map(LocalSyntax::identifier) else listOf(LocalSyntax.identifier(nameNode))
-            )
+            val unitName = if (standalone) unitName(nameNode) else QualifiedName(LocalSyntax.identifier(nameNode))
             val form = when {
                 node.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION) -> LocalSubprogramForm.BODY
                 node.hasDirectChildren(PlSqlGrammar.CALL_SPECIFICATION) -> LocalSubprogramForm.CALL_SPECIFICATION
                 node.hasDirectChildren(PlSqlTokenType.WRAPPED_SOURCE) -> LocalSubprogramForm.WRAPPED
                 else -> LocalSubprogramForm.HEADING_ONLY
             }
-            val kind = if (node.type === PlSqlGrammar.CREATE_FUNCTION || node.type === PlSqlGrammar.FUNCTION_DECLARATION) {
+            val kind = if (constructor || node.type === PlSqlGrammar.CREATE_FUNCTION || node.type === PlSqlGrammar.FUNCTION_DECLARATION) {
                 LocalDeclarationKind.FUNCTION
             } else {
                 LocalDeclarationKind.PROCEDURE
             }
-            val declaration = if (enclosing.modeled) {
-                declare(enclosing, kind, unitName.last, range(node), range(nameNode))
-            } else {
-                null
-            }
+            val declaration = declare(enclosing, kind, unitName.last, range(node), range(nameNode))
             val body = if (form == LocalSubprogramForm.BODY) open(enclosing, LocalRegionKind.SUBPROGRAM, node.type.toString(), range(node)) else null
 
-            val parameters = node.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)
-                ?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
-                .mapIndexed { index, parameter -> parameter(parameter, index + 1, enclosing, body) }
-            val returnType = node.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, body ?: enclosing) }
+            val parameters = ArrayList<LocalParameter>()
+            if (constructor) explicitConstructorSelf(node, enclosing, body)?.let { parameters += it }
+            val parameterNodes = if (constructor) {
+                node.getChildren(PlSqlGrammar.PARAMETER_DECLARATION)
+            } else {
+                node.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
+            }
+            for (parameter in parameterNodes) parameters += parameter(parameter, parameters.size + 1, enclosing, body)
+            val returnType = if (constructor) null else node.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, body ?: enclosing) }
             for (child in node.children) {
                 when (child.type) {
-                    PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.PARAMETER_DECLARATIONS, PlSqlGrammar.DATATYPE -> Unit
+                    PlSqlGrammar.UNIT_NAME, PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.PARAMETER_DECLARATIONS,
+                    PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.DATATYPE -> Unit
                     else -> visit(child, body ?: enclosing)
                 }
             }
-            declaration?.details = LocalSubprogram(unitName, form, frozenList(parameters), returnType, body?.id, null)
+            val methodKind = methodKind(node)
+            val explicitSelf = parameters.any { it.name == SELF }
+            val implicitSelf = when {
+                methodKind == null || methodKind == LocalMethodKind.STATIC || explicitSelf -> null
+                methodKind == LocalMethodKind.CONSTRUCTOR || kind == LocalDeclarationKind.PROCEDURE -> ParameterMode.IN_OUT
+                else -> ParameterMode.IN
+            }
+            declaration.details = LocalSubprogram(
+                unitName, form, frozenList(parameters), returnType, constructor, body?.id, null, null, methodKind, implicitSelf
+            )
         }
+
+        /** The method kind written around an object type member: its wrapper rule and keywords. */
+        private fun methodKind(node: AstNode): LocalMethodKind? {
+            if (node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) return LocalMethodKind.CONSTRUCTOR
+            val wrapper = node.parent ?: return null
+            return when (wrapper.type) {
+                PlSqlGrammar.MAP_ORDER_FUNCTION -> if (wrapper.hasDirectChildren(PlSqlKeyword.MAP)) LocalMethodKind.MAP else LocalMethodKind.ORDER
+                PlSqlGrammar.TYPE_SUBPROGRAM -> if (wrapper.hasDirectChildren(PlSqlKeyword.STATIC)) LocalMethodKind.STATIC else LocalMethodKind.MEMBER
+                else -> null
+            }
+        }
+
+        /** `CONSTRUCTOR FUNCTION t(SELF IN OUT t, …)`: the grammar writes this `SELF` outside PARAMETER_DECLARATION. */
+        private fun explicitConstructorSelf(node: AstNode, enclosing: RegionDraft, body: RegionDraft?): LocalParameter? {
+            val children = node.children
+            val open = children.indexOfFirst { it.type === PlSqlPunctuator.LPARENTHESIS }
+            val self = children.getOrNull(open + 1)?.takeIf { open >= 0 && it.type === PlSqlKeyword.SELF } ?: return null
+            val datatype = node.getFirstChild(PlSqlGrammar.DATATYPE)
+            val parameter = LocalParameter(
+                LocalSyntax.identifier(self), range(self), 1, ParameterMode.IN_OUT, false, false, typeUse(datatype, enclosing)
+            )
+            if (body != null) {
+                val range = SourceRange(fileId, self.token.line, self.token.column, datatype.lastToken.endLine, datatype.lastToken.endColumn)
+                declare(body, LocalDeclarationKind.PARAMETER, parameter.name, range, parameter.nameRange, parameter.type, details = parameter)
+            }
+            return parameter
+        }
+
+        /**
+         * A package, package body or type body: a declaration of [enclosing] and, unless wrapped, a region of
+         * [regionKind] holding its declaration-section items (or type body members) and its initialization section.
+         */
+        private fun unit(node: AstNode, enclosing: RegionDraft, kind: LocalDeclarationKind, regionKind: LocalRegionKind) {
+            val nameNode = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
+            val wrapped = node.hasDirectChildren(PlSqlTokenType.WRAPPED_SOURCE)
+            val declaration = declare(enclosing, kind, nameNode.lastChild.let(LocalSyntax::identifier), range(node), range(nameNode))
+            val region = if (wrapped) null else open(enclosing, regionKind, node.type.toString(), range(node))
+            if (region != null) node.children.filter { it !== nameNode }.forEach { visit(it, region) }
+            declaration.details = LocalUnit(unitName(nameNode), if (wrapped) LocalUnitForm.WRAPPED else LocalUnitForm.SOURCE, region?.id, null, null)
+        }
+
+        /** `CREATE TYPE`: an object type forms an OBJECT_TYPE region; a collection type forms none. */
+        private fun createType(node: AstNode, enclosing: RegionDraft) {
+            val nameNode = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
+            val name = unitName(nameNode)
+            val objectDefinition = node.getFirstChildOrNull(PlSqlGrammar.OBJECT_TYPE_DEFINITION)
+            val collection = node.hasDirectChildren(PlSqlKeyword.TABLE, PlSqlKeyword.VARRAY, PlSqlKeyword.ARRAY) ||
+                node.hasDirectChildren(PlSqlGrammar.NESTED_TABLE_DEFINITION, PlSqlGrammar.VARRAY_TYPE_DEFINITION)
+            if (collection) {
+                val definition = node.getFirstChildOrNull(PlSqlGrammar.NESTED_TABLE_DEFINITION)
+                    ?: node.getFirstChildOrNull(PlSqlGrammar.VARRAY_TYPE_DEFINITION) ?: node
+                val form = if (node.hasDirectChildren(PlSqlKeyword.VARRAY, PlSqlKeyword.ARRAY) ||
+                    definition.type === PlSqlGrammar.VARRAY_TYPE_DEFINITION) LocalCollectionForm.VARRAY else LocalCollectionForm.NESTED_TABLE
+                declare(
+                    enclosing, LocalDeclarationKind.COLLECTION_TYPE, name.last, range(node), range(nameNode),
+                    definition.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, enclosing) },
+                    isNotNull = notNull(definition), details = LocalCollectionType(form, null, name)
+                )
+                return
+            }
+            val form = when {
+                node.hasDirectChildren(PlSqlTokenType.WRAPPED_SOURCE) -> LocalUnitForm.WRAPPED
+                objectDefinition == null -> LocalUnitForm.INCOMPLETE
+                else -> LocalUnitForm.SOURCE
+            }
+            val declaration = declare(enclosing, LocalDeclarationKind.OBJECT_TYPE, name.last, range(node), range(nameNode))
+            val region = objectDefinition?.let { open(enclosing, LocalRegionKind.OBJECT_TYPE, node.type.toString(), range(node)) }
+            val supertype = objectDefinition?.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME)
+            objectDefinition?.children?.filter { it !== supertype }?.forEach { visit(it, region!!) }
+            declaration.details = LocalUnit(name, form, region?.id, null, supertype?.let(::unitName))
+        }
+
+        /**
+         * A trigger: a declaration of [enclosing] and, with a PL/SQL body, a TRIGGER region starting at the body. The
+         * heading (events, REFERENCING, WHEN) stays in [enclosing]. A compound trigger's timing points are nested
+         * TIMING_POINT regions.
+         */
+        private fun trigger(node: AstNode, enclosing: RegionDraft) {
+            val nameNode = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
+            val declaration = declare(enclosing, LocalDeclarationKind.TRIGGER, nameNode.lastChild.let(LocalSyntax::identifier), range(node), range(nameNode))
+            val alternative = node.children.firstOrNull { it.type in TRIGGER_ALTERNATIVES }
+            var body: RegionDraft? = null
+            if (alternative != null) {
+                val children = alternative.children
+                val bodyStart = children.indexOfFirst {
+                    it.type === PlSqlKeyword.DECLARE || it.type === PlSqlGrammar.STATEMENTS_SECTION || it.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK
+                }
+                children.take(if (bodyStart < 0) children.size else bodyStart).forEach { visit(it, enclosing) }
+                if (bodyStart >= 0) {
+                    val first = children[bodyStart]
+                    val region = open(enclosing, LocalRegionKind.TRIGGER, (if (first.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) first.type else node.type).toString(),
+                        SourceRange(fileId, first.token.line, first.token.column, alternative.lastToken.endLine, alternative.lastToken.endColumn))
+                    body = region
+                    for (child in children.drop(bodyStart)) {
+                        if (child.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) compoundTrigger(child, region) else visit(child, region)
+                    }
+                }
+            }
+            val correlation = when (alternative?.type) {
+                null, PlSqlGrammar.SYSTEM_TRIGGER -> null
+                else -> correlationNames(alternative.getFirstChildOrNull(PlSqlGrammar.REFERENCING_CLAUSE))
+            }
+            declaration.details = LocalTrigger(unitName(nameNode), body?.id, correlation)
+        }
+
+        private fun compoundTrigger(block: AstNode, region: RegionDraft) {
+            for (child in block.children) {
+                if (child.type === PlSqlGrammar.TIMING_POINT_SECTION) {
+                    val timingPoint = open(region, LocalRegionKind.TIMING_POINT, child.type.toString(), range(child))
+                    walk(child, timingPoint)
+                } else {
+                    visit(child, region)
+                }
+            }
+        }
+
+        private fun correlationNames(referencing: AstNode?): LocalCorrelationNames {
+            if (referencing == null) return DEFAULT_CORRELATION_NAMES
+            var new = DEFAULT_CORRELATION_NAMES.new
+            var old = DEFAULT_CORRELATION_NAMES.old
+            var parent = DEFAULT_CORRELATION_NAMES.parent
+            var pending: AstNodeType? = null
+            for (child in referencing.children) {
+                when {
+                    child.type === PlSqlKeyword.NEW || child.type === PlSqlKeyword.OLD || child.type === PlSqlKeyword.PARENT -> pending = child.type
+                    child.type === PlSqlGrammar.IDENTIFIER_NAME -> {
+                        val alias = LocalSyntax.identifier(child)
+                        when (pending) {
+                            PlSqlKeyword.NEW -> new = alias
+                            PlSqlKeyword.OLD -> old = alias
+                            PlSqlKeyword.PARENT -> parent = alias
+                            else -> Unit
+                        }
+                        pending = null
+                    }
+                }
+            }
+            return LocalCorrelationNames(new, old, parent)
+        }
+
+        private fun unitName(unitNameNode: AstNode) =
+            QualifiedName(unitNameNode.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map(LocalSyntax::identifier))
 
         private fun parameter(node: AstNode, ordinal: Int, enclosing: RegionDraft, body: RegionDraft?): LocalParameter {
             val out = node.hasDirectChildren(PlSqlKeyword.OUT)
@@ -409,40 +570,82 @@ internal object LocalSemanticModelBuilder {
         private fun linkForwardDeclarations() {
             for (region in regions) {
                 if (region.kind !in FORWARD_SCOPES) continue
-                val forwards = HashMap<String, MutableList<DeclarationDraft>>()
-                val bodies = HashMap<String, MutableList<DeclarationDraft>>()
-                for (id in region.declarations) {
-                    val draft = declarations[id.ordinal]
-                    val subprogram = draft.details as? LocalSubprogram ?: continue
-                    val target = when (subprogram.form) {
-                        LocalSubprogramForm.HEADING_ONLY -> forwards
-                        LocalSubprogramForm.BODY -> bodies
-                        else -> continue
-                    }
-                    val key = signatureKey(draft.kind, subprogram) ?: continue
-                    target.getOrPut(key) { ArrayList() } += draft
-                }
-                for ((key, matches) in forwards) {
+                val bodies = subprogramsByKey(region, LocalSubprogramForm.BODY)
+                for ((key, matches) in subprogramsByKey(region, LocalSubprogramForm.HEADING_ONLY)) {
                     val forward = matches.singleOrNull() ?: continue
                     val body = bodies[key]?.singleOrNull() ?: continue
-                    forward.details = linked(forward.details as LocalSubprogram, body.id)
-                    body.details = linked(body.details as LocalSubprogram, forward.id)
+                    forward.details = (forward.details as LocalSubprogram).copy(counterpart = body.id)
+                    body.details = (body.details as LocalSubprogram).copy(counterpart = forward.id)
                 }
             }
         }
 
-        private fun linked(subprogram: LocalSubprogram, counterpart: LocalDeclarationId) = LocalSubprogram(
-            subprogram.unitName, subprogram.form, subprogram.parameters, subprogram.returnType, subprogram.body, counterpart
-        )
+        /**
+         * Links specifications and bodies of packages and object types, then each specification heading to its
+         * implementation in the linked body. A unit pair is linked only when the file holds exactly one specification
+         * and exactly one body with the same written unit name; headings use the forward-link signature key (which
+         * includes the method kind). Grouping by key in hash maps: linear, and order never decides.
+         */
+        private fun linkUnits() {
+            val specifications = HashMap<String, MutableList<DeclarationDraft>>()
+            val bodies = HashMap<String, MutableList<DeclarationDraft>>()
+            for (draft in declarations) {
+                val target = when (draft.kind) {
+                    LocalDeclarationKind.PACKAGE, LocalDeclarationKind.OBJECT_TYPE -> specifications
+                    LocalDeclarationKind.PACKAGE_BODY, LocalDeclarationKind.TYPE_BODY -> bodies
+                    else -> continue
+                }
+                val unit = draft.details as LocalUnit
+                val family = if (draft.kind == LocalDeclarationKind.PACKAGE || draft.kind == LocalDeclarationKind.PACKAGE_BODY) "package" else "type"
+                target.getOrPut(family + "|" + unit.unitName.lookupKey()) { ArrayList() } += draft
+            }
+            for ((key, matches) in specifications) {
+                val specification = matches.singleOrNull() ?: continue
+                val body = bodies[key]?.singleOrNull() ?: continue
+                val specificationUnit = specification.details as LocalUnit
+                val bodyUnit = body.details as LocalUnit
+                val specificationRegion = specificationUnit.region ?: continue
+                val bodyRegion = bodyUnit.region ?: continue
+                specification.details = LocalUnit(specificationUnit.unitName, specificationUnit.form, specificationRegion, bodyRegion, specificationUnit.supertype)
+                body.details = LocalUnit(bodyUnit.unitName, bodyUnit.form, bodyRegion, specificationRegion, bodyUnit.supertype)
+                linkHeadings(regions[specificationRegion.ordinal], regions[bodyRegion.ordinal])
+            }
+        }
+
+        private fun linkHeadings(specification: RegionDraft, body: RegionDraft) {
+            val headings = subprogramsByKey(specification, LocalSubprogramForm.HEADING_ONLY)
+            val implementations = subprogramsByKey(body, LocalSubprogramForm.BODY)
+            for ((key, matches) in headings) {
+                val heading = matches.singleOrNull() ?: continue
+                val implementation = implementations[key]?.singleOrNull() ?: continue
+                heading.details = (heading.details as LocalSubprogram).copy(specificationCounterpart = implementation.id)
+                implementation.details = (implementation.details as LocalSubprogram).copy(specificationCounterpart = heading.id)
+            }
+        }
+
+        private fun subprogramsByKey(region: RegionDraft, form: LocalSubprogramForm): Map<String, List<DeclarationDraft>> {
+            val result = HashMap<String, MutableList<DeclarationDraft>>()
+            for (id in region.declarations) {
+                val draft = declarations[id.ordinal]
+                val subprogram = draft.details as? LocalSubprogram ?: continue
+                if (subprogram.form != form) continue
+                val key = signatureKey(draft.kind, subprogram) ?: continue
+                result.getOrPut(key) { ArrayList() } += draft
+            }
+            return result
+        }
 
         private fun signatureKey(kind: LocalDeclarationKind, subprogram: LocalSubprogram): String? {
-            val key = StringBuilder(kind.name).append('|').append(QualifiedName(subprogram.unitName.last).lookupKey())
+            val key = StringBuilder(kind.name).append('|').append(subprogram.methodKind ?: "").append('|')
+                .append(QualifiedName(subprogram.unitName.last).lookupKey())
             for (parameter in subprogram.parameters) {
                 val type = parameter.type?.typeRef ?: return null
                 key.append('|').append(QualifiedName(parameter.name).lookupKey()).append(' ').append(parameter.mode)
                     .append(' ').append(type.headerIdentityKey())
             }
-            if (kind == LocalDeclarationKind.FUNCTION) {
+            if (subprogram.returnsSelf) {
+                key.append("|return SELF")
+            } else if (kind == LocalDeclarationKind.FUNCTION) {
                 key.append("|return ").append((subprogram.returnType?.typeRef ?: return null).headerIdentityKey())
             }
             return key.toString()
@@ -462,11 +665,7 @@ internal object LocalSemanticModelBuilder {
 
         private fun freeze(): LocalSemanticModel {
             val frozenRegions = regions.map { draft ->
-                val extraction = when {
-                    !draft.modeled -> LocalExtraction.NOT_EXTRACTED
-                    draft.gaps.isNotEmpty() -> LocalExtraction.PARTIAL
-                    else -> LocalExtraction.ALL_ITEMS_EXTRACTED
-                }
+                val extraction = if (draft.gaps.isNotEmpty()) LocalExtraction.PARTIAL else LocalExtraction.ALL_ITEMS_EXTRACTED
                 LocalRegion(
                     draft.id, draft.parent?.id, draft.kind, draft.syntax, draft.range,
                     frozenList(draft.declarations), frozenList(draft.children), extraction, frozenList(draft.gaps)

@@ -41,8 +41,8 @@ internal value class LocalDeclarationId(val ordinal: Int) {
 
 internal enum class LocalRegionKind {
     /**
-     * The whole file: the root. It holds the top-level units: standalone subprograms are its declarations, and so are
-     * the labels of top-level blocks. It is not an Oracle region (standalone units live in a schema, and a top-level
+     * The whole file: the root. It holds the top-level units: standalone subprograms, packages, package bodies,
+     * triggers, types and type bodies are its declarations, and so are the labels of top-level blocks. It is not an Oracle region (standalone units live in a schema, and a top-level
      * block's label is visible only inside the block), so a resolver must treat it specially.
      */
     FILE,
@@ -50,7 +50,12 @@ internal enum class LocalRegionKind {
     /** A `[DECLARE …] BEGIN … END` block, top-level or nested in a statement list. */
     ANONYMOUS_BLOCK,
 
-    /** A procedure or function with a body: its parameters and its local declarations. */
+    /**
+     * A procedure or function with a body: its parameters and its local declarations. Inside a member method of an
+     * object type (see [LocalSubprogram.implicitSelf]) a resolver must also consider the implicit `SELF` and the
+     * attributes and methods of the type's specification, reachable without the `SELF.` qualifier. That rule is
+     * documented by Oracle (Object-Relational Developer's Guide, "Object Methods"), not probed.
+     */
     SUBPROGRAM,
 
     /** A cursor with parameters: the parameters, visible in its query. */
@@ -75,12 +80,47 @@ internal enum class LocalRegionKind {
      */
     SQL_WITH,
 
+    /** A package specification: its declaration-section items. Its subprograms are headings without regions. */
+    PACKAGE_SPEC,
+
     /**
-     * A construct that forms a lexical region the model does not extract yet (packages, triggers and their sections,
-     * object types and type bodies, type constructors). Kept so that regions nested in it have their true parent;
-     * its own declarations are not extracted.
+     * A package body: its declaration-section items, and its initialization section (blocks, loops and labels there
+     * have this region as their parent). The model records the body and its specification as two regions, linked
+     * through [LocalUnit.counterpart]; it does not merge them. For a resolver:
+     * - the specification's declarations are visible throughout the body, whatever their order;
+     * - the body's private declarations follow the ordinary order rule of a region;
+     * - specification and body declarations collide as if they were one region (a duplicate is diagnosed lazily, on
+     *   reference, as PLS-00371).
+     *
+     * A body whose specification is not in the file has no link: the specification's declarations then come from the
+     * project and are not represented here.
      */
-    UNMODELED
+    PACKAGE_BODY,
+
+    /**
+     * The PL/SQL body of a trigger, from `DECLARE`, `BEGIN` or `COMPOUND TRIGGER` to its end: the declarations of its
+     * `DECLARE` section, or the section-level declarations of a compound trigger. The heading (events, `REFERENCING`,
+     * `WHEN`) is SQL-level, cannot see these declarations, and is not part of the region.
+     */
+    TRIGGER,
+
+    /** A timing-point section of a compound trigger: its own declarations, visible only inside that timing point. */
+    TIMING_POINT,
+
+    /**
+     * An object type specification: its attributes and its method and constructor headings. Every rule about how
+     * methods see attributes and `SELF` is documented by Oracle, not probed (see [SUBPROGRAM]).
+     */
+    OBJECT_TYPE,
+
+    /**
+     * An object type body: its member subprograms, each with a body forming a nested SUBPROGRAM region. The type's
+     * attributes are not declarations of this region: they come from the linked specification ([LocalUnit.counterpart])
+     * or, when the specification is not in the file, from elsewhere and are not represented here. Inside a member
+     * method a resolver must also consider `SELF` and the attributes and methods of the specification; documented by
+     * Oracle, not probed.
+     */
+    TYPE_BODY
 }
 
 internal enum class LocalDeclarationKind {
@@ -96,7 +136,22 @@ internal enum class LocalDeclarationKind {
     CURSOR_PARAMETER,
     RECORD_TYPE,
     COLLECTION_TYPE,
-    REF_CURSOR_TYPE
+    REF_CURSOR_TYPE,
+    PACKAGE,
+    PACKAGE_BODY,
+
+    /**
+     * A trigger. Inside the trigger its name is not a qualifier (`trigger_name.x` fails with PLS-00201) and a trigger
+     * is not callable.
+     */
+    TRIGGER,
+
+    /** An object type created by `CREATE TYPE … AS OBJECT` or `UNDER`, or an incomplete `CREATE TYPE t;`. */
+    OBJECT_TYPE,
+    TYPE_BODY,
+
+    /** An attribute of an object type specification. */
+    ATTRIBUTE
 }
 
 /** How much of a region's own declarations the builder extracted. Never a statement that the list is complete. */
@@ -105,10 +160,7 @@ internal enum class LocalExtraction {
     ALL_ITEMS_EXTRACTED,
 
     /** Some declaration items, recorded as [LocalCoverageGap]s, were not extracted. */
-    PARTIAL,
-
-    /** The region's declarations are not extracted at all ([LocalRegionKind.UNMODELED]). */
-    NOT_EXTRACTED
+    PARTIAL
 }
 
 internal enum class LocalGapKind {
@@ -191,18 +243,42 @@ internal class LocalParameter(
     override fun toString() = "$ordinal $name $mode"
 }
 
-internal class LocalSubprogram(
+/** How an object type method is declared. */
+internal enum class LocalMethodKind { MEMBER, STATIC, MAP, ORDER, CONSTRUCTOR }
+
+internal data class LocalSubprogram(
     /** As written: `scott.p` for a standalone unit, the single name for a nested one. */
     val unitName: QualifiedName,
     val form: LocalSubprogramForm,
-    /** In ordinal order, for every form (empty when wrapped). */
+    /**
+     * In ordinal order, for every form (empty when wrapped). An explicitly written `SELF` parameter is one of them,
+     * including the `SELF IN OUT t` of a constructor.
+     */
     val parameters: List<LocalParameter>,
     /** The RETURN type of a function, looked up in the function's own region when it has a body. */
     val returnType: LocalTypeUse?,
+    /** `RETURN SELF AS RESULT` of a constructor: a return that is not a written type, so [returnType] is null. */
+    val returnsSelf: Boolean,
     /** The region formed by a [LocalSubprogramForm.BODY]. */
     val body: LocalRegionId?,
-    /** A forward declaration and its body, linked both ways when the match is unique (see the builder). */
-    val counterpart: LocalDeclarationId?
+    /** A forward declaration and its body in the same region, linked both ways when the match is unique. */
+    val counterpart: LocalDeclarationId?,
+    /**
+     * A heading of a package or object type specification and its implementation in the linked body, linked both
+     * ways when the match is unique. Independent of [counterpart]: a heading, a forward declaration in the body and
+     * the body's implementation are one entity, and both links may exist at once.
+     */
+    val specificationCounterpart: LocalDeclarationId?,
+    /** The method kind of an object type member; null outside object types. */
+    val methodKind: LocalMethodKind?,
+    /**
+     * The mode of the implicit `SELF` parameter of a member method, which has no source text and is therefore not a
+     * declaration: IN for member functions (MAP and ORDER included), IN OUT for member procedures — documented by
+     * Oracle, not probed — and IN OUT for constructors, taken from the grammar's explicit form (`SELF IN OUT t`), since
+     * the documentation does not state it. Null for static methods, for non-members, and when `SELF` is written as a
+     * parameter.
+     */
+    val implicitSelf: ParameterMode?
 ) : LocalDeclarationDetails
 
 internal enum class LocalMutability { MUTABLE, IMMUTABLE }
@@ -258,7 +334,54 @@ internal class LocalCollectionType(
     /** The element type is the declaration's [LocalDeclaration.type]. */
     val form: LocalCollectionForm,
     /** The `INDEX BY` type of an associative array, looked up in the region holding the type. */
-    val indexType: LocalTypeUse?
+    val indexType: LocalTypeUse?,
+    /** The full written name of a schema-level `CREATE TYPE … AS TABLE OF` / `VARRAY`; null for a local type. */
+    val unitName: QualifiedName? = null
+) : LocalDeclarationDetails
+
+internal enum class LocalUnitForm {
+    /** Source is present: the unit forms its region. */
+    SOURCE,
+
+    /** Wrapped source: nothing of the unit is visible and it forms no region. */
+    WRAPPED,
+
+    /** `CREATE TYPE t;` without a definition: forms no region. */
+    INCOMPLETE
+}
+
+/** A package, package body, object type or type body. */
+internal class LocalUnit(
+    val unitName: QualifiedName,
+    val form: LocalUnitForm,
+    /** The region the unit forms ([LocalRegionKind.PACKAGE_SPEC], `PACKAGE_BODY`, `OBJECT_TYPE` or `TYPE_BODY`). */
+    val region: LocalRegionId?,
+    /**
+     * The region of the linked specification (on a body) or body (on a specification). Linked only when the file holds
+     * exactly one specification and exactly one body with the same written unit name, compared segment by segment
+     * (`scott.pk` and `pk` differ: the schema is unknown). Order never decides.
+     */
+    val counterpart: LocalRegionId?,
+    /** The written supertype of an `UNDER` object type. */
+    val supertype: QualifiedName?
+) : LocalDeclarationDetails
+
+/**
+ * The correlation names of a DML trigger: `NEW`, `OLD` and `PARENT`, renamed by `REFERENCING` when written. They are
+ * facts of the trigger, not declarations of any region: they do not occupy the PL/SQL namespace (a local variable
+ * named `new` compiles). In the body they are reached through bind syntax (`:new.a`, `:n.a`); without the colon only
+ * in the `WHEN` condition.
+ */
+internal class LocalCorrelationNames(val new: OracleIdentifier, val old: OracleIdentifier, val parent: OracleIdentifier) {
+    override fun toString() = "new=$new old=$old parent=$parent"
+}
+
+internal class LocalTrigger(
+    val unitName: QualifiedName,
+    /** The [LocalRegionKind.TRIGGER] region of a PL/SQL body; null for a `CALL` trigger. */
+    val body: LocalRegionId?,
+    /** Null for system (DDL and database event) triggers, which have none. */
+    val correlationNames: LocalCorrelationNames?
 ) : LocalDeclarationDetails
 
 internal class LocalRefCursorType(

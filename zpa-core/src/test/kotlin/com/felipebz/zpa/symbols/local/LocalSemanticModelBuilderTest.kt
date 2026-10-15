@@ -336,10 +336,14 @@ class LocalSemanticModelBuilderTest {
             "  TYPE aa IS TABLE OF VARCHAR2(10) INDEX BY PLS_INTEGER;\n  TYPE rc IS REF CURSOR;\n" +
             "  PROCEDURE q(a IN OUT NOCOPY NUMBER);\n  PROCEDURE q(a IN OUT NOCOPY NUMBER) IS BEGIN NULL; END;\n" +
             "  FUNCTION f(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;\n" +
-            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN NULL; END;\n  FOR i IN 1 .. 2 LOOP NULL; END LOOP;\nEND;\n"
+            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN NULL; END;\n  FOR i IN 1 .. 2 LOOP NULL; END LOOP;\nEND;\n" +
+            "/\ncreate package pk is procedure a; end;\n/\ncreate package body pk is procedure a is begin null; end; end;\n/\n" +
+            "create trigger trg before insert on t referencing new as n for each row begin null; end;\n/\n" +
+            "create type ot as object (x number, member procedure m);\n/\ncreate type body ot as member procedure m is begin null; end; end;\n/\n"
         val model = build(source)
         assertThat(model.declarations.map { it.details?.javaClass?.simpleName }.toSet())
-            .contains("LocalCursor", "LocalCursorParameter", "LocalRecordType", "LocalCollectionType", "LocalRefCursorType", "LocalSubprogram", "LocalParameter", "LocalLabel", "LocalLoopIndex")
+            .contains("LocalCursor", "LocalCursorParameter", "LocalRecordType", "LocalCollectionType", "LocalRefCursorType", "LocalSubprogram", "LocalParameter", "LocalLabel", "LocalLoopIndex", "LocalUnit", "LocalTrigger")
+        assertThat(model.declarations.mapNotNull { (it.details as? LocalTrigger)?.correlationNames }).hasSize(1)
         val reached = reachable(model)
         assertThat(reached.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()
         assertThat(reached.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") || it.contains("amount_t IS") || it.contains("garbage") }
@@ -715,7 +719,7 @@ class LocalSemanticModelBuilderTest {
     }
 
     @Test
-    fun packagesTriggersAndObjectTypesStayUnmodeledButTheirSubprogramsAreRegions() {
+    fun packagesTriggersAndObjectTypesAreModeledRegions() {
         val model = build(
             """
             CREATE PACKAGE pkg AS
@@ -745,18 +749,19 @@ class LocalSemanticModelBuilderTest {
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [] ALL_ITEMS_EXTRACTED",
-            "R1 UNMODELED(CREATE_PACKAGE) parent=R0 [] NOT_EXTRACTED",
-            "R2 UNMODELED(CREATE_PACKAGE_BODY) parent=R0 [] NOT_EXTRACTED",
-            "R3 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [D0 PARAMETER a, D1 VARIABLE v] ALL_ITEMS_EXTRACTED",
-            "R4 UNMODELED(CREATE_TRIGGER) parent=R0 [] NOT_EXTRACTED",
-            "R5 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R4 [D2 VARIABLE w] ALL_ITEMS_EXTRACTED",
-            "R6 UNMODELED(CREATE_TYPE) parent=R0 [] NOT_EXTRACTED",
-            "R7 UNMODELED(CREATE_TYPE_BODY) parent=R0 [] NOT_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 PACKAGE pkg, D2 PACKAGE_BODY pkg, D7 TRIGGER trg, D10 OBJECT_TYPE pt, D14 TYPE_BODY pt] ALL_ITEMS_EXTRACTED",
+            "R1 PACKAGE_SPEC(CREATE_PACKAGE) parent=R0 [D1 PROCEDURE p] ALL_ITEMS_EXTRACTED",
+            "R2 PACKAGE_BODY(CREATE_PACKAGE_BODY) parent=R0 [D3 VARIABLE g, D4 PROCEDURE p] ALL_ITEMS_EXTRACTED",
+            "R3 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [D5 PARAMETER a, D6 VARIABLE v] ALL_ITEMS_EXTRACTED",
+            "R4 TRIGGER(CREATE_TRIGGER) parent=R0 [D8 VARIABLE z] ALL_ITEMS_EXTRACTED",
+            "R5 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R4 [D9 VARIABLE w] ALL_ITEMS_EXTRACTED",
+            "R6 OBJECT_TYPE(CREATE_TYPE) parent=R0 [D11 ATTRIBUTE x, D12 PROCEDURE m, D13 FUNCTION o] ALL_ITEMS_EXTRACTED",
+            "R7 TYPE_BODY(CREATE_TYPE_BODY) parent=R0 [D15 PROCEDURE m, D16 FUNCTION o, D17 FUNCTION pt] ALL_ITEMS_EXTRACTED",
             "R8 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R7 [] ALL_ITEMS_EXTRACTED",
             "R9 SUBPROGRAM(FUNCTION_DECLARATION) parent=R7 [] ALL_ITEMS_EXTRACTED",
-            "R10 UNMODELED(TYPE_CONSTRUCTOR) parent=R7 [] NOT_EXTRACTED"
+            "R10 SUBPROGRAM(TYPE_CONSTRUCTOR) parent=R7 [D18 PARAMETER x] ALL_ITEMS_EXTRACTED"
         )
+        assertWellNested(model)
     }
 
     /** Every child range lies inside its parent's, children follow the source, region starts are in document order. */
@@ -861,6 +866,350 @@ class LocalSemanticModelBuilderTest {
         val t = model.declarations.single()
         assertThat(t.type!!.lookupRegion).isEqualTo(t.region)
         assertThat(contains(t.range, t.type!!.range)).isTrue()
+    }
+
+    private fun unit(model: LocalSemanticModel, kind: LocalDeclarationKind, index: Int = 0) =
+        model.declarations.filter { it.kind == kind }[index].details as LocalUnit
+
+    @Test
+    fun packageSpecificationAndBodyAreLinked() {
+        // Oracle: spec items are visible throughout the body regardless of order; a body-private item follows the
+        // ordinary order rule; a spec and a body variable of the same name collide on reference.
+        val model = build(
+            """
+            create or replace package ad4ok is
+              x number := 1;
+              procedure a;
+              procedure b;
+              function f(n number) return number;
+            end;
+            /
+            create or replace package body ad4ok is
+              x number := 2;
+              procedure b;
+              procedure a is begin b; end;
+              procedure b is begin say('ad4ok.b'); end;
+              function f(n number) return number is begin return n; end;
+              procedure private_p is begin null; end;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 PACKAGE ad4ok, D5 PACKAGE_BODY ad4ok] ALL_ITEMS_EXTRACTED",
+            "R1 PACKAGE_SPEC(CREATE_PACKAGE) parent=R0 [D1 VARIABLE x, D2 PROCEDURE a, D3 PROCEDURE b, D4 FUNCTION f] ALL_ITEMS_EXTRACTED",
+            "R2 PACKAGE_BODY(CREATE_PACKAGE_BODY) parent=R0 [D6 VARIABLE x, D7 PROCEDURE b, D8 PROCEDURE a, D9 PROCEDURE b, D10 FUNCTION f, D12 PROCEDURE private_p] ALL_ITEMS_EXTRACTED",
+            "R3 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R4 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R5 SUBPROGRAM(FUNCTION_DECLARATION) parent=R2 [D11 PARAMETER n] ALL_ITEMS_EXTRACTED",
+            "R6 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED"
+        )
+        val spec = unit(model, LocalDeclarationKind.PACKAGE)
+        val body = unit(model, LocalDeclarationKind.PACKAGE_BODY)
+        assertThat(spec.unitName).isEqualTo(qualified("ad4ok"))
+        assertThat(spec.region).isEqualTo(LocalRegionId(1))
+        assertThat(spec.counterpart).isEqualTo(LocalRegionId(2))
+        assertThat(body.counterpart).isEqualTo(LocalRegionId(1))
+        // Spec headings link to their implementations; the body forward `b` links to the same implementation.
+        val links = model.declarations.filter { it.details is LocalSubprogram }
+            .associate { "${it.id} ${it.name}" to (it.subprogram().specificationCounterpart to it.subprogram().counterpart) }
+        assertThat(links).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                "D2 a" to (LocalDeclarationId(8) to null),
+                "D3 b" to (LocalDeclarationId(9) to null),
+                "D4 f" to (LocalDeclarationId(10) to null),
+                "D7 b" to (null to LocalDeclarationId(9)),
+                "D8 a" to (LocalDeclarationId(2) to null),
+                "D9 b" to (LocalDeclarationId(3) to LocalDeclarationId(7)),
+                "D10 f" to (LocalDeclarationId(4) to null),
+                "D12 private_p" to (null to null)
+            )
+        )
+        // The spec and body variables `x` are distinct facts; the model does not merge the regions.
+        assertThat(model.declarationsOf(LocalRegionId(1)).first().id).isNotEqualTo(model.declarationsOf(LocalRegionId(2)).first().id)
+        assertWellNested(model)
+    }
+
+    @Test
+    fun specificationAndBodyStayUnlinkedUnlessTheMatchIsUnique() {
+        val bodyOnly = build("create package body p is procedure a is begin null; end; end;\n/\n")
+        assertThat(unit(bodyOnly, LocalDeclarationKind.PACKAGE_BODY).counterpart).isNull()
+        assertThat(bodyOnly.declarations.single { it.name.lookupName == "A" }.subprogram().specificationCounterpart).isNull()
+
+        val twoSpecs = build("create package p is procedure a; end;\n/\ncreate package p is procedure a; end;\n/\ncreate package body p is procedure a is begin null; end; end;\n/\n")
+        assertThat(listOf(0, 1).map { unit(twoSpecs, LocalDeclarationKind.PACKAGE, it).counterpart }).containsOnlyNulls()
+        assertThat(unit(twoSpecs, LocalDeclarationKind.PACKAGE_BODY).counterpart).isNull()
+
+        // The schema of an unqualified unit is unknown: scott.pk and pk are different written names.
+        val schema = build("create package scott.pk is procedure a; end;\n/\ncreate package body pk is procedure a is begin null; end; end;\n/\n")
+        assertThat(unit(schema, LocalDeclarationKind.PACKAGE).unitName).isEqualTo(qualified("scott", "pk"))
+        assertThat(unit(schema, LocalDeclarationKind.PACKAGE).counterpart).isNull()
+        assertThat(unit(schema, LocalDeclarationKind.PACKAGE_BODY).counterpart).isNull()
+
+        val wrapped = build("create package w wrapped\na000000\nabcd\n/\ncreate package body w is procedure a is begin null; end; end;\n/\n")
+        val wrappedSpec = unit(wrapped, LocalDeclarationKind.PACKAGE)
+        assertThat(wrappedSpec.form).describedAs(outline(wrapped).toString()).isEqualTo(LocalUnitForm.WRAPPED)
+        assertThat(wrappedSpec.region).isNull()
+        assertThat(unit(wrapped, LocalDeclarationKind.PACKAGE_BODY).counterpart).isNull()
+        for (model in listOf(bodyOnly, twoSpecs, schema, wrapped)) assertWellNested(model)
+    }
+
+    @Test
+    fun packageInitializationSectionBelongsToTheBody() {
+        val model = build(
+            """
+            create package body p is
+              g number;
+            begin
+              <<init>>
+              declare l number; begin null; end;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 PACKAGE_BODY p] ALL_ITEMS_EXTRACTED",
+            "R1 PACKAGE_BODY(CREATE_PACKAGE_BODY) parent=R0 [D1 VARIABLE g, D2 LABEL init] ALL_ITEMS_EXTRACTED",
+            "R2 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R1 [D3 VARIABLE l] ALL_ITEMS_EXTRACTED"
+        )
+        assertThat((model.declarations[2].details as LocalLabel).labeled).isEqualTo(LocalRegionId(2))
+        assertWellNested(model)
+    }
+
+    private fun trigger(model: LocalSemanticModel) = model.declarations.single { it.kind == LocalDeclarationKind.TRIGGER }.details as LocalTrigger
+
+    @Test
+    fun triggerBodiesAreRegionsAndCorrelationNamesAreTriggerFacts() {
+        // Oracle tr5_bi and tr5_ref (both compile; tr5_ref renames NEW and OLD).
+        val model = build(
+            """
+            create or replace trigger tr5_bi before insert on tr5 for each row
+            when (new.a > 0)
+            declare
+              a number := 5;
+            begin
+              :new.b := a;
+            end;
+            /
+            create or replace trigger tr5_ref before insert on tr5 referencing new as n old as o for each row
+            follows tr5_bi
+            begin
+              :n.b := :n.b + 1000;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 TRIGGER tr5_bi, D2 TRIGGER tr5_ref] ALL_ITEMS_EXTRACTED",
+            "R1 TRIGGER(CREATE_TRIGGER) parent=R0 [D1 VARIABLE a] ALL_ITEMS_EXTRACTED",
+            "R2 TRIGGER(CREATE_TRIGGER) parent=R0 [] ALL_ITEMS_EXTRACTED"
+        )
+        // The region starts at DECLARE: the WHEN condition is outside it.
+        assertThat(model.region(LocalRegionId(1)).range.let { it.startLine to it.startColumn }).isEqualTo(3 to 0)
+        val bi = model.declarations[0].details as LocalTrigger
+        assertThat(bi.unitName).isEqualTo(qualified("tr5_bi"))
+        assertThat(bi.body).isEqualTo(LocalRegionId(1))
+        assertThat(bi.correlationNames.toString()).isEqualTo("new=NEW old=OLD parent=PARENT")
+        val ref = model.declarations[2].details as LocalTrigger
+        assertThat(ref.correlationNames!!.new).isEqualTo(OracleIdentifier.fromSource("n"))
+        assertThat(ref.correlationNames!!.old).isEqualTo(OracleIdentifier.fromSource("o"))
+        assertThat(ref.correlationNames!!.parent).isEqualTo(OracleIdentifier.fromSource("PARENT"))
+        // The region of tr5_ref starts at BEGIN, after FOLLOWS.
+        assertThat(model.region(LocalRegionId(2)).range.startLine).isEqualTo(11)
+        assertWellNested(model)
+    }
+
+    @Test
+    fun systemCallAndNewNamedTriggers() {
+        val system = build("create trigger ddl_t after create on schema begin null; end;\n/\n")
+        assertThat(trigger(system).correlationNames).isNull()
+        assertThat(trigger(system).body).isEqualTo(LocalRegionId(1))
+
+        val call = build("create trigger call_t before insert on t for each row call p(1)\n/\n")
+        assertThat(outline(call)).containsExactly("R0 FILE(FILE) parent=null [D0 TRIGGER call_t] ALL_ITEMS_EXTRACTED")
+        assertThat(trigger(call).body).isNull()
+
+        // Oracle tr6_new compiles: a local variable named `new` is an ordinary declaration.
+        val newNamed = build("create or replace trigger tr6_new before insert on tr6 for each row\ndeclare\n  new number := 1;\nbegin\n  :new.a := new;\nend;\n/\n")
+        assertThat(outline(newNamed)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 TRIGGER tr6_new] ALL_ITEMS_EXTRACTED",
+            "R1 TRIGGER(CREATE_TRIGGER) parent=R0 [D1 VARIABLE new] ALL_ITEMS_EXTRACTED"
+        )
+        assertThat(trigger(newNamed).correlationNames!!.new).isEqualTo(newNamed.declarations[1].name)
+        for (model in listOf(system, call, newNamed)) assertWellNested(model)
+    }
+
+    @Test
+    fun compoundTriggerSectionsAndTimingPoints() {
+        // Oracle tr5_c: g_cnt is shared by the timing points; l belongs to one.
+        val model = build(
+            """
+            create or replace trigger tr5_c for update on tr5 compound trigger
+              g_cnt pls_integer := 0;
+              procedure bump is begin g_cnt := g_cnt + 1; end;
+              before statement is
+              begin
+                g_cnt := 0;
+              end before statement;
+              before each row is
+                l pls_integer := 1;
+              begin
+                g_cnt := g_cnt + l;
+              end before each row;
+            end tr5_c;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 TRIGGER tr5_c] ALL_ITEMS_EXTRACTED",
+            "R1 TRIGGER(COMPOUND_TRIGGER_BLOCK) parent=R0 [D1 VARIABLE g_cnt, D2 PROCEDURE bump] ALL_ITEMS_EXTRACTED",
+            "R2 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R1 [] ALL_ITEMS_EXTRACTED",
+            "R3 TIMING_POINT(TIMING_POINT_SECTION) parent=R1 [] ALL_ITEMS_EXTRACTED",
+            "R4 TIMING_POINT(TIMING_POINT_SECTION) parent=R1 [D3 VARIABLE l] ALL_ITEMS_EXTRACTED"
+        )
+        assertThat(trigger(model).correlationNames).isNotNull()
+        assertWellNested(model)
+    }
+
+    @Test
+    fun objectTypeSpecificationAndBody() {
+        val model = build(
+            """
+            create type pt as object (
+              x number not null,
+              y varchar2(10),
+              member procedure m,
+              member function f return number,
+              static function s return pt,
+              map member function mp return number,
+              constructor function pt(x number) return self as result
+            );
+            /
+            create type body pt as
+              member procedure m is begin null; end;
+              member function f return number is begin return x; end;
+              static function s return pt is begin return null; end;
+              map member function mp return number is begin return x; end;
+              constructor function pt(x number) return self as result is begin return; end;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 OBJECT_TYPE pt, D8 TYPE_BODY pt] ALL_ITEMS_EXTRACTED",
+            "R1 OBJECT_TYPE(CREATE_TYPE) parent=R0 [D1 ATTRIBUTE x, D2 ATTRIBUTE y, D3 PROCEDURE m, D4 FUNCTION f, D5 FUNCTION s, D6 FUNCTION mp, D7 FUNCTION pt] ALL_ITEMS_EXTRACTED",
+            "R2 TYPE_BODY(CREATE_TYPE_BODY) parent=R0 [D9 PROCEDURE m, D10 FUNCTION f, D11 FUNCTION s, D12 FUNCTION mp, D13 FUNCTION pt] ALL_ITEMS_EXTRACTED",
+            "R3 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R4 SUBPROGRAM(FUNCTION_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R5 SUBPROGRAM(FUNCTION_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R6 SUBPROGRAM(FUNCTION_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
+            "R7 SUBPROGRAM(TYPE_CONSTRUCTOR) parent=R2 [D14 PARAMETER x] ALL_ITEMS_EXTRACTED"
+        )
+        assertThat(unit(model, LocalDeclarationKind.OBJECT_TYPE).counterpart).isEqualTo(LocalRegionId(2))
+        assertThat(unit(model, LocalDeclarationKind.TYPE_BODY).counterpart).isEqualTo(LocalRegionId(1))
+        val attributes = model.declarations.filter { it.kind == LocalDeclarationKind.ATTRIBUTE }
+        assertThat(attributes.map { "${it.name} ${it.typeRef!!.name} ${it.isNotNull}" }).containsExactly("x number true", "y varchar2 false")
+        val methods = model.declarationsOf(LocalRegionId(1)).filter { it.details is LocalSubprogram }
+        assertThat(methods.map { "${it.name} ${it.subprogram().methodKind} self=${it.subprogram().implicitSelf} ${it.subprogram().form}" })
+            .containsExactly(
+                "m MEMBER self=IN_OUT HEADING_ONLY",
+                "f MEMBER self=IN HEADING_ONLY",
+                "s STATIC self=null HEADING_ONLY",
+                "mp MAP self=IN HEADING_ONLY",
+                "pt CONSTRUCTOR self=IN_OUT HEADING_ONLY"
+            )
+        val constructor = methods.last().subprogram()
+        assertThat(constructor.returnsSelf).isTrue()
+        assertThat(constructor.returnType).isNull()
+        // Every heading links to its implementation, constructor included.
+        val implementations = model.declarationsOf(LocalRegionId(2))
+        assertThat(methods.map { it.subprogram().specificationCounterpart }).containsExactlyElementsOf(implementations.map { it.id })
+        assertThat(implementations.map { it.subprogram().specificationCounterpart }).containsExactlyElementsOf(methods.map { it.id })
+        assertThat(implementations.map { it.subprogram().implicitSelf }).containsExactly(ParameterMode.IN_OUT, ParameterMode.IN, null, ParameterMode.IN, ParameterMode.IN_OUT)
+        assertWellNested(model)
+    }
+
+    @Test
+    fun explicitSelfIsAParameterAndSuppressesTheImplicitOne() {
+        val model = build(
+            """
+            create type body pt as
+              member function f(self in pt) return number is begin return 1; end;
+              constructor function pt(self in out pt, x number) return self as result is begin return; end;
+              order member function o(other pt) return number is begin return 0; end;
+            end;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 TYPE_BODY pt] ALL_ITEMS_EXTRACTED",
+            "R1 TYPE_BODY(CREATE_TYPE_BODY) parent=R0 [D1 FUNCTION f, D3 FUNCTION pt, D6 FUNCTION o] ALL_ITEMS_EXTRACTED",
+            "R2 SUBPROGRAM(FUNCTION_DECLARATION) parent=R1 [D2 PARAMETER self] ALL_ITEMS_EXTRACTED",
+            "R3 SUBPROGRAM(TYPE_CONSTRUCTOR) parent=R1 [D4 PARAMETER self, D5 PARAMETER x] ALL_ITEMS_EXTRACTED",
+            "R4 SUBPROGRAM(FUNCTION_DECLARATION) parent=R1 [D7 PARAMETER other] ALL_ITEMS_EXTRACTED"
+        )
+        val (f, ctor, o) = model.declarationsOf(LocalRegionId(1)).map { it.subprogram() }
+        assertThat(f.implicitSelf).isNull()
+        assertThat(ctor.implicitSelf).isNull()
+        assertThat(ctor.parameters.map { "${it.ordinal} ${it.name} ${it.mode}" }).containsExactly("1 self IN_OUT", "2 x IN")
+        assertThat(o.methodKind).isEqualTo(LocalMethodKind.ORDER)
+        assertThat(o.implicitSelf).isEqualTo(ParameterMode.IN)
+        // No spec in the file: the attributes come from elsewhere.
+        assertThat(unit(model, LocalDeclarationKind.TYPE_BODY).counterpart).isNull()
+        assertWellNested(model)
+    }
+
+    @Test
+    fun collectionIncompleteAndSubtypeObjectTypes() {
+        val model = build(
+            """
+            create type num_tab as table of number;
+            /
+            create type scott.names as varray(10) of varchar2(30) not null;
+            /
+            create type later;
+            /
+            create type emp_t under scott.person_t (salary number) not final;
+            /
+            """.trimIndent()
+        )
+        assertThat(outline(model)).containsExactly(
+            "R0 FILE(FILE) parent=null [D0 COLLECTION_TYPE num_tab, D1 COLLECTION_TYPE names, D2 OBJECT_TYPE later, D3 OBJECT_TYPE emp_t] ALL_ITEMS_EXTRACTED",
+            "R1 OBJECT_TYPE(CREATE_TYPE) parent=R0 [D4 ATTRIBUTE salary] ALL_ITEMS_EXTRACTED"
+        )
+        val (numTab, names, later, emp) = model.declarations
+        assertThat((numTab.details as LocalCollectionType).form).isEqualTo(LocalCollectionForm.NESTED_TABLE)
+        assertThat(numTab.typeRef!!.name).isEqualTo(qualified("number"))
+        val namesType = names.details as LocalCollectionType
+        assertThat(namesType.form).isEqualTo(LocalCollectionForm.VARRAY)
+        assertThat(namesType.unitName).isEqualTo(qualified("scott", "names"))
+        assertThat(names.isNotNull).isTrue()
+        assertThat((later.details as LocalUnit).form).isEqualTo(LocalUnitForm.INCOMPLETE)
+        assertThat((later.details as LocalUnit).region).isNull()
+        assertThat((emp.details as LocalUnit).supertype).isEqualTo(qualified("scott", "person_t"))
+        assertWellNested(model)
+    }
+
+    @Test
+    fun unitModelsAreDeterministicAndIndependent() {
+        val source = "create package p is procedure a; end;\n/\ncreate package body p is procedure a is begin null; end; end;\n/\n" +
+            "create trigger t for update on x compound trigger g number; before each row is l number; begin null; end before each row; end t;\n/\n" +
+            "create type o as object (a number, member function f return number);\n/\ncreate type body o as member function f return number is begin return a; end; end;\n/\n"
+        val full = { model: LocalSemanticModel -> outline(model) + model.declarations.map { "${it.id} ${(it.details as? LocalUnit)?.counterpart} ${(it.details as? LocalSubprogram)?.specificationCounterpart}" } }
+        val expected = full(build(source))
+        val pool = Executors.newFixedThreadPool(4)
+        try {
+            val results = (1..16).map { i -> pool.submit(Callable { full(build(if (i % 2 == 0) source else "BEGIN NULL; END;\n", "f$i.sql")) }) }.map { it.get() }
+            assertThat(results.filterIndexed { i, _ -> i % 2 == 1 }).containsOnly(expected)
+        } finally {
+            pool.shutdown()
+        }
+    }
+
+    @Test
+    fun alterTypeDeclaresNothing() {
+        val model = build("alter type pt add member procedure extra cascade;\n/\n")
+        assertThat(outline(model)).containsExactly("R0 FILE(FILE) parent=null [] ALL_ITEMS_EXTRACTED")
     }
 
     private fun rangesOf(model: LocalSemanticModel): List<SourceRange> =
