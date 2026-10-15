@@ -19,14 +19,19 @@
  */
 package com.felipebz.zpa.lexer
 
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.api.Trivia
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
+import com.felipebz.zpa.api.PlSqlTokenType
 
 /**
  * Removes PL/SQL selection and error directives (`$IF … $THEN … $ELSIF … $ELSE … $END`, `$ERROR … $END`) from the
- * token stream, keeping one branch as ordinary tokens. The directives and the other branches produce no token and no
- * trivia.
+ * token stream, keeping one branch as ordinary tokens. Each run of removed text (directives and the branches not
+ * kept) becomes one skipped-text trivia of the next token, typed [PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY] when it
+ * opens or closes the kept branch, or [PlSqlTokenType.CONDITIONAL_DIRECTIVE] when it is a complete directive that
+ * keeps no text.
  *
  * Branch policy (conditions are not evaluated): the first branch whose text is not just an `$ERROR … $END` directive
  * (ignoring whitespace and comments) is kept; an empty branch is kept like any other. When no branch qualifies, the
@@ -45,17 +50,26 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
         if (code.peek() != '$'.code) return false
         val scanner = Scanner(code)
         val directive = scanner.directiveAt(0) ?: return false
+        var type = PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY
         val end = when (directive.kind) {
-            Kind.IF -> scanner.selection(directive.end)
+            Kind.IF -> scanner.selection(directive.end).also { if (it == scanner.lastSelectionEnd) type = PlSqlTokenType.CONDITIONAL_DIRECTIVE }
             // The kept branch just ended: skip the rest of this $IF.
             Kind.ELSIF, Kind.ELSE -> scanner.matchingEnd(directive.end)
             // The kept branch ends here.
             Kind.END -> directive.end
-            Kind.ERROR -> scanner.matchingEnd(directive.end)
+            Kind.ERROR -> scanner.matchingEnd(directive.end).also { type = PlSqlTokenType.CONDITIONAL_DIRECTIVE }
             Kind.THEN -> -1
         }
         if (end < 0) return false
-        repeat(end) { code.pop() }
+        val line = code.getLinePosition()
+        val column = code.getColumnPosition()
+        val text = StringBuilder(end)
+        repeat(end) { text.appendCodePoint(code.pop()) }
+        output.addTrivia(
+            Trivia.createSkippedText(
+                Token.builder().setType(type).setValueAndOriginalValue(text.toString()).setLine(line).setColumn(column).build()
+            )
+        )
         return true
     }
 
@@ -68,6 +82,9 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
     private class Directive(val kind: Kind, val end: Int)
 
     private class Scanner(private val code: CodeReader) {
+        /** The end of the `$IF … $END` scanned by the last [selection] call; equal to its result when nothing is kept. */
+        var lastSelectionEnd = -1
+
         private fun char(offset: Int): Int = code.intAt(offset)
 
         private fun isLetter(c: Int) = c > 0 && Character.isLetter(c)
@@ -248,7 +265,7 @@ class ConditionalCompilationChannel : Channel<LexerOutput> {
                 }
                 if (selected < 0 && !(items == 1 && firstIsError)) selected = branchStart
                 branchStart = when (terminator.kind) {
-                    Kind.END -> return if (selected >= 0) selected else terminator.end
+                    Kind.END -> { lastSelectionEnd = terminator.end; return if (selected >= 0) selected else terminator.end }
                     Kind.ELSIF -> afterThen(terminator.end).also { if (it < 0) return -1 }
                     else -> terminator.end
                 }

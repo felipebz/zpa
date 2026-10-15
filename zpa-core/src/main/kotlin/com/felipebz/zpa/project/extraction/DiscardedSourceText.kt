@@ -20,11 +20,13 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.flr.api.Token
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.CallableCoverageGap
 
 /**
  * Finds source text the lexer discarded (no token, no trivia) between consecutive tokens, by mapping token starts
- * back to the source string. Lines follow the lexer's cursor rules (LF, or CR not followed by LF) and columns are
+ * back to the source string, and the conditional-compilation text the lexer reported as trivia
+ * ([PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY], [PlSqlTokenType.CONDITIONAL_DIRECTIVE]). Lines follow the lexer's cursor rules (LF, or CR not followed by LF) and columns are
  * character offsets (tab width 1, the lexer default). Used only during one extraction; nothing retains it.
  */
 internal class DiscardedSourceText(private val source: String) {
@@ -47,7 +49,7 @@ internal class DiscardedSourceText(private val source: String) {
      */
     fun firstGap(tokens: List<Token>, from: Int, to: Int): CallableCoverageGap? {
         var first: CallableCoverageGap? = null
-        visitGaps(tokens, from, to) { kind, _, _, _ ->
+        visitGaps(tokens, from, to) { kind, _, _ ->
             first = kind
             false
         }
@@ -56,9 +58,10 @@ internal class DiscardedSourceText(private val source: String) {
 
     /**
      * Every kind of discarded text between `tokens[from]` and `tokens[to]`, and the tokens lying between the first and
-     * the last conditional-compilation directive that opens or closes a branch. The lexer drops `$IF … $THEN`,
-     * `$ELSIF/$ELSE … $END`, `$ERROR … $END` and `$END` but keeps the tokens of a `$THEN` branch, so those tokens may be
-     * absent for Oracle. A self-contained directive text (`$IF c $THEN $END`, `$ERROR … $END`) bounds no branch.
+     * the last conditional-compilation text that opens or closes a kept branch. The lexer reports the directives as
+     * trivia and keeps the tokens of one branch, so those tokens may be absent for Oracle: a
+     * [PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY] trivia bounds that branch, a [PlSqlTokenType.CONDITIONAL_DIRECTIVE]
+     * trivia (`$ERROR … $END`, a `$IF … $END` keeping nothing) bounds none. A `$` left in a gap counts as a boundary.
      * Scanning stops at an unlocatable token ([CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS]).
      */
     fun scan(tokens: List<Token>, from: Int, to: Int): Scan {
@@ -66,9 +69,9 @@ internal class DiscardedSourceText(private val source: String) {
         var firstConditional = -1
         var lastConditional = -1
         var boundaries = 0
-        visitGaps(tokens, from, to) { kind, before, segmentStart, segmentEnd ->
+        visitGaps(tokens, from, to) { kind, before, boundsBranch ->
             kinds += kind
-            if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && !selfContained(segmentStart, segmentEnd)) {
+            if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && boundsBranch) {
                 if (firstConditional < 0) firstConditional = before
                 lastConditional = before
                 boundaries++
@@ -87,36 +90,35 @@ internal class DiscardedSourceText(private val source: String) {
     /** [kinds] of discarded text; [conditionalTokens] are the indexes of tokens inside the conditional span, if any. */
     class Scan(val kinds: Set<CallableCoverageGap>, val conditionalTokens: IntRange?)
 
-    /** Every `$END` in the text closes a `$IF`/`$ERROR` opened earlier in the same text, and none stays open. */
-    private fun selfContained(from: Int, to: Int): Boolean {
-        var depth = 0
-        for (match in DIRECTIVE.findAll(source.substring(from, to))) {
-            depth += if (match.groupValues[1].equals("end", ignoreCase = true)) -1 else 1
-            if (depth < 0) return false
-        }
-        return depth == 0
-    }
-
-    /** Calls [visit] with each discarded kind, the index of the token right after it and the text offsets, until false. */
-    private inline fun visitGaps(tokens: List<Token>, from: Int, to: Int, visit: (CallableCoverageGap, Int, Int, Int) -> Boolean) {
+    /**
+     * Calls [visit] with each discarded kind, the index of the token right after it and whether it bounds a kept
+     * conditional-compilation branch, until false.
+     */
+    private inline fun visitGaps(tokens: List<Token>, from: Int, to: Int, visit: (CallableCoverageGap, Int, Boolean) -> Boolean) {
         var previousEnd = end(tokens[from]) ?: run {
-            visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, from, 0, 0)
+            visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, from, false)
             return
         }
         for (index in from + 1..to) {
             val token = tokens[index]
             val start = start(token) ?: run {
-                visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, 0, 0)
+                visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false)
                 return
             }
             var cursor = previousEnd
             for (trivia in token.trivia) {
                 for (piece in trivia.tokens) {
                     val pieceStart = start(piece) ?: run {
-                        visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, 0, 0)
+                        visit(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, index, false)
                         return
                     }
                     if (!visitSegment(cursor, pieceStart, index, visit)) return
+                    val boundsBranch = when (piece.type) {
+                        PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY -> true
+                        PlSqlTokenType.CONDITIONAL_DIRECTIVE -> false
+                        else -> null
+                    }
+                    if (boundsBranch != null && !visit(CallableCoverageGap.CONDITIONAL_COMPILATION, index, boundsBranch)) return
                     cursor = maxOf(cursor, pieceStart + piece.originalValue.length)
                 }
             }
@@ -126,16 +128,12 @@ internal class DiscardedSourceText(private val source: String) {
     }
 
     /**
-     * Visits the kind of one discarded segment, then conditional compilation again when a `$` follows another kind in
-     * the same segment (for example `&x $END`), so the conditional span never misses a directive.
+     * Visits the kind of one discarded segment. Conditional-compilation text is never a gap (the lexer reports it as
+     * trivia); a `$` found here is a conservative fallback and counts as a branch boundary.
      */
-    private inline fun visitSegment(from: Int, to: Int, before: Int, visit: (CallableCoverageGap, Int, Int, Int) -> Boolean): Boolean {
+    private inline fun visitSegment(from: Int, to: Int, before: Int, visit: (CallableCoverageGap, Int, Boolean) -> Boolean): Boolean {
         val kind = classify(from, to) ?: return true
-        if (!visit(kind, before, from, to)) return false
-        if (kind != CallableCoverageGap.CONDITIONAL_COMPILATION && source.substring(from, to).contains('$')) {
-            return visit(CallableCoverageGap.CONDITIONAL_COMPILATION, before, from, to)
-        }
-        return true
+        return visit(kind, before, kind == CallableCoverageGap.CONDITIONAL_COMPILATION)
     }
 
     private fun classify(from: Int, to: Int): CallableCoverageGap? {
@@ -158,10 +156,5 @@ internal class DiscardedSourceText(private val source: String) {
         if (token.line < 1 || token.line > lineStarts.size) return null
         val offset = lineStarts[token.line - 1] + token.column
         return offset.takeIf { it <= source.length && source.startsWith(token.originalValue, it) }
-    }
-
-    private companion object {
-        /** `$IF`, `$ERROR` and `$END` directives, not inquiry directives such as `$$if_flag`. */
-        val DIRECTIVE = Regex("(?i)(?<![\$\\w])\\$(if|error|end)(?!\\w)")
     }
 }

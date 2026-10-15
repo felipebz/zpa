@@ -32,7 +32,20 @@ enum class PlSqlTokenType : TokenType {
     MLE_INLINE_SOURCE,
     MLE_MODULE_SOURCE,
     WRAPPED_SOURCE,
-    GRAPHQL_DUALITY_SOURCE;
+    GRAPHQL_DUALITY_SOURCE,
+
+    /**
+     * Skipped-text trivia: conditional-compilation text that opens or closes the kept branch of a selection
+     * directive — `$IF … $THEN` (with any branch skipped before the kept one), `$ELSIF`/`$ELSE … $END` met after the
+     * kept branch, or a bare `$END`. The tokens between an opening and a closing boundary may be absent for Oracle.
+     */
+    CONDITIONAL_BRANCH_BOUNDARY,
+
+    /**
+     * Skipped-text trivia: a complete conditional-compilation directive that keeps no text — `$ERROR … $END`, or a
+     * whole `$IF … $END` none of whose branches was kept.
+     */
+    CONDITIONAL_DIRECTIVE;
 
     override val value = name
 

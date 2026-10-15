@@ -25,8 +25,8 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.checks.PlSqlVisitor
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.checks.PlSqlVisitor
 import com.felipebz.zpa.api.squid.PlSqlCommentAnalyzer
 import java.util.*
 
@@ -128,6 +128,8 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
 
                 if (callbackVisitor.visitsComment) {
                     for (trivia in ast.token.trivia) {
+                        // Only comments: conditional-compilation text is skipped-text trivia.
+                        if (!trivia.isComment) continue
                         callbackVisitor.visitor.visitComment(trivia,
                             PlSqlCommentAnalyzer.getContents(trivia.token.originalValue))
                     }

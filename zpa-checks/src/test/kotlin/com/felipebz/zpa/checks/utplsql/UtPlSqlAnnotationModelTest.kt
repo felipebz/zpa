@@ -61,6 +61,26 @@ class UtPlSqlAnnotationModelTest {
     }
 
     @Test
+    fun conditionalCompilationTextIsInvisibleToAnnotations() {
+        val model = collect(
+            """
+            CREATE PACKAGE p AS
+              --%test
+              ${'$'}IF ${'$'}${'$'}with_tests ${'$'}THEN
+              PROCEDURE t;
+              ${'$'}END
+            END p;
+            """
+        )
+
+        // Pinned current behavior: the directive text is ignored, so the line it occupied counts like a blank line and
+        // breaks the association, as before conditional-compilation trivia existed. Whether that blank line should
+        // break the run is a separate question.
+        assertThat(model.groups.single { it.annotations.single().kind == UtPlSqlAnnotationKind.TEST }.declarationNode)
+            .isNull()
+    }
+
+    @Test
     fun blankLinesBreakAssociation() {
         val model = collect(
             """

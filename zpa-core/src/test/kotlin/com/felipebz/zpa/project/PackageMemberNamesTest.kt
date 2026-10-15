@@ -246,6 +246,10 @@ class PackageMemberNamesTest {
         assertThat(coverage(selfContained).conditionalRange).isNull()
         assertThat(coverage(selfContained).gaps).containsExactly(MemberNameGap.CONDITIONAL_COMPILATION)
         assertThat(status(selfContained, "employees", "rows_t")).isEqualTo(DECLARED_BEFORE)
+        // A quoted `$END` inside the error message does not close anything: the lexer reports one complete directive.
+        val quotedEnd = ccSpec("  CURSOR employees RETURN r_t;\n  \$ERROR 'it''s \$END here' \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;")
+        assertThat(coverage(quotedEnd).conditionalRange).isNull()
+        assertThat(status(quotedEnd, "employees", "rows_t")).isEqualTo(DECLARED_BEFORE)
     }
 
     @Test

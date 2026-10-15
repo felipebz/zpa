@@ -21,11 +21,10 @@ package com.felipebz.zpa.checks.utplsql
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
-import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.api.squid.PlSqlCommentAnalyzer
-import java.util.Collections
-import java.util.IdentityHashMap
+import java.util.*
 import kotlin.math.max
 
 internal class UtPlSqlAnnotationGroup(
@@ -125,6 +124,10 @@ internal object UtPlSqlAnnotationCollector {
         }
 
         for (trivia in token.trivia) {
+            // Conditional-compilation text is invisible to annotations, as for utPLSQL, which reads the
+            // post-processed source.
+            val type = trivia.token.type
+            if (type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY || type === PlSqlTokenType.CONDITIONAL_DIRECTIVE) continue
             if (!trivia.isComment) {
                 finishRun()
                 previousSourceLine = max(previousSourceLine, trivia.tokens.maxOf { it.endLine })

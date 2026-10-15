@@ -23,7 +23,7 @@ import java.util.*
 
 /** Why the callable members of a package specification cannot be bounded by name. */
 enum class CallableCoverageGap {
-    /** Conditional-compilation text (`$IF`, `$ELSE`, `$END`, ...) the lexer discarded inside the declaration region. */
+    /** Conditional-compilation text (`$IF`, `$ELSE`, `$END`, ...) the lexer reported as trivia inside the declaration region. */
     CONDITIONAL_COMPILATION,
 
     /** A SQL*Plus substitution (`&name`) the lexer discarded inside the declaration region. */

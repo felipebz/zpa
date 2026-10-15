@@ -177,6 +177,50 @@ class ConditionalCompilationChannelTest {
         assertThat(node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT)).isEmpty()
     }
 
+    private fun trivia(source: String, value: String) =
+        lexer.lex(source).first { it.originalValue == value }.trivia.map { "${if (it.isComment) "COMMENT" else "SKIPPED_TEXT"} ${it.token.type} ${it.token.line}:${it.token.column} ${it.token.originalValue}" }
+
+    @Test
+    fun removedTextIsReportedAsTrivia() {
+        val source = "BEGIN\n  -- note\n  \$IF \$\$a \$THEN x := 1; \$ELSE y := 2; \$END z := 3;\nEND;"
+        assertThat(trivia(source, "x")).containsExactly(
+            "COMMENT COMMENT 2:2 -- note",
+            "SKIPPED_TEXT CONDITIONAL_BRANCH_BOUNDARY 3:2 \$IF \$\$a \$THEN"
+        )
+        assertThat(trivia(source, "z")).containsExactly("SKIPPED_TEXT CONDITIONAL_BRANCH_BOUNDARY 3:24 \$ELSE y := 2; \$END")
+        val tokens = lexer.lex(source)
+        val x = tokens.first { it.originalValue == "x" }
+        assertThat(x.trivia.last().token.value).isEqualTo(x.trivia.last().token.originalValue)
+        // Kept tokens are unchanged.
+        assertThat(tokens.map { it.originalValue }.joinToString(" ")).isEqualTo("BEGIN x := 1 ; z := 3 ; END ; EOF")
+    }
+
+    @Test
+    fun directivesKeepingNoTextAreCompleteDirectives() {
+        assertThat(trivia("BEGIN \$ERROR 'e' \$END NULL; END;", "NULL")).containsExactly("SKIPPED_TEXT CONDITIONAL_DIRECTIVE 1:6 \$ERROR 'e' \$END")
+        assertThat(trivia("BEGIN \$IF a \$THEN \$ERROR 'e' \$END \$END NULL; END;", "NULL"))
+            .containsExactly("SKIPPED_TEXT CONDITIONAL_DIRECTIVE 1:6 \$IF a \$THEN \$ERROR 'e' \$END \$END")
+        // A bare $END closing the kept branch is a boundary.
+        assertThat(trivia("BEGIN \$IF a \$THEN NULL; \$END x := 1; END;", "x")).containsExactly("SKIPPED_TEXT CONDITIONAL_BRANCH_BOUNDARY 1:24 \$END")
+        // A run right before the end of the file attaches to EOF.
+        val eof = lexer.lex("NULL;\n\$END").last()
+        assertThat(eof.type).isEqualTo(GenericTokenType.EOF)
+        assertThat(eof.trivia.map { "${it.token.type} ${it.token.originalValue}" }).containsExactly("CONDITIONAL_BRANCH_BOUNDARY \$END")
+    }
+
+    @Test
+    fun commentVisitorsReceiveOnlyComments() {
+        val comments = ArrayList<String>()
+        val visitor = object : com.felipebz.zpa.api.checks.PlSqlCheck() {
+            override fun visitComment(trivia: com.felipebz.flr.api.Trivia, content: String) {
+                comments += trivia.token.originalValue
+            }
+        }
+        val root = parse("BEGIN\n  -- one\n  \$IF \$\$a \$THEN NULL; /* two */ \$ELSE x := 1; \$END\n  \$ERROR 'e' \$END\n  NULL;\nEND;")
+        com.felipebz.zpa.squid.PlSqlAstWalker(listOf(visitor)).walk(com.felipebz.zpa.api.PlSqlVisitorContext(root, null, null))
+        assertThat(comments).containsExactly("-- one", "/* two */")
+    }
+
     // Known limitation of the branch policy (conditions are not evaluated): the empty first branch is selected, so the
     // procedure body is empty and the parse fails. Evaluating conditions (a later step) addresses it.
     @Test
