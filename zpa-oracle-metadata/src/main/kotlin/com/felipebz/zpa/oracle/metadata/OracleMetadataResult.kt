@@ -39,7 +39,7 @@ class OracleMetadataResult internal constructor(
     val sessionCurrentSchema: String,
     /** `DB_UNIQUE_NAME`. */
     val database: String,
-    /** `CON_NAME` (the PDB name, or `CDB$ROOT`). */
+    /** `CON_NAME` (the PDB name, or `CDB$ROOT`); empty for databases before 12c, which have no containers. */
     val container: String,
     /** Local time at which the acquisition transaction started. */
     val acquiredAt: Instant,

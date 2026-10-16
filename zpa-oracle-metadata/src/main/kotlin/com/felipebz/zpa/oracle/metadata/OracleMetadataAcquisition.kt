@@ -47,22 +47,6 @@ object OracleMetadataAcquisition {
     private const val FETCH_SIZE = 1000
     private const val BATCH = 200
 
-    private const val SESSION_SQL =
-        "SELECT SYS_CONTEXT('USERENV', 'SESSION_USER'), SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA'), " +
-            "SYS_CONTEXT('USERENV', 'CON_NAME'), SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') FROM dual"
-
-    private const val SCHEMA_RELATIONS_SQL =
-        "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
-            "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
-            "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE owner = ?"
-
-    private const val COLUMN_LIST =
-        "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +
-            "char_used, data_precision, data_scale FROM all_tab_cols "
-
-    private const val SCHEMA_COLUMNS_SQL =
-        COLUMN_LIST + "WHERE owner = ? AND user_generated = 'YES' ORDER BY table_name, internal_column_id"
-
     /**
      * Acquires the requested schemas and relations.
      *
@@ -74,13 +58,20 @@ object OracleMetadataAcquisition {
     @JvmStatic
     @Throws(SQLException::class)
     fun acquire(dataSource: DataSource, request: OracleMetadataRequest): OracleMetadataResult =
-        dataSource.connection.use { acquire(it, request) }
+        dataSource.connection.use { acquire(it, request, null) }
 
-    private fun acquire(connection: Connection, request: OracleMetadataRequest): OracleMetadataResult {
+    /** As [acquire], with the dictionary dialect forced instead of chosen from the server version (tests only). */
+    @JvmSynthetic
+    internal fun acquire(dataSource: DataSource, request: OracleMetadataRequest, dialect: OracleDictionaryDialect): OracleMetadataResult =
+        dataSource.connection.use { acquire(it, request, dialect) }
+
+    private fun acquire(connection: Connection, request: OracleMetadataRequest, forced: OracleDictionaryDialect?): OracleMetadataResult {
         check(connection.autoCommit) {
             "The DataSource returned a connection that is not in auto-commit mode; metadata acquisition needs an " +
                 "exclusive connection outside any external transaction"
         }
+        // Decided once, from driver metadata, before any dictionary query.
+        val dialect = forced ?: OracleDictionaryDialect.forMajorVersion(connection.metaData.databaseMajorVersion)
         val timeout = request.queryTimeout.seconds.toInt()
         var failure: Throwable? = null
         try {
@@ -91,30 +82,18 @@ object OracleMetadataAcquisition {
                 it.execute("SET TRANSACTION READ ONLY")
             }
             val acquiredAt = Instant.now()
-            val session = session(connection, timeout)
+            val session = session(connection, dialect.sessionSql, timeout)
             val relations = ArrayList<RelationRow>()
             val columns = ArrayList<ColumnRow>()
             for (schema in request.schemas) {
-                query(connection, SCHEMA_RELATIONS_SQL, listOf(schema, schema), timeout) { relations += relationRow(it) }
-                query(connection, SCHEMA_COLUMNS_SQL, listOf(schema), timeout) { columns += columnRow(it) }
+                query(connection, dialect.schemaRelationsSql, listOf(schema, schema), timeout) { relations += relationRow(it) }
+                query(connection, dialect.schemaColumnsSql, listOf(schema), timeout) { columns += columnRow(it) }
             }
             val targeted = request.relations.filter { it.schema !in request.schemas }
             for (chunk in targeted.chunked(BATCH)) {
                 val pairs = chunk.flatMap { listOf(it.schema, it.name) }
-                val placeholders = chunk.joinToString(", ") { "(?, ?)" }
-                query(
-                    connection,
-                    "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
-                        "WHERE (owner, table_name) IN ($placeholders) AND (dropped IS NULL OR dropped = 'NO') " +
-                        "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE (owner, view_name) IN ($placeholders)",
-                    pairs + pairs, timeout
-                ) { relations += relationRow(it) }
-                query(
-                    connection,
-                    COLUMN_LIST + "WHERE (owner, table_name) IN ($placeholders) AND user_generated = 'YES' " +
-                        "ORDER BY owner, table_name, internal_column_id",
-                    pairs, timeout
-                ) { columns += columnRow(it) }
+                query(connection, dialect.targetedRelationsSql(chunk.size), pairs + pairs, timeout) { relations += relationRow(it) }
+                query(connection, dialect.targetedColumnsSql(chunk.size), pairs, timeout) { columns += columnRow(it) }
             }
             return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt)
         } catch (e: Throwable) {
@@ -146,9 +125,9 @@ object OracleMetadataAcquisition {
         }
     }
 
-    private fun session(connection: Connection, timeout: Int): SessionInfo {
+    private fun session(connection: Connection, sql: String, timeout: Int): SessionInfo {
         var info: SessionInfo? = null
-        query(connection, SESSION_SQL, emptyList(), timeout) {
+        query(connection, sql, emptyList(), timeout) {
             info = SessionInfo(it.getString(1), it.getString(2), it.getString(3) ?: "", it.getString(4) ?: "")
         }
         return info ?: throw SQLException("The session context query returned no row")

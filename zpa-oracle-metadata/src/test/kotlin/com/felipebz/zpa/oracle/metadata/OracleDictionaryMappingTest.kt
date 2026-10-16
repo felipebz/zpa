@@ -187,8 +187,10 @@ class OracleDictionaryMappingTest {
     @Test
     fun failuresRollBackRestoreAndCloseWithoutAResult() {
         val statement = mock<Statement>()
+        val serverMetaData = databaseMetaData(23)
         val connection = mock<Connection> {
             on { autoCommit } doReturn true
+            on { metaData } doReturn serverMetaData
             on { createStatement() } doReturn statement
             on { prepareStatement(any()) } doThrow SQLException("ORA-00942: table or view does not exist")
         }
@@ -221,8 +223,10 @@ class OracleDictionaryMappingTest {
     @Test
     fun autoCommitIsRestoredEvenWhenTheFinalRollbackFails() {
         val statement = mock<Statement>()
+        val serverMetaData = databaseMetaData(23)
         val connection = mock<Connection> {
             on { autoCommit } doReturn true
+            on { metaData } doReturn serverMetaData
             on { createStatement() } doReturn statement
             on { prepareStatement(any()) } doThrow SQLException("primary")
             on { rollback() } doThrow SQLException("rollback failed")
@@ -234,4 +238,6 @@ class OracleDictionaryMappingTest {
         verify(connection).autoCommit = true
         verify(connection).close()
     }
+
+    private fun databaseMetaData(major: Int) = mock<java.sql.DatabaseMetaData> { on { databaseMajorVersion } doReturn major }
 }

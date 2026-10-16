@@ -29,4 +29,8 @@ testing {
     }
 }
 
+kotlin.target.compilations.named("oracleIntegrationTest") {
+    associateWith(kotlin.target.compilations.getByName("main"))
+}
+
 description = "ZPA Oracle Metadata"
