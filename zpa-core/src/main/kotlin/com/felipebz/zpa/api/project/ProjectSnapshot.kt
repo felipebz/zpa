@@ -186,7 +186,8 @@ class ProjectSnapshot private constructor(
      * package is scanned); a qualified name uses its own prefix and ignores [packageOwner] for candidate selection
      * (the supplied owner is still reported in the result). [ProjectValueResolution.candidates] holds every known
      * declaration with the effective qualified name, of any kind, in index order; only a package value is an eligible
-     * target. An unprepared snapshot gives `NOT_PREPARED`, then any preparation failure gives `INCOMPLETE_INDEX`
+     * target (a package exception or cursor of that name is a candidate, and the status stays `NOT_FOUND_IN_PROJECT`:
+     * read the candidate to use it). An unprepared snapshot gives `NOT_PREPARED`, then any preparation failure gives `INCOMPLETE_INDEX`
      * (even without candidates or owner); `NOT_FOUND_IN_PROJECT` is not proof about Oracle. No scope rules, field
      * paths or `%TYPE` interpretation are applied.
      */

@@ -84,16 +84,17 @@ class PackageSpecificationExtractorTest {
         assertThat(declarations.map { it.kind }).containsExactly(
             ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE_TYPE, ProjectDeclarationKind.PACKAGE_SUBTYPE,
             ProjectDeclarationKind.PACKAGE_VARIABLE, ProjectDeclarationKind.PACKAGE_CONSTANT,
+            ProjectDeclarationKind.PACKAGE_EXCEPTION, ProjectDeclarationKind.PACKAGE_CURSOR,
             ProjectDeclarationKind.PACKAGE_PROCEDURE, ProjectDeclarationKind.PACKAGE_FUNCTION, ProjectDeclarationKind.PACKAGE_VARIABLE
         )
         assertThat(declarations.map { it.role }).containsOnly(DeclarationRole.SPECIFICATION)
         assertThat(declarations.map { it.fileId }).containsOnly(fileId)
         assertThat((declarations[1] as PackageTypeDeclaration).recordFields.map { it.ordinal }).containsExactly(0, 1)
-        assertThat((declarations[5] as PackageProcedureDeclaration).parameters.map { it.ordinal }).containsExactly(1, 2)
-        assertThat((declarations[6] as PackageFunctionDeclaration).deterministic).isTrue()
+        assertThat((declarations[7] as PackageProcedureDeclaration).parameters.map { it.ordinal }).containsExactly(1, 2)
+        assertThat((declarations[8] as PackageFunctionDeclaration).deterministic).isTrue()
         assertThat((declarations[3] as PackageValueDeclaration).name.originalSpelling).isEqualTo("g")
-        assertThat((declarations[7] as PackageValueDeclaration).name.originalSpelling).isEqualTo("pragma")
-        assertThat(declarations.drop(1).map { it.sourceRange.startLine }).containsExactly(2, 3, 4, 5, 9, 10, 11)
+        assertThat((declarations[9] as PackageValueDeclaration).name.originalSpelling).isEqualTo("pragma")
+        assertThat(declarations.drop(1).map { it.sourceRange.startLine }).containsExactly(2, 3, 4, 5, 6, 8, 9, 10, 11)
         assertThat(unit.nextIndex).isEqualTo(fixture.stream.tokens.size - 1)
     }
 

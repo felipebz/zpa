@@ -77,6 +77,8 @@ internal object ReferenceHolders {
         is PackageTypeDeclaration -> fact.owner
         is PackageProcedureDeclaration -> fact.owner
         is PackageFunctionDeclaration -> fact.owner
+        is PackageExceptionDeclaration -> fact.owner
+        is PackageCursorDeclaration -> fact.owner
         else -> null
     }
 
@@ -106,6 +108,8 @@ internal object ReferenceHolders {
         is PackageFunctionDeclaration -> parameters(fact.parameters) + Retained(fact.returnType, fact.parameters.map { it.name })
         is StandaloneProcedureDeclaration -> parameters(fact.parameters)
         is StandaloneFunctionDeclaration -> parameters(fact.parameters) + Retained(fact.returnType, fact.parameters.map { it.name })
+        is PackageCursorDeclaration -> parameters(fact.parameters) +
+            listOfNotNull(fact.returnType?.let { Retained(it, fact.parameters.map { p -> p.name }) })
         else -> emptyList()
     }
 

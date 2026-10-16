@@ -159,6 +159,51 @@ internal class PackageMemberParser(
         )
     }
 
+    /**
+     * `CURSOR name [ ( parameters ) ] RETURN rowtype ;` or `CURSOR name [ ( parameters ) ] [ RETURN rowtype ] IS query ;`
+     * ending at the strict `;` at [semicolon]. Parameters must all be plain `IN` (no `OUT`, `IN OUT` or `NOCOPY`); the
+     * return type must be a strictly valid datatype; the query is bounded by the `;` and not parsed. Anything else yields
+     * null, never a partial fact.
+     */
+    fun parseCursor(index: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? {
+        val nameIndex = index + 1
+        if (!stream.isKeyword(index, "CURSOR") || nameIndex >= semicolon || !stream.isName(stream.tokens[nameIndex]) ||
+            stream.isPunctuator(nameIndex + 1, PlSqlPunctuator.DOT)
+        ) return null
+        var cursor = nameIndex + 1
+        var parameters: List<ProjectParameter> = emptyList()
+        if (stream.isPunctuator(cursor, PlSqlPunctuator.LPARENTHESIS)) {
+            val close = stream.strictClose(cursor, semicolon) ?: return null
+            if (close == cursor + 1) return null
+            parameters = parseParameters(cursor + 1, close) ?: return null
+            if (parameters.any { it.mode != ParameterMode.IN || it.nocopy }) return null
+            cursor = close + 1
+        }
+        var returnType: TypeRef? = null
+        if (stream.isKeyword(cursor, "RETURN")) {
+            val returnEnd = stream.firstKeywordAtTopLevel(cursor + 1, setOf("IS"), semicolon) ?: semicolon
+            if (!datatypeShape.strictDatatype(cursor + 1, returnEnd) || !datatypeShape.strictTypeArguments(cursor + 1, returnEnd)) return null
+            returnType = typeReferences.typeReference(cursor + 1, returnEnd) ?: return null
+            cursor = returnEnd
+        }
+        when {
+            cursor == semicolon -> if (returnType == null) return null
+            stream.isKeyword(cursor, "IS") -> if (cursor + 1 >= semicolon) return null
+            else -> return null
+        }
+        val declaration = PackageCursorDeclaration(
+            owner, stream.identifier(stream.tokens[nameIndex]), parameters, returnType, stream.fileId, stream.range(index, semicolon)
+        )
+        return ParsedDeclaration(declaration, semicolon + 1)
+    }
+
+    /** `name EXCEPTION ;` and nothing else, ending at the strict `;` at [semicolon]. */
+    fun parseException(index: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? {
+        if (index + 2 != semicolon || !stream.isName(stream.tokens[index]) || !stream.isKeyword(index + 1, "EXCEPTION")) return null
+        val declaration = PackageExceptionDeclaration(owner, stream.identifier(stream.tokens[index]), stream.fileId, stream.range(index, semicolon))
+        return ParsedDeclaration(declaration, semicolon + 1)
+    }
+
     fun parseParameters(start: Int, close: Int): List<ProjectParameter>? {
         if (start == close) return emptyList()
         val result = mutableListOf<ProjectParameter>()

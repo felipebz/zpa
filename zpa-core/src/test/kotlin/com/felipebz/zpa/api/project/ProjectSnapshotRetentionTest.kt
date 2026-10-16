@@ -472,7 +472,7 @@ class ProjectSnapshotRetentionTest {
             index, unit, com.felipebz.zpa.project.OracleIdentifier.fromSource("c"), null
         )
         val reachable = auditGraph(mapOf("coverage" to spec.memberNames!!, "evidence" to evidence), listOf(snapshot, source, reader, input), sourceMarker)
-        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageMemberName>()).hasSize(3)
+        assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.PackageMemberName>()).hasSize(1)
         assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectSymbolIndex>()).isEmpty()
         assertThat(reachable.filterIsInstance<com.felipebz.zpa.project.ProjectDeclaration>()).isEmpty()
     }

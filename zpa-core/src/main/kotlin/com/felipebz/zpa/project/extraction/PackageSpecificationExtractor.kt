@@ -86,16 +86,24 @@ internal class PackageSpecificationExtractor(
                 // subprograms, subtypes, cursors and types): anything that is not a complete, strictly valid
                 // variable falls through to the member parsers.
                 val retained = (packageValues.parseSpecificationValue(cursor, declarationEnd.index, owner)
-                    ?: parseSpecificationMember(cursor, owner)
+                    ?: parseSpecificationMember(cursor, declarationEnd.index, owner)
                         // Agreement rule: the member parser (value-based) must end exactly where the
                         // strict scanner ends the declaration; any disagreement drops the declaration.
                         ?.takeIf { it.nextIndex == declarationEnd.index + 1 })
                     ?.also { members += it.declaration }
-                recordCoverage(cursor, declarationEnd.index, retained != null, omitted, gaps)
-                if (retained == null) {
-                    recordMemberName(cursor, declarationEnd.index, true, names, nameGaps)
-                } else if (containsCallableHeader(cursor + 1, declarationEnd.index)) {
-                    nameGaps += MemberNameGap.SWALLOWED_DECLARATION
+                val fact = retained?.declaration
+                if (fact is PackageExceptionDeclaration || fact is PackageCursorDeclaration) {
+                    // Formerly name-only members: their declaration keeps exactly the coverage checks it had as an
+                    // unretained name (a cursor query may still absorb a following declaration), without the name.
+                    recordCoverage(cursor, declarationEnd.index, false, omitted, gaps)
+                    recordMemberName(cursor, declarationEnd.index, true, names, nameGaps, recordName = false)
+                } else {
+                    recordCoverage(cursor, declarationEnd.index, retained != null, omitted, gaps)
+                    if (retained == null) {
+                        recordMemberName(cursor, declarationEnd.index, true, names, nameGaps)
+                    } else if (containsCallableHeader(cursor + 1, declarationEnd.index)) {
+                        nameGaps += MemberNameGap.SWALLOWED_DECLARATION
+                    }
                 }
                 cursor = declarationEnd.index + 1
             } else {
@@ -124,7 +132,8 @@ internal class PackageSpecificationExtractor(
         end: Int,
         terminated: Boolean,
         names: MutableList<PackageMemberName>,
-        gaps: MutableSet<MemberNameGap>
+        gaps: MutableSet<MemberNameGap>,
+        recordName: Boolean = true
     ) {
         if (!terminated) gaps += MemberNameGap.UNTERMINATED_DECLARATION
         if (isPragma(start, end)) return
@@ -135,7 +144,7 @@ internal class PackageSpecificationExtractor(
         }
         val (kind, nameIndex) = head
         val last = if (terminated) end else end - 1
-        names += PackageMemberName(stream.identifier(stream.tokens[nameIndex]), kind, stream.range(start, last))
+        if (recordName) names += PackageMemberName(stream.identifier(stream.tokens[nameIndex]), kind, stream.range(start, last))
         if (mayHideAnotherDeclaration(kind, nameIndex + 1, end)) gaps += MemberNameGap.SWALLOWED_DECLARATION
     }
 
@@ -308,9 +317,12 @@ internal class PackageSpecificationExtractor(
 
     /**
      * Existing member parsers, selected by structural lookahead on token types. `type NUMBER;`,
-     * `"TYPE" NUMBER;` and a variable named `function` do not match any member shape.
+     * `"TYPE" NUMBER;` and a variable named `function` do not match any member shape. Cursors and exceptions are
+     * parsed against the strict `;` at [semicolon].
      */
-    private fun parseSpecificationMember(cursor: Int, owner: QualifiedName): ParsedDeclaration? = when {
+    private fun parseSpecificationMember(cursor: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? = when {
+        stream.isKeyword(cursor, "CURSOR") -> memberParser.parseCursor(cursor, semicolon, owner)
+        stream.isKeyword(cursor + 1, "EXCEPTION") -> memberParser.parseException(cursor, semicolon, owner)
         stream.isKeyword(cursor, "TYPE") && stream.isNameBefore(cursor + 1, stream.tokens.size) && stream.isKeyword(cursor + 2, "IS") ->
             memberParser.parsePackageType(cursor, owner)
         stream.isKeyword(cursor, "SUBTYPE") && stream.isNameBefore(cursor + 1, stream.tokens.size) && stream.isKeyword(cursor + 2, "IS") ->

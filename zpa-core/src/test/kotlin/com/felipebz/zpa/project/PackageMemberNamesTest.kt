@@ -80,10 +80,10 @@ class PackageMemberNamesTest {
             END p;
             """.trimIndent()
         )
-        assertThat(c.unretained.map { it.kind to it.name.originalSpelling })
-            .containsExactly(CURSOR to "c1", CURSOR to "c2", EXCEPTION to "e_bad", VALUE to "g")
+        // Cursors and exceptions are retained as facts; only the dropped value keeps a name.
+        assertThat(c.unretained.map { it.kind to it.name.originalSpelling }).containsExactly(VALUE to "g")
         assertThat(c.complete).isTrue()
-        assertThat(c.unretained[0].sourceRange).isEqualTo(SourceRange(FileId("spec.sql"), 3, 2, 3, 23))
+        assertThat(c.unretained[0].sourceRange).isEqualTo(SourceRange(FileId("spec.sql"), 8, 2, 8, 13))
     }
 
     @Test
@@ -204,7 +204,8 @@ class PackageMemberNamesTest {
         // Oracle: the cursor captures only when the flag is TRUE; with FALSE the anchor reads the table.
         val conditional = ccSpec("  \$IF \$\$f \$THEN CURSOR employees RETURN r_t; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;")
         assertThat(status(conditional, "employees", "rows_t")).isEqualTo(UNKNOWN)
-        assertThat(coverage(conditional).unretained.map { it.name.lookupName }).containsExactly("EMPLOYEES")
+        assertThat(coverage(conditional).unretained).isEmpty()
+        assertThat(prepare("spec.sql" to conditional).index.findOccurrences(name("p", "employees"))).hasSize(1)
         // Oracle: TRUE rejects the spec (PLS-00341), FALSE is valid with the table row.
         val later = ccSpec("  TYPE rows_t IS TABLE OF employees%ROWTYPE;\n  \$IF \$\$f \$THEN CURSOR employees RETURN r_t; \$END")
         assertThat(status(later, "employees", "rows_t")).isEqualTo(UNKNOWN)
@@ -234,7 +235,8 @@ class PackageMemberNamesTest {
         val c = coverage(before)
         // The tokens `v NUMBER;` of the branch (columns are 0-based).
         assertThat(c.conditionalRange).isEqualTo(SourceRange(FileId("spec.sql"), 4, 16, 4, 25))
-        assertThat(c.isUnconditional(c.unretained.single().sourceRange)).isTrue()
+        val cursor = prepare("spec.sql" to before).index.findOccurrences(name("p", "employees")).single().declaration
+        assertThat(c.isUnconditional(cursor.sourceRange)).isTrue()
         // An unconditional later member rejects whatever the branches hold.
         val rejected = ccSpec("  \$IF \$\$f \$THEN CURSOR employees RETURN r_t; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;\n  employees EXCEPTION;")
         assertThat(status(rejected, "employees", "rows_t")).isEqualTo(REJECTED)
@@ -307,7 +309,7 @@ class PackageMemberNamesTest {
         }
         // No unretained name duplicates a fact.
         val unretained = (unit.declaration as PackageDeclaration).memberNames!!.unretained
-        assertThat(unretained.map { it.name.lookupName }).containsExactly("C")
+        assertThat(unretained).isEmpty()
         assertThat(unretained.map { it.sourceRange }).doesNotContainAnyElementsOf(retained.map { it.sourceRange })
     }
 

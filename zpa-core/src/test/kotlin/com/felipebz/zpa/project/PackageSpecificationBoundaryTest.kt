@@ -47,7 +47,7 @@ class PackageSpecificationBoundaryTest {
     private fun simpleName(fact: ProjectDeclaration) = fact.qualifiedName().last.originalSpelling
 
     /**
-     * Valid syntax: container range and every type/subtype/subprogram member agree with the parser.
+     * Valid syntax: container range and every type/subtype/subprogram/cursor/exception member agree with the parser.
      * Value declarations are verified against the parser by the package value extraction tests.
      */
     private fun assertAgreesWithAst(source: String) {
@@ -66,6 +66,8 @@ class PackageSpecificationBoundaryTest {
                     PlSqlGrammar.RECORD_DECLARATION, PlSqlGrammar.TABLE_OF_DECLARATION, PlSqlGrammar.VARRAY_DECLARATION,
                     PlSqlGrammar.REF_CURSOR_DECLARATION -> ProjectDeclarationKind.PACKAGE_TYPE
                     PlSqlGrammar.CUSTOM_SUBTYPE -> ProjectDeclarationKind.PACKAGE_SUBTYPE
+                    PlSqlGrammar.CURSOR_DECLARATION -> ProjectDeclarationKind.PACKAGE_CURSOR
+                    PlSqlGrammar.EXCEPTION_DECLARATION -> ProjectDeclarationKind.PACKAGE_EXCEPTION
                     else -> return@mapNotNull null
                 }
                 Triple(kind, child.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenOriginalValue, child.range())

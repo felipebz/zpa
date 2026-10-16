@@ -357,15 +357,36 @@ class ProjectApiKotlinConsumerTest {
         ProjectDeclarationKind.STANDALONE_FUNCTION -> "standalone function"
         ProjectDeclarationKind.PACKAGE_VARIABLE -> "package variable"
         ProjectDeclarationKind.PACKAGE_CONSTANT -> "package constant"
+        ProjectDeclarationKind.PACKAGE_EXCEPTION -> "package exception"
+        ProjectDeclarationKind.PACKAGE_CURSOR -> "package cursor"
     }
 
     @Test
     fun declarationKindEnumHasTheDocumentedConstantsInOrder() {
         assertThat(ProjectDeclarationKind.entries.map { it.name }).containsExactly(
             "PACKAGE", "PACKAGE_BODY", "STANDALONE_TYPE", "PACKAGE_TYPE", "PACKAGE_SUBTYPE", "PACKAGE_PROCEDURE",
-            "PACKAGE_FUNCTION", "SEQUENCE", "STANDALONE_PROCEDURE", "STANDALONE_FUNCTION", "PACKAGE_VARIABLE", "PACKAGE_CONSTANT"
+            "PACKAGE_FUNCTION", "SEQUENCE", "STANDALONE_PROCEDURE", "STANDALONE_FUNCTION", "PACKAGE_VARIABLE", "PACKAGE_CONSTANT",
+            "PACKAGE_EXCEPTION", "PACKAGE_CURSOR"
         )
         ProjectDeclarationKind.entries.forEach { assertThat(describe(it)).isNotBlank() }
+    }
+
+    @Test
+    fun exposesPackageExceptionsAndCursors() {
+        val snapshot = ProjectSnapshots.prepare(listOf(counted("db/errors_spec.sql", "errors_spec.sql")), false)
+        val exception = snapshot.findDeclarations(n("error_pkg", "app_error")).declarations.single() as ProjectPackageExceptionView
+        assertThat(exception.kind).isEqualTo(ProjectDeclarationKind.PACKAGE_EXCEPTION)
+        assertThat(exception.owner).isEqualTo(n("error_pkg"))
+        assertThat(exception.localName).isEqualTo(id("APP_ERROR"))
+        val cursors = snapshot.declarationsFor("db/errors_spec.sql").declarations.filterIsInstance<ProjectPackageCursorView>()
+        assertThat(cursors.map { it.localName.originalSpelling }).containsExactly("c_pending", "c_all")
+        val (pending, all) = cursors
+        assertThat(pending.parameters.map { it.name.originalSpelling to it.typeRef.name }).containsExactly("p_status" to n("NUMBER"))
+        assertThat(pending.returnType.get().anchor).contains(ProjectTypeReference.Anchor.ROWTYPE)
+        assertThat(all.returnType).isEmpty
+        val resolution = snapshot.resolvePackageValue(n("error_pkg", "c_all"), null)
+        assertThat(resolution.status).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT)
+        assertThat(resolution.candidates.map { it.id }).containsExactly(all.id)
     }
 
     // ---- Nested records, collection elements and bounded type descriptions ----

@@ -578,6 +578,8 @@ class ProjectApiJavaConsumerTest {
             case STANDALONE_FUNCTION -> "standalone function";
             case PACKAGE_VARIABLE -> "package variable";
             case PACKAGE_CONSTANT -> "package constant";
+            case PACKAGE_EXCEPTION -> "package exception";
+            case PACKAGE_CURSOR -> "package cursor";
         };
     }
 
@@ -586,13 +588,43 @@ class ProjectApiJavaConsumerTest {
         assertThat(ProjectDeclarationKind.values()).extracting(Enum::name).containsExactly(
             "PACKAGE", "PACKAGE_BODY", "STANDALONE_TYPE", "PACKAGE_TYPE", "PACKAGE_SUBTYPE", "PACKAGE_PROCEDURE",
             "PACKAGE_FUNCTION", "SEQUENCE", "STANDALONE_PROCEDURE", "STANDALONE_FUNCTION", "PACKAGE_VARIABLE",
-            "PACKAGE_CONSTANT");
+            "PACKAGE_CONSTANT", "PACKAGE_EXCEPTION", "PACKAGE_CURSOR");
         for (ProjectDeclarationKind kind : ProjectDeclarationKind.values()) {
             assertThat(describe(kind)).isNotBlank();
         }
         assertThat(describe(ProjectDeclarationKind.PACKAGE_VARIABLE)).isEqualTo("package variable");
         assertThat(ProjectDeclarationKind.PACKAGE_VARIABLE.ordinal()).isEqualTo(10);
         assertThat(ProjectDeclarationKind.PACKAGE_CONSTANT.ordinal()).isEqualTo(11);
+    }
+
+    @Test
+    void exposesPackageExceptionsAndCursors() {
+        ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(counted("db/errors_spec.sql", "errors_spec.sql")), false);
+        List<ProjectDeclarationView> members = snapshot.declarationsFor("db/errors_spec.sql").getDeclarations();
+        assertThat(members).extracting(ProjectDeclarationView::getKind).containsExactly(
+            ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE_EXCEPTION,
+            ProjectDeclarationKind.PACKAGE_CURSOR, ProjectDeclarationKind.PACKAGE_CURSOR);
+
+        ProjectPackageExceptionView exception = (ProjectPackageExceptionView) members.get(1);
+        assertThat(exception.getOwner()).isEqualTo(name("error_pkg"));
+        assertThat(exception.getLocalName()).isEqualTo(ProjectIdentifier.fromSource("app_error"));
+        assertThat(exception.getRole()).isEqualTo(ProjectDeclarationRole.SPECIFICATION);
+
+        ProjectPackageCursorView pending = (ProjectPackageCursorView) members.get(2);
+        assertThat(pending.getLocalName().getOriginalSpelling()).isEqualTo("c_pending");
+        assertThat(pending.getParameters()).extracting(p -> p.getName().getOriginalSpelling()).containsExactly("p_status");
+        assertThat(pending.getParameters().get(0).getMode()).isEqualTo(ProjectParameterMode.IN);
+        ProjectTypeReference row = pending.getReturnType().orElseThrow();
+        assertThat(row.getAnchor()).contains(ProjectTypeReference.Anchor.ROWTYPE);
+        assertThat(row.getName()).isEqualTo(name("send_queue"));
+
+        ProjectPackageCursorView all = (ProjectPackageCursorView) members.get(3);
+        assertThat(all.getParameters()).isEmpty();
+        assertThat(all.getReturnType()).isEmpty();
+
+        ProjectValueResolution resolution = snapshot.resolvePackageValue(name("error_pkg", "app_error"), null);
+        assertThat(resolution.getStatus()).isEqualTo(ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT);
+        assertThat(resolution.getCandidates()).extracting(ProjectDeclarationView::getId).containsExactly(exception.getId());
     }
 
     // ---- Nested records, collection elements and bounded type descriptions ----

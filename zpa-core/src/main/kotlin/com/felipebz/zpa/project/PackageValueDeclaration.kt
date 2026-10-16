@@ -43,3 +43,47 @@ class PackageValueDeclaration(
 
     override fun toString(): String = "PackageValueDeclaration($owner.$name, constant=$constant, $typeRef, $fileId, $sourceRange)"
 }
+
+/** An exception declared directly in a package specification (`name EXCEPTION;`). [owner] is the package name as written. */
+class PackageExceptionDeclaration(
+    val owner: QualifiedName,
+    val name: OracleIdentifier,
+    override val fileId: FileId,
+    override val sourceRange: SourceRange
+) : ProjectDeclaration {
+    override val kind = ProjectDeclarationKind.PACKAGE_EXCEPTION
+    override val role = DeclarationRole.SPECIFICATION
+
+    override fun equals(other: Any?): Boolean = other is PackageExceptionDeclaration &&
+        owner == other.owner && name == other.name && fileId == other.fileId && sourceRange == other.sourceRange
+
+    override fun hashCode(): Int = listOf(owner, name, fileId, sourceRange).hashCode()
+
+    override fun toString(): String = "PackageExceptionDeclaration($owner.$name, $fileId, $sourceRange)"
+}
+
+/**
+ * An explicit cursor declared directly in a package specification: its `IN` parameters and its `RETURN` row type, null
+ * when the declaration has none. The query, if any, is not retained. [owner] is the package name as written.
+ */
+class PackageCursorDeclaration(
+    val owner: QualifiedName,
+    val name: OracleIdentifier,
+    parameters: List<ProjectParameter>,
+    val returnType: TypeRef?,
+    override val fileId: FileId,
+    override val sourceRange: SourceRange
+) : ProjectDeclaration {
+    val parameters: List<ProjectParameter> = immutableList(parameters)
+
+    override val kind = ProjectDeclarationKind.PACKAGE_CURSOR
+    override val role = DeclarationRole.SPECIFICATION
+
+    override fun equals(other: Any?): Boolean = other is PackageCursorDeclaration &&
+        owner == other.owner && name == other.name && parameters == other.parameters && returnType == other.returnType &&
+        fileId == other.fileId && sourceRange == other.sourceRange
+
+    override fun hashCode(): Int = listOf(owner, name, parameters, returnType, fileId, sourceRange).hashCode()
+
+    override fun toString(): String = "PackageCursorDeclaration($owner.$name, $parameters, $returnType, $fileId, $sourceRange)"
+}

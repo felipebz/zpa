@@ -27,7 +27,9 @@ import java.util.*
  * supplied, supported project index contains: [Status.NOT_FOUND_IN_PROJECT] is not proof that the declaration is
  * absent from Oracle or that source is invalid. Preparation failures take precedence over everything except an
  * unprepared snapshot, even when no candidate is known. [candidates] lists every known declaration with the effective
- * qualified name in index order, whatever its kind; only a [ProjectPackageValueView] is an eligible target.
+ * qualified name in index order, whatever its kind; only a [ProjectPackageValueView] is an eligible target. A package
+ * exception or cursor with the name ([ProjectPackageExceptionView], [ProjectPackageCursorView]) is listed as a
+ * candidate and leaves the status [Status.NOT_FOUND_IN_PROJECT].
  */
 @ZpaExperimentalApi
 class ProjectValueResolution private constructor(

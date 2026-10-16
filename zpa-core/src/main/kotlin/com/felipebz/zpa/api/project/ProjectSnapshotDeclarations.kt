@@ -48,6 +48,8 @@ internal object ProjectSnapshotDeclarations {
                 is StandaloneProcedureDeclaration -> BackedStandaloneProcedureView(id, fact)
                 is StandaloneFunctionDeclaration -> BackedStandaloneFunctionView(id, fact)
                 is PackageValueDeclaration -> BackedPackageValueView(id, fact)
+                is PackageExceptionDeclaration -> BackedPackageExceptionView(id, fact)
+                is PackageCursorDeclaration -> BackedPackageCursorView(id, fact)
                 else -> BackedDeclarationView(id, fact)
             }
         }
@@ -73,6 +75,8 @@ internal object ProjectSnapshotDeclarations {
             FactKind.STANDALONE_FUNCTION -> ProjectDeclarationKind.STANDALONE_FUNCTION
             FactKind.PACKAGE_VARIABLE -> ProjectDeclarationKind.PACKAGE_VARIABLE
             FactKind.PACKAGE_CONSTANT -> ProjectDeclarationKind.PACKAGE_CONSTANT
+            FactKind.PACKAGE_EXCEPTION -> ProjectDeclarationKind.PACKAGE_EXCEPTION
+            FactKind.PACKAGE_CURSOR -> ProjectDeclarationKind.PACKAGE_CURSOR
         }
 
         override val role: ProjectDeclarationRole
@@ -137,6 +141,20 @@ internal object ProjectSnapshotDeclarations {
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(valueFact.name)
         override val isConstant: Boolean get() = valueFact.constant
         override val typeRef: ProjectTypeReference get() = ProjectTypeReference.from(valueFact.typeRef)
+    }
+
+    private class BackedPackageExceptionView(id: ProjectDeclarationId, private val exceptionFact: PackageExceptionDeclaration) :
+        BackedDeclarationView(id, exceptionFact), ProjectPackageExceptionView {
+        override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(exceptionFact.owner)
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(exceptionFact.name)
+    }
+
+    private class BackedPackageCursorView(id: ProjectDeclarationId, private val cursorFact: PackageCursorDeclaration) :
+        BackedDeclarationView(id, cursorFact), ProjectPackageCursorView {
+        override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(cursorFact.owner)
+        override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(cursorFact.name)
+        override val parameters: List<ProjectParameterView> = cursorFact.parameters.toParameterViews()
+        override val returnType: Optional<ProjectTypeReference> = cursorFact.returnType.toPublicReference()
     }
 
     /** Standalone callables are never package members: no `packageOwner`, no schema inference. */

@@ -163,6 +163,8 @@ internal class ProjectOverviewBuilder(
         is ProjectPackageTypeView -> view.owner
         is ProjectSubtypeView -> view.owner
         is ProjectPackageValueView -> view.owner
+        is ProjectPackageExceptionView -> view.owner
+        is ProjectPackageCursorView -> view.owner
         is ProjectPackageSubprogramView ->
             if (view.role == ProjectDeclarationRole.SPECIFICATION) view.packageOwner else null
         else -> null
@@ -180,6 +182,16 @@ internal class ProjectOverviewBuilder(
             range(view.sourceRange),
             children = listOf(typeNode(view.typeRef, owner))
         )
+        is ProjectPackageExceptionView -> node("EXCEPTION ${view.localName}${at(view.sourceRange)}", range(view.sourceRange))
+        is ProjectPackageCursorView -> {
+            val params = view.parameters.joinToString(", ") { "${it.name} ${ref(it.typeRef)}" }
+            val returnType = view.returnType.orElse(null)
+            node(
+                "CURSOR ${view.localName}${if (params.isEmpty()) "" else "($params)"}${returnType?.let { " RETURN ${ref(it)}" }.orEmpty()}${at(view.sourceRange)}",
+                range(view.sourceRange),
+                children = view.parameters.map { typeNode(it.typeRef, owner) } + listOfNotNull(returnType?.let { typeNode(it, owner) })
+            )
+        }
         is ProjectPackageSubprogramView -> subprogramNode(view, view.localName.toString(), owner)
         else -> error("Not a package member: ${view.kind}")
     }

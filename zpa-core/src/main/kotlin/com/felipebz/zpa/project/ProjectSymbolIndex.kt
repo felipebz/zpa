@@ -125,6 +125,8 @@ class ProjectSymbolIndex internal constructor(
                 is PackageValueDeclaration -> declaration.owner
                 is PackageTypeDeclaration -> declaration.owner
                 is PackageSubtypeDeclaration -> declaration.owner
+                is PackageExceptionDeclaration -> declaration.owner
+                is PackageCursorDeclaration -> declaration.owner
                 else -> null
             }
         }
@@ -193,6 +195,8 @@ class ProjectSymbolIndex internal constructor(
             is StandaloneProcedureDeclaration -> declaration.name.lookupKey()
             is StandaloneFunctionDeclaration -> declaration.name.lookupKey()
             is PackageValueDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}"
+            is PackageExceptionDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}"
+            is PackageCursorDeclaration -> "${declaration.owner.lookupKey()}.${declaration.name.lookupName}"
         }
 
         /** Stable tie-breaker only; source spelling and rule metadata do not define identity. */
@@ -210,6 +214,9 @@ class ProjectSymbolIndex internal constructor(
                 is PackageFunctionDeclaration -> declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey()
                 is SequenceDeclaration -> ""
                 is PackageValueDeclaration -> "${declaration.constant}:${declaration.typeRef.structuralKey()}"
+                is PackageExceptionDeclaration -> ""
+                is PackageCursorDeclaration ->
+                    declaration.parameters.orderingKey() + ":" + (declaration.returnType?.structuralKey() ?: "")
                 is StandaloneProcedureDeclaration -> declaration.parameters.orderingKey()
                 is StandaloneFunctionDeclaration ->
                     declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey() + ":" + declaration.deterministic
