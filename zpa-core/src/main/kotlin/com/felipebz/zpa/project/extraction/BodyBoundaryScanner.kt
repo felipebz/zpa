@@ -31,19 +31,22 @@ internal enum class BodyHeaderDelimiterKind {
 
 internal enum class BlockKind {
     BEGIN,
-    CASE
+    CASE,
+    IF,
+    LOOP
 }
 
 /** What an `END` token did to the stack of open blocks. */
 internal enum class BlockClose {
-    IGNORED,
+    /** `END IF` or `END LOOP` closed its own `IF` or `LOOP`. */
+    STATEMENT,
     CASE,
     BEGIN,
     UNBALANCED
 }
 
 /**
- * Value-based boundary scanning of subprogram bodies and implementations: BEGIN/END/CASE block
+ * Value-based boundary scanning of subprogram bodies and implementations: BEGIN/CASE/IF/LOOP block
  * tracking and nested-subprogram skipping. It only identifies token indices and never produces facts.
  */
 internal class BodyBoundaryScanner(private val stream: TokenStream) {
@@ -77,12 +80,13 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
                 index = nestedEnd + 1
                 continue
             }
+            val opened = statementStart(index)
             when {
                 stream.isKeyword(index, "BEGIN") -> {
                     bodyStarted = true
                     blocks += BlockKind.BEGIN
                 }
-                isCaseStart(index) -> blocks += BlockKind.CASE
+                opened != null -> blocks += opened
                 stream.isKeyword(index, "END") -> {
                     val closed = closeBlock(index, blocks)
                     if (closed == BlockClose.UNBALANCED) return null
@@ -98,12 +102,18 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
     private fun nestedSubprogramEnd(index: Int, end: Int, bodyStarted: Boolean): Int? =
         if (!bodyStarted && isSubprogramKeyword(index)) bodySubprogramEnd(index, end) else null
 
-    /** Applies the `END` at [index] to [blocks]: `END IF` and `END LOOP` close nothing, `END` pops the innermost block. */
+    /**
+     * Applies the `END` at [index] to [blocks] by popping the innermost block. `END IF` / `END LOOP` close an open `IF` /
+     * `LOOP`; on a `BEGIN` or `CASE` the word is only a label (Oracle accepts any identifier after a block's `END`), so
+     * they close that block as `END x` does.
+     */
     fun closeBlock(index: Int, blocks: MutableList<BlockKind>): BlockClose {
-        if (stream.isKeyword(index + 1, "IF") || stream.isKeyword(index + 1, "LOOP")) return BlockClose.IGNORED
-        val last = blocks.lastOrNull() ?: return BlockClose.UNBALANCED
-        blocks.removeAt(blocks.lastIndex)
-        return if (last == BlockKind.CASE) BlockClose.CASE else BlockClose.BEGIN
+        val last = blocks.removeLastOrNull() ?: return BlockClose.UNBALANCED
+        return when (last) {
+            BlockKind.BEGIN -> BlockClose.BEGIN
+            BlockKind.CASE -> BlockClose.CASE
+            BlockKind.IF, BlockKind.LOOP -> BlockClose.STATEMENT
+        }
     }
 
     fun bodySubprogramEnd(index: Int, end: Int): Int? {
@@ -126,17 +136,14 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
         val blocks = mutableListOf<BlockKind>()
         var index = start
         while (index < end.coerceAtMost(stream.tokens.size)) {
+            val opened = statementStart(index)
             when {
                 stream.isKeyword(index, "BEGIN") -> blocks += BlockKind.BEGIN
-                isCaseStart(index) -> blocks += BlockKind.CASE
-                stream.isKeyword(index, "END") -> when {
-                    stream.isKeyword(index + 1, "IF") || stream.isKeyword(index + 1, "LOOP") -> Unit
-                    blocks.lastOrNull() == BlockKind.CASE -> blocks.removeAt(blocks.lastIndex)
-                    blocks.lastOrNull() == BlockKind.BEGIN -> {
-                        blocks.removeAt(blocks.lastIndex)
-                        if (blocks.isEmpty()) return stream.semicolonAfter(index).coerceAtMost(end)
-                    }
-                    else -> return null
+                opened != null -> blocks += opened
+                stream.isKeyword(index, "END") -> when (closeBlock(index, blocks)) {
+                    BlockClose.UNBALANCED -> return null
+                    BlockClose.BEGIN -> if (blocks.isEmpty()) return stream.semicolonAfter(index).coerceAtMost(end)
+                    else -> Unit
                 }
             }
             index++
@@ -147,6 +154,17 @@ internal class BodyBoundaryScanner(private val stream: TokenStream) {
     fun isSubprogramKeyword(index: Int): Boolean =
         stream.isKeyword(index, "PROCEDURE") || stream.isKeyword(index, "FUNCTION")
 
-    fun isCaseStart(index: Int): Boolean =
-        stream.isKeyword(index, "CASE") && !stream.isKeyword(index - 1, "END")
+    /**
+     * The block a `CASE`, `IF` or `LOOP` keyword at [index] opens, unless it follows `END`. A `FOR`/`WHILE` loop opens at
+     * its `LOOP`. Quoted identifiers are not keywords, and conditional-compilation `$IF` is trivia, never a token.
+     */
+    fun statementStart(index: Int): BlockKind? {
+        if (stream.isKeyword(index - 1, "END")) return null
+        return when {
+            stream.isKeyword(index, "CASE") -> BlockKind.CASE
+            stream.isKeyword(index, "IF") -> BlockKind.IF
+            stream.isKeyword(index, "LOOP") -> BlockKind.LOOP
+            else -> null
+        }
+    }
 }

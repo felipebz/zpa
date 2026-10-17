@@ -181,6 +181,16 @@ class ProjectCallOmittedStandaloneTest {
     }
 
     @Test
+    fun aProcedureWithAnInnerBlockLabelledLoopIsACandidate() {
+        val source = "CREATE PROCEDURE proc(p_a NUMBER) IS BEGIN BEGIN NULL; END LOOP; END;"
+        val project = project("proc.sql" to source)
+        val arguments = ProjectCallArguments.of(listOf(ProjectCallArgument.named(ProjectIdentifier.fromSource("p_a"))))
+        val result = project.snapshot.resolveCall(written("proc"), ProjectCallKind.PROCEDURE, arguments)
+        assertThat(result.status.name).isEqualTo("RESOLVED")
+        assertThat(result.uncertainties).isEmpty()
+    }
+
+    @Test
     fun serialConcurrentAndReversedPreparationAgree() {
         val files = listOf(
             "spec.sql" to spec,

@@ -49,6 +49,18 @@ class PackageBodyExtractorTest {
     }
 
     @Test
+    fun aMemberWithAnInnerBlockLabelledLoopKeepsItsBodyAndTheNextMember() {
+        // Oracle accepts LOOP as a block's end label (it rejects IF and CASE there, but the scanner treats them alike).
+        val text = "CREATE PACKAGE BODY p AS\n  PROCEDURE q IS\n  BEGIN\n    IF a THEN\n      BEGIN NULL; END LOOP;\n    END IF;\n  END q;\n" +
+            "  PROCEDURE hidden IS BEGIN NULL; END;\nEND p;"
+        val facts = body(text).first!!.declarations
+        assertThat(facts.map { (it as PackageProcedureDeclaration).name.originalSpelling }).containsExactly("q", "hidden")
+        assertThat(facts[0].sourceRange.endLine).isEqualTo(7)
+        val labelledIf = body(text.replace("END LOOP;", "END IF;")).first!!.declarations
+        assertThat(labelledIf.map { (it as PackageProcedureDeclaration).name.originalSpelling }).containsExactly("q", "hidden")
+    }
+
+    @Test
     fun procedureAndFunctionAreExtractedInSourceOrderWithBodyRole() {
         val text = "CREATE PACKAGE BODY p AS\n  PROCEDURE q(a IN NUMBER, b OUT NOCOPY VARCHAR2 DEFAULT 'x', c IN OUT t.x%TYPE) IS BEGIN NULL; END;\n" +
             "  FUNCTION f(a NUMBER) RETURN VARCHAR2(10) DETERMINISTIC IS BEGIN RETURN 'x'; END f;\nEND p;"

@@ -39,6 +39,14 @@ class StandaloneFunctionExtractionTest {
     private fun functions(source: String) = extract(source).filterIsInstance<StandaloneFunctionDeclaration>()
     private fun names(source: String) = functions(source).map { it.name.toString() }
 
+    @org.junit.jupiter.api.Test
+    fun anInnerBlockLabelledLoopDoesNotLeaveTheBodyOpen() {
+        val source = "CREATE FUNCTION f RETURN NUMBER IS\nBEGIN\n  BEGIN\n    NULL;\n  END LOOP;\n  RETURN 1;\nEND f;\n/\n$good\n/\n"
+        val facts = functions(source)
+        assertThat(facts.map { it.name.toString() }).containsExactly("f", "good")
+        assertThat(facts[0].sourceRange.endLine).isEqualTo(7)
+    }
+
     private fun astFunctions(source: String): List<AstNode> =
         PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).parse(source)
             .getDescendants(PlSqlGrammar.CREATE_FUNCTION)

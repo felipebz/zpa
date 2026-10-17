@@ -267,11 +267,21 @@ class StandaloneProcedureExtractionTest {
             assertThat(facts.map { it.name.toString() }).describedAs(source).containsExactly("good")
         }
         assertThat(procedures("CREATE PROCEDURE bad IS BEGIN NULL; END")).isEmpty()
-        // Documented limitation: statements are not validated, so a structurally closed body
-        // (an unbalanced IF is not tracked) is still a fact, but it never reaches the next unit.
-        val closed = procedures("CREATE PROCEDURE bad IS BEGIN IF x THEN NULL; END;\nCREATE PROCEDURE good IS BEGIN NULL; END;\n")
-        assertThat(closed.map { it.name.toString() }).containsExactly("bad", "good")
-        assertThat(closed[0].sourceRange.endLine).isEqualTo(1)
+        // IF is tracked like BEGIN and CASE: an IF without END IF leaves the body unclosed, so `bad` (which Oracle
+        // rejects) gives no fact, and the scan still never reaches the next unit.
+        val unclosedIf = procedures("CREATE PROCEDURE bad IS BEGIN IF x THEN NULL; END;\nCREATE PROCEDURE good IS BEGIN NULL; END;\n")
+        assertThat(unclosedIf.map { it.name.toString() }).containsExactly("good")
+    }
+
+    @Test
+    fun anInnerBlockLabelledLoopDoesNotLeaveTheBodyOpen() {
+        // Oracle accepts any identifier after a block's END, including LOOP.
+        val source = "CREATE PROCEDURE p(a NUMBER) IS\nBEGIN\n  FOR i IN 1 .. a LOOP\n    BEGIN\n      NULL;\n    END LOOP;\n  END LOOP;\nEND;\n/\n" +
+            "CREATE PROCEDURE next_one IS BEGIN NULL; END;\n/\n"
+        val facts = procedures(source)
+        assertThat(facts.map { it.name.toString() }).containsExactly("p", "next_one")
+        assertThat(facts[0].sourceRange.endLine).isEqualTo(8)
+        assertAgreesWithAst(source)
     }
 
     /**

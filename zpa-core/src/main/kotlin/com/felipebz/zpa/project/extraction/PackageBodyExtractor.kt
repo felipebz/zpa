@@ -50,8 +50,9 @@ internal class PackageBodyExtractor(
                 continue
             }
 
+            val opened = bodyBoundaries.statementStart(cursor)
             when {
-                bodyBoundaries.isCaseStart(cursor) -> blocks += BlockKind.CASE
+                opened != null -> blocks += opened
                 stream.isKeyword(cursor, "BEGIN") -> {
                     if (blocks.isEmpty()) {
                         val end = bodyBoundaries.executableBlockEnd(cursor, stream.tokens.size) ?: stream.tokens.lastIndex

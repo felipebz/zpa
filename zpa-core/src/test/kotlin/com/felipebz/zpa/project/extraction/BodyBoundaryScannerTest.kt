@@ -61,9 +61,13 @@ class BodyBoundaryScannerTest {
         val f = Fixture("IS BEGIN x := CASE WHEN 1 = 1 THEN 1 END; IF a THEN NULL; END IF; LOOP EXIT; END LOOP; CASE a WHEN 1 THEN NULL; END CASE; END;")
         val last = f.stream.tokens.indices.last { f.stream.isPunctuator(it, com.felipebz.zpa.api.PlSqlPunctuator.SEMICOLON) }
         assertThat(f.scanner.implementationEnd(1, f.size)).isEqualTo(last)
-        assertThat(f.scanner.isCaseStart(f.at("CASE", 0))).isTrue()
-        // `END CASE` is not the start of a CASE.
-        assertThat(f.scanner.isCaseStart(f.at("CASE", 2))).isFalse()
+        assertThat(f.scanner.statementStart(f.at("CASE", 0))).isEqualTo(BlockKind.CASE)
+        assertThat(f.scanner.statementStart(f.at("IF", 0))).isEqualTo(BlockKind.IF)
+        assertThat(f.scanner.statementStart(f.at("LOOP", 0))).isEqualTo(BlockKind.LOOP)
+        // `END CASE`, `END IF` and `END LOOP` open nothing.
+        assertThat(f.scanner.statementStart(f.at("CASE", 2))).isNull()
+        assertThat(f.scanner.statementStart(f.at("IF", 1))).isNull()
+        assertThat(f.scanner.statementStart(f.at("LOOP", 1))).isNull()
     }
 
     @Test
@@ -74,17 +78,41 @@ class BodyBoundaryScannerTest {
     }
 
     @Test
-    fun closeBlockPopsTheInnermostBlockAndIgnoresEndIfAndEndLoop() {
+    fun closeBlockPopsTheInnermostBlockAndTreatsEndIfAndEndLoopOnABlockAsALabel() {
         val f = Fixture("END; END IF; END LOOP; END; END;")
-        val blocks = mutableListOf(BlockKind.BEGIN, BlockKind.CASE)
-        assertThat(f.scanner.closeBlock(f.at("END", 1), blocks)).isEqualTo(BlockClose.IGNORED)
-        assertThat(f.scanner.closeBlock(f.at("END", 2), blocks)).isEqualTo(BlockClose.IGNORED)
-        assertThat(blocks).containsExactly(BlockKind.BEGIN, BlockKind.CASE)
-        assertThat(f.scanner.closeBlock(f.at("END", 0), blocks)).isEqualTo(BlockClose.CASE)
-        assertThat(f.scanner.closeBlock(f.at("END", 3), blocks)).isEqualTo(BlockClose.BEGIN)
+        // On their own statement, END IF / END LOOP close it.
+        val statements = mutableListOf(BlockKind.BEGIN, BlockKind.LOOP, BlockKind.IF)
+        assertThat(f.scanner.closeBlock(f.at("END", 1), statements)).isEqualTo(BlockClose.STATEMENT)
+        assertThat(f.scanner.closeBlock(f.at("END", 2), statements)).isEqualTo(BlockClose.STATEMENT)
+        assertThat(statements).containsExactly(BlockKind.BEGIN)
+        // On a CASE or BEGIN the word is a label: the block closes as with END x.
+        val blocks = mutableListOf(BlockKind.BEGIN, BlockKind.BEGIN, BlockKind.CASE)
+        assertThat(f.scanner.closeBlock(f.at("END", 1), blocks)).isEqualTo(BlockClose.CASE)
+        assertThat(f.scanner.closeBlock(f.at("END", 2), blocks)).isEqualTo(BlockClose.BEGIN)
+        assertThat(f.scanner.closeBlock(f.at("END", 0), blocks)).isEqualTo(BlockClose.BEGIN)
         assertThat(blocks).isEmpty()
         assertThat(f.scanner.closeBlock(f.at("END", 4), blocks)).isEqualTo(BlockClose.UNBALANCED)
         assertThat(blocks).isEmpty()
+    }
+
+    @Test
+    fun blocksLabelledLoopOrIfInsideLoopsAndIfs() {
+        val source = "IS BEGIN FOR i IN 1 .. 2 LOOP BEGIN NULL; END LOOP; END LOOP; " +
+            "WHILE a LOOP IF b THEN BEGIN NULL; END IF; ELSIF c THEN LOOP BEGIN NULL; END; END LOOP; END IF; END LOOP; " +
+            "BEGIN NULL; END CASE; END q; PROCEDURE next IS BEGIN NULL; END;"
+        val f = Fixture(source)
+        assertThat(f.scanner.implementationEnd(1, f.size)).isEqualTo(f.at(";", 12))
+        assertThat(f.scanner.executableBlockEnd(f.at("BEGIN", 0), f.size)).isEqualTo(f.at(";", 12))
+        // Conditional-compilation $IF opens nothing.
+        val conditional = Fixture("IS BEGIN \$IF \$\$a \$THEN NULL; \$ELSE x := 1; \$END END; PROCEDURE next IS BEGIN NULL; END;")
+        assertThat(conditional.scanner.implementationEnd(1, conditional.size)).isEqualTo(conditional.at(";", 1))
+    }
+
+    @Test
+    fun aUnitWhoseOwnEndIsWrittenEndLoopStillEnds() {
+        // Oracle rejects it (the end label must match the unit name), but the body still ends there.
+        val f = Fixture("IS BEGIN NULL; END LOOP; PROCEDURE next IS BEGIN NULL; END;")
+        assertThat(f.scanner.implementationEnd(1, f.size)).isEqualTo(f.at(";", 1))
     }
 
     @Test
