@@ -23,7 +23,6 @@ import com.felipebz.flr.impl.Lexer
 import com.felipebz.flr.impl.channel.BlackHoleChannel
 import com.felipebz.flr.impl.channel.PunctuatorChannel
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.and
-import com.felipebz.flr.impl.channel.RegexpChannelBuilder.g
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.o2n
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.or
 import com.felipebz.flr.impl.channel.RegexpChannelBuilder.regexp
@@ -40,23 +39,11 @@ object PlSqlLexer {
         """\d++(?:e[+-]?\d++)""" // number literal in scientific notation
     ) + ")"
 
-    private const val CUSTOM_DELIMITER_START = """[^\s{\[<\(]""" // any except spacing
-    private const val CUSTOM_DELIMITER_END = """\1""" // same as the start
-
-    private val STRING_LITERAL = ("(?is)(?:"
-        + or("""?:n?'(?:[^']|'')*+'""", // simple text literal
-        "n?q?'" + or("?:" + g("?:" + g(CUSTOM_DELIMITER_START) + ".*?(?:" + CUSTOM_DELIMITER_END + "')"),
-            g("""?:\(.*?\)'"""),
-            g("""?:\[.*?\]'"""),
-            g("""?:<.*?>'"""),
-            g("""?:\{.*?\}'"""))) // text with user-defined delimiter
-        + ")")
-
     // Oracle tolerates padding inside the literal.
     private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\s*\d{1,4}-\d{1,2}-\d{1,2}\s*')"""
 
     // Undocumented, but Oracle 26 parses TIME followed by any string literal and validates the value afterwards.
-    private val TIME_LITERAL = "(?i)TIME\\s*?$STRING_LITERAL"
+    private val TIME_LITERAL = "(?i)TIME\\s*?${StringLiteralSyntax.PATTERN}"
 
     private const val TIMESTAMP_LITERAL = """(?i)TIMESTAMP\s*?'\d{4}-\d{2}-\d{2}\s++\d{1,2}:\d{2}:\d{2}(?:.\d{1,9})?(?:\s++[A-Z0-9_/+-:]++(?:\s++[A-Z0-9_/+-]{1,5})?)?'"""
 
@@ -76,7 +63,7 @@ object PlSqlLexer {
             .withChannel(GraphQlDualitySourceChannel())
             .withChannel(NumericChannel(regexp(PlSqlTokenType.NUMBER_LITERAL, NUMBER_LITERAL)))
             .withChannel(IntegerChannel())
-            .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, STRING_LITERAL)))
+            .withChannel(StringChannel(regexp(PlSqlTokenType.STRING_LITERAL, StringLiteralSyntax.PATTERN)))
             .withChannel(DateChannel(regexp(PlSqlTokenType.DATE_LITERAL, DATE_LITERAL), 'd'))
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIMESTAMP_LITERAL, TIMESTAMP_LITERAL), 't'))
             .withChannel(DateChannel(regexp(PlSqlTokenType.TIME_LITERAL, TIME_LITERAL), 't'))

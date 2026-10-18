@@ -23,6 +23,8 @@ import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.impl.Parser
 import com.felipebz.zpa.FormsMetadataAwareCheck
+import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
+import com.felipebz.zpa.dynamicsql.DynamicSqlTools
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.metrics.ComplexityVisitor
@@ -52,8 +54,9 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
                  private val projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED,
                  conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE) {
 
-    private val parser: Parser<Grammar> =
-        PlSqlParser.create(PlSqlConfiguration(charset, isErrorRecoveryEnabled, conditionalCompilation))
+    private val configuration = PlSqlConfiguration(charset, isErrorRecoveryEnabled, conditionalCompilation)
+    private val parser: Parser<Grammar> = PlSqlParser.create(configuration)
+    private val dynamicSqlTools = DynamicSqlTools(configuration)
     private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext)
     @OptIn(ZpaExperimentalApi::class)
     private val semanticScanCapabilities = SemanticScanCapabilities(
@@ -71,6 +74,8 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         fileId: FileId = FileId(inputFile.path().toString())
     ): AstScannerResult {
         val newVisitorContext = getPlSqlVisitorContext(inputFile)
+        newVisitorContext.dynamicSqlSupport =
+            DynamicSqlSupport(dynamicSqlTools, semanticAnalysisPipeline, fileId, semanticScanCapabilities)
 
         val metricsVisitor = MetricsVisitor()
         val complexityVisitor = ComplexityVisitor()
