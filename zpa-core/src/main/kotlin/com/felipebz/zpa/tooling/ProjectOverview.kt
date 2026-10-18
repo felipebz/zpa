@@ -401,7 +401,7 @@ internal class ProjectOverviewBuilder(
 
     private fun ref(reference: ProjectTypeReference): String = when (reference.kind) {
         ProjectTypeReference.Kind.NAMED -> "${reference.name}"
-        ProjectTypeReference.Kind.ANCHORED -> "${reference.name}%${reference.anchor.get()}"
+        ProjectTypeReference.Kind.ANCHORED -> "${reference.name}${reference.link.map { "@$it" }.orElse("")}%${reference.anchor.get()}"
         ProjectTypeReference.Kind.REF -> "REF ${reference.name}"
     }
 

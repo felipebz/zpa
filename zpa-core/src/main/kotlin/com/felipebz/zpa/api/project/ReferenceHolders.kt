@@ -122,7 +122,8 @@ internal object ReferenceHolders {
             is NamedTypeRef -> reference.kind == ProjectTypeReference.Kind.NAMED
             is RefTypeRef -> reference.kind == ProjectTypeReference.Kind.REF
             is AnchoredTypeRef -> reference.kind == ProjectTypeReference.Kind.ANCHORED && reference.anchor ==
-                java.util.Optional.of(if (fact.anchor == TypeAnchor.TYPE) ProjectTypeReference.Anchor.TYPE else ProjectTypeReference.Anchor.ROWTYPE)
+                java.util.Optional.of(if (fact.anchor == TypeAnchor.TYPE) ProjectTypeReference.Anchor.TYPE else ProjectTypeReference.Anchor.ROWTYPE) &&
+                fact.link == reference.link.map { it.name }.orElse(null)
         }
     }
 }

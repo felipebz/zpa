@@ -79,7 +79,10 @@ class ProjectTypeDescription private constructor(
         ENCLOSING_SCOPE,
 
         /** The value is declared after, or is, the reference in the same package specification. */
-        DECLARED_LATER
+        DECLARED_LATER,
+
+        /** The anchor names an object behind a database link (`t.c@link%TYPE`): never read against project sources. */
+        REMOTE
     }
 
     /** The followed package values and subtypes in traversal order, each occurrence once. Runtime-unmodifiable. */
@@ -144,7 +147,9 @@ class ProjectTypeDescription private constructor(
                 targets == (false to false) && resolution == null && valueResolution == null && anchorStop != null &&
                     (terminalReference?.kind == ProjectTypeReference.Kind.ANCHORED ||
                         (atRequest && writtenAnchor.anchor ==
-                            if (anchorStop == AnchorStop.ROWTYPE) ProjectTypeReference.Anchor.ROWTYPE else ProjectTypeReference.Anchor.TYPE))
+                            if (anchorStop == AnchorStop.ROWTYPE) ProjectTypeReference.Anchor.ROWTYPE else ProjectTypeReference.Anchor.TYPE)) &&
+                    // A remote anchor always stops as REMOTE, and only a remote anchor does.
+                    (anchorStop == AnchorStop.REMOTE) == (terminalReference?.link?.isPresent == true)
             ) { "Invalid ANCHORED_REFERENCE description" }
             Status.REF_REFERENCE -> require(
                 targets == (false to false) && noExtras && terminalReference?.kind == ProjectTypeReference.Kind.REF

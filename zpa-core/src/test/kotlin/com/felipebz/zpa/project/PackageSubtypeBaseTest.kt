@@ -41,7 +41,7 @@ class PackageSubtypeBaseTest {
     private fun parse(source: String) = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
     private fun spec(vararg declarations: String) = "CREATE PACKAGE p AS\n${declarations.joinToString("\n") { "  $it" }}\nEND p;"
 
-    private data class Base(val kind: String, val name: String, val range: SourceRange)
+    private data class Base(val kind: String, val name: String, val range: SourceRange, val link: String? = null)
 
     private fun range(node: AstNode) = SourceRange(fileId, node.token.line, node.token.column, node.lastToken.endLine, node.lastToken.endColumn)
 
@@ -49,10 +49,12 @@ class PackageSubtypeBaseTest {
         val tokens = datatype.tokens
         val first = datatype.getFirstChild().type
         val anchored = first == PlSqlGrammar.ANCHORED_DATATYPE
-        val names = tokens.takeWhile { it.value != "%" }
+        val link = tokens.dropWhile { it.value != "@" }.drop(1).takeWhile { it.value != "%" }.filter { it.value != "." }
+            .takeIf { it.isNotEmpty() }?.joinToString(".") { it.originalValue }
+        val names = tokens.takeWhile { it.value != "%" && it.value != "@" }
             .let { list -> if (anchored || first == PlSqlGrammar.CUSTOM_DATATYPE) list else list.take(1) }.filter { it.value != "." }
         val kind = if (anchored) "ANCHORED:${tokens.last().value.uppercase()}" else "NAMED"
-        return Base(kind, names.joinToString(".") { it.originalValue }, range(datatype))
+        return Base(kind, names.joinToString(".") { it.originalValue }, range(datatype), link)
     }
 
     private fun describe(ref: TypeRef) = Base(
@@ -61,7 +63,8 @@ class PackageSubtypeBaseTest {
             is AnchoredTypeRef -> "ANCHORED:${ref.anchor}"
             is RefTypeRef -> "REF"
         },
-        ref.name.segments.joinToString(".") { it.originalSpelling }, ref.sourceRange
+        ref.name.segments.joinToString(".") { it.originalSpelling }, ref.sourceRange,
+        (ref as? AnchoredTypeRef)?.link?.segments?.joinToString(".") { it.originalSpelling }
     )
 
     private data class Expected(val base: Base, val declaration: SourceRange)
@@ -103,10 +106,13 @@ class PackageSubtypeBaseTest {
                 "SUBTYPE l IS VARCHAR2(30 CHAR) NULL;",
                 "SUBTYPE m IS src.tab.col%TYPE NOT NULL;",
                 "SUBTYPE n IS q.t NOT NULL;",
+                "SUBTYPE o IS t.c@l%TYPE;",
+                "SUBTYPE r IS s.t@internet.intranet%ROWTYPE;",
+                "SUBTYPE s2 IS s.t.c@\"LNK\"%TYPE NOT NULL;",
                 "g1 NUMBER;",
                 "PROCEDURE ok;"
             ),
-            14
+            17
         )
     }
 

@@ -392,6 +392,23 @@ class LocalSemanticModelBuilderTest {
         assertThat(block.completeness.reasons).containsExactly(LocalIncompleteness.CONDITIONAL_COMPILATION)
     }
 
+    @Test
+    fun forwardDeclarationsLinkByTheLinkOfARemoteParameterType() {
+        val model = build(
+            "DECLARE\n  PROCEDURE q(a t.c@lnk%TYPE);\n  PROCEDURE r(a t.c@x%TYPE);\n" +
+                "  PROCEDURE q(a T.C@LNK%type) IS BEGIN NULL; END;\n  PROCEDURE r(a t.c@y%TYPE) IS BEGIN NULL; END;\nBEGIN\n  NULL;\nEND;\n"
+        )
+        val forwardQ = subprogram(model, "Q", 0)
+        val bodyQ = subprogram(model, "Q", 1)
+        assertThat(forwardQ.subprogram().counterpart).isEqualTo(bodyQ.id)
+        assertThat(bodyQ.subprogram().counterpart).isEqualTo(forwardQ.id)
+        val parameter = model.declarations.first { it.kind == LocalDeclarationKind.PARAMETER }
+        assertThat((parameter.typeRef as com.felipebz.zpa.project.AnchoredTypeRef).link.toString()).isEqualToIgnoringCase("lnk")
+        // Different links are different headings: no link.
+        assertThat(subprogram(model, "R", 0).subprogram().counterpart).isNull()
+        assertThat(subprogram(model, "R", 1).subprogram().counterpart).isNull()
+    }
+
     private fun subprogram(model: LocalSemanticModel, name: String, index: Int = 0) =
         model.declarations.filter { it.details is LocalSubprogram && it.name.lookupName == name }[index]
 

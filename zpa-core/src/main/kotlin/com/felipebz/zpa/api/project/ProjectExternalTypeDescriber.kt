@@ -102,6 +102,9 @@ private class Composition(
         val walkFacts = stepFacts + listOfNotNull(source.declaration.orElse(null)?.let { factOf(it) })
         val referenceFacts = listOfNotNull(startHolder?.fact)
 
+        // A remote anchor is not described by the local metadata: no lookup, no competition.
+        if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.REMOTE) return Outcome(Status.REMOTE, stoppedAnchor())
+
         // 2. A followed anchor is a positive source interpretation; a found relation reading of it competes.
         followedConflict(stepFacts, referenceFacts)?.let { return it }
 

@@ -81,7 +81,13 @@ class ProjectExternalTypeDescription private constructor(
         RELATION_NOT_FOUND,
 
         /** The column is absent under declared complete column coverage. */
-        COLUMN_NOT_FOUND
+        COLUMN_NOT_FOUND,
+
+        /**
+         * The source walk stopped at an anchor behind a database link (`t.c@link%TYPE`). The supplied metadata
+         * describes the local database only, so no lookup is performed; [anchor] and [anchorName] give the anchor.
+         */
+        REMOTE
     }
 
     /** The anchor kind interpreted: the stopped anchor, or a followed anchor that competes with a relation. */
@@ -134,6 +140,8 @@ class ProjectExternalTypeDescription private constructor(
             }
             Status.SOURCE_INCOMPLETE -> require(externalCandidates.isEmpty()) { "Invalid SOURCE_INCOMPLETE description" }
             Status.CAPTURE_NOT_EXCLUDED -> Unit
+            Status.REMOTE -> require(anchor != null && relationName == null && lookup == null && sourceCandidates.isEmpty() &&
+                externalCandidates.isEmpty()) { "Invalid REMOTE description" }
         }
     }
 

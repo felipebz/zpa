@@ -103,8 +103,9 @@ internal class PackageBodyExtractor(
 
         val implementationEnd = bodyBoundaries.implementationEnd(header.index + 1, end) ?: return null
         val declaration = if (function) {
+            // A missing or rejected return type skips this subprogram, never the members after it.
             val returnIndex = stream.firstKeywordAtTopLevel(cursor, setOf("RETURN"), header.index)
-                ?: return null
+                ?: return ParsedBodySubprogram(null, implementationEnd + 1)
             val modifier = stream.firstKeywordAtTopLevel(
                 returnIndex + 1,
                 FUNCTION_RETURN_TYPE_TERMINATORS,
@@ -112,7 +113,7 @@ internal class PackageBodyExtractor(
             )
             val returnTypeEnd = modifier ?: header.index
             val returnType = typeReferences.declaredType(returnIndex + 1, returnTypeEnd)
-                ?: return null
+                ?: return ParsedBodySubprogram(null, implementationEnd + 1)
             PackageFunctionDeclaration(
                 owner,
                 name.first,

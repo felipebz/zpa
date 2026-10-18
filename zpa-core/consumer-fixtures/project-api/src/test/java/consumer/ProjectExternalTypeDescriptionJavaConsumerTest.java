@@ -36,6 +36,7 @@ class ProjectExternalTypeDescriptionJavaConsumerTest {
             case INCOMPLETE -> "incomplete";
             case RELATION_NOT_FOUND -> "relation not found";
             case COLUMN_NOT_FOUND -> "column not found";
+            case REMOTE -> "remote";
         };
     }
 

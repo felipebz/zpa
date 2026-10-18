@@ -26,7 +26,7 @@ import com.felipebz.zpa.project.*
 
 /** Why an anchor step stopped; recorded only for composition, never part of a public result. */
 internal enum class AnchorStopCause {
-    ROWTYPE, NO_HOLDER, SIBLING, BODY_SCOPE, NO_PACKAGE_SCOPE, PACKAGE_MEMBER, PREFIX_VALUE, PACKAGE_UNIT, DECLARED_LATER
+    REMOTE, ROWTYPE, NO_HOLDER, SIBLING, BODY_SCOPE, NO_PACKAGE_SCOPE, PACKAGE_MEMBER, PREFIX_VALUE, PACKAGE_UNIT, DECLARED_LATER
 }
 
 /**
@@ -164,6 +164,8 @@ internal object ProjectTypeDescriber {
         trace?.written = context is AnchorContext.Written
         trace?.cause = null
         trace?.captors = emptyList()
+        // A remote anchor names another database: nothing in the project or the local metadata describes it.
+        if (reference?.link?.isPresent == true) return step.stop(ProjectTypeDescription.AnchorStop.REMOTE, AnchorStopCause.REMOTE)
         // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
         if (kind == ProjectTypeReference.Anchor.ROWTYPE) return step.stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
         if (context is AnchorContext.Retained && holder == null) return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)

@@ -411,7 +411,8 @@ private object SemanticInspectionMapper {
                 is AnchoredTypeRef -> "Anchored"
                 is RefTypeRef -> "Ref"
             },
-            name = reference.name.toString(),
+            // A remote anchor prints its database link with the name: `t.c@link`.
+            name = reference.name.toString() + ((reference as? AnchoredTypeRef)?.link?.let { "@$it" } ?: ""),
             anchor = (reference as? AnchoredTypeRef)?.anchor?.name,
             sourceRange = sourceRange(reference.sourceRange)
         )

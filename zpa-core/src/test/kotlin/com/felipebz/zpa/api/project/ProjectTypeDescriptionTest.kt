@@ -329,7 +329,7 @@ class ProjectTypeDescriptionTest {
             0 to "DECLARED_TYPE", 1 to "BUILT_IN", 2 to "UNRESOLVED_NAME", 3 to "ANCHORED_REFERENCE", 4 to "REF_REFERENCE", 5 to "CYCLE",
             6 to "UNRESOLVED_VALUE"
         )
-        assertThat(ProjectTypeDescription.AnchorStop.entries.map { it.name }).containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER")
+        assertThat(ProjectTypeDescription.AnchorStop.entries.map { it.name }).containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE")
         assertThat(Category.entries.map { it.name }).containsExactly("NUMERIC", "CHARACTER", "LOB", "BOOLEAN", "DATE", "JSON")
         val described = snapshot.describeType(n("total"), p)
         assertThatThrownBy { (described.subtypes as MutableList<ProjectSubtypeView>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)

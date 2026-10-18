@@ -560,7 +560,7 @@ class ProjectExternalTypeDescriptionTest {
         assertThatThrownBy { (e.externalCandidates as MutableList<ProjectExternalRelation>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
         assertThat(Status.entries.map { it.name }).containsExactly(
             "RESOLVED", "NOT_EXTERNAL", "CAPTURE_NOT_EXCLUDED", "SOURCE_INCOMPLETE", "CONFLICT", "UNAVAILABLE",
-            "SCHEMA_CONTEXT_MISSING", "AMBIGUOUS", "INCOMPLETE", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND"
+            "SCHEMA_CONTEXT_MISSING", "AMBIGUOUS", "INCOMPLETE", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND", "REMOTE"
         )
         val pool = Executors.newFixedThreadPool(8)
         try {

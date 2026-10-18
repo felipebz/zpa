@@ -539,6 +539,7 @@ class ProjectApiKotlinConsumerTest {
         ProjectTypeDescription.AnchorStop.FIELD_PATH -> "field path"
         ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE -> "enclosing scope"
         ProjectTypeDescription.AnchorStop.DECLARED_LATER -> "declared later"
+        ProjectTypeDescription.AnchorStop.REMOTE -> "remote"
     }
 
     private fun label(status: ProjectValueResolution.Status): String = when (status) {

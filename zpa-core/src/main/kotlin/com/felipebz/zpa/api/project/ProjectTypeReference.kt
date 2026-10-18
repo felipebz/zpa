@@ -36,10 +36,17 @@ class ProjectTypeReference private constructor(
     val kind: Kind,
     val name: ProjectQualifiedName,
     val sourceRange: ProjectSourceRange,
-    anchor: Anchor?
+    anchor: Anchor?,
+    link: ProjectQualifiedName?
 ) {
     /** Present only for [Kind.ANCHORED] references. */
     val anchor: Optional<Anchor> = Optional.ofNullable(anchor)
+
+    /**
+     * The database link of a remote anchor (`t.c@link%TYPE`); present only for a [Kind.ANCHORED] reference written with
+     * a link. [name] is then the anchored object on the remote database.
+     */
+    val link: Optional<ProjectQualifiedName> = Optional.ofNullable(link)
 
     enum class Kind {
         NAMED,
@@ -52,7 +59,7 @@ class ProjectTypeReference private constructor(
         ROWTYPE
     }
 
-    override fun toString(): String = "$kind $name"
+    override fun toString(): String = "$kind $name" + link.map { "@$it" }.orElse("")
 
     internal companion object {
         @JvmSynthetic
@@ -60,14 +67,15 @@ class ProjectTypeReference private constructor(
             val range = ref.sourceRange.toPublic()
             val name = ProjectQualifiedName.wrap(ref.name)
             return when (ref) {
-                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null)
-                is RefTypeRef -> ProjectTypeReference(Kind.REF, name, range, null)
+                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null, null)
+                is RefTypeRef -> ProjectTypeReference(Kind.REF, name, range, null, null)
                 is AnchoredTypeRef -> ProjectTypeReference(
                     Kind.ANCHORED, name, range,
                     when (ref.anchor) {
                         TypeAnchor.TYPE -> Anchor.TYPE
                         TypeAnchor.ROWTYPE -> Anchor.ROWTYPE
-                    }
+                    },
+                    ref.link?.let(ProjectQualifiedName::wrap)
                 )
             }
         }

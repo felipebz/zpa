@@ -39,7 +39,8 @@ private val DATATYPE_CONTINUATIONS = setOf(
 /** Strict validation of datatype token slices. */
 internal class DatatypeShape(private val stream: TokenStream) {
     /**
-     * Conservative datatype shape: `name[.name…] [%TYPE|%ROWTYPE]`, `REF name[.name]`, or a
+     * Conservative datatype shape: `name[.name…] [@link[.link…]] %TYPE|%ROWTYPE` (the link only on an anchor),
+     * `name[.name…]`, `REF name[.name]`, or a
      * name followed only by balanced groups and words from [DATATYPE_CONTINUATIONS]. Anything
      * else (an extra free identifier, punctuation, unknown words) is rejected: no fact.
      */
@@ -53,6 +54,10 @@ internal class DatatypeShape(private val stream: TokenStream) {
         while (stream.isPunctuator(index, PlSqlPunctuator.DOT) && stream.isNameBefore(index + 1, endExclusive)) index += 2
         if (index == endExclusive) return true
         if (ref) return false
+        if (stream.isPunctuator(index, PlSqlPunctuator.REMOTE)) {
+            index = linkEnd(index, endExclusive) ?: return false
+            if (!stream.isPunctuator(index, PlSqlPunctuator.MOD)) return false
+        }
         if (stream.isPunctuator(index, PlSqlPunctuator.MOD)) {
             return index + 2 == endExclusive && (stream.isKeyword(index + 1, "TYPE") || stream.isKeyword(index + 1, "ROWTYPE"))
         }
@@ -67,6 +72,15 @@ internal class DatatypeShape(private val stream: TokenStream) {
             }
         }
         return true
+    }
+
+    /** The index after the database link `@name[.name…]` whose `@` is at [at], or null when no name follows it. */
+    fun linkEnd(at: Int, endExclusive: Int): Int? {
+        var index = at + 1
+        if (!stream.isNameBefore(index, endExclusive)) return null
+        index++
+        while (stream.isPunctuator(index, PlSqlPunctuator.DOT) && stream.isNameBefore(index + 1, endExclusive)) index += 2
+        return index
     }
 
     /**
@@ -141,15 +155,28 @@ internal class TypeReferences(private val stream: TokenStream) {
         val percent = (start until end).firstOrNull { stream.isPunctuator(it, PlSqlPunctuator.MOD) }?.minus(start) ?: -1
         val ref = stream.isKeyword(start, "REF")
         val nameStart = if (ref) 1 else 0
-        val nameEnd = if (percent >= 0) percent else selected.size
+        val at = (start until end).firstOrNull { stream.isPunctuator(it, PlSqlPunctuator.REMOTE) }?.minus(start) ?: -1
+        val nameEnd = when {
+            at >= 0 -> at
+            percent >= 0 -> percent
+            else -> selected.size
+        }
         val datatypeTokens = selected.subList(nameStart, nameEnd)
         val parsedName = qualifiedSegments(datatypeTokens) ?: return null
         val anchor = anchorSuffix(start, percent, selected.size)
         if (percent >= 0 && (ref || parsedName.second != datatypeTokens.size || anchor == null)) return null
+        // A database link is accepted only between the anchored name and its `%TYPE`/`%ROWTYPE`.
+        val link = if (at < 0) null else {
+            if (anchor == null || at > percent) return null
+            val linkTokens = selected.subList(at + 1, percent)
+            val parsedLink = qualifiedSegments(linkTokens) ?: return null
+            if (parsedLink.second != linkTokens.size) return null
+            parsedLink.first
+        }
         val name = parsedName.first
         if (ref && !DatatypeShape(stream).strictDatatype(start, end)) return null
         val sourceRange = stream.range(start, end - 1)
-        if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange)
+        if (anchor != null) return AnchoredTypeRef(name, anchor, sourceRange, link)
         if (ref) return RefTypeRef(name, sourceRange)
         val headerTypeIdentity = normalizedHeaderTypeIdentity(selected)
         return if (headerTypeIdentity == null) {

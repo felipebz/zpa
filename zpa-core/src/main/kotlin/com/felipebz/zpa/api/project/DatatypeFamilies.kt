@@ -141,7 +141,8 @@ internal object DatatypeFamilies {
      * reference) or [startName] (a name query). Only conclusive statuses classify:
      * - `NOT_EXTERNAL` with a source built-in (terminal reference, else the request name), or with a source RECORD,
      *   COLLECTION or OBJECT declaration;
-     * - `RESOLVED` column `%TYPE` with an owner-less datatype, or `RESOLVED` `%ROWTYPE`.
+     * - `RESOLVED` column `%TYPE` with an owner-less datatype, or `RESOLVED` `%ROWTYPE`;
+     * - `REMOTE` `%ROWTYPE` (a row on any database). A `REMOTE` `%TYPE` has no family: its column is not known here.
      *
      * A retained reference written with `%ROWTYPE` is COMPOSITE whatever its resolution: any declaration that compiles
      * with it holds a record (table, view or cursor row), and one that does not compile cannot receive a call. The shape
@@ -169,6 +170,8 @@ internal object DatatypeFamilies {
                 ProjectTypeReference.Anchor.TYPE -> description.lookup.flatMap { it.column }.flatMap { it.datatype }.orElse(null)?.let { ofExternal(it) }
                 null -> null
             }
+            ProjectExternalTypeDescription.Status.REMOTE ->
+                if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) ProjectDatatypeFamily.COMPOSITE else null
             else -> null
         }
     }

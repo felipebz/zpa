@@ -74,12 +74,17 @@ class NamedTypeRef private constructor(
     )
 }
 
+/**
+ * A `%TYPE` / `%ROWTYPE` anchor. [name] is the anchored object (the segments before any `@`); [link] is the database
+ * link of a remote anchor (`t.c@link%TYPE`), null for a local one. The source range covers the whole datatype.
+ */
 data class AnchoredTypeRef(
     override val name: QualifiedName,
     val anchor: TypeAnchor,
-    override val sourceRange: SourceRange
+    override val sourceRange: SourceRange,
+    val link: QualifiedName? = null
 ) : TypeRef {
-    override fun structuralKey() = "anchored:${name.lookupKey()}:$anchor"
+    override fun structuralKey() = "anchored:${name.lookupKey()}${link?.let { "@" + it.lookupKey() } ?: ""}:$anchor"
 }
 
 /** An Oracle REF datatype whose target object type remains unresolved. */

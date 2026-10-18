@@ -31,6 +31,7 @@ class ProjectExternalTypeDescriptionKotlinConsumerTest {
         ProjectExternalTypeDescription.Status.INCOMPLETE -> "incomplete"
         ProjectExternalTypeDescription.Status.RELATION_NOT_FOUND -> "relation not found"
         ProjectExternalTypeDescription.Status.COLUMN_NOT_FOUND -> "column not found"
+        ProjectExternalTypeDescription.Status.REMOTE -> "remote"
     }
 
     @Test

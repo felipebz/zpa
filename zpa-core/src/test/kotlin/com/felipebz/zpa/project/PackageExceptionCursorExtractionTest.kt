@@ -57,7 +57,7 @@ class PackageExceptionCursorExtractionTest {
 
     private fun type(ref: TypeRef?) = when (ref) {
         null -> null
-        is AnchoredTypeRef -> "${ref.name}%${ref.anchor}"
+        is AnchoredTypeRef -> "${ref.name}${ref.link?.let { "@$it" } ?: ""}%${ref.anchor}"
         else -> ref.name.toString()
     }
 
@@ -88,17 +88,18 @@ class PackageExceptionCursorExtractionTest {
             "CURSOR c_pending (p_status NUMBER) RETURN send_queue%ROWTYPE;",
             "CURSOR c_record RETURN rec_t IS SELECT 1 id FROM dual;",
             "CURSOR \"Quoted\" RETURN other.rec_t;",
-            "CURSOR Mixed_Case RETURN c_all%ROWTYPE;"
+            "CURSOR Mixed_Case RETURN c_all%ROWTYPE;",
+            "CURSOR c_remote RETURN t@l%ROWTYPE;"
         )
         val facts = cursors(source)
         assertThat(facts.map { it.name.originalSpelling })
-            .containsExactly("c_all", "c_param", "c_pending", "c_record", "\"Quoted\"", "Mixed_Case")
+            .containsExactly("c_all", "c_param", "c_pending", "c_record", "\"Quoted\"", "Mixed_Case", "c_remote")
         assertThat(facts.map { type(it.returnType) })
-            .containsExactly(null, null, "send_queue%ROWTYPE", "rec_t", "other.rec_t", "c_all%ROWTYPE")
+            .containsExactly(null, null, "send_queue%ROWTYPE", "rec_t", "other.rec_t", "c_all%ROWTYPE", "t@l%ROWTYPE")
         assertThat(facts.map { c -> c.parameters.map { "${it.ordinal}:${it.name}:${it.mode}:${it.defaultPresent}:${it.typeRef.name}" } })
             .containsExactly(
                 emptyList(), listOf("1:p_status:IN:false:NUMBER", "2:p_flag:IN:true:VARCHAR2"), listOf("1:p_status:IN:false:NUMBER"),
-                emptyList(), emptyList(), emptyList()
+                emptyList(), emptyList(), emptyList(), emptyList()
             )
         assertThat(facts.map { it.kind }).containsOnly(ProjectDeclarationKind.PACKAGE_CURSOR)
         assertThat(facts[4].qualifiedName()).isEqualTo(QualifiedName(listOf(id("p"), id("\"Quoted\""))))

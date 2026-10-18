@@ -41,7 +41,7 @@ class PackageCollectionElementTest {
     private fun spec(vararg declarations: String) = "CREATE PACKAGE p AS\n${declarations.joinToString("\n") { "  $it" }}\nEND p;"
     private fun id(source: String) = OracleIdentifier.fromSource(source)
 
-    private data class Element(val kind: String, val name: String, val range: SourceRange)
+    private data class Element(val kind: String, val name: String, val range: SourceRange, val link: String? = null)
 
     private fun describe(ref: TypeRef) = Element(
         when (ref) {
@@ -49,21 +49,24 @@ class PackageCollectionElementTest {
             is AnchoredTypeRef -> "ANCHORED:${ref.anchor}"
             is RefTypeRef -> "REF"
         },
-        ref.name.segments.joinToString(".") { it.originalSpelling }, ref.sourceRange
+        ref.name.segments.joinToString(".") { it.originalSpelling }, ref.sourceRange,
+        (ref as? AnchoredTypeRef)?.link?.segments?.joinToString(".") { it.originalSpelling }
     )
 
     private fun elementFromAst(datatype: AstNode): Element {
         val tokens = datatype.tokens
         val ref = datatype.getFirstChild().type == PlSqlGrammar.REF_DATATYPE
         val anchored = datatype.getFirstChild().type == PlSqlGrammar.ANCHORED_DATATYPE
-        val names = tokens.drop(if (ref) 1 else 0).takeWhile { it.value != "%" }.filter { it.value != "." }
+        val names = tokens.drop(if (ref) 1 else 0).takeWhile { it.value != "%" && it.value != "@" }.filter { it.value != "." }
             .let { list -> if (anchored || ref || datatype.getFirstChild().type == PlSqlGrammar.CUSTOM_DATATYPE) list else list.take(1) }
+        val link = tokens.dropWhile { it.value != "@" }.drop(1).takeWhile { it.value != "%" }.filter { it.value != "." }
+            .takeIf { it.isNotEmpty() }?.joinToString(".") { it.originalValue }
         val kind = when {
             ref -> "REF"
             anchored -> "ANCHORED:${tokens.last().value.uppercase()}"
             else -> "NAMED"
         }
-        return Element(kind, names.joinToString(".") { it.originalValue }, SourceRange(fileId, tokens.first().line, tokens.first().column, tokens.last().endLine, tokens.last().endColumn))
+        return Element(kind, names.joinToString(".") { it.originalValue }, SourceRange(fileId, tokens.first().line, tokens.first().column, tokens.last().endLine, tokens.last().endColumn), link)
     }
 
     /** Collections that are direct members of a specification's declare section, with the element datatype node. */
@@ -108,9 +111,12 @@ class PackageCollectionElementTest {
                 "TYPE k IS TABLE OF a;",
                 "TYPE l IS TABLE OF \"Mixed\" NULL;",
                 "TYPE m IS TABLE OF app.q.t INDEX BY BINARY_INTEGER;",
-                "TYPE n IS TABLE OF TIMESTAMP(3) WITH TIME ZONE;"
+                "TYPE n IS TABLE OF TIMESTAMP(3) WITH TIME ZONE;",
+                "TYPE o IS TABLE OF emp.sal@link%TYPE;",
+                "TYPE p2 IS TABLE OF s.t@internet.intranet%ROWTYPE;",
+                "TYPE q2 IS TABLE OF t@\"LNK\"%ROWTYPE;"
             ),
-            14
+            17
         )
     }
 
@@ -151,7 +157,8 @@ class PackageCollectionElementTest {
     fun unsupportedOrMalformedElementsAreNotFabricatedAndLaterMembersSurvive() {
         listOf(
             "TYPE bad IS TABLE OF t@link;" to true,
-            "TYPE bad IS TABLE OF emp.sal@link%TYPE;" to true,
+            "TYPE bad IS TABLE OF emp.sal@%TYPE;" to false,
+            "TYPE bad IS TABLE OF REF t@link%TYPE;" to false,
             "TYPE bad IS TABLE OF ;" to false,
             "TYPE bad IS TABLE NUMBER;" to false,
             "TYPE bad IS VARRAY OF NUMBER;" to false,

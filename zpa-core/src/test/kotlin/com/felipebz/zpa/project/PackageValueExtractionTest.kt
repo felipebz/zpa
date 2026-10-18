@@ -47,7 +47,7 @@ class PackageValueExtractionTest {
 
     private data class Expected(
         val name: String, val constant: Boolean, val typeKind: String, val typeName: String, val typeRange: SourceRange,
-        val range: SourceRange
+        val range: SourceRange, val link: String? = null
     )
 
     private fun actual(value: PackageValueDeclaration) = Expected(
@@ -57,7 +57,8 @@ class PackageValueExtractionTest {
             is AnchoredTypeRef -> "ANCHORED:${type.anchor}"
             is RefTypeRef -> "REF"
         },
-        value.typeRef.name.segments.joinToString(".") { it.originalSpelling }, value.typeRef.sourceRange, value.sourceRange
+        value.typeRef.name.segments.joinToString(".") { it.originalSpelling }, value.typeRef.sourceRange, value.sourceRange,
+        (value.typeRef as? AnchoredTypeRef)?.link?.segments?.joinToString(".") { it.originalSpelling }
     )
 
     /** Leading `name{.name}` of a datatype, taken from AST tokens (after a leading REF). */
@@ -83,7 +84,9 @@ class PackageValueExtractionTest {
             }
             Expected(
                 variable.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenOriginalValue,
-                variable.hasDirectChildren(PlSqlKeyword.CONSTANT), kind, typeName(datatype), datatype.range(), variable.range()
+                variable.hasDirectChildren(PlSqlKeyword.CONSTANT), kind, typeName(datatype), datatype.range(), variable.range(),
+                datatype.tokens.dropWhile { it.value != "@" }.drop(1).takeWhile { it.value != "%" }.filter { it.value != "." }
+                    .takeIf { it.isNotEmpty() }?.joinToString(".") { it.originalValue }
             )
         }
     }
@@ -110,6 +113,8 @@ class PackageValueExtractionTest {
             spec("dp DOUBLE PRECISION;", "lr LONG RAW;", "vc VARCHAR2(10 BYTE);"),
             spec("q1 pkg.t;", "q2 sch.pkg.t;", "\"Q\" \"Sch\".\"Pkg\".\"T\";", "q3 sys.anydata;"),
             spec("a1 tab.col%TYPE;", "a2 tab%ROWTYPE;", "a3 sch.tab.col%TYPE;", "a4 other_pkg.value%TYPE;", "a5 \"T\".\"C\"%TYPE;", "a6 tab.col%type;"),
+            spec("l1 s.t@l%ROWTYPE;", "l2 t@l%rowtype;", "l3 s.t.c@l%TYPE;", "l4 t.c@internet.intranet%TYPE := NULL;", "l5 t.c@\"LNK\"%TYPE;",
+                "l6 CONSTANT t.c@l%TYPE DEFAULT 1;"),
             spec("r1 REF obj_t;", "r2 REF sch.obj_t;", "r3 ref \"O\";")
         ).forEach(::assertAgreesWithAst)
     }

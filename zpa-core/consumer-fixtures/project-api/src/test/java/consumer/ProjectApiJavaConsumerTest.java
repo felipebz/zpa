@@ -810,6 +810,7 @@ class ProjectApiJavaConsumerTest {
             case FIELD_PATH -> "field path";
             case ENCLOSING_SCOPE -> "enclosing scope";
             case DECLARED_LATER -> "declared later";
+            case REMOTE -> "remote";
         };
     }
 
@@ -991,7 +992,7 @@ class ProjectApiJavaConsumerTest {
         assertThat(Arrays.stream(ProjectTypeDescription.Status.values()).map(Enum::name)).containsExactly(
             "DECLARED_TYPE", "BUILT_IN", "UNRESOLVED_NAME", "ANCHORED_REFERENCE", "REF_REFERENCE", "CYCLE", "UNRESOLVED_VALUE");
         assertThat(Arrays.stream(ProjectTypeDescription.AnchorStop.values()).map(Enum::name))
-            .containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER");
+            .containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE");
         assertThat(Arrays.stream(ProjectValueResolution.Status.values()).map(Enum::name)).containsExactly(
             "RESOLVED", "AMBIGUOUS", "NOT_FOUND_IN_PROJECT", "INCOMPLETE_INDEX", "NOT_PREPARED");
     }
