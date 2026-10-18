@@ -201,6 +201,103 @@ class ModelClauseTest : RuleTest() {
     }
 
     @Test
+    fun matchesFirstLastAggregateCellReference() {
+        val source = "model dimension by (year) measures (value, 0 boundary) " +
+            "rules (boundary[1] = min(value) keep (dense_rank first order by value)[year <= 2024], " +
+            "boundary[2] = max(value) keep (dense_rank last order by value desc nulls last)[any])"
+        assertThat(p).matches(source)
+
+        val node = p.parse(source)
+
+        assertThat(node.getDescendants(DmlGrammar.KEEP_CLAUSE)).hasSize(2)
+        assertThat(node.getDescendants(DmlGrammar.MODEL_CELL_REFERENCE_SUFFIX)).hasSize(4)
+    }
+
+    @Test
+    fun matchesIterativeBinPackingModel() {
+        setRootRule(DmlGrammar.SELECT_EXPRESSION)
+
+        assertThat(p).matches(
+            """
+            select id, rownum n, bin, qt_apontamento, max(bin_value) over (partition by bin) bin_value
+              from (select * from apontamentordemproducao where nr_seqregistro = v_nr_seqregistro
+                    model dimension by (row_number() over (order by qt_apontamento desc) rn)
+                    measures (id,
+                              qt_apontamento,
+                              row_number() over (order by qt_apontamento desc) bin,
+                              qt_apontamento bin_value,
+                              row_number() over (order by qt_apontamento desc) rn_m,
+                              0 min_bin,
+                              count(*) over () - v_nr_bins - 1 n_iters)
+                    rules iterate (100000) until (iteration_number >= n_iters[1])
+                    (min_bin[1] = min(rn_m) keep (dense_rank first order by bin_value)[rn <= v_nr_bins],
+                     bin[iteration_number + v_nr_bins + 1] = min_bin[1],
+                     bin_value[min_bin[1]] = bin_value[cv()]
+                       + nvl(qt_apontamento[iteration_number + v_nr_bins + 1], 0)))
+            """
+        )
+    }
+
+    @Test
+    fun matchesFirstLastAnalyticFunctionInModelRule() {
+        assertThat(p).matches(
+            "model dimension by (year) measures (value, 0 boundary) "
+                + "rules update (boundary[any] = min(value) keep (dense_rank first order by value) over ())"
+        )
+    }
+
+    @Test
+    fun rejectsClausesAroundAggregateCellReference() {
+        listOf(
+            "sum(value)[any] over ()",
+            "sum(value) over () [any]",
+            "min(value)[any] keep (dense_rank first order by value)",
+            "min(value) keep (dense_rank first order by value)[any] over ()",
+            "min(value) keep (dense_rank first order by value) over () [any]",
+            "listagg(value, ',') within group (order by value)[any] filter (where value > 1)",
+            "listagg(value, ',') within group (order by value)[any] over (partition by year)"
+        ).forEach { expression ->
+            val source = "model dimension by (year) measures (value) rules (value[1] = $expression)"
+            assertThat(p).describedAs(expression).notMatches(source)
+        }
+    }
+
+    @Test
+    fun matchesModelColumnAliasesWithAs() {
+        assertThat(p).matches(
+            "model partition by (country as c) dimension by (year as y) "
+                + "measures (sale as s, 0 as total) rules (total[1] = s[1])"
+        )
+    }
+
+    @Test
+    fun matchesExpressionsInForLoops() {
+        assertThat(p).matches(
+            """
+            model
+              dimension by (year, month)
+              measures (value)
+              rules
+              (
+                value[for year in (-1, 2000 + 1, abs(-2)), 1] = 1,
+                value[for year in ((select max(year) from years), 2025), 1] = 1,
+                value[for year from -1 to 2000 + 1 increment 1, 1] = 1,
+                value[for year like 'Y' || '%' from 1 to 2 increment 1, 1] = 1,
+                value[for (year, month) in ((-1, 1 + 1), (2025, abs(-2)))] = 1
+              )
+            """
+        )
+    }
+
+    @Test
+    fun rejectsUntilWithoutCondition() {
+        assertThat(p).notMatches(
+            "model dimension by (year) measures (value) "
+                + "rules iterate (3) until (value[1] = 1, value[2] = 2)"
+        )
+    }
+
+    @Test
     fun matchesModelForLoopAndIterationFunctions() {
         setRootRule(DmlGrammar.SELECT_EXPRESSION)
 
@@ -251,6 +348,7 @@ class ModelClauseTest : RuleTest() {
 
         assertThat(p).notMatches("select measure[2024] from values_table")
         assertThat(p).notMatches("select sum(value)[2024] from values_table")
+        assertThat(p).notMatches("select min(value) keep (dense_rank first order by year)[2024] from values_table")
         assertThat(p).notMatches("select value from values_table where measure[2024] = 1")
         assertThat(p).notMatches("select value from values_table where value is present")
         assertThat(p).notMatches("select country from values_table group by country having value is not present")

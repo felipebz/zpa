@@ -23,21 +23,21 @@ import com.felipebz.flr.api.GenericTokenType.EOF
 import com.felipebz.flr.api.GenericTokenType.IDENTIFIER
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.flr.grammar.LexerfulGrammarBuilder
-import com.felipebz.zpa.grammar.ExecuteBufferExpression
-import com.felipebz.zpa.grammar.JsonArrayStepAdmissionExpression
-import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
-import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.DclGrammar.DCL_COMMAND
 import com.felipebz.zpa.api.DdlGrammar.*
 import com.felipebz.zpa.api.DmlGrammar.*
-import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_RECOGNITION_FUNCTION
-import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_INVALID_AGGREGATE_FUNCTION
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.*
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_INVALID_AGGREGATE_FUNCTION
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_RECOGNITION_FUNCTION
 import com.felipebz.zpa.api.SessionControlGrammar.SESSION_CONTROL_COMMAND
 import com.felipebz.zpa.api.SqlPlusGrammar.SQLPLUS_COMMAND
 import com.felipebz.zpa.api.TclGrammar.*
+import com.felipebz.zpa.grammar.ExecuteBufferExpression
+import com.felipebz.zpa.grammar.JsonArrayStepAdmissionExpression
+import com.felipebz.zpa.squid.PlSqlConfiguration
+import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 
 enum class PlSqlGrammar : GrammarRuleKey {
 
@@ -1033,8 +1033,13 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     // suffix after the function call, for example
                     // SUM(measure)[dimension_value]. The suffix itself is
                     // guarded, so this does not broaden ordinary SQL calls.
+                    // The cell reference ends the aggregate: Oracle rejects a
+                    // following OVER, KEEP or FILTER clause (ORA-00907).
                     b.firstOf(
-                        b.sequence(CALL_EXPRESSION, b.optional(MODEL_CELL_REFERENCE_SUFFIX)),
+                        b.sequence(
+                            CALL_EXPRESSION,
+                            b.optional(MODEL_CELL_REFERENCE_SUFFIX, b.nextNot(b.firstOf(OVER, KEEP, FILTER)))
+                        ),
                         MEMBER_EXPRESSION
                     ),
                     b.zeroOrMore(DOT, b.firstOf(CALL_EXPRESSION, MEMBER_EXPRESSION)),
@@ -1100,7 +1105,9 @@ enum class PlSqlGrammar : GrammarRuleKey {
                         OBJECT_REFERENCE,
                         b.optional(b.firstOf(
                             ANALYTIC_CLAUSE,
-                            b.sequence(KEEP_CLAUSE, b.optional(ANALYTIC_CLAUSE))
+                            // MIN(measure) KEEP (...)[dimension_value] is a FIRST/LAST
+                            // aggregate cell reference in a MODEL expression.
+                            b.sequence(KEEP_CLAUSE, b.optional(b.firstOf(ANALYTIC_CLAUSE, MODEL_CELL_REFERENCE_SUFFIX)))
                         ))
                     )
                 )

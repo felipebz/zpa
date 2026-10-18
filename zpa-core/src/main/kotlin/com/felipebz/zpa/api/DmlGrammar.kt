@@ -21,13 +21,13 @@ package com.felipebz.zpa.api
 
 import com.felipebz.flr.grammar.ContextKey
 import com.felipebz.flr.grammar.GrammarRuleKey
-import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
-import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_CLAUSE
 import com.felipebz.zpa.api.PlSqlKeyword.*
 import com.felipebz.zpa.api.PlSqlPunctuator.*
 import com.felipebz.zpa.api.PlSqlTokenType.INTEGER_LITERAL
+import com.felipebz.zpa.api.RowPatternGrammar.ROW_PATTERN_CLAUSE
 import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar.*
+import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 
 /** The kind of row source being parsed; DELETE and UPDATE targets have none. */
 internal enum class RowSource { QUERY, MERGE }
@@ -742,9 +742,10 @@ enum class DmlGrammar : GrammarRuleKey {
                 RETURN, b.firstOf(UPDATED, ALL), ROWS
             )
 
+            // Oracle accepts AS before the alias, although the diagram omits it.
             b.rule(MODEL_COLUMN).define(
                 EXPRESSION,
-                b.optional(IDENTIFIER_NAME)
+                b.optional(b.optional(AS), IDENTIFIER_NAME)
             )
 
             b.rule(MODEL_PARTITION_BY_CLAUSE).define(
@@ -807,7 +808,7 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.withContext(
                     MODEL_EXPRESSION_CONTEXT, true,
                     ITERATE, LPARENTHESIS, EXPRESSION, RPARENTHESIS,
-                    b.optional(UNTIL, b.optional(LPARENTHESIS, EXPRESSION, RPARENTHESIS))
+                    b.optional(UNTIL, LPARENTHESIS, EXPRESSION, RPARENTHESIS)
                 )
             )
 
@@ -823,29 +824,34 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.zeroOrMore(COMMA, MODEL_ORDER_BY_ITEM)
             )
 
+            // The diagrams show literals in FOR loops, but Oracle parses expressions here and only
+            // rejects non-constant values afterwards (ORA-32625, ORA-32626).
             b.rule(SINGLE_COLUMN_FOR_LOOP).define(
                 FOR, IDENTIFIER_NAME,
                 b.firstOf(
                     b.sequence(
                         IN, LPARENTHESIS,
                         b.firstOf(
-                            b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
-                            b.sequence(LITERAL, b.zeroOrMore(COMMA, LITERAL))
+                            // Values first: when the subquery alternative matches a leading
+                            // (SELECT ...) value and then fails at the comma, EXPRESSION no
+                            // longer parses that value at the same position.
+                            b.sequence(EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION), b.next(RPARENTHESIS)),
+                            b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION)
                         ),
                         RPARENTHESIS
                     ),
                     b.sequence(
-                        b.optional(LIKE, CHARACTER_LITERAL),
-                        FROM, LITERAL,
-                        TO, LITERAL,
-                        b.firstOf(INCREMENT, DECREMENT), LITERAL
+                        b.optional(LIKE, EXPRESSION),
+                        FROM, EXPRESSION,
+                        TO, EXPRESSION,
+                        b.firstOf(INCREMENT, DECREMENT), EXPRESSION
                     )
                 )
             )
 
-            val modelLiteralTuple = b.sequence(
+            val modelForLoopTuple = b.sequence(
                 LPARENTHESIS,
-                LITERAL, b.zeroOrMore(COMMA, LITERAL),
+                EXPRESSION, b.zeroOrMore(COMMA, EXPRESSION),
                 RPARENTHESIS
             )
 
@@ -857,8 +863,8 @@ enum class DmlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.withoutContext(MODEL_EXPRESSION_CONTEXT, SELECT_EXPRESSION),
                     b.sequence(
-                        modelLiteralTuple,
-                        b.zeroOrMore(COMMA, modelLiteralTuple)
+                        modelForLoopTuple,
+                        b.zeroOrMore(COMMA, modelForLoopTuple)
                     )
                 ),
                 RPARENTHESIS
