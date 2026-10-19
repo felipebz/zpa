@@ -156,6 +156,24 @@ class OracleDictionaryMappingTest {
         assertThat(relation.rowObjectType.get().name).isEqualTo("ADDR_T")
         assertThat(relation.rowObjectType.get().typeOwner).contains(id("APP"))
         assertThat(relation.rowFields).hasSize(2)
+        assertThat(relation.isView).isFalse()
+    }
+
+    @Test
+    fun viewsAreViewsAndObjectViewsKeepTheirRowType() {
+        val result = OracleDictionaryMapping.assemble(
+            OracleMetadataRequest.builder().schema("APP").build(), session,
+            listOf(RelationRow("APP", "V", null, null, true, view = true), RelationRow("APP", "ADDR_V", "APP", "ADDR_T", true, view = true)),
+            listOf(col("A", 1, "NUMBER", relation = "V"), col("STREET", 1, "VARCHAR2", relation = "ADDR_V")), at
+        )
+        val plain = result.metadata.findRelation(id("APP"), id("V")).relation.get()
+        assertThat(plain.isView).isTrue()
+        assertThat(plain.rowObjectType).isEmpty()
+        val objectView = result.metadata.findRelation(id("APP"), id("ADDR_V")).relation.get()
+        assertThat(objectView.isView).isTrue()
+        assertThat(objectView.rowObjectType.get().name).isEqualTo("ADDR_T")
+        assertThat(objectView.rowObjectType.get().typeOwner).contains(id("APP"))
+        assertThat(objectView.rowFields.map { it.name }).containsExactly(id("STREET"))
     }
 
     @Test

@@ -31,11 +31,18 @@ import java.time.Instant
 internal class SessionInfo(val sessionUser: String, val currentSchema: String, val container: String, val database: String)
 
 /**
- * One `ALL_ALL_TABLES` or `ALL_VIEWS` row; [typeName] is set for object tables. [columnsAcquired] states that the
- * relation's user-generated columns were queried over the same scope in the same transaction, which is what makes it
- * column-complete (independently of how many columns were returned).
+ * One `ALL_ALL_TABLES` or `ALL_VIEWS` row ([view]); [typeName] is set for object tables and object views. [columnsAcquired]
+ * states that the relation's user-generated columns were queried over the same scope in the same transaction, which is
+ * what makes it column-complete (independently of how many columns were returned).
  */
-internal class RelationRow(val schema: String, val name: String, val typeOwner: String?, val typeName: String?, val columnsAcquired: Boolean)
+internal class RelationRow(
+    val schema: String,
+    val name: String,
+    val typeOwner: String?,
+    val typeName: String?,
+    val columnsAcquired: Boolean,
+    val view: Boolean = false
+)
 
 /** One user-generated `ALL_TAB_COLS` row, values as read (SQL NULL stays null). */
 internal class ColumnRow(
@@ -109,11 +116,12 @@ internal object OracleDictionaryMapping {
             val rows = columnsByRelation[key].orEmpty()
             try {
                 val descriptors = rows.map { column(it) }
-                val descriptor = if (relation.typeName != null) {
-                    val rowType = ProjectExternalDatatype.of(relation.typeName, relation.typeOwner, null, null, null, null)
-                    ProjectExternalRelation.objectTable(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
-                } else {
-                    ProjectExternalRelation.of(relation.schema, relation.name, relation.columnsAcquired, descriptors)
+                val rowType = relation.typeName?.let { ProjectExternalDatatype.of(it, relation.typeOwner, null, null, null, null) }
+                val descriptor = when {
+                    relation.view && rowType != null -> ProjectExternalRelation.objectView(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
+                    relation.view -> ProjectExternalRelation.view(relation.schema, relation.name, relation.columnsAcquired, descriptors)
+                    rowType != null -> ProjectExternalRelation.objectTable(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
+                    else -> ProjectExternalRelation.of(relation.schema, relation.name, relation.columnsAcquired, descriptors)
                 }
                 builder.relation(descriptor)
             } catch (e: IllegalArgumentException) {

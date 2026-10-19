@@ -73,6 +73,7 @@ class OracleMetadataAcquisitionIT {
             "CREATE TYPE addr_t AS OBJECT (street VARCHAR2(30), city VARCHAR2(30))",
             "CREATE TABLE dt_table (x XMLTYPE, a addr_t, j JSON, r RAW(16), n NCHAR(4), xs SYS.XMLTYPE)",
             "CREATE TABLE addr_tab OF addr_t",
+            "CREATE VIEW addr_v OF addr_t WITH OBJECT IDENTIFIER (street) AS SELECT street, city FROM addr_tab",
             "CREATE TABLE \"MixedCase\" (\"MixedCol\" NUMBER, plain DATE)",
             "GRANT SELECT ON test_table TO ${reader.name}",
             pkg,
@@ -169,6 +170,18 @@ class OracleMetadataAcquisitionIT {
         assertThat(names(tab.rowFields)).containsExactly("STREET", "CITY")
         assertThat(written(Anchor.ROWTYPE, "addr_tab").status).isEqualTo(Status.RESOLVED)
         assertThat(owner.accepts("DECLARE v addr_tab%ROWTYPE; BEGIN v := addr_t('s', 'c'); END;")).isTrue()
+        assertThat(tab.isView).isFalse()
+        // An object view has the same row type, and its hidden SYS_NC_OID$ and SYS_NC_ROWINFO$ columns are left out.
+        val view = relation("ADDR_V")
+        assertThat(view.isView).isTrue()
+        assertThat(view.rowObjectType.get().name).isEqualTo("ADDR_T")
+        assertThat(view.rowObjectType.get().typeOwner).contains(schema)
+        assertThat(names(view.columns)).containsExactly("STREET", "CITY")
+        assertThat(written(Anchor.ROWTYPE, "addr_v").status).isEqualTo(Status.RESOLVED)
+        assertThat(owner.accepts("DECLARE v addr_v%ROWTYPE; BEGIN v := addr_t('s', 'c'); END;")).isTrue()
+        val plain = relation("TEST_VIEW")
+        assertThat(plain.isView).isTrue()
+        assertThat(plain.rowObjectType).isEmpty
     }
 
     @Test

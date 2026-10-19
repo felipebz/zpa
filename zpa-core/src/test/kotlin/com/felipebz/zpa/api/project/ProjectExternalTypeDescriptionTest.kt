@@ -167,6 +167,20 @@ class ProjectExternalTypeDescriptionTest {
     }
 
     @Test
+    fun objectViewsKeepTheirRowTypeAsObjectTablesDo() {
+        val rowType = ProjectExternalDatatype.of("EMP_T", "HR", null, null, null, null)
+        val attrs = listOf(ProjectExternalColumn.of("A", 1, null), ProjectExternalColumn.of("B", 2, null))
+        val complete = empty.describeExternalType(w(ROWTYPE, "emp_ov"), null, metadata(ProjectExternalRelation.objectView("HR", "EMP_OV", rowType, true, attrs)), hr)
+        assertThat(complete.status).isEqualTo(Status.RESOLVED)
+        assertThat(complete.lookup.get().relation.get().rowObjectType).contains(rowType)
+        assertThat(complete.lookup.get().relation.get().isView).isTrue()
+        assertThat(fields(complete)).containsExactly("\"A\"", "\"B\"")
+        val partial = empty.describeExternalType(w(ROWTYPE, "emp_ov"), null, metadata(ProjectExternalRelation.objectView("HR", "EMP_OV", rowType, false, attrs)), hr)
+        assertThat(partial.status).isEqualTo(Status.INCOMPLETE)
+        assertThat(partial.lookup.get().status).isEqualTo(Lookup.FOUND)
+    }
+
+    @Test
     fun quotedIdentifiersFollowOracleIdentity() {
         val m = metadata(ProjectExternalRelation.of("HR", "Emp", true, listOf(idColumn)))
         assertThat(empty.describeExternalType(w(ROWTYPE, "\"Emp\""), null, m, hr).status).isEqualTo(Status.RESOLVED)

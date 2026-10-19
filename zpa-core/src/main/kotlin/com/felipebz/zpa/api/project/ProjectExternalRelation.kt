@@ -36,7 +36,9 @@ class ProjectExternalRelation private constructor(
      */
     val isColumnsComplete: Boolean,
     columns: List<ProjectExternalColumn>,
-    rowObjectType: ProjectExternalDatatype?
+    rowObjectType: ProjectExternalDatatype?,
+    /** Whether the relation is a view (`ALL_VIEWS`) rather than a table. */
+    val isView: Boolean
 ) {
     /** `[schema, name]`, each one segment. */
     val qualifiedName: ProjectQualifiedName = ProjectQualifiedName.ofIdentifiers(listOf(schema, name))
@@ -50,8 +52,8 @@ class ProjectExternalRelation private constructor(
     val rowFields: List<ProjectExternalColumn> = Collections.unmodifiableList(this.columns.filter { it.position.isPresent })
 
     /**
-     * Present only for an object table, whose `%ROWTYPE` is an instance of this type rather than a record; [rowFields]
-     * then lists only the supplied top-level attribute columns.
+     * Present only for an object table or an object view (including an `XMLTYPE` view), whose `%ROWTYPE` is an instance
+     * of this type rather than a record; [rowFields] then lists only the supplied top-level attribute columns.
      */
     val rowObjectType: Optional<ProjectExternalDatatype> = Optional.ofNullable(rowObjectType)
 
@@ -62,11 +64,12 @@ class ProjectExternalRelation private constructor(
 
     override fun equals(other: Any?): Boolean = other is ProjectExternalRelation && schema == other.schema &&
         name == other.name && isColumnsComplete == other.isColumnsComplete && columns == other.columns &&
-        rowObjectType == other.rowObjectType
+        rowObjectType == other.rowObjectType && isView == other.isView
 
-    override fun hashCode(): Int = Objects.hash(schema, name, isColumnsComplete, columns, rowObjectType)
+    override fun hashCode(): Int = Objects.hash(schema, name, isColumnsComplete, columns, rowObjectType, isView)
 
-    override fun toString(): String = "$qualifiedName (${columns.size} columns${if (isColumnsComplete) "" else ", partial"})"
+    override fun toString(): String =
+        "$qualifiedName (${if (isView) "view, " else ""}${columns.size} columns${if (isColumnsComplete) "" else ", partial"})"
 
     companion object {
         /**
@@ -77,7 +80,7 @@ class ProjectExternalRelation private constructor(
          */
         @JvmStatic
         fun of(dictionarySchema: String, dictionaryName: String, columnsComplete: Boolean, columns: List<ProjectExternalColumn>): ProjectExternalRelation =
-            create(dictionarySchema, dictionaryName, columnsComplete, columns, null)
+            create(dictionarySchema, dictionaryName, columnsComplete, columns, null, view = false)
 
         /** As [of], for an object table whose row is an instance of [rowType]. */
         @JvmStatic
@@ -87,14 +90,30 @@ class ProjectExternalRelation private constructor(
             rowType: ProjectExternalDatatype,
             columnsComplete: Boolean,
             columns: List<ProjectExternalColumn>
-        ): ProjectExternalRelation = create(dictionarySchema, dictionaryName, columnsComplete, columns, rowType)
+        ): ProjectExternalRelation = create(dictionarySchema, dictionaryName, columnsComplete, columns, rowType, view = false)
+
+        /** As [of], for a view. */
+        @JvmStatic
+        fun view(dictionarySchema: String, dictionaryName: String, columnsComplete: Boolean, columns: List<ProjectExternalColumn>): ProjectExternalRelation =
+            create(dictionarySchema, dictionaryName, columnsComplete, columns, null, view = true)
+
+        /** As [view], for an object view whose row is an instance of [rowType]. */
+        @JvmStatic
+        fun objectView(
+            dictionarySchema: String,
+            dictionaryName: String,
+            rowType: ProjectExternalDatatype,
+            columnsComplete: Boolean,
+            columns: List<ProjectExternalColumn>
+        ): ProjectExternalRelation = create(dictionarySchema, dictionaryName, columnsComplete, columns, rowType, view = true)
 
         private fun create(
             schema: String,
             name: String,
             columnsComplete: Boolean,
             columns: List<ProjectExternalColumn>,
-            rowType: ProjectExternalDatatype?
+            rowType: ProjectExternalDatatype?,
+            view: Boolean
         ): ProjectExternalRelation {
             val nullableColumns: List<ProjectExternalColumn?> = columns
             val copy = ArrayList<ProjectExternalColumn>(nullableColumns.size)
@@ -109,7 +128,7 @@ class ProjectExternalRelation private constructor(
             require(duplicateName == null) { "Duplicate column name: ${duplicateName!!.key}" }
             val duplicatePosition = copy.filter { it.position.isPresent }.groupBy { it.position.asInt }.entries.firstOrNull { it.value.size > 1 }
             require(duplicatePosition == null) { "Duplicate column position: ${duplicatePosition!!.key}" }
-            return ProjectExternalRelation(dictionaryIdentifier(schema, "schema"), dictionaryIdentifier(name, "relation"), columnsComplete, copy, rowType)
+            return ProjectExternalRelation(dictionaryIdentifier(schema, "schema"), dictionaryIdentifier(name, "relation"), columnsComplete, copy, rowType, view)
         }
     }
 }

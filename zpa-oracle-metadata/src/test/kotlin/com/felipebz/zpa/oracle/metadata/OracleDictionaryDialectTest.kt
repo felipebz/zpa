@@ -30,7 +30,7 @@ class OracleDictionaryDialectTest {
         assertThat(listOf(12, 19, 23).map(OracleDictionaryDialect::forMajorVersion)).containsOnly(OracleDictionaryDialect.CURRENT)
     }
 
-    /** The SQL used before dialects existed, verbatim: 12c and later must not change. */
+    /** The SQL of 12c and later, verbatim. */
     @Test
     fun currentDialectIsTheExistingSql() {
         val d = OracleDictionaryDialect.CURRENT
@@ -39,15 +39,15 @@ class OracleDictionaryDialectTest {
                 "SYS_CONTEXT('USERENV', 'CON_NAME'), SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') FROM dual"
         )
         assertThat(d.schemaRelationsSql).isEqualTo(
-            "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
+            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
                 "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
-                "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE owner = ?"
+                "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE owner = ?"
         )
         assertThat(d.schemaColumnsSql).isEqualTo(COLUMN_LIST + "WHERE owner = ? AND user_generated = 'YES' ORDER BY table_name, internal_column_id")
         assertThat(d.targetedRelationsSql(2)).isEqualTo(
-            "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
+            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
                 "WHERE (owner, table_name) IN ((?, ?), (?, ?)) AND (dropped IS NULL OR dropped = 'NO') " +
-                "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE (owner, view_name) IN ((?, ?), (?, ?))"
+                "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE (owner, view_name) IN ((?, ?), (?, ?))"
         )
         assertThat(d.targetedColumnsSql(2)).isEqualTo(
             COLUMN_LIST + "WHERE (owner, table_name) IN ((?, ?), (?, ?)) AND user_generated = 'YES' " +

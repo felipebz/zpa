@@ -134,7 +134,8 @@ object OracleMetadataAcquisition {
     }
 
     // Every relation query is paired with a column query over the same scope in the same transaction.
-    private fun relationRow(rs: ResultSet) = RelationRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), columnsAcquired = true)
+    private fun relationRow(rs: ResultSet) =
+        RelationRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), columnsAcquired = true, view = rs.getString(5) == "VIEW")
 
     private fun columnRow(rs: ResultSet) = ColumnRow(
         schema = rs.getString(1),

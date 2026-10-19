@@ -98,6 +98,14 @@ class ProjectExternalMetadataJavaConsumerTest {
         assertThat(table.getRowObjectType()).contains(rowType);
         assertThat(table.getRowFields()).hasSize(1);
         assertThat(table.getColumns()).hasSize(2);
+        assertThat(table.isView()).isFalse();
+        ProjectExternalRelation objectView = ProjectExternalRelation.objectView("HR", "EMP_OV", rowType, true,
+            List.of(ProjectExternalColumn.of("A", 1, null)));
+        assertThat(objectView.isView()).isTrue();
+        assertThat(objectView.getRowObjectType()).contains(rowType);
+        ProjectExternalRelation view = ProjectExternalRelation.view("HR", "EMP_V", true, List.of(ProjectExternalColumn.of("A", 1, null)));
+        assertThat(view.isView()).isTrue();
+        assertThat(view.getRowObjectType()).isEmpty();
         assertThat(rowType.getCategory()).isEmpty();
         assertThat(rowType.getTypeOwner()).contains(id("hr"));
         assertThat(ProjectExternalDatatype.of("XMLTYPE", "PUBLIC", null, null, null, null).getCategory()).isEmpty();

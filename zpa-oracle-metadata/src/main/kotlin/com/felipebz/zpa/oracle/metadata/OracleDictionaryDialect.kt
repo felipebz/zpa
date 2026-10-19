@@ -42,9 +42,9 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
             "$containerExpression, SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') FROM dual"
 
     val schemaRelationsSql: String =
-        "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
+        "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
             "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
-            "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE owner = ?"
+            "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE owner = ?"
 
     val schemaColumnsSql: String =
         COLUMN_LIST + "WHERE owner = ? AND $columnFilter ORDER BY table_name, internal_column_id"
@@ -52,9 +52,9 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
     /** Relations of [pairs] `(owner, name)` pairs; parameters are the pairs twice. */
     fun targetedRelationsSql(pairs: Int): String {
         val placeholders = placeholders(pairs)
-        return "SELECT owner, table_name, table_type_owner, table_type FROM all_all_tables " +
+        return "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
             "WHERE (owner, table_name) IN ($placeholders) AND (dropped IS NULL OR dropped = 'NO') " +
-            "UNION ALL SELECT owner, view_name, NULL, NULL FROM all_views WHERE (owner, view_name) IN ($placeholders)"
+            "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE (owner, view_name) IN ($placeholders)"
     }
 
     /** Columns of [pairs] `(owner, table_name)` pairs; parameters are the pairs once. */

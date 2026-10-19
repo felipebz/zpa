@@ -156,6 +156,27 @@ class ProjectExternalMetadataTest {
     }
 
     @Test
+    fun viewsSayTheyAreViewsAndObjectViewsKeepTheirRowType() {
+        val rowType = type("EMP_OBJ_T", owner = "HR")
+        val columns = listOf(col("B", 2), col("A", 1))
+        val plain = ProjectExternalRelation.view("HR", "EMP_V", true, columns)
+        val objectView = ProjectExternalRelation.objectView("HR", "EMP_OV", rowType, true, columns)
+        assertThat(plain.isView).isTrue()
+        assertThat(plain.rowObjectType).isEmpty
+        assertThat(objectView.isView).isTrue()
+        assertThat(objectView.rowObjectType).contains(rowType)
+        assertThat(objectView.rowFields.map { it.name }).containsExactly(id("a"), id("b"))
+        assertThat(ProjectExternalRelation.of("HR", "EMP_V", true, columns).isView).isFalse()
+        assertThat(ProjectExternalRelation.objectTable("HR", "EMP_OV", rowType, true, columns).isView).isFalse()
+        assertThat(plain).isNotEqualTo(ProjectExternalRelation.of("HR", "EMP_V", true, columns))
+        assertThat(objectView).isNotEqualTo(ProjectExternalRelation.objectTable("HR", "EMP_OV", rowType, true, columns))
+        assertThat(plain).isEqualTo(ProjectExternalRelation.view("HR", "EMP_V", true, columns.reversed()))
+        assertThat(plain.hashCode()).isEqualTo(ProjectExternalRelation.view("HR", "EMP_V", true, columns.reversed()).hashCode())
+        assertThat(plain.toString()).isEqualTo("\"HR\".\"EMP_V\" (view, 2 columns)")
+        assertThat(ProjectExternalRelation.of("HR", "EMP_V", false, columns).toString()).isEqualTo("\"HR\".\"EMP_V\" (2 columns, partial)")
+    }
+
+    @Test
     fun datatypesKeepNullApartFromZeroAndPreserveDictionaryValues() {
         fun d(t: ProjectExternalDatatype) = listOf(t.length, t.lengthSemantics, t.precision, t.scale, t.category)
         val e = OptionalInt.empty()
