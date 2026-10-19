@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.api
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
@@ -358,13 +359,21 @@ enum class SingleRowSqlFunctionsGrammar : GrammarRuleKey {
         private fun createConversionFunctions(b: PlSqlGrammarBuilder) {
             b.rule(DEFAULT_ON_ERROR_CLAUSE).define(DEFAULT, EXPRESSION, ON, CONVERSION, ERROR)
 
+            // Beyond the documented forms, PL/SQL also parses built-in types, %TYPE, %ROWTYPE and @link, and SQL
+            // parses JSON(...); neither parses a size or constraint.
             b.rule(TREAT_AS_EXPRESSION).define(
                 b.optional(TREAT),
                 LPARENTHESIS,
                 EXPRESSION,
                 AS,
-                b.optional(REF),
-                OBJECT_REFERENCE,
+                b.firstOf(
+                    b.sequence(b.next(JSON, b.firstOf(LPARENTHESIS, RPARENTHESIS)), DATATYPE),
+                    b.sequence(
+                        b.nextNot(JSON),
+                        b.nextNot(b.zeroOrMore(b.anyTokenButNot(b.firstOf(LPARENTHESIS, RPARENTHESIS, GenericTokenType.EOF))), LPARENTHESIS),
+                        DATATYPE
+                    )
+                ),
                 RPARENTHESIS
             )
 

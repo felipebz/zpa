@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import org.assertj.core.api.Assertions.assertThat as assertThatValue
+import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar
 
 class CreateTypeBodyTest : RuleTest() {
 
@@ -104,4 +106,18 @@ class CreateTypeBodyTest : RuleTest() {
                         + "begin null; end; "
                         + "end;")
     }
+
+    @Test
+    fun matchesGeneralizedInvocationWithDatatype() {
+        val body = "" +
+            "create or replace type body circle_t as " +
+            "overriding member function area return number is " +
+            "begin return (self as shape_t).area() + (self as hr.shape_t).area(); end; " +
+            "end;"
+        assertThat(p).matches(body)
+        val types = p.parse(body).getDescendants(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)
+            .map { it.getFirstChild(PlSqlGrammar.DATATYPE)?.firstChild?.type }
+        assertThatValue(types).containsExactly(PlSqlGrammar.CUSTOM_DATATYPE, PlSqlGrammar.CUSTOM_DATATYPE)
+    }
+
 }

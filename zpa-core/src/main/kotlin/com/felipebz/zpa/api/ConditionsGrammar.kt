@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.api
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.grammar.GrammarRuleKey
 import com.felipebz.zpa.sslr.PlSqlGrammarBuilder
 import com.felipebz.zpa.api.PlSqlGrammar.*
@@ -138,6 +139,19 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 )
             )
 
+            // PL/SQL also parses built-in types (but not the TYPE keyword); neither parser takes REF, %TYPE, @link
+            // or a constraint.
+            val isOfType = b.sequence(
+                b.optional(ONLY),
+                b.nextNot(REF),
+                b.nextNot(
+                    b.zeroOrMore(b.anyTokenButNot(b.firstOf(
+                        PlSqlPunctuator.LPARENTHESIS, PlSqlPunctuator.RPARENTHESIS, PlSqlPunctuator.COMMA,
+                        PlSqlPunctuator.MOD, PlSqlPunctuator.REMOTE, GenericTokenType.EOF))),
+                    b.firstOf(PlSqlPunctuator.LPARENTHESIS, PlSqlPunctuator.MOD, PlSqlPunctuator.REMOTE)
+                ),
+                DATATYPE
+            )
             b.rule(IS_OF_CONDITION).define(
                 VECTOR_DISTANCE_EXPRESSION,
                 IS,
@@ -145,9 +159,8 @@ enum class ConditionsGrammar : GrammarRuleKey {
                 OF,
                 b.optional(TYPE),
                 PlSqlPunctuator.LPARENTHESIS,
-                b.optional(ONLY),
-                OBJECT_REFERENCE,
-                b.zeroOrMore(PlSqlPunctuator.COMMA, b.optional(ONLY), OBJECT_REFERENCE),
+                isOfType,
+                b.zeroOrMore(PlSqlPunctuator.COMMA, isOfType),
                 PlSqlPunctuator.RPARENTHESIS
             )
 
