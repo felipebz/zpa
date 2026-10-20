@@ -103,25 +103,30 @@ internal class LocalDeclarationLinker(private val regions: List<RegionDraft>, pr
         return result
     }
 
-    private fun signatureKey(kind: LocalDeclarationKind, subprogram: LocalSubprogram): String? {
-        val key = StringBuilder(kind.name).append('|').append(subprogram.methodKind ?: "").append('|')
-            .append(QualifiedName(subprogram.unitName.last).lookupKey())
-        for (parameter in subprogram.parameters) {
-            val type = parameter.type?.typeRef ?: return null
-            key.append('|').append(QualifiedName(parameter.name).lookupKey()).append(' ').append(parameter.mode)
-                .append(' ').append(type.headerIdentityKey())
+    companion object {
+        /**
+         * The heading identity of a subprogram: kind, method kind, name, and each parameter's name, mode and written type,
+         * plus the RETURN type of a function. Null when a type cannot be represented. Also used by the resolver to find two
+         * bodies of one heading.
+         */
+        fun signatureKey(kind: LocalDeclarationKind, subprogram: LocalSubprogram): String? {
+            val key = StringBuilder(kind.name).append('|').append(subprogram.methodKind ?: "").append('|')
+                .append(QualifiedName(subprogram.unitName.last).lookupKey())
+            for (parameter in subprogram.parameters) {
+                val type = parameter.type?.typeRef ?: return null
+                key.append('|').append(QualifiedName(parameter.name).lookupKey()).append(' ').append(parameter.mode)
+                    .append(' ').append(type.headerIdentityKey())
+            }
+            if (subprogram.returnsSelf) {
+                key.append("|return SELF")
+            } else if (kind == LocalDeclarationKind.FUNCTION) {
+                key.append("|return ").append((subprogram.returnType?.typeRef ?: return null).headerIdentityKey())
+            }
+            return key.toString()
         }
-        if (subprogram.returnsSelf) {
-            key.append("|return SELF")
-        } else if (kind == LocalDeclarationKind.FUNCTION) {
-            key.append("|return ").append((subprogram.returnType?.typeRef ?: return null).headerIdentityKey())
-        }
-        return key.toString()
-    }
 
-    private companion object {
         /** Regions whose forward subprogram declarations are linked to their bodies. */
-        val FORWARD_SCOPES = setOf(
+        private val FORWARD_SCOPES = setOf(
             LocalRegionKind.ANONYMOUS_BLOCK, LocalRegionKind.SUBPROGRAM, LocalRegionKind.PACKAGE_BODY,
             LocalRegionKind.TRIGGER, LocalRegionKind.TIMING_POINT
         )

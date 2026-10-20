@@ -342,6 +342,16 @@ class LocalSemanticModelBuilderTest {
         assertThat(model.declarations.map { it.details?.javaClass?.simpleName }.toSet())
             .contains("LocalCursor", "LocalCursorParameter", "LocalRecordType", "LocalCollectionType", "LocalRefCursorType", "LocalSubprogram", "LocalParameter", "LocalLabel", "LocalLoopIndex", "LocalUnit", "LocalTrigger")
         assertThat(model.declarations.mapNotNull { (it.details as? LocalTrigger)?.correlationNames }).hasSize(1)
+        // Reference facts and their outcomes are detached too.
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
+        val referenced = LocalSemanticModelBuilder.build(root, FileId("block.sql"), source)
+        val references = LocalReferenceCollector.collect(root, referenced)
+        val outcomes = references.map { LocalResolver.resolve(referenced, it) }
+        assertThat(references).isNotEmpty
+        val reachedFromReferences = reachable(listOf(references, outcomes))
+        assertThat(reachedFromReferences.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()
+        assertThat(reachedFromReferences.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") || it.contains("amount_t IS") }
+        assertThat(reachedFromReferences.map { it.javaClass.name }.filter { it.startsWith("com.felipebz.flr") }).isEmpty()
         val reached = reachable(model)
         assertThat(reached.filterIsInstance<LocalRegionCompleteness>().flatMap { it.reasons }).contains(LocalIncompleteness.CONDITIONAL_COMPILATION)
         assertThat(reached.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()

@@ -23,6 +23,8 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import com.felipebz.zpa.squid.DatabaseVersion
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.symbols.local.LocalIncompleteness.*
 import org.assertj.core.api.Assertions.assertThat
@@ -32,8 +34,11 @@ import java.nio.charset.StandardCharsets
 /** Per-region completeness: which regions may miss declarations Oracle sees, and why. */
 class LocalRegionCompletenessTest {
 
-    private fun parse(source: String, recovery: Boolean = false): AstNode =
-        PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, recovery)).parse(source)
+    private fun parse(
+        source: String,
+        recovery: Boolean = false,
+        settings: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE
+    ): AstNode = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, recovery, settings)).parse(source)
 
     private fun build(source: String, recovery: Boolean = false) = LocalSemanticModelBuilder.build(parse(source, recovery), FileId("f.sql"), source)
 
@@ -252,5 +257,57 @@ class LocalRegionCompletenessTest {
         val model = build("BEGIN \$IF a \$THEN NULL; \$END END;\n/\nBEGIN NULL; END;\n/\n")
         assertThat(model.regions.last().completeness).isSameAs(LocalRegionCompleteness.COMPLETE)
         assertThat(model.regions.first().completeness.reasons).containsExactly(CONDITIONAL_COMPILATION)
+    }
+
+    @Test
+    fun completenessIsRelativeToTheConfiguredSettings() {
+        val source = "DECLARE \$IF \$\$off \$THEN v NUMBER; \$END BEGIN NULL; END;\n/\n"
+        // Active settings with `$$off` unset (NULL): nothing is kept, the selection is only a directive.
+        val active = ConditionalCompilationSettings(databaseVersion = DatabaseVersion(19, 0))
+        val evaluated = LocalSemanticModelBuilder.build(parse(source, settings = active), FileId("f.sql"), source)
+        assertThat(evaluated.declarations).isEmpty()
+        assertThat(verdicts(evaluated)).containsExactly("FILE[] COMPLETE", "ANONYMOUS_BLOCK[] COMPLETE")
+        // Without settings the first branch is kept unevaluated.
+        assertThat(verdicts(build(source))).containsExactly(
+            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
+        )
+        // A branch kept because its condition is proven TRUE stays incomplete (the lexer does not say why it was kept).
+        val on = ConditionalCompilationSettings(mapOf("off" to com.felipebz.zpa.squid.CcValue.True))
+        val kept = LocalSemanticModelBuilder.build(parse(source, settings = on), FileId("f.sql"), source)
+        assertThat(verdicts(kept)).containsExactly(
+            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
+        )
+    }
+
+    @Test
+    fun tokensOutOfOrderLocateNothing() {
+        // Swapping two units breaks the token order the bounds rely on: nothing is located, every region is unverified.
+        val source = "BEGIN NULL; END;\n/\nDECLARE x NUMBER; BEGIN NULL; END;\n/\n"
+        val root = parse(source)
+        val units = root.children.filter { it.type !== com.felipebz.flr.api.GenericTokenType.EOF }
+        val eof = root.children.last()
+        root.children.clear()
+        units.reversed().forEach(root::addChild)
+        root.addChild(eof)
+        val model = LocalSemanticModelBuilder.build(root, FileId("f.sql"), source)
+        assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).containsExactly(UNVERIFIED_SOURCE_POSITIONS) }
+    }
+
+    @Test
+    fun aRecoveryNodeWhoseStartIsUnknownTaintsEveryRegion() {
+        // A file-level RECOVERY node whose own token is not one of the tree's tokens.
+        val source = "BEGIN NULL; END;\n/\nBEGIN NULL; END;\n/\n"
+        val root = parse(source)
+        val foreign = parse("BEGIN NULL; END;").tokens.first()
+        val original = root.children.toList()
+        root.children.clear()
+        val recovery = AstNode(PlSqlGrammar.RECOVERY, "RECOVERY", foreign)
+        recovery.addChild(original.first())
+        root.addChild(recovery)
+        original.drop(1).forEach(root::addChild)
+        val model = LocalSemanticModelBuilder.build(root, FileId("f.sql"), source)
+        assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).contains(PARSE_RECOVERY) }
     }
 }

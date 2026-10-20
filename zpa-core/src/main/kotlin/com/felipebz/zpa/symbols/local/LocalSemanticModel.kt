@@ -98,9 +98,15 @@ internal enum class LocalIncompleteness {
  * conditional-compilation and recovery conditions of a proven absence hold for this region. It says nothing about the
  * lookup-time conditions (stopping outcomes, qualification, SQL namespace), which a resolver checks.
  *
- * Completeness is relative to the lexer's branch policy: the lexer keeps one branch of each conditional-compilation
- * selection without evaluating its condition, so any region conditional compilation touches is incomplete. A region no
- * conditional-compilation text touches is independent of that policy.
+ * Completeness is relative to the configured conditional-compilation settings, the same ones the AST follows:
+ * - without active settings, the lexer keeps the first branch of each selection without evaluating its condition, so
+ *   every region conditional compilation touches is incomplete;
+ * - with active settings, a selection whose conditions all evaluate `FALSE`/`NULL` keeps nothing and is reported as a
+ *   directive, which is not evidence: a region whose skipped branch holds declarations is then complete for those
+ *   settings. A branch kept because its condition is proven `TRUE` still makes the region incomplete (conservative:
+ *   the lexer does not report how a branch was chosen).
+ *
+ * A region no conditional-compilation text touches is independent of the settings.
  */
 internal class LocalRegionCompleteness private constructor(
     /** Empty when complete; otherwise the reasons, in [LocalIncompleteness] order. */

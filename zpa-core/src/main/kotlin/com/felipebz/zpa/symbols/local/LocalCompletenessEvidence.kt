@@ -52,8 +52,24 @@ internal class LocalCompletenessEvidence private constructor(
     /** Index of the last token before `EOF`, or -1. */
     private val lastToken = tokens.indexOfLast { it.type !== GenericTokenType.EOF }
 
+    /**
+     * True when the tokens before `EOF` start at strictly increasing positions. Token bounds and the gap walk rely on
+     * it; when it fails, [global] holds `UNVERIFIED_SOURCE_POSITIONS` and nothing is located.
+     */
+    private val ordered = isStrictlyOrdered(tokens)
+
     /** The completeness of every region, by region id. */
     fun attribute(regions: List<RegionDraft>): List<LocalRegionCompleteness> {
+        if (!ordered) {
+            // Nothing can be located: every region carries the global reasons, and recovery anywhere taints all.
+            return regions.map { region ->
+                val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
+                reasons += global
+                if (region.gaps.isNotEmpty()) reasons += LocalIncompleteness.PARTIAL_EXTRACTION
+                if (recoveryStarts.isNotEmpty()) reasons += LocalIncompleteness.PARSE_RECOVERY
+                LocalRegionCompleteness.of(reasons)
+            }
+        }
         // The file region holds the whole text, including hidden text before the first token and after the last.
         // A region whose ends are not token boundaries (never seen) is treated as the whole file, conservatively.
         val bounds = regions.map { if (it.kind == LocalRegionKind.FILE) tokens.indices else tokenBounds(it.range) ?: tokens.indices }
@@ -122,6 +138,7 @@ internal class LocalCompletenessEvidence private constructor(
         fun of(root: AstNode, source: String?): LocalCompletenessEvidence {
             val tokens = parserTokens(root)
             val global = EnumSet.noneOf(LocalIncompleteness::class.java)
+            if (!isStrictlyOrdered(tokens)) global += LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS
             val points = HashMap<LocalIncompleteness, MutableList<Int>>()
             fun point(reason: LocalIncompleteness, before: Int) {
                 val list = points.getOrPut(reason) { ArrayList() }
@@ -144,7 +161,7 @@ internal class LocalCompletenessEvidence private constructor(
             var dollarFallback = false
             if (source == null) {
                 global += LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE
-            } else {
+            } else if (LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS !in global) {
                 for (segment in DiscardedSourceText(source).fileSegments(tokens)) {
                     when (segment.kind) {
                         CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS -> global += LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS
@@ -168,12 +185,27 @@ internal class LocalCompletenessEvidence private constructor(
                 if (recovery.any { it.parent !== root }) global += LocalIncompleteness.PARSE_RECOVERY
                 val index = IdentityHashMap<Token, Int>()
                 tokens.forEachIndexed { i, token -> index[token] = i }
-                recovery.mapNotNull { if (it.hasToken()) index[it.token] else null }.sorted().toIntArray()
+                val starts = recovery.mapNotNull { if (it.hasToken()) index[it.token] else null }
+                // A recovery node whose start cannot be found would otherwise go unnoticed.
+                if (starts.size != recovery.size) global += LocalIncompleteness.PARSE_RECOVERY
+                starts.sorted().toIntArray()
             }
 
             return LocalCompletenessEvidence(
                 tokens, points.mapValues { it.value.distinct().sorted().toIntArray() }, spans, recoveryStarts, global
             )
+        }
+
+        /** Whether the tokens before `EOF` start at strictly increasing (line, column) positions. */
+        private fun isStrictlyOrdered(tokens: List<Token>): Boolean {
+            var previous: Token? = null
+            for (token in tokens) {
+                if (token.type === GenericTokenType.EOF) continue
+                val last = previous
+                if (last != null && (token.line < last.line || token.line == last.line && token.column <= last.column)) return false
+                previous = token
+            }
+            return true
         }
 
         /**
