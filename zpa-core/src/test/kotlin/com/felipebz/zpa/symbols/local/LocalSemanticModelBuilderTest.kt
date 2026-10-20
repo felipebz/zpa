@@ -117,7 +117,7 @@ class LocalSemanticModelBuilderTest {
         // Oracle accepts this procedure: three levels reuse `x`; the innermost declaration wins at each level.
         val model = build(
             """
-            create or replace procedure t_ns01_a is
+            create or replace procedure nested_blocks is
               x number := 1;
             begin
               declare
@@ -137,7 +137,7 @@ class LocalSemanticModelBuilderTest {
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [D0 PROCEDURE t_ns01_a] ALL_ITEMS_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 PROCEDURE nested_blocks] ALL_ITEMS_EXTRACTED",
             "R1 SUBPROGRAM(CREATE_PROCEDURE) parent=R0 [D1 VARIABLE x] ALL_ITEMS_EXTRACTED",
             "R2 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R1 [D2 VARIABLE x] ALL_ITEMS_EXTRACTED",
             "R3 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R2 [D3 VARIABLE x] ALL_ITEMS_EXTRACTED"
@@ -315,7 +315,7 @@ class LocalSemanticModelBuilderTest {
     @Test
     fun parseRecoveryIsObservableAndNeverLooksComplete() {
         // Recovery detaches the broken declarative part (holding `pkg`) from BEGIN ... END: the block that remains
-        // looks valid and declares nothing, yet `pkg` was written.
+        // Looks valid and declares nothing, yet `pkg` was written.
         val model = build("DECLARE\n  pkg NUMBER;\n  ??? garbage;\nBEGIN\n  pkg.processar(1);\nEND;\n/\n", recovery = true)
         assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).contains(LocalIncompleteness.PARSE_RECOVERY) }
         assertThat(model.declarations.map { it.name.lookupName }).doesNotContain("PKG")
@@ -334,7 +334,7 @@ class LocalSemanticModelBuilderTest {
             "  TYPE aa IS TABLE OF VARCHAR2(10) INDEX BY PLS_INTEGER;\n  TYPE rc IS REF CURSOR;\n" +
             "  PROCEDURE q(a IN OUT NOCOPY NUMBER);\n  PROCEDURE q(a IN OUT NOCOPY NUMBER) IS BEGIN NULL; END;\n" +
             "  FUNCTION f(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;\n" +
-            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN NULL; END;\n  FOR i IN 1 .. 2 LOOP \$IF \$\$x \$THEN NULL; \$END END LOOP;\nEND;\n" +
+            "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN w := l.w; END;\n  <<lp>> FOR i IN 1 .. 2 LOOP \$IF \$\$x \$THEN NULL; \$END EXIT lp; END LOOP;\n  OPEN c(1); CLOSE c;\nEND;\n" +
             "/\ncreate package pk is procedure a; end;\n/\ncreate package body pk is procedure a is begin null; end; end;\n/\n" +
             "create trigger trg before insert on t referencing new as n for each row begin null; end;\n/\n" +
             "create type ot as object (x number, member procedure m);\n/\ncreate type body ot as member procedure m is begin null; end; end;\n/\n"
@@ -346,8 +346,9 @@ class LocalSemanticModelBuilderTest {
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
         val referenced = LocalSemanticModelBuilder.build(root, FileId("block.sql"), source)
         val references = LocalReferenceCollector.collect(root, referenced)
-        val outcomes = references.map { LocalResolver.resolve(referenced, it) }
+        val outcomes = references.map { LocalResolver.resolveQualified(referenced, it) }
         assertThat(references).isNotEmpty
+        assertThat(references.flatMap { it.segments }).isNotEmpty
         val reachedFromReferences = reachable(listOf(references, outcomes))
         assertThat(reachedFromReferences.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()
         assertThat(reachedFromReferences.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") || it.contains("amount_t IS") }
@@ -394,7 +395,7 @@ class LocalSemanticModelBuilderTest {
     @Test
     fun conditionalCompilationMakesTheRegionIncomplete() {
         // The lexer keeps the $THEN branch and drops the rest, so `pkg` looks like an ordinary declaration and `other`
-        // is absent: the extraction is complete for the kept tokens, but the region is not.
+        // Is absent: the extraction is complete for the kept tokens, but the region is not.
         val model = build("DECLARE v DATE; \$IF \$\$debug \$THEN pkg NUMBER; \$ELSE other NUMBER; \$END BEGIN NULL; END;\n/\n")
         val block = blocks(model).single()
         assertThat(model.declarationsOf(block.id).map { it.name.lookupName }).containsExactly("V", "PKG")
@@ -477,7 +478,7 @@ class LocalSemanticModelBuilderTest {
         // Oracle accepts the unreferenced duplicate; a reference to `p` is an error (PLS-00410 family).
         val model = build(
             """
-            create or replace procedure t_ns03_a is
+            create or replace procedure param_and_local is
               procedure inner(p number) is
                 p varchar2(10) := 'local';
               begin
@@ -490,7 +491,7 @@ class LocalSemanticModelBuilderTest {
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [D0 PROCEDURE t_ns03_a] ALL_ITEMS_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 PROCEDURE param_and_local] ALL_ITEMS_EXTRACTED",
             "R1 SUBPROGRAM(CREATE_PROCEDURE) parent=R0 [D1 PROCEDURE inner] ALL_ITEMS_EXTRACTED",
             "R2 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R1 [D2 PARAMETER p, D3 VARIABLE p] ALL_ITEMS_EXTRACTED"
         )
@@ -502,26 +503,26 @@ class LocalSemanticModelBuilderTest {
 
     @Test
     fun forwardDeclarationsAreLinkedOnlyToTheirUniqueBody() {
-        // Oracle accepts t_ns08_c: the forward declaration makes the later body callable from `a`.
-        val ns08 = build(
+        // Oracle accepts it: the forward declaration makes the later body callable from `a`.
+        val forwardLinked = build(
             """
-            create or replace procedure t_ns08_c is
-              procedure ns08_b;
-              procedure a is begin ns08_b; end;
-              procedure ns08_b is begin say('local ns08_b'); end;
+            create or replace procedure forward_link is
+              procedure later_proc;
+              procedure a is begin later_proc; end;
+              procedure later_proc is begin say('local later_proc'); end;
             begin
               a;
             end;
             /
             """.trimIndent()
         )
-        val forward = subprogram(ns08, "NS08_B", 0)
-        val body = subprogram(ns08, "NS08_B", 1)
+        val forward = subprogram(forwardLinked, "LATER_PROC", 0)
+        val body = subprogram(forwardLinked, "LATER_PROC", 1)
         assertThat(forward.subprogram().form).isEqualTo(LocalSubprogramForm.HEADING_ONLY)
         assertThat(forward.subprogram().body).isNull()
         assertThat(forward.subprogram().counterpart).isEqualTo(body.id)
         assertThat(body.subprogram().counterpart).isEqualTo(forward.id)
-        assertThat(subprogram(ns08, "A").subprogram().counterpart).isNull()
+        assertThat(subprogram(forwardLinked, "A").subprogram().counterpart).isNull()
 
         val overloads = build(
             """
@@ -566,10 +567,10 @@ class LocalSemanticModelBuilderTest {
     @Test
     fun headingTypesRecordWhereTheyAreLookedUp() {
         // Oracle: the parameter type `t` is the outer NUMBER; the RETURN type `t` is looked up in f's own region,
-        // where the later local `t` makes it an error (PLS-00311).
+        // Where the later local `t` makes it an error (PLS-00311).
         val model = build(
             """
-            create or replace procedure lsd_g is
+            create or replace procedure return_type_order is
               subtype t is number;
               function f(a t) return t is subtype t is date; begin return sysdate; end;
             begin
@@ -642,8 +643,8 @@ class LocalSemanticModelBuilderTest {
 
     @Test
     fun theForRegionContainsItsBounds() {
-        // Oracle t_ad07_b: in `for i in 1..i` the bound `i` is the loop index itself (the index is in scope there).
-        val model = build("create or replace procedure t_ad07_b is\nbegin\n  for i in 1..i loop\n    say('i='||i);\n  end loop;\nend;\n/\n")
+        // In `for i in 1..i` the bound `i` is the loop index itself (the index is in scope there).
+        val model = build("create or replace procedure index_in_bounds is\nbegin\n  for i in 1..i loop\n    say('i='||i);\n  end loop;\nend;\n/\n")
         val loop = model.regions.single { it.kind == LocalRegionKind.FOR_LOOP }
         assertThat(loop.range).isEqualTo(SourceRange(FileId("block.sql"), 3, 2, 5, 11))
         val bound = SourceRange(FileId("block.sql"), 3, 14, 3, 15)
@@ -655,7 +656,7 @@ class LocalSemanticModelBuilderTest {
     fun labelsAreDeclarationsOfTheEnclosingRegion() {
         val model = build(
             """
-            create or replace procedure t_x09_b is
+            create or replace procedure labels is
               x number := 1;
             begin
               <<x>>
@@ -674,8 +675,8 @@ class LocalSemanticModelBuilderTest {
         )
         assertThat(outline(model)).containsExactly(
             // The file region is not an Oracle region: a top-level block's label is visible only inside the block.
-            "R0 FILE(FILE) parent=null [D0 PROCEDURE t_x09_b, D5 LABEL top] ALL_ITEMS_EXTRACTED",
-            // Oracle t_x09_b: a label and a variable of the same name in one region are both accepted when unreferenced.
+            "R0 FILE(FILE) parent=null [D0 PROCEDURE labels, D5 LABEL top] ALL_ITEMS_EXTRACTED",
+            // A label and a variable of the same name in one region are both accepted when unreferenced.
             "R1 SUBPROGRAM(CREATE_PROCEDURE) parent=R0 [D1 VARIABLE x, D2 LABEL x] ALL_ITEMS_EXTRACTED",
             "R2 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R1 [D3 LABEL step, D4 LABEL lp] ALL_ITEMS_EXTRACTED",
             "R3 ANONYMOUS_BLOCK(BLOCK_STATEMENT) parent=R0 [] ALL_ITEMS_EXTRACTED"
@@ -886,7 +887,7 @@ class LocalSemanticModelBuilderTest {
     @Test
     fun aTypeUseIsNeverDeclaredEarlierThanItsOwnDeclaration() {
         // `SUBTYPE t IS t`: the type is looked up in the declaring region, and the owning declaration's range contains
-        // the type's range, so it does not end before the type starts.
+        // The type's range, so it does not end before the type starts.
         val model = build("DECLARE\n  SUBTYPE t IS t;\nBEGIN\n  NULL;\nEND;\n")
         val t = model.declarations.single()
         assertThat(t.type!!.lookupRegion).isEqualTo(t.region)
@@ -899,21 +900,21 @@ class LocalSemanticModelBuilderTest {
     @Test
     fun packageSpecificationAndBodyAreLinked() {
         // Oracle: spec items are visible throughout the body regardless of order; a body-private item follows the
-        // ordinary order rule; a spec and a body variable of the same name collide on reference.
+        // Ordinary order rule; a spec and a body variable of the same name collide on reference.
         val model = build(
             """
-            create or replace package ad4ok is
+            create or replace package pk_ok is
               x number := 1;
               procedure a;
               procedure b;
               function f(n number) return number;
             end;
             /
-            create or replace package body ad4ok is
+            create or replace package body pk_ok is
               x number := 2;
               procedure b;
               procedure a is begin b; end;
-              procedure b is begin say('ad4ok.b'); end;
+              procedure b is begin say('pk_ok.b'); end;
               function f(n number) return number is begin return n; end;
               procedure private_p is begin null; end;
             end;
@@ -921,7 +922,7 @@ class LocalSemanticModelBuilderTest {
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [D0 PACKAGE ad4ok, D5 PACKAGE_BODY ad4ok] ALL_ITEMS_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 PACKAGE pk_ok, D5 PACKAGE_BODY pk_ok] ALL_ITEMS_EXTRACTED",
             "R1 PACKAGE_SPEC(CREATE_PACKAGE) parent=R0 [D1 VARIABLE x, D2 PROCEDURE a, D3 PROCEDURE b, D4 FUNCTION f] ALL_ITEMS_EXTRACTED",
             "R2 PACKAGE_BODY(CREATE_PACKAGE_BODY) parent=R0 [D6 VARIABLE x, D7 PROCEDURE b, D8 PROCEDURE a, D9 PROCEDURE b, D10 FUNCTION f, D12 PROCEDURE private_p] ALL_ITEMS_EXTRACTED",
             "R3 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R2 [] ALL_ITEMS_EXTRACTED",
@@ -931,7 +932,7 @@ class LocalSemanticModelBuilderTest {
         )
         val spec = unit(model, LocalDeclarationKind.PACKAGE)
         val body = unit(model, LocalDeclarationKind.PACKAGE_BODY)
-        assertThat(spec.unitName).isEqualTo(qualified("ad4ok"))
+        assertThat(spec.unitName).isEqualTo(qualified("pk_ok"))
         assertThat(spec.region).isEqualTo(LocalRegionId(1))
         assertThat(spec.counterpart).isEqualTo(LocalRegionId(2))
         assertThat(body.counterpart).isEqualTo(LocalRegionId(1))
@@ -1005,10 +1006,10 @@ class LocalSemanticModelBuilderTest {
 
     @Test
     fun triggerBodiesAreRegionsAndCorrelationNamesAreTriggerFacts() {
-        // Oracle tr5_bi and tr5_ref (both compile; tr5_ref renames NEW and OLD).
+        // Both compile; the second renames NEW and OLD.
         val model = build(
             """
-            create or replace trigger tr5_bi before insert on tr5 for each row
+            create or replace trigger trg_bi before insert on orders for each row
             when (new.a > 0)
             declare
               a number := 5;
@@ -1016,8 +1017,8 @@ class LocalSemanticModelBuilderTest {
               :new.b := a;
             end;
             /
-            create or replace trigger tr5_ref before insert on tr5 referencing new as n old as o for each row
-            follows tr5_bi
+            create or replace trigger trg_ref before insert on orders referencing new as n old as o for each row
+            follows trg_bi
             begin
               :n.b := :n.b + 1000;
             end;
@@ -1025,21 +1026,21 @@ class LocalSemanticModelBuilderTest {
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [D0 TRIGGER tr5_bi, D2 TRIGGER tr5_ref] ALL_ITEMS_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 TRIGGER trg_bi, D2 TRIGGER trg_ref] ALL_ITEMS_EXTRACTED",
             "R1 TRIGGER(CREATE_TRIGGER) parent=R0 [D1 VARIABLE a] ALL_ITEMS_EXTRACTED",
             "R2 TRIGGER(CREATE_TRIGGER) parent=R0 [] ALL_ITEMS_EXTRACTED"
         )
         // The region starts at DECLARE: the WHEN condition is outside it.
         assertThat(model.region(LocalRegionId(1)).range.let { it.startLine to it.startColumn }).isEqualTo(3 to 0)
         val bi = model.declarations[0].details as LocalTrigger
-        assertThat(bi.unitName).isEqualTo(qualified("tr5_bi"))
+        assertThat(bi.unitName).isEqualTo(qualified("trg_bi"))
         assertThat(bi.body).isEqualTo(LocalRegionId(1))
         assertThat(bi.correlationNames.toString()).isEqualTo("new=NEW old=OLD parent=PARENT")
         val ref = model.declarations[2].details as LocalTrigger
         assertThat(ref.correlationNames!!.new).isEqualTo(OracleIdentifier.fromSource("n"))
         assertThat(ref.correlationNames.old).isEqualTo(OracleIdentifier.fromSource("o"))
         assertThat(ref.correlationNames.parent).isEqualTo(OracleIdentifier.fromSource("PARENT"))
-        // The region of tr5_ref starts at BEGIN, after FOLLOWS.
+        // The region of the second trigger starts at BEGIN, after FOLLOWS.
         assertThat(model.region(LocalRegionId(2)).range.startLine).isEqualTo(11)
         assertWellNested(model)
     }
@@ -1066,10 +1067,10 @@ class LocalSemanticModelBuilderTest {
 
     @Test
     fun compoundTriggerSectionsAndTimingPoints() {
-        // Oracle tr5_c: g_cnt is shared by the timing points; l belongs to one.
+        // G_cnt is shared by the timing points; l belongs to one.
         val model = build(
             """
-            create or replace trigger tr5_c for update on tr5 compound trigger
+            create or replace trigger trg_c for update on orders compound trigger
               g_cnt pls_integer := 0;
               procedure bump is begin g_cnt := g_cnt + 1; end;
               before statement is
@@ -1081,12 +1082,12 @@ class LocalSemanticModelBuilderTest {
               begin
                 g_cnt := g_cnt + l;
               end before each row;
-            end tr5_c;
+            end trg_c;
             /
             """.trimIndent()
         )
         assertThat(outline(model)).containsExactly(
-            "R0 FILE(FILE) parent=null [D0 TRIGGER tr5_c] ALL_ITEMS_EXTRACTED",
+            "R0 FILE(FILE) parent=null [D0 TRIGGER trg_c] ALL_ITEMS_EXTRACTED",
             "R1 TRIGGER(COMPOUND_TRIGGER_BLOCK) parent=R0 [D1 VARIABLE g_cnt, D2 PROCEDURE bump] ALL_ITEMS_EXTRACTED",
             "R2 SUBPROGRAM(PROCEDURE_DECLARATION) parent=R1 [] ALL_ITEMS_EXTRACTED",
             "R3 TIMING_POINT(TIMING_POINT_SECTION) parent=R1 [] ALL_ITEMS_EXTRACTED",

@@ -34,8 +34,8 @@ internal enum class LocalReferenceContext {
     CALL_EXPRESSION,
 
     /**
-     * The first segment of a qualified name (`a.b`, `a.b(…)`, `c%ROWCOUNT`, a qualified type name). Only that segment
-     * is looked up; [LocalReference.remainingSegments] counts the rest.
+     * The first segment of a qualified name (`a.b`, `a.b(…)`, `c%ROWCOUNT`, a qualified type name). [LocalReference.segments]
+     * holds the rest, and [LocalReference.lastSegmentContext] the position of the whole name.
      */
     QUALIFIER,
 
@@ -52,7 +52,30 @@ internal enum class LocalReferenceContext {
     EXCEPTION,
 
     /** A plain name inside a SQL statement or query, other than the PL/SQL targets of an `INTO` clause. */
-    SQL_VALUE
+    SQL_VALUE,
+
+    /** The label of `GOTO`: a statement label under the branching restrictions. */
+    GOTO_TARGET,
+
+    /** The label of `EXIT` or `CONTINUE`: the label of an enclosing loop. */
+    LOOP_TARGET,
+
+    /** The cursor of `OPEN`, `FETCH` or `CLOSE`: an explicit cursor or a cursor variable. */
+    CURSOR_OPERAND,
+
+    /** The cursor of `OPEN … FOR`: a cursor variable, never an explicit cursor. */
+    OPEN_FOR_OPERAND,
+
+    /**
+     * The single name of a `FOR r IN c` or `FOR r IN c(…)` control: an explicit cursor, or a value iterated once (a
+     * variable or a function). Unlike [CURSOR_OPERAND], a variable here need not be a cursor variable.
+     */
+    FOR_CONTROL
+}
+
+/** A segment written after the first one: a member (`.name`) or an attribute (`%name`). */
+internal class LocalSegment(val name: OracleIdentifier, val isAttribute: Boolean) {
+    override fun toString() = (if (isAttribute) "%" else ".") + name
 }
 
 /**
@@ -66,14 +89,20 @@ internal class LocalReference(
     val range: SourceRange,
     val context: LocalReferenceContext,
     val region: LocalRegionId,
-    /** For a [LocalReferenceContext.QUALIFIER], the number of segments after this one; 0 otherwise. */
-    val remainingSegments: Int,
+    /** For a [LocalReferenceContext.QUALIFIER], the segments written after this one, in order; empty otherwise. */
+    val segments: List<LocalSegment>,
+    /** The position of the whole name: [context] for a single segment, the qualified name's own position otherwise. */
+    val lastSegmentContext: LocalReferenceContext,
     /** Written in the default expression of a subprogram or cursor parameter. */
-    val inParameterDefault: Boolean
+    val inParameterDefault: Boolean,
+    /** The innermost exception handler holding the reference, for the branching rule of `GOTO`. */
+    val handler: SourceRange?
 ) {
+    val remainingSegments: Int get() = segments.size
+
     override fun toString() =
-        "$context $name@${range.startLine}:${range.startColumn} in $region" +
-            (if (remainingSegments > 0) " +$remainingSegments" else "") + (if (inParameterDefault) " (default)" else "")
+        "$context $name${segments.joinToString("")}@${range.startLine}:${range.startColumn} in $region" +
+            (if (segments.isNotEmpty()) " as $lastSegmentContext" else "") + (if (inParameterDefault) " (default)" else "")
 
     companion object {
         /** Document order of the start, then of the end, then context for references at one position. */

@@ -169,13 +169,15 @@ internal object LocalSemanticModelBuilder {
             val first = content.firstOrNull() ?: return null
             val range = SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn)
             val region = open(enclosing, kind, node.type.toString(), range)
-            labels.forEach { it.details = LocalLabel(region.id) }
+            labels.forEach { it.details = (it.details as LocalLabel).copy(labeled = region.id) }
             content.forEach { visit(it, region) }
             return region
         }
 
-        private fun declareLabel(label: AstNode, region: RegionDraft, labeled: LocalRegionId?): DeclarationDraft =
-            declare(region, LocalDeclarationKind.LABEL, label, label.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME), details = LocalLabel(labeled))
+        private fun declareLabel(label: AstNode, region: RegionDraft, labeled: LocalRegionId?): DeclarationDraft {
+            val details = LocalLabelFacts.of(label, labeled, region.range, fileId)
+            return declare(region, LocalDeclarationKind.LABEL, label, label.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME), details = details)
+        }
 
         /** The iterands of a FOR loop or an iterator choice, as indices of the region the loop forms. */
         private fun iterator(node: AstNode, region: RegionDraft) {
@@ -206,7 +208,7 @@ internal object LocalSemanticModelBuilder {
             val first = content.first()
             val region = open(enclosing, LocalRegionKind.FORALL, node.type.toString(),
                 SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn))
-            labels.forEach { it.details = LocalLabel(region.id) }
+            labels.forEach { it.details = (it.details as LocalLabel).copy(labeled = region.id) }
             val index = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
             declare(region, LocalDeclarationKind.LOOP_INDEX, index, index, details = LocalLoopIndex(null, true))
             content.filter { it !== index }.forEach { visit(it, region) }

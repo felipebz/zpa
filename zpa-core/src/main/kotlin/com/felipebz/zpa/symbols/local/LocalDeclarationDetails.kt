@@ -128,9 +128,18 @@ internal class LocalLoopIndex(
     val isTypeImplicit: Boolean
 ) : LocalDeclarationDetails
 
-internal class LocalLabel(
+internal data class LocalLabel(
     /** The region formed by the labeled statement or block, if it forms one. */
-    val labeled: LocalRegionId?
+    val labeled: LocalRegionId?,
+    /** The labeled statement, label included. */
+    val statement: SourceRange,
+    /** The labeled statement is a loop (`LOOP`, `WHILE`, `FOR`): `EXIT` and `CONTINUE` may name the label. */
+    val isLoop: Boolean,
+    /**
+     * The innermost branch of an `IF` or `CASE`, loop or exception handler of the label's region that holds the labeled
+     * statement; null when it is directly in the region's statement list. A `GOTO` outside this range cannot reach it.
+     */
+    val compound: SourceRange?
 ) : LocalDeclarationDetails
 
 internal class LocalCursor(

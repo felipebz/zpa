@@ -36,21 +36,25 @@ import com.felipebz.zpa.project.*
  *
  * | Shape | Context |
  * |---|---|
- * | first child of `MEMBER_EXPRESSION` or `OBJECT_REFERENCE` | QUALIFIER, with the segments after it |
+ * | first child of `MEMBER_EXPRESSION` or `OBJECT_REFERENCE` | QUALIFIER, with the `.`/`%` segments after it; the whole name's own position (below) is the last segment's context |
  * | first child of a `METHOD_CALL` that is a `CALL_STATEMENT`, or a `CALL_STATEMENT` name | CALL_STATEMENT |
+ * | first child of a `METHOD_CALL` that is a `SINGLE_EXPRESSION_CONTROL`, or a direct child of one | FOR_CONTROL |
  * | first child of any other `METHOD_CALL` | CALL_EXPRESSION |
  * | child of `RAISE_STATEMENT` or `EXCEPTION_HANDLER`, first child of `EXCEPTION_INIT_PRAGMA` | EXCEPTION |
+ * | first name of `OPEN_STATEMENT`, `FETCH_STATEMENT`, `CLOSE_STATEMENT` | CURSOR_OPERAND |
+ * | first name of `OPEN_FOR_STATEMENT` | OPEN_FOR_OPERAND |
+ * | `IDENTIFIER_NAME` of `GOTO_STATEMENT` | GOTO_TARGET |
+ * | `IDENTIFIER_NAME` of `EXIT_STATEMENT`, `CONTINUE_STATEMENT` | LOOP_TARGET |
  * | inside `SELECT_`/`INSERT_`/`UPDATE_`/`DELETE_`/`MERGE_EXPRESSION`, outside an `INTO_CLAUSE` | SQL_VALUE |
  * | anything else | VALUE |
  * | single-segment `NamedTypeRef`/`RefTypeRef` of a type use | TYPE |
  * | single-segment `AnchoredTypeRef` of a type use | ANCHOR_TYPE / ANCHOR_ROWTYPE |
- * | multi-segment type name of a type use | QUALIFIER |
+ * | multi-segment type name of a type use | QUALIFIER, last segment TYPE / ANCHOR_TYPE / ANCHOR_ROWTYPE |
  *
- * Not collected: the cursor operand of `OPEN`, `FETCH`, `CLOSE` and `OPEN … FOR`; the single expression of a `FOR`
- * iteration control (a cursor or a value); call names and qualified names inside SQL; columns of `INSERT (…)` and
- * `SET` targets; names inside datatypes other than the model's type uses (constraints, `CAST`); names behind a database
- * link; the name of `PRAGMA DEPRECATE`; names of a trigger heading (`WHEN`, `CALL`); labels of `EXIT`, `GOTO` and
- * `END name` (not `VARIABLE_NAME`s); bind and host variables; dynamic SQL text.
+ * Not collected: call names and qualified names inside SQL; columns of `INSERT (…)` and `SET` targets; names inside
+ * datatypes other than the model's type uses (constraints, `CAST`); names behind a database link; the name of
+ * `PRAGMA DEPRECATE`; names of a trigger heading (`WHEN`, `CALL`); `END name` trailers, which Oracle matches against the
+ * unit or label without looking them up; bind and host variables; dynamic SQL text.
  */
 internal object LocalReferenceCollector {
 
@@ -64,13 +68,16 @@ internal object LocalReferenceCollector {
 
     fun collect(root: AstNode, model: LocalSemanticModel): List<LocalReference> {
         val references = ArrayList<LocalReference>()
-        Walk(model, references).visit(root, State(inSql = false, inDefault = false, inTrigger = false))
+        Walk(model, references).visit(root, State(inSql = false, inDefault = false, inTrigger = false, handler = null))
         typeUses(model, references)
         references.sortWith(LocalReference.ORDER)
         return references
     }
 
-    private class State(val inSql: Boolean, val inDefault: Boolean, val inTrigger: Boolean)
+    private class State(val inSql: Boolean, val inDefault: Boolean, val inTrigger: Boolean, val handler: SourceRange?) {
+        fun with(inSql: Boolean = this.inSql, inDefault: Boolean = this.inDefault, inTrigger: Boolean = this.inTrigger, handler: SourceRange? = this.handler) =
+            State(inSql, inDefault, inTrigger, handler)
+    }
 
     private class Walk(private val model: LocalSemanticModel, private val out: MutableList<LocalReference>) {
         private val fileId: FileId = model.fileId
@@ -84,14 +91,18 @@ internal object LocalReferenceCollector {
                 }
                 type === PlSqlGrammar.DATATYPE || type === PlSqlGrammar.DEPRECATE_PRAGMA ||
                     type === DmlGrammar.INSERT_COLUMNS -> return
+                type === PlSqlGrammar.GOTO_STATEMENT -> labelTarget(node, LocalReferenceContext.GOTO_TARGET, state)
+                type === PlSqlGrammar.EXIT_STATEMENT || type === PlSqlGrammar.CONTINUE_STATEMENT ->
+                    labelTarget(node, LocalReferenceContext.LOOP_TARGET, state)
             }
             var next = state
             when {
-                type in SQL_STATEMENTS -> next = State(true, state.inDefault, state.inTrigger)
-                type === DmlGrammar.INTO_CLAUSE -> next = State(false, state.inDefault, state.inTrigger)
-                type === PlSqlGrammar.CREATE_TRIGGER -> next = State(state.inSql, state.inDefault, true)
+                type in SQL_STATEMENTS -> next = state.with(inSql = true)
+                type === DmlGrammar.INTO_CLAUSE -> next = state.with(inSql = false)
+                type === PlSqlGrammar.CREATE_TRIGGER -> next = state.with(inTrigger = true)
+                type === PlSqlGrammar.EXCEPTION_HANDLER -> next = state.with(handler = LocalSyntax.range(fileId, node))
                 type === PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT && (node.parent.type === PlSqlGrammar.PARAMETER_DECLARATION ||
-                    node.parent.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) -> next = State(state.inSql, true, state.inTrigger)
+                    node.parent.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) -> next = state.with(inDefault = true)
             }
             for ((index, child) in node.children.withIndex()) {
                 if (index == 0 && type === DmlGrammar.UPDATE_COLUMN) continue
@@ -99,40 +110,77 @@ internal object LocalReferenceCollector {
             }
         }
 
+        /** The label named by `GOTO`, `EXIT` or `CONTINUE` (an `IDENTIFIER_NAME`, absent for a plain `EXIT`). */
+        private fun labelTarget(statement: AstNode, context: LocalReferenceContext, state: State) {
+            val identifier = statement.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return
+            add(identifier, context, emptyList(), context, state)
+        }
+
         private fun reference(node: AstNode, state: State) {
             val identifier = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return
             val parent = node.parent
+            if (parent.type === PlSqlGrammar.MEMBER_EXPRESSION || parent.type === PlSqlGrammar.OBJECT_REFERENCE) {
+                if (parent.firstChild !== node || state.inSql || parent.hasDirectChildren(PlSqlPunctuator.REMOTE)) return
+                val whole = position(parent, state) ?: return
+                add(identifier, LocalReferenceContext.QUALIFIER, segments(parent), whole, state)
+                return
+            }
+            val context = position(node, state) ?: return
+            add(identifier, context, emptyList(), context, state)
+        }
+
+        /** The context of a name written as [node] (a `VARIABLE_NAME` or a qualified name), or null when not collected. */
+        private fun position(node: AstNode, state: State): LocalReferenceContext? {
+            val parent = node.parent
             val first = parent.firstChild === node
-            var remaining = 0
-            val context = when {
-                parent.type === PlSqlGrammar.MEMBER_EXPRESSION || parent.type === PlSqlGrammar.OBJECT_REFERENCE -> {
-                    if (!first || state.inSql || parent.hasDirectChildren(PlSqlPunctuator.REMOTE)) return
-                    remaining = parent.children.count { it.type === PlSqlPunctuator.DOT || it.type === PlSqlPunctuator.MOD }
-                    LocalReferenceContext.QUALIFIER
-                }
-                parent.type === PlSqlGrammar.METHOD_CALL && first -> {
-                    if (state.inSql || parent.parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL) return
-                    if (parent.parent.type === PlSqlGrammar.CALL_STATEMENT) LocalReferenceContext.CALL_STATEMENT
-                    else LocalReferenceContext.CALL_EXPRESSION
+            return when {
+                parent.type === PlSqlGrammar.METHOD_CALL && first -> when {
+                    state.inSql -> null
+                    parent.parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> LocalReferenceContext.FOR_CONTROL
+                    parent.parent.type === PlSqlGrammar.CALL_STATEMENT -> LocalReferenceContext.CALL_STATEMENT
+                    else -> LocalReferenceContext.CALL_EXPRESSION
                 }
                 parent.type === PlSqlGrammar.CALL_STATEMENT -> LocalReferenceContext.CALL_STATEMENT
-                parent.type === PlSqlGrammar.EXCEPTION_INIT_PRAGMA -> {
+                parent.type === PlSqlGrammar.EXCEPTION_INIT_PRAGMA ->
                     // Only the first argument names the exception; the error code is an expression.
-                    if (parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME) !== node) LocalReferenceContext.VALUE
+                    if (parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) !== node) LocalReferenceContext.VALUE
                     else LocalReferenceContext.EXCEPTION
-                }
                 parent.type === PlSqlGrammar.RAISE_STATEMENT || parent.type === PlSqlGrammar.EXCEPTION_HANDLER ->
                     LocalReferenceContext.EXCEPTION
-                parent.type in CURSOR_STATEMENTS && parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME) === node -> return
-                parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> return
+                parent.type in CURSOR_STATEMENTS && parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) === node ->
+                    if (parent.type === PlSqlGrammar.OPEN_FOR_STATEMENT) LocalReferenceContext.OPEN_FOR_OPERAND else LocalReferenceContext.CURSOR_OPERAND
+                parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> LocalReferenceContext.FOR_CONTROL
                 state.inSql -> LocalReferenceContext.SQL_VALUE
                 else -> LocalReferenceContext.VALUE
             }
+        }
+
+        /** The segments written after the first child of a qualified name: `.name` members and `%name` attributes. */
+        private fun segments(qualified: AstNode): List<LocalSegment> {
+            val result = ArrayList<LocalSegment>()
+            val children = qualified.children
+            for (index in 1 until children.size - 1) {
+                val separator = children[index].type
+                if (separator !== PlSqlPunctuator.DOT && separator !== PlSqlPunctuator.MOD) continue
+                val name = children[index + 1]
+                if (!name.hasToken()) continue
+                result += LocalSegment(LocalSyntax.identifier(name), separator === PlSqlPunctuator.MOD)
+            }
+            return result
+        }
+
+        private fun add(
+            identifier: AstNode,
+            context: LocalReferenceContext,
+            segments: List<LocalSegment>,
+            whole: LocalReferenceContext,
+            state: State
+        ) {
             val range = LocalSyntax.range(fileId, identifier)
             val region = innermostRegion(model, range)
             // A trigger heading (WHEN, CALL) is SQL-level and names correlation rows, not PL/SQL declarations.
             if (state.inTrigger && model.region(region).kind == LocalRegionKind.FILE) return
-            out += LocalReference(LocalSyntax.identifier(identifier), range, context, region, remaining, state.inDefault)
+            out += LocalReference(LocalSyntax.identifier(identifier), range, context, region, segments, whole, state.inDefault, state.handler)
         }
     }
 
@@ -151,7 +199,8 @@ internal object LocalReferenceCollector {
                 }
             }
             val actual = if (segments.size > 1) LocalReferenceContext.QUALIFIER else context
-            out += LocalReference(segments.first(), use.range, actual, use.lookupRegion, segments.size - 1, false)
+            val rest = segments.drop(1).map { LocalSegment(it, false) }
+            out += LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null)
         }
         for (declaration in model.declarations) {
             add(declaration.type)

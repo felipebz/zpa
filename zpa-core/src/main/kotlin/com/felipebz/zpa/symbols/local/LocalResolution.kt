@@ -112,8 +112,27 @@ internal sealed interface LocalResolution {
     ) : LocalResolution
 
     /**
-     * An unqualified name in SQL that the local regions also declare: a column of the same name wins over it in Oracle
-     * (AD06), so without relation metadata it is either.
+     * No region declares the name and it cannot be a schema object: a label target nothing declares (PLS-00201), or a
+     * member missing from a region, record or collection whose members the file shows in full (PLS-00302).
+     */
+    data object Undeclared : LocalResolution
+
+    /**
+     * The name binds [declaration], which this reference cannot reach from where it is written: a label or subprogram
+     * name used as a qualifier outside its region (PLS-00219, PLS-00225), an `EXIT` outside the labeled loop
+     * (PLS-00374), or a `GOTO` into a statement it cannot branch into (PLS-00375; PLS-00201 for a loop body).
+     */
+    data class OutOfScope(val declaration: LocalDeclarationId) : LocalResolution
+
+    /** A member step: the field at [ordinal] (zero-based) of the local record type [recordType]. */
+    data class Field(val recordType: LocalDeclarationId, val ordinal: Int) : LocalResolution
+
+    /** A member step: a collection method (`COUNT`, `EXISTS`…) of a variable of the local collection type [collectionType]. */
+    data class CollectionMethod(val collectionType: LocalDeclarationId) : LocalResolution
+
+    /**
+     * An unqualified name in SQL that the local regions also declare: a same-named column wins in Oracle, so without
+     * relation metadata it is either.
      */
     data class SqlColumnOrLocal(val declaration: LocalDeclarationId) : LocalResolution
 }
@@ -148,5 +167,17 @@ internal enum class LocalUnsupportedConstruct {
     OVERLOADS_PARTLY_LATER,
 
     /** A SQL name whose local outcome is not a single declaration: a column could still win over it. */
-    SQL_NAME_WITHOUT_SINGLE_DECLARATION
+    SQL_NAME_WITHOUT_SINGLE_DECLARATION,
+
+    /**
+     * A member of a name whose members depend on its datatype, which is not a local record or collection type: a
+     * subtype, `%TYPE`/`%ROWTYPE`, a type of another unit or STANDARD, a loop index, a qualified or unrepresentable type.
+     */
+    MEMBER_NEEDS_TYPING,
+
+    /** A member of a label that labels a statement forming no region (a plain loop or an ordinary statement). */
+    MEMBER_OF_STATEMENT_LABEL,
+
+    /** A member of a parameterless cursor written inside the cursor's own declaration: not observed. */
+    CURSOR_MEMBER_INSIDE_CURSOR
 }

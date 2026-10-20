@@ -48,6 +48,7 @@ internal object LocalResolver {
     private val TYPES = EnumSet.of(SUBTYPE, RECORD_TYPE, COLLECTION_TYPE, REF_CURSOR_TYPE)
     private val CALLABLES = EnumSet.of(PROCEDURE, FUNCTION)
     private val QUALIFYING_UNITS = EnumSet.of(PACKAGE, PACKAGE_BODY, PROCEDURE, FUNCTION)
+    private val LABEL_TARGETS = EnumSet.of(Ctx.GOTO_TARGET, Ctx.LOOP_TARGET)
 
     fun resolve(model: LocalSemanticModel, reference: LocalReference): LocalResolution {
         if (reference.inParameterDefault) return LocalResolution.Unsupported(LocalUnsupportedConstruct.PARAMETER_DEFAULT)
@@ -74,8 +75,10 @@ internal object LocalResolver {
         if (outcome == null) {
             val candidates = fileCandidates(model, reference, chain)
             if (reliesOnFileRegion(chain)) relied += model.root
-            outcome = if (candidates.isEmpty()) LocalResolution.ProvenAbsent
-            else decide(model, reference, Scope(listOf(model.root), candidates, null, null), candidates, chain)
+            outcome = if (candidates.isEmpty()) {
+                // Labels are never schema objects: a target nothing declares is an error, not an absence.
+                if (reference.context in LABEL_TARGETS) LocalResolution.Undeclared else LocalResolution.ProvenAbsent
+            } else decide(model, reference, Scope(listOf(model.root), candidates, null, null), candidates, chain)
         }
         if (reference.context == Ctx.SQL_VALUE) outcome = sqlOutcome(outcome, gaps)
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
@@ -84,6 +87,13 @@ internal object LocalResolver {
         relied.forEach { reasons += it.completeness.reasons }
         return if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
     }
+
+    /**
+     * The outcome of each segment of a qualified [reference], up to the first that stops (see
+     * [LocalQualifiedResolver]); a single outcome for a single segment.
+     */
+    fun resolveQualified(model: LocalSemanticModel, reference: LocalReference): List<LocalResolution> =
+        LocalQualifiedResolver.resolve(model, reference)
 
     /**
      * Whether the file step depends on the file region's own text: only when the reference is in no region, or when the
@@ -95,7 +105,7 @@ internal object LocalResolver {
         chain.isEmpty() || chain.last().kind == LocalRegionKind.ANONYMOUS_BLOCK
 
     /** The regions from [region] outward, without the file region. */
-    private fun chain(model: LocalSemanticModel, region: LocalRegionId): List<LocalRegion> {
+    fun chain(model: LocalSemanticModel, region: LocalRegionId): List<LocalRegion> {
         val chain = ArrayList<LocalRegion>()
         var current: LocalRegion? = model.region(region)
         while (current != null && current.kind != LocalRegionKind.FILE) {
@@ -106,7 +116,7 @@ internal object LocalResolver {
     }
 
     /** A region as a lookup sees it: a linked package body together with its specification. */
-    private class Scope(
+    class Scope(
         val regions: List<LocalRegion>,
         val declarations: List<LocalDeclaration>,
         /** The linked specification region of a package body. */
@@ -114,7 +124,7 @@ internal object LocalResolver {
         val body: LocalRegion?
     )
 
-    private fun scopeOf(model: LocalSemanticModel, region: LocalRegion): Scope {
+    fun scopeOf(model: LocalSemanticModel, region: LocalRegion): Scope {
         if (region.kind != LocalRegionKind.PACKAGE_BODY) return Scope(listOf(region), model.declarationsOf(region.id), null, null)
         val unit = model.declarations.firstOrNull { (it.details as? LocalUnit)?.region == region.id }?.details as? LocalUnit
         val specification = unit?.counterpart ?: return Scope(listOf(region), model.declarationsOf(region.id), null, region)
@@ -139,7 +149,7 @@ internal object LocalResolver {
         }
     }
 
-    private fun decide(
+    fun decide(
         model: LocalSemanticModel,
         reference: LocalReference,
         scope: Scope,
@@ -162,6 +172,7 @@ internal object LocalResolver {
         val declaration = model.declaration(representative(entity))
         if (!earlier.single()) return LocalResolution.DeclaredLater(declaration.id)
         if (isCallable(entity)) return callables(entities, reference.context, chain)
+        if (declaration.kind == LABEL && reference.context in LABEL_TARGETS) return labelTarget(model, declaration, reference)
         return when (fit(declaration.kind, reference.context)) {
             Fit.APPLICABLE -> LocalResolution.Bound(declaration.id)
             Fit.WRONG -> LocalResolution.WrongKind(declaration.id)
@@ -170,8 +181,8 @@ internal object LocalResolver {
     }
 
     /**
-     * Callables decide: an overload set, unless no callable of the set can be used here (KC). As a qualifier, the
-     * subprogram whose body encloses the reference is the one named (NS11).
+     * Callables decide: an overload set, unless no callable of the set can be used here. As a qualifier, the
+     * subprogram whose body encloses the reference is the one named.
      */
     private fun callables(entities: List<List<LocalDeclaration>>, context: Ctx, chain: List<LocalRegion>): LocalResolution {
         val representatives = entities.map(::representative)
@@ -180,19 +191,51 @@ internal object LocalResolver {
             if (enclosing != null) return LocalResolution.Bound(representative(enclosing))
         }
         val kinds = entities.mapTo(EnumSet.noneOf(LocalDeclarationKind::class.java)) { it.first().kind }
-        val wrong = when (context) {
-            Ctx.QUALIFIER -> false
-            Ctx.CALL_STATEMENT -> PROCEDURE !in kinds // PLS-00221
-            Ctx.VALUE, Ctx.SQL_VALUE, Ctx.CALL_EXPRESSION -> FUNCTION !in kinds // PLS-00222
-            Ctx.TYPE, Ctx.ANCHOR_TYPE, Ctx.ANCHOR_ROWTYPE, Ctx.EXCEPTION -> true // PLS-00488, PLS-00206, PLS-00310, PLS-00485…
+        val fit = when (context) {
+            Ctx.QUALIFIER -> Fit.APPLICABLE
+            Ctx.CALL_STATEMENT -> if (PROCEDURE in kinds) Fit.APPLICABLE else Fit.WRONG // PLS-00221
+            Ctx.VALUE, Ctx.SQL_VALUE, Ctx.CALL_EXPRESSION -> if (FUNCTION in kinds) Fit.APPLICABLE else Fit.WRONG // PLS-00222
+            Ctx.TYPE, Ctx.ANCHOR_TYPE, Ctx.ANCHOR_ROWTYPE, Ctx.EXCEPTION -> Fit.WRONG // PLS-00488, PLS-00206, PLS-00310, PLS-00485…
+            Ctx.CURSOR_OPERAND -> if (FUNCTION in kinds) Fit.UNSUPPORTED else Fit.WRONG // PLS-00456
+            Ctx.FOR_CONTROL -> if (FUNCTION in kinds) Fit.APPLICABLE else Fit.UNSUPPORTED // a value iterated once
+            Ctx.OPEN_FOR_OPERAND, Ctx.GOTO_TARGET, Ctx.LOOP_TARGET -> Fit.UNSUPPORTED
         }
-        return if (wrong) LocalResolution.WrongKind(representatives.first()) else LocalResolution.OverloadSet(representatives)
+        return when (fit) {
+            Fit.APPLICABLE -> LocalResolution.OverloadSet(representatives)
+            Fit.WRONG -> LocalResolution.WrongKind(representatives.first())
+            Fit.UNSUPPORTED -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, kinds.first(), context)
+        }
     }
 
     /**
-     * Whether a declaration of [kind] can be what [context] names. Every WRONG pair was observed as a compile error
-     * that did not fall back to an outer declaration (KC matrix, LT07_D, LT04_A, SP06_C, SP07_E, NS04_D); every
-     * APPLICABLE pair compiled.
+     * No branch leaves a subprogram (PLS-00374, PLS-00375). `EXIT`/`CONTINUE` must name a loop (PLS-00373) that
+     * encloses the statement (PLS-00374). A `GOTO` cannot enter a loop, a handler or an `IF`/`CASE` branch from outside
+     * it, so it cannot cross branches either, nor branch from a handler into its own block (PLS-00375).
+     */
+    private fun labelTarget(model: LocalSemanticModel, label: LocalDeclaration, reference: LocalReference): LocalResolution {
+        val details = label.details as LocalLabel
+        // Control never leaves a subprogram: a label beyond one is out of reach.
+        val crossed = chain(model, reference.region).takeWhile { it.id != label.region }
+        if (crossed.any { it.kind == LocalRegionKind.SUBPROGRAM }) return LocalResolution.OutOfScope(label.id)
+        if (reference.context == Ctx.LOOP_TARGET) {
+            if (!details.isLoop) return LocalResolution.WrongKind(label.id)
+            return if (contains(details.statement, reference.range)) LocalResolution.Bound(label.id) else LocalResolution.OutOfScope(label.id)
+        }
+        details.compound?.let { if (!contains(it, reference.range)) return LocalResolution.OutOfScope(label.id) }
+        val handler = reference.handler
+        if (handler != null && !contains(handler, details.statement) &&
+            LocalReferenceCollector.innermostRegion(model, handler) == label.region
+        ) return LocalResolution.OutOfScope(label.id)
+        return LocalResolution.Bound(label.id)
+    }
+
+    private fun contains(outer: SourceRange, inner: SourceRange) =
+        (outer.startLine < inner.startLine || outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn) &&
+            (inner.endLine < outer.endLine || inner.endLine == outer.endLine && inner.endColumn <= outer.endColumn)
+
+    /**
+     * Whether a declaration of [kind] can be what [context] names. WRONG pairs fail at the use on Oracle without falling
+     * back to an outer declaration; APPLICABLE pairs compile.
      */
     private fun fit(kind: LocalDeclarationKind, context: Ctx): Fit = when (context) {
         Ctx.QUALIFIER -> Fit.APPLICABLE
@@ -206,7 +249,7 @@ internal object LocalResolver {
             kind in VALUES || kind in TYPES || kind == EXCEPTION || kind == CURSOR || kind == LABEL -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
-        // Element access, a subtype conversion (ST_A) or a constructor: whether the call fits is typing.
+        // Element access, a subtype conversion or a constructor: whether the call fits is typing.
         Ctx.CALL_EXPRESSION -> when (kind) {
             VARIABLE, PARAMETER, LOOP_INDEX, SUBTYPE, RECORD_TYPE, COLLECTION_TYPE -> Fit.APPLICABLE
             EXCEPTION, CURSOR, LABEL, REF_CURSOR_TYPE -> Fit.WRONG
@@ -217,13 +260,13 @@ internal object LocalResolver {
             kind == VARIABLE || kind == PARAMETER || kind == LOOP_INDEX || kind == LABEL || kind == EXCEPTION || kind == CURSOR -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
-        // A parameter or loop index cannot anchor %TYPE (KC, PLS-00206); a constant can (AN_A).
+        // A parameter or loop index cannot anchor %TYPE (PLS-00206); a constant can.
         Ctx.ANCHOR_TYPE -> when (kind) {
             VARIABLE -> Fit.APPLICABLE
             PARAMETER, LOOP_INDEX, LABEL, EXCEPTION, CURSOR, SUBTYPE, RECORD_TYPE, COLLECTION_TYPE, REF_CURSOR_TYPE -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
-        // A variable or parameter anchors %ROWTYPE only when it is a cursor variable (AN_B, AN_C; LT04_A): typing.
+        // A variable or parameter anchors %ROWTYPE only when it is a cursor variable: typing.
         Ctx.ANCHOR_ROWTYPE -> when (kind) {
             CURSOR -> Fit.APPLICABLE
             LOOP_INDEX, LABEL, EXCEPTION, SUBTYPE, RECORD_TYPE, COLLECTION_TYPE, REF_CURSOR_TYPE -> Fit.WRONG
@@ -234,9 +277,24 @@ internal object LocalResolver {
             kind in VALUES && kind != CURSOR_PARAMETER || kind in TYPES || kind == CURSOR || kind == LABEL -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
+        // A variable or parameter is a cursor variable or not, which is typing.
+        Ctx.CURSOR_OPERAND -> when (kind) {
+            CURSOR -> Fit.APPLICABLE
+            EXCEPTION, LABEL, LOOP_INDEX, SUBTYPE, RECORD_TYPE -> Fit.WRONG // PLS-00456, PLS-00330
+            else -> Fit.UNSUPPORTED
+        }
+        Ctx.OPEN_FOR_OPERAND -> if (kind == CURSOR) Fit.WRONG else Fit.UNSUPPORTED // PLS-00382
+        // A cursor, or a value iterated once; a weak cursor variable fails on its type.
+        Ctx.FOR_CONTROL -> when (kind) {
+            CURSOR, VARIABLE, PARAMETER -> Fit.APPLICABLE
+            EXCEPTION, SUBTYPE -> Fit.WRONG // PLS-00320, PLS-00330
+            else -> Fit.UNSUPPORTED
+        }
+        // Labels are decided by the label-target rule; any other kind there is not observed.
+        Ctx.GOTO_TARGET, Ctx.LOOP_TARGET -> Fit.UNSUPPORTED
     }
 
-    /** In SQL a column of the same name wins over a local (AD06): a single local is only one of two readings. */
+    /** In SQL a column of the same name wins over a local: a single local is only one of two readings. */
     private fun sqlOutcome(outcome: LocalResolution, gaps: EnumSet<LocalLookupGap>): LocalResolution = when (outcome) {
         is LocalResolution.Bound -> LocalResolution.SqlColumnOrLocal(outcome.declaration)
         is LocalResolution.OverloadSet -> outcome.declarations.singleOrNull()?.let { LocalResolution.SqlColumnOrLocal(it) }
@@ -277,7 +335,7 @@ internal object LocalResolver {
 
     private fun isCallable(entity: List<LocalDeclaration>) = entity.all { it.kind in CALLABLES }
 
-    /** Two subprogram bodies with one heading are not overloads but one subprogram defined twice (SP05_C, PLS-00305). */
+    /** Two subprogram bodies with one heading are not overloads but one subprogram defined twice (PLS-00305). */
     private fun hasTwoBodiesOfOneHeading(entities: List<List<LocalDeclaration>>): Boolean {
         val keys = HashSet<String>()
         return entities.flatten().any { declaration ->
