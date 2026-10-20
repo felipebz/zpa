@@ -54,6 +54,15 @@ internal enum class LocalReferenceContext {
     /** A plain name inside a SQL statement or query, other than the PL/SQL targets of an `INTO` clause. */
     SQL_VALUE,
 
+    /** The name of `name(args)` inside SQL, single-row `VALUES` included: a SQL built-in wins over a local function. */
+    SQL_CALL,
+
+    /**
+     * A plain name in the `VALUES` of a single-table `INSERT`: no column scope, so a local wins, but a local function is
+     * still used in SQL (PLS-00231).
+     */
+    INSERT_VALUE,
+
     /** The label of `GOTO`: a statement label under the branching restrictions. */
     GOTO_TARGET,
 
@@ -96,7 +105,9 @@ internal class LocalReference(
     /** Written in the default expression of a subprogram or cursor parameter. */
     val inParameterDefault: Boolean,
     /** The innermost exception handler holding the reference, for the branching rule of `GOTO`. */
-    val handler: SourceRange?
+    val handler: SourceRange?,
+    /** For a name inside SQL, the relations that can qualify it. */
+    val sql: LocalSqlScope? = null
 ) {
     val remainingSegments: Int get() = segments.size
 

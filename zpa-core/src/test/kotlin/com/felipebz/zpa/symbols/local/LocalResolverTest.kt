@@ -76,6 +76,11 @@ class LocalResolverTest {
             is LocalResolution.OutOfScope -> "OutOfScope(${d(outcome.declaration)})"
             is LocalResolution.Field -> "Field(${d(outcome.recordType)}.${(model.declaration(outcome.recordType).details as LocalRecordType).fields[outcome.ordinal].name.originalSpelling})"
             is LocalResolution.CollectionMethod -> "CollectionMethod(${d(outcome.collectionType)})"
+            is LocalResolution.ImplicitSelf -> "ImplicitSelf(${d(outcome.method)})"
+            is LocalResolution.InstanceMemberInStatic -> "InstanceMemberInStatic(${d(outcome.declaration)})"
+            LocalResolution.SqlRelation -> "SqlRelation"
+            is LocalResolution.LocalFunctionInSql -> "LocalFunctionInSql(${outcome.declarations.joinToString(", ", transform = ::d)})"
+            is LocalResolution.SqlBuiltinOrLocal -> "SqlBuiltinOrLocal(${outcome.declarations.joinToString(", ", transform = ::d)})"
         }
     }
 
@@ -439,9 +444,9 @@ class LocalResolverTest {
 
     @Test
     fun unmodeledContextsAreUnsupported() {
-        assertThat(outcome("create type ot as object (a number, member function f return number);\n/\n" +
-            "create type body ot as member function f return number is begin return a; end; end;\n/\n", "a", context = VALUE))
-            .isEqualTo("Unsupported(OBJECT_TYPE_MEMBER)")
+        // In an object type specification only single-segment type names are observed.
+        assertThat(outcome("create type ot as object (a pkg.t, member function f return number);\n/\n", "pkg"))
+            .isEqualTo("Unsupported(OBJECT_TYPE_SPECIFICATION)")
         // Parameter defaults follow neither the body's rules nor the enclosing region's.
         assertThat(outcome("create procedure t is\n  k1 number := 10;\n  procedure q(a number := k1) is begin null; end;\nbegin\n  q;\nend;\n/\n", "k1"))
             .isEqualTo("Unsupported(PARAMETER_DEFAULT)")
@@ -492,6 +497,7 @@ class LocalResolverTest {
               pk.proc(1);
               raise e;
               select col into y from t where c1 = z;
+              select e.col, f(2) into y from t e;
               insert into t (col) values (u);
               open cr(1);
               fetch cr into y;
@@ -515,7 +521,7 @@ class LocalResolverTest {
             "cr ANCHOR_ROWTYPE", "e EXCEPTION", "x VALUE", "f CALL_EXPRESSION", "g VALUE", "q QUALIFIER.r as VALUE",
             "q QUALIFIER.s as CALL_EXPRESSION", "c QUALIFIER%rowcount as VALUE", "proc CALL_STATEMENT", "proc CALL_STATEMENT",
             "pk QUALIFIER.proc as CALL_STATEMENT", "e EXCEPTION", "col SQL_VALUE", "y VALUE", "c1 SQL_VALUE", "z SQL_VALUE",
-            "u SQL_VALUE", "cr CURSOR_OPERAND", "cr CURSOR_OPERAND", "y VALUE", "cr CURSOR_OPERAND", "cr FOR_CONTROL",
+            "e QUALIFIER.col as SQL_VALUE", "f SQL_CALL", "y VALUE", "u INSERT_VALUE", "cr CURSOR_OPERAND", "cr CURSOR_OPERAND", "y VALUE", "cr CURSOR_OPERAND", "cr FOR_CONTROL",
             "x VALUE", "lbl GOTO_TARGET", "lbl LOOP_TARGET", "lbl LOOP_TARGET", "rc OPEN_FOR_OPERAND", "e EXCEPTION"
         )
         // `END lbl` is matched, not looked up: it is not a reference.
@@ -524,6 +530,10 @@ class LocalResolverTest {
         assertThat(analysis.references).isSortedAccordingTo(LocalReference.ORDER)
         val k = reference(analysis, "k", 0, SQL_VALUE)
         assertThat(analysis.model.region(k.region).kind).isEqualTo(LocalRegionKind.CURSOR)
+        // A SQL name carries its statement's relations; PL/SQL names carry none.
+        assertThat(reference(analysis, "e", 0, QUALIFIER).sql?.relations?.map { it.lookupName }).containsExactly("E")
+        assertThat(reference(analysis, "u", 0, INSERT_VALUE).sql).isNull()
+        assertThat(reference(analysis, "y", 0, VALUE).sql).isNull()
     }
 
     @Test

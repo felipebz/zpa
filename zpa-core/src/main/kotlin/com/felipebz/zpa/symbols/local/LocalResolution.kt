@@ -135,6 +135,38 @@ internal sealed interface LocalResolution {
      * relation metadata it is either.
      */
     data class SqlColumnOrLocal(val declaration: LocalDeclarationId) : LocalResolution
+
+    /**
+     * The implicit `SELF` of the member method or constructor [method]: a value with no source text. Its members are the
+     * type's attributes and methods, the supertypes' included.
+     */
+    data class ImplicitSelf(val method: LocalDeclarationId) : LocalResolution
+
+    /**
+     * An attribute or member method found from a static method, which has no `SELF`: rejected (PLS-00588 for an
+     * attribute, PLS-00306 for a method), never a fallback.
+     */
+    data class InstanceMemberInStatic(val declaration: LocalDeclarationId) : LocalResolution
+
+    /**
+     * A qualified name in SQL whose qualifier is a relation of the statement or an enclosing query (a table, view or
+     * alias): a column or object path, never a local name. It holds no declaration.
+     */
+    data object SqlRelation : LocalResolution
+
+    /**
+     * A call in SQL to functions that are not stored: nested in a subprogram or block, or private to a package body.
+     * PLS-00231, unless the name is a SQL built-in, which wins over a local function called with arguments. The
+     * resolver does not know the built-ins; the caller decides.
+     */
+    data class LocalFunctionInSql(val declarations: List<LocalDeclarationId>) : LocalResolution
+
+    /**
+     * An unqualified call in SQL with arguments to something SQL accepts: a function of a package specification or
+     * an object type, or a local variable or parameter (element access). A SQL built-in of the same name wins over
+     * them; otherwise [declarations] bind. The resolver does not know the built-ins; the caller decides.
+     */
+    data class SqlBuiltinOrLocal(val declarations: List<LocalDeclarationId>) : LocalResolution
 }
 
 /** Why a lookup cannot be decided from the file, beyond the regions' own verdicts. */
@@ -143,13 +175,16 @@ internal enum class LocalLookupGap {
     SPECIFICATION_NOT_IN_FILE,
 
     /** A plain name in SQL that no local region declares may still be a column, which the resolver cannot see. */
-    SQL_COLUMN_UNKNOWN
+    SQL_COLUMN_UNKNOWN,
+
+    /** An object type the lookup relies on is `UNDER` a supertype that is not in the file: it may declare the name. */
+    SUPERTYPE_NOT_IN_FILE
 }
 
 /** What [LocalResolution.Unsupported] does not model. */
 internal enum class LocalUnsupportedConstruct {
-    /** A reference inside an object type or type body, where attributes and `SELF` are visible (later increment). */
-    OBJECT_TYPE_MEMBER,
+    /** A reference in an object type specification other than a single-segment type name: not observed. */
+    OBJECT_TYPE_SPECIFICATION,
 
     /** A reference inside a subprogram declared by a SQL `WITH` clause: no evidence on what it sees. */
     SQL_WITH_SUBPROGRAM,

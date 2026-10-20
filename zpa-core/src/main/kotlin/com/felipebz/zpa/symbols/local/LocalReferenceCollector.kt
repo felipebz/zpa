@@ -22,6 +22,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.*
 
@@ -45,13 +46,17 @@ import com.felipebz.zpa.project.*
  * | first name of `OPEN_FOR_STATEMENT` | OPEN_FOR_OPERAND |
  * | `IDENTIFIER_NAME` of `GOTO_STATEMENT` | GOTO_TARGET |
  * | `IDENTIFIER_NAME` of `EXIT_STATEMENT`, `CONTINUE_STATEMENT` | LOOP_TARGET |
+ * | first child of a `METHOD_CALL` inside SQL or a single-table `VALUES` | SQL_CALL |
+ * | in the `VALUES` of a single-table `INSERT`, outside a subquery | INSERT_VALUE |
  * | inside `SELECT_`/`INSERT_`/`UPDATE_`/`DELETE_`/`MERGE_EXPRESSION`, outside an `INTO_CLAUSE` | SQL_VALUE |
  * | anything else | VALUE |
  * | single-segment `NamedTypeRef`/`RefTypeRef` of a type use | TYPE |
  * | single-segment `AnchoredTypeRef` of a type use | ANCHOR_TYPE / ANCHOR_ROWTYPE |
  * | multi-segment type name of a type use | QUALIFIER, last segment TYPE / ANCHOR_TYPE / ANCHOR_ROWTYPE |
  *
- * Not collected: call names and qualified names inside SQL; columns of `INSERT (…)` and `SET` targets; names inside
+ * A name inside SQL carries the [LocalSqlScope] of its query block or statement, whose relations can qualify it.
+ *
+ * Not collected: columns of `INSERT (…)` and `SET` targets; names inside
  * datatypes other than the model's type uses (constraints, `CAST`); names behind a database link; the name of
  * `PRAGMA DEPRECATE`; names of a trigger heading (`WHEN`, `CALL`); `END name` trailers, which Oracle matches against the
  * unit or label without looking them up; bind and host variables; dynamic SQL text.
@@ -68,16 +73,36 @@ internal object LocalReferenceCollector {
 
     fun collect(root: AstNode, model: LocalSemanticModel): List<LocalReference> {
         val references = ArrayList<LocalReference>()
-        Walk(model, references).visit(root, State(inSql = false, inDefault = false, inTrigger = false, handler = null))
+        Walk(model, references).visit(root, State(inSql = false, inValues = false, sql = null, inDefault = false, inTrigger = false, handler = null))
         typeUses(model, references)
         references.sortWith(LocalReference.ORDER)
         return references
     }
 
-    private class State(val inSql: Boolean, val inDefault: Boolean, val inTrigger: Boolean, val handler: SourceRange?) {
-        fun with(inSql: Boolean = this.inSql, inDefault: Boolean = this.inDefault, inTrigger: Boolean = this.inTrigger, handler: SourceRange? = this.handler) =
-            State(inSql, inDefault, inTrigger, handler)
+    private class State(
+        val inSql: Boolean,
+        /** In the `VALUES` of a single-table `INSERT`, outside a subquery. */
+        val inValues: Boolean,
+        val sql: LocalSqlScope?,
+        val inDefault: Boolean,
+        val inTrigger: Boolean,
+        val handler: SourceRange?
+    ) {
+        fun with(
+            inSql: Boolean = this.inSql,
+            inValues: Boolean = this.inValues,
+            sql: LocalSqlScope? = this.sql,
+            inDefault: Boolean = this.inDefault,
+            inTrigger: Boolean = this.inTrigger,
+            handler: SourceRange? = this.handler
+        ) = State(inSql, inValues, sql, inDefault, inTrigger, handler)
     }
+
+    /** Children of a single-table `INSERT` that are not its `VALUES` rows. */
+    private val NOT_VALUES = setOf(
+        DmlGrammar.INSERT_INTO_CLAUSE, DmlGrammar.SELECT_EXPRESSION, DmlGrammar.INSERT_SET_CLAUSE,
+        DmlGrammar.RETURNING_INTO_CLAUSE, DmlGrammar.ERROR_LOGGING_CLAUSE
+    )
 
     private class Walk(private val model: LocalSemanticModel, private val out: MutableList<LocalReference>) {
         private val fileId: FileId = model.fileId
@@ -97,8 +122,11 @@ internal object LocalReferenceCollector {
             }
             var next = state
             when {
-                type in SQL_STATEMENTS -> next = state.with(inSql = true)
-                type === DmlGrammar.INTO_CLAUSE -> next = state.with(inSql = false)
+                type === DmlGrammar.SELECT_EXPRESSION ->
+                    next = state.with(inSql = true, inValues = false, sql = if (skipsEnclosing(node)) state.sql?.parent else state.sql)
+                type in SQL_STATEMENTS -> next = state.with(inSql = true, inValues = false, sql = LocalSqlScope.of(node, state.sql))
+                type === DmlGrammar.QUERY_BLOCK -> next = state.with(sql = LocalSqlScope.of(node, state.sql))
+                type === DmlGrammar.INTO_CLAUSE -> next = state.with(inSql = false, sql = null)
                 type === PlSqlGrammar.CREATE_TRIGGER -> next = state.with(inTrigger = true)
                 type === PlSqlGrammar.EXCEPTION_HANDLER -> next = state.with(handler = LocalSyntax.range(fileId, node))
                 type === PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT && (node.parent.type === PlSqlGrammar.PARAMETER_DECLARATION ||
@@ -106,7 +134,23 @@ internal object LocalReferenceCollector {
             }
             for ((index, child) in node.children.withIndex()) {
                 if (index == 0 && type === DmlGrammar.UPDATE_COLUMN) continue
-                visit(child, next)
+                // Single-row VALUES have no column scope (the names are PL/SQL), but are still evaluated by SQL.
+                val values = type === DmlGrammar.SINGLE_TABLE_INSERT && child.type !in NOT_VALUES
+                visit(child, if (values) next.with(inSql = false, inValues = true, sql = null) else next)
+            }
+        }
+
+        /**
+         * A query that does not see the relations of the query or statement holding it: an inline view in `FROM`
+         * without `LATERAL` or `APPLY`, and the query of a single-table `INSERT … SELECT`.
+         */
+        private fun skipsEnclosing(query: AstNode): Boolean {
+            val parent = query.parent
+            return when (parent.type) {
+                DmlGrammar.SINGLE_TABLE_INSERT -> true
+                DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE ->
+                    !parent.hasDirectChildren(PlSqlKeyword.LATERAL) && parent.parent.type !== DmlGrammar.CROSS_OUTER_APPLY_CLAUSE
+                else -> false
             }
         }
 
@@ -120,7 +164,7 @@ internal object LocalReferenceCollector {
             val identifier = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return
             val parent = node.parent
             if (parent.type === PlSqlGrammar.MEMBER_EXPRESSION || parent.type === PlSqlGrammar.OBJECT_REFERENCE) {
-                if (parent.firstChild !== node || state.inSql || parent.hasDirectChildren(PlSqlPunctuator.REMOTE)) return
+                if (parent.firstChild !== node || parent.hasDirectChildren(PlSqlPunctuator.REMOTE)) return
                 val whole = position(parent, state) ?: return
                 add(identifier, LocalReferenceContext.QUALIFIER, segments(parent), whole, state)
                 return
@@ -135,7 +179,7 @@ internal object LocalReferenceCollector {
             val first = parent.firstChild === node
             return when {
                 parent.type === PlSqlGrammar.METHOD_CALL && first -> when {
-                    state.inSql -> null
+                    state.inSql || state.inValues -> LocalReferenceContext.SQL_CALL
                     parent.parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> LocalReferenceContext.FOR_CONTROL
                     parent.parent.type === PlSqlGrammar.CALL_STATEMENT -> LocalReferenceContext.CALL_STATEMENT
                     else -> LocalReferenceContext.CALL_EXPRESSION
@@ -150,6 +194,7 @@ internal object LocalReferenceCollector {
                 parent.type in CURSOR_STATEMENTS && parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) === node ->
                     if (parent.type === PlSqlGrammar.OPEN_FOR_STATEMENT) LocalReferenceContext.OPEN_FOR_OPERAND else LocalReferenceContext.CURSOR_OPERAND
                 parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> LocalReferenceContext.FOR_CONTROL
+                state.inValues -> LocalReferenceContext.INSERT_VALUE
                 state.inSql -> LocalReferenceContext.SQL_VALUE
                 else -> LocalReferenceContext.VALUE
             }
@@ -180,7 +225,10 @@ internal object LocalReferenceCollector {
             val region = innermostRegion(model, range)
             // A trigger heading (WHEN, CALL) is SQL-level and names correlation rows, not PL/SQL declarations.
             if (state.inTrigger && model.region(region).kind == LocalRegionKind.FILE) return
-            out += LocalReference(LocalSyntax.identifier(identifier), range, context, region, segments, whole, state.inDefault, state.handler)
+            out += LocalReference(
+                LocalSyntax.identifier(identifier), range, context, region, segments, whole, state.inDefault, state.handler,
+                if (state.inSql) state.sql else null
+            )
         }
     }
 

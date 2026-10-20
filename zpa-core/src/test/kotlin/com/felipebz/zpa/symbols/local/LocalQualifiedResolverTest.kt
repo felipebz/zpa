@@ -31,14 +31,14 @@ class LocalQualifiedResolverTest {
 
     private val support = LocalResolverTest()
 
-    private fun steps(source: String, name: String, occurrence: Int = 0, context: LocalReferenceContext? = null): String {
+    internal fun steps(source: String, name: String, occurrence: Int = 0, context: LocalReferenceContext? = null): String {
         val analysis = support.analyze(source)
         val reference = support.reference(analysis, name, occurrence, context)
         return LocalResolver.resolveQualified(analysis.model, reference).joinToString(" / ") { support.render(analysis.model, it) }
     }
 
     /** `/*A*/` marks a region a step relies on, `/*S*/` one it does not; [fromStep] is the first step touched. */
-    private fun assertSteps(
+    internal fun assertSteps(
         template: String, name: String, expected: List<String>, occurrence: Int = 0, context: LocalReferenceContext? = null, fromStep: Int = 0
     ) {
         val plain = template.replace(A, "").replace(S, "")

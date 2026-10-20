@@ -36,6 +36,8 @@ import com.felipebz.zpa.symbols.local.LocalReferenceContext as Ctx
  */
 internal object LocalQualifiedResolver {
 
+    private val CALLABLES = EnumSet.of(LocalDeclarationKind.FUNCTION, LocalDeclarationKind.PROCEDURE)
+
     private val ARRAY_METHODS = setOf("COUNT", "FIRST", "LAST", "PRIOR", "NEXT", "EXISTS", "DELETE", "LIMIT")
 
     /** Methods of nested tables and varrays only: on an associative array they fail (PLS-00306). */
@@ -74,7 +76,13 @@ internal object LocalQualifiedResolver {
             step.regions.forEach { reasons += it.completeness.reasons }
             reasons += step.reasons
             gaps += step.gaps
-            steps += if (reasons.isEmpty() && gaps.isEmpty()) step.outcome else LocalResolution.Incomplete(reasons, gaps, step.outcome)
+            // A qualified name is never a SQL built-in: the stored functions or the value it names bind.
+            val outcome = (step.outcome as? LocalResolution.SqlBuiltinOrLocal)?.let { builtinOrLocal ->
+                val declarations = builtinOrLocal.declarations
+                if (model.declaration(declarations.first()).kind in CALLABLES) LocalResolution.OverloadSet(declarations)
+                else LocalResolution.Bound(declarations.single())
+            } ?: step.outcome
+            steps += if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
             if (step.outcome !is LocalResolution.Bound && step.outcome !is LocalResolution.Field) break
             current = step.outcome
         }
@@ -91,6 +99,7 @@ internal object LocalQualifiedResolver {
                 typed(model, field.type, member)
             }
             is LocalResolution.Bound -> bound(model, model.declaration(qualifier.declaration), member, chain)
+            is LocalResolution.ImplicitSelf -> self(model, (model.declaration(qualifier.method).details as LocalSubprogram).body!!, member, chain)
             else -> null
         }
 
@@ -99,6 +108,11 @@ internal object LocalQualifiedResolver {
         fun regionOrOutOfScope(region: LocalRegionId?): Step =
             if (region != null && region in onChain) inRegion(model, model.region(region), member, chain)
             else Step(LocalResolution.OutOfScope(declaration.id))
+        // An explicit SELF parameter of a method (`SELF IN OUT t` of a constructor) is the implicit one written out.
+        val region = model.region(declaration.region)
+        if (declaration.kind == LocalDeclarationKind.PARAMETER && declaration.name == LocalResolver.SELF &&
+            model.parent(region.id)?.kind == LocalRegionKind.TYPE_BODY
+        ) return self(model, region.id, member, chain)
         return when (val details = declaration.details) {
             is LocalLabel -> if (details.labeled == null) unsupported(LocalUnsupportedConstruct.MEMBER_OF_STATEMENT_LABEL)
             else regionOrOutOfScope(details.labeled)
@@ -122,12 +136,30 @@ internal object LocalQualifiedResolver {
     /** A member of a region a qualifier names: its declarations (with a linked specification), with the order rule. */
     private fun inRegion(model: LocalSemanticModel, region: LocalRegion, member: LocalReference, chain: List<LocalRegion>): Step {
         val scope = LocalResolver.scopeOf(model, region)
-        val gaps = if (region.kind == LocalRegionKind.PACKAGE_BODY && scope.specification == null) {
-            setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE)
-        } else emptySet()
+        val gaps = scope.gaps
         val candidates = scope.declarations.filter { it.name == member.name }
         val outcome = if (candidates.isEmpty()) LocalResolution.Undeclared else LocalResolver.decide(model, member, scope, candidates, chain)
         return Step(outcome, scope.regions, gaps)
+    }
+
+    /**
+     * A member of `SELF` in the method whose region is [method]: an attribute or method of the type, the supertypes'
+     * included (missing: PLS-00302).
+     */
+    private fun self(model: LocalSemanticModel, method: LocalRegionId, member: LocalReference, chain: List<LocalRegion>): Step {
+        val scope = LocalTypeScope.of(model, model.parent(method)!!, supertypeMethods = true)
+        val candidates = scope.declarations.filter {
+            it.name == member.name && it.kind in setOf(LocalDeclarationKind.ATTRIBUTE, LocalDeclarationKind.FUNCTION, LocalDeclarationKind.PROCEDURE)
+        }
+        val outcome = when {
+            candidates.isEmpty() -> LocalResolution.Undeclared
+            // A static method cannot be invoked on an instance (PLS-00587).
+            candidates.all { (it.details as? LocalSubprogram)?.methodKind == LocalMethodKind.STATIC } -> LocalResolution.WrongKind(candidates.first().id)
+            else -> LocalResolver.decide(model, member, scope, candidates, chain)
+        }
+        // A supertype outside the file may declare the name, or further overloads of a method (attributes cannot repeat).
+        val reliesOnSupertypes = candidates.isEmpty() || candidates.any { it.kind in CALLABLES }
+        return Step(outcome, scope.regions, if (reliesOnSupertypes) scope.gaps + scope.absenceGaps else scope.gaps)
     }
 
     /** A member of a value whose declared type is [type]: a record field or a collection method of a local type. */

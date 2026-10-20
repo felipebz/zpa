@@ -337,7 +337,8 @@ class LocalSemanticModelBuilderTest {
             "BEGIN\n  <<l>> DECLARE w VARCHAR2(10); BEGIN w := l.w; END;\n  <<lp>> FOR i IN 1 .. 2 LOOP \$IF \$\$x \$THEN NULL; \$END EXIT lp; END LOOP;\n  OPEN c(1); CLOSE c;\nEND;\n" +
             "/\ncreate package pk is procedure a; end;\n/\ncreate package body pk is procedure a is begin null; end; end;\n/\n" +
             "create trigger trg before insert on t referencing new as n for each row begin null; end;\n/\n" +
-            "create type ot as object (x number, member procedure m);\n/\ncreate type body ot as member procedure m is begin null; end; end;\n/\n"
+            "create type ot as object (x number, member procedure m);\n/\ncreate type body ot as member procedure m is begin x := self.x; end; end;\n/\n" +
+            "create procedure q2 is\n  n number;\nbegin\n  select count(*) into n from emp e where e.x = f(1);\n  insert into emp values (n);\nend;\n/\n"
         val model = build(source)
         assertThat(model.declarations.map { it.details?.javaClass?.simpleName }.toSet())
             .contains("LocalCursor", "LocalCursorParameter", "LocalRecordType", "LocalCollectionType", "LocalRefCursorType", "LocalSubprogram", "LocalParameter", "LocalLabel", "LocalLoopIndex", "LocalUnit", "LocalTrigger")
@@ -349,6 +350,9 @@ class LocalSemanticModelBuilderTest {
         val outcomes = references.map { LocalResolver.resolveQualified(referenced, it) }
         assertThat(references).isNotEmpty
         assertThat(references.flatMap { it.segments }).isNotEmpty
+        assertThat(references.mapNotNull { it.sql }).isNotEmpty
+        assertThat(outcomes.flatten()).anyMatch { it is LocalResolution.ImplicitSelf }.anyMatch { it == LocalResolution.SqlRelation }
+            .anyMatch { it is LocalResolution.Bound && referenced.declaration(it.declaration).kind == LocalDeclarationKind.ATTRIBUTE }
         val reachedFromReferences = reachable(listOf(references, outcomes))
         assertThat(reachedFromReferences.filter { it is AstNode || it is Token || it is Symbol || it is Scope || it is ProjectSnapshot }).isEmpty()
         assertThat(reachedFromReferences.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") || it.contains("amount_t IS") }

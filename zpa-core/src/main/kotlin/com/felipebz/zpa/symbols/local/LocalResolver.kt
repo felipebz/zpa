@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
 import java.util.*
@@ -35,6 +36,10 @@ import com.felipebz.zpa.symbols.local.LocalReferenceContext as Ctx
  *   heading, are a duplicate.
  * - A declaration is earlier when its range ends before the reference starts, except for a subprogram or unit seen
  *   from inside itself, specification items seen from their body, and labels.
+ * - A type body decides together with its specification and the attributes of its supertypes in the file. Inside a
+ *   member method or constructor the implicit `SELF` is declared in the method's region; a static method has none, and
+ *   rejects the attributes and member methods it finds.
+ * - In SQL a qualifier naming a relation of the statement is SQL; a local function called in SQL is reported as such.
  * - File declarations never bind plain names; top-level block labels decide inside their block, and enclosing unit
  *   names bind as qualifiers.
  * - Every region an outcome relies on must be complete. The file region counts only when the reference is in no region
@@ -49,26 +54,45 @@ internal object LocalResolver {
     private val CALLABLES = EnumSet.of(PROCEDURE, FUNCTION)
     private val QUALIFYING_UNITS = EnumSet.of(PACKAGE, PACKAGE_BODY, PROCEDURE, FUNCTION)
     private val LABEL_TARGETS = EnumSet.of(Ctx.GOTO_TARGET, Ctx.LOOP_TARGET)
+    val SELF: OracleIdentifier = OracleIdentifier.fromSource("SELF")
 
     fun resolve(model: LocalSemanticModel, reference: LocalReference): LocalResolution {
         if (reference.inParameterDefault) return LocalResolution.Unsupported(LocalUnsupportedConstruct.PARAMETER_DEFAULT)
-        val chain = chain(model, reference.region)
-        if (chain.any { it.kind == LocalRegionKind.OBJECT_TYPE || it.kind == LocalRegionKind.TYPE_BODY }) {
-            return LocalResolution.Unsupported(LocalUnsupportedConstruct.OBJECT_TYPE_MEMBER)
+        // A relation of the SQL statement qualifies a column or object path, whatever the local regions declare.
+        if (reference.context == Ctx.QUALIFIER && reference.sql?.qualifies(reference.name, reference.segments) == true) {
+            return LocalResolution.SqlRelation
         }
+        val chain = chain(model, reference.region)
         if (chain.any { it.kind == LocalRegionKind.SQL_WITH }) {
             return LocalResolution.Unsupported(LocalUnsupportedConstruct.SQL_WITH_SUBPROGRAM)
         }
+        // In a specification only type names are observed: attributes and methods capture them.
+        if (chain.any { it.kind == LocalRegionKind.OBJECT_TYPE } && reference.context != Ctx.TYPE) {
+            return LocalResolution.Unsupported(LocalUnsupportedConstruct.OBJECT_TYPE_SPECIFICATION)
+        }
+        val method = LocalTypeScope.method(model, chain)
         val relied = ArrayList<LocalRegion>()
         val gaps = EnumSet.noneOf(LocalLookupGap::class.java)
         var outcome: LocalResolution? = null
         for (region in chain) {
             val scope = scopeOf(model, region)
             relied += scope.regions
-            if (region.kind == LocalRegionKind.PACKAGE_BODY && scope.specification == null) gaps += LocalLookupGap.SPECIFICATION_NOT_IN_FILE
             val candidates = scope.declarations.filter { it.name == reference.name }
+            gaps += if (candidates.isEmpty()) scope.gaps + scope.absenceGaps else scope.gaps
+            val implicitSelf = method != null && region.id == method.region && reference.name == SELF &&
+                (method.declaration.details as LocalSubprogram).implicitSelf != null
+            if (implicitSelf) {
+                outcome = when {
+                    // A local named SELF collides with the implicit parameter (PLS-00410).
+                    candidates.isNotEmpty() -> LocalResolution.Duplicate(candidates.map { it.id })
+                    reference.context == Ctx.VALUE || reference.context == Ctx.QUALIFIER -> LocalResolution.ImplicitSelf(method!!.declaration.id)
+                    else -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, null, reference.context)
+                }
+                break
+            }
             if (candidates.isNotEmpty()) {
                 outcome = decide(model, reference, scope, candidates, chain)
+                if (region.kind == LocalRegionKind.TYPE_BODY && method?.isStatic == true) outcome = LocalTypeScope.rejectInstanceMember(model, outcome)
                 break
             }
         }
@@ -76,9 +100,14 @@ internal object LocalResolver {
             val candidates = fileCandidates(model, reference, chain)
             if (reliesOnFileRegion(chain)) relied += model.root
             outcome = if (candidates.isEmpty()) {
-                // Labels are never schema objects: a target nothing declares is an error, not an absence.
-                if (reference.context in LABEL_TARGETS) LocalResolution.Undeclared else LocalResolution.ProvenAbsent
-            } else decide(model, reference, Scope(listOf(model.root), candidates, null, null), candidates, chain)
+                when {
+                    // Labels are never schema objects: a target nothing declares is an error, not an absence.
+                    reference.context in LABEL_TARGETS -> LocalResolution.Undeclared
+                    // A static method has no SELF (PLS-00201).
+                    method?.isStatic == true && reference.name == SELF -> LocalResolution.Undeclared
+                    else -> LocalResolution.ProvenAbsent
+                }
+            } else decide(model, reference, Scope(listOf(model.root), candidates, null), candidates, chain)
         }
         if (reference.context == Ctx.SQL_VALUE) outcome = sqlOutcome(outcome, gaps)
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
@@ -115,25 +144,33 @@ internal object LocalResolver {
         return chain
     }
 
-    /** A region as a lookup sees it: a linked package body together with its specification. */
+    /**
+     * A region as a lookup sees it: a linked package body together with its specification, a type body or
+     * specification together with its specification and supertypes.
+     */
     class Scope(
         val regions: List<LocalRegion>,
         val declarations: List<LocalDeclaration>,
-        /** The linked specification region of a package body. */
+        /** The linked specification region of a package or type body. */
         val specification: LocalRegionId?,
-        val body: LocalRegion?
+        /** Regions whose declarations are visible throughout the scope, whatever their order. */
+        val earlierRegions: Set<LocalRegionId> = setOfNotNull(specification),
+        val gaps: Set<LocalLookupGap> = emptySet(),
+        /** Gaps that matter only when the scope does not declare the name. */
+        val absenceGaps: Set<LocalLookupGap> = emptySet()
     )
 
-    fun scopeOf(model: LocalSemanticModel, region: LocalRegion): Scope {
-        if (region.kind != LocalRegionKind.PACKAGE_BODY) return Scope(listOf(region), model.declarationsOf(region.id), null, null)
-        val unit = model.declarations.firstOrNull { (it.details as? LocalUnit)?.region == region.id }?.details as? LocalUnit
-        val specification = unit?.counterpart ?: return Scope(listOf(region), model.declarationsOf(region.id), null, region)
-        return Scope(
-            listOf(region, model.region(specification)),
-            model.declarationsOf(region.id) + model.declarationsOf(specification),
-            specification,
-            region
-        )
+    fun scopeOf(model: LocalSemanticModel, region: LocalRegion): Scope = when (region.kind) {
+        LocalRegionKind.PACKAGE_BODY -> {
+            val specification = LocalTypeScope.unitOf(model, region.id)?.counterpart
+            if (specification == null) {
+                Scope(listOf(region), model.declarationsOf(region.id), null, gaps = setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE))
+            } else {
+                Scope(listOf(region, model.region(specification)), model.declarationsOf(region.id) + model.declarationsOf(specification), specification)
+            }
+        }
+        LocalRegionKind.TYPE_BODY, LocalRegionKind.OBJECT_TYPE -> LocalTypeScope.of(model, region, supertypeMethods = false)
+        else -> Scope(listOf(region), model.declarationsOf(region.id), null)
     }
 
     /** File-region declarations a reference may see: enclosing top-level labels, and enclosing unit names as qualifiers. */
@@ -165,13 +202,14 @@ internal object LocalResolver {
             return when {
                 earlier.none { it } -> LocalResolution.DeclaredLater(representative(entities.first()))
                 earlier.any { !it } -> LocalResolution.Unsupported(LocalUnsupportedConstruct.OVERLOADS_PARTLY_LATER)
-                else -> callables(entities, reference.context, chain)
+                else -> callables(model, entities, reference.context, chain)
             }
         }
         val entity = entities.single()
         val declaration = model.declaration(representative(entity))
         if (!earlier.single()) return LocalResolution.DeclaredLater(declaration.id)
-        if (isCallable(entity)) return callables(entities, reference.context, chain)
+        if (isCallable(entity)) return callables(model, entities, reference.context, chain)
+        if (reference.context == Ctx.SQL_CALL) LocalSqlScope.calledValue(declaration)?.let { return it }
         if (declaration.kind == LABEL && reference.context in LABEL_TARGETS) return labelTarget(model, declaration, reference)
         return when (fit(declaration.kind, reference.context)) {
             Fit.APPLICABLE -> LocalResolution.Bound(declaration.id)
@@ -184,7 +222,7 @@ internal object LocalResolver {
      * Callables decide: an overload set, unless no callable of the set can be used here. As a qualifier, the
      * subprogram whose body encloses the reference is the one named.
      */
-    private fun callables(entities: List<List<LocalDeclaration>>, context: Ctx, chain: List<LocalRegion>): LocalResolution {
+    private fun callables(model: LocalSemanticModel, entities: List<List<LocalDeclaration>>, context: Ctx, chain: List<LocalRegion>): LocalResolution {
         val representatives = entities.map(::representative)
         if (context == Ctx.QUALIFIER) {
             val enclosing = entities.firstOrNull { entity -> entity.any { encloses(it, chain) } }
@@ -195,6 +233,7 @@ internal object LocalResolver {
             Ctx.QUALIFIER -> Fit.APPLICABLE
             Ctx.CALL_STATEMENT -> if (PROCEDURE in kinds) Fit.APPLICABLE else Fit.WRONG // PLS-00221
             Ctx.VALUE, Ctx.SQL_VALUE, Ctx.CALL_EXPRESSION -> if (FUNCTION in kinds) Fit.APPLICABLE else Fit.WRONG // PLS-00222
+            Ctx.SQL_CALL, Ctx.INSERT_VALUE -> return LocalSqlScope.callables(model, entities, representatives, context)
             Ctx.TYPE, Ctx.ANCHOR_TYPE, Ctx.ANCHOR_ROWTYPE, Ctx.EXCEPTION -> Fit.WRONG // PLS-00488, PLS-00206, PLS-00310, PLS-00485…
             Ctx.CURSOR_OPERAND -> if (FUNCTION in kinds) Fit.UNSUPPORTED else Fit.WRONG // PLS-00456
             Ctx.FOR_CONTROL -> if (FUNCTION in kinds) Fit.APPLICABLE else Fit.UNSUPPORTED // a value iterated once
@@ -239,8 +278,9 @@ internal object LocalResolver {
      */
     private fun fit(kind: LocalDeclarationKind, context: Ctx): Fit = when (context) {
         Ctx.QUALIFIER -> Fit.APPLICABLE
-        Ctx.VALUE, Ctx.SQL_VALUE -> when {
-            kind in VALUES -> Fit.APPLICABLE
+        // An attribute is a value in a member method, and captures type names (PLS-00488).
+        Ctx.VALUE, Ctx.SQL_VALUE, Ctx.INSERT_VALUE -> when {
+            kind in VALUES || kind == ATTRIBUTE -> Fit.APPLICABLE
             kind == EXCEPTION || kind == CURSOR || kind == LABEL || kind in TYPES -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
@@ -257,7 +297,7 @@ internal object LocalResolver {
         }
         Ctx.TYPE -> when {
             kind in TYPES -> Fit.APPLICABLE
-            kind == VARIABLE || kind == PARAMETER || kind == LOOP_INDEX || kind == LABEL || kind == EXCEPTION || kind == CURSOR -> Fit.WRONG
+            kind == ATTRIBUTE || kind == VARIABLE || kind == PARAMETER || kind == LOOP_INDEX || kind == LABEL || kind == EXCEPTION || kind == CURSOR -> Fit.WRONG
             else -> Fit.UNSUPPORTED
         }
         // A parameter or loop index cannot anchor %TYPE (PLS-00206); a constant can.
@@ -290,6 +330,7 @@ internal object LocalResolver {
             EXCEPTION, SUBTYPE -> Fit.WRONG // PLS-00320, PLS-00330
             else -> Fit.UNSUPPORTED
         }
+        Ctx.SQL_CALL -> Fit.UNSUPPORTED // variables and parameters are decided before; other kinds are not observed
         // Labels are decided by the label-target rule; any other kind there is not observed.
         Ctx.GOTO_TARGET, Ctx.LOOP_TARGET -> Fit.UNSUPPORTED
     }
@@ -360,7 +401,7 @@ internal object LocalResolver {
         return entity.any { member ->
             when {
                 member.kind == LABEL -> true
-                scope.specification != null && member.region == scope.specification -> true
+                member.region in scope.earlierRegions -> true
                 encloses(member, chain) -> true
                 hasDefinition && (member.details as? LocalCursor)?.isForward == true -> false
                 else -> endsBefore(member.range, reference.range)
