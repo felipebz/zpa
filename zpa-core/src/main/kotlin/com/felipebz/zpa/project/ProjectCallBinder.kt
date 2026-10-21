@@ -51,62 +51,21 @@ internal class ProjectCallBinder(context: ProjectAnalysisContext) {
         kind: ProjectCallKind,
         arguments: ProjectCallArguments
     ): ProjectCallCandidate {
-        fun rejected(applicability: ProjectCallCandidate.Applicability, ordinal: Int? = null) =
-            ProjectCallCandidate(occurrence, kind, arguments, applicability, rejectedArgumentOrdinal = ordinal)
-
         val declaration = occurrence.declaration
-        if (declaration.callKind() != kind) return rejected(ProjectCallCandidate.Applicability.WRONG_KIND)
         val parameters = declaration.callParameters()
-        val byLabel = HashMap<OracleIdentifier, Int>(parameters.size)
-        for ((index, parameter) in parameters.withIndex()) {
-            if (byLabel.put(parameter.name, index) != null) {
-                return rejected(ProjectCallCandidate.Applicability.INVALID_SIGNATURE)
-            }
-        }
-        if (arguments.arguments.isEmpty()) {
-            return if (parameters.isCallableWithoutArguments()) {
-                ProjectCallCandidate(
-                    occurrence, kind, arguments, ProjectCallCandidate.Applicability.APPLICABLE,
-                    omittedParameters = parameters
-                )
-            } else {
-                ProjectCallCandidate(
-                    occurrence, kind, arguments, ProjectCallCandidate.Applicability.MISSING_REQUIRED,
-                    missingParameters = parameters.filter { !it.defaultPresent }
-                )
-            }
-        }
-        val positionalCount = arguments.positionalCount
-        if (positionalCount > parameters.size) {
-            return rejected(ProjectCallCandidate.Applicability.TOO_MANY_ARGUMENTS, parameters.size + 1)
-        }
-        val bound = BooleanArray(parameters.size)
-        val formalIndices = IntArray(arguments.arguments.size)
-        for (index in 0 until positionalCount) {
-            bound[index] = true
-            formalIndices[index] = index
-        }
-        for (index in positionalCount until arguments.arguments.size) {
-            val label = requireNotNull(arguments.arguments[index].label)
-            val formalIndex = byLabel[label]
-                ?: return rejected(ProjectCallCandidate.Applicability.UNKNOWN_LABEL, index + 1)
-            if (bound[formalIndex]) return rejected(ProjectCallCandidate.Applicability.DUPLICATE_BINDING, index + 1)
-            bound[formalIndex] = true
-            formalIndices[index] = formalIndex
-        }
-        val (omitted, missing) = parameters.filterIndexed { index, _ -> !bound[index] }.partition { it.defaultPresent }
-        if (missing.isNotEmpty()) {
+        val result = ParameterListBinding.bind(declaration.callKind(), kind, parameters, ProjectParameter::name, ProjectParameter::defaultPresent, arguments)
+        if (result.applicability != ProjectCallCandidate.Applicability.APPLICABLE) {
             return ProjectCallCandidate(
-                occurrence, kind, arguments, ProjectCallCandidate.Applicability.MISSING_REQUIRED,
-                missingParameters = missing
+                occurrence, kind, arguments, result.applicability,
+                missingParameters = result.missing, rejectedArgumentOrdinal = result.rejectedArgumentOrdinal
             )
         }
         val bindings = arguments.arguments.mapIndexed { index, argument ->
-            ProjectArgumentBinding(index + 1, argument, parameters[formalIndices[index]])
+            ProjectArgumentBinding(index + 1, argument, parameters[result.formalIndices[index]])
         }
         return ProjectCallCandidate(
             occurrence, kind, arguments, ProjectCallCandidate.Applicability.APPLICABLE,
-            bindings = bindings, omittedParameters = omitted
+            bindings = bindings, omittedParameters = result.omitted
         )
     }
 }

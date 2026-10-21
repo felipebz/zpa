@@ -251,7 +251,7 @@ class LocalForwardCallTest {
             "10: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
             // Two overloads: which one is called is call binding, not evidence.
             "11: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",
-            // h(1) is an element of h's result, not h's result.
+            // h(1) with a parameterless h: Oracle rejects it (PLS-00306), so no evidence.
             "12: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"
         )
     }
@@ -324,14 +324,16 @@ class LocalForwardCallTest {
     fun callsAndFactsAreDeterministicAndDetached() {
         val source = block(
             "  SUBTYPE amount_t IS DATE;\n  TYPE r_t IS RECORD (f amount_t);\n  r r_t;\n  v r.f%TYPE;\n  TYPE n_t IS TABLE OF amount_t;\n  n n_t;\n" +
-                "  FUNCTION f RETURN amount_t IS BEGIN RETURN NULL; END;",
-            "pkg.processar(v); pkg.processar(r.f); pkg.processar('a'); pkg.processar(n(1)); pkg.processar(f);\n  FOR i IN 1..2 LOOP pkg.processar(i); END LOOP;"
+                "  FUNCTION f RETURN amount_t IS BEGIN RETURN NULL; END;\n  PROCEDURE p(x NUMBER) IS BEGIN NULL; END;\n  PROCEDURE p(x DATE) IS BEGIN NULL; END;",
+            "pkg.processar(v); pkg.processar(r.f); pkg.processar('a'); pkg.processar(n(1)); pkg.processar(f);\n  FOR i IN 1..2 LOOP pkg.processar(i); END LOOP;\n  p(v);"
         )
+        fun rendered(calls: List<LocalCallAnalysis>) = calls.map { "${render(it)} ${it.local}" }
         val first = analyze(source, snapshot)
-        assertThat(analyze(source, snapshot).calls.map(::render)).isEqualTo(first.calls.map(::render))
+        assertThat(rendered(analyze(source, snapshot).calls)).isEqualTo(rendered(first.calls))
         // The order references are analyzed in does not matter.
-        val reversed = LocalForwardCalls(first.model, first.references.reversed(), first.facts.reversed(), snapshot).analyze().map(::render)
-        assertThat(reversed.reversed()).isEqualTo(first.calls.map(::render))
+        val reversed = rendered(LocalForwardCalls(first.model, first.references.reversed(), first.facts.reversed(), snapshot).analyze())
+        assertThat(reversed.reversed()).isEqualTo(rendered(first.calls))
+        assertThat(first.calls.single { it.target.toString() == "p" }.local!!.status).isEqualTo(LocalCallResolution.Status.RESOLVED)
         assertThat(first.calls.filter { it.target.toString().endsWith("processar") }.map(::render)).allMatch { it.endsWith("RESOLVED date") || it.endsWith("RESOLVED number") || it.contains("CHARACTER") }
             .hasSize(6)
         // Facts and results reach no syntax, legacy symbol or snapshot; project results are the project's own values.

@@ -565,78 +565,99 @@ source overloads_by_type_family
 oracle AGREES | f(number) printed
 target met
 ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+# Oracle picks NUMBER by its preference among compatible overloads; narrowing keeps VARCHAR2 too.
+call f CALL_STATEMENT 0 = AMBIGUOUS
+call f CALL_STATEMENT 1 = AMBIGUOUS
+call f CALL_STATEMENT 5 = AMBIGUOUS
 
 case overloads_by_type_family: case_a f(sysdate),f(d),f(date lit),f(d 1): f(date) = F
 source overloads_by_type_family
 oracle LEGACY_WRONG_BINDING | f(date) = F
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target out-of-scope: overload ranking: Oracle prefers one of several compatible overloads; narrowing never ranks
 ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+# sysdate and d + 1 give no evidence; d and the DATE literal eliminate NUMBER only.
+call f CALL_STATEMENT 2 = AMBIGUOUS
+call f CALL_STATEMENT 4 = AMBIGUOUS
+call f CALL_STATEMENT 6 = AMBIGUOUS
 
 case overloads_by_type_family: case_a f( a ),f(to_char(1)): f(varchar2) = F
 source overloads_by_type_family
 oracle LEGACY_WRONG_BINDING | f(varchar2) = F
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target out-of-scope: overload ranking: Oracle prefers one of several compatible overloads; narrowing never ranks
 ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+call f CALL_STATEMENT 3 = AMBIGUOUS
 
 case overloads_by_type_family: case_b f(null): PLS-00307
 source overloads_by_type_family
 oracle LEGACY_ACCEPTS_ERROR | PLS-00307
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 10 = OverloadSet(PROCEDURE f@14:12, PROCEDURE f@15:12, PROCEDURE f@16:12)
+call f CALL_STATEMENT 10 = AMBIGUOUS
 
 case overloads_by_type_family: case_c f(systimestamp): PLS-00307
 source overloads_by_type_family
 oracle LEGACY_ACCEPTS_ERROR | PLS-00307
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 11 = OverloadSet(PROCEDURE f@22:12, PROCEDURE f@23:12, PROCEDURE f@24:12)
+# No evidence for systimestamp: every candidate stays.
+call f CALL_STATEMENT 11 = AMBIGUOUS
 
 case overloads_by_type_family: case_d f( 2020 01 01 ): PLS-00307
 source overloads_by_type_family
 oracle LEGACY_ACCEPTS_ERROR | PLS-00307
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 12 = OverloadSet(PROCEDURE f@30:12, PROCEDURE f@31:12)
+call f CALL_STATEMENT 12 = AMBIGUOUS
 
 case overloads_by_parameter_name_and_count: case_a f(a= 1): f(a) = F
 source overloads_by_parameter_name_and_count
 oracle AGREES | f(a) = F
 target met
 ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@2:12, PROCEDURE f@3:12)
+call f CALL_STATEMENT 0 = RESOLVED PROCEDURE f@2:12
 
 case overloads_by_parameter_name_and_count: case_a f(b= 2): f(b) = F
 source overloads_by_parameter_name_and_count
 oracle LEGACY_WRONG_BINDING | f(b) = F
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 1 = OverloadSet(PROCEDURE f@2:12, PROCEDURE f@3:12)
+call f CALL_STATEMENT 1 = RESOLVED PROCEDURE f@3:12
 
 case overloads_by_parameter_name_and_count: case_b f(1): PLS-00307
 source overloads_by_parameter_name_and_count
 oracle LEGACY_ACCEPTS_ERROR | PLS-00307
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@9:12, PROCEDURE f@10:12)
+call f CALL_STATEMENT 2 = AMBIGUOUS
 
 case overloads_by_parameter_name_and_count: case_c f(1): f(a) = F
 source overloads_by_parameter_name_and_count
 oracle AGREES | f(a) = F
 target met
 ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@16:12, PROCEDURE f@17:12)
+call f CALL_STATEMENT 3 = RESOLVED PROCEDURE f@16:12
 
 case overloads_by_parameter_name_and_count: case_c f(1,2), f(a= 1,b= 2): f(a,b) = F
 source overloads_by_parameter_name_and_count
 oracle LEGACY_WRONG_BINDING | f(a,b) = F
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 4 = OverloadSet(PROCEDURE f@16:12, PROCEDURE f@17:12)
+call f CALL_STATEMENT 4 = RESOLVED PROCEDURE f@17:12
+call f CALL_STATEMENT 5 = RESOLVED PROCEDURE f@17:12
 
 case overloads_by_parameter_name_and_count: case_d f(1,2): f(a,b default) = F
 source overloads_by_parameter_name_and_count
 oracle LEGACY_WRONG_BINDING | f(a,b default) = F
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 6 = OverloadSet(PROCEDURE f@23:12, PROCEDURE f@24:12)
+call f CALL_STATEMENT 6 = RESOLVED PROCEDURE f@24:12
 
 case overloads_by_parameter_name_and_count: case_e f(1): PLS-00307
 source overloads_by_parameter_name_and_count
 oracle LEGACY_ACCEPTS_ERROR | PLS-00307
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 7 = OverloadSet(PROCEDURE f@30:12, PROCEDURE f@31:12)
+call f CALL_STATEMENT 7 = AMBIGUOUS
 
 case recursion_and_forward_declarations: case_a fact recursion: fact(5)=120
 source recursion_and_forward_declarations
@@ -644,12 +665,15 @@ oracle AGREES | fact(5)=120
 target met
 ref fact CALL_EXPRESSION 0 = OverloadSet(FUNCTION fact@2:11)
 ref fact CALL_EXPRESSION 1 = OverloadSet(FUNCTION fact@2:11)
+call fact CALL_EXPRESSION 0 = RESOLVED FUNCTION fact@2:11
+call fact CALL_EXPRESSION 1 = RESOLVED FUNCTION fact@2:11
 
 case recursion_and_forward_declarations: case_a is_odd(n 1) in is_even: OK, executes is_odd body
 source recursion_and_forward_declarations
 oracle AGREES | OK, executes is_odd body
 target met
 ref is_odd CALL_EXPRESSION 0 = OverloadSet(FUNCTION is_odd@5:11)
+call is_odd CALL_EXPRESSION 0 = RESOLVED FUNCTION is_odd@5:11
 
 case recursion_and_forward_declarations: case_a is_even calls: OK
 source recursion_and_forward_declarations
@@ -718,12 +742,14 @@ source local_overloads_and_outer_subprograms
 oracle AGREES | nested f(varchar2)
 target met
 ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@9:14)
+call f CALL_STATEMENT 0 = RESOLVED PROCEDURE f@9:14
 
 case local_overloads_and_outer_subprograms: case_d pk_n.f(1) in run: pk_n.f(number)
 source local_overloads_and_outer_subprograms
 oracle AGREES | pk_n.f(number)
 target met
 ref pk_n QUALIFIER 0 = Bound(PACKAGE_BODY pk_n@6:31) / OverloadSet(PROCEDURE f@7:12)
+call pk_n QUALIFIER 0 = RESOLVED PROCEDURE f@7:12
 
 case local_overloads_and_outer_subprograms: case_d pk_n.run call: executes pk_n.run
 source local_overloads_and_outer_subprograms
@@ -736,18 +762,21 @@ source local_overloads_and_outer_subprograms
 oracle AGREES | inner f(date)
 target met
 ref f CALL_STATEMENT 1 = OverloadSet(PROCEDURE f@20:14)
+call f CALL_STATEMENT 1 = RESOLVED PROCEDURE f@20:14
 
 case local_overloads_and_outer_subprograms: case_b f(1): PLS-00306 (inner hides outer)
 source local_overloads_and_outer_subprograms
 oracle LEGACY_ACCEPTS_ERROR | PLS-00306 (inner hides outer)
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@30:14)
+call f CALL_STATEMENT 2 = NO_COMPATIBLE_CANDIDATE
 
 case local_overloads_and_outer_subprograms: case_c f(1): inner f(varchar2)
 source local_overloads_and_outer_subprograms
 oracle AGREES | inner f(varchar2)
 target met
 ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@40:14)
+call f CALL_STATEMENT 3 = RESOLVED PROCEDURE f@40:14
 
 case local_overloads_and_outer_subprograms: case_e f(1) with var f: PLS-00221
 source local_overloads_and_outer_subprograms
@@ -760,18 +789,21 @@ source local_overloads_and_outer_subprograms
 oracle LEGACY_WRONG_BINDING | outer f(number) = F
 target met
 ref case_f QUALIFIER 0 = Bound(PROCEDURE case_f@61:28) / OverloadSet(PROCEDURE f@62:12)
+call case_f QUALIFIER 0 = RESOLVED PROCEDURE f@62:12
 
 case local_overload_and_standalone_subprogram: case_a f_local(1): local f_local(varchar2)
 source local_overload_and_standalone_subprogram
 oracle AGREES | local f_local(varchar2)
 target met
 ref f_local CALL_STATEMENT 0 = OverloadSet(PROCEDURE f_local@4:12)
+call f_local CALL_STATEMENT 0 = RESOLVED PROCEDURE f_local@4:12
 
 case local_overload_and_standalone_subprogram: case_b f_local(1): PLS-00306 (local hides standalone)
 source local_overload_and_standalone_subprogram
 oracle LEGACY_ACCEPTS_ERROR | PLS-00306 (local hides standalone)
-target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+target met
 ref f_local CALL_STATEMENT 1 = OverloadSet(PROCEDURE f_local@10:12)
+call f_local CALL_STATEMENT 1 = NO_COMPATIBLE_CANDIDATE
 
 case cursor_parameters: case_a x in cursor query outer x c v: param x (1); outer x=99
 source cursor_parameters

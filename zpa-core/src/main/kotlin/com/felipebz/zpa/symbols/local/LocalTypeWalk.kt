@@ -130,6 +130,12 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null)
     }
 
+    /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
+    fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown("no written type")
+
+    /** Evidence of the result of the local function [function], a call resolved to that entity. */
+    fun result(function: LocalDeclarationId): LocalTypeEvidence = Walk().result(model.declaration(function), 0)
+
     /** Evidence of a project call's result: the RETURN type of the function a RESOLVED call selected. */
     fun projectResult(typed: ProjectTypedCallResolution?): LocalTypeEvidence {
         if (typed == null) return LocalTypeEvidence.unknown("not forwarded")
@@ -170,7 +176,9 @@ internal class LocalTypeWalk(
                 LocalTypeEvidence(ProjectArgumentType.builtIn("PLS_INTEGER"), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
             LocalLoopControl.Form.QUERY -> composite(followed.toList())
             LocalLoopControl.Form.NAME -> {
-                val reference = LocalReference(control.name!!, control.nameRange!!, LocalReferenceContext.FOR_CONTROL, declaration.region, emptyList(),
+                // The control is written before the index is declared: it is looked up where the loop is written.
+                val enclosing = model.region(declaration.region).parent ?: return unknown("no enclosing region")
+                val reference = LocalReference(control.name!!, control.nameRange!!, LocalReferenceContext.FOR_CONTROL, enclosing, emptyList(),
                     LocalReferenceContext.FOR_CONTROL, false, null)
                 val cursor = (LocalResolver.resolve(model, reference) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
                 if (cursor?.kind == CURSOR) { followed += cursor.id; composite(followed.toList()) } else unknown("iterates over a value")
@@ -192,12 +200,14 @@ internal class LocalTypeWalk(
         }
 
         /** The RETURN type of the single local function [functions] names; unknown for several entities. */
-        fun result(functions: LocalResolution.OverloadSet, arguments: Int = 0): LocalTypeEvidence {
-            val function = functions.declarations.singleOrNull()?.let(model::declaration) ?: return unknown("overloaded")
+        fun result(functions: LocalResolution.OverloadSet, arguments: Int = 0): LocalTypeEvidence =
+            functions.declarations.singleOrNull()?.let { result(model.declaration(it), arguments) } ?: unknown("overloaded")
+
+        fun result(function: LocalDeclaration, arguments: Int): LocalTypeEvidence {
             val subprogram = function.details as? LocalSubprogram
             if (function.kind != FUNCTION || subprogram == null) return unknown("not a function")
-            // `f(1)` with a parameterless `f` indexes its result.
-            if (arguments > 0 && subprogram.parameters.isEmpty()) return unknown("indexes the result of a parameterless function")
+            // Oracle rejects `f(1)` for a parameterless `f` (PLS-00306): it does not index the result.
+            if (arguments > 0 && subprogram.parameters.isEmpty()) return unknown("a parameterless function called with actuals")
             followed += function.id
             if (subprogram.returnsSelf) return composite(followed.toList())
             return subprogram.returnType?.let(::type) ?: unknown("no written RETURN type")
@@ -209,7 +219,7 @@ internal class LocalTypeWalk(
             return type(field.type ?: return unknown("no written type"))
         }
 
-        private fun type(use: LocalTypeUse): LocalTypeEvidence {
+        fun type(use: LocalTypeUse): LocalTypeEvidence {
             val typeRef = use.typeRef ?: return unknown("type not representable")
             if (typeRef is RefTypeRef) return unknown("REF type")
             val reference = LocalReferenceCollector.typeUseReference(use) ?: return unknown("type behind a database link")

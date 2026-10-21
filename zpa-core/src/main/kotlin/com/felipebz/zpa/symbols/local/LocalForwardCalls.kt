@@ -35,7 +35,10 @@ internal enum class LocalCallOutcome {
     /** The first segment is proven absent: the project resolved and narrowed the call. */
     PROJECT,
 
-    /** The first segment is declared locally (a callee, or a capture of the qualifier): the project is not consulted. */
+    /**
+     * The first segment is declared locally (a callee, or a capture of the qualifier): the project is not consulted.
+     * A local callee's resolution is in [LocalCallAnalysis.local].
+     */
     LOCAL_CAPTURE,
 
     /** The first segment's outcome is incomplete: a region or a lookup gap may hide a local declaration. */
@@ -46,8 +49,9 @@ internal enum class LocalCallOutcome {
 }
 
 /**
- * A call from local code: its written target, the first segment's outcome, the evidence of each actual, and the
- * project's typed resolution when the call was forwarded.
+ * A call from local code: its written target, the first segment's outcome, the evidence of each actual, the
+ * project's typed resolution when the call was forwarded, and the local resolution when the callee is a local
+ * overload set.
  */
 internal class LocalCallAnalysis(
     val reference: LocalReference,
@@ -58,9 +62,14 @@ internal class LocalCallAnalysis(
     /** Empty when the call form is not modeled. */
     val actuals: List<LocalActualEvidence>,
     /** Present only for [LocalCallOutcome.PROJECT]. */
-    val typed: ProjectTypedCallResolution?
+    val typed: ProjectTypedCallResolution?,
+    /**
+     * Present when the whole name resolves to a local overload set of subprograms (not object type methods), or to one
+     * provisionally ([LocalCallResolution.Status.INCOMPLETE]).
+     */
+    val local: LocalCallResolution?
 ) {
-    override fun toString() = "$kind $target: $outcome ($firstSegment) $actuals"
+    override fun toString() = "$kind $target: $outcome ($firstSegment) $actuals" + (local?.let { " -> $it" } ?: "")
 }
 
 /**
@@ -77,6 +86,7 @@ internal class LocalForwardCalls(
     private val metadata: ProjectExternalMetadata = ProjectExternalMetadata.none()
 ) {
     private val walk = LocalTypeWalk(model, snapshot, metadata)
+    private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot))
     private val callsByPosition = calls.associateBy { it.line to it.column }
     private val namesByPosition = references.filter { it.context != Ctx.TYPE && it.context != Ctx.ANCHOR_TYPE && it.context != Ctx.ANCHOR_ROWTYPE }
         .groupBy { it.range.startLine to it.range.startColumn }
@@ -98,12 +108,35 @@ internal class LocalForwardCalls(
         return when (reference.lastSegmentContext) {
             Ctx.CALL_STATEMENT -> ProjectCallKind.PROCEDURE
             Ctx.CALL_EXPRESSION -> ProjectCallKind.FUNCTION
-            // `pkg.f` without parentheses: a call only when the project shows a function and no value of that name.
-            Ctx.VALUE -> if (reference.segments.isNotEmpty() && LocalResolver.resolve(model, reference) == LocalResolution.ProvenAbsent &&
-                isProjectFunction(target(reference), reference.region)
+            // A name without parentheses: a call of a local function, or of a project function when the project shows a
+            // function and no value of that name.
+            Ctx.VALUE -> if (localCallee(reference) != null || reference.segments.isNotEmpty() &&
+                LocalResolver.resolve(model, reference) == LocalResolution.ProvenAbsent && isProjectFunction(target(reference), reference.region)
             ) ProjectCallKind.FUNCTION else null
             else -> null
         }
+    }
+
+    /**
+     * The local overload set the whole name resolves to, outside object types, with whether it was found through
+     * complete regions only.
+     */
+    private fun localCallee(reference: LocalReference): Pair<LocalResolution.OverloadSet, Boolean>? {
+        val steps = LocalResolver.resolveQualified(model, reference)
+        if (steps.size != reference.segments.size + 1) return null
+        val last = steps.last()
+        val set = (last as? LocalResolution.OverloadSet ?: (last as? LocalResolution.Incomplete)?.provisional as? LocalResolution.OverloadSet)
+            ?: return null
+        if (set.declarations.any { isMethod(model.declaration(it)) }) return null
+        return set to steps.none { it is LocalResolution.Incomplete }
+    }
+
+    private fun isMethod(declaration: LocalDeclaration) = (declaration.details as? LocalSubprogram)?.methodKind != null ||
+        model.region(declaration.region).kind.let { it == LocalRegionKind.OBJECT_TYPE || it == LocalRegionKind.TYPE_BODY }
+
+    private fun ProjectCallKind.internal() = when (this) {
+        ProjectCallKind.PROCEDURE -> com.felipebz.zpa.project.ProjectCallKind.PROCEDURE
+        ProjectCallKind.FUNCTION -> com.felipebz.zpa.project.ProjectCallKind.FUNCTION
     }
 
     private fun target(reference: LocalReference) = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
@@ -133,13 +166,19 @@ internal class LocalForwardCalls(
             is LocalResolution.Unsupported -> LocalCallOutcome.UNSUPPORTED
             else -> LocalCallOutcome.LOCAL_CAPTURE
         }
-        if (outcome != LocalCallOutcome.PROJECT) return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null)
         val notation = ProjectCallArguments.of(actuals.map { actual ->
             actual.actual.label?.let { ProjectCallArgument.named(ProjectIdentifier.fromSource(it.originalSpelling)) } ?: ProjectCallArgument.positional()
         })
+        if (outcome != LocalCallOutcome.PROJECT) {
+            val local = if (call != null && call.actuals == null) null else localCallee(reference)?.let { (set, complete) ->
+                if (!complete) LocalCallResolution.incomplete
+                else overloads.resolve(set.declarations, kind.internal(), notation.internal, actuals.map { it.evidence })
+            }
+            return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null, local)
+        }
         val structural = snapshot.resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
         val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, metadata, null)
-        return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed)
+        return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed, null)
     }
 
     /**
@@ -161,6 +200,9 @@ internal class LocalForwardCalls(
             else walk.projectValue(target(reference), reference.region)
         }
         if (steps.size != reference.segments.size + 1) return LocalTypeEvidence.unknown("stopped at ${steps.last()}")
+        callOf(reference)?.local?.let { local ->
+            return local.selected?.let(walk::result) ?: LocalTypeEvidence.unknown("the local call is ${local.status}")
+        }
         if (!actual.isCall) return walk.outcome(steps.last())
         return walk.call(steps.last(), callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0)
     }

@@ -31,7 +31,8 @@ import com.felipebz.zpa.project.*
  */
 @OptIn(ZpaExperimentalApi::class)
 internal object ProjectCallNarrower {
-    private class Evidence(val family: ProjectDatatypeFamily?, val reason: UnknownReason?)
+    /** The family of one side of a binding, or why it is unknown. */
+    internal class Evidence(val family: ProjectDatatypeFamily?, val reason: UnknownReason?)
 
     @JvmSynthetic
     fun narrow(
@@ -49,26 +50,31 @@ internal object ProjectCallNarrower {
         for (candidate in structural.candidates) {
             require(snapshot.occurrenceOf(candidate.declaration.id) != null) { "The call resolution was not issued by this snapshot" }
         }
-        val shadowCache = HashMap<Pair<QualifiedName, OracleIdentifier>, Boolean>()
-        fun shadowed(scope: QualifiedName, name: OracleIdentifier) =
-            shadowCache.getOrPut(scope to name) { possiblyShadowed(snapshot, scope, name) }
-
-        val actuals = types.map { actual(it, ::shadowed) }
+        val shadowed = shadowCheck(snapshot)
+        val actuals = types.map { actual(it, shadowed) }
         val evaluations = structural.candidates
             .filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
             .map { candidate ->
                 val owner = (candidate.declaration as? ProjectPackageSubprogramView)?.packageOwner
                 val bindings = candidate.bindings.map { binding ->
                     val actual = actuals[binding.argumentOrdinal - 1]
-                    val formal = formal(snapshot, binding.parameter, owner, metadata, currentSchema, ::shadowed)
-                    compare(binding, actual, formal)
+                    val formal = formal(snapshot, binding.parameter, owner, metadata, currentSchema, shadowed)
+                    compare(actual, formal) { outcome, reason ->
+                        ProjectBindingCompatibility.of(binding, outcome, actual.family, formal.family, reason)
+                    }
                 }
                 ProjectCandidateCompatibility.of(candidate, bindings)
             }
         return ProjectTypedCallResolution.of(structural, evaluations)
     }
 
-    private fun actual(type: ProjectArgumentType, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): Evidence = when (type.kind) {
+    /** Whether a package member may shadow a predefined type name, answered once per scope and name. */
+    internal fun shadowCheck(snapshot: ProjectSnapshot): (QualifiedName, OracleIdentifier) -> Boolean {
+        val cache = HashMap<Pair<QualifiedName, OracleIdentifier>, Boolean>()
+        return { scope, name -> cache.getOrPut(scope to name) { possiblyShadowed(snapshot, scope, name) } }
+    }
+
+    internal fun actual(type: ProjectArgumentType, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): Evidence = when (type.kind) {
         ProjectArgumentType.Kind.UNKNOWN -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
         ProjectArgumentType.Kind.NULL_LITERAL -> Evidence(null, UnknownReason.NULL_LITERAL)
         else -> {
@@ -107,16 +113,18 @@ internal object ProjectCallNarrower {
         return Evidence(family, null)
     }
 
-    private fun compare(binding: ProjectArgumentBinding, actual: Evidence, formal: Evidence): ProjectBindingCompatibility {
+    /**
+     * One binding's outcome from its two sides: unknown when either side is, else the families' compatibility. Only
+     * INCOMPATIBLE eliminates a candidate.
+     */
+    internal inline fun <R> compare(actual: Evidence, formal: Evidence, result: (Outcome, UnknownReason?) -> R): R {
         val reason = actual.reason ?: formal.reason
-        if (reason != null) return ProjectBindingCompatibility.of(binding, Outcome.UNKNOWN, actual.family, formal.family, reason)
+        if (reason != null) return result(Outcome.UNKNOWN, reason)
         return when (DatatypeFamilies.compatibility(actual.family, formal.family)) {
-            DatatypeCompatibility.COMPATIBLE -> ProjectBindingCompatibility.of(binding, Outcome.COMPATIBLE, actual.family, formal.family, null)
-            DatatypeCompatibility.INCOMPATIBLE -> ProjectBindingCompatibility.of(binding, Outcome.INCOMPATIBLE, actual.family, formal.family, null)
-            DatatypeCompatibility.ENVIRONMENT_DEPENDENT ->
-                ProjectBindingCompatibility.of(binding, Outcome.UNKNOWN, actual.family, formal.family, UnknownReason.ENVIRONMENT_DEPENDENT)
-            DatatypeCompatibility.UNKNOWN ->
-                ProjectBindingCompatibility.of(binding, Outcome.UNKNOWN, actual.family, formal.family, UnknownReason.UNSUPPORTED_PAIR)
+            DatatypeCompatibility.COMPATIBLE -> result(Outcome.COMPATIBLE, null)
+            DatatypeCompatibility.INCOMPATIBLE -> result(Outcome.INCOMPATIBLE, null)
+            DatatypeCompatibility.ENVIRONMENT_DEPENDENT -> result(Outcome.UNKNOWN, UnknownReason.ENVIRONMENT_DEPENDENT)
+            DatatypeCompatibility.UNKNOWN -> result(Outcome.UNKNOWN, UnknownReason.UNSUPPORTED_PAIR)
         }
     }
 

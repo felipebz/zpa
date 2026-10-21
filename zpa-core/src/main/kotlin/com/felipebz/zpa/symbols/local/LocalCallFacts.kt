@@ -103,6 +103,8 @@ internal object LocalCallCollector {
         if (argument.hasDirectChildren(PlSqlKeyword.DISTINCT, PlSqlKeyword.UNIQUE)) return LocalActual(label, null, 0, 0)
         if (expression.type === PlSqlGrammar.LITERAL) return LocalActual(label, literal(expression), 0, 0)
         if (expression.type === PlSqlGrammar.METHOD_CALL) {
+            // `c(1)(2)`, `h()(1)`: an element of a result, an expression this model does not type.
+            if (expression.getChildren(PlSqlGrammar.ARGUMENTS).size != 1) return LocalActual(label, null, 0, 0)
             val called = name(expression.firstChild) ?: return LocalActual(label, null, 0, 0)
             return LocalActual(label, null, called.token.line, called.token.column, isCall = true)
         }

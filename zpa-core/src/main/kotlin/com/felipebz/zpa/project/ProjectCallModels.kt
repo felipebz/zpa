@@ -259,9 +259,6 @@ internal fun ProjectDeclaration.callParameters(): List<ProjectParameter> = when 
     else -> error("Not a subprogram declaration")
 }
 
-/** The structural definition shared by zero-actual procedure and function binding. No exact-zero preference. */
-internal fun List<ProjectParameter>.isCallableWithoutArguments(): Boolean = all { it.defaultPresent }
-
 internal fun callUncertainties(
     target: ProjectCallTarget,
     specifications: List<IndexedDeclaration>,

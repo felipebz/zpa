@@ -19,6 +19,8 @@
  */
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectSnapshots
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
@@ -40,16 +42,19 @@ import java.nio.charset.StandardCharsets
  * - `ref <name> <context> <occurrence> = <outcome>`: the occurrence-th reference to the name in that context, resolved
  *   segment by segment;
  * - `none <name> <first line>-<last line>`: no reference to the name in those lines;
- * - `contexts <name> <line> = <context,…>`: the contexts of the references to the name on that line.
+ * - `contexts <name> <line> = <context,…>`: the contexts of the references to the name on that line;
+ * - `call <name> <context> <occurrence> = <status> [<selected>]`: the local resolution of the call that reference
+ *   names, when its callee is a local overload set.
  */
+@OptIn(ZpaExperimentalApi::class)
 class LocalOracleFixtureTest {
 
     private class Case(val name: String, val lines: List<String>) {
         fun value(key: String) = lines.single { it.startsWith("$key ") }.substringAfter(' ')
-        val checks get() = lines.filter { it.startsWith("ref ") || it.startsWith("none ") || it.startsWith("contexts ") }
+        val checks get() = lines.filter { it.startsWith("ref ") || it.startsWith("none ") || it.startsWith("contexts ") || it.startsWith("call ") }
     }
 
-    private class Analysis(val model: LocalSemanticModel, val references: List<LocalReference>)
+    private class Analysis(val model: LocalSemanticModel, val references: List<LocalReference>, val calls: () -> List<LocalCallAnalysis>)
 
     private val analyses = HashMap<String, Analysis>()
 
@@ -57,7 +62,10 @@ class LocalOracleFixtureTest {
         val text = File(DIRECTORY, "sources/$source.sql").readText()
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
         val model = LocalSemanticModelBuilder.build(root, FileId("$source.sql"), text)
-        Analysis(model, LocalReferenceCollector.collect(root, model))
+        val references = LocalReferenceCollector.collect(root, model)
+        val facts = LocalCallCollector.collect(root)
+        val calls by lazy { LocalForwardCalls(model, references, facts, EMPTY_PROJECT).analyze() }
+        Analysis(model, references) { calls }
     }
 
     private fun cases(): List<Case> = File(DIRECTORY, "oracle-cases.txt").readText().split(Regex("\n\\s*\n"))
@@ -91,6 +99,15 @@ class LocalOracleFixtureTest {
                     assertThat(actual).describedAs("${case.name}: $head").isEqualTo(expected)
                     outcomes += actual
                 }
+                "call" -> {
+                    val context = LocalReferenceContext.valueOf(words[2])
+                    val reference = analysis.references.filter { it.name == name && it.context == context }.getOrNull(words[3].toInt())
+                    val local = analysis.calls().singleOrNull { it.reference === reference }?.local
+                    assertThat(local).describedAs("${case.name}: $head in ${case.value("source")}").isNotNull
+                    val actual = local!!.status.name + (local.selected?.let { " " + declaration(analysis.model, it) } ?: "")
+                    assertThat(actual).describedAs("${case.name}: $head").isEqualTo(expected)
+                    outcomes += actual
+                }
                 "none" -> {
                     val (first, last) = words[2].split('-').map(String::toInt)
                     assertThat(analysis.references.filter { it.name == name && it.range.startLine in first..last })
@@ -116,14 +133,20 @@ class LocalOracleFixtureTest {
         private val WORDS = Regex("\"[^\"]*\"|\\S+")
 
         private val ERRORS = listOf(
-            "DeclaredLater", "WrongKind", "Duplicate", "Undeclared", "OutOfScope", "InstanceMemberInStatic", "LocalFunctionInSql"
+            "DeclaredLater", "WrongKind", "Duplicate", "Undeclared", "OutOfScope", "InstanceMemberInStatic", "LocalFunctionInSql",
+            // Call outcomes: no candidate (PLS-00306) and several candidates left (PLS-00307).
+            "NO_APPLICABLE_CANDIDATE", "NO_COMPATIBLE_CANDIDATE", "AMBIGUOUS"
         )
+
+        private val EMPTY_PROJECT = ProjectSnapshots.prepare(emptyList(), false)
+
+        private fun declaration(model: LocalSemanticModel, id: LocalDeclarationId) = model.declaration(id).let {
+            "${it.kind} ${it.name.originalSpelling}@${it.nameRange.startLine}:${it.nameRange.startColumn}"
+        }
 
         /** An outcome with each declaration as `KIND name@line:column` of its name. */
         internal fun render(model: LocalSemanticModel, outcome: LocalResolution): String {
-            fun d(id: LocalDeclarationId) = model.declaration(id).let {
-                "${it.kind} ${it.name.originalSpelling}@${it.nameRange.startLine}:${it.nameRange.startColumn}"
-            }
+            fun d(id: LocalDeclarationId) = declaration(model, id)
             fun ds(ids: List<LocalDeclarationId>) = ids.joinToString(", ", transform = ::d)
             return when (outcome) {
                 is LocalResolution.Bound -> "Bound(${d(outcome.declaration)})"
