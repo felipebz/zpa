@@ -249,19 +249,8 @@ internal object LocalReferenceCollector {
     private fun typeUses(model: LocalSemanticModel, out: MutableList<LocalReference>) {
         val seen = HashSet<SourceRange>()
         fun add(use: LocalTypeUse?) {
-            val typeRef = use?.typeRef ?: return
-            if (!seen.add(use.range)) return
-            val segments = typeRef.name.segments
-            val context = when (typeRef) {
-                is NamedTypeRef, is RefTypeRef -> LocalReferenceContext.TYPE
-                is AnchoredTypeRef -> {
-                    if (typeRef.link != null) return // a remote object, not a local name
-                    if (typeRef.anchor == TypeAnchor.TYPE) LocalReferenceContext.ANCHOR_TYPE else LocalReferenceContext.ANCHOR_ROWTYPE
-                }
-            }
-            val actual = if (segments.size > 1) LocalReferenceContext.QUALIFIER else context
-            val rest = segments.drop(1).map { LocalSegment(it, false) }
-            out += LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null)
+            if (use == null || !seen.add(use.range)) return
+            typeUseReference(use)?.let { out += it }
         }
         for (declaration in model.declarations) {
             add(declaration.type)
@@ -278,6 +267,25 @@ internal object LocalReferenceCollector {
                 else -> Unit
             }
         }
+    }
+
+    /**
+     * The lookup a written datatype makes, as the collector gathers it: its first segment in [LocalTypeUse.lookupRegion],
+     * at the type use's range. Null when the type is not representable or names an object behind a database link.
+     */
+    fun typeUseReference(use: LocalTypeUse): LocalReference? {
+        val typeRef = use.typeRef ?: return null
+        val segments = typeRef.name.segments
+        val context = when (typeRef) {
+            is NamedTypeRef, is RefTypeRef -> LocalReferenceContext.TYPE
+            is AnchoredTypeRef -> {
+                if (typeRef.link != null) return null // a remote object, not a local name
+                if (typeRef.anchor == TypeAnchor.TYPE) LocalReferenceContext.ANCHOR_TYPE else LocalReferenceContext.ANCHOR_ROWTYPE
+            }
+        }
+        val actual = if (segments.size > 1) LocalReferenceContext.QUALIFIER else context
+        val rest = segments.drop(1).map { LocalSegment(it, false) }
+        return LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null)
     }
 
     /** The innermost region of [model] containing the start of [range]. Regions nest and children are in start order. */
