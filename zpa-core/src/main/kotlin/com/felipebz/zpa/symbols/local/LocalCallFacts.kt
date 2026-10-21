@@ -49,13 +49,19 @@ internal class LocalActual(
     val label: OracleIdentifier?,
     /** Set for a literal actual. */
     val literal: LocalLiteral?,
-    /** For a plain or qualified name, the line of its first segment (the start of its [LocalReference]); 0 otherwise. */
+    /**
+     * For a plain or qualified name, or the called name of `name(…)`, the line of its first segment (the start of its
+     * [LocalReference]); 0 otherwise.
+     */
     val nameLine: Int,
-    val nameColumn: Int
+    val nameColumn: Int,
+    /** The actual is `name(…)`: a call or an element access, with its own [LocalCall] at the same position. */
+    val isCall: Boolean = false
 ) {
     val isName: Boolean get() = nameLine > 0
 
-    override fun toString() = (label?.let { "$it => " } ?: "") + (literal?.name ?: if (isName) "name@$nameLine:$nameColumn" else "expression")
+    override fun toString() = (label?.let { "$it => " } ?: "") +
+        (literal?.name ?: if (isName) (if (isCall) "call" else "name") + "@$nameLine:$nameColumn" else "expression")
 }
 
 /** The actuals of one call, keyed by the position of the called name's first segment. */
@@ -96,7 +102,17 @@ internal object LocalCallCollector {
         val expression = argument.lastChild
         if (argument.hasDirectChildren(PlSqlKeyword.DISTINCT, PlSqlKeyword.UNIQUE)) return LocalActual(label, null, 0, 0)
         if (expression.type === PlSqlGrammar.LITERAL) return LocalActual(label, literal(expression), 0, 0)
-        val name = when (expression.type) {
+        if (expression.type === PlSqlGrammar.METHOD_CALL) {
+            val called = name(expression.firstChild) ?: return LocalActual(label, null, 0, 0)
+            return LocalActual(label, null, called.token.line, called.token.column, isCall = true)
+        }
+        val name = name(expression) ?: return LocalActual(label, null, 0, 0)
+        return LocalActual(label, null, name.token.line, name.token.column)
+    }
+
+    /** A plain or qualified name: names only, no attribute and no database link. */
+    private fun name(expression: AstNode): AstNode? =
+        when (expression.type) {
             PlSqlGrammar.VARIABLE_NAME -> expression.takeIf { it.hasDirectChildren(PlSqlGrammar.IDENTIFIER_NAME) }
             // `a.b`: names only, no attribute and no database link.
             PlSqlGrammar.MEMBER_EXPRESSION -> expression.takeIf { member ->
@@ -104,9 +120,7 @@ internal object LocalCallCollector {
                     !member.hasDirectChildren(PlSqlPunctuator.MOD, PlSqlPunctuator.REMOTE)
             }
             else -> null
-        } ?: return LocalActual(label, null, 0, 0)
-        return LocalActual(label, null, name.token.line, name.token.column)
-    }
+        }
 
     /** As [com.felipebz.zpa.api.project.ProjectArgumentType] lists literal evidence; null when not classified. */
     private fun literal(literal: AstNode): LocalLiteral? {

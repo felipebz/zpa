@@ -125,8 +125,31 @@ internal class LocalLoopIndex(
      * True when no type is written: the type comes from the iteration control (numeric range, collection, cursor
      * row…), which the model does not infer.
      */
-    val isTypeImplicit: Boolean
+    val isTypeImplicit: Boolean,
+    /** The form of the iteration control, for an index whose type it gives; null when not recognized. */
+    val control: LocalLoopControl? = null
 ) : LocalDeclarationDetails
+
+/** The iteration control of a FOR loop with one index and one control. */
+internal class LocalLoopControl(
+    val form: Form,
+    /** For [Form.NAME], the name the control iterates over: a cursor, or a value iterated once. */
+    val name: OracleIdentifier?,
+    val nameRange: SourceRange?
+) {
+    enum class Form {
+        /** `lo .. hi` without `BY`: the index is a PLS_INTEGER. */
+        STEPPED,
+
+        /** A subquery: the index is a row. */
+        QUERY,
+
+        /** A name, called or not: a cursor's index is a row, a value's is not known. */
+        NAME
+    }
+
+    override fun toString() = "$form${name?.let { " $it" } ?: ""}"
+}
 
 internal data class LocalLabel(
     /** The region formed by the labeled statement or block, if it forms one. */

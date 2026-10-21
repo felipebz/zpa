@@ -81,20 +81,49 @@ internal class LocalForwardCalls(
     private val namesByPosition = references.filter { it.context != Ctx.TYPE && it.context != Ctx.ANCHOR_TYPE && it.context != Ctx.ANCHOR_ROWTYPE }
         .groupBy { it.range.startLine to it.range.startColumn }
 
+    private val analyses = HashMap<LocalReference, LocalCallAnalysis?>()
+
     /** Every call of the file, in reference order. */
-    fun analyze(): List<LocalCallAnalysis> = references.mapNotNull { reference -> kindOf(reference)?.let { analyze(reference, it) } }
+    fun analyze(): List<LocalCallAnalysis> = references.mapNotNull(::callOf)
+
+    /** The analysis of [reference] when it is a call, computed once: an actual may be the result of another call. */
+    private fun callOf(reference: LocalReference): LocalCallAnalysis? {
+        if (reference in analyses) return analyses[reference]
+        analyses[reference] = null // a call never contains itself; this only stops a malformed tree
+        return kindOf(reference)?.let { analyze(reference, it) }.also { analyses[reference] = it }
+    }
 
     private fun kindOf(reference: LocalReference): ProjectCallKind? {
         if (reference.segments.any { it.isAttribute }) return null
         return when (reference.lastSegmentContext) {
             Ctx.CALL_STATEMENT -> ProjectCallKind.PROCEDURE
             Ctx.CALL_EXPRESSION -> ProjectCallKind.FUNCTION
+            // `pkg.f` without parentheses: a call only when the project shows a function and no value of that name.
+            Ctx.VALUE -> if (reference.segments.isNotEmpty() && LocalResolver.resolve(model, reference) == LocalResolution.ProvenAbsent &&
+                isProjectFunction(target(reference), reference.region)
+            ) ProjectCallKind.FUNCTION else null
             else -> null
         }
     }
 
+    private fun target(reference: LocalReference) = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
+
+    /**
+     * Whether the project knows [name] as a function and not as a package value: a certain candidate search with a
+     * function candidate, and no package value of that name.
+     */
+    private fun isProjectFunction(name: QualifiedName, region: LocalRegionId): Boolean {
+        val written = ProjectQualifiedName.wrap(name)
+        val candidates = snapshot.findCallCandidates(ProjectCallTarget.written(written))
+        if (candidates.status != ProjectCallCandidates.Status.FOUND || candidates.uncertainties.isNotEmpty() ||
+            candidates.candidates.none { it is ProjectFunctionView }
+        ) return false
+        val value = snapshot.resolvePackageValue(written, walk.packageOwner(region))
+        return value.status == ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT && value.candidates.none { it is ProjectPackageValueView }
+    }
+
     private fun analyze(reference: LocalReference, kind: ProjectCallKind): LocalCallAnalysis {
-        val target = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
+        val target = target(reference)
         val first = LocalResolver.resolve(model, reference)
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
         val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it)) }.orEmpty()
@@ -113,7 +142,10 @@ internal class LocalForwardCalls(
         return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed)
     }
 
-    /** Evidence of one actual: a literal as Oracle types it, a name through the resolver and the type walk. */
+    /**
+     * Evidence of one actual: a literal as Oracle types it; a name, an element or a call's result through the resolver,
+     * the type walk and, for a project callee, the call's own resolution.
+     */
     private fun evidence(actual: LocalActual): LocalTypeEvidence {
         if (!actual.isName) return LocalTypeEvidence.literal(actual.literal).takeIf { actual.literal != null }
             ?: LocalTypeEvidence.unknown("expression not modeled")
@@ -123,11 +155,13 @@ internal class LocalForwardCalls(
         val steps = LocalResolver.resolveQualified(model, reference)
         val first = steps.first()
         if (first == LocalResolution.ProvenAbsent) {
+            callOf(reference)?.let { return walk.projectResult(it.typed) }
             // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
-            return if (reference.segments.isEmpty()) LocalTypeEvidence.unknown("not a local name")
-            else walk.projectValue(QualifiedName(listOf(reference.name) + reference.segments.map { it.name }), reference.region)
+            return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
+            else walk.projectValue(target(reference), reference.region)
         }
         if (steps.size != reference.segments.size + 1) return LocalTypeEvidence.unknown("stopped at ${steps.last()}")
-        return walk.outcome(steps.last())
+        if (!actual.isCall) return walk.outcome(steps.last())
+        return walk.call(steps.last(), callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0)
     }
 }

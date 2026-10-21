@@ -120,8 +120,13 @@ class LocalTypeWalkTest {
     fun anIncompleteRegionOnTheWayGivesUnknown() {
         val source = "declare\n  subtype t is date;\nbegin\n  declare\n    \$IF \$\$x \$THEN subtype t is number; \$END\n    v t;\n  begin\n    null;\n  end;\nend;\n/\n"
         assertThat(evidence(source)).startsWith("UNKNOWN UNKNOWN [VARIABLE v] Incomplete")
-        // A loop index typed by its iteration control has no written type.
-        assertThat(evidence("begin\n  for i in 1..2 loop null; end loop;\nend;\n/\n", "i")).isEqualTo("UNKNOWN UNKNOWN [LOOP_INDEX i] typed by its iteration control")
+        // A numeric range's index is a PLS_INTEGER (Oracle picks a PLS_INTEGER overload for it); with BY it is not known.
+        assertThat(evidence("begin\n  for i in 1..2 loop null; end loop;\nend;\n/\n", "i")).isEqualTo("BUILT_IN BUILT_IN NUMERIC [LOOP_INDEX i]")
+        assertThat(evidence("begin\n  for i in 1..9 by 2 loop null; end loop;\nend;\n/\n", "i")).isEqualTo("UNKNOWN UNKNOWN [LOOP_INDEX i] typed by its iteration control")
+        // A value iterated once is not known; a cursor's index is a row.
+        assertThat(evidence("declare\n  n number;\nbegin\n  for i in n loop null; end loop;\nend;\n/\n", "i")).isEqualTo("UNKNOWN UNKNOWN [LOOP_INDEX i] iterates over a value")
+        assertThat(evidence("declare\n  cursor c is select 1 a from dual;\nbegin\n  for i in c loop null; end loop;\nend;\n/\n", "i"))
+            .isEqualTo("COMPOSITE COMPOSITE COMPOSITE [LOOP_INDEX i > CURSOR c]")
     }
 
     @Test
@@ -143,18 +148,28 @@ class LocalTypeWalkTest {
     }
 
     @Test
-    fun aSpecificationValueUsesTheProjectFactWhenPrepared() {
-        // A package value whose specification is in the file: with a prepared snapshot of that file the project's own
-        // fact, matched by range, describes it; without one the specification is walked locally.
-        val source = "create package pk as\n  subtype money_t is date;\n  g money_t;\nend;\n/\n"
-        val prepared = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("pk.sql", source)), false)
-        assertThat(evidence(source, "g", snapshot = prepared, fileId = "pk.sql")).isEqualTo("PROJECT DESCRIBED DATETIME [VARIABLE g]")
-        assertThat(evidence(source, "g", snapshot = null, fileId = "pk.sql")).isEqualTo("BUILT_IN BUILT_IN DATETIME [VARIABLE g > SUBTYPE money_t]")
-        // A package subtype named like a predefined type: the project gives the predefined family, which narrowing
-        // checks against the package's members and treats as unknown; the local walk gives the package subtype.
-        val shadow = "create package pk as\n  subtype integer is date;\n  g integer;\nend;\n/\n"
-        val preparedShadow = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("pk.sql", shadow)), false)
-        assertThat(evidence(shadow, "g", snapshot = preparedShadow, fileId = "pk.sql")).isEqualTo("PROJECT DESCRIBED NUMERIC [VARIABLE g]")
-        assertThat(evidence(shadow, "g", snapshot = null, fileId = "pk.sql")).isEqualTo("BUILT_IN BUILT_IN DATETIME [VARIABLE g > SUBTYPE integer]")
+    fun aSpecificationValueIsWalkedLocallyFirst() {
+        fun both(source: String, project: String = source) =
+            listOf(ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("pk.sql", project)), false), null)
+                .map { evidence(source, "g", snapshot = it, fileId = "pk.sql") }
+        // The local walk gives a family: it is used, prepared snapshot or not.
+        assertThat(both("create package pk as\n  subtype money_t is date;\n  g money_t;\nend;\n/\n"))
+            .containsOnly("BUILT_IN BUILT_IN DATETIME [VARIABLE g > SUBTYPE money_t]")
+        // A package subtype named like a predefined type: the project's predefined family may be shadowed, so it is
+        // not conclusive; the local walk gives the DATE Oracle uses.
+        assertThat(both("create package pk as\n  subtype integer is date;\n  g integer;\nend;\n/\n"))
+            .containsOnly("BUILT_IN BUILT_IN DATETIME [VARIABLE g > SUBTYPE integer]")
+        // Both conclusive and in agreement.
+        assertThat(both("create package pk as\n  type r_t is record (a number);\n  g r_t;\nend;\n/\n"))
+            .containsOnly("COMPOSITE COMPOSITE COMPOSITE [VARIABLE g > RECORD_TYPE r_t]")
+        // The local walk gives unknown (conditional compilation in the specification): the project fact is used.
+        assertThat(both("create package pk as\n  \$IF \$\$x \$THEN h number; \$END\n  g date;\nend;\n/\n")).containsExactly(
+            "PROJECT DESCRIBED DATETIME [VARIABLE g]", "UNKNOWN UNKNOWN [VARIABLE g] Incomplete(CONDITIONAL_COMPILATION, provisional=ProvenAbsent)"
+        )
+        // Both conclusive and different (a project prepared from another version of the specification): unknown.
+        assertThat(both(
+            "create package pk as\n  type r_t is record (a number);\n  g number;\nend;\n/\n",
+            "create package pk as\n  type r_t is record (a number);\n  g r_t   ;\nend;\n/\n"
+        )).containsExactly("UNKNOWN UNKNOWN [VARIABLE g] the local walk gives NUMERIC, the project fact COMPOSITE", "BUILT_IN BUILT_IN NUMERIC [VARIABLE g]")
     }
 }

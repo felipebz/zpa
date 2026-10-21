@@ -197,7 +197,7 @@ internal object LocalSemanticModelBuilder {
                     // Looked up where the loop is written, not among the loop's own indices.
                     type = datatype?.let { typeUse(it, region.parent ?: region) },
                     isNotNull = LocalSyntax.notNull(child),
-                    details = LocalLoopIndex(mutability, datatype == null)
+                    details = LocalLoopIndex(mutability, datatype == null, if (datatype == null) LocalSyntax.loopControl(node, fileId) else null)
                 )
             }
         }

@@ -199,8 +199,8 @@ class LocalForwardCallTest {
             "34: LOCAL_CAPTURE processar(BUILT_IN DATETIME)",                    // the local processar(varchar2)
             "37: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // local SUBTYPE varchar2 IS DATE
             "40: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // an anchor to the outer a
-            "43: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",                   // a function's result: Oracle DATE, no evidence
-            "46: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",                   // an element c(1): Oracle DATE, no evidence
+            "43: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // a local function's result
+            "46: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // an element c(1) of a local collection
             "49: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",                   // v's anchor is captured by a local (PLS-00487)
             "52: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"                    // NVL(...): Oracle DATE, no evidence
         )
@@ -232,15 +232,108 @@ class LocalForwardCallTest {
         assertThat(analyze(text, prepared, "s.sql").calls.map(::render)).containsExactly("8: PROJECT pk.processar(DESCRIBED NUMERIC) -> AMBIGUOUS")
     }
 
+    /** The calls to `pkg.processar` in [source], with [packages] prepared as the project. */
+    private fun processar(source: String, packages: String): List<String> {
+        val prepared = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("packages.sql", packages)), false)
+        return analyze(source, prepared).calls.filter { it.target.toString().endsWith("processar") }.map(::render)
+    }
+
+    private val processarPackage = "create package pkg as\n  procedure processar(p number);\n  procedure processar(p date);\nend;\n/\n"
+
+    @Test
+    fun aLocalFunctionResultIsItsReturnType() {
+        val source = "declare\n  subtype amount_t is date;\n  function f return amount_t is begin return null; end;\n" +
+            "  function g(a number) return date is begin return null; end;\n  function g(a varchar2) return number is begin return 0; end;\n" +
+            "  type dates_t is table of date;\n  function h return dates_t is begin return null; end;\n" +
+            "begin\n  pkg.processar(f);\n  pkg.processar(f());\n  pkg.processar(g(1));\n  pkg.processar(h(1));\nend;\n/\n"
+        assertThat(processar(source, processarPackage)).containsExactly(
+            "9: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
+            "10: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
+            // Two overloads: which one is called is call binding, not evidence.
+            "11: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",
+            // h(1) is an element of h's result, not h's result.
+            "12: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"
+        )
+    }
+
+    @Test
+    fun aProjectFunctionResultIsTheSelectedCandidatesReturnType() {
+        val packages = processarPackage + "create package pf as\n  g date;\n  function d return date;\n  function o(x number) return date;\n" +
+            "  function o(x date) return number;\nend;\n/\n"
+        val source = "declare\n  v varchar2(10);\nbegin\n  pkg.processar(pf.d());\n  pkg.processar(pf.d);\n  pkg.processar(pf.g);\n" +
+            "  pkg.processar(pf.o(1));\n  pkg.processar(pf.o(v));\nend;\n/\n"
+        assertThat(processar(source, packages)).containsExactly(
+            "4: PROJECT pkg.processar(DESCRIBED DATETIME) -> RESOLVED date",
+            // Without parentheses: the project knows pf.d as a function and no value of that name, so it is a call.
+            "5: PROJECT pkg.processar(DESCRIBED DATETIME) -> RESOLVED date",
+            // A package value.
+            "6: PROJECT pkg.processar(DESCRIBED DATETIME) -> RESOLVED date",
+            // pf.o(1) narrows to the NUMBER overload, whose result is a DATE.
+            "7: PROJECT pkg.processar(DESCRIBED DATETIME) -> RESOLVED date",
+            // pf.o(v) with a character actual stays ambiguous: no result evidence.
+            "8: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"
+        )
+        // `x := pf.d` is forwarded as a call; `x := pf.g` is not.
+        val assigned = analyze("declare\n  x date;\nbegin\n  x := pf.d;\n  x := pf.g;\nend;\n/\n",
+            ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("packages.sql", packages)), false)).calls
+        assertThat(assigned.map(::render)).containsExactly("4: PROJECT pf.d() -> RESOLVED ")
+    }
+
+    @Test
+    fun anElementOfALocalCollectionIsItsElementType() {
+        val source = "declare\n  type nt is table of date;\n  type va is varray(3) of date;\n  type aa is table of date index by varchar2(10);\n" +
+            "  n nt;\n  a va;\n  b aa;\nbegin\n  pkg.processar(n(1));\n  pkg.processar(a(2));\n  pkg.processar(b('k'));\nend;\n/\n"
+        assertThat(processar(source, processarPackage)).containsExactly(
+            "9: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
+            "10: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
+            "11: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date"
+        )
+    }
+
+    @Test
+    fun aForLoopIndexIsAPlsIntegerOrARow() {
+        // Oracle: a numeric range's index picks NUMBER over DATE, PLS_INTEGER over VARCHAR2, and PLS_INTEGER over NUMBER.
+        val packages = processarPackage + "create package pv as\n  procedure p(x pls_integer);\n  procedure p(x varchar2);\nend;\n/\n" +
+            "create package np as\n  procedure p(x number);\n  procedure p(x pls_integer);\nend;\n/\n"
+        val prepared = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("packages.sql", packages)), false)
+        val source = "declare\n  cursor c is select 1 a from dual;\nbegin\n  for i in 1..3 loop pkg.processar(i); end loop;\n" +
+            "  for i in 1..3 loop pv.p(i); end loop;\n  for i in 1..3 loop np.p(i); end loop;\n" +
+            "  for r in (select 1 a from dual) loop pkg.processar(r); end loop;\n  for r in c loop pkg.processar(r); end loop;\nend;\n/\n"
+        assertThat(analyze(source, prepared).calls.map(::render)).containsExactly(
+            "4: PROJECT pkg.processar(BUILT_IN NUMERIC) -> RESOLVED number",
+            // Narrowing never ranks: a numeric actual stays compatible with VARCHAR2 and with NUMBER.
+            "5: PROJECT pv.p(BUILT_IN NUMERIC) -> AMBIGUOUS",
+            "6: PROJECT np.p(BUILT_IN NUMERIC) -> AMBIGUOUS",
+            // A cursor FOR loop's index is a row (Oracle: PLS-00306).
+            "7: PROJECT pkg.processar(COMPOSITE COMPOSITE) -> NO_COMPATIBLE_CANDIDATE",
+            "8: PROJECT pkg.processar(COMPOSITE COMPOSITE) -> NO_COMPATIBLE_CANDIDATE"
+        )
+    }
+
+    @Test
+    fun aOneSegmentSchemaTypeIsDescribedByTheProject() {
+        val packages = processarPackage + "create type obj_t as object (a number);\n/\ncreate type tab_t as table of number;\n/\n"
+        val source = "declare\n  o obj_t;\n  t tab_t;\nbegin\n  pkg.processar(o);\n  pkg.processar(t);\nend;\n/\n"
+        assertThat(processar(source, packages)).containsExactly(
+            "5: PROJECT pkg.processar(DESCRIBED COMPOSITE) -> NO_COMPATIBLE_CANDIDATE",
+            "6: PROJECT pkg.processar(DESCRIBED COMPOSITE) -> NO_COMPATIBLE_CANDIDATE"
+        )
+    }
+
     @Test
     fun callsAndFactsAreDeterministicAndDetached() {
-        val source = block("  SUBTYPE amount_t IS DATE;\n  TYPE r_t IS RECORD (f amount_t);\n  r r_t;\n  v r.f%TYPE;", "pkg.processar(v); pkg.processar(r.f); pkg.processar('a');")
+        val source = block(
+            "  SUBTYPE amount_t IS DATE;\n  TYPE r_t IS RECORD (f amount_t);\n  r r_t;\n  v r.f%TYPE;\n  TYPE n_t IS TABLE OF amount_t;\n  n n_t;\n" +
+                "  FUNCTION f RETURN amount_t IS BEGIN RETURN NULL; END;",
+            "pkg.processar(v); pkg.processar(r.f); pkg.processar('a'); pkg.processar(n(1)); pkg.processar(f);\n  FOR i IN 1..2 LOOP pkg.processar(i); END LOOP;"
+        )
         val first = analyze(source, snapshot)
         assertThat(analyze(source, snapshot).calls.map(::render)).isEqualTo(first.calls.map(::render))
         // The order references are analyzed in does not matter.
         val reversed = LocalForwardCalls(first.model, first.references.reversed(), first.facts.reversed(), snapshot).analyze().map(::render)
         assertThat(reversed.reversed()).isEqualTo(first.calls.map(::render))
-        assertThat(first.calls.map(::render)).allMatch { it.endsWith("RESOLVED date") || it.contains("CHARACTER") }
+        assertThat(first.calls.filter { it.target.toString().endsWith("processar") }.map(::render)).allMatch { it.endsWith("RESOLVED date") || it.endsWith("RESOLVED number") || it.contains("CHARACTER") }
+            .hasSize(6)
         // Facts and results reach no syntax, legacy symbol or snapshot; project results are the project's own values.
         val reached = reachable(listOf(first.facts, first.calls))
         assertThat(reached.filter { it is AstNode || it is Token || it is Symbol || it is ProjectSnapshot }).isEmpty()

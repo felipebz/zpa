@@ -22,8 +22,10 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.GenericTokenType
+import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
@@ -31,6 +33,25 @@ import com.felipebz.zpa.project.SourceRange
 
 /** Source facts shared by the local extraction code: identifiers and ranges of AST nodes, never the nodes. */
 internal object LocalSyntax {
+    /** The iteration control of a FOR loop [iterator] with one implicitly typed index and one control, if recognized. */
+    fun loopControl(iterator: AstNode, fileId: FileId): LocalLoopControl? {
+        val controls = iterator.getChildren(PlSqlGrammar.QUAL_ITERATION_CTL)
+        if (iterator.getChildren(PlSqlGrammar.ITERAND_DECLARATION).size != 1 || controls.size != 1) return null
+        val control = controls.single()
+        control.getFirstChildOrNull(PlSqlGrammar.STEPPED_CONTROL)?.let {
+            return if (it.hasDirectChildren(PlSqlKeyword.BY)) null else LocalLoopControl(LocalLoopControl.Form.STEPPED, null, null)
+        }
+        val expression = control.getFirstChildOrNull(PlSqlGrammar.SINGLE_EXPRESSION_CONTROL)?.lastChild ?: return null
+        val query = expression.type === DmlGrammar.SELECT_EXPRESSION || expression.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION) &&
+            expression.children.all { it.type === DmlGrammar.SELECT_EXPRESSION || it.type === PlSqlPunctuator.LPARENTHESIS || it.type === PlSqlPunctuator.RPARENTHESIS }
+        if (query) {
+            return LocalLoopControl(LocalLoopControl.Form.QUERY, null, null)
+        }
+        val name = (if (expression.type === PlSqlGrammar.METHOD_CALL) expression.firstChild else expression)
+            .takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
+        return LocalLoopControl(LocalLoopControl.Form.NAME, identifier(name), range(fileId, name))
+    }
+
     fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromSource(node.token.originalValue)
 
     fun range(fileId: FileId, node: AstNode): SourceRange =
