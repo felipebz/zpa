@@ -77,7 +77,7 @@ internal object LocalResolver {
         for (region in chain) {
             val scope = scopeOf(model, region)
             relied += scope.regions
-            val candidates = scope.declarations.filter { it.name == reference.name }
+            val candidates = scope.named(reference.name).filter { LocalTypeScope.capturesIn(it, reference.context) }
             gaps += if (candidates.isEmpty()) scope.gaps + scope.absenceGaps else scope.gaps
             val implicitSelf = method != null && region.id == method.region && reference.name == SELF &&
                 (method.declaration.details as LocalSubprogram).implicitSelf != null
@@ -107,7 +107,7 @@ internal object LocalResolver {
                     method?.isStatic == true && reference.name == SELF -> LocalResolution.Undeclared
                     else -> LocalResolution.ProvenAbsent
                 }
-            } else decide(model, reference, Scope(listOf(model.root), candidates, null), candidates, chain)
+            } else decide(model, reference, Scope(model, listOf(model.root), null), candidates, chain)
         }
         if (reference.context == Ctx.SQL_VALUE) outcome = sqlOutcome(outcome, gaps)
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
@@ -149,35 +149,36 @@ internal object LocalResolver {
      * specification together with its specification and supertypes.
      */
     class Scope(
+        private val model: LocalSemanticModel,
         val regions: List<LocalRegion>,
-        val declarations: List<LocalDeclaration>,
         /** The linked specification region of a package or type body. */
         val specification: LocalRegionId?,
         /** Regions whose declarations are visible throughout the scope, whatever their order. */
         val earlierRegions: Set<LocalRegionId> = setOfNotNull(specification),
         val gaps: Set<LocalLookupGap> = emptySet(),
         /** Gaps that matter only when the scope does not declare the name. */
-        val absenceGaps: Set<LocalLookupGap> = emptySet()
-    )
+        val absenceGaps: Set<LocalLookupGap> = emptySet(),
+        /** Regions of which only the attributes are visible (supertypes seen unqualified). */
+        private val attributesOnly: Set<LocalRegionId> = emptySet()
+    ) {
+        fun named(name: OracleIdentifier): List<LocalDeclaration> = regions.flatMap { region ->
+            val found = model.index.named(region.id, name)
+            if (region.id in attributesOnly) found.filter { it.kind == ATTRIBUTE } else found
+        }
+    }
 
     fun scopeOf(model: LocalSemanticModel, region: LocalRegion): Scope = when (region.kind) {
-        LocalRegionKind.PACKAGE_BODY -> {
-            val specification = LocalTypeScope.unitOf(model, region.id)?.counterpart
-            if (specification == null) {
-                Scope(listOf(region), model.declarationsOf(region.id), null, gaps = setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE))
-            } else {
-                Scope(listOf(region, model.region(specification)), model.declarationsOf(region.id) + model.declarationsOf(specification), specification)
-            }
-        }
+        LocalRegionKind.PACKAGE_BODY -> LocalTypeScope.unitOf(model, region.id)?.counterpart?.let { Scope(model, listOf(region, model.region(it)), it) }
+            ?: Scope(model, listOf(region), null, gaps = setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE))
         LocalRegionKind.TYPE_BODY, LocalRegionKind.OBJECT_TYPE -> LocalTypeScope.of(model, region, supertypeMethods = false)
-        else -> Scope(listOf(region), model.declarationsOf(region.id), null)
+        else -> Scope(model, listOf(region), null)
     }
 
     /** File-region declarations a reference may see: enclosing top-level labels, and enclosing unit names as qualifiers. */
     private fun fileCandidates(model: LocalSemanticModel, reference: LocalReference, chain: List<LocalRegion>): List<LocalDeclaration> {
         val onChain = chain.mapTo(HashSet()) { it.id }
-        return model.declarationsOf(model.root.id).filter { declaration ->
-            declaration.name == reference.name && when (val details = declaration.details) {
+        return model.index.named(model.root.id, reference.name).filter { declaration ->
+            when (val details = declaration.details) {
                 is LocalLabel -> details.labeled in onChain
                 is LocalUnit -> reference.context == Ctx.QUALIFIER && declaration.kind in QUALIFYING_UNITS && details.region in onChain
                 is LocalSubprogram -> reference.context == Ctx.QUALIFIER && details.body in onChain
@@ -409,15 +410,13 @@ internal object LocalResolver {
         }
     }
 
-    /** Whether [declaration] is a subprogram or unit whose region is on [chain]: its name is visible inside it. */
-    private fun encloses(declaration: LocalDeclaration, chain: List<LocalRegion>): Boolean {
-        val region = when (val details = declaration.details) {
-            is LocalSubprogram -> details.body
-            is LocalUnit -> details.region
-            else -> null
-        } ?: return false
-        return chain.any { it.id == region }
-    }
+    /** Whether [declaration] is a subprogram, unit or cursor whose region is on [chain]: its name is visible inside it. */
+    private fun encloses(declaration: LocalDeclaration, chain: List<LocalRegion>): Boolean = when (val details = declaration.details) {
+        is LocalSubprogram -> details.body
+        is LocalUnit -> details.region
+        is LocalCursor -> details.parameters
+        else -> null
+    }.let { region -> region != null && chain.any { it.id == region } }
 
     private fun endsBefore(declaration: SourceRange, reference: SourceRange) =
         declaration.endLine < reference.startLine ||

@@ -137,7 +137,7 @@ internal object LocalQualifiedResolver {
     private fun inRegion(model: LocalSemanticModel, region: LocalRegion, member: LocalReference, chain: List<LocalRegion>): Step {
         val scope = LocalResolver.scopeOf(model, region)
         val gaps = scope.gaps
-        val candidates = scope.declarations.filter { it.name == member.name }
+        val candidates = scope.named(member.name)
         val outcome = if (candidates.isEmpty()) LocalResolution.Undeclared else LocalResolver.decide(model, member, scope, candidates, chain)
         return Step(outcome, scope.regions, gaps)
     }
@@ -148,8 +148,8 @@ internal object LocalQualifiedResolver {
      */
     private fun self(model: LocalSemanticModel, method: LocalRegionId, member: LocalReference, chain: List<LocalRegion>): Step {
         val scope = LocalTypeScope.of(model, model.parent(method)!!, supertypeMethods = true)
-        val candidates = scope.declarations.filter {
-            it.name == member.name && it.kind in setOf(LocalDeclarationKind.ATTRIBUTE, LocalDeclarationKind.FUNCTION, LocalDeclarationKind.PROCEDURE)
+        val candidates = scope.named(member.name).filter {
+            it.kind == LocalDeclarationKind.ATTRIBUTE || it.kind in CALLABLES
         }
         val outcome = when {
             candidates.isEmpty() -> LocalResolution.Undeclared

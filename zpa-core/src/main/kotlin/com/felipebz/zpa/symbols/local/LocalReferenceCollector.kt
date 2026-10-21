@@ -50,13 +50,15 @@ import com.felipebz.zpa.project.*
  * | in the `VALUES` of a single-table `INSERT`, outside a subquery | INSERT_VALUE |
  * | inside `SELECT_`/`INSERT_`/`UPDATE_`/`DELETE_`/`MERGE_EXPRESSION`, outside an `INTO_CLAUSE` | SQL_VALUE |
  * | anything else | VALUE |
+ * | first child of a `QUALIFIED_EXPRESSION` (its type mark) | TYPE |
  * | single-segment `NamedTypeRef`/`RefTypeRef` of a type use | TYPE |
  * | single-segment `AnchoredTypeRef` of a type use | ANCHOR_TYPE / ANCHOR_ROWTYPE |
  * | multi-segment type name of a type use | QUALIFIER, last segment TYPE / ANCHOR_TYPE / ANCHOR_ROWTYPE |
  *
  * A name inside SQL carries the [LocalSqlScope] of its query block or statement, whose relations can qualify it.
  *
- * Not collected: columns of `INSERT (…)` and `SET` targets; names inside
+ * Not collected: names written after an element access or call (`a(i).f`), which are members; datatypes outside the
+ * model's type uses (`CAST`, `TREAT`, `IS OF`, a `JSON_VALUE` returning type, DDL columns); columns of `INSERT (…)` and `SET` targets; names inside
  * datatypes other than the model's type uses (constraints, `CAST`); names behind a database link; the name of
  * `PRAGMA DEPRECATE`; names of a trigger heading (`WHEN`, `CALL`); `END name` trailers, which Oracle matches against the
  * unit or label without looking them up; bind and host variables; dynamic SQL text.
@@ -114,8 +116,13 @@ internal object LocalReferenceCollector {
                     reference(node, state)
                     return
                 }
-                type === PlSqlGrammar.DATATYPE || type === PlSqlGrammar.DEPRECATE_PRAGMA ||
+                type === PlSqlGrammar.DATATYPE || type === PlSqlGrammar.CUSTOM_DATATYPE || type === PlSqlGrammar.DEPRECATE_PRAGMA ||
                     type === DmlGrammar.INSERT_COLUMNS -> return
+                // Names after the first child (`a(i).f`, `a(i).m(j)`, `(x as t).m(j)`) are members, not lookups; arguments are.
+                type === PlSqlGrammar.OBJECT_REFERENCE -> {
+                    node.children.forEachIndexed { index, child -> if (index == 0) visit(child, state) else arguments(child, state) }
+                    return
+                }
                 type === PlSqlGrammar.GOTO_STATEMENT -> labelTarget(node, LocalReferenceContext.GOTO_TARGET, state)
                 type === PlSqlGrammar.EXIT_STATEMENT || type === PlSqlGrammar.CONTINUE_STATEMENT ->
                     labelTarget(node, LocalReferenceContext.LOOP_TARGET, state)
@@ -138,6 +145,10 @@ internal object LocalReferenceCollector {
                 val values = type === DmlGrammar.SINGLE_TABLE_INSERT && child.type !in NOT_VALUES
                 visit(child, if (values) next.with(inSql = false, inValues = true, sql = null) else next)
             }
+        }
+
+        private fun arguments(node: AstNode, state: State) {
+            if (node.type === PlSqlGrammar.ARGUMENTS) visit(node, state) else node.children.forEach { arguments(it, state) }
         }
 
         /**
@@ -194,6 +205,8 @@ internal object LocalReferenceCollector {
                 parent.type in CURSOR_STATEMENTS && parent.getFirstChild(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) === node ->
                     if (parent.type === PlSqlGrammar.OPEN_FOR_STATEMENT) LocalReferenceContext.OPEN_FOR_OPERAND else LocalReferenceContext.CURSOR_OPERAND
                 parent.type === PlSqlGrammar.SINGLE_EXPRESSION_CONTROL -> LocalReferenceContext.FOR_CONTROL
+                // The type mark of a qualified expression (`t(1 => 'a')`).
+                parent.type === PlSqlGrammar.QUALIFIED_EXPRESSION && first -> LocalReferenceContext.TYPE
                 state.inValues -> LocalReferenceContext.INSERT_VALUE
                 state.inSql -> LocalReferenceContext.SQL_VALUE
                 else -> LocalReferenceContext.VALUE

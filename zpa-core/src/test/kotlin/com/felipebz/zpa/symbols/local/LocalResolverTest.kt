@@ -369,6 +369,36 @@ class LocalResolverTest {
     }
 
     @Test
+    fun aUnitOfTheFileIsASchemaObject() {
+        // Standalone units and types of the file are not local declarations: the caller binds them after ProvenAbsent.
+        val source = "create type pair_t as object (a number);\n/\ncreate procedure helper is begin null; end;\n/\n" +
+            "create procedure caller is\n  v pair_t;\nbegin\n  /*A*/ helper;\nend;\n/\ncreate procedure other is begin /*S*/ null; end;\n/\n"
+        assertRule(source, "helper", "ProvenAbsent", context = CALL_STATEMENT)
+        assertRule(source, "pair_t", "ProvenAbsent", context = TYPE)
+    }
+
+    @Test
+    fun overloadsDeclaredOnBothSidesOfAReferenceAreUnsupported() {
+        // Order between overloads declared partly before and partly after the reference has no evidence.
+        val source = "create procedure partly_later is\n  procedure f(a number) is begin null; end;\n  procedure g is begin /*A*/ f(1); end;\n" +
+            "  procedure f(a date) is begin null; end;\nbegin\n  g;\nend;\n/\n"
+        // Unsupported is never wrapped, so the outcome is the same with hidden text in the deciding region.
+        for (variant in listOf(source.replace(A, ""), source.replace(A, IF))) {
+            assertThat(outcome(variant, "f", context = CALL_STATEMENT)).describedAs(variant).isEqualTo("Unsupported(OVERLOADS_PARTLY_LATER)")
+        }
+    }
+
+    @Test
+    fun aQualifiedExpressionNamesItsType() {
+        // The type mark of `t(1 => 1)` is a type, not a value.
+        assertRule(
+            "create procedure qualified_expression is\n  type t is table of number index by pls_integer;\n  v t;\nbegin\n" +
+                "  /*A*/ v := t(1 => 1, 2 => 2);\nend;\n/\ncreate procedure other is begin /*S*/ null; end;\n/\n",
+            "t", "Bound(COLLECTION_TYPE t@2)", occurrence = 1, context = TYPE
+        )
+    }
+
+    @Test
     fun forwardCursorsAreOneEntityWithTheirDefinition() {
         // A forward cursor and its definition in one block.
         assertRule(
@@ -418,6 +448,8 @@ class LocalResolverTest {
         // A variable anchors %ROWTYPE only when it is a cursor variable, which needs its type.
         assertThat(outcome("create procedure t is\n  k1 number;\n  v k1%rowtype;\nbegin\n  null;\nend;\n/\n", "k1", context = ANCHOR_ROWTYPE))
             .isEqualTo("Unsupported(KIND_IN_CONTEXT VARIABLE ANCHOR_ROWTYPE)")
+        assertThat(outcome("create procedure t(k1 sys_refcursor) is\n  v k1%rowtype;\nbegin\n  null;\nend;\n/\n", "k1", context = ANCHOR_ROWTYPE))
+            .isEqualTo("Unsupported(KIND_IN_CONTEXT PARAMETER ANCHOR_ROWTYPE)")
         // A procedure used as a value (PLS-00222), a function called as a statement (PLS-00221).
         assertThat(outcome("create procedure t is\n  x number;\n  procedure k1 is begin null; end;\nbegin\n  x := k1;\nend;\n/\n", "k1"))
             .isEqualTo("WrongKind(PROCEDURE k1@3)")
@@ -430,6 +462,12 @@ class LocalResolverTest {
         // Recovery: a broken declarative part may have held the name (the prototype's recovery hazard).
         assertThat(outcome("declare\n  pkg number;\n  ??? garbage;\nbegin\n  pkg.processar(1);\nend;\n/\n", "pkg", recovery = true))
             .startsWith("Incomplete[PARTIAL_EXTRACTION, PARSE_RECOVERY](")
+        // Substitution text in a region of the chain.
+        assertThat(outcome("create procedure t is\n  v date;\n  &more_declarations\nbegin\n  pkg.processar(v);\nend;\n/\n", "pkg"))
+            .isEqualTo("Incomplete[SUBSTITUTION](ProvenAbsent)")
+        // Recovery can leave a broken unit's subprograms at file level: they are file declarations, never bindings.
+        assertThat(outcome("create package body p is\n  ??? garbage;\n  procedure a is begin null; end;\n  procedure b is begin a; end;\nend;\n/\n", "a", recovery = true))
+            .startsWith("Incomplete[").endsWith("(ProvenAbsent)")
         // A package body whose specification is not in the file.
         assertThat(outcome("create package body p is\n  procedure a is begin b; end;\nend;\n/\n", "b"))
             .isEqualTo("Incomplete[SPECIFICATION_NOT_IN_FILE](ProvenAbsent)")
@@ -507,6 +545,7 @@ class LocalResolverTest {
               goto lbl;
               <<lbl>> loop exit lbl; continue lbl; end loop lbl;
               open rc for select 1 from dual;
+              x := json_value(j, '$' returning jt) || a(1).b || a(2).m(w) || (y as t2).m2(v2);
             exception
               when e then null;
             end;
@@ -522,7 +561,9 @@ class LocalResolverTest {
             "q QUALIFIER.s as CALL_EXPRESSION", "c QUALIFIER%rowcount as VALUE", "proc CALL_STATEMENT", "proc CALL_STATEMENT",
             "pk QUALIFIER.proc as CALL_STATEMENT", "e EXCEPTION", "col SQL_VALUE", "y VALUE", "c1 SQL_VALUE", "z SQL_VALUE",
             "e QUALIFIER.col as SQL_VALUE", "f SQL_CALL", "y VALUE", "u INSERT_VALUE", "cr CURSOR_OPERAND", "cr CURSOR_OPERAND", "y VALUE", "cr CURSOR_OPERAND", "cr FOR_CONTROL",
-            "x VALUE", "lbl GOTO_TARGET", "lbl LOOP_TARGET", "lbl LOOP_TARGET", "rc OPEN_FOR_OPERAND", "e EXCEPTION"
+            "x VALUE", "lbl GOTO_TARGET", "lbl LOOP_TARGET", "lbl LOOP_TARGET", "rc OPEN_FOR_OPERAND",
+            // A JSON_VALUE returning type is a datatype outside the model; names after an element access are members.
+            "x VALUE", "j VALUE", "a CALL_EXPRESSION", "a CALL_EXPRESSION", "w VALUE", "y VALUE", "v2 VALUE", "e EXCEPTION"
         )
         // `END lbl` is matched, not looked up: it is not a reference.
         assertThat(analysis.references.count { it.name.lookupName == "LBL" }).isEqualTo(3)

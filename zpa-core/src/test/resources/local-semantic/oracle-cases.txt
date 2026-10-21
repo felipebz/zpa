@@ -1,0 +1,1464 @@
+# The Oracle-classified comparison of the legacy symbol table: one case per row, with the references it shows
+# and the outcome the resolver gives. See LocalOracleFixtureTest for the format.
+
+case nested_block_shadowing: case_a: x → innermost each level (inner, 2001, inner, 1)
+source nested_block_shadowing
+oracle AGREES | x → innermost each level (inner, 2001, inner, 1)
+target met
+ref x VALUE 0 = Bound(VARIABLE x@5:4)
+ref x VALUE 2 = Bound(VARIABLE x@5:4)
+ref x VALUE 1 = Bound(VARIABLE x@9:6)
+ref x VALUE 3 = Bound(VARIABLE x@2:2)
+
+case parameter_and_constant_shadowing: case_a: p/c inner locals shadow IN param/constant; after block p=42 c=1
+source parameter_and_constant_shadowing
+oracle AGREES | p/c inner locals shadow IN param/constant; after block p=42 c=1
+target met
+ref p VALUE 0 = Bound(PARAMETER p@3:18)
+ref p VALUE 4 = Bound(PARAMETER p@3:18)
+ref c VALUE 3 = Bound(VARIABLE c@2:2)
+
+case duplicate_declarations: case_a: dup vars unreferenced → accepted
+source duplicate_declarations
+oracle AGREES | dup vars unreferenced → accepted
+target met
+none x 1-7
+
+case duplicate_declarations: case_b: x := 1 → PLS-00371
+source duplicate_declarations
+oracle LEGACY_ACCEPTS_ERROR | `x := 1` → PLS-00371
+target met
+ref x VALUE 0 = Duplicate(VARIABLE x@9:2, VARIABLE x@10:2)
+
+case duplicate_declarations: case_c: var+proc same name unreferenced → PLS-00305 (eager, at decl)
+source duplicate_declarations
+oracle NOT_COMPARABLE | var+proc same name unreferenced → PLS-00305 (eager, at decl)
+target not-comparable
+none x 15-21
+
+case duplicate_declarations: case_d: x(1) → PLS-00305 + PLS-00221
+source duplicate_declarations
+oracle LEGACY_ACCEPTS_ERROR | `x(1)` → PLS-00305 + PLS-00221
+target met
+ref x CALL_STATEMENT 0 = Duplicate(VARIABLE x@23:2, PROCEDURE x@24:12)
+
+case duplicate_declarations: case_e: x.x → PLS-00487 (prefix binds block var, not label)
+source duplicate_declarations
+oracle AGREES | `x.x` → PLS-00487 (prefix binds block var, not label)
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref x QUALIFIER 0 = Bound(VARIABLE x@33:4) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case declaration_order: case_a: a := b before b → PLS-00320
+source declaration_order
+oracle AGREES | `a := b` before b → PLS-00320
+target met
+ref b VALUE 0 = DeclaredLater(VARIABLE b@3:2)
+
+case declaration_order: case_b: inner a := b before inner b → PLS-00320, no fallback to outer b
+source declaration_order
+oracle LEGACY_ACCEPTS_ERROR | inner `a := b` before inner b → PLS-00320, no fallback to outer b
+target met
+ref b VALUE 1 = DeclaredLater(VARIABLE b@13:4)
+
+case declaration_order: case_c: no inner b → binds outer (a=100)
+source declaration_order
+oracle AGREES | no inner b → binds outer (a=100)
+target met
+ref b VALUE 3 = Bound(VARIABLE b@20:2)
+
+case type_declaration_order: case_a: v t before subtype t → PLS-00311
+source type_declaration_order
+oracle AGREES | `v t` before subtype t → PLS-00311
+target met
+ref t TYPE 0 = DeclaredLater(SUBTYPE t@3:10)
+
+case type_declaration_order: case_b: same with outer t → PLS-00311, no fallback
+source type_declaration_order
+oracle LEGACY_ACCEPTS_ERROR | same with outer t → PLS-00311, no fallback
+target met
+ref t TYPE 1 = DeclaredLater(SUBTYPE t@13:12)
+
+case type_declaration_order: case_c: same, v unreferenced → PLS-00311
+source type_declaration_order
+oracle LEGACY_ACCEPTS_ERROR | same, v unreferenced → PLS-00311
+target met
+ref t TYPE 2 = DeclaredLater(SUBTYPE t@25:12)
+
+case nested_subprogram_call_order: case_a: call to later sibling b_local → PLS-00313
+source nested_subprogram_call_order
+oracle AGREES | call to later sibling b_local → PLS-00313
+target met
+ref b_local CALL_STATEMENT 0 = DeclaredLater(PROCEDURE b_local@5:12)
+
+case nested_subprogram_call_order: case_b (a body): later_proc before local decl → PLS-00313, NOT standalone
+source nested_subprogram_call_order
+oracle LEGACY_ACCEPTS_ERROR | `later_proc` before local decl → PLS-00313, NOT standalone
+target met
+ref later_proc CALL_STATEMENT 0 = DeclaredLater(PROCEDURE later_proc@12:12)
+
+case nested_subprogram_call_order: case_b (main body): later_proc → local (unit invalid anyway)
+source nested_subprogram_call_order
+oracle AGREES | later_proc → local (unit invalid anyway)
+target met
+ref later_proc CALL_STATEMENT 1 = OverloadSet(PROCEDURE later_proc@12:12)
+
+case nested_subprogram_call_order: case_c: forward decl → binds local ('local later_proc')
+source nested_subprogram_call_order
+oracle AGREES | forward decl → binds local ('local later_proc')
+target met
+ref later_proc CALL_STATEMENT 2 = OverloadSet(PROCEDURE later_proc@21:12)
+
+case block_labels: case_a (outer.x,outer.x): label-qualified → outer x=1
+source block_labels
+oracle LEGACY_MISSING | label-qualified → outer x=1
+target met
+ref OUTER QUALIFIER 0 = Bound(LABEL Outer@3:4) / Bound(VARIABLE x@5:4)
+ref outer QUALIFIER 1 = Bound(LABEL Outer@3:4) / Bound(VARIABLE x@5:4)
+
+case block_labels: case_a (x): x → inner (2)
+source block_labels
+oracle AGREES | x → inner (2)
+target met
+ref x VALUE 0 = Bound(VARIABLE x@8:6)
+
+case block_labels: case_b: lp.i → FOR index (1,2)
+source block_labels
+oracle LEGACY_MISSING | `lp.i` → FOR index (1,2)
+target met
+ref lp QUALIFIER 0 = Bound(LABEL lp@17:4) / Bound(LOOP_INDEX i@18:6)
+ref i VALUE 0 = Bound(VARIABLE i@20:6)
+
+case block_labels: case_c: dup label a.x → innermost ('inner')
+source block_labels
+oracle LEGACY_MISSING | dup label `a.x` → innermost ('inner')
+target met
+ref a QUALIFIER 0 = Bound(LABEL a@33:6) / Bound(VARIABLE x@35:6)
+
+case block_labels: case_d: b1.x sibling label → PLS-00219
+source block_labels
+oracle AGREES | `b1.x` sibling label → PLS-00219
+target met
+ref b1 QUALIFIER 0 = Bound(LABEL b1@44:4) / OutOfScope(LABEL b1@44:4)
+
+case label_named_like_a_package: case_a: label pkg_a.x → block var ('label.x')
+source label_named_like_a_package
+oracle LEGACY_WRONG_BINDING | label `pkg_a.x` → block var ('label.x')
+target met
+ref pkg_a QUALIFIER 0 = Bound(LABEL pkg_a@8:4) / Bound(VARIABLE x@10:4)
+
+case label_named_like_a_package: case_b: pkg_a.y in labeled block → PLS-00302 (no pkg fallback)
+source label_named_like_a_package
+oracle LEGACY_ACCEPTS_ERROR | `pkg_a.y` in labeled block → PLS-00302 (no pkg fallback)
+target met
+ref pkg_a QUALIFIER 1 = Bound(LABEL pkg_a@18:4) / Undeclared
+
+case label_named_like_a_package: case_c: pkg_a.x after block → PLS-00219
+source label_named_like_a_package
+oracle LEGACY_ACCEPTS_ERROR | `pkg_a.x` after block → PLS-00219
+target met
+ref pkg_a QUALIFIER 2 = Bound(LABEL pkg_a@28:4) / OutOfScope(LABEL pkg_a@28:4)
+
+case subprogram_name_qualifiers: case_a (case_a.x): → proc-level x=1 ()
+source subprogram_name_qualifiers
+oracle LEGACY_WRONG_BINDING | → proc-level x=1 ()
+target met
+ref case_a QUALIFIER 0 = Bound(PROCEDURE case_a@1:28) / Bound(VARIABLE x@2:2)
+
+case subprogram_name_qualifiers: case_a (x): x → inner (2)
+source subprogram_name_qualifiers
+oracle AGREES | x → inner (2)
+target met
+ref x VALUE 0 = Bound(VARIABLE x@5:4)
+
+case subprogram_name_qualifiers: case_b: outerp.v/innerp.v/outerp.w/v/w all correct levels
+source subprogram_name_qualifiers
+oracle AGREES | outerp.v/innerp.v/outerp.w/v/w all correct levels
+target met
+ref outerp QUALIFIER 0 = Bound(PROCEDURE outerp@12:12) / Bound(PARAMETER v@12:19)
+ref innerp QUALIFIER 0 = Bound(PROCEDURE innerp@14:14) / Bound(PARAMETER v@14:21)
+ref v VALUE 0 = Bound(PARAMETER v@14:21)
+ref outerp QUALIFIER 1 = Bound(PROCEDURE outerp@12:12) / Bound(VARIABLE w@13:4)
+ref w VALUE 0 = Bound(VARIABLE w@15:6)
+
+case subprogram_name_qualifiers: case_c: p.x in p's decl init → param (5)
+source subprogram_name_qualifiers
+oracle AGREES | `p.x` in p's decl init → param (5)
+target met
+ref p QUALIFIER 0 = Bound(PROCEDURE p@27:12) / Bound(PARAMETER x@27:14)
+
+case quoted_identifiers: case_a "x": "x"→"x"@13 (=1)
+source quoted_identifiers
+oracle AGREES | `"x"`→`"x"`@13 (=1)
+target met
+ref "x" VALUE 0 = Bound(VARIABLE "x"@2:2)
+
+case quoted_identifiers: case_a x,"x": both → x@14 (=2)
+source quoted_identifiers
+oracle AGREES | both → `x`@14 (=2)
+target met
+ref x VALUE 0 = Bound(VARIABLE x@3:2)
+ref "X" VALUE 1 = Bound(VARIABLE x@3:2)
+
+case quoted_identifiers: case_b: PLS-00371 (X and "X" are the same name)
+source quoted_identifiers
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 (X and "X" are the same name)
+target met
+ref x VALUE 2 = Duplicate(VARIABLE X@9:2, VARIABLE "X"@10:2)
+
+case quoted_identifiers: case_c: "my var"≠"My Var" (3/4)
+source quoted_identifiers
+oracle AGREES | `"my var"`≠`"My Var"` (3/4)
+target met
+ref "my var" VALUE 0 = Bound(VARIABLE "my var"@16:2)
+ref "My Var" VALUE 0 = Bound(VARIABLE "My Var"@17:2)
+
+case quoted_identifiers: case_d: PLS-00201 lbl.x (label "lbl"≠LBL)
+source quoted_identifiers
+oracle AGREES | PLS-00201 `lbl.x` (label "lbl"≠LBL)
+target met
+ref lbl QUALIFIER 0 = ProvenAbsent
+
+case quoted_identifiers: case_e: lbl.x → x via <<"LBL">> (=1)
+source quoted_identifiers
+oracle LEGACY_MISSING | `lbl.x` → x via `<<"LBL">>` (=1)
+target met
+ref lbl QUALIFIER 1 = Bound(LABEL "LBL"@34:4) / Bound(VARIABLE x@36:4)
+
+case enclosing_declarations: case_a acc,p in bump: enclosing acc / outer p (acc=10)
+source enclosing_declarations
+oracle AGREES | enclosing acc / outer p (acc=10)
+target met
+ref acc VALUE 0 = Bound(VARIABLE acc@3:4)
+ref p VALUE 0 = Bound(PARAMETER p@2:19)
+
+case enclosing_declarations: case_a p in twice: inner p (twice(7)=14)
+source enclosing_declarations
+oracle AGREES | inner p (twice(7)=14)
+target met
+ref p VALUE 1 = Bound(PARAMETER p@5:19)
+
+case enclosing_declarations: case_a calls, p 19: bump/twice/outerp, outer p=5
+source enclosing_declarations
+oracle AGREES | bump/twice/outerp, outer p=5
+target met
+ref bump CALL_STATEMENT 0 = OverloadSet(PROCEDURE bump@4:14)
+ref twice CALL_EXPRESSION 0 = OverloadSet(FUNCTION twice@5:13)
+ref p VALUE 2 = Bound(PARAMETER p@2:19)
+ref outerp CALL_STATEMENT 0 = OverloadSet(PROCEDURE outerp@2:12)
+
+case anchored_types: case_a: w v%type = NUMBER(2) (VALUE_ERROR)
+source anchored_types
+oracle AGREES | `w v%type` = NUMBER(2) (VALUE_ERROR)
+target met
+ref v ANCHOR_TYPE 0 = Bound(VARIABLE v@3:2)
+
+case anchored_types: case_b: PLS-00218 (NOT NULL inherited)
+source anchored_types
+oracle AGREES | PLS-00218 (NOT NULL inherited)
+target met
+ref v ANCHOR_TYPE 1 = Bound(VARIABLE v@14:2)
+
+case anchored_types: case_c: rec.b%type = VARCHAR2(3)
+source anchored_types
+oracle AGREES | `rec.b%type` = VARCHAR2(3)
+target met
+ref rec QUALIFIER 0 = Bound(VARIABLE rec@22:2) / Field(RECORD_TYPE r_t@21:7.b)
+
+case anchored_types: case_d: PLS-00206 (r_t.b%type names a type)
+source anchored_types
+oracle LEGACY_ACCEPTS_ERROR | PLS-00206 (`r_t.b%type` names a type)
+target met
+ref r_t QUALIFIER 0 = Bound(RECORD_TYPE r_t@33:7) / WrongKind(RECORD_TYPE r_t@33:7)
+
+case anchored_types: case_e table column cursor: tbl = table, tbl.a = column, c = cursor; x NUMBER(2)
+source anchored_types
+oracle AGREES | tbl = table, tbl.a = column, c = cursor; x NUMBER(2)
+target met
+ref tbl ANCHOR_ROWTYPE 0 = ProvenAbsent
+ref tbl QUALIFIER 0 = ProvenAbsent
+ref c ANCHOR_ROWTYPE 0 = Bound(CURSOR c@42:9)
+
+case anchored_types: case_e r.a, cr.extra: rowtype fields
+source anchored_types
+oracle NOT_COMPARABLE | rowtype fields
+target not-comparable
+ref r QUALIFIER 0 = Bound(VARIABLE r@40:2) / Unsupported(MEMBER_NEEDS_TYPING)
+ref cr QUALIFIER 0 = Bound(VARIABLE cr@43:2) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case anchored_types: case_f: tbl.a column %TYPE OK
+source anchored_types
+oracle AGREES | tbl.a column %TYPE OK
+target met
+ref tbl QUALIFIER 1 = ProvenAbsent
+
+case locals_named_like_tables: case_a: PLS-00310 (local tb captures the name, so not a table)
+source locals_named_like_tables
+oracle LEGACY_ACCEPTS_ERROR | PLS-00310 (local tb captures the name, so not a table)
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref tb ANCHOR_ROWTYPE 0 = Unsupported(KIND_IN_CONTEXT VARIABLE ANCHOR_ROWTYPE)
+
+case locals_named_like_tables: case_b: tb.a → local record field (VARCHAR2(10))
+source locals_named_like_tables
+oracle AGREES | tb.a → local record field (VARCHAR2(10))
+target met
+ref tb QUALIFIER 0 = Bound(VARIABLE tb@11:2) / Field(RECORD_TYPE rec_t@10:7.a)
+
+case locals_named_like_tables: case_c: PLS-00302 component 'A' (no fallback to the column)
+source locals_named_like_tables
+oracle LEGACY_ACCEPTS_ERROR | PLS-00302 component 'A' (no fallback to the column)
+target met
+ref tb QUALIFIER 1 = Bound(VARIABLE tb@19:2) / Undeclared
+
+case package_subtypes_named_like_predefined_types: pkg_p_ specs: all subtype…
+source package_subtypes_named_like_predefined_types
+oracle AGREES | all `subtype integer/date/varchar2/number/pls_integer/boolean/string/"DATE"/"NUMBER"` accepted
+target met
+ref date TYPE 0 = ProvenAbsent
+
+case package_subtypes_named_like_predefined_types: pkg_p_integer g integer: integer → package subtype (DATE; g printed 2020-02-02)
+source package_subtypes_named_like_predefined_types
+oracle LEGACY_WRONG_BINDING | integer → package subtype (DATE; g printed 2020-02-02)
+target met
+ref integer TYPE 0 = Bound(SUBTYPE integer@2:10)
+
+case package_subtypes_named_like_predefined_types: pkg_p_qnumber g "number": → package subtype (DATE)
+source package_subtypes_named_like_predefined_types
+oracle AGREES | → package subtype (DATE)
+target met
+ref "NUMBER" TYPE 5 = Bound(SUBTYPE "NUMBER"@35:10)
+
+case package_subtypes_named_like_predefined_types: pkg_p_qnumber h number: → package subtype "NUMBER" (DATE), by analogy with a related case h
+source package_subtypes_named_like_predefined_types
+oracle LEGACY_WRONG_BINDING | → package subtype "NUMBER" (DATE), by analogy with a related case `h`
+target met
+ref number TYPE 6 = Bound(SUBTYPE "NUMBER"@35:10)
+
+case package_subtypes_named_like_predefined_types: case_a v pkg_p_integer.integer: → package subtype (DATE; v(year)=2026)
+source package_subtypes_named_like_predefined_types
+oracle LEGACY_MISSING | → package subtype (DATE; v(year)=2026)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_p_integer QUALIFIER 0 = ProvenAbsent
+
+case package_subtypes_named_like_predefined_types: case_a pkg_p_integer.g: → package var G
+source package_subtypes_named_like_predefined_types
+oracle LEGACY_MISSING | → package var G
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_p_integer QUALIFIER 1 = ProvenAbsent
+
+case package_subtypes_named_like_predefined_types: case_a w integer: STANDARD.INTEGER (w=5)
+source package_subtypes_named_like_predefined_types
+oracle AGREES | STANDARD.INTEGER (w=5)
+target met
+ref w VALUE 0 = Bound(VARIABLE w@42:2)
+
+case locals_shadowing_predefined_types: case_a v integer: local subtype (DATE, v=2001)
+source locals_shadowing_predefined_types
+oracle LEGACY_WRONG_BINDING | local subtype (DATE, v=2001)
+target met
+ref integer TYPE 0 = Bound(SUBTYPE integer@2:10)
+
+case locals_shadowing_predefined_types: case_a p integer: local subtype (DATE, f=2002)
+source locals_shadowing_predefined_types
+oracle AGREES | local subtype (DATE, f=2002)
+target met
+ref p VALUE 0 = Bound(PARAMETER p@5:13)
+
+case locals_shadowing_predefined_types: case_a w standard.integer: STANDARD.INTEGER (w=5)
+source locals_shadowing_predefined_types
+oracle AGREES | STANDARD.INTEGER (w=5)
+target met
+ref standard QUALIFIER 0 = ProvenAbsent
+
+case locals_shadowing_predefined_types: case_b: v pls_integer → local subtype VARCHAR2(10) (v=abc)
+source locals_shadowing_predefined_types
+oracle LEGACY_WRONG_BINDING | `v pls_integer` → local subtype VARCHAR2(10) (v=abc)
+target met
+ref pls_integer TYPE 0 = Bound(SUBTYPE pls_integer@11:10)
+
+case locals_shadowing_predefined_types: case_c: subtype number is date compiles
+source locals_shadowing_predefined_types
+oracle AGREES | `subtype number is date` compiles
+target met
+ref date TYPE 1 = ProvenAbsent
+
+case locals_shadowing_predefined_types: case_d: PLS-00488 (variable integer hides the type)
+source locals_shadowing_predefined_types
+oracle AGREES | PLS-00488 (variable `integer` hides the type)
+target met
+ref integer TYPE 2 = WrongKind(VARIABLE integer@24:2)
+
+case locals_shadowing_predefined_types: case_e v2: inner subtype integer = VARCHAR2(5) (v2=abc)
+source locals_shadowing_predefined_types
+oracle LEGACY_WRONG_BINDING | inner subtype integer = VARCHAR2(5) (v2=abc)
+target met
+ref integer TYPE 4 = Bound(SUBTYPE integer@34:12)
+
+case locals_shadowing_predefined_types: case_e v1,v3: STANDARD integer (v3=7, v1=1)
+source locals_shadowing_predefined_types
+oracle AGREES | STANDARD integer (v3=7, v1=1)
+target met
+ref v3 VALUE 0 = Bound(VARIABLE v3@40:4)
+ref v1 VALUE 0 = Bound(VARIABLE v1@31:2)
+
+case locals_shadowing_predefined_types: case_f: unquoted number → local subtype "NUMBER" (DATE, year 2003)
+source locals_shadowing_predefined_types
+oracle LEGACY_WRONG_BINDING | unquoted `number` → local subtype "NUMBER" (DATE, year 2003)
+target met
+ref number TYPE 1 = Bound(SUBTYPE "NUMBER"@47:10)
+
+case label_scope: case_a: PLS-00219 (later label pkg_b hides the package)
+source label_scope
+oracle LEGACY_ACCEPTS_ERROR | PLS-00219 (later label pkg_b hides the package)
+target met
+ref pkg_b QUALIFIER 0 = Bound(LABEL pkg_b@8:4) / OutOfScope(LABEL pkg_b@8:4)
+
+case label_scope: case_b: PLS-00219 (label b hides record b after the label)
+source label_scope
+oracle LEGACY_ACCEPTS_ERROR | PLS-00219 (label b hides record b after the label)
+target met
+ref b QUALIFIER 1 = Bound(LABEL b@24:6) / OutOfScope(LABEL b@24:6)
+
+case label_scope: case_c: PLS-00219 (and before the label)
+source label_scope
+oracle LEGACY_ACCEPTS_ERROR | PLS-00219 (and before the label)
+target met
+ref b QUALIFIER 3 = Bound(LABEL b@43:6) / OutOfScope(LABEL b@43:6)
+
+case label_scope: case_b,c b.x = 31 49: outer b record (statement outside the inner block; not reported)
+source label_scope
+oracle AGREES | outer b record (statement outside the inner block; not reported)
+target met
+ref b QUALIFIER 0 = Bound(VARIABLE b@18:2) / Field(RECORD_TYPE r_t@17:7.x)
+ref b QUALIFIER 2 = Bound(VARIABLE b@36:2) / Field(RECORD_TYPE r_t@35:7.x)
+
+case label_scope: case_d: PLS-00371 duplicate label lab
+source label_scope
+oracle AGREES | PLS-00371 duplicate label lab
+target met
+ref lab QUALIFIER 0 = Duplicate(LABEL lab@54:4, LABEL lab@60:4)
+
+case label_scope: case_e: OK, labels never referenced
+source label_scope
+oracle AGREES | OK, labels never referenced
+target met
+none lab 68-81
+
+case outer_and_later_inner_subprograms: case_a: PLS-00313 (inner nb declared later; no fallback to outer)
+source outer_and_later_inner_subprograms
+oracle LEGACY_ACCEPTS_ERROR | PLS-00313 (inner nb declared later; no fallback to outer)
+target met
+ref nb CALL_STATEMENT 0 = DeclaredLater(PROCEDURE nb@6:14)
+
+case outer_and_later_inner_subprograms: case_b: outer nb ("outer nb")
+source outer_and_later_inner_subprograms
+oracle AGREES | outer nb ("outer nb")
+target met
+ref nb CALL_STATEMENT 1 = OverloadSet(PROCEDURE nb@13:12)
+ref a CALL_STATEMENT 1 = OverloadSet(PROCEDURE a@16:14)
+
+case outer_and_later_inner_subprograms: case_c: PLS-00320 (c%rowtype before cursor c)
+source outer_and_later_inner_subprograms
+oracle AGREES | PLS-00320 (c%rowtype before cursor c)
+target met
+ref c ANCHOR_ROWTYPE 0 = DeclaredLater(CURSOR c@24:9)
+
+case predefined_type_named_subtypes: pkg_p_date g date: package subtype (NUMBER; g=5)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | package subtype (NUMBER; g=5)
+target met
+ref date TYPE 0 = Bound(SUBTYPE date@2:10)
+
+case predefined_type_named_subtypes: pkg_p_varchar2b g varchar2: package subtype (NUMBER; g=7)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | package subtype (NUMBER; g=7)
+target met
+ref varchar2 TYPE 1 = Bound(SUBTYPE varchar2@12:10)
+
+case predefined_type_named_subtypes: pkg_p_varchar2 g varchar2(10) = abc: spec compiled; no runtime evidence
+source predefined_type_named_subtypes
+oracle NOT_COMPARABLE | spec compiled; no runtime evidence
+target not-comparable
+ref varchar2 TYPE 0 = Bound(SUBTYPE varchar2@7:10)
+
+case predefined_type_named_subtypes: pkg_p_number g number: package subtype (DATE; 2004)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | package subtype (DATE; 2004)
+target met
+ref number TYPE 3 = Bound(SUBTYPE number@17:10)
+
+case predefined_type_named_subtypes: pkg_p_qnumber h number: subtype "NUMBER" (DATE; 2005)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | subtype "NUMBER" (DATE; 2005)
+target met
+ref number TYPE 4 = Bound(SUBTYPE "NUMBER"@22:10)
+
+case predefined_type_named_subtypes: case_a a,b,c qualified subtypes: pkg_p_date.date = NUMBER, pkg_p_varchar2b.varchar2 = NUMBER,…
+source predefined_type_named_subtypes
+oracle LEGACY_MISSING | pkg_p_date.date = NUMBER, pkg_p_varchar2b.varchar2 = NUMBER, pkg_p_number.number = DATE
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_p_date QUALIFIER 0 = ProvenAbsent
+ref pkg_p_varchar2b QUALIFIER 0 = ProvenAbsent
+ref pkg_p_number QUALIFIER 0 = ProvenAbsent
+
+case predefined_type_named_subtypes: case_a pkg.g refs: → package vars G, G, G, H
+source predefined_type_named_subtypes
+oracle LEGACY_MISSING | → package vars G, G, G, H
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_p_date QUALIFIER 1 = ProvenAbsent
+ref pkg_p_varchar2b QUALIFIER 1 = ProvenAbsent
+ref pkg_p_number QUALIFIER 1 = ProvenAbsent
+ref pkg_p_qnumber QUALIFIER 0 = ProvenAbsent
+
+case predefined_type_named_subtypes: case_a d,e: STANDARD date/number (2007, 9)
+source predefined_type_named_subtypes
+oracle AGREES | STANDARD date/number (2007, 9)
+target met
+ref date TYPE 3 = ProvenAbsent
+ref number TYPE 5 = ProvenAbsent
+
+case predefined_type_named_subtypes: case_b v: local subtype number = DATE (2008)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | local subtype number = DATE (2008)
+target met
+ref number TYPE 6 = Bound(SUBTYPE number@37:10)
+
+case predefined_type_named_subtypes: case_b w standard.number: STANDARD.NUMBER (w=3)
+source predefined_type_named_subtypes
+oracle AGREES | STANDARD.NUMBER (w=3)
+target met
+ref standard QUALIFIER 0 = ProvenAbsent
+
+case predefined_type_named_subtypes: case_c: v date → local subtype NUMBER (v=5)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | `v date` → local subtype NUMBER (v=5)
+target met
+ref date TYPE 5 = Bound(SUBTYPE date@45:10)
+
+case predefined_type_named_subtypes: case_d: v varchar2 → local subtype NUMBER (v=11)
+source predefined_type_named_subtypes
+oracle LEGACY_WRONG_BINDING | `v varchar2` → local subtype NUMBER (v=11)
+target met
+ref varchar2 TYPE 2 = Bound(SUBTYPE varchar2@52:10)
+
+case predefined_type_named_subtypes: case_e: p number → local subtype DATE (accepts sysdate)
+source predefined_type_named_subtypes
+oracle refs | `p number` → local subtype DATE (accepts sysdate)
+target met
+ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@60:12)
+ref p VALUE 0 = Bound(PARAMETER p@60:14)
+
+case predefined_type_named_subtypes: case_f: PLS-00382 (v is DATE, so := 5 is wrong)
+source predefined_type_named_subtypes
+oracle LEGACY_ACCEPTS_ERROR | PLS-00382 (v is DATE, so `:= 5` is wrong)
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref number TYPE 10 = Bound(SUBTYPE number@66:10)
+
+case predefined_type_named_subtypes: case_g: standard.date / standard.varchar2(5) OK (2009, ab)
+source predefined_type_named_subtypes
+oracle AGREES | standard.date / standard.varchar2(5) OK (2009, ab)
+target met
+ref standard QUALIFIER 1 = ProvenAbsent
+ref standard QUALIFIER 2 = ProvenAbsent
+
+case overloads_by_type_family: case_a f(1),f(1.5),f(n),f(1 1): f(number) printed
+source overloads_by_type_family
+oracle AGREES | f(number) printed
+target met
+ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+
+case overloads_by_type_family: case_a f(sysdate),f(d),f(date lit),f(d 1): f(date) = F
+source overloads_by_type_family
+oracle LEGACY_WRONG_BINDING | f(date) = F
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+
+case overloads_by_type_family: case_a f( a ),f(to_char(1)): f(varchar2) = F
+source overloads_by_type_family
+oracle LEGACY_WRONG_BINDING | f(varchar2) = F
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
+
+case overloads_by_type_family: case_b f(null): PLS-00307
+source overloads_by_type_family
+oracle LEGACY_ACCEPTS_ERROR | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 10 = OverloadSet(PROCEDURE f@14:12, PROCEDURE f@15:12, PROCEDURE f@16:12)
+
+case overloads_by_type_family: case_c f(systimestamp): PLS-00307
+source overloads_by_type_family
+oracle LEGACY_ACCEPTS_ERROR | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 11 = OverloadSet(PROCEDURE f@22:12, PROCEDURE f@23:12, PROCEDURE f@24:12)
+
+case overloads_by_type_family: case_d f( 2020 01 01 ): PLS-00307
+source overloads_by_type_family
+oracle LEGACY_ACCEPTS_ERROR | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 12 = OverloadSet(PROCEDURE f@30:12, PROCEDURE f@31:12)
+
+case overloads_by_parameter_name_and_count: case_a f(a= 1): f(a) = F
+source overloads_by_parameter_name_and_count
+oracle AGREES | f(a) = F
+target met
+ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@2:12, PROCEDURE f@3:12)
+
+case overloads_by_parameter_name_and_count: case_a f(b= 2): f(b) = F
+source overloads_by_parameter_name_and_count
+oracle LEGACY_WRONG_BINDING | f(b) = F
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 1 = OverloadSet(PROCEDURE f@2:12, PROCEDURE f@3:12)
+
+case overloads_by_parameter_name_and_count: case_b f(1): PLS-00307
+source overloads_by_parameter_name_and_count
+oracle LEGACY_ACCEPTS_ERROR | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@9:12, PROCEDURE f@10:12)
+
+case overloads_by_parameter_name_and_count: case_c f(1): f(a) = F
+source overloads_by_parameter_name_and_count
+oracle AGREES | f(a) = F
+target met
+ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@16:12, PROCEDURE f@17:12)
+
+case overloads_by_parameter_name_and_count: case_c f(1,2), f(a= 1,b= 2): f(a,b) = F
+source overloads_by_parameter_name_and_count
+oracle LEGACY_WRONG_BINDING | f(a,b) = F
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 4 = OverloadSet(PROCEDURE f@16:12, PROCEDURE f@17:12)
+
+case overloads_by_parameter_name_and_count: case_d f(1,2): f(a,b default) = F
+source overloads_by_parameter_name_and_count
+oracle LEGACY_WRONG_BINDING | f(a,b default) = F
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 6 = OverloadSet(PROCEDURE f@23:12, PROCEDURE f@24:12)
+
+case overloads_by_parameter_name_and_count: case_e f(1): PLS-00307
+source overloads_by_parameter_name_and_count
+oracle LEGACY_ACCEPTS_ERROR | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 7 = OverloadSet(PROCEDURE f@30:12, PROCEDURE f@31:12)
+
+case recursion_and_forward_declarations: case_a fact recursion: fact(5)=120
+source recursion_and_forward_declarations
+oracle AGREES | fact(5)=120
+target met
+ref fact CALL_EXPRESSION 0 = OverloadSet(FUNCTION fact@2:11)
+ref fact CALL_EXPRESSION 1 = OverloadSet(FUNCTION fact@2:11)
+
+case recursion_and_forward_declarations: case_a is_odd(n 1) in is_even: OK, executes is_odd body
+source recursion_and_forward_declarations
+oracle AGREES | OK, executes is_odd body
+target met
+ref is_odd CALL_EXPRESSION 0 = OverloadSet(FUNCTION is_odd@5:11)
+
+case recursion_and_forward_declarations: case_a is_even calls: OK
+source recursion_and_forward_declarations
+oracle AGREES | OK
+target met
+ref is_even CALL_EXPRESSION 0 = OverloadSet(FUNCTION is_even@4:11)
+ref is_even CALL_EXPRESSION 1 = OverloadSet(FUNCTION is_even@4:11)
+
+case recursion_and_forward_declarations: case_b is_odd2 before decl: PLS-00313
+source recursion_and_forward_declarations
+oracle AGREES | PLS-00313
+target met
+ref is_odd2 CALL_EXPRESSION 0 = DeclaredLater(FUNCTION is_odd2@12:11)
+
+case recursion_and_forward_declarations: case_b is_even in is_odd2: binds IS_EVEN
+source recursion_and_forward_declarations
+oracle AGREES | binds IS_EVEN
+target met
+ref is_even CALL_EXPRESSION 2 = OverloadSet(FUNCTION is_even@11:11)
+
+case recursion_and_forward_declarations: case_c f(1), dup bodies: PLS-00305
+source recursion_and_forward_declarations
+oracle LEGACY_ACCEPTS_ERROR | PLS-00305
+target met
+ref f CALL_STATEMENT 0 = Duplicate(PROCEDURE f@18:12, PROCEDURE f@19:12, PROCEDURE f@20:12)
+
+case local_and_package_subprograms: pk_s.caller sp pk_s.sp: nested sp; package sp
+source local_and_package_subprograms
+oracle AGREES | nested sp; package sp
+target met
+ref sp CALL_STATEMENT 0 = OverloadSet(PROCEDURE sp@12:14)
+ref pk_s QUALIFIER 0 = Bound(PACKAGE_BODY pk_s@9:31) / OverloadSet(PROCEDURE sp@10:12)
+
+case local_and_package_subprograms: pk_s.caller2 sp: package member (not standalone)
+source local_and_package_subprograms
+oracle AGREES | package member (not standalone)
+target met
+ref sp CALL_STATEMENT 1 = OverloadSet(PROCEDURE sp@10:12)
+
+case local_and_package_subprograms: case_a sp: local sp
+source local_and_package_subprograms
+oracle AGREES | local sp
+target met
+ref sp CALL_STATEMENT 2 = OverloadSet(PROCEDURE sp@23:12)
+
+case local_and_package_subprograms: case_a pk_s.sp, pk_s.caller, pk_s.caller2: package members (printed)
+source local_and_package_subprograms
+oracle LEGACY_MISSING | package members (printed)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pk_s QUALIFIER 1 = ProvenAbsent
+
+case local_and_package_subprograms: case_b user.sp: standalone (dynamic SQL)
+source local_and_package_subprograms
+oracle NOT_COMPARABLE | standalone (dynamic SQL)
+target not-comparable
+none sp 29-29
+
+case local_and_package_subprograms: case_c sp with var sp: PLS-00221
+source local_and_package_subprograms
+oracle LEGACY_ACCEPTS_ERROR | PLS-00221
+target met
+ref sp CALL_STATEMENT 3 = WrongKind(VARIABLE sp@34:2)
+
+case local_overloads_and_outer_subprograms: case_d pk_n.run f(1): nested f(varchar2)
+source local_overloads_and_outer_subprograms
+oracle AGREES | nested f(varchar2)
+target met
+ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@9:14)
+
+case local_overloads_and_outer_subprograms: case_d pk_n.f(1) in run: pk_n.f(number)
+source local_overloads_and_outer_subprograms
+oracle AGREES | pk_n.f(number)
+target met
+ref pk_n QUALIFIER 0 = Bound(PACKAGE_BODY pk_n@6:31) / OverloadSet(PROCEDURE f@7:12)
+
+case local_overloads_and_outer_subprograms: case_d pk_n.run call: executes pk_n.run
+source local_overloads_and_outer_subprograms
+oracle LEGACY_MISSING | executes pk_n.run
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pk_n QUALIFIER 1 = ProvenAbsent
+
+case local_overloads_and_outer_subprograms: case_a f(sysdate): inner f(date)
+source local_overloads_and_outer_subprograms
+oracle AGREES | inner f(date)
+target met
+ref f CALL_STATEMENT 1 = OverloadSet(PROCEDURE f@20:14)
+
+case local_overloads_and_outer_subprograms: case_b f(1): PLS-00306 (inner hides outer)
+source local_overloads_and_outer_subprograms
+oracle LEGACY_ACCEPTS_ERROR | PLS-00306 (inner hides outer)
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@30:14)
+
+case local_overloads_and_outer_subprograms: case_c f(1): inner f(varchar2)
+source local_overloads_and_outer_subprograms
+oracle AGREES | inner f(varchar2)
+target met
+ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@40:14)
+
+case local_overloads_and_outer_subprograms: case_e f(1) with var f: PLS-00221
+source local_overloads_and_outer_subprograms
+oracle LEGACY_ACCEPTS_ERROR | PLS-00221
+target met
+ref f CALL_STATEMENT 4 = WrongKind(VARIABLE f@55:4)
+
+case local_overloads_and_outer_subprograms: case_f case_f.f(1): outer f(number) = F
+source local_overloads_and_outer_subprograms
+oracle LEGACY_WRONG_BINDING | outer f(number) = F
+target met
+ref case_f QUALIFIER 0 = Bound(PROCEDURE case_f@61:28) / OverloadSet(PROCEDURE f@62:12)
+
+case local_overload_and_standalone_subprogram: case_a f_local(1): local f_local(varchar2)
+source local_overload_and_standalone_subprogram
+oracle AGREES | local f_local(varchar2)
+target met
+ref f_local CALL_STATEMENT 0 = OverloadSet(PROCEDURE f_local@4:12)
+
+case local_overload_and_standalone_subprogram: case_b f_local(1): PLS-00306 (local hides standalone)
+source local_overload_and_standalone_subprogram
+oracle LEGACY_ACCEPTS_ERROR | PLS-00306 (local hides standalone)
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref f_local CALL_STATEMENT 1 = OverloadSet(PROCEDURE f_local@10:12)
+
+case cursor_parameters: case_a x in cursor query outer x c v: param x (1); outer x=99
+source cursor_parameters
+oracle AGREES | param x (1); outer x=99
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref x SQL_VALUE 0 = SqlColumnOrLocal(CURSOR_PARAMETER x@4:11)
+ref x VALUE 0 = Bound(VARIABLE x@2:2)
+
+case cursor_parameters: case_b dummy in cursor sql: DUAL.DUMMY column wins ('X')
+source cursor_parameters
+oracle LEGACY_WRONG_BINDING | DUAL.DUMMY column wins ('X')
+target met
+ref dummy SQL_VALUE 0 = SqlColumnOrLocal(CURSOR_PARAMETER dummy@12:11)
+
+case cursor_parameters: case_c cp outside cursor: PLS-00201
+source cursor_parameters
+oracle AGREES | PLS-00201
+target met
+ref cp VALUE 0 = ProvenAbsent
+ref cp SQL_VALUE 0 = SqlColumnOrLocal(CURSOR_PARAMETER cp@19:11)
+
+case cursor_parameters: case_d param default, for r in c(7): a=5, r.a=7
+source cursor_parameters
+oracle AGREES | a=5, r.a=7
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref a SQL_VALUE 0 = SqlColumnOrLocal(CURSOR_PARAMETER a@26:11)
+ref c FOR_CONTROL 0 = Bound(CURSOR c@26:9)
+ref r QUALIFIER 0 = Bound(LOOP_INDEX r@30:6) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case for_loop_index_scope: case_a loop i after loop i: index (numeric) / outer 'outer'
+source for_loop_index_scope
+oracle AGREES | index (numeric) / outer 'outer'
+target met
+ref i VALUE 0 = Bound(LOOP_INDEX i@4:6)
+ref i VALUE 1 = Bound(VARIABLE i@2:2)
+
+case for_loop_index_scope: case_b j after loop: PLS-00201
+source for_loop_index_scope
+oracle AGREES | PLS-00201
+target met
+ref j VALUE 0 = ProvenAbsent
+
+case for_loop_index_scope: case_c i = 5: PLS-00363 (read-only, not name-res)
+source for_loop_index_scope
+oracle AGREES | PLS-00363 (read-only, not name-res)
+target met
+ref i VALUE 2 = Bound(LOOP_INDEX i@18:6)
+
+case for_loop_index_scope: case_d inner r.a: inner r (2)
+source for_loop_index_scope
+oracle AGREES | inner r (2)
+target met
+ref r QUALIFIER 0 = Bound(LOOP_INDEX r@27:8) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case for_loop_index_scope: case_d o.r.a: label-qualified outer R (1)
+source for_loop_index_scope
+oracle LEGACY_MISSING | label-qualified outer R (1)
+target met
+ref o QUALIFIER 0 = Bound(LABEL o@25:4) / Bound(LOOP_INDEX r@26:6) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case for_loop_index_scope: case_e r.a after r: loop record / outer 42
+source for_loop_index_scope
+oracle AGREES | loop record / outer 42
+target met
+ref r QUALIFIER 1 = Bound(LOOP_INDEX r@36:6) / Unsupported(MEMBER_NEEDS_TYPING)
+ref r VALUE 0 = Bound(VARIABLE r@34:2)
+
+case for_loop_index_scope: case_f for k in 1..i: outer i
+source for_loop_index_scope
+oracle AGREES | outer i
+target met
+ref i VALUE 3 = Bound(VARIABLE i@43:2)
+
+case for_loop_index_scope: case_f for i in i..i 1: bounds see index itself (ORA-06502, per a related case)
+source for_loop_index_scope
+oracle AGREES | bounds see index itself (ORA-06502, per a related case)
+target met
+ref i VALUE 4 = Bound(LOOP_INDEX i@48:6)
+
+case for_loop_bounds: case_a for i in i..i 1: bounds = index (ORA-06502)
+source for_loop_bounds
+oracle AGREES | bounds = index (ORA-06502)
+target met
+ref i VALUE 0 = Bound(LOOP_INDEX i@4:6)
+
+case for_loop_bounds: case_b for i in 1..i: compiles; bound = index
+source for_loop_bounds
+oracle AGREES | compiles; bound = index
+target met
+ref i VALUE 3 = Bound(LOOP_INDEX i@11:6)
+
+case for_loop_bounds: case_c for i in 1..i: bound = index (ORA-06502)
+source for_loop_bounds
+oracle AGREES | bound = index (ORA-06502)
+target met
+ref i VALUE 5 = Bound(LOOP_INDEX i@19:6)
+
+case for_loop_bounds: case_d connect by level = i: outer i=2
+source for_loop_bounds
+oracle AGREES | outer i=2
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref i SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE i@25:2)
+ref r QUALIFIER 0 = Bound(LOOP_INDEX r@27:6) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case exception_handler_scope: case_a: handler x → block local x ('loc')
+source exception_handler_scope
+oracle AGREES | handler `x` → block local x ('loc')
+target met
+ref x VALUE 0 = Bound(VARIABLE x@4:4)
+
+case exception_handler_scope: case_b raise e: inner e (not caught by outer when e)
+source exception_handler_scope
+oracle AGREES | inner e (not caught by outer `when e`)
+target met
+ref e EXCEPTION 0 = Bound(EXCEPTION e@15:4)
+
+case exception_handler_scope: case_b when e: outer e
+source exception_handler_scope
+oracle AGREES | outer e
+target met
+ref e EXCEPTION 1 = Bound(EXCEPTION e@12:2)
+
+case exception_handler_scope: case_c no_data_found: local exception shadows STANDARD (handler + raise)
+source exception_handler_scope
+oracle AGREES | local exception shadows STANDARD (handler + raise)
+target met
+ref no_data_found EXCEPTION 0 = Bound(EXCEPTION no_data_found@25:2)
+ref no_data_found EXCEPTION 1 = Bound(EXCEPTION no_data_found@25:2)
+
+case exception_handler_scope: case_c standard.no_data_found: binds STANDARD exception
+source exception_handler_scope
+oracle NOT_COMPARABLE | binds STANDARD exception
+target not-comparable
+ref standard QUALIFIER 0 = ProvenAbsent
+ref standard QUALIFIER 1 = ProvenAbsent
+
+case exception_handler_scope: case_d: PLS-00201 'X'
+source exception_handler_scope
+oracle AGREES | PLS-00201 'X'
+target met
+ref x VALUE 1 = ProvenAbsent
+
+case package_specification_and_body: pk_ok: b → spec-declared B (body def later), OK
+source package_specification_and_body
+oracle AGREES | `b` → spec-declared B (body def later), OK
+target met
+ref b CALL_STATEMENT 0 = OverloadSet(PROCEDURE b@8:12)
+
+case package_specification_and_body: pk_bad: PLS-00313 'C'
+source package_specification_and_body
+oracle AGREES | PLS-00313 'C'
+target met
+ref c CALL_STATEMENT 0 = DeclaredLater(PROCEDURE c@17:12)
+
+case package_specification_and_body: pk_dup: PLS-00371 'X' (spec x + body x)
+source package_specification_and_body
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 'X' (spec x + body x)
+target met
+ref x VALUE 0 = Duplicate(VARIABLE x@21:2, VARIABLE x@26:2)
+
+case package_specification_and_body: pk_ord: PLS-00320 (c2 before decl)
+source package_specification_and_body
+oracle AGREES | PLS-00320 (c2 before decl)
+target met
+ref c2 VALUE 0 = DeclaredLater(VARIABLE c2@32:2)
+
+case package_specification_and_body: pk_bord: PLS-00320 (v2 before decl)
+source package_specification_and_body
+oracle AGREES | PLS-00320 (v2 before decl)
+target met
+ref v2 VALUE 0 = DeclaredLater(VARIABLE v2@55:2)
+
+case package_specification_and_body: pk_q: pk_q.g → private g; pk_q.x → spec x; x → local
+source package_specification_and_body
+oracle AGREES | pk_q.g → private g; pk_q.x → spec x; x → local
+target met
+ref pk_q QUALIFIER 0 = Bound(PACKAGE_BODY pk_q@40:31) / Bound(VARIABLE g@41:2)
+ref pk_q QUALIFIER 1 = Bound(PACKAGE_BODY pk_q@40:31) / Bound(VARIABLE x@36:2)
+ref x VALUE 1 = Bound(VARIABLE x@43:4)
+
+case package_specification_and_body: case_a: pk_ok.a / pk_q.show → package procs (ran)
+source package_specification_and_body
+oracle LEGACY_MISSING | pk_ok.a / pk_q.show → package procs (ran)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pk_ok QUALIFIER 0 = ProvenAbsent
+ref pk_q QUALIFIER 2 = ProvenAbsent
+
+case sql_and_plsql_scope: case_a where x = x: both sides = column (3 rows)
+source sql_and_plsql_scope
+oracle LEGACY_WRONG_BINDING | both sides = column (3 rows)
+target met
+ref x SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE x@7:2)
+ref x SQL_VALUE 1 = SqlColumnOrLocal(VARIABLE x@7:2)
+
+case sql_and_plsql_scope: case_a where x = x2: x column; x2 variable (1 row)
+source sql_and_plsql_scope
+oracle LEGACY_WRONG_BINDING | x column; x2 variable (1 row)
+target met
+ref x SQL_VALUE 2 = SqlColumnOrLocal(VARIABLE x@7:2)
+ref x2 SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE x2@8:2)
+
+case sql_and_plsql_scope: case_b: blk.x → block variable x (1 row)
+source sql_and_plsql_scope
+oracle LEGACY_MISSING | `blk.x` → block variable x (1 row)
+target met
+ref blk QUALIFIER 0 = Bound(LABEL blk@20:4) / Bound(VARIABLE x@22:4)
+
+case sql_and_plsql_scope: case_b emp.x: column
+source sql_and_plsql_scope
+oracle AGREES | column
+target met
+ref emp QUALIFIER 0 = SqlRelation
+
+case sql_and_plsql_scope: case_c: x column; case_c.x variable
+source sql_and_plsql_scope
+oracle LEGACY_WRONG_BINDING | `x` column; `case_c.x` variable
+target met
+ref x SQL_VALUE 3 = SqlColumnOrLocal(VARIABLE x@30:2)
+ref case_c QUALIFIER 0 = Bound(PROCEDURE case_c@29:28) / Bound(VARIABLE x@30:2)
+
+case sql_and_plsql_scope: case_d insert column list: (x, name) = target columns
+source sql_and_plsql_scope
+oracle LEGACY_WRONG_BINDING | `(x, name)` = target columns
+target met
+contexts x 42 = INSERT_VALUE
+
+case sql_and_plsql_scope: case_d values: values (x, name) → locals
+source sql_and_plsql_scope
+oracle AGREES | `values (x, name)` → locals
+target met
+ref x INSERT_VALUE 0 = Bound(VARIABLE x@38:2)
+ref name INSERT_VALUE 0 = Bound(VARIABLE name@40:2)
+
+case sql_and_plsql_scope: case_d where select list: columns (count=1; select x → 1)
+source sql_and_plsql_scope
+oracle LEGACY_WRONG_BINDING | columns (count=1; select x → 1)
+target met
+ref x SQL_VALUE 4 = SqlColumnOrLocal(VARIABLE x@38:2)
+ref name SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE name@40:2)
+ref x SQL_VALUE 5 = SqlColumnOrLocal(VARIABLE x@38:2)
+ref x SQL_VALUE 6 = SqlColumnOrLocal(VARIABLE x@38:2)
+
+case sql_and_plsql_scope: case_e: PLS-00231 local fn F in SQL
+source sql_and_plsql_scope
+oracle LEGACY_ACCEPTS_ERROR | PLS-00231 local fn F in SQL
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref f SQL_VALUE 0 = SqlColumnOrLocal(FUNCTION f@52:11)
+
+case sql_and_plsql_scope: case_f: x column; r.x record field
+source sql_and_plsql_scope
+oracle AGREES | `x` column; `r.x` record field
+target met
+ref x SQL_VALUE 7 = Incomplete[SQL_COLUMN_UNKNOWN](ProvenAbsent)
+ref r QUALIFIER 1 = Bound(VARIABLE r@59:2) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case record_named_like_a_package: case_a: px.x → local record field
+source record_named_like_a_package
+oracle AGREES | px.x → local record field
+target met
+ref px QUALIFIER 0 = Bound(VARIABLE px@8:2) / Field(RECORD_TYPE r@7:7.x)
+ref px QUALIFIER 1 = Bound(VARIABLE px@8:2) / Field(RECORD_TYPE r@7:7.x)
+
+case record_named_like_a_package: case_b: PLS-00302 'Y' (no fallback to package)
+source record_named_like_a_package
+oracle AGREES | PLS-00302 'Y' (no fallback to package)
+target met
+ref px QUALIFIER 2 = Bound(VARIABLE px@16:2) / Undeclared
+
+case record_named_like_a_package: case_c: px.y → package px.y ('pkg.y')
+source record_named_like_a_package
+oracle LEGACY_MISSING | px.y → package px.y ('pkg.y')
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref px QUALIFIER 3 = ProvenAbsent
+
+case locals_shadowing_standard_functions: case_a pl sql upper: local fn ('local')
+source locals_shadowing_standard_functions
+oracle AGREES | local fn ('local')
+target met
+ref upper CALL_EXPRESSION 0 = OverloadSet(FUNCTION upper@3:11)
+
+case locals_shadowing_standard_functions: case_a standard.upper: STANDARD builtin
+source locals_shadowing_standard_functions
+oracle NOT_COMPARABLE | STANDARD builtin
+target not-comparable
+ref standard QUALIFIER 0 = ProvenAbsent
+
+case locals_shadowing_standard_functions: case_a sql upper: SQL builtin ('A'), not local fn
+source locals_shadowing_standard_functions
+oracle LEGACY_WRONG_BINDING | SQL builtin ('A'), not local fn
+target met
+ref upper SQL_CALL 0 = LocalFunctionInSql(FUNCTION upper@3:11)
+
+case locals_shadowing_standard_functions: case_b: local var sysdate in PL/SQL and SQL (2000)
+source locals_shadowing_standard_functions
+oracle AGREES | local var sysdate in PL/SQL and SQL (2000)
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref sysdate VALUE 0 = Bound(VARIABLE sysdate@11:2)
+ref sysdate SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE sysdate@11:2)
+
+case locals_shadowing_standard_functions: case_c: local var user in SQL and PL/SQL ('me')
+source locals_shadowing_standard_functions
+oracle AGREES | local var user in SQL and PL/SQL ('me')
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref user SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE user@20:2)
+ref user VALUE 0 = Bound(VARIABLE user@20:2)
+
+case locals_shadowing_standard_functions: case_d: local var fx hides standalone fx
+source locals_shadowing_standard_functions
+oracle AGREES | local var fx hides standalone fx
+target met
+ref fx VALUE 0 = Bound(VARIABLE fx@30:2)
+
+case functions_without_parentheses: case_a: f/f() → local fn; inner f → var
+source functions_without_parentheses
+oracle AGREES | f/f() → local fn; inner f → var
+target met
+ref f VALUE 0 = OverloadSet(FUNCTION f@2:11)
+ref f CALL_EXPRESSION 0 = OverloadSet(FUNCTION f@2:11)
+ref f VALUE 1 = Bound(VARIABLE f@6:4)
+
+case functions_without_parentheses: case_b: inner f → inner fn; outer f → var
+source functions_without_parentheses
+oracle AGREES | inner f → inner fn; outer f → var
+target met
+ref f VALUE 2 = OverloadSet(FUNCTION f@16:13)
+ref f VALUE 3 = Bound(VARIABLE f@13:2)
+
+case exceptions_and_variables: case_a: exception e + var e unreferenced → compiles
+source exceptions_and_variables
+oracle AGREES | exception e + var e unreferenced → compiles
+target met
+none e 1-7
+
+case exceptions_and_variables: case_b: raise/when e → inner exception; outer e=1
+source exceptions_and_variables
+oracle AGREES | raise/when e → inner exception; outer e=1
+target met
+ref e EXCEPTION 0 = Bound(EXCEPTION e@12:4)
+ref e EXCEPTION 1 = Bound(EXCEPTION e@12:4)
+ref e VALUE 0 = Bound(VARIABLE e@9:2)
+
+case labels_and_variables: case_a: PLS-00371 'B' (record b + label <<b>>) at b.x refs
+source labels_and_variables
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 'B' (record b + label <<b>>) at b.x refs
+target met
+ref b QUALIFIER 0 = Duplicate(VARIABLE b@3:2, LABEL b@6:4)
+ref b QUALIFIER 1 = Duplicate(VARIABLE b@3:2, LABEL b@6:4)
+
+case labels_and_variables: case_b: PLS-00371 'B'
+source labels_and_variables
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 'B'
+target met
+ref b QUALIFIER 2 = Duplicate(VARIABLE b@16:2, LABEL b@19:4)
+ref b QUALIFIER 3 = Duplicate(VARIABLE b@16:2, LABEL b@19:4)
+
+case anchor_declaration_position: case_a: PLS-00320 (w x%type before inner x; no fallback to outer)
+source anchor_declaration_position
+oracle LEGACY_ACCEPTS_ERROR | PLS-00320 (`w x%type` before inner x; no fallback to outer)
+target met
+ref x ANCHOR_TYPE 0 = DeclaredLater(VARIABLE x@6:4)
+
+case anchor_declaration_position: case_b: anchor → inner x NUMBER; w=5
+source anchor_declaration_position
+oracle AGREES | anchor → inner x NUMBER; w=5
+target met
+ref x ANCHOR_TYPE 1 = Bound(VARIABLE x@16:4)
+ref w VALUE 0 = Bound(VARIABLE w@17:4)
+
+case parameterless_names_in_sql: case_a pl sql sysdate: local fn sysdate
+source parameterless_names_in_sql
+oracle AGREES | local fn sysdate
+target met
+ref sysdate VALUE 0 = OverloadSet(FUNCTION sysdate@9:11)
+
+case parameterless_names_in_sql: case_a sql sysdate: PLS-00231 (SQL picks local fn, then rejects)
+source parameterless_names_in_sql
+oracle LEGACY_ACCEPTS_ERROR | PLS-00231 (SQL picks local fn, then rejects)
+target out-of-scope: relation metadata: a column of the same name would win, so the outcome stays an explicit SQL uncertainty
+ref sysdate SQL_VALUE 0 = SqlColumnOrLocal(FUNCTION sysdate@9:11)
+
+case parameterless_names_in_sql: case_b sysdate: SQL builtin (2026)
+source parameterless_names_in_sql
+oracle AGREES | SQL builtin (2026)
+target met
+ref sysdate SQL_VALUE 1 = Incomplete[SQL_COLUMN_UNKNOWN](ProvenAbsent)
+
+case parameterless_names_in_sql: case_b pkg_date.sysdate: package var (1990)
+source parameterless_names_in_sql
+oracle LEGACY_MISSING | package var (1990)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_date QUALIFIER 0 = ProvenAbsent
+
+case parameterless_names_in_sql: case_c: select-list n = column (1)
+source parameterless_names_in_sql
+oracle LEGACY_WRONG_BINDING | select-list `n` = column (1)
+target met
+ref n SQL_VALUE 0 = SqlColumnOrLocal(VARIABLE n@24:2)
+
+case duplicates_across_kinds: case_a: PLS-00371 'E' (exception + var, referenced)
+source duplicates_across_kinds
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 'E' (exception + var, referenced)
+target met
+ref e VALUE 0 = Duplicate(EXCEPTION e@2:2, VARIABLE e@3:2)
+
+case duplicates_across_kinds: case_b: label x + var x unreferenced → OK
+source duplicates_across_kinds
+oracle AGREES | label x + var x unreferenced → OK
+target met
+none x 8-17
+
+case duplicates_across_kinds: case_c: PLS-00371 'X' (label + var, referenced)
+source duplicates_across_kinds
+oracle LEGACY_ACCEPTS_ERROR | PLS-00371 'X' (label + var, referenced)
+target met
+ref x VALUE 0 = Duplicate(VARIABLE x@19:2, LABEL x@21:4)
+
+case local_subtype_argument: case_base base v amount_t: pkg.processar(DATE) (local subtype DATE)
+source local_subtype_argument
+oracle AGREES | `pkg.processar(DATE)` (local subtype DATE)
+target met
+ref amount_t TYPE 0 = Bound(SUBTYPE amount_t@21:10)
+
+case local_subtype_argument_variants: every pkg.processar(...) call target: binds the pkg overload (DATE/NUMBER printed)
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | binds the pkg overload (DATE/NUMBER printed)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg QUALIFIER 0 = ProvenAbsent
+
+case local_subtype_argument_variants: case_ba inner amount_t number, v in inner: NUMBER
+source local_subtype_argument_variants
+oracle AGREES | NUMBER
+target met
+ref amount_t TYPE 0 = Bound(SUBTYPE amount_t@24:12)
+
+case local_subtype_argument_variants: case_bb v outer (date) w inner (number): DATE / NUMBER
+source local_subtype_argument_variants
+oracle AGREES | DATE / NUMBER
+target met
+ref v VALUE 1 = Bound(VARIABLE v@34:2)
+ref w VALUE 0 = Bound(VARIABLE w@38:4)
+
+case local_subtype_argument_variants: case_bc v pkg_other.g_amt type: DATE
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | DATE
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_other QUALIFIER 0 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bd v pkg_other.amt_t: DATE
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | DATE
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_other QUALIFIER 1 = ProvenAbsent
+
+case local_subtype_argument_variants: case_be v number = 1: NUMBER
+source local_subtype_argument_variants
+oracle AGREES | NUMBER
+target met
+ref NUMBER TYPE 5 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bf literals 1 sysdate date literal: NUMBER / DATE / DATE
+source local_subtype_argument_variants
+oracle NOT_COMPARABLE | NUMBER / DATE / DATE
+target not-comparable
+ref sysdate VALUE 0 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bg subtype amount_t is pkg_other.amt_n: NUMBER
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | NUMBER
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_other QUALIFIER 2 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bh o.v (label qualified outer v date): binds outer v DATE → DATE
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | binds outer `v` DATE → DATE
+target met
+ref o QUALIFIER 0 = Bound(LABEL o@83:4) / Bound(VARIABLE v@85:4)
+
+case local_subtype_argument_variants: case_bh unqualified inner v: NUMBER (inner V)
+source local_subtype_argument_variants
+oracle AGREES | NUMBER (inner V)
+target met
+ref v VALUE 6 = Bound(VARIABLE v@88:6)
+
+case local_subtype_argument_variants: case_bi subtype integer is date v integer: DATE (local subtype)
+source local_subtype_argument_variants
+oracle LEGACY_WRONG_BINDING | DATE (local subtype)
+target met
+ref integer TYPE 0 = Bound(SUBTYPE integer@98:10)
+
+case local_subtype_argument_variants: case_bj v a type, a amount_t=date: DATE
+source local_subtype_argument_variants
+oracle AGREES | DATE
+target met
+ref a ANCHOR_TYPE 0 = Bound(VARIABLE a@107:2)
+
+case local_subtype_argument_variants: case_bk r.f, field typed amount_t=date: DATE (record field)
+source local_subtype_argument_variants
+oracle LEGACY_MISSING | DATE (record field)
+target met
+ref r QUALIFIER 0 = Bound(VARIABLE r@117:2) / Field(RECORD_TYPE r_t@116:7.f)
+
+case local_subtype_argument_variants: case_bl pkg_other.amt_t type: PLS-00206
+source local_subtype_argument_variants
+oracle AGREES | PLS-00206
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_other QUALIFIER 3 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bm case_bn 2020 01 01 null arg: PLS-00307
+source local_subtype_argument_variants
+oracle AGREES | PLS-00307
+target out-of-scope: overload narrowing: the resolver gives the overload set, the call binding picks one
+ref pkg QUALIFIER 16 = ProvenAbsent
+ref pkg QUALIFIER 17 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bo local var pkg hides package: pkg binds the variable → PLS-00487
+source local_subtype_argument_variants
+oracle AGREES | `pkg` binds the variable → PLS-00487
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref pkg QUALIFIER 18 = Bound(VARIABLE pkg@144:8) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case local_subtype_argument_variants: case_bp var after subprogram body: PLS-00103 (syntax; an authoring error in this source)
+source local_subtype_argument_variants
+oracle NOT_COMPARABLE | PLS-00103 (syntax; an authoring error in this source)
+target not-comparable
+ref processar CALL_STATEMENT 0 = OverloadSet(PROCEDURE processar@147:18)
+
+case local_subtype_argument_variants: case_bq sibling block subtype does not leak: NUMBER (outer amount_t)
+source local_subtype_argument_variants
+oracle AGREES | NUMBER (outer amount_t)
+target met
+ref amount_t TYPE 6 = Bound(SUBTYPE amount_t@150:16)
+
+case local_subtype_argument_variants: case_br subtype amount_t is varchar2(10): PLS-00307
+source local_subtype_argument_variants
+oracle AGREES | PLS-00307
+target met
+ref amount_t TYPE 7 = Bound(SUBTYPE amount_t@153:16)
+
+case local_subtype_argument_variants: case_bs timestamp var: DATE overload
+source local_subtype_argument_variants
+oracle AGREES | DATE overload
+target met
+ref TIMESTAMP TYPE 0 = ProvenAbsent
+
+case local_subtype_argument_variants: case_bt pls_integer var: NUMBER overload
+source local_subtype_argument_variants
+oracle AGREES | NUMBER overload
+target met
+ref PLS_INTEGER TYPE 0 = ProvenAbsent
+
+case predefined_type_named_local_subtype_argument: case_ca subtype number is date v number: DATE overload
+source predefined_type_named_local_subtype_argument
+oracle LEGACY_WRONG_BINDING | DATE overload
+target met
+ref number TYPE 3 = Bound(SUBTYPE number@31:16)
+
+case predefined_type_named_local_subtype_argument: case_cb unqualified processar(v) with local processar(varchar2): local processar
+source predefined_type_named_local_subtype_argument
+oracle AGREES | local processar
+target met
+ref processar CALL_STATEMENT 0 = OverloadSet(PROCEDURE processar@34:26)
+
+case predefined_type_named_local_subtype_argument: case_cc subtype varchar2 is date v varchar2: DATE overload
+source predefined_type_named_local_subtype_argument
+oracle LEGACY_WRONG_BINDING | DATE overload
+target met
+ref varchar2 TYPE 1 = Bound(SUBTYPE varchar2@37:16)
+
+case predefined_type_named_local_subtype_argument: case_cd v a type under inner amount_t number: DATE
+source predefined_type_named_local_subtype_argument
+oracle AGREES | DATE
+target met
+ref a ANCHOR_TYPE 0 = Bound(VARIABLE a@40:34)
+
+case predefined_type_named_local_subtype_argument: case_ce function returning local subtype: DATE
+source predefined_type_named_local_subtype_argument
+oracle AGREES | DATE
+target met
+ref f VALUE 0 = OverloadSet(FUNCTION f@43:43)
+
+case predefined_type_named_local_subtype_argument: case_cf c(1) element of local subtype: DATE
+source predefined_type_named_local_subtype_argument
+oracle AGREES | DATE
+target met
+ref c CALL_EXPRESSION 1 = Bound(VARIABLE c@46:84)
+
+case predefined_type_named_local_subtype_argument: case_cg local var pkg_other in type: binds the variable → PLS-00487
+source predefined_type_named_local_subtype_argument
+oracle AGREES | binds the variable → PLS-00487
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref pkg_other QUALIFIER 0 = Bound(VARIABLE pkg_other@49:8) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case predefined_type_named_local_subtype_argument: case_ch nvl(v, sysdate): DATE
+source predefined_type_named_local_subtype_argument
+oracle AGREES | DATE
+target met
+ref v VALUE 6 = Bound(VARIABLE v@52:34)
+
+case predefined_type_named_subtypes_with_constraints: case_a subtype varchar2 is number v varchar2(10): binds local subtype (ORA-06502 char→number at runtime)
+source predefined_type_named_subtypes_with_constraints
+oracle LEGACY_WRONG_BINDING | binds local subtype (ORA-06502 char→number at runtime)
+target met
+ref varchar2 TYPE 1 = Bound(SUBTYPE varchar2@7:10)
+
+case predefined_type_named_subtypes_with_constraints: case_c v varchar2(3) = 12345: local subtype (ORA-06502 precision)
+source predefined_type_named_subtypes_with_constraints
+oracle LEGACY_WRONG_BINDING | local subtype (ORA-06502 precision)
+target met
+ref varchar2 TYPE 2 = Bound(SUBTYPE varchar2@21:10)
+
+case predefined_type_named_subtypes_with_constraints: case_b subtype number is date v number(5): PLS-00566 + PLS-00382
+source predefined_type_named_subtypes_with_constraints
+oracle LEGACY_ACCEPTS_ERROR | PLS-00566 + PLS-00382
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref number TYPE 2 = Bound(SUBTYPE number@14:10)
+
+case predefined_type_named_subtypes_with_constraints: case_e subtype integer is date v integer(3): PLS-00566 + PLS-00382
+source predefined_type_named_subtypes_with_constraints
+oracle LEGACY_ACCEPTS_ERROR | PLS-00566 + PLS-00382
+target out-of-scope: typing: the error depends on the datatype, which lookup does not decide
+ref integer TYPE 0 = Bound(SUBTYPE integer@33:10)
+
+case predefined_type_named_subtypes_with_constraints: case_d pkg_p_varchar2.g (spec g varchar2(10), varchar2=number): binds package var g; NUMBER (ORA-06502 at init)
+source predefined_type_named_subtypes_with_constraints
+oracle LEGACY_MISSING | binds package var g; NUMBER (ORA-06502 at init)
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref pkg_p_varchar2 QUALIFIER 0 = ProvenAbsent
+
+case parameter_and_return_type_regions: ret_b procedure p(a t) local subtype t is date: a NUMBER (param type in enclosing scope)
+source parameter_and_return_type_regions
+oracle AGREES | `a` NUMBER (param type in enclosing scope)
+target met
+ref t TYPE 1 = Bound(SUBTYPE t@20:10)
+
+case parameter_and_return_type_regions: ret_d function f(a t) local t date: NUMBER
+source parameter_and_return_type_regions
+oracle AGREES | NUMBER
+target met
+ref t TYPE 2 = Bound(SUBTYPE t@27:10)
+
+case parameter_and_return_type_regions: ret_a function f return t is subtype t is date: PLS-00311 (RETURN t resolved in f's own region, later decl) +…
+source parameter_and_return_type_regions
+oracle LEGACY_ACCEPTS_ERROR | PLS-00311 (RETURN t resolved in f's own region, later decl) + PLS-00313 at call
+target met
+ref t TYPE 0 = DeclaredLater(SUBTYPE t@14:33)
+ref f VALUE 0 = OverloadSet(FUNCTION f@14:11)
+
+case parameter_and_return_type_regions: ret_f return t is v t = 1 subtype t is date: PLS-00311 + PLS-00313
+source parameter_and_return_type_regions
+oracle LEGACY_ACCEPTS_ERROR | PLS-00311 + PLS-00313
+target met
+ref t TYPE 9 = DeclaredLater(SUBTYPE t@52:43)
+ref t TYPE 10 = DeclaredLater(SUBTYPE t@52:43)
+
+case parameter_and_return_type_regions: ret_e forward decl function f return t: NUMBER
+source parameter_and_return_type_regions
+oracle AGREES | NUMBER
+target met
+ref f VALUE 1 = OverloadSet(FUNCTION f@45:11)
+
+case parameter_and_return_type_regions: pkg_rg body function fn return t is type t is table ...: PLS-00498 + PLS-00323
+source parameter_and_return_type_regions
+oracle LEGACY_ACCEPTS_ERROR | PLS-00498 + PLS-00323
+target met
+ref t TYPE 6 = DeclaredLater(COLLECTION_TYPE t@38:31)
+
+case local_named_like_its_procedure: rv(f date) is rv tp.rec_t ... rv.f: local record var field rv.f → NUMBER; param f NOT used
+source local_named_like_its_procedure
+oracle LEGACY_WRONG_BINDING | local record var field `rv.f` → NUMBER; param f NOT used
+target met
+ref rv QUALIFIER 0 = Bound(VARIABLE rv@13:2) / Unsupported(MEMBER_NEEDS_TYPING)
+ref rv QUALIFIER 1 = Bound(VARIABLE rv@13:2) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case local_named_like_its_procedure: tp.rec_t type ref: package record type rec_t
+source local_named_like_its_procedure
+oracle LEGACY_MISSING | package record type rec_t
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref tp QUALIFIER 0 = ProvenAbsent
+
+case parameter_named_like_its_package: x(cfg tp.rec_t) body cfg.f: parameter's record field → NUMBER; package var f NOT used
+source parameter_named_like_its_package
+oracle LEGACY_WRONG_BINDING | parameter's record field → NUMBER; package var `f` NOT used
+target met
+ref cfg QUALIFIER 0 = Bound(PARAMETER cfg@18:14) / Unsupported(MEMBER_NEEDS_TYPING)
+
+case parameter_named_like_its_package: cfg.x(r) from case_a: binds package proc x
+source parameter_named_like_its_package
+oracle LEGACY_MISSING | binds package proc x
+target out-of-scope: Project System: the name is a member of a unit outside the enclosing chain, which the caller looks up after ProvenAbsent
+ref cfg QUALIFIER 1 = ProvenAbsent

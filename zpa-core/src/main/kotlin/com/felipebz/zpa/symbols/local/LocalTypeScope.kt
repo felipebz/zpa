@@ -35,16 +35,13 @@ internal object LocalTypeScope {
      */
     fun of(model: LocalSemanticModel, region: LocalRegion, supertypeMethods: Boolean): LocalResolver.Scope {
         val regions = arrayListOf(region)
-        val declarations = ArrayList(model.declarationsOf(region.id))
+        val attributesOnly = HashSet<LocalRegionId>()
         val gaps = EnumSet.noneOf(LocalLookupGap::class.java)
         val absenceGaps = EnumSet.noneOf(LocalLookupGap::class.java)
         val specification = if (region.kind == LocalRegionKind.OBJECT_TYPE) region else unitOf(model, region.id)?.counterpart?.let(model::region)
         if (region.kind == LocalRegionKind.TYPE_BODY) {
             if (specification == null) gaps += LocalLookupGap.SPECIFICATION_NOT_IN_FILE
-            else {
-                regions += specification
-                declarations += model.declarationsOf(specification.id)
-            }
+            else regions += specification
         }
         var supertype = specification?.let { unitOf(model, it.id)?.supertype }
         while (supertype != null) {
@@ -59,16 +56,21 @@ internal object LocalTypeScope {
             }
             if (regions.any { it.id == superRegion.id }) break
             regions += superRegion
-            declarations += model.declarationsOf(superRegion.id).filter { supertypeMethods || it.kind == ATTRIBUTE }
+            if (!supertypeMethods) attributesOnly += superRegion.id
             supertype = unit.supertype
         }
         // A type body implements only methods its specification declares (PLS-00539): order never decides there.
         val earlier = regions.mapTo(HashSet()) { it.id }
-        return LocalResolver.Scope(regions, declarations, specification?.id?.takeIf { region.kind == LocalRegionKind.TYPE_BODY }, earlier, gaps, absenceGaps)
+        return LocalResolver.Scope(
+            model, regions, specification?.id?.takeIf { region.kind == LocalRegionKind.TYPE_BODY }, earlier, gaps, absenceGaps, attributesOnly
+        )
     }
 
-    fun unitOf(model: LocalSemanticModel, region: LocalRegionId): LocalUnit? =
-        model.declarations.firstOrNull { (it.details as? LocalUnit)?.region == region }?.details as? LocalUnit
+    /** A constructor is named like its type: in a type position the name denotes the type, never the constructor. */
+    fun capturesIn(declaration: LocalDeclaration, context: LocalReferenceContext): Boolean =
+        context != LocalReferenceContext.TYPE || (declaration.details as? LocalSubprogram)?.methodKind != LocalMethodKind.CONSTRUCTOR
+
+    fun unitOf(model: LocalSemanticModel, region: LocalRegionId): LocalUnit? = model.index.unit(region)
 
     /** The method of a type body whose region is on [chain], with that region. */
     class Method(val declaration: LocalDeclaration, val region: LocalRegionId) {

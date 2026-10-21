@@ -215,6 +215,19 @@ class LocalObjectTypeResolverTest {
     }
 
     @Test
+    fun aTypeNameIsNeverItsConstructor() {
+        // The constructors carry the type's name; in a type position the name is the type itself.
+        val source = "create type ctor_type as object (\n  x number,\n  constructor function ctor_type(v number) return self as result,\n" +
+            "  member function f return ctor_type\n);\n/\ncreate type body ctor_type as\n" +
+            "  constructor function ctor_type(v number) return self as result is begin x := v; return; end;\n" +
+            "  member function f return ctor_type is\n    w ctor_type;\n  begin\n    /*A*/ return ctor_type(1);\n  end;\nend;\n/\n" + other
+        assertThat(steps(source.replace("/*A*/", "").replace("/*S*/", ""), "ctor_type", context = TYPE)).isEqualTo("ProvenAbsent")
+        assertSteps(source, "ctor_type", listOf("ProvenAbsent"), occurrence = 2, context = TYPE)
+        // Called, the name is the constructor.
+        assertSteps(source, "ctor_type", listOf("OverloadSet(FUNCTION ctor_type@8)"), context = CALL_EXPRESSION)
+    }
+
+    @Test
     fun membersOfAnAttributeNeedTyping() {
         val source = "create type typed_attribute as object (b other_t, member function f return number);\n/\n" +
             "create type body typed_attribute as\n  member function f return number is begin return b.n + self.b.n; end;\nend;\n/\n"

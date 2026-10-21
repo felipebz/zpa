@@ -321,6 +321,15 @@ class LocalQualifiedResolverTest {
     }
 
     @Test
+    fun aCursorQualifiesItsParameterInItsOwnQuery() {
+        // The cursor encloses its query, so its name is visible there, before the declaration ends.
+        assertSteps(
+            "create procedure cursor_own_query is\n  cursor c(p number) is select 1 a from dual where 1 = c.p;\nbegin\n  /*A*/ open c(1);\nend;\n/\n" + other,
+            "c", listOf("Bound(CURSOR c@2)", "Bound(CURSOR_PARAMETER p@2)"), context = QUALIFIER
+        )
+    }
+
+    @Test
     fun cursorOperandsAndForControls() {
         // An explicit cursor.
         assertSteps(
@@ -333,6 +342,13 @@ class LocalQualifiedResolverTest {
         // A variable is a cursor variable or not: typing.
         assertThat(steps("create procedure t is\n  k1 number;\nbegin\n  close k1;\nend;\n/\n", "k1"))
             .isEqualTo("Unsupported(KIND_IN_CONTEXT VARIABLE CURSOR_OPERAND)")
+        assertThat(steps("create procedure t(k1 sys_refcursor) is\nbegin\n  close k1;\nend;\n/\n", "k1", context = CURSOR_OPERAND))
+            .isEqualTo("Unsupported(KIND_IN_CONTEXT PARAMETER CURSOR_OPERAND)")
+        // OPEN … FOR on a variable or parameter: a cursor variable or not, which is typing too.
+        assertThat(steps("create procedure t is\n  k1 sys_refcursor;\nbegin\n  open k1 for select 1 a from dual;\nend;\n/\n", "k1", context = OPEN_FOR_OPERAND))
+            .isEqualTo("Unsupported(KIND_IN_CONTEXT VARIABLE OPEN_FOR_OPERAND)")
+        assertThat(steps("create procedure t(k1 in out sys_refcursor) is\nbegin\n  open k1 for select 1 a from dual;\nend;\n/\n", "k1", context = OPEN_FOR_OPERAND))
+            .isEqualTo("Unsupported(KIND_IN_CONTEXT PARAMETER OPEN_FOR_OPERAND)")
         // An exception or a procedure captures the operand (PLS-00456).
         assertThat(steps("create procedure t is\n  cursor k1 is select 1 a from dual;\nbegin\n  declare k1 exception; begin open k1; end;\nend;\n/\n", "k1", context = CURSOR_OPERAND))
             .isEqualTo("WrongKind(EXCEPTION k1@4)")

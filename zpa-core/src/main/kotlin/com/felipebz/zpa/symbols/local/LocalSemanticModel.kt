@@ -192,5 +192,8 @@ internal class LocalSemanticModel(
 
     fun parent(region: LocalRegionId): LocalRegion? = region(region).parent?.let(::region)
 
+    /** Lookup tables for the resolver, derived from the regions and declarations on first use. */
+    val index: LocalLookupIndex by lazy { LocalLookupIndex(this) }
+
     override fun toString() = "LocalSemanticModel($fileId, ${regions.size} regions, ${declarations.size} declarations)"
 }
