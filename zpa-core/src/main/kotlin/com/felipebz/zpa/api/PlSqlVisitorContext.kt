@@ -26,6 +26,7 @@ import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.SymbolTableImpl
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.SymbolTable
 
@@ -51,6 +52,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     fun plSqlFile() = plSqlFile
 
     fun parsingException() = parsingException
+
+    /** The file's local semantic resolution, left by the pipeline's pre-pass; null when it did not run or failed. */
+    internal var localSemanticFacts: LocalSemanticFacts? = null
 
     /** Installed by the scanner with the file's configuration and project; created on first use otherwise. */
     internal var dynamicSqlSupport: DynamicSqlSupport? = null

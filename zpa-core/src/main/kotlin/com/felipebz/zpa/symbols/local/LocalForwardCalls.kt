@@ -83,9 +83,10 @@ internal class LocalForwardCalls(
     private val references: List<LocalReference>,
     calls: List<LocalCall>,
     private val snapshot: ProjectSnapshot,
-    private val metadata: ProjectExternalMetadata = ProjectExternalMetadata.none()
+    /** The run's external metadata and compilation schema. */
+    private val external: ProjectExternalContext = ProjectExternalContext.none()
 ) {
-    private val walk = LocalTypeWalk(model, snapshot, metadata)
+    private val walk = LocalTypeWalk(model, snapshot, external)
     private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot))
     private val callsByPosition = calls.associateBy { it.line to it.column }
     private val namesByPosition = references.filter { it.context != Ctx.TYPE && it.context != Ctx.ANCHOR_TYPE && it.context != Ctx.ANCHOR_ROWTYPE }
@@ -197,7 +198,7 @@ internal class LocalForwardCalls(
             return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null, local)
         }
         val structural = snapshot.resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
-        val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, metadata, null)
+        val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, external.metadata, walk.compilationSchema(reference.region))
         return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed, null)
     }
 
@@ -214,7 +215,7 @@ internal class LocalForwardCalls(
         val steps = LocalResolver.resolveQualified(model, reference)
         val first = steps.first()
         if (first == LocalResolution.ProvenAbsent) {
-            callOf(reference)?.let { return walk.projectResult(it.typed) }
+            callOf(reference)?.let { return walk.projectResult(it.typed, reference.region) }
             // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
             return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
             else walk.projectValue(target(reference), reference.region)

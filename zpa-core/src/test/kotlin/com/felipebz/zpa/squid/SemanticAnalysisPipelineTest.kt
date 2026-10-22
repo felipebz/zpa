@@ -29,6 +29,7 @@ import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.SymbolVisitor
+import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -45,6 +46,7 @@ class SemanticAnalysisPipelineTest {
         val visitors = SemanticAnalysisPipeline(context).create(FileId("current.sql")).all
 
         assertThat(visitors.map { it::class }).containsExactly(
+            LocalSemanticPrepass::class,
             SymbolVisitor::class,
             ProjectSubprogramDeclarationResolutionVisitor::class,
             ProjectTypeResolutionVisitor::class,
@@ -59,6 +61,6 @@ class SemanticAnalysisPipelineTest {
         val visitors = SemanticAnalysisPipeline(ProjectAnalysisContext.NOT_PREPARED)
             .create(FileId("current.sql")).all
 
-        assertThat(visitors.map { it::class }).containsExactly(SymbolVisitor::class)
+        assertThat(visitors.map { it::class }).containsExactly(LocalSemanticPrepass::class, SymbolVisitor::class)
     }
 }

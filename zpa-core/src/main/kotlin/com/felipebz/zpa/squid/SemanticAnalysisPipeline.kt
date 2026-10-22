@@ -34,6 +34,7 @@ import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
 import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
 import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 
 /**
  * Creates the semantic visitors in the one order required by the analysis pipeline.
@@ -53,7 +54,8 @@ internal class SemanticAnalysisPipeline(
 
     fun create(fileId: FileId): Visitors {
         val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true)
-        val visitors = mutableListOf<PlSqlVisitor>(symbolVisitor)
+        // Shadow mode: computes the local resolution first; no visitor reads it yet.
+        val visitors = mutableListOf<PlSqlVisitor>(LocalSemanticPrepass(fileId), symbolVisitor)
 
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
             val projectTypeResolver = ProjectTypeResolver(projectAnalysisContext)

@@ -21,12 +21,16 @@ package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.SemanticAnalysisPipeline
+import com.felipebz.zpa.squid.SemanticScanCapabilities
+import com.felipebz.zpa.squid.createProjectAnalysis
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
 /**
  * Runs ZPA's semantic decoration pipeline and exposes a read-only diagnostic snapshot.
@@ -35,20 +39,23 @@ import com.felipebz.zpa.squid.SemanticAnalysisPipeline
  * API for custom rules and deliberately converts project semantic state to immutable DTOs.
  */
 public class SemanticInspectionService {
+    @OptIn(ZpaExperimentalApi::class)
     public fun analyze(
         root: AstNode,
         fileId: FileId,
         projectAnalysisContext: ProjectAnalysisContext
     ): SemanticInspectionResult {
         val visitors = SemanticAnalysisPipeline.forTooling(projectAnalysisContext).create(fileId)
-        PlSqlAstWalker(visitors.all).walk(PlSqlVisitorContext(root, null, null))
+        val context = PlSqlVisitorContext(root, null, null)
+        // The scan's project analysis, as the scanner installs it.
+        PlSqlAstWalker(visitors.all).walk(context, SemanticScanCapabilities(createProjectAnalysis(projectAnalysisContext)))
         return SemanticInspectionResult(
             fileId,
             root,
             visitors.symbolVisitor.symbolTable,
             projectAnalysisSummary(projectAnalysisContext),
             projectAnalysisContext
-        )
+        ).also { it.localSemanticFacts = context.localSemanticFacts }
     }
 }
 
@@ -60,6 +67,9 @@ public class SemanticInspectionResult internal constructor(
     public val projectAnalysis: ProjectAnalysisSummary,
     private val projectAnalysisContext: ProjectAnalysisContext
 ) {
+    /** The local semantic resolution the pipeline's pre-pass left; internal, for diagnostics and tests. */
+    internal var localSemanticFacts: LocalSemanticFacts? = null
+
     /** Everything the Project System captured for this file, built on first access. */
     public val projectOverview: ProjectOverviewNode by lazy {
         ProjectOverviewBuilder(fileId, root, symbolTable, projectAnalysisContext).build()

@@ -89,8 +89,28 @@ internal class LocalTypeEvidence(
 internal class LocalTypeWalk(
     private val model: LocalSemanticModel,
     private val snapshot: ProjectSnapshot?,
-    private val metadata: ProjectExternalMetadata = ProjectExternalMetadata.none()
+    /** The run's external metadata and compilation schema, as the project's own resolution uses them. */
+    private val external: ProjectExternalContext = ProjectExternalContext.none()
 ) {
+    private val metadata = external.metadata
+
+    /**
+     * The schema the file-level unit holding [region] compiles in, from the run's external context: its written schema,
+     * else the configured default. Null for code outside a named unit (an anonymous block of a script), and when
+     * neither establishes it: the project then keeps the uncertainty.
+     */
+    fun compilationSchema(region: LocalRegionId): ProjectIdentifier? {
+        val top = LocalResolver.chain(model, region).firstOrNull { it.parent == model.root.id } ?: return null
+        val name = model.declarationsOf(model.root.id).firstNotNullOfOrNull { declaration ->
+            when (val details = declaration.details) {
+                is LocalUnit -> details.unitName.takeIf { details.region == top.id }
+                is LocalSubprogram -> details.unitName.takeIf { details.body == top.id }
+                is LocalTrigger -> details.unitName.takeIf { details.body == top.id }
+                else -> null
+            }
+        } ?: return null
+        return external.compilationSchema(ProjectQualifiedName.wrap(name)).orElse(null)
+    }
     private val prepared = snapshot != null && snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
 
     /** Evidence of the value [declaration] names. */
@@ -125,7 +145,7 @@ internal class LocalTypeWalk(
     fun projectValue(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence {
         val owner = packageOwner(region)
         val described = snapshot?.describeExternalType(
-            ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(name), ProjectTypeReference.Anchor.TYPE), owner, metadata, null
+            ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(name), ProjectTypeReference.Anchor.TYPE), owner, metadata, compilationSchema(region)
         ) ?: return LocalTypeEvidence.unknown("no project snapshot")
         return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null)
     }
@@ -137,12 +157,12 @@ internal class LocalTypeWalk(
     fun result(function: LocalDeclarationId): LocalTypeEvidence = Walk().result(model.declaration(function), 0)
 
     /** Evidence of a project call's result: the RETURN type of the function a RESOLVED call selected. */
-    fun projectResult(typed: ProjectTypedCallResolution?): LocalTypeEvidence {
+    fun projectResult(typed: ProjectTypedCallResolution?, region: LocalRegionId): LocalTypeEvidence {
         if (typed == null) return LocalTypeEvidence.unknown("not forwarded")
         if (typed.status != ProjectTypedCallResolution.Status.RESOLVED) return LocalTypeEvidence.unknown("the call is ${typed.status}")
         val function = typed.selected.get().declaration as? ProjectFunctionView ?: return LocalTypeEvidence.unknown("not a function")
         val owner = (function as? ProjectPackageSubprogramView)?.packageOwner
-        val described = snapshot!!.describeExternalType(function.returnType, owner, metadata, null)
+        val described = snapshot!!.describeExternalType(function.returnType, owner, metadata, compilationSchema(region))
         return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null)
     }
 
@@ -258,7 +278,7 @@ internal class LocalTypeWalk(
                 if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null) {
                     return LocalTypeEvidence(ProjectArgumentType.builtIn(spelling), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
                 }
-                val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, null)
+                val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
             }
             val snapshot = snapshot ?: return unknown("no project snapshot")
@@ -267,9 +287,9 @@ internal class LocalTypeWalk(
             val described = when (typeRef) {
                 is AnchoredTypeRef -> snapshot.describeExternalType(
                     ProjectWrittenAnchor.of(written, if (typeRef.anchor == TypeAnchor.TYPE) ProjectTypeReference.Anchor.TYPE else ProjectTypeReference.Anchor.ROWTYPE),
-                    owner, metadata, null
+                    owner, metadata, compilationSchema(use.lookupRegion)
                 )
-                else -> snapshot.describeExternalType(written, owner, metadata, null)
+                else -> snapshot.describeExternalType(written, owner, metadata, compilationSchema(use.lookupRegion))
             }
             return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
         }
@@ -294,7 +314,7 @@ internal class LocalTypeWalk(
                 val r = it.sourceRange
                 r.startLine == range.startLine && r.startColumn == range.startColumn && r.endLine == range.endLine && r.endColumn == range.endColumn
             } ?: return null
-            val described = snapshot.describeExternalType(view.typeRef, view.owner, metadata, null)
+            val described = snapshot.describeExternalType(view.typeRef, view.owner, metadata, compilationSchema(declaration.region))
             return LocalTypeEvidence(ProjectArgumentType.described(described, view.owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
         }
     }

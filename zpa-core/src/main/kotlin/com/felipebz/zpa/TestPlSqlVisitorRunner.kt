@@ -20,6 +20,8 @@
 package com.felipebz.zpa
 
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.PlSqlConfiguration
@@ -35,7 +37,10 @@ object TestPlSqlVisitorRunner {
 
     fun scanFile(file: File, metadata: FormsMetadata?, vararg visitors: PlSqlVisitor) {
         val context = createContext(TestPlSqlFile(file), metadata)
-        val walker = PlSqlAstWalker(visitors.toList())
+        // The same local pre-pass as the analysis pipeline, so tests and production run the same semantic passes; the
+        // walk installs a not-prepared project analysis.
+        val prepass = LocalSemanticPrepass(FileId(file.path))
+        val walker = PlSqlAstWalker(listOf(prepass) + visitors)
         walker.walk(context)
     }
 

@@ -46,7 +46,9 @@ internal class ProjectTypeResolutionVisitor(
 
     override fun visitNode(node: AstNode) {
         val reference = namedTypeReference(node) ?: return
-        if (isResolvedLexically(reference, context.currentScope)) return
+        val lexical = isResolvedLexically(reference, context.currentScope)
+        context.localSemanticFacts?.recordTypeGate(reference.sourceRange, lexical)
+        if (lexical) return
 
         val owner = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
             ?.let(::packageName)

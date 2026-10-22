@@ -1,0 +1,129 @@
+/**
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2026 Felipe Zorzo
+ * mailto:felipe AT felipezorzo DOT com DOT br
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package com.felipebz.zpa.symbols.local
+
+import com.felipebz.zpa.project.SourceRange
+
+/**
+ * The local semantic resolution of one file, computed by the pipeline's pre-pass and consumed by nothing yet: the
+ * model, the references with their segment-by-segment outcomes, the calls, and the comparison with the decisions the
+ * legacy lexical lookup makes for the same names. AST-detached.
+ */
+internal class LocalSemanticFacts(
+    val model: LocalSemanticModel,
+    val references: List<LocalReference>,
+    /** For each reference, in the same order, its outcomes as [LocalResolver.resolveQualified] gives them. */
+    val resolutions: List<List<LocalResolution>>,
+    val calls: List<LocalCallAnalysis>
+) {
+    private val typeGates = ArrayList<LegacyGate>()
+    private val firstSegments = ArrayList<LegacyGate>()
+
+    /** The legacy type-name gate's decision for the type name starting at [range]: true when it found the name lexically. */
+    fun recordTypeGate(range: SourceRange, lexical: Boolean) {
+        typeGates += LegacyGate(range.startLine, range.startColumn, lexical)
+    }
+
+    /** The legacy lookup's hit for the first segment of a call or qualified name starting at line, column. */
+    fun recordFirstSegment(line: Int, column: Int, lexical: Boolean) {
+        firstSegments += LegacyGate(line, column, lexical)
+    }
+
+    /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
+    fun differential(): List<LocalShadowPair> {
+        val byStart = HashMap<Triple<Boolean, Int, Int>, MutableList<Int>>()
+        for ((index, reference) in references.withIndex()) {
+            byStart.getOrPut(Triple(isTypeName(reference), reference.range.startLine, reference.range.startColumn)) { ArrayList(1) } += index
+        }
+        fun pair(kind: LocalShadowPair.Kind, gate: LegacyGate): LocalShadowPair {
+            val index = byStart[Triple(kind == LocalShadowPair.Kind.TYPE_NAME, gate.line, gate.column)]?.singleOrNull()
+            val outcome = index?.let { decidingOutcome(references[it], resolutions[it]) }
+            return LocalShadowPair(kind, gate.line, gate.column, gate.lexical, outcome, LocalShadowPair.classify(gate.lexical, outcome))
+        }
+        return typeGates.map { pair(LocalShadowPair.Kind.TYPE_NAME, it) } + firstSegments.map { pair(LocalShadowPair.Kind.FIRST_SEGMENT, it) }
+    }
+
+    /** A type name is decided by its whole name; a call or qualified name by its first segment. */
+    private fun decidingOutcome(reference: LocalReference, steps: List<LocalResolution>): LocalResolution =
+        if (isTypeName(reference) && steps.first() != LocalResolution.ProvenAbsent) steps.last() else steps.first()
+
+    private class LegacyGate(val line: Int, val column: Int, val lexical: Boolean)
+}
+
+/** A written type name, one segment or qualified (whose first segment is a qualifier of a type position). */
+internal fun isTypeName(reference: LocalReference) = reference.lastSegmentContext == LocalReferenceContext.TYPE
+
+/** One legacy lexical decision and the local outcome for the same name. */
+internal class LocalShadowPair(
+    val kind: Kind,
+    val line: Int,
+    val column: Int,
+    /** The legacy lookup found the name (its project resolution is suppressed). */
+    val legacyLexical: Boolean,
+    /** Null when no local reference starts there. */
+    val local: LocalResolution?,
+    val shadowClass: ShadowClass
+) {
+    enum class Kind {
+        /** The project type resolution's lexical gate. */
+        TYPE_NAME,
+
+        /** The legacy symbol of the first segment of a call or a qualified name. */
+        FIRST_SEGMENT
+    }
+
+    enum class ShadowClass {
+        /** Both find the name locally, or both prove it absent. */
+        SAME,
+
+        /** Legacy finds the name; the local resolver proves it absent, so project evidence is suppressed today. */
+        LEGACY_SUPPRESSES,
+
+        /** Legacy finds nothing; the local resolver finds a local declaration, so project evidence is let through today. */
+        LEGACY_ALLOWS,
+
+        /** The local outcome is incomplete, unsupported or a SQL uncertainty. */
+        LOCAL_UNCERTAIN,
+
+        /** No local reference at that position. */
+        UNPAIRED
+    }
+
+    override fun toString() = "$kind $line:$column legacy=${if (legacyLexical) "lexical" else "absent"} local=$local $shadowClass"
+
+    companion object {
+        fun classify(legacyLexical: Boolean, local: LocalResolution?): ShadowClass {
+            val declares = when (local) {
+                null -> return ShadowClass.UNPAIRED
+                is LocalResolution.Incomplete, is LocalResolution.Unsupported, is LocalResolution.SqlColumnOrLocal,
+                LocalResolution.SqlRelation, is LocalResolution.LocalFunctionInSql, is LocalResolution.SqlBuiltinOrLocal ->
+                    return ShadowClass.LOCAL_UNCERTAIN
+                LocalResolution.ProvenAbsent -> false
+                // A binding, or a local declaration that rejects the use: either way the name is local.
+                else -> true
+            }
+            return when {
+                legacyLexical == declares -> ShadowClass.SAME
+                legacyLexical -> ShadowClass.LEGACY_SUPPRESSES
+                else -> ShadowClass.LEGACY_ALLOWS
+            }
+        }
+    }
+}
