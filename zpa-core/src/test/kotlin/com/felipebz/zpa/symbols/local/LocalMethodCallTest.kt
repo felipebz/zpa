@@ -146,4 +146,25 @@ class LocalMethodCallTest {
         assertThat(LocalResolver.resolveQualified(calls(source).first, line.first().reference).last())
             .isEqualTo(LocalResolution.Unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING))
     }
+
+    @Test
+    fun aStaticSelectedFromAMemberIsRejectedOnTheInstance() {
+        // Oracle: p(d) and self.p(d) select the static and reject it (PLS-00587); p(1) runs the member.
+        val source = "create type ms as object (a number, member procedure p(x number), static procedure p(x date), member procedure run);\n/\n" +
+            "create type body ms as\n  member procedure p(x number) is begin null; end;\n  static procedure p(x date) is begin null; end;\n" +
+            "  member procedure run is d date; begin p(d); self.p(d); p(1); end;\nend;\n/\n"
+        assertThat(resolutions(source, 6)).containsExactly("p STATIC_ON_INSTANCE", "self.p STATIC_ON_INSTANCE", "p RESOLVED PROCEDURE 4")
+        // A rejection, not an absence: nothing goes to the project.
+        assertThat(calls(source).second.filter { it.reference.range.startLine == 6 }.map { it.outcome }).containsOnly(LocalCallOutcome.LOCAL_CAPTURE)
+    }
+
+    @Test
+    fun aMemberSelectedFromAStaticIsRejected() {
+        // Oracle: p(1) inside a static selects only the member and fails (PLS-00306); p(d) runs the static.
+        val source = "create type ms as object (a number, member procedure p(x number), static procedure p(x date), static procedure st);\n/\n" +
+            "create type body ms as\n  member procedure p(x number) is begin null; end;\n  static procedure p(x date) is begin null; end;\n" +
+            "  static procedure st is d date; begin p(1); p(d); end;\nend;\n/\n"
+        assertThat(resolutions(source, 6)).containsExactly("p MEMBER_FROM_STATIC", "p RESOLVED PROCEDURE 5")
+        assertThat(calls(source).second.filter { it.reference.range.startLine == 6 }.map { it.outcome }).containsOnly(LocalCallOutcome.LOCAL_CAPTURE)
+    }
 }

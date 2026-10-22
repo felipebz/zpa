@@ -33,6 +33,9 @@ import com.felipebz.zpa.project.ProjectCallCandidate.Applicability
 import com.felipebz.zpa.project.ProjectCallKind
 import com.felipebz.zpa.project.QualifiedName
 
+/** The kind of method a method call is written in: with an instance (a member) or without (a static). */
+internal enum class LocalMethodCaller { MEMBER, STATIC }
+
 /** One actual bound to one formal of a local candidate, with the datatype comparison of the two. */
 internal class LocalBindingCompatibility(
     /** One-based, in written order. */
@@ -83,6 +86,18 @@ internal class LocalCallResolution(
         /** Exactly one candidate is retained. It may still have unknown bindings. */
         RESOLVED,
 
+        /**
+         * Exactly one candidate is retained and it is a static method, called on the instance (named alone or through
+         * `SELF` from a member method): Oracle selects it and rejects the call. A rejection, not an absence.
+         */
+        STATIC_ON_INSTANCE,
+
+        /**
+         * Exactly one candidate is retained and it is a member method, called from a static method, which has no
+         * instance: Oracle reports wrong number or types of arguments. A rejection, not an absence.
+         */
+        MEMBER_FROM_STATIC,
+
         /** Several candidates are retained. */
         AMBIGUOUS,
 
@@ -122,7 +137,9 @@ internal class LocalOverloads(
         entities: List<LocalDeclarationId>,
         kind: ProjectCallKind,
         arguments: ProjectCallArguments,
-        actuals: List<LocalTypeEvidence>
+        actuals: List<LocalTypeEvidence>,
+        /** The kind of method the call is named alone or through `SELF` from; null outside methods. */
+        caller: LocalMethodCaller? = null
     ): LocalCallResolution {
         if (arguments.notation != ProjectCallArguments.Notation.VALID) {
             return LocalCallResolution(LocalCallResolution.Status.INVALID_NOTATION, emptyList(), null)
@@ -131,12 +148,16 @@ internal class LocalOverloads(
         val candidates = entities.map { candidate(model.declaration(it), kind, arguments, actualEvidence) }
         val retained = candidates.filter { it.retained }
         val status = when {
+            retained.size == 1 && caller == LocalMethodCaller.MEMBER && LocalTypeScope.isStatic(model.declaration(retained.single().declaration)) ->
+                LocalCallResolution.Status.STATIC_ON_INSTANCE
+            retained.size == 1 && caller == LocalMethodCaller.STATIC && LocalTypeScope.isInstanceMethod(model.declaration(retained.single().declaration)) ->
+                LocalCallResolution.Status.MEMBER_FROM_STATIC
             retained.size == 1 -> LocalCallResolution.Status.RESOLVED
             retained.size > 1 -> LocalCallResolution.Status.AMBIGUOUS
             candidates.none { it.applicability == Applicability.APPLICABLE } -> LocalCallResolution.Status.NO_APPLICABLE_CANDIDATE
             else -> LocalCallResolution.Status.NO_COMPATIBLE_CANDIDATE
         }
-        return LocalCallResolution(status, candidates, retained.singleOrNull()?.declaration)
+        return LocalCallResolution(status, candidates, retained.singleOrNull()?.declaration?.takeIf { status == LocalCallResolution.Status.RESOLVED })
     }
 
     private fun candidate(

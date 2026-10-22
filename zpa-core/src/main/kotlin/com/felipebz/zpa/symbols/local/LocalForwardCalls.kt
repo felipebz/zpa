@@ -134,6 +134,13 @@ internal class LocalForwardCalls(
         return LocalResolution.OverloadSet(LocalTypeScope.withoutOverridden(model, body, set.declarations)) to complete
     }
 
+    /** For a method set (named alone or through `SELF`), the kind of method the call is written in. */
+    private fun caller(reference: LocalReference, set: LocalResolution.OverloadSet): LocalMethodCaller? {
+        if ((model.declaration(set.declarations.first()).details as LocalSubprogram).methodKind == null) return null
+        val method = LocalTypeScope.method(model, LocalResolver.chain(model, reference.region)) ?: return null
+        return if (method.isStatic) LocalMethodCaller.STATIC else LocalMethodCaller.MEMBER
+    }
+
     private fun provisional(outcome: LocalResolution) = (outcome as? LocalResolution.Incomplete)?.provisional ?: outcome
 
     /** A method named alone, or through the implicit `SELF` or a written `SELF` parameter, inside a type body. */
@@ -185,7 +192,7 @@ internal class LocalForwardCalls(
         if (outcome != LocalCallOutcome.PROJECT) {
             val local = if (call != null && call.actuals == null) null else localCallee(reference)?.let { (set, complete) ->
                 if (!complete) LocalCallResolution.incomplete
-                else overloads.resolve(set.declarations, kind.internal(), notation.internal, actuals.map { it.evidence })
+                else overloads.resolve(set.declarations, kind.internal(), notation.internal, actuals.map { it.evidence }, caller(reference, set))
             }
             return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null, local)
         }

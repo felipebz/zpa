@@ -95,7 +95,7 @@ internal object LocalTypeScope {
 
     /** The method of a type body whose region is on [chain], with that region. */
     class Method(val declaration: LocalDeclaration, val region: LocalRegionId) {
-        val isStatic: Boolean get() = (declaration.details as LocalSubprogram).methodKind == LocalMethodKind.STATIC
+        val isStatic: Boolean get() = isStatic(declaration)
     }
 
     fun method(model: LocalSemanticModel, chain: List<LocalRegion>): Method? {
@@ -106,16 +106,19 @@ internal object LocalTypeScope {
         return declaration?.let { Method(it, region.id) }
     }
 
+    /** A static method. */
+    fun isStatic(declaration: LocalDeclaration) = (declaration.details as? LocalSubprogram)?.methodKind == LocalMethodKind.STATIC
+
+    /** A member method, MAP and ORDER included: it needs an instance. */
+    fun isInstanceMethod(declaration: LocalDeclaration) = (declaration.details as? LocalSubprogram)?.methodKind in INSTANCE_METHODS
+
     /**
      * From a static method, an attribute or a set of member methods is rejected (PLS-00588, PLS-00306). From a member
      * method, a set of static methods named without qualifier is invoked on the instance and rejected (PLS-00587).
      */
     fun rejectAcrossInstance(model: LocalSemanticModel, outcome: LocalResolution, fromStatic: Boolean): LocalResolution {
-        fun instance(id: LocalDeclarationId): Boolean {
-            val declaration = model.declaration(id)
-            return declaration.kind == ATTRIBUTE || (declaration.details as? LocalSubprogram)?.methodKind in INSTANCE_METHODS
-        }
-        fun static(id: LocalDeclarationId) = (model.declaration(id).details as? LocalSubprogram)?.methodKind == LocalMethodKind.STATIC
+        fun instance(id: LocalDeclarationId) = model.declaration(id).let { it.kind == ATTRIBUTE || isInstanceMethod(it) }
+        fun static(id: LocalDeclarationId) = isStatic(model.declaration(id))
         return when {
             !fromStatic -> if (outcome is LocalResolution.OverloadSet && outcome.declarations.all(::static)) {
                 LocalResolution.WrongKind(outcome.declarations.first())
