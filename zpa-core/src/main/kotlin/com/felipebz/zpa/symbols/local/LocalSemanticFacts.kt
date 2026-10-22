@@ -29,7 +29,10 @@ import com.felipebz.zpa.project.SourceRange
 internal class LocalSemanticFacts(
     val model: LocalSemanticModel,
     val references: List<LocalReference>,
-    /** For each reference, in the same order, its outcomes as [LocalResolver.resolveQualified] gives them. */
+    /**
+     * For each reference, in the same order, its outcomes as [LocalResolver.resolveQualified] gives them, refined with
+     * the project's specification coverage ([LocalSpecificationCoverage]) when the project is prepared.
+     */
     val resolutions: List<List<LocalResolution>>,
     val calls: List<LocalCallAnalysis>
 ) {
@@ -62,7 +65,10 @@ internal class LocalSemanticFacts(
 
     /** A type name is decided by its whole name; a call or qualified name by its first segment. */
     private fun decidingOutcome(reference: LocalReference, steps: List<LocalResolution>): LocalResolution =
-        if (isTypeName(reference) && steps.first() != LocalResolution.ProvenAbsent) steps.last() else steps.first()
+        if (isTypeName(reference) && !notLocal(steps.first())) steps.last() else steps.first()
+
+    private fun notLocal(outcome: LocalResolution) =
+        LocalReferenceOutcomes.isAbsent(outcome) || LocalReferenceOutcomes.isSpecificationMember(outcome)
 
     private class LegacyGate(val line: Int, val column: Int, val lexical: Boolean)
 }
@@ -110,7 +116,10 @@ internal class LocalShadowPair(
 
     companion object {
         fun classify(legacyLexical: Boolean, local: LocalResolution?): ShadowClass {
-            val declares = when (local) {
+            // Decided with the project's coverage: absent and a specification member are both "not local".
+            val decided = (local as? LocalResolution.SpecificationCovered)?.outcome?.takeIf { it != LocalResolution.SpecificationMember }
+                ?: if (local is LocalResolution.SpecificationCovered) LocalResolution.ProvenAbsent else local
+            val declares = when (decided) {
                 null -> return ShadowClass.UNPAIRED
                 is LocalResolution.Incomplete, is LocalResolution.Unsupported, is LocalResolution.SqlColumnOrLocal,
                 LocalResolution.SqlRelation, is LocalResolution.LocalFunctionInSql, is LocalResolution.SqlBuiltinOrLocal ->

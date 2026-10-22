@@ -1,0 +1,167 @@
+/**
+ * Z PL/SQL Analyzer
+ * Copyright (C) 2015-2026 Felipe Zorzo
+ * mailto:felipe AT felipezorzo DOT com DOT br
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+@file:OptIn(ZpaExperimentalApi::class)
+
+package com.felipebz.zpa.symbols.local
+
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectPreparationState
+import com.felipebz.zpa.api.project.ProjectSnapshot
+import com.felipebz.zpa.project.DeclarationRole
+import com.felipebz.zpa.project.IndexedDeclaration
+import com.felipebz.zpa.project.MemberNameStatus
+import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.PackageDeclaration
+import com.felipebz.zpa.project.PackageMemberNames
+import com.felipebz.zpa.project.ProjectSymbolIndex
+import java.util.*
+
+/**
+ * Decides lookups that stopped only at a package body's missing specification, with the project's member-name
+ * coverage of that specification when it is in another project file. A step over the resolver's outcomes: the
+ * resolver itself never sees the project.
+ *
+ * A lookup qualifies when its only gap is the missing specification, no region it relied on is incomplete, the body is
+ * a package body, and the project holds exactly one specification occurrence for the package name written in the
+ * body's CREATE. With the coverage's status for the name (every specification member precedes a body reference):
+ *
+ * | Status | The body declares the name | Outcome |
+ * |---|---|---|
+ * | NOT_DECLARED | no | absent |
+ * | NOT_DECLARED | yes | the body's own decision |
+ * | DECLARED_BEFORE | no | [LocalResolution.SpecificationMember] |
+ * | DECLARED_BEFORE | yes | the gap stays: overloads across specification and body form one set |
+ * | REJECTED or UNKNOWN | either | the gap stays |
+ *
+ * Every decision is wrapped in [LocalResolution.SpecificationCovered], so a consumer can tell it from one the file
+ * proved alone. Absence is still the only outcome after which a caller looks past the local scope: an absent name is
+ * one neither the body nor the specification declares.
+ *
+ * For a qualified name, the first segment is decided this way; when it is the package's own name, the second segment
+ * (a member of the body and specification) too, where "absent" is the member lookup's own `Undeclared`. Later
+ * segments inherit the first segments' gap only, and carry the covered decision.
+ */
+internal class LocalSpecificationCoverage private constructor(
+    private val model: LocalSemanticModel,
+    private val index: ProjectSymbolIndex
+) {
+    private val specifications = HashMap<LocalRegionId, Optional<IndexedDeclaration>>()
+
+    fun refine(reference: LocalReference, steps: List<LocalResolution>): List<LocalResolution> {
+        val first = steps.first() as? LocalResolution.Incomplete ?: return steps
+        if (!onlySpecificationGap(first)) return steps
+        val chain = LocalResolver.chain(model, reference.region)
+        if (chain.any { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }) return steps
+        val body = chain.firstOrNull { it.kind == LocalRegionKind.PACKAGE_BODY } ?: return steps
+        val specification = specification(body) ?: return steps
+        val decided = decide(specification, body, reference.name, first.provisional, LocalResolution.ProvenAbsent) ?: return steps
+        if (decided == LocalResolution.ProvenAbsent || decided == LocalResolution.SpecificationMember || steps.size == 1) {
+            return listOf(LocalResolution.SpecificationCovered(decided))
+        }
+        val result = arrayListOf<LocalResolution>(LocalResolution.SpecificationCovered(decided))
+        var rest = steps.drop(1)
+        // The package's own name as qualifier: the next segment is a member of the body and its specification.
+        if (isOwnUnit(decided, body)) {
+            val member = rest.first() as? LocalResolution.Incomplete
+            val decidedMember = member?.takeIf(::onlySpecificationGap)
+                ?.let { decide(specification, body, reference.segments.first().name, it.provisional, LocalResolution.Undeclared) }
+                ?: return result + rest
+            result += LocalResolution.SpecificationCovered(decidedMember)
+            if (decidedMember == LocalResolution.SpecificationMember) return result
+            rest = rest.drop(1)
+        }
+        for (step in rest) {
+            result += if (step is LocalResolution.Incomplete && onlySpecificationGap(step)) LocalResolution.SpecificationCovered(step.provisional) else step
+        }
+        return result
+    }
+
+    private fun onlySpecificationGap(outcome: LocalResolution.Incomplete) =
+        outcome.regionReasons.isEmpty() && outcome.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE)
+
+    /** The decision for [name], whose resolver outcome without the gap is [provisional]; null keeps the gap. */
+    private fun decide(
+        specification: IndexedDeclaration,
+        body: LocalRegion,
+        name: OracleIdentifier,
+        provisional: LocalResolution,
+        absent: LocalResolution
+    ): LocalResolution? = when (PackageMemberNames.at(index, specification, name, null).status) {
+        MemberNameStatus.NOT_DECLARED -> provisional.takeIf { it == absent || declaredByBody(it, body) }
+        MemberNameStatus.DECLARED_BEFORE -> LocalResolution.SpecificationMember.takeIf { provisional == absent }
+        MemberNameStatus.REJECTED, MemberNameStatus.UNKNOWN -> null
+    }
+
+    /** A decision made by declarations of the body region, or by the body's own unit name. */
+    private fun declaredByBody(outcome: LocalResolution, body: LocalRegion): Boolean {
+        val ids = when (outcome) {
+            is LocalResolution.Bound -> listOf(outcome.declaration)
+            is LocalResolution.OverloadSet -> outcome.declarations
+            is LocalResolution.WrongKind -> listOf(outcome.declaration)
+            is LocalResolution.DeclaredLater -> listOf(outcome.declaration)
+            is LocalResolution.Duplicate -> outcome.declarations
+            else -> return false
+        }
+        return ids.all { id -> model.declaration(id).let { it.region == body.id || isOwnUnit(LocalResolution.Bound(id), body) } }
+    }
+
+    private fun isOwnUnit(outcome: LocalResolution, body: LocalRegion): Boolean =
+        ((outcome as? LocalResolution.Bound)?.let { model.declaration(it.declaration).details } as? LocalUnit)?.region == body.id
+
+    /** The one specification occurrence the project holds for the body's package, or null. */
+    private fun specification(body: LocalRegion): IndexedDeclaration? = specifications.getOrPut(body.id) {
+        val name = LocalTypeScope.unitOf(model, body.id)?.unitName
+        Optional.ofNullable(name?.let { index.findOccurrences(it) }?.singleOrNull {
+            val declaration = it.declaration
+            declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION
+        })
+    }.orElse(null)
+
+    companion object {
+        /** The refinement over [snapshot]'s project, or null when the project is not prepared. */
+        fun of(model: LocalSemanticModel, snapshot: ProjectSnapshot): LocalSpecificationCoverage? =
+            if (snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) null
+            else LocalSpecificationCoverage(model, snapshot.projectIndex)
+    }
+}
+
+/**
+ * The outcomes of a file's references, computed once: the resolver's steps, refined with the specification coverage
+ * when the project is prepared. The facts and the forwarded calls read the same values.
+ */
+internal class LocalReferenceOutcomes(private val model: LocalSemanticModel, private val coverage: LocalSpecificationCoverage?) {
+    private val steps = IdentityHashMap<LocalReference, List<LocalResolution>>()
+
+    fun steps(reference: LocalReference): List<LocalResolution> = steps.getOrPut(reference) {
+        val resolved = LocalResolver.resolveQualified(model, reference)
+        coverage?.refine(reference, resolved) ?: resolved
+    }
+
+    fun first(reference: LocalReference): LocalResolution = steps(reference).first()
+
+    companion object {
+        /** An outcome after which the caller looks past the local scope: proven by the file, or with project coverage. */
+        fun isAbsent(outcome: LocalResolution) =
+            outcome == LocalResolution.ProvenAbsent || (outcome as? LocalResolution.SpecificationCovered)?.outcome == LocalResolution.ProvenAbsent
+
+        fun isSpecificationMember(outcome: LocalResolution) =
+            (outcome as? LocalResolution.SpecificationCovered)?.outcome == LocalResolution.SpecificationMember
+    }
+}

@@ -90,7 +90,10 @@ internal class LocalTypeWalk(
     private val model: LocalSemanticModel,
     private val snapshot: ProjectSnapshot?,
     /** The run's external metadata and compilation schema, as the project's own resolution uses them. */
-    private val external: ProjectExternalContext = ProjectExternalContext.none()
+    private val external: ProjectExternalContext = ProjectExternalContext.none(),
+    /** The outcomes of its lookups: the resolver's, refined with the project's specification coverage. */
+    private val outcomes: LocalReferenceOutcomes =
+        LocalReferenceOutcomes(model, snapshot?.let { LocalSpecificationCoverage.of(model, it) })
 ) {
     private val metadata = external.metadata
 
@@ -169,6 +172,16 @@ internal class LocalTypeWalk(
     private fun composite(followed: List<LocalDeclarationId>) =
         LocalTypeEvidence(ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed, null)
 
+    /** A decision made with the project's specification coverage is still the body's: its declaration is local. */
+    private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
+
+    /** [segments], a member of the specification of the package body holding [region], named through that package. */
+    fun specificationMember(segments: List<OracleIdentifier>, region: LocalRegionId): QualifiedName? {
+        val body = LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.PACKAGE_BODY } ?: return null
+        val unit = LocalTypeScope.unitOf(model, body.id) ?: return null
+        return QualifiedName(unit.unitName.segments + segments)
+    }
+
     /** The package whose specification or body holds [region], as an owner for the project's name lookups. */
     fun packageOwner(region: LocalRegionId): ProjectQualifiedName? =
         LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.PACKAGE_SPEC || it.kind == LocalRegionKind.PACKAGE_BODY }
@@ -200,8 +213,15 @@ internal class LocalTypeWalk(
                 val enclosing = model.region(declaration.region).parent ?: return unknown("no enclosing region")
                 val reference = LocalReference(control.name!!, control.nameRange!!, LocalReferenceContext.FOR_CONTROL, enclosing, emptyList(),
                     LocalReferenceContext.FOR_CONTROL, false, null)
-                val cursor = (LocalResolver.resolve(model, reference) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
-                if (cursor?.kind == CURSOR) { followed += cursor.id; composite(followed.toList()) } else unknown("iterates over a value")
+                val first = outcomes.first(reference)
+                if (LocalReferenceOutcomes.isSpecificationMember(first)) {
+                    // A cursor of the specification in another file: a row only when the project describes one.
+                    val row = specificationMember(listOf(control.name), enclosing)?.let { name -> project(name, TypeAnchor.ROWTYPE, enclosing) }
+                    if (row?.argumentType?.family?.orElse(null) == ProjectDatatypeFamily.COMPOSITE) row else unknown("a specification name the project does not describe as a row")
+                } else {
+                    val cursor = (covered(first) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
+                    if (cursor?.kind == CURSOR) { followed += cursor.id; composite(followed.toList()) } else unknown("iterates over a value")
+                }
             }
             null -> unknown("typed by its iteration control")
         }
@@ -243,9 +263,16 @@ internal class LocalTypeWalk(
             val typeRef = use.typeRef ?: return unknown("type not representable")
             if (typeRef is RefTypeRef) return unknown("REF type")
             val reference = LocalReferenceCollector.typeUseReference(use) ?: return unknown("type behind a database link")
-            val steps = LocalResolver.resolveQualified(model, reference)
-            if (steps.first() == LocalResolution.ProvenAbsent) return project(typeRef, use)
-            val last = steps.last()
+            val steps = outcomes.steps(reference)
+            if (LocalReferenceOutcomes.isAbsent(steps.first())) return project(typeRef, use)
+            // A member of the package's specification in another file: described by the project through the package.
+            val member = steps.indexOfFirst(LocalReferenceOutcomes::isSpecificationMember)
+            if (member >= 0) {
+                val name = if (member == 0) specificationMember(typeRef.name.segments, use.lookupRegion) else typeRef.name
+                val anchor = (typeRef as? AnchoredTypeRef)?.anchor
+                return name?.let { project(it, anchor, use.lookupRegion) } ?: unknown("no package for a specification member")
+            }
+            val last = covered(steps.last())
             if (steps.size != reference.segments.size + 1) return unknown("stopped at $last")
             return when (last) {
                 is LocalResolution.Bound -> declared(model.declaration(last.declaration), typeRef)
@@ -269,7 +296,7 @@ internal class LocalTypeWalk(
             else -> unknown("${target.kind} ${target.name} anchors no row")
         }
 
-        /** The first segment is proven absent in complete regions: the name is not local. */
+        /** The first segment is proven absent: the name is not local. */
         private fun project(typeRef: com.felipebz.zpa.project.TypeRef, use: LocalTypeUse): LocalTypeEvidence {
             val name = typeRef.name
             if (typeRef is NamedTypeRef && name.segments.size == 1) {
@@ -281,15 +308,20 @@ internal class LocalTypeWalk(
                 val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
             }
+            return project(name, (typeRef as? AnchoredTypeRef)?.anchor, use.lookupRegion)
+        }
+
+        /** [name] described by the project, as a type, or as the `%TYPE` / `%ROWTYPE` [anchor] of it. */
+        fun project(name: QualifiedName, anchor: TypeAnchor?, region: LocalRegionId): LocalTypeEvidence {
             val snapshot = snapshot ?: return unknown("no project snapshot")
-            val owner = packageOwner(use.lookupRegion)
+            val owner = packageOwner(region)
             val written = ProjectQualifiedName.wrap(name)
-            val described = when (typeRef) {
-                is AnchoredTypeRef -> snapshot.describeExternalType(
-                    ProjectWrittenAnchor.of(written, if (typeRef.anchor == TypeAnchor.TYPE) ProjectTypeReference.Anchor.TYPE else ProjectTypeReference.Anchor.ROWTYPE),
-                    owner, metadata, compilationSchema(use.lookupRegion)
+            val described = when (anchor) {
+                null -> snapshot.describeExternalType(written, owner, metadata, compilationSchema(region))
+                else -> snapshot.describeExternalType(
+                    ProjectWrittenAnchor.of(written, if (anchor == TypeAnchor.TYPE) ProjectTypeReference.Anchor.TYPE else ProjectTypeReference.Anchor.ROWTYPE),
+                    owner, metadata, compilationSchema(region)
                 )
-                else -> snapshot.describeExternalType(written, owner, metadata, compilationSchema(use.lookupRegion))
             }
             return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
         }

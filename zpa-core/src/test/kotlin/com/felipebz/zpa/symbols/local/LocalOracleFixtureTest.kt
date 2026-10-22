@@ -167,6 +167,8 @@ class LocalOracleFixtureTest {
                 is LocalResolution.ImplicitSelf -> "ImplicitSelf(${d(outcome.method)})"
                 is LocalResolution.InstanceMemberInStatic -> "InstanceMemberInStatic(${d(outcome.declaration)})"
                 LocalResolution.SqlRelation -> "SqlRelation"
+                is LocalResolution.SpecificationCovered -> "SpecificationCovered(${render(model, outcome.outcome)})"
+                LocalResolution.SpecificationMember -> "SpecificationMember"
                 is LocalResolution.LocalFunctionInSql -> "LocalFunctionInSql(${ds(outcome.declarations)})"
                 is LocalResolution.SqlBuiltinOrLocal -> "SqlBuiltinOrLocal(${ds(outcome.declarations)})"
             }

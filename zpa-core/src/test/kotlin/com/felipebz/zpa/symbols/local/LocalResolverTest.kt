@@ -79,6 +79,8 @@ class LocalResolverTest {
             is LocalResolution.ImplicitSelf -> "ImplicitSelf(${d(outcome.method)})"
             is LocalResolution.InstanceMemberInStatic -> "InstanceMemberInStatic(${d(outcome.declaration)})"
             LocalResolution.SqlRelation -> "SqlRelation"
+            is LocalResolution.SpecificationCovered -> "SpecificationCovered(${render(model, outcome.outcome)})"
+            LocalResolution.SpecificationMember -> "SpecificationMember"
             is LocalResolution.LocalFunctionInSql -> "LocalFunctionInSql(${outcome.declarations.joinToString(", ", transform = ::d)})"
             is LocalResolution.SqlBuiltinOrLocal -> "SqlBuiltinOrLocal(${outcome.declarations.joinToString(", ", transform = ::d)})"
         }

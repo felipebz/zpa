@@ -64,6 +64,18 @@ internal sealed interface LocalResolution {
     data object ProvenAbsent : LocalResolution
 
     /**
+     * A lookup that stopped only at a package body's missing specification, decided with the project's member-name
+     * coverage of that specification in another project file (see [LocalSpecificationCoverage]). [outcome] is
+     * [ProvenAbsent] when neither the body nor the specification declares the name (the caller may then look past the
+     * local scope, as for any absence), the body's own decision when only the body declares it, or
+     * [SpecificationMember]. Never produced by the resolver itself: it does not see the project.
+     */
+    data class SpecificationCovered(val outcome: LocalResolution) : LocalResolution
+
+    /** A member of the package's specification held by the project in another file: not local, the project describes it. */
+    data object SpecificationMember : LocalResolution
+
+    /**
      * A region the outcome relies on may miss declarations, or the lookup depends on something outside the file.
      *
      * [provisional] extends the outcome model on purpose: it is the outcome the resolver would give if every region it
