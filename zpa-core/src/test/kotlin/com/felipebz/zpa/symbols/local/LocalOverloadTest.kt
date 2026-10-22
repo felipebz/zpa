@@ -196,16 +196,6 @@ class LocalOverloadTest {
     }
 
     @Test
-    fun objectTypeMethodsKeepTheirOutcome() {
-        val source = "create type t as object (a number, member procedure m(x number), member procedure m(x date), member procedure run);\n/\n" +
-            "create type body t as\n  member procedure m(x number) is begin null; end;\n  member procedure m(x date) is begin null; end;\n" +
-            "  member procedure run is begin m(1); end;\nend;\n/\n"
-        val call = analyze(source).calls.single { it.target.toString() == "m" }
-        assertThat(call.outcome).isEqualTo(LocalCallOutcome.LOCAL_CAPTURE)
-        assertThat(call.local).isNull()
-    }
-
-    @Test
     fun aResolvedLocalFunctionGivesItsResult() {
         val snapshot = ProjectSnapshots.prepare(
             listOf(ProjectSourceInput.ofText("pkg.sql", "create package pkg as\n  procedure processar(p number);\n  procedure processar(p date);\nend;\n/\n")), false

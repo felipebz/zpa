@@ -92,7 +92,7 @@ internal object LocalResolver {
             }
             if (candidates.isNotEmpty()) {
                 outcome = decide(model, reference, scope, candidates, chain)
-                if (region.kind == LocalRegionKind.TYPE_BODY && method?.isStatic == true) outcome = LocalTypeScope.rejectInstanceMember(model, outcome)
+                if (region.kind == LocalRegionKind.TYPE_BODY && method != null) outcome = LocalTypeScope.rejectAcrossInstance(model, outcome, method.isStatic)
                 break
             }
         }

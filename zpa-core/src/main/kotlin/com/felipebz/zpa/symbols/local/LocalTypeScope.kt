@@ -72,6 +72,27 @@ internal object LocalTypeScope {
 
     fun unitOf(model: LocalSemanticModel, region: LocalRegionId): LocalUnit? = model.index.unit(region)
 
+    /**
+     * The methods of [methods] without those a subtype overrides: a supertype method and a method of a type nearer the
+     * type body [body] with the same heading are one entity (Oracle runs the override and reports no ambiguity), and
+     * the nearer one is kept.
+     */
+    fun withoutOverridden(model: LocalSemanticModel, body: LocalRegion, methods: List<LocalDeclarationId>): List<LocalDeclarationId> {
+        val regions = of(model, body, supertypeMethods = true).regions.map { it.id }
+        fun depth(declaration: LocalDeclaration): Int {
+            val region = model.region(declaration.region)
+            val specification = if (region.kind == LocalRegionKind.TYPE_BODY) unitOf(model, region.id)?.counterpart ?: region.id else region.id
+            return regions.indexOf(specification).takeIf { it >= 0 } ?: regions.indexOf(region.id)
+        }
+        val declarations = methods.map(model::declaration)
+        val keys = declarations.map { LocalDeclarationLinker.signatureKey(it.kind, it.details as LocalSubprogram) }
+        return declarations.filterIndexed { index, declaration ->
+            val key = keys[index] ?: return@filterIndexed true
+            val own = depth(declaration)
+            own < 0 || declarations.indices.none { other -> other != index && keys[other] == key && depth(declarations[other]).let { it in 0 until own } }
+        }.map { it.id }
+    }
+
     /** The method of a type body whose region is on [chain], with that region. */
     class Method(val declaration: LocalDeclaration, val region: LocalRegionId) {
         val isStatic: Boolean get() = (declaration.details as LocalSubprogram).methodKind == LocalMethodKind.STATIC
@@ -85,15 +106,22 @@ internal object LocalTypeScope {
         return declaration?.let { Method(it, region.id) }
     }
 
-    /** From a static method, an attribute or a set of member methods is rejected (PLS-00588, PLS-00306). */
-    fun rejectInstanceMember(model: LocalSemanticModel, outcome: LocalResolution): LocalResolution {
+    /**
+     * From a static method, an attribute or a set of member methods is rejected (PLS-00588, PLS-00306). From a member
+     * method, a set of static methods named without qualifier is invoked on the instance and rejected (PLS-00587).
+     */
+    fun rejectAcrossInstance(model: LocalSemanticModel, outcome: LocalResolution, fromStatic: Boolean): LocalResolution {
         fun instance(id: LocalDeclarationId): Boolean {
             val declaration = model.declaration(id)
             return declaration.kind == ATTRIBUTE || (declaration.details as? LocalSubprogram)?.methodKind in INSTANCE_METHODS
         }
-        return when (outcome) {
-            is LocalResolution.Bound -> if (instance(outcome.declaration)) LocalResolution.InstanceMemberInStatic(outcome.declaration) else outcome
-            is LocalResolution.OverloadSet ->
+        fun static(id: LocalDeclarationId) = (model.declaration(id).details as? LocalSubprogram)?.methodKind == LocalMethodKind.STATIC
+        return when {
+            !fromStatic -> if (outcome is LocalResolution.OverloadSet && outcome.declarations.all(::static)) {
+                LocalResolution.WrongKind(outcome.declarations.first())
+            } else outcome
+            outcome is LocalResolution.Bound -> if (instance(outcome.declaration)) LocalResolution.InstanceMemberInStatic(outcome.declaration) else outcome
+            outcome is LocalResolution.OverloadSet ->
                 if (outcome.declarations.all(::instance)) LocalResolution.InstanceMemberInStatic(outcome.declarations.first()) else outcome
             else -> outcome
         }

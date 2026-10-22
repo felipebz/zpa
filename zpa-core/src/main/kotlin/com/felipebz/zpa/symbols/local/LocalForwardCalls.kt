@@ -118,21 +118,34 @@ internal class LocalForwardCalls(
     }
 
     /**
-     * The local overload set the whole name resolves to, outside object types, with whether it was found through
-     * complete regions only.
+     * The local overload set the whole name resolves to, with whether it was found through complete regions only.
+     * Methods qualify only inside a type body, named alone (`m(…)`) or through `SELF` (`self.m(…)`); constructors never
+     * do. Methods reached through a value or a type name are not resolved here.
      */
     private fun localCallee(reference: LocalReference): Pair<LocalResolution.OverloadSet, Boolean>? {
         val steps = LocalResolver.resolveQualified(model, reference)
         if (steps.size != reference.segments.size + 1) return null
-        val last = steps.last()
-        val set = (last as? LocalResolution.OverloadSet ?: (last as? LocalResolution.Incomplete)?.provisional as? LocalResolution.OverloadSet)
-            ?: return null
-        if (set.declarations.any { isMethod(model.declaration(it)) }) return null
-        return set to steps.none { it is LocalResolution.Incomplete }
+        val set = provisional(steps.last()) as? LocalResolution.OverloadSet ?: return null
+        val methods = set.declarations.map { (model.declaration(it).details as LocalSubprogram).methodKind }
+        val complete = steps.none { it is LocalResolution.Incomplete }
+        if (methods.none { it != null }) return set to complete
+        if (methods.any { it == null || it == LocalMethodKind.CONSTRUCTOR } || !inTypeBody(steps)) return null
+        val body = LocalResolver.chain(model, reference.region).firstOrNull { it.kind == LocalRegionKind.TYPE_BODY } ?: return null
+        return LocalResolution.OverloadSet(LocalTypeScope.withoutOverridden(model, body, set.declarations)) to complete
     }
 
-    private fun isMethod(declaration: LocalDeclaration) = (declaration.details as? LocalSubprogram)?.methodKind != null ||
-        model.region(declaration.region).kind.let { it == LocalRegionKind.OBJECT_TYPE || it == LocalRegionKind.TYPE_BODY }
+    private fun provisional(outcome: LocalResolution) = (outcome as? LocalResolution.Incomplete)?.provisional ?: outcome
+
+    /** A method named alone, or through the implicit `SELF` or a written `SELF` parameter, inside a type body. */
+    private fun inTypeBody(steps: List<LocalResolution>): Boolean = when (steps.size) {
+        1 -> true // a method set named alone is found only from the type scope of a type body
+        2 -> when (val first = provisional(steps.first())) {
+            is LocalResolution.ImplicitSelf -> true
+            is LocalResolution.Bound -> model.declaration(first.declaration).let { it.kind == LocalDeclarationKind.PARAMETER && it.name == LocalResolver.SELF }
+            else -> false
+        }
+        else -> false
+    }
 
     private fun ProjectCallKind.internal() = when (this) {
         ProjectCallKind.PROCEDURE -> com.felipebz.zpa.project.ProjectCallKind.PROCEDURE

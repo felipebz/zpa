@@ -147,7 +147,8 @@ internal class LocalOverloads(
     ): LocalCallCandidate {
         val subprogram = declaration.details as LocalSubprogram
         val declaredKind = if (declaration.kind == LocalDeclarationKind.FUNCTION) ProjectCallKind.FUNCTION else ProjectCallKind.PROCEDURE
-        val parameters = subprogram.parameters
+        // A written SELF never binds to an actual (a label `self =>` is rejected): it is the method's instance.
+        val parameters = if (subprogram.methodKind == null) subprogram.parameters else subprogram.parameters.filter { it.name != LocalResolver.SELF }
         val bound = ParameterListBinding.bind(declaredKind, kind, parameters, LocalParameter::name, LocalParameter::hasDefault, arguments)
         val bindings = if (bound.applicability != Applicability.APPLICABLE) emptyList() else actuals.mapIndexed { index, actual ->
             val parameter = parameters[bound.formalIndices[index]]

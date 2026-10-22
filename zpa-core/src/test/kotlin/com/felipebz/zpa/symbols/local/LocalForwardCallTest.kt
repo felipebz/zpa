@@ -322,7 +322,10 @@ class LocalForwardCallTest {
 
     @Test
     fun callsAndFactsAreDeterministicAndDetached() {
-        val source = block(
+        val type = "CREATE TYPE tt AS OBJECT (a NUMBER, MEMBER PROCEDURE m(x NUMBER), MEMBER PROCEDURE m(x DATE), MEMBER PROCEDURE run);\n/\n" +
+            "CREATE TYPE BODY tt AS\n  MEMBER PROCEDURE m(x NUMBER) IS BEGIN NULL; END;\n  MEMBER PROCEDURE m(x DATE) IS BEGIN NULL; END;\n" +
+            "  MEMBER PROCEDURE run IS BEGIN SELF.m(1); END;\nEND;\n/\n"
+        val source = type + block(
             "  SUBTYPE amount_t IS DATE;\n  TYPE r_t IS RECORD (f amount_t);\n  r r_t;\n  v r.f%TYPE;\n  TYPE n_t IS TABLE OF amount_t;\n  n n_t;\n" +
                 "  FUNCTION f RETURN amount_t IS BEGIN RETURN NULL; END;\n  PROCEDURE p(x NUMBER) IS BEGIN NULL; END;\n  PROCEDURE p(x DATE) IS BEGIN NULL; END;",
             "pkg.processar(v); pkg.processar(r.f); pkg.processar('a'); pkg.processar(n(1)); pkg.processar(f);\n  FOR i IN 1..2 LOOP pkg.processar(i); END LOOP;\n  p(v);"
@@ -334,6 +337,7 @@ class LocalForwardCallTest {
         val reversed = rendered(LocalForwardCalls(first.model, first.references.reversed(), first.facts.reversed(), snapshot).analyze())
         assertThat(reversed.reversed()).isEqualTo(rendered(first.calls))
         assertThat(first.calls.single { it.target.toString() == "p" }.local!!.status).isEqualTo(LocalCallResolution.Status.RESOLVED)
+        assertThat(first.calls.single { it.target.toString().equals("self.m", ignoreCase = true) }.local!!.status).isEqualTo(LocalCallResolution.Status.RESOLVED)
         assertThat(first.calls.filter { it.target.toString().endsWith("processar") }.map(::render)).allMatch { it.endsWith("RESOLVED date") || it.endsWith("RESOLVED number") || it.contains("CHARACTER") }
             .hasSize(6)
         // Facts and results reach no syntax, legacy symbol or snapshot; project results are the project's own values.
