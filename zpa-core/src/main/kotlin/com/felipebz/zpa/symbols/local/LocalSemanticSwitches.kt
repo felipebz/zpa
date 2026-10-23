@@ -20,12 +20,15 @@
 package com.felipebz.zpa.symbols.local
 
 /**
- * Internal switches that let a consumer take its decision from the local semantic resolution instead of the legacy
- * lookup. Off by default; not public API and not a Sonar property. Read once from the environment of the analysis
- * process (a variable set to `true`), and settable by tests in this module.
+ * Internal switches through which consumers take their decision from the local semantic resolution instead of the
+ * legacy lookup. Not public API and not a Sonar property: an environment variable of the analysis process is the way
+ * back, and tests in this module set the switches directly.
  */
 internal object LocalSemanticSwitches {
-    /** The project type resolution's lexical gate decides from the local outcome where it is certain. */
+    /**
+     * The project type resolution's lexical gate decides from the local outcome where it is certain. On by default;
+     * `ZPA_INTERNAL_LOCAL_TYPE_GATE=false` turns it off.
+     */
     @Volatile
-    var typeNameGate: Boolean = System.getenv("ZPA_INTERNAL_LOCAL_TYPE_GATE") == "true"
+    var typeNameGate: Boolean = System.getenv("ZPA_INTERNAL_LOCAL_TYPE_GATE") != "false"
 }

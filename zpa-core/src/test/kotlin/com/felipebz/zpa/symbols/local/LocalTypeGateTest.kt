@@ -38,6 +38,7 @@ import com.felipebz.zpa.squid.SemanticScanCapabilities
 import com.felipebz.zpa.squid.createProjectAnalysis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -65,9 +66,16 @@ class LocalTypeGateTest {
         }
     }
 
+    private var found = LocalSemanticSwitches.typeNameGate
+
+    @BeforeEach
+    fun save() {
+        found = LocalSemanticSwitches.typeNameGate
+    }
+
     @AfterEach
-    fun reset() {
-        LocalSemanticSwitches.typeNameGate = false
+    fun restore() {
+        LocalSemanticSwitches.typeNameGate = found
     }
 
     private fun gate(text: String, vararg others: Pair<String, String>, on: Boolean, failing: Boolean = false): List<String> {
