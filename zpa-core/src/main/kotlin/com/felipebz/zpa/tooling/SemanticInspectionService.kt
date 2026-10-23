@@ -175,6 +175,7 @@ public enum class ProjectRecordMemberResolutionState {
     RESOLVED,
     NOT_FOUND,
     AMBIGUOUS,
+    INCOMPLETE,
     UNSUPPORTED_TYPE
 }
 
@@ -350,6 +351,12 @@ private object SemanticInspectionMapper {
             declaration(resolution.declaration),
             null,
             resolution.candidates.map(::field)
+        )
+        is ProjectRecordMemberResolution.Incomplete -> ProjectRecordMemberResolutionSummary(
+            ProjectRecordMemberResolutionState.INCOMPLETE,
+            declaration(resolution.declaration),
+            null,
+            emptyList()
         )
         is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberResolutionSummary(
             ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE,

@@ -374,6 +374,7 @@ internal class ProjectOverviewBuilder(
         is ProjectRecordMemberResolution.NotFound -> "No matching field in ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.Ambiguous ->
             "Ambiguous (${resolution.candidates.size} fields) in ${resolution.declaration.qualifiedName}"
+        is ProjectRecordMemberResolution.Incomplete -> "Attribute list incomplete in ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.UnsupportedType -> "Unsupported type ${resolution.declaration.qualifiedName}"
     }
 

@@ -48,7 +48,12 @@ data class StandaloneTypeDeclaration(
     override val fileId: FileId,
     override val sourceRange: SourceRange,
     /** Direct element type syntax of a COLLECTION, when the extractor admitted it. Unresolved. */
-    val elementType: TypeRef? = null
+    val elementType: TypeRef? = null,
+    val attributes: List<ProjectRecordField> = emptyList(),
+    val methodNames: List<OracleIdentifier> = emptyList(),
+    val supertype: TypeRef? = null,
+    /** False when an element of the type could not be extracted. `ALTER TYPE` changes are tracked by the index. */
+    val attributesComplete: Boolean = true
 ) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE
@@ -57,6 +62,9 @@ data class StandaloneTypeDeclaration(
     init {
         require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
             "Only COLLECTION declarations may contain an element type"
+        }
+        require(shape == ProjectTypeShape.OBJECT || (attributes.isEmpty() && methodNames.isEmpty() && supertype == null)) {
+            "Only OBJECT declarations may contain attributes or a supertype"
         }
     }
 }

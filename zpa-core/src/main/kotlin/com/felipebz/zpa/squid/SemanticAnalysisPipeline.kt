@@ -59,7 +59,7 @@ internal class SemanticAnalysisPipeline(
 
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
             val projectTypeResolver = ProjectTypeResolver(projectAnalysisContext)
-            val projectRecordMemberResolver = ProjectRecordMemberResolver()
+            val projectRecordMemberResolver = ProjectRecordMemberResolver(projectAnalysisContext)
             val projectRecordFieldTypeResolver = ProjectRecordFieldTypeResolver(
                 TypeRefSemanticResolver(projectTypeResolver)
             )

@@ -80,7 +80,7 @@ class ProjectRecordMemberResolverTest {
     }
 
     @Test
-    fun rejectsNonRecordAndUnsupportedProjectTypes() {
+    fun rejectsCollectionsAndSubtypesAndResolvesObjectAttributes() {
         val collection = extractor.extract(FileId("types.sql"), "CREATE PACKAGE p AS TYPE t IS TABLE OF NUMBER; END p;")
             .filterIsInstance<PackageTypeDeclaration>().single()
         val standalone = extractor.extract(FileId("standalone.sql"), "CREATE TYPE t AS OBJECT (id NUMBER);")
@@ -91,7 +91,7 @@ class ProjectRecordMemberResolverTest {
         assertThat(resolver.resolve(collection, OracleIdentifier.fromSource("id")))
             .isEqualTo(ProjectRecordMemberResolution.UnsupportedType(collection))
         assertThat(resolver.resolve(standalone, OracleIdentifier.fromSource("id")))
-            .isEqualTo(ProjectRecordMemberResolution.UnsupportedType(standalone))
+            .isEqualTo(ProjectRecordMemberResolution.Resolved(standalone, standalone.attributes.single()))
         assertThat(resolver.resolve(subtype, OracleIdentifier.fromSource("id")))
             .isEqualTo(ProjectRecordMemberResolution.UnsupportedType(subtype))
     }

@@ -451,6 +451,7 @@ internal class SemanticTreeBuilder {
         ProjectRecordMemberResolutionState.RESOLVED -> "Resolved"
         ProjectRecordMemberResolutionState.NOT_FOUND -> "No matching project field"
         ProjectRecordMemberResolutionState.AMBIGUOUS -> "Ambiguous"
+        ProjectRecordMemberResolutionState.INCOMPLETE -> "Attribute list incomplete"
         ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE -> "Unsupported type"
     }
 
@@ -462,6 +463,7 @@ internal class SemanticTreeBuilder {
     private fun stopReason(reason: String?): String = when (reason) {
         "MEMBER_NOT_FOUND" -> "Member not found"
         "MEMBER_AMBIGUOUS" -> "Ambiguous member"
+        "MEMBER_INCOMPLETE" -> "Attribute list incomplete"
         "UNSUPPORTED_TYPE" -> "Unsupported type"
         "FIELD_TYPE_UNRESOLVED" -> "Field type unresolved"
         null -> "Unknown"

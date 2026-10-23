@@ -19,7 +19,7 @@
  */
 package com.felipebz.zpa.project
 
-/** A resolved project RECORD member segment and the type fact for that field. */
+/** A resolved project RECORD field or OBJECT attribute segment and the type fact for it. */
 internal data class ProjectRecordMemberPathSegment(
     val field: ProjectRecordField,
     val fieldTypeResolution: ProjectRecordFieldTypeResolution
@@ -71,12 +71,13 @@ internal sealed interface ProjectRecordMemberPathResolution {
     enum class StopReason {
         MEMBER_NOT_FOUND,
         MEMBER_AMBIGUOUS,
+        MEMBER_INCOMPLETE,
         UNSUPPORTED_TYPE,
         FIELD_TYPE_UNRESOLVED
     }
 }
 
-/** Composes a finite project RECORD member path from an already known base type. */
+/** Composes a finite member path (record fields, object attributes) from an already known base type. */
 internal class ProjectRecordMemberPathResolver(
     private val memberResolver: ProjectRecordMemberResolver,
     private val fieldTypeResolver: ProjectRecordFieldTypeResolver
@@ -113,15 +114,15 @@ internal class ProjectRecordMemberPathResolver(
                 return stopped(segments, memberNames[index + 1], fieldTypeReason(fieldTypeResolution))
             }
 
-            val nestedRecord = nextDeclaration as? PackageTypeDeclaration
-            if (nestedRecord == null || nestedRecord.shape != ProjectTypeShape.RECORD) {
-                return stopped(
-                    segments,
-                    memberNames[index + 1],
-                    ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
-                )
-            }
-            currentDeclaration = nestedRecord
+            val nested = nextDeclaration.takeIf {
+                (it is PackageTypeDeclaration && it.shape == ProjectTypeShape.RECORD) ||
+                    (it is StandaloneTypeDeclaration && it.shape == ProjectTypeShape.OBJECT)
+            } ?: return stopped(
+                segments,
+                memberNames[index + 1],
+                ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
+            )
+            currentDeclaration = nested
         }
 
         error("A project member path must contain at least two member names")
@@ -137,6 +138,7 @@ internal class ProjectRecordMemberPathResolver(
         when (resolution) {
             is ProjectRecordMemberResolution.NotFound -> ProjectRecordMemberPathResolution.StopReason.MEMBER_NOT_FOUND
             is ProjectRecordMemberResolution.Ambiguous -> ProjectRecordMemberPathResolution.StopReason.MEMBER_AMBIGUOUS
+            is ProjectRecordMemberResolution.Incomplete -> ProjectRecordMemberPathResolution.StopReason.MEMBER_INCOMPLETE
             is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
             is ProjectRecordMemberResolution.Resolved -> error("Resolved member was not expected here")
         }

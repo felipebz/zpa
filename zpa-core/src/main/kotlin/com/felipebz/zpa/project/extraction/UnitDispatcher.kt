@@ -22,7 +22,9 @@ package com.felipebz.zpa.project.extraction
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectDeclaration
+import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.ProjectFileExtraction
+import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.immutableList
 
 /**
@@ -61,7 +63,46 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
                 cursor = create + 1
             }
         }
-        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames)
+        val altered = alteredTypeAttributes()
+        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, altered.keys, altered.filterValues { it.isNotEmpty() })
+    }
+
+    private fun alteredTypeAttributes(): Map<QualifiedName, Set<OracleIdentifier>> {
+        val altered = HashMap<QualifiedName, MutableSet<OracleIdentifier>>()
+        var cursor = 0
+        while (cursor < stream.tokens.size) {
+            val alter = stream.nextValue(cursor, "ALTER") ?: break
+            cursor = alter + 1
+            if (!stream.isKeyword(alter, "ALTER") || stream.valueAt(alter + 1) != "TYPE") continue
+            val name = stream.qualifiedName(alter + 2) ?: continue
+            val end = statementEnd(name.second)
+            val attributes = (name.second until end).filter { stream.valueAt(it) == "ATTRIBUTE" }
+            if (attributes.isEmpty()) continue
+            val dropped = altered.getOrPut(name.first) { HashSet() }
+            for (attribute in attributes) {
+                if (stream.valueAt(attribute - 1) != "DROP") continue
+                if (stream.valueAt(attribute + 1) == "(") {
+                    val close = stream.matching(attribute + 1).coerceAtMost(end)
+                    var index = attribute + 2
+                    while (index < close) {
+                        stream.identifierAt(index)?.let { dropped += it.first }
+                        index = (index + 1 until close).firstOrNull { stream.valueAt(it) == "," }?.plus(1) ?: close
+                    }
+                } else {
+                    stream.identifierAt(attribute + 1)?.let { dropped += it.first }
+                }
+            }
+        }
+        return altered
+    }
+
+    /** A statement ends at its `;` or at a `/` that opens a line. */
+    private fun statementEnd(start: Int): Int {
+        val semicolon = stream.semicolonAfter(start)
+        val slash = (start until semicolon).firstOrNull { index ->
+            stream.valueAt(index) == "/" && (index == 0 || stream.tokens[index - 1].line < stream.tokens[index].line)
+        }
+        return slash ?: semicolon
     }
 
     private fun parseCreate(create: Int): ParsedUnit? {

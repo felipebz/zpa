@@ -26,11 +26,19 @@ import java.util.concurrent.ConcurrentHashMap
 class ProjectSymbolIndexBuilder {
     private val declarationsByFile = ConcurrentHashMap<FileId, List<ProjectDeclaration>>()
     private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
+    private val alteredTypeAttributesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
+    private val droppedTypeAttributesByFile = ConcurrentHashMap<FileId, Map<QualifiedName, Set<OracleIdentifier>>>()
 
     fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) = add(fileId, declarations, emptySet())
 
     /** [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact. */
-    internal fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>, omittedStandaloneCallables: Set<QualifiedName>) {
+    internal fun add(
+        fileId: FileId,
+        declarations: Collection<ProjectDeclaration>,
+        omittedStandaloneCallables: Set<QualifiedName>,
+        alteredTypeAttributes: Set<QualifiedName> = emptySet(),
+        droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = emptyMap()
+    ) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
         }
@@ -39,6 +47,8 @@ class ProjectSymbolIndexBuilder {
             "Declarations for $fileId were added more than once"
         }
         if (omittedStandaloneCallables.isNotEmpty()) omittedStandaloneCallablesByFile[fileId] = omittedStandaloneCallables
+        if (alteredTypeAttributes.isNotEmpty()) alteredTypeAttributesByFile[fileId] = alteredTypeAttributes
+        if (droppedTypeAttributes.isNotEmpty()) droppedTypeAttributesByFile[fileId] = droppedTypeAttributes
     }
 
     fun build(): ProjectSymbolIndex {
@@ -52,7 +62,10 @@ class ProjectSymbolIndexBuilder {
             )
         }
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
-        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables)
+        val alteredTypeAttributes = alteredTypeAttributesByFile.values.flatMapTo(HashSet()) { it }
+        val dropped = HashMap<QualifiedName, MutableSet<OracleIdentifier>>()
+        droppedTypeAttributesByFile.values.forEach { file -> file.forEach { (type, names) -> dropped.getOrPut(type) { HashSet() } += names } }
+        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, alteredTypeAttributes, dropped)
     }
 }
 
@@ -77,7 +90,9 @@ class IndexedDeclaration internal constructor(
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
     fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
-    omittedStandaloneCallables: Set<QualifiedName> = emptySet()
+    omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
+    alteredTypeAttributes: Set<QualifiedName> = emptySet(),
+    droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = emptyMap()
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -85,6 +100,11 @@ class ProjectSymbolIndex internal constructor(
     // Name-only standalone coverage: identified standalone callable headings that produced no fact. Never candidates.
     internal val omittedStandaloneCallables: Set<QualifiedName> =
         Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
+
+    internal val alteredTypeAttributes: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(alteredTypeAttributes))
+
+    internal val droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> =
+        Collections.unmodifiableMap(droppedTypeAttributes.mapValues { Collections.unmodifiableSet(HashSet(it.value)) })
 
     /** All canonical occurrences in deterministic file, then per-file order. */
     val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })

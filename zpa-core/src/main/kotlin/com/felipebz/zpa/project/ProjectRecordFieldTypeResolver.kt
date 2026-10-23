@@ -19,7 +19,7 @@
  */
 package com.felipebz.zpa.project
 
-/** Resolves only the type reference of an already identified project RECORD field. */
+/** Resolves only the type reference of an already identified project RECORD field or OBJECT attribute. */
 internal class ProjectRecordFieldTypeResolver(
     private val resolver: TypeRefSemanticResolver
 ) {
@@ -27,7 +27,7 @@ internal class ProjectRecordFieldTypeResolver(
         val field = member.field
         return ProjectRecordFieldTypeResolution(
             field,
-            resolver.resolve(field.typeRef, ProjectTypeLookupContext(member.declaration.owner))
+            resolver.resolve(field.typeRef, ProjectTypeLookupContext((member.declaration as? PackageTypeDeclaration)?.owner))
         )
     }
 }

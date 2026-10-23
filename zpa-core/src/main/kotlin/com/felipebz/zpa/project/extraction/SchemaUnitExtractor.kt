@@ -20,9 +20,12 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.ProjectRecordField
 import com.felipebz.zpa.project.ProjectTypeShape
 import com.felipebz.zpa.project.SequenceDeclaration
 import com.felipebz.zpa.project.StandaloneTypeDeclaration
+import com.felipebz.zpa.project.TypeRef
 
 /** `CREATE SEQUENCE` and `CREATE [OR REPLACE] TYPE [BODY]` units, recognized with the value-based token operations. */
 internal class SchemaUnitExtractor(
@@ -54,10 +57,16 @@ internal class SchemaUnitExtractor(
         val name = stream.qualifiedName(typeIndex + 1) ?: return null
         val end = stream.semicolonAfter(typeIndex + 1)
         val collection = standaloneCollection(create, name.second, end)
-        val shape = typeReferences.typeShape(typeIndex, end) ?: ProjectTypeShape.COLLECTION.takeIf { collection != null }
+        val objectSyntax = objectSyntax(create, name.second)
+        val shape = if (objectSyntax != null) ProjectTypeShape.OBJECT
+        else typeReferences.typeShape(typeIndex, end) ?: ProjectTypeShape.COLLECTION.takeIf { collection != null }
         val declaration = StandaloneTypeDeclaration(
             name.first, shape, stream.fileId, stream.range(create, end),
-            elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION }
+            elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION },
+            attributes = objectSyntax?.attributes.orEmpty(),
+            methodNames = objectSyntax?.methods.orEmpty(),
+            supertype = objectSyntax?.supertype,
+            attributesComplete = objectSyntax?.complete ?: true
         )
         return ParsedUnit(listOf(declaration), end + 1)
     }
@@ -75,6 +84,54 @@ internal class SchemaUnitExtractor(
         return collectionElements.parseStandalone(afterName, limit, reliableEnd(afterName, limit)?.takeIf { it == end })
     }
 
+    private class ObjectSyntax(
+        val attributes: List<ProjectRecordField>,
+        val methods: List<OracleIdentifier>,
+        val supertype: TypeRef?,
+        val complete: Boolean
+    )
+
+    private fun objectSyntax(create: Int, afterName: Int): ObjectSyntax? {
+        val limit = bounds.unitLimit(create)
+        val keyword = stream.firstAtTopLevel(afterName, setOf("OBJECT", "UNDER"), limit) ?: return null
+        val under = stream.valueAt(keyword) == "UNDER"
+        if (!under && !(stream.isKeyword(keyword - 1, "AS") || stream.isKeyword(keyword - 1, "IS"))) return null
+        var open = keyword + 1
+        var supertype: TypeRef? = null
+        if (under) {
+            val superName = stream.qualifiedName(keyword + 1) ?: return ObjectSyntax(emptyList(), emptyList(), null, false)
+            supertype = typeReferences.typeReference(keyword + 1, superName.second)
+            open = superName.second
+        }
+        val close = stream.strictClose(open, limit) ?: return ObjectSyntax(emptyList(), emptyList(), supertype, false)
+        val parts = stream.splitStrict(open, close) ?: return ObjectSyntax(emptyList(), emptyList(), supertype, false)
+        val attributes = ArrayList<ProjectRecordField>()
+        val methods = ArrayList<OracleIdentifier>()
+        var complete = supertype != null || !under
+        for (part in parts) {
+            if (stream.valueAt(part.first) in METHOD_STARTS) {
+                if (stream.valueAt(part.first) == "PRAGMA") continue
+                val kind = (part.first..part.last).firstOrNull { stream.valueAt(it) == "FUNCTION" || stream.valueAt(it) == "PROCEDURE" }
+                val method = kind?.let { stream.identifierAt(it + 1) }
+                if (method == null) complete = false else methods += method.first
+                continue
+            }
+            if (methods.isNotEmpty()) {
+                // Not valid Oracle.
+                complete = false
+                continue
+            }
+            val attribute = stream.identifierAt(part.first)
+            val typeRef = attribute?.let { typeReferences.declaredType(it.second, part.last + 1) }
+            if (attribute == null || typeRef == null) {
+                complete = false
+                continue
+            }
+            attributes += ProjectRecordField(attribute.first, attributes.size, typeRef, stream.range(part.first, part.last))
+        }
+        return ObjectSyntax(attributes, methods, supertype, complete)
+    }
+
     /** First `;` at typed delimiter depth 0 in `[start, limit)`, else [limit]; null when delimiters are crossed. */
     private fun reliableEnd(start: Int, limit: Int): Int? {
         val expected = kotlin.collections.ArrayDeque<PlSqlPunctuator>()
@@ -86,6 +143,10 @@ internal class SchemaUnitExtractor(
             }
         }
         return if (expected.isEmpty()) limit else null
+    }
+
+    private companion object {
+        val METHOD_STARTS = setOf("MEMBER", "STATIC", "MAP", "ORDER", "CONSTRUCTOR", "FINAL", "NOT", "INSTANTIABLE", "OVERRIDING", "PRAGMA")
     }
 
     fun parseTypeBody(typeIndex: Int): ParsedUnit {
