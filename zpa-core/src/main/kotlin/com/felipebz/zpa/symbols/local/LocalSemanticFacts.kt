@@ -34,8 +34,16 @@ internal class LocalSemanticFacts(
      * the project's specification coverage ([LocalSpecificationCoverage]) when the project is prepared.
      */
     val resolutions: List<List<LocalResolution>>,
-    val calls: List<LocalCallAnalysis>
+    val calls: List<LocalCallAnalysis>,
+    /**
+     * The source ranges, in this file, of the declarations the project index holds (package specification members and
+     * standalone units), as plain coordinates: a local binding to one of them is also a project declaration.
+     */
+    private val projectHeld: Set<LocalRangeKey> = emptySet()
 ) {
+    /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
+    val gateMismatches = ArrayList<String>()
+
     private val typeGates = ArrayList<LegacyGate>()
     private val firstSegments = ArrayList<LegacyGate>()
 
@@ -49,15 +57,45 @@ internal class LocalSemanticFacts(
         firstSegments += LegacyGate(line, column, lexical)
     }
 
+    private val byStart: Map<Triple<Boolean, Int, Int>, List<Int>> by lazy {
+        val map = HashMap<Triple<Boolean, Int, Int>, MutableList<Int>>()
+        for ((index, reference) in references.withIndex()) {
+            map.getOrPut(Triple(isTypeName(reference), reference.range.startLine, reference.range.startColumn)) { ArrayList(1) } += index
+        }
+        map
+    }
+
+    /** The local outcome deciding the name of [kind] starting at line, column; null when no single reference starts there. */
+    private fun localOutcome(kind: LocalShadowPair.Kind, line: Int, column: Int): LocalResolution? =
+        byStart[Triple(kind == LocalShadowPair.Kind.TYPE_NAME, line, column)]?.singleOrNull()
+            ?.let { decidingOutcome(references[it], resolutions[it]) }
+
+    /**
+     * The type-name gate's decision taken from the local outcome, paired as [differential] pairs it:
+     * - [LocalTypeGate.Local]: a local declaration the project does not hold decides the name (no project resolution);
+     * - [LocalTypeGate.Held]: the local binding is a declaration the project index also holds; project resolution runs,
+     *   and must resolve to that declaration;
+     * - [LocalTypeGate.NotLocal]: absent, absent with the project's coverage, or a member of the specification in another
+     *   file;
+     * - null when the local outcome is uncertain or no reference is paired: the legacy decision stands.
+     */
+    fun localTypeGate(range: SourceRange): LocalTypeGate? {
+        val outcome = localOutcome(LocalShadowPair.Kind.TYPE_NAME, range.startLine, range.startColumn) ?: return null
+        return when (LocalShadowPair.classify(false, outcome)) {
+            LocalShadowPair.ShadowClass.SAME -> LocalTypeGate.NotLocal
+            LocalShadowPair.ShadowClass.LEGACY_ALLOWS -> {
+                val bound = ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Bound
+                val key = bound?.let { LocalRangeKey.of(model.declaration(it.declaration).range) }
+                if (key != null && key in projectHeld) LocalTypeGate.Held(key) else LocalTypeGate.Local
+            }
+            else -> null
+        }
+    }
+
     /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
     fun differential(): List<LocalShadowPair> {
-        val byStart = HashMap<Triple<Boolean, Int, Int>, MutableList<Int>>()
-        for ((index, reference) in references.withIndex()) {
-            byStart.getOrPut(Triple(isTypeName(reference), reference.range.startLine, reference.range.startColumn)) { ArrayList(1) } += index
-        }
         fun pair(kind: LocalShadowPair.Kind, gate: LegacyGate): LocalShadowPair {
-            val index = byStart[Triple(kind == LocalShadowPair.Kind.TYPE_NAME, gate.line, gate.column)]?.singleOrNull()
-            val outcome = index?.let { decidingOutcome(references[it], resolutions[it]) }
+            val outcome = localOutcome(kind, gate.line, gate.column)
             return LocalShadowPair(kind, gate.line, gate.column, gate.lexical, outcome, LocalShadowPair.classify(gate.lexical, outcome))
         }
         return typeGates.map { pair(LocalShadowPair.Kind.TYPE_NAME, it) } + firstSegments.map { pair(LocalShadowPair.Kind.FIRST_SEGMENT, it) }
@@ -71,6 +109,20 @@ internal class LocalSemanticFacts(
         LocalReferenceOutcomes.isAbsent(outcome) || LocalReferenceOutcomes.isSpecificationMember(outcome)
 
     private class LegacyGate(val line: Int, val column: Int, val lexical: Boolean)
+}
+
+/** A source range as plain coordinates, detached from any file object. */
+internal data class LocalRangeKey(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int) {
+    companion object {
+        fun of(range: SourceRange) = LocalRangeKey(range.startLine, range.startColumn, range.endLine, range.endColumn)
+    }
+}
+
+/** The type-name gate's decision from the local outcome. */
+internal sealed interface LocalTypeGate {
+    data object Local : LocalTypeGate
+    data object NotLocal : LocalTypeGate
+    data class Held(val declaration: LocalRangeKey) : LocalTypeGate
 }
 
 /** A written type name, one segment or qualified (whose first segment is a qualifier of a type position). */

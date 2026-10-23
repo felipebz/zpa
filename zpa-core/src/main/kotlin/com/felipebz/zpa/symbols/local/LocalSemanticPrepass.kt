@@ -25,6 +25,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.utils.log.Loggers
@@ -51,7 +52,9 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             val outcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, analysis.snapshot))
             val resolutions = references.map(outcomes::steps)
             val calls = LocalForwardCalls(model, references, LocalCallCollector.collect(node), analysis.snapshot, analysis.externalContext, outcomes).analyze()
-            LocalSemanticFacts(model, references, resolutions, calls)
+            val held = if (analysis.snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) emptySet()
+            else analysis.snapshot.projectIndex.declarationsFor(fileId).mapTo(HashSet()) { LocalRangeKey.of(it.sourceRange) }
+            LocalSemanticFacts(model, references, resolutions, calls, held)
         }
     }
 

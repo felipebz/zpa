@@ -33,6 +33,9 @@ import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.project.ProjectTypeResolver
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.symbols.local.LocalRangeKey
+import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
+import com.felipebz.zpa.symbols.local.LocalTypeGate
 
 /** Adds project resolution facts without changing the legacy datatype result. */
 internal class ProjectTypeResolutionVisitor(
@@ -46,8 +49,16 @@ internal class ProjectTypeResolutionVisitor(
 
     override fun visitNode(node: AstNode) {
         val reference = namedTypeReference(node) ?: return
-        val lexical = isResolvedLexically(reference, context.currentScope)
-        context.localSemanticFacts?.recordTypeGate(reference.sourceRange, lexical)
+        val legacy = isResolvedLexically(reference, context.currentScope)
+        val facts = context.localSemanticFacts
+        facts?.recordTypeGate(reference.sourceRange, legacy)
+        // With the switch on, a certain local outcome decides; an uncertain or unpaired one keeps the legacy decision.
+        val gate = if (LocalSemanticSwitches.typeNameGate) facts?.localTypeGate(reference.sourceRange) else null
+        val lexical = when (gate) {
+            null -> legacy
+            LocalTypeGate.Local -> true
+            LocalTypeGate.NotLocal, is LocalTypeGate.Held -> false
+        }
         if (lexical) return
 
         val owner = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
@@ -56,6 +67,14 @@ internal class ProjectTypeResolutionVisitor(
             reference,
             ProjectTypeLookupContext(owner)
         )
+        // A declaration both sides hold: the project must resolve to the one the local side binds; otherwise the local
+        // declaration decides, and the mismatch is recorded.
+        if (gate is LocalTypeGate.Held && resolution is ProjectTypeResolution.Resolved &&
+            (resolution.declaration.fileId != fileId || LocalRangeKey.of(resolution.declaration.sourceRange) != gate.declaration)
+        ) {
+            facts?.gateMismatches?.add("${reference.sourceRange.startLine}:${reference.sourceRange.startColumn}")
+            return
+        }
         (node as SemanticAstNode).projectTypeResolution = resolution
         if (resolution is ProjectTypeResolution.Resolved) {
             declaredTypeSymbol(node)?.projectTypeDeclaration = resolution.declaration
