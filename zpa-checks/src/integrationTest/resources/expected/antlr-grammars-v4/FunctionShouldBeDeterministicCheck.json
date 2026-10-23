@@ -1,4 +1,5 @@
 {
+  "examples/examples-sql-script/green_tools.pkb" : [ 10 ],
   "more-examples/create_function04.sql" : [ 3 ],
   "more-examples/editionable_function.sql" : [ 1 ]
 }

@@ -29,7 +29,13 @@ import org.junit.jupiter.api.fail
 import com.felipebz.zpa.checks.CheckList
 import com.felipebz.zpa.checks.ParsingErrorCheck
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectDeclarationExtractor
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.checks.PlSqlVisitor
 import java.io.File
@@ -186,16 +192,23 @@ class PlSqlRulingTest {
         val metadataFilePath = Paths.get(baseDir.absolutePath, "metadata.json")
         val metadata = if (metadataFilePath.exists()) FormsMetadata.loadFromFile(metadataFilePath.toString()) else null
 
-        val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
-        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8)
-
         val files = baseDir
             .walkTopDown()
             .filter { it.isFile && it.extension.isNotEmpty() && extensions.contains(it.extension.lowercase(Locale.getDefault())) }
             .toList()
+        val inputFiles = files.map { InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8) }
 
-        val issues = files
-            .map { scanner.scanFile(InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8)) }
+        // As in production: the project is prepared from the files the analysis scans, lexed as the scanner lexes them,
+        // each indexed under the id the scan uses for it.
+        val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(PlSqlConfiguration(StandardCharsets.UTF_8, false)))
+            .prepare(inputFiles.map { file -> ProjectSource(FileId(file.path().toString())) { file.contents() } }, concurrent = true)
+        preparation.failures.forEach { println("Project preparation failure in $project: $it") }
+
+        val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
+        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8, ProjectAnalysisContext.prepared(preparation))
+
+        val issues = inputFiles
+            .map { scanner.scanFile(it, emptyList(), FileId(it.path().toString())) }
             .flatMap { it.issues }
 
         val writer = mapper.writer(prettyPrinter)
