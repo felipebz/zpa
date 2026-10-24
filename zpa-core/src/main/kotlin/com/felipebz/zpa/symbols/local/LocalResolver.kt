@@ -85,7 +85,7 @@ internal object LocalResolver {
                 outcome = when {
                     // A local named SELF collides with the implicit parameter (PLS-00410).
                     candidates.isNotEmpty() -> LocalResolution.Duplicate(candidates.map { it.id })
-                    reference.context == Ctx.VALUE || reference.context == Ctx.QUALIFIER -> LocalResolution.ImplicitSelf(method!!.declaration.id)
+                    reference.context == Ctx.VALUE || reference.context == Ctx.QUALIFIER -> LocalResolution.ImplicitSelf(method.declaration.id)
                     else -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, null, reference.context)
                 }
                 break
@@ -369,7 +369,7 @@ internal object LocalResolver {
             union(candidate.id, details.specificationCounterpart)
         }
         val cursors = candidates.filter { it.kind == CURSOR }
-        val definition = cursors.filter { !(it.details as LocalCursor).isForward }.singleOrNull()
+        val definition = cursors.singleOrNull { !(it.details as LocalCursor).isForward }
         if (definition != null) cursors.forEach { union(it.id, definition.id) }
         return candidates.groupBy { find(it.id) }.values.map { members -> members.sortedBy { it.id.ordinal } }
             .sortedBy { it.first().id.ordinal }

@@ -22,7 +22,6 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.DatatypeFamilies
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
@@ -154,7 +153,7 @@ internal class LocalTypeWalk(
     }
 
     /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
-    fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown("no written type")
+    fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown(NO_WRITTEN_TYPE)
 
     /** Evidence of the result of the local function [function], a call resolved to that entity. */
     fun result(function: LocalDeclarationId): LocalTypeEvidence = Walk().result(model.declaration(function), 0)
@@ -199,7 +198,7 @@ internal class LocalTypeWalk(
             followed += declaration.id
             val index = declaration.details as? LocalLoopIndex
             if (index?.isTypeImplicit == true) return loopIndex(declaration, index.control)
-            val local = declaration.type?.let(::type) ?: unknown("no written type")
+            val local = declaration.type?.let(::type) ?: unknown(NO_WRITTEN_TYPE)
             return packageValue(declaration, local)
         }
 
@@ -256,7 +255,7 @@ internal class LocalTypeWalk(
         fun field(recordType: LocalDeclarationId, ordinal: Int): LocalTypeEvidence {
             if (!fields.add(recordType to ordinal)) return unknown("anchor cycle")
             val field = (model.declaration(recordType).details as LocalRecordType).fields[ordinal]
-            return type(field.type ?: return unknown("no written type"))
+            return type(field.type ?: return unknown(NO_WRITTEN_TYPE))
         }
 
         fun type(use: LocalTypeUse): LocalTypeEvidence {
@@ -286,7 +285,7 @@ internal class LocalTypeWalk(
             typeRef is NamedTypeRef -> when (target.kind) {
                 SUBTYPE -> if (target.id in followed) unknown("subtype cycle") else {
                     followed += target.id
-                    target.type?.let(::type) ?: unknown("no written type")
+                    target.type?.let(::type) ?: unknown(NO_WRITTEN_TYPE)
                 }
                 RECORD_TYPE, COLLECTION_TYPE, REF_CURSOR_TYPE -> { followed += target.id; composite(followed.toList()) }
                 else -> unknown("${target.kind} ${target.name} is not a type")
@@ -355,3 +354,5 @@ internal class LocalTypeWalk(
         private val VALUES = setOf(VARIABLE, PARAMETER, CURSOR_PARAMETER, LOOP_INDEX)
     }
 }
+
+private const val NO_WRITTEN_TYPE = "no written type"

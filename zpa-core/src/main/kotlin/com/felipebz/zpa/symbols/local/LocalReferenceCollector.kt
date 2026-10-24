@@ -306,10 +306,10 @@ internal object LocalReferenceCollector {
                     high = middle - 1
                 }
             }
-            val inside = candidate != null &&
-                compare(range.startLine, range.startColumn, candidate.range.endLine, candidate.range.endColumn) < 0
-            if (!inside) return current.id
-            current = candidate!!
+            if (candidate == null || compare(range.startLine, range.startColumn, candidate.range.endLine, candidate.range.endColumn) >= 0) {
+                return current.id
+            }
+            current = candidate
         }
     }
 

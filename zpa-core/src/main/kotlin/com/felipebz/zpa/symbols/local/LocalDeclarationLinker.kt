@@ -54,19 +54,14 @@ internal class LocalDeclarationLinker(private val regions: List<RegionDraft>, pr
      * includes the method kind). Grouping by key in hash maps: linear, and order never decides.
      */
     fun linkUnits() {
-        val specifications = HashMap<String, MutableList<DeclarationDraft>>()
-        val bodies = HashMap<String, MutableList<DeclarationDraft>>()
-        for (draft in declarations) {
-            val target = when (draft.kind) {
-                LocalDeclarationKind.PACKAGE, LocalDeclarationKind.OBJECT_TYPE -> specifications
-                LocalDeclarationKind.PACKAGE_BODY, LocalDeclarationKind.TYPE_BODY -> bodies
-                else -> continue
+        fun unitsByKey(vararg kinds: LocalDeclarationKind): Map<String, List<DeclarationDraft>> = declarations
+            .filter { it.kind in kinds && (it.details as LocalUnit).form != LocalUnitForm.INCOMPLETE }
+            .groupBy { draft ->
+                val family = if (draft.kind == LocalDeclarationKind.PACKAGE || draft.kind == LocalDeclarationKind.PACKAGE_BODY) "package" else "type"
+                family + "|" + (draft.details as LocalUnit).unitName.lookupKey()
             }
-            val unit = draft.details as LocalUnit
-            if (unit.form == LocalUnitForm.INCOMPLETE) continue
-            val family = if (draft.kind == LocalDeclarationKind.PACKAGE || draft.kind == LocalDeclarationKind.PACKAGE_BODY) "package" else "type"
-            target.getOrPut(family + "|" + unit.unitName.lookupKey()) { ArrayList() } += draft
-        }
+        val specifications = unitsByKey(LocalDeclarationKind.PACKAGE, LocalDeclarationKind.OBJECT_TYPE)
+        val bodies = unitsByKey(LocalDeclarationKind.PACKAGE_BODY, LocalDeclarationKind.TYPE_BODY)
         for ((key, matches) in specifications) {
             val specification = matches.singleOrNull() ?: continue
             val body = bodies[key]?.singleOrNull() ?: continue

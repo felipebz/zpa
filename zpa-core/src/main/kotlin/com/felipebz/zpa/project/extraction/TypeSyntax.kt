@@ -279,7 +279,4 @@ internal class TypeReferences(private val stream: TokenStream) {
     }
 
     private fun isNameAt(tokens: List<Token>, index: Int) = index in tokens.indices && stream.isName(tokens[index])
-
-    private fun valueAt(tokens: List<Token>, index: Int): String =
-        if (index in tokens.indices) stream.value(tokens[index]) else ""
 }

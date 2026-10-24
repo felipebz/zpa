@@ -3,6 +3,7 @@ package consumer;
 import com.felipebz.zpa.api.project.*;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,7 +125,7 @@ class ProjectExternalMetadataJavaConsumerTest {
             ProjectExternalDatatype.class, ProjectExternalLookup.class)) {
             assertThat(Arrays.stream(type.getConstructors()).filter(c -> !c.isSynthetic())).as(type.getName()).isEmpty();
         }
-        assertThat(Arrays.stream(ProjectExternalLookup.class.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).map(m -> m.getName()))
+        assertThat(Arrays.stream(ProjectExternalLookup.class.getMethods()).filter(m -> Modifier.isStatic(m.getModifiers())).map(Method::getName))
             .doesNotContain("of");
         assertThat(Arrays.stream(ProjectExternalLookup.Status.values()).map(Enum::name))
             .containsExactly("FOUND", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND", "NOT_COVERED", "UNAVAILABLE");

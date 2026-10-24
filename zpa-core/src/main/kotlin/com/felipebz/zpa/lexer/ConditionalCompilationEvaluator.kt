@@ -21,7 +21,7 @@ package com.felipebz.zpa.lexer
 
 import com.felipebz.zpa.squid.CcValue
 import com.felipebz.zpa.squid.ConditionalCompilationSettings
-import java.util.Locale
+import java.util.*
 
 /** Result of evaluating a `$IF`/`$ELSIF` condition. [UNKNOWN] means it could not be evaluated. */
 internal enum class ConditionResult { TRUE, FALSE, NULL, UNKNOWN }
@@ -315,20 +315,20 @@ internal object ConditionalCompilationEvaluator {
 
         private fun primary(): Value? {
             val t = peek() ?: return null
-            when (t.type) {
+            return when (t.type) {
                 T.LPAREN -> {
                     pos++
                     val v = or() ?: return null
                     if (peek()?.type != T.RPAREN) return null
                     pos++
-                    return v
+                    v
                 }
-                T.NUMBER -> { pos++; return intValue(t.text.toBigInteger().takeIf { it.bitLength() < 63 }?.toLong() ?: return Value.Unknown) }
-                T.INQUIRY -> { pos++; return inquiry(t.text) }
+                T.NUMBER -> { pos++; intValue(t.text.toBigInteger().takeIf { it.bitLength() < 63 }?.toLong() ?: return Value.Unknown) }
+                T.INQUIRY -> { pos++; inquiry(t.text) }
                 // A string literal or quoted identifier is not modeled, but still parses as an operand.
-                T.OTHER -> if (t.text.startsWith("'") || t.text.startsWith("\"")) { pos++; return Value.Unknown } else return null
-                T.WORD -> return name()
-                else -> return null
+                T.OTHER -> if (t.text.startsWith("'") || t.text.startsWith("\"")) { pos++; Value.Unknown } else null
+                T.WORD -> name()
+                else -> null
             }
         }
 

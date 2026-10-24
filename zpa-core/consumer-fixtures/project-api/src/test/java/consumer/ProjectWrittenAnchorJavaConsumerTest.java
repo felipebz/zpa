@@ -51,9 +51,9 @@ class ProjectWrittenAnchorJavaConsumerTest {
         ProjectWrittenAnchor anchor = type("p", "g");
         assertThat(anchor.getName()).isEqualTo(ProjectQualifiedName.of("p", "g"));
         assertThat(anchor.getAnchor()).isEqualTo(ProjectTypeReference.Anchor.TYPE);
-        assertThat(anchor).isEqualTo(type("P", "\"G\"")).hasSameHashCodeAs(type("P", "\"G\""));
-        assertThat(anchor).isNotEqualTo(type("p", "\"g\""));
-        assertThat(anchor).isNotEqualTo(ProjectWrittenAnchor.of(ProjectQualifiedName.of("p", "g"), ProjectTypeReference.Anchor.ROWTYPE));
+        assertThat(anchor).isEqualTo(type("P", "\"G\"")).hasSameHashCodeAs(type("P", "\"G\""))
+            .isNotEqualTo(type("p", "\"g\""))
+            .isNotEqualTo(ProjectWrittenAnchor.of(ProjectQualifiedName.of("p", "g"), ProjectTypeReference.Anchor.ROWTYPE));
         assertThatThrownBy(() -> ProjectWrittenAnchor.of(null, ProjectTypeReference.Anchor.TYPE)).isInstanceOf(NullPointerException.class);
     }
 
@@ -68,9 +68,9 @@ class ProjectWrittenAnchorJavaConsumerTest {
         assertThat(builtIn.getValues()).extracting(ProjectDeclarationView::getQualifiedName).containsExactly(ProjectQualifiedName.of("p", "g"));
         assertThat(builtIn.getTerminalReference()).isPresent();
 
-        ProjectTypeDescription record = snapshot.describeType(type("p", "rec_value"), null);
-        assertThat(label(record.getStatus())).isEqualTo("declared");
-        assertThat(record.getDeclaration().orElseThrow().getQualifiedName()).isEqualTo(ProjectQualifiedName.of("p", "rec_t"));
+        ProjectTypeDescription recordValue = snapshot.describeType(type("p", "rec_value"), null);
+        assertThat(label(recordValue.getStatus())).isEqualTo("declared");
+        assertThat(recordValue.getDeclaration().orElseThrow().getQualifiedName()).isEqualTo(ProjectQualifiedName.of("p", "rec_t"));
 
         ProjectWrittenAnchor column = type("employees", "salary");
         ProjectTypeDescription external = snapshot.describeType(column, null);

@@ -62,11 +62,11 @@ class ProjectApiJavaConsumerTest {
         for (ProjectDeclarationView view : snapshot.getDeclarations()) {
             kinds.merge(view.getKind(), 1, Integer::sum);
         }
-        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE, 1);
-        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_TYPE, 1);
-        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_SUBTYPE, 1);
-        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_PROCEDURE, 5);
-        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE_FUNCTION, 2);
+        assertThat(kinds).containsEntry(ProjectDeclarationKind.PACKAGE, 1)
+            .containsEntry(ProjectDeclarationKind.PACKAGE_TYPE, 1)
+            .containsEntry(ProjectDeclarationKind.PACKAGE_SUBTYPE, 1)
+            .containsEntry(ProjectDeclarationKind.PACKAGE_PROCEDURE, 5)
+            .containsEntry(ProjectDeclarationKind.PACKAGE_FUNCTION, 2);
         assertThat(snapshot.declarationsFor("db/shop_spec.sql").getDeclarations()).hasSize(7);
         assertThat(snapshot.declarationsFor("unknown.sql").getDeclarations()).isEmpty();
     }

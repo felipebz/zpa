@@ -164,15 +164,15 @@ internal class ProjectMethodCallBinder(private val memberResolver: ProjectRecord
         }
         val applicableUsers = users.filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
         val candidates = users + listOfNotNull(defaultConstructor)
-        val defaultFits = defaultConstructor?.applicability == ProjectCallCandidate.Applicability.APPLICABLE
         val (status, selected) = when {
             // A fitting user constructor wins over the attribute-value one only when no datatype tells them apart.
-            applicableUsers.size == 1 && defaultFits && !indistinguishable(applicableUsers + defaultConstructor!!) ->
+            applicableUsers.size == 1 && defaultConstructor != null &&
+                defaultConstructor.applicability == ProjectCallCandidate.Applicability.APPLICABLE && !indistinguishable(applicableUsers + defaultConstructor) ->
                 (if (complete) ProjectMethodCall.Status.SEVERAL_APPLICABLE else ProjectMethodCall.Status.UNDECIDED) to null
             applicableUsers.size == 1 -> ProjectMethodCall.Status.RESOLVED to applicableUsers.single()
             applicableUsers.size > 1 -> (if (complete) several(applicableUsers) else ProjectMethodCall.Status.UNDECIDED) to null
-            !complete -> ProjectMethodCall.Status.UNDECIDED to null
-            defaultConstructor!!.applicability == ProjectCallCandidate.Applicability.APPLICABLE -> ProjectMethodCall.Status.RESOLVED to defaultConstructor
+            !complete || defaultConstructor == null -> ProjectMethodCall.Status.UNDECIDED to null
+            defaultConstructor.applicability == ProjectCallCandidate.Applicability.APPLICABLE -> ProjectMethodCall.Status.RESOLVED to defaultConstructor
             else -> ProjectMethodCall.Status.NO_APPLICABLE_CANDIDATE to null
         }
         return ProjectMethodCall(status, receiver, kind, candidates, selected, complete)

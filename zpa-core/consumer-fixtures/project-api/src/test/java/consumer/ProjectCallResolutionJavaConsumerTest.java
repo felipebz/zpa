@@ -149,7 +149,14 @@ class ProjectCallResolutionJavaConsumerTest {
         assertThat(c.getSourceRange().getFileId()).isEqualTo("spec.sql");
         assertThat(candidate.getOmittedParameters()).singleElement().isSameAs(declaration.getParameters().get(1));
         assertThat(candidate.getOmittedParameters().get(0).isDefaultPresent()).isTrue();
+    }
 
+    @Test
+    void resolutionListsAreImmutable() {
+        ProjectSnapshot snapshot = snapshot();
+        ProjectCallArguments arguments = ProjectCallArguments.of(List.of(ProjectCallArgument.positional(), named("c")));
+        ProjectCallResolution resolution = snapshot.resolveCall(member("run"), ProjectCallKind.PROCEDURE, arguments);
+        ProjectCallCandidate candidate = resolution.getSelected().orElseThrow();
         var resolutionCandidates = resolution.getCandidates();
         assertThatThrownBy(() -> resolutionCandidates.clear()).isInstanceOf(UnsupportedOperationException.class);
         var resolutionUncertainties = resolution.getUncertainties();
