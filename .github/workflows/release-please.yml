@@ -12,7 +12,7 @@ permissions:
 jobs:
   release_please:
     name: Create or update Release Please draft
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       issues: write
@@ -35,7 +35,7 @@ jobs:
     name: Prepare and verify stable release
     if: needs.release_please.outputs.release_created == 'true'
     needs: release_please
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       release_version: ${{ steps.release.outputs.release_version }}
       release_tag: ${{ steps.release.outputs.release_tag }}
@@ -306,7 +306,7 @@ jobs:
     name: Plugin integration test (${{ matrix.sqVersion }})
     if: needs.prepare_release.result == 'success'
     needs: prepare_release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -363,7 +363,7 @@ jobs:
     needs:
       - prepare_release
       - integration_tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     concurrency:
       group: zpa-maven-publication-main
       cancel-in-progress: false
@@ -410,7 +410,7 @@ jobs:
     name: Publish GitHub Release
     if: needs.deploy_maven.result == 'success'
     needs: deploy_maven
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     env:
