@@ -193,6 +193,8 @@ internal class LocalForwardCalls(
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
         val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it)) }.orEmpty()
         val outcome = when {
+            // A member of an object type's specification has no package target: a method set this analysis does not bind.
+            member && memberTarget(reference) == null -> LocalCallOutcome.UNSUPPORTED
             LocalReferenceOutcomes.isAbsent(first) || member -> if (call == null || call.actuals != null) LocalCallOutcome.PROJECT else LocalCallOutcome.UNSUPPORTED
             else -> when (first) {
                 is LocalResolution.Incomplete -> LocalCallOutcome.INCOMPLETE

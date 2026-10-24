@@ -21,6 +21,7 @@ package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.OracleIdentifier
@@ -49,7 +50,8 @@ internal class ProjectRecordMemberResolutionVisitor(
     fun decorate(node: AstNode) {
         if (!decorated.add(node)) return
         val memberExpression = node as? SemanticAstNode ?: return
-        if (memberExpression.symbol != null) return
+        // `c%NOTFOUND` is a cursor attribute, not a member.
+        if (memberExpression.symbol != null || node.hasDirectChildren(PlSqlPunctuator.MOD)) return
 
         val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
         if (parts.size != 2 || parts.first().type != PlSqlGrammar.VARIABLE_NAME ||

@@ -60,7 +60,7 @@ internal class LocalSpecificationCoverage private constructor(
 
     fun refine(reference: LocalReference, steps: List<LocalResolution>): List<LocalResolution> {
         val first = steps.first() as? LocalResolution.Incomplete ?: return steps
-        if (isFreeEnclosingTypeName(reference, first)) return listOf(LocalResolution.SpecificationCovered(LocalResolution.ProvenAbsent))
+        typeBody(reference, first)?.let { return listOf(LocalResolution.SpecificationCovered(it)) }
         if (!onlySpecificationGap(first)) return steps
         val chain = LocalResolver.chain(model, reference.region)
         if (chain.any { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }) return steps
@@ -88,28 +88,52 @@ internal class LocalSpecificationCoverage private constructor(
         return result
     }
 
+    /** Names decided in an object type body or specification by the project: `name:line:column` where it disagrees. */
+    val mismatches = ArrayList<String>()
+
     /**
-     * The enclosing object type's own name in a type position, stopped only because the specification or a supertype is
-     * not in the file. Those could capture the name only with an attribute or method of that name (PLS-00488); a
-     * constructor never does. The project's complete attribute and method lists of the chain decide.
+     * A first segment in an object type body or specification that stopped only because the specification or a
+     * supertype is not in the file, decided from the project's attribute and method lists of the type and its `UNDER`
+     * chain:
+     * - neither an attribute nor a method (constructors aside, which capture nothing): absent;
+     * - an attribute or a method: a specification member. In a type position it captures the name (PLS-00488).
+     *
+     * Null keeps the gap: a list of the chain not fully known, an attribute or member method named alone in a static
+     * method (rejected, which the local rules decide), or a disagreement with the specification in this file.
      */
-    private fun isFreeEnclosingTypeName(reference: LocalReference, outcome: LocalResolution.Incomplete): Boolean {
-        if (reference.context != LocalReferenceContext.TYPE || reference.segments.isNotEmpty()) return false
+    private fun typeBody(reference: LocalReference, outcome: LocalResolution.Incomplete): LocalResolution? {
         if (outcome.provisional != LocalResolution.ProvenAbsent || outcome.regionReasons.isNotEmpty() ||
-            !TYPE_GAPS.containsAll(outcome.lookupReasons)) return false
-        val unitName = LocalTypeScope.enclosingTypeName(model, reference) ?: return false
-        return unitName.last == reference.name && freeOfName(unitName, reference.name, own = true, HashSet())
+            !TYPE_GAPS.containsAll(outcome.lookupReasons)) return null
+        val chain = LocalResolver.chain(model, reference.region)
+        val typeRegion = chain.firstOrNull { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE } ?: return null
+        val unitName = LocalTypeScope.unitOf(model, typeRegion.id)?.unitName ?: return null
+        val types = projectChain(unitName) ?: return null
+        val name = reference.name
+        fun StandaloneTypeDeclaration.attribute() = attributes.any { it.name == name }
+        fun StandaloneTypeDeclaration.methods() = methods.filter { it.name == name && it.methodKind != ProjectMethodKind.CONSTRUCTOR }
+        if (types.none { it.attribute() || it.methods().isNotEmpty() }) return LocalResolution.ProvenAbsent
+        // The specification is in this file and the local side found nothing of the name in it.
+        if (LocalLookupGap.SPECIFICATION_NOT_IN_FILE !in outcome.lookupReasons && (types.first().attribute() || types.first().methods().isNotEmpty())) {
+            mismatches += "$name:${reference.range.startLine}:${reference.range.startColumn}"
+            return null
+        }
+        val instanceMember = types.any { it.attribute() || it.methods().any { m -> m.methodKind != ProjectMethodKind.STATIC } }
+        if (instanceMember && reference.context != LocalReferenceContext.TYPE && LocalTypeScope.method(model, chain)?.isStatic == true) return null
+        return LocalResolution.SpecificationMember
     }
 
-    private fun freeOfName(typeName: QualifiedName, name: OracleIdentifier, own: Boolean, visited: MutableSet<QualifiedName>): Boolean {
-        if (!visited.add(typeName)) return false
-        val type = index.findOccurrences(typeName).map { it.declaration }
-            .singleOrNull { it is StandaloneTypeDeclaration } as? StandaloneTypeDeclaration ?: return false
-        if (type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete || !type.methodsComplete) return false
-        if (index.alteredTypes.attributesOf(type.name) || index.alteredTypes.methodsOf(type.name)) return false
-        if (type.attributes.any { it.name == name } || (!own && type.methods.any { it.name == name })) return false
-        val supertype = type.supertype ?: return true
-        return freeOfName(supertype.name, name, own = false, visited)
+    /** The project's object type [typeName] and its supertypes, nearest first, when every list is complete and unaltered. */
+    private fun projectChain(typeName: QualifiedName): List<StandaloneTypeDeclaration>? {
+        val types = ArrayList<StandaloneTypeDeclaration>()
+        var name: QualifiedName? = typeName
+        while (name != null) {
+            val type = index.findOccurrences(name).map { it.declaration }.singleOrNull() as? StandaloneTypeDeclaration ?: return null
+            if (type in types || type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete || !type.methodsComplete) return null
+            if (index.alteredTypes.attributesOf(type.name) || index.alteredTypes.methodsOf(type.name)) return null
+            types += type
+            name = type.supertype?.name
+        }
+        return types
     }
 
     private fun onlySpecificationGap(outcome: LocalResolution.Incomplete) =

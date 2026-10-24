@@ -29,17 +29,8 @@ import com.felipebz.zpa.api.project.ProjectSnapshot
 import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.IndexedDeclaration
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.squid.PlSqlAstWalker
-import com.felipebz.zpa.squid.PlSqlConfiguration
-import com.felipebz.zpa.squid.SemanticAnalysisPipeline
-import com.felipebz.zpa.squid.SemanticScanCapabilities
-import com.felipebz.zpa.squid.createProjectAnalysis
+import com.felipebz.zpa.project.*
+import com.felipebz.zpa.squid.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -158,10 +149,57 @@ class LocalSpecificationCoverageTest {
     }
 
     @Test
-    fun aTypeBodyKeepsItsGap() {
+    fun aTypeBodyNameIsDecidedFromTheProjectSpecification() {
         val typeBody = "create type body tt as\n  member procedure m is\n  begin\n    other_pkg.run(1);\n  end;\nend;\n/\n"
         val facts = facts(typeBody, "type.sql" to "create type tt as object (a number, member procedure m);\n/\n", "other.sql" to other)
-        assertThat(outcome(facts, "other_pkg", 4)).startsWith("Incomplete[SPECIFICATION_NOT_IN_FILE]")
+        assertThat(outcome(facts, "other_pkg", 4)).isEqualTo("SpecificationCovered(ProvenAbsent)")
+        // Without the specification in the project the gap stays.
+        assertThat(outcome(facts(typeBody, "other.sql" to other), "other_pkg", 4)).startsWith("Incomplete[SPECIFICATION_NOT_IN_FILE]")
+    }
+
+    private val sup = "create type sup as object (inherited number, member function f return number) not final;\n/\n"
+    private val sub = "create type sub under sup (own number, member procedure m, static function s return number,\n" +
+        "  constructor function sub(p number) return self as result);\n/\n"
+    private val subBody = "create type body sub as\n" +
+        "  member procedure m is\n" +
+        "    v number;\n" +
+        "    w other_pkg.t;\n" +
+        "  begin\n" +
+        "    v := own + inherited + f;\n" +
+        "    other_pkg.run(1);\n" +
+        "  end;\n" +
+        "  static function s return number is begin return own; end;\n" +
+        "  constructor function sub(p number) return self as result is x own; begin return; end;\n" +
+        "end;\n/\n"
+
+    @Test
+    fun namesInATypeBodyAreDecidedFromTheProjectMemberLists() {
+        val facts = facts(subBody, "sup.sql" to sup, "sub.sql" to sub, "other.sql" to other)
+        assertThat(outcome(facts, "own", 6)).isEqualTo("SpecificationCovered(SpecificationMember)")
+        assertThat(outcome(facts, "inherited", 6)).isEqualTo("SpecificationCovered(SpecificationMember)")
+        assertThat(outcome(facts, "f", 6)).isEqualTo("SpecificationCovered(SpecificationMember)")
+        assertThat(outcome(facts, "other_pkg", 7)).isEqualTo("SpecificationCovered(ProvenAbsent)")
+        assertThat(outcome(facts, "other_pkg", 4)).isEqualTo("SpecificationCovered(ProvenAbsent)")
+        // An attribute named alone in a static method is rejected by the local rules: the gap stays.
+        assertThat(outcome(facts, "own", 9)).startsWith("Incomplete")
+        // An attribute name in a type position is captured by the attribute (PLS-00488).
+        assertThat(outcome(facts, "own", 10)).isEqualTo("SpecificationCovered(SpecificationMember)")
+        assertThat(facts.localTypeGate(facts.references.first { it.name.originalSpelling == "own" && it.range.startLine == 10 }.range))
+            .isEqualTo(LocalTypeGate.Local)
+        // A local declaration shadows the members.
+        assertThat(outcome(facts, "v", 6)).startsWith("Bound")
+    }
+
+    @Test
+    fun typeBodyNamesStayUncertainWhenTheChainIsNotFullyKnown() {
+        // The supertype outside the project.
+        assertThat(outcome(facts(subBody, "sub.sql" to sub, "other.sql" to other), "other_pkg", 7)).startsWith("Incomplete")
+        // An ALTER TYPE of the type.
+        val altered = facts(subBody, "sup.sql" to sup, "sub.sql" to sub, "other.sql" to other, "alter.sql" to "alter type sub add member function g return number cascade;\n")
+        assertThat(outcome(altered, "other_pkg", 7)).startsWith("Incomplete")
+        // Two specifications of the type.
+        val twice = facts(subBody, "sup.sql" to sup, "sub.sql" to sub, "sub2.sql" to sub, "other.sql" to other)
+        assertThat(outcome(twice, "other_pkg", 7)).startsWith("Incomplete")
     }
 
     @Test

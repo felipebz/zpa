@@ -40,7 +40,9 @@ internal class LocalSemanticFacts(
      * The source ranges, in this file, of the declarations the project index holds (package specification members and
      * standalone units), as plain coordinates: a local binding to one of them is also a project declaration.
      */
-    private val projectHeld: Set<LocalRangeKey> = emptySet()
+    private val projectHeld: Set<LocalRangeKey> = emptySet(),
+    /** Names in an object type body where the project's member lists disagree with the specification in this file. */
+    val coverageMismatches: List<String> = emptyList()
 ) {
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
@@ -111,7 +113,9 @@ internal class LocalSemanticFacts(
         val index = byStart[Triple(true, range.startLine, range.startColumn)]?.singleOrNull() ?: return null
         val outcome = decidingOutcome(references[index], resolutions[index])
         return when (LocalShadowPair.classify(false, outcome)) {
-            LocalShadowPair.ShadowClass.SAME -> enclosingType(references[index])?.let(LocalTypeGate::EnclosingType) ?: LocalTypeGate.NotLocal
+            // In a type body, a member of the specification captures a type position (PLS-00488): no project type.
+            LocalShadowPair.ShadowClass.SAME -> if (LocalReferenceOutcomes.isSpecificationMember(outcome) && LocalTypeScope.enclosingTypeName(model, references[index]) != null) LocalTypeGate.Local
+            else enclosingType(references[index])?.let(LocalTypeGate::EnclosingType) ?: LocalTypeGate.NotLocal
             LocalShadowPair.ShadowClass.LEGACY_ALLOWS -> {
                 val bound = ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Bound
                 val key = bound?.let { LocalRangeKey.of(model.declaration(it.declaration).range) }

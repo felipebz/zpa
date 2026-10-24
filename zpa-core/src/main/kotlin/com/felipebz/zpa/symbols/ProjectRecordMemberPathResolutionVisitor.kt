@@ -21,6 +21,7 @@ package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlPunctuator.DOT
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
@@ -40,7 +41,7 @@ internal class ProjectRecordMemberPathResolutionVisitor(
 
     override fun visitNode(node: AstNode) {
         val memberExpression = node as? SemanticAstNode ?: return
-        if (memberExpression.symbol != null || node.parent.type == PlSqlGrammar.METHOD_CALL) return
+        if (memberExpression.symbol != null || node.parent.type == PlSqlGrammar.METHOD_CALL || node.hasDirectChildren(PlSqlPunctuator.MOD)) return
 
         val children = node.children
         if (children.size < 5 || children.size % 2 == 0 ||

@@ -183,6 +183,13 @@ class ObjectTypeAttributeTest {
     }
 
     @Test
+    fun aCursorAttributeIsNotAMember() {
+        val pk = "CREATE PACKAGE pk AS TYPE rc IS REF CURSOR; END pk;\n/\n"
+        val use = "CREATE PROCEDURE use_it IS\n  c pk.rc;\nBEGIN\n  IF c%NOTFOUND THEN NULL; END IF;\nEND;\n/\n"
+        assertThat(scan(listOf("pk.sql" to pk, "use.sql" to use), "use.sql")).isEmpty()
+    }
+
+    @Test
     fun theIndexIsTheSameWhateverTheFileOrder() {
         val sources = listOf(
             "sup.sql" to "CREATE TYPE sup AS OBJECT (a1 NUMBER) NOT FINAL;",
