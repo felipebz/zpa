@@ -68,6 +68,25 @@ class UsageEvidenceTest {
         return rows
     }
 
+    /** `NAME: evidence` for each parameter and cursor parameter declaration of [text], with no project. */
+    private fun parameters(text: String): List<String> {
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            init {
+                subscribeTo(PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_PARAMETER_DECLARATION)
+            }
+
+            override fun visitNode(node: AstNode) {
+                rows += "${node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue}: ${context.usageEvidence(node)}"
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
+    }
+
     @Test
     fun usedUnusedAndUnknownWithTheirReasons() {
         val text = "declare\n  used number;\n  unused number;\n  in_sql number;\n  e exception;\n  n number;\nbegin\n" +
@@ -87,6 +106,29 @@ class UsageEvidenceTest {
         assertThat(evidence(conditional)).containsExactly("V: Unknown[CONDITIONAL_COMPILATION]")
         val substitution = "declare\n  w number;\n  n number;\nbegin\n  n := 1 &plus_w;\nend;\n/\n"
         assertThat(evidence(substitution)).containsExactly("W: Unknown[SUBSTITUTION]", "N: Unknown[SUBSTITUTION]")
+    }
+
+    @Test
+    fun aReferenceBeforeTheDeclarationIsAUse() {
+        assertThat(evidence("declare\n  a number := b;\n  b number := 1;\nbegin\n  null;\nend;\n/\n")).containsExactly("A: Unused", "B: Used")
+    }
+
+    @Test
+    fun parametersAndCursorParameters() {
+        val text = "create procedure p(used number, unused number, named number) is\n" +
+            "  cursor c(in_query number, unused_c number) is select count(*) from t where in_query = 1;\n" +
+            "begin\n  print(p.used);\n  q(named => 1);\nend;\n/\n" +
+            "create procedure ext(x number) as language java name 'A.run(int)';\n/\n" +
+            "create package s as\n  procedure h(hp number);\nend;\n/\n"
+        assertThat(parameters(text)).containsExactly(
+            "USED: Used",
+            "UNUSED: Unused",
+            "NAMED: Unused",
+            "IN_QUERY: Unknown[SQL_NAME_MAY_BE_COLUMN]",
+            "UNUSED_C: Unused",
+            "X: Unavailable(NOT_A_COVERED_DECLARATION)",
+            "HP: Unavailable(NOT_A_COVERED_DECLARATION)"
+        )
     }
 
     @Test

@@ -100,6 +100,9 @@ enum class UsageUnavailability {
     /** The local analysis of the file did not complete (a failure was logged): nothing is known about it. */
     FILE_NOT_ANALYZED,
 
-    /** The node is not a declaration this evidence covers (variable and exception declarations of the file). */
+    /**
+     * The node is not a declaration this evidence covers: not a variable, exception, parameter or cursor parameter
+     * declaration, or one the local analysis holds no declaration for (a call specification's parameters).
+     */
     NOT_A_COVERED_DECLARATION
 }

@@ -33,8 +33,8 @@ import java.util.*
  * The usage evidence of a file's declarations, from every reference's outcomes (refined with the project's
  * specification coverage when the project is prepared). Computed once per file.
  *
- * A reference whose outcome binds a declaration is a certain use, an erroneous one (a wrong kind, a duplicate) included:
- * it names the declaration. A SQL name that may be a column, or an incomplete outcome whose provisional decision binds
+ * A reference whose outcome binds a declaration is a certain use, an erroneous one (a wrong kind, a duplicate, a
+ * reference out of scope or written before the declaration) included: it names the declaration. A SQL name that may be a column, or an incomplete outcome whose provisional decision binds
  * the declaration, is a possible use. Absence is proven only when, besides, every region the declaration is visible in
  * (its own and those inside it) is complete and holds no unmodeled reference of the same name.
  */
@@ -52,7 +52,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         }
     }
 
-    /** The evidence for a variable or exception declaration node ([PlSqlGrammar.VARIABLE_DECLARATION], [PlSqlGrammar.EXCEPTION_DECLARATION]). */
+    /** The evidence for a declaration node of [COVERED] whose declaration the model holds. */
     fun evidence(declarationNode: AstNode): UsageEvidence {
         val declaration = declarationOf(declarationNode) ?: return UsageEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
         if (declaration.id in certain) return UsageEvidence.Used
@@ -65,10 +65,10 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
     }
 
     private fun declarationOf(node: AstNode): LocalDeclaration? {
-        if (node.type != PlSqlGrammar.VARIABLE_DECLARATION && node.type != PlSqlGrammar.EXCEPTION_DECLARATION) return null
+        val kinds = COVERED[node.type] ?: return null
         val name = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
         val declaration = declarationsByName[name.token.line to name.token.column] ?: return null
-        return declaration.takeIf { it.kind == LocalDeclarationKind.VARIABLE || it.kind == LocalDeclarationKind.EXCEPTION }
+        return declaration.takeIf { it.kind in kinds }
     }
 
     private fun record(reference: LocalReference, outcome: LocalResolution) {
@@ -101,6 +101,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         is LocalResolution.Duplicate -> outcome.declarations
         is LocalResolution.WrongKind -> listOf(outcome.declaration)
         is LocalResolution.OutOfScope -> listOf(outcome.declaration)
+        is LocalResolution.DeclaredLater -> listOf(outcome.declaration)
         is LocalResolution.SqlColumnOrLocal -> listOf(outcome.declaration)
         is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations
         is LocalResolution.SpecificationCovered -> named(outcome.outcome)
@@ -128,6 +129,16 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
         LocalIncompleteness.PARTIAL_EXTRACTION, LocalIncompleteness.DISCARDED_SOURCE_TEXT,
         LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS, LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE -> UsageUncertainty.INCOMPLETE_SOURCE
+    }
+
+    private companion object {
+        /** The declaration nodes covered, with the kinds of declaration each may hold. */
+        val COVERED = mapOf(
+            PlSqlGrammar.VARIABLE_DECLARATION to setOf(LocalDeclarationKind.VARIABLE),
+            PlSqlGrammar.EXCEPTION_DECLARATION to setOf(LocalDeclarationKind.EXCEPTION),
+            PlSqlGrammar.PARAMETER_DECLARATION to setOf(LocalDeclarationKind.PARAMETER),
+            PlSqlGrammar.CURSOR_PARAMETER_DECLARATION to setOf(LocalDeclarationKind.CURSOR_PARAMETER)
+        )
     }
 
     private fun uncertainty(reason: LocalLookupGap) = when (reason) {

@@ -83,9 +83,12 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     fun dynamicSql(parts: List<AstNode>): DynamicSqlText? = dynamicSqlSupport().fromParts(parts)
 
     /**
-     * Whether the variable or exception [declaration] (a `VARIABLE_DECLARATION` or `EXCEPTION_DECLARATION` node of this
-     * file) is used, from the file's local name resolution, with the project's coverage of package specifications in
-     * other files when the project is prepared.
+     * Whether [declaration] is used, from the file's local name resolution, with the project's coverage of package
+     * specifications in other files when the project is prepared. [declaration] is a node of this file: a
+     * `VARIABLE_DECLARATION`, an `EXCEPTION_DECLARATION`, a `PARAMETER_DECLARATION` of a subprogram with a body, or a
+     * `CURSOR_PARAMETER_DECLARATION`. A covered node the analysis holds no declaration for (the parameters of a call
+     * specification, which an external routine receives, or of a heading without a body) is
+     * [UsageUnavailability.NOT_A_COVERED_DECLARATION].
      *
      * [UsageEvidence.Unused] is the only proven absence; [UsageEvidence.Unknown] never is one. When the local analysis of
      * the file did not complete, the answer is [UsageEvidence.Unavailable] for every declaration: report nothing then.
