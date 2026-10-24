@@ -19,6 +19,8 @@
  */
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.project.QualifiedName
+
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.ATTRIBUTE
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.OBJECT_TYPE
 import java.util.*
@@ -71,6 +73,12 @@ internal object LocalTypeScope {
         context != LocalReferenceContext.TYPE || (declaration.details as? LocalSubprogram)?.methodKind != LocalMethodKind.CONSTRUCTOR
 
     fun unitOf(model: LocalSemanticModel, region: LocalRegionId): LocalUnit? = model.index.unit(region)
+
+    /** The written name of the object type specification or type body enclosing [reference], or null. */
+    fun enclosingTypeName(model: LocalSemanticModel, reference: LocalReference): QualifiedName? =
+        LocalResolver.chain(model, reference.region)
+            .firstOrNull { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }
+            ?.let { unitOf(model, it.id)?.unitName }
 
     /**
      * The methods of [methods] without those a subtype overrides: a supertype method and a method of a type nearer the

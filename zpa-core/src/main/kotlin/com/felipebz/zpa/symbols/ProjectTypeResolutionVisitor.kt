@@ -25,14 +25,7 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectTypeLookupContext
-import com.felipebz.zpa.project.ProjectTypeResolution
-import com.felipebz.zpa.project.ProjectTypeResolver
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.local.LocalRangeKey
 import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 import com.felipebz.zpa.symbols.local.LocalTypeGate
@@ -57,7 +50,7 @@ internal class ProjectTypeResolutionVisitor(
         val lexical = when (gate) {
             null -> legacy
             LocalTypeGate.Local -> true
-            LocalTypeGate.NotLocal, is LocalTypeGate.Held -> false
+            LocalTypeGate.NotLocal, is LocalTypeGate.Held, is LocalTypeGate.EnclosingType -> false
         }
         if (lexical) return
 
@@ -71,6 +64,12 @@ internal class ProjectTypeResolutionVisitor(
         // declaration decides, and the mismatch is recorded.
         if (gate is LocalTypeGate.Held && resolution is ProjectTypeResolution.Resolved &&
             (resolution.declaration.fileId != fileId || LocalRangeKey.of(resolution.declaration.sourceRange) != gate.declaration)
+        ) {
+            facts?.gateMismatches?.add("${reference.sourceRange.startLine}:${reference.sourceRange.startColumn}")
+            return
+        }
+        if (gate is LocalTypeGate.EnclosingType && resolution is ProjectTypeResolution.Resolved &&
+            (resolution.declaration !is StandaloneTypeDeclaration || resolution.declaration.qualifiedName != gate.name)
         ) {
             facts?.gateMismatches?.add("${reference.sourceRange.startLine}:${reference.sourceRange.startColumn}")
             return

@@ -99,9 +99,11 @@ class ProjectSelfMemberBaseTest {
     @Test
     fun anExplicitSelfParameterKeepsItsLegacyBase() {
         val explicit = "CREATE TYPE BODY t AS\n  CONSTRUCTOR FUNCTION t(SELF IN OUT t) RETURN SELF AS RESULT IS BEGIN self.a := 0; RETURN; END;\nEND;\n/\n"
-        val on = scan("spec.sql" to spec, "body.sql" to explicit)
-        LocalSemanticSwitches.selfMemberBase = false
-        assertThat(on).isEqualTo(scan("spec.sql" to spec, "body.sql" to explicit))
+        for (switch in listOf(true, false)) {
+            LocalSemanticSwitches.selfMemberBase = switch
+            assertThat(scan("t.sql" to spec + explicit)).describedAs("switch $switch").containsExactly("10 self.a Resolved t.a")
+            assertThat(scan("spec.sql" to spec, "body.sql" to explicit)).describedAs("switch $switch").containsExactly("2 self.a Resolved t.a")
+        }
     }
 
     private fun scan(vararg sources: Pair<String, String>): List<String> {

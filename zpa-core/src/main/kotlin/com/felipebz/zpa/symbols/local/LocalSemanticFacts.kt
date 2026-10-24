@@ -84,9 +84,10 @@ internal class LocalSemanticFacts(
      * - null when the local outcome is uncertain or no reference is paired: the legacy decision stands.
      */
     fun localTypeGate(range: SourceRange): LocalTypeGate? {
-        val outcome = localOutcome(LocalShadowPair.Kind.TYPE_NAME, range.startLine, range.startColumn) ?: return null
+        val index = byStart[Triple(true, range.startLine, range.startColumn)]?.singleOrNull() ?: return null
+        val outcome = decidingOutcome(references[index], resolutions[index])
         return when (LocalShadowPair.classify(false, outcome)) {
-            LocalShadowPair.ShadowClass.SAME -> LocalTypeGate.NotLocal
+            LocalShadowPair.ShadowClass.SAME -> enclosingType(references[index])?.let(LocalTypeGate::EnclosingType) ?: LocalTypeGate.NotLocal
             LocalShadowPair.ShadowClass.LEGACY_ALLOWS -> {
                 val bound = ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Bound
                 val key = bound?.let { LocalRangeKey.of(model.declaration(it.declaration).range) }
@@ -114,6 +115,10 @@ internal class LocalSemanticFacts(
         }
         return LocalSelfBase(type.unitName, member)
     }
+
+    private fun enclosingType(reference: LocalReference): QualifiedName? =
+        LocalTypeScope.enclosingTypeName(model, reference)
+            ?.takeIf { isTypeName(reference) && reference.segments.isEmpty() && it.last == reference.name }
 
     /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
     fun differential(): List<LocalShadowPair> {
@@ -158,6 +163,9 @@ internal sealed interface LocalSelfMember {
 internal sealed interface LocalTypeGate {
     data object Local : LocalTypeGate
     data object NotLocal : LocalTypeGate
+
+    /** Not local: the enclosing object type's own name, which the project must resolve to that type. */
+    data class EnclosingType(val name: QualifiedName) : LocalTypeGate
     data class Held(val declaration: LocalRangeKey) : LocalTypeGate
 }
 

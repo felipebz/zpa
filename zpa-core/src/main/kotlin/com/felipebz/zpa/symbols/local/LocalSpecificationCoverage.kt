@@ -24,13 +24,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.project.ProjectSnapshot
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.IndexedDeclaration
-import com.felipebz.zpa.project.MemberNameStatus
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.PackageDeclaration
-import com.felipebz.zpa.project.PackageMemberNames
-import com.felipebz.zpa.project.ProjectSymbolIndex
+import com.felipebz.zpa.project.*
 import java.util.*
 
 /**
@@ -66,6 +60,7 @@ internal class LocalSpecificationCoverage private constructor(
 
     fun refine(reference: LocalReference, steps: List<LocalResolution>): List<LocalResolution> {
         val first = steps.first() as? LocalResolution.Incomplete ?: return steps
+        if (isFreeEnclosingTypeName(reference, first)) return listOf(LocalResolution.SpecificationCovered(LocalResolution.ProvenAbsent))
         if (!onlySpecificationGap(first)) return steps
         val chain = LocalResolver.chain(model, reference.region)
         if (chain.any { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }) return steps
@@ -91,6 +86,30 @@ internal class LocalSpecificationCoverage private constructor(
             result += if (step is LocalResolution.Incomplete && onlySpecificationGap(step)) LocalResolution.SpecificationCovered(step.provisional) else step
         }
         return result
+    }
+
+    /**
+     * The enclosing object type's own name in a type position, stopped only because the specification or a supertype is
+     * not in the file. Those could capture the name only with an attribute or method of that name (PLS-00488); a
+     * constructor never does. The project's complete attribute and method lists of the chain decide.
+     */
+    private fun isFreeEnclosingTypeName(reference: LocalReference, outcome: LocalResolution.Incomplete): Boolean {
+        if (reference.context != LocalReferenceContext.TYPE || reference.segments.isNotEmpty()) return false
+        if (outcome.provisional != LocalResolution.ProvenAbsent || outcome.regionReasons.isNotEmpty() ||
+            !TYPE_GAPS.containsAll(outcome.lookupReasons)) return false
+        val unitName = LocalTypeScope.enclosingTypeName(model, reference) ?: return false
+        return unitName.last == reference.name && freeOfName(unitName, reference.name, own = true, HashSet())
+    }
+
+    private fun freeOfName(typeName: QualifiedName, name: OracleIdentifier, own: Boolean, visited: MutableSet<QualifiedName>): Boolean {
+        if (!visited.add(typeName)) return false
+        val type = index.findOccurrences(typeName).map { it.declaration }
+            .singleOrNull { it is StandaloneTypeDeclaration } as? StandaloneTypeDeclaration ?: return false
+        if (type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete) return false
+        if (index.alteredTypeAttributes.any { it.last == type.name.last }) return false
+        if (type.attributes.any { it.name == name } || (!own && name in type.methodNames)) return false
+        val supertype = type.supertype ?: return true
+        return freeOfName(supertype.name, name, own = false, visited)
     }
 
     private fun onlySpecificationGap(outcome: LocalResolution.Incomplete) =
@@ -135,6 +154,8 @@ internal class LocalSpecificationCoverage private constructor(
     }.orElse(null)
 
     companion object {
+        private val TYPE_GAPS = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE)
+
         /** The refinement over [snapshot]'s project, or null when the project is not prepared. */
         fun of(model: LocalSemanticModel, snapshot: ProjectSnapshot): LocalSpecificationCoverage? =
             if (snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) null
