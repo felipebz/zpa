@@ -56,10 +56,7 @@ class ProjectDeclarationExtractor(
 internal class ProjectFileExtraction(
     val declarations: List<ProjectDeclaration>,
     omittedStandaloneCallables: Set<QualifiedName>,
-    alteredTypeAttributes: Set<QualifiedName> = emptySet(),
-    droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = emptyMap()
+    val alteredTypes: AlteredTypes = AlteredTypes.NONE
 ) {
-    val droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = Collections.unmodifiableMap(HashMap(droppedTypeAttributes))
     val omittedStandaloneCallables: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
-    val alteredTypeAttributes: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(alteredTypeAttributes))
 }

@@ -26,8 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ProjectSymbolIndexBuilder {
     private val declarationsByFile = ConcurrentHashMap<FileId, List<ProjectDeclaration>>()
     private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
-    private val alteredTypeAttributesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
-    private val droppedTypeAttributesByFile = ConcurrentHashMap<FileId, Map<QualifiedName, Set<OracleIdentifier>>>()
+    private val alteredTypesByFile = ConcurrentHashMap<FileId, AlteredTypes>()
 
     fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) = add(fileId, declarations, emptySet())
 
@@ -36,8 +35,7 @@ class ProjectSymbolIndexBuilder {
         fileId: FileId,
         declarations: Collection<ProjectDeclaration>,
         omittedStandaloneCallables: Set<QualifiedName>,
-        alteredTypeAttributes: Set<QualifiedName> = emptySet(),
-        droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = emptyMap()
+        alteredTypes: AlteredTypes = AlteredTypes.NONE
     ) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
@@ -47,8 +45,7 @@ class ProjectSymbolIndexBuilder {
             "Declarations for $fileId were added more than once"
         }
         if (omittedStandaloneCallables.isNotEmpty()) omittedStandaloneCallablesByFile[fileId] = omittedStandaloneCallables
-        if (alteredTypeAttributes.isNotEmpty()) alteredTypeAttributesByFile[fileId] = alteredTypeAttributes
-        if (droppedTypeAttributes.isNotEmpty()) droppedTypeAttributesByFile[fileId] = droppedTypeAttributes
+        if (!alteredTypes.isEmpty()) alteredTypesByFile[fileId] = alteredTypes
     }
 
     fun build(): ProjectSymbolIndex {
@@ -62,10 +59,9 @@ class ProjectSymbolIndexBuilder {
             )
         }
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
-        val alteredTypeAttributes = alteredTypeAttributesByFile.values.flatMapTo(HashSet()) { it }
-        val dropped = HashMap<QualifiedName, MutableSet<OracleIdentifier>>()
-        droppedTypeAttributesByFile.values.forEach { file -> file.forEach { (type, names) -> dropped.getOrPut(type) { HashSet() } += names } }
-        return ProjectSymbolIndex(occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, alteredTypeAttributes, dropped)
+        return ProjectSymbolIndex(
+            occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values)
+        )
     }
 }
 
@@ -91,8 +87,7 @@ class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
     fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
     omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
-    alteredTypeAttributes: Set<QualifiedName> = emptySet(),
-    droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> = emptyMap()
+    alteredTypes: AlteredTypes = AlteredTypes.NONE
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -101,10 +96,7 @@ class ProjectSymbolIndex internal constructor(
     internal val omittedStandaloneCallables: Set<QualifiedName> =
         Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 
-    internal val alteredTypeAttributes: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(alteredTypeAttributes))
-
-    internal val droppedTypeAttributes: Map<QualifiedName, Set<OracleIdentifier>> =
-        Collections.unmodifiableMap(droppedTypeAttributes.mapValues { Collections.unmodifiableSet(HashSet(it.value)) })
+    internal val alteredTypes: AlteredTypes = alteredTypes
 
     /** All canonical occurrences in deterministic file, then per-file order. */
     val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })

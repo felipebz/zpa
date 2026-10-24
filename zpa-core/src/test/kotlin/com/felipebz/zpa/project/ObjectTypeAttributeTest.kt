@@ -74,8 +74,8 @@ class ObjectTypeAttributeTest {
             "sup.sql" to "CREATE TYPE sup AS OBJECT (a1 NUMBER, MEMBER FUNCTION total RETURN NUMBER) NOT FINAL;",
             "sub.sql" to "CREATE TYPE sub UNDER sup (b1 DATE, STATIC PROCEDURE make);"
         )
-        assertThat(member(methods, "sub", "total")).isEqualTo("UnsupportedType")
-        assertThat(member(methods, "sub", "make")).isEqualTo("UnsupportedType")
+        assertThat(member(methods, "sub", "total")).isEqualTo("Method")
+        assertThat(member(methods, "sub", "make")).isEqualTo("Method")
         assertThat(member(methods, "sub", "other")).isEqualTo("NotFound")
     }
 
@@ -194,7 +194,7 @@ class ObjectTypeAttributeTest {
         val first = index(sources, false)
         for (other in listOf(index(sources.reversed(), false), index(sources.reversed(), true))) {
             assertThat(other.declarations).isEqualTo(first.declarations)
-            assertThat(other.alteredTypeAttributes).isEqualTo(first.alteredTypeAttributes)
+            assertThat(other.alteredTypes).isEqualTo(first.alteredTypes)
         }
     }
 

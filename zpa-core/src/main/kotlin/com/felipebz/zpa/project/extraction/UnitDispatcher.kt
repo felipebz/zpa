@@ -32,11 +32,11 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
     private val datatypeShape = DatatypeShape(stream)
     private val typeReferences = TypeReferences(stream)
     private val collectionElements = CollectionElementSyntax(stream, datatypeShape, typeReferences)
-    private val schemaUnits = SchemaUnitExtractor(stream, typeReferences, bounds, collectionElements)
     private val bodyBoundaries = BodyBoundaryScanner(stream)
     private val initializerShape = InitializerShape(stream)
     private val packageValues = PackageValueRecognizer(stream, datatypeShape, typeReferences, initializerShape)
     private val memberParser = PackageMemberParser(stream, typeReferences, collectionElements, datatypeShape)
+    private val schemaUnits = SchemaUnitExtractor(stream, typeReferences, bounds, collectionElements, ObjectMethodSyntax(stream, typeReferences, memberParser))
     private val callableProperties = CallableProperties(stream)
     private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
     private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences)
@@ -58,19 +58,27 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
                 cursor = create + 1
             }
         }
-        val altered = alteredTypeAttributes()
-        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, altered.keys, altered.filterValues { it.isNotEmpty() })
+        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes())
     }
 
-    private fun alteredTypeAttributes(): Map<QualifiedName, Set<OracleIdentifier>> {
+    private fun alteredTypes(): AlteredTypes {
         val altered = HashMap<QualifiedName, MutableSet<OracleIdentifier>>()
+        val methods = HashSet<QualifiedName>()
         var cursor = 0
         while (cursor < stream.tokens.size) {
             val alter = stream.nextValue(cursor, "ALTER") ?: break
             cursor = alter + 1
             if (!stream.isKeyword(alter, "ALTER") || stream.valueAt(alter + 1) != "TYPE") continue
-            val name = stream.qualifiedName(alter + 2) ?: continue
+            val ifExists = stream.valueAt(alter + 2) == "IF" && stream.valueAt(alter + 3) == "EXISTS"
+            val name = stream.qualifiedName(if (ifExists) alter + 4 else alter + 2) ?: continue
             val end = bounds.statementEnd(name.second)
+            // REPLACE restates the whole specification.
+            if (stream.valueAt(name.second) == "REPLACE") {
+                methods += name.first
+                altered.getOrPut(name.first) { HashSet() }
+                continue
+            }
+            if ((name.second..end).any { (stream.valueAt(it) == "ADD" || stream.valueAt(it) == "DROP") && isMethodClause(it + 1) }) methods += name.first
             val attributes = (name.second..end).filter { stream.valueAt(it) == "ATTRIBUTE" }
             if (attributes.isEmpty()) continue
             val dropped = altered.getOrPut(name.first) { HashSet() }
@@ -88,7 +96,14 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
                 }
             }
         }
-        return altered
+        return AlteredTypes(altered.keys, altered.filterValues { it.isNotEmpty() }, methods)
+    }
+
+    /** `[NOT] OVERRIDING | FINAL | INSTANTIABLE ...` then MEMBER, STATIC, MAP, ORDER or CONSTRUCTOR. */
+    private fun isMethodClause(start: Int): Boolean {
+        var index = start
+        while (stream.valueAt(index) in METHOD_MODIFIERS) index++
+        return stream.valueAt(index) in METHOD_KINDS
     }
 
     private fun parseCreate(create: Int): ParsedUnit? {
@@ -135,5 +150,10 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
         if (orReplace) index += 2
         if (stream.isKeyword(index, "EDITIONABLE") || stream.isKeyword(index, "NONEDITIONABLE")) index++
         return if (stream.isKeyword(index, "PACKAGE")) index to orReplace else null
+    }
+
+    private companion object {
+        val METHOD_MODIFIERS = setOf("NOT", "OVERRIDING", "FINAL", "INSTANTIABLE")
+        val METHOD_KINDS = setOf("MEMBER", "STATIC", "MAP", "ORDER", "CONSTRUCTOR")
     }
 }

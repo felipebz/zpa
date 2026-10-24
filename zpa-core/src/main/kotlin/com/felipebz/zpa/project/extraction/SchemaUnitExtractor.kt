@@ -27,7 +27,8 @@ internal class SchemaUnitExtractor(
     private val stream: TokenStream,
     private val typeReferences: TypeReferences,
     private val bounds: UnitBounds,
-    private val collectionElements: CollectionElementSyntax
+    private val collectionElements: CollectionElementSyntax,
+    private val methodSyntax: ObjectMethodSyntax
 ) {
     fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
         // CREATE SEQUENCE has no OR REPLACE or EDITIONABLE prefix in the supported
@@ -59,9 +60,10 @@ internal class SchemaUnitExtractor(
             name.first, shape, stream.fileId, stream.range(create, end),
             elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION },
             attributes = objectSyntax?.attributes.orEmpty(),
-            methodNames = objectSyntax?.methods.orEmpty(),
+            methods = objectSyntax?.methods.orEmpty(),
             supertype = objectSyntax?.supertype,
-            attributesComplete = objectSyntax?.complete ?: true
+            attributesComplete = objectSyntax?.complete ?: true,
+            methodsComplete = objectSyntax?.methodsComplete ?: true
         )
         return ParsedUnit(listOf(declaration), end + 1)
     }
@@ -81,9 +83,10 @@ internal class SchemaUnitExtractor(
 
     private class ObjectSyntax(
         val attributes: List<ProjectRecordField>,
-        val methods: List<OracleIdentifier>,
+        val methods: List<ProjectTypeMethod>,
         val supertype: TypeRef?,
-        val complete: Boolean
+        val complete: Boolean,
+        val methodsComplete: Boolean = complete
     )
 
     private fun objectSyntax(create: Int, afterName: Int): ObjectSyntax? {
@@ -101,14 +104,14 @@ internal class SchemaUnitExtractor(
         val close = stream.strictClose(open, limit) ?: return ObjectSyntax(emptyList(), emptyList(), supertype, false)
         val parts = stream.splitStrict(open, close) ?: return ObjectSyntax(emptyList(), emptyList(), supertype, false)
         val attributes = ArrayList<ProjectRecordField>()
-        val methods = ArrayList<OracleIdentifier>()
+        val methods = ArrayList<ProjectTypeMethod>()
         var complete = supertype != null || !under
+        var methodsComplete = complete
         for (part in parts) {
             if (stream.valueAt(part.first) in METHOD_STARTS) {
                 if (stream.valueAt(part.first) == "PRAGMA") continue
-                val kind = (part.first..part.last).firstOrNull { stream.valueAt(it) == "FUNCTION" || stream.valueAt(it) == "PROCEDURE" }
-                val method = kind?.let { stream.identifierAt(it + 1) }
-                if (method == null) complete = false else methods += method.first
+                val method = methodSyntax.parse(part.first, part.last)
+                if (method == null) methodsComplete = false else methods += method
                 continue
             }
             if (methods.isNotEmpty()) {
@@ -124,7 +127,7 @@ internal class SchemaUnitExtractor(
             }
             attributes += ProjectRecordField(attribute.first, attributes.size, typeRef, stream.range(part.first, part.last))
         }
-        return ObjectSyntax(attributes, methods, supertype, complete)
+        return ObjectSyntax(attributes, methods, supertype, complete, methodsComplete)
     }
 
     /** First `;` at typed delimiter depth 0 in `[start, limit)`, else [limit]; null when delimiters are crossed. */

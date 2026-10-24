@@ -19,20 +19,7 @@
  */
 package com.felipebz.flr.internal.toolkit
 
-import com.felipebz.zpa.tooling.LegacySemanticSummary
-import com.felipebz.zpa.tooling.ProjectDeclarationSummary
-import com.felipebz.zpa.tooling.ProjectRecordFieldSummary
-import com.felipebz.zpa.tooling.ProjectRecordFieldTypeResolutionState
-import com.felipebz.zpa.tooling.ProjectRecordFieldTypeResolutionSummary
-import com.felipebz.zpa.tooling.ProjectRecordMemberPathResolutionState
-import com.felipebz.zpa.tooling.ProjectRecordMemberPathResolutionSummary
-import com.felipebz.zpa.tooling.ProjectRecordMemberResolutionSummary
-import com.felipebz.zpa.tooling.ProjectRecordMemberResolutionState
-import com.felipebz.zpa.tooling.ProjectTypeResolutionState
-import com.felipebz.zpa.tooling.ProjectTypeResolutionSummary
-import com.felipebz.zpa.tooling.SemanticNodeInspection
-import com.felipebz.zpa.tooling.SemanticSourceRange
-import com.felipebz.zpa.tooling.SemanticTypeRefSummary
+import com.felipebz.zpa.tooling.*
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
@@ -452,6 +439,7 @@ internal class SemanticTreeBuilder {
         ProjectRecordMemberResolutionState.NOT_FOUND -> "No matching project field"
         ProjectRecordMemberResolutionState.AMBIGUOUS -> "Ambiguous"
         ProjectRecordMemberResolutionState.INCOMPLETE -> "Attribute list incomplete"
+        ProjectRecordMemberResolutionState.METHOD -> "Method"
         ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE -> "Unsupported type"
     }
 
@@ -464,6 +452,7 @@ internal class SemanticTreeBuilder {
         "MEMBER_NOT_FOUND" -> "Member not found"
         "MEMBER_AMBIGUOUS" -> "Ambiguous member"
         "MEMBER_INCOMPLETE" -> "Attribute list incomplete"
+        "MEMBER_IS_METHOD" -> "Method"
         "UNSUPPORTED_TYPE" -> "Unsupported type"
         "FIELD_TYPE_UNRESOLVED" -> "Field type unresolved"
         null -> "Unknown"

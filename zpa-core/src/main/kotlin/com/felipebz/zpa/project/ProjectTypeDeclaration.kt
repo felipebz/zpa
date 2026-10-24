@@ -50,10 +50,12 @@ data class StandaloneTypeDeclaration(
     /** Direct element type syntax of a COLLECTION, when the extractor admitted it. Unresolved. */
     val elementType: TypeRef? = null,
     val attributes: List<ProjectRecordField> = emptyList(),
-    val methodNames: List<OracleIdentifier> = emptyList(),
+    val methods: List<ProjectTypeMethod> = emptyList(),
     val supertype: TypeRef? = null,
-    /** False when an element of the type could not be extracted. `ALTER TYPE` changes are tracked by the index. */
-    val attributesComplete: Boolean = true
+    /** False when an attribute could not be extracted. `ALTER TYPE` changes are tracked by the index. */
+    val attributesComplete: Boolean = true,
+    /** False when a method could not be extracted. `ALTER TYPE` changes are tracked by the index. */
+    val methodsComplete: Boolean = true
 ) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE
@@ -63,8 +65,8 @@ data class StandaloneTypeDeclaration(
         require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
             "Only COLLECTION declarations may contain an element type"
         }
-        require(shape == ProjectTypeShape.OBJECT || (attributes.isEmpty() && methodNames.isEmpty() && supertype == null)) {
-            "Only OBJECT declarations may contain attributes or a supertype"
+        require(shape == ProjectTypeShape.OBJECT || (attributes.isEmpty() && methods.isEmpty() && supertype == null)) {
+            "Only OBJECT declarations may contain attributes, methods or a supertype"
         }
     }
 }

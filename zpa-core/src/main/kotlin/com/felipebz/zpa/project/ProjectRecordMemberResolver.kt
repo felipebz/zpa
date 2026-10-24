@@ -19,7 +19,7 @@
  */
 package com.felipebz.zpa.project
 
-/** Resolves only the identity of a RECORD field or OBJECT attribute on an already identified project type. */
+/** Resolves only the identity of a RECORD field, or of an OBJECT attribute or method set, on an already identified project type. */
 class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAnalysisContext? = null) {
     private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
 
@@ -36,28 +36,47 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
         }
         is StandaloneTypeDeclaration ->
             if (declaration.shape != ProjectTypeShape.OBJECT) ProjectRecordMemberResolution.UnsupportedType(declaration)
-            else attribute(declaration, memberName)
+            else member(declaration, memberName)
         else -> ProjectRecordMemberResolution.UnsupportedType(declaration)
     }
 
-    private fun attribute(type: StandaloneTypeDeclaration, memberName: OracleIdentifier): ProjectRecordMemberResolution {
+    /**
+     * An attribute or the methods of that name along the chain from [type]. Methods form one overload set: the type's
+     * own first, then inherited ones that a nearer method of the same parameters does not override. Constructors are
+     * not members of a value.
+     */
+    private fun member(type: StandaloneTypeDeclaration, memberName: OracleIdentifier): ProjectRecordMemberResolution {
         val visited = HashSet<StandaloneTypeDeclaration>()
+        val methods = ArrayList<ProjectMethodCandidate>()
         var current = type
         var complete = true
         while (true) {
-            if (!visited.add(current)) return ProjectRecordMemberResolution.Incomplete(type)
-            found(current, current.attributes, memberName)?.let { found ->
-                // Statements are not ordered across files: the drop may precede or follow this declaration.
-                return if (isDropped(current, memberName)) ProjectRecordMemberResolution.Incomplete(type) else found
+            if (!visited.add(current)) return methodsOr(type, methods, false) { ProjectRecordMemberResolution.Incomplete(type) }
+            if (methods.isEmpty()) {
+                found(current, current.attributes, memberName)?.let { found ->
+                    // Statements are not ordered across files: the drop may precede or follow this declaration.
+                    return if (isDropped(current, memberName)) ProjectRecordMemberResolution.Incomplete(type) else found
+                }
             }
-            // Methods are not modeled.
-            if (memberName in current.methodNames) return ProjectRecordMemberResolution.UnsupportedType(type)
-            if (!current.attributesComplete || isAltered(current)) complete = false
+            for (method in current.methods) {
+                if (method.name != memberName || method.methodKind == ProjectMethodKind.CONSTRUCTOR) continue
+                if (methods.none { it.method.overloadKey() == method.overloadKey() }) methods += ProjectMethodCandidate(current, method)
+            }
+            if (!current.attributesComplete || !current.methodsComplete || isAltered(current)) complete = false
             val supertype = current.supertype ?: break
-            current = supertypeOf(supertype) ?: return ProjectRecordMemberResolution.Incomplete(type)
+            current = supertypeOf(supertype) ?: return methodsOr(type, methods, false) { ProjectRecordMemberResolution.Incomplete(type) }
         }
-        return if (complete) ProjectRecordMemberResolution.NotFound(type) else ProjectRecordMemberResolution.Incomplete(type)
+        return methodsOr(type, methods, complete) {
+            if (complete) ProjectRecordMemberResolution.NotFound(type) else ProjectRecordMemberResolution.Incomplete(type)
+        }
     }
+
+    private inline fun methodsOr(
+        type: StandaloneTypeDeclaration,
+        methods: List<ProjectMethodCandidate>,
+        complete: Boolean,
+        otherwise: () -> ProjectRecordMemberResolution
+    ): ProjectRecordMemberResolution = if (methods.isEmpty()) otherwise() else ProjectRecordMemberResolution.Method(type, methods, complete)
 
     private fun found(declaration: ProjectTypeDeclaration, fields: List<ProjectRecordField>, memberName: OracleIdentifier): ProjectRecordMemberResolution? {
         val candidates = fields.filter { it.name == memberName }.deterministicallySorted()
@@ -75,15 +94,13 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
     }
 
     private fun isDropped(type: StandaloneTypeDeclaration, name: OracleIdentifier): Boolean {
-        val dropped = (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.droppedTypeAttributes
-            ?: return false
-        return dropped.any { (altered, names) -> altered.last == type.name.last && name in names }
+        val altered = (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes ?: return false
+        return altered.dropped(type.name, name)
     }
 
     private fun isAltered(type: StandaloneTypeDeclaration): Boolean {
-        val altered = (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypeAttributes
-            ?: return false
-        return altered.any { it.last == type.name.last }
+        val altered = (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes ?: return false
+        return altered.attributesOf(type.name) || altered.methodsOf(type.name)
     }
 }
 
@@ -113,6 +130,25 @@ sealed interface ProjectRecordMemberResolution {
         override fun toString(): String = "Ambiguous($declaration, $candidates)"
     }
 
+    /**
+     * Methods of that name: the overload set, the type's own first, then inherited ones not overridden. Static methods
+     * are kept with their kind. [complete] is false when a list of the chain is incomplete, altered or outside the project.
+     */
+    class Method(
+        override val declaration: ProjectTypeDeclaration,
+        overloads: Collection<ProjectMethodCandidate>,
+        val complete: Boolean
+    ) : ProjectRecordMemberResolution {
+        val overloads: List<ProjectMethodCandidate> = immutableList(overloads)
+
+        override fun equals(other: Any?): Boolean = other is Method &&
+            declaration == other.declaration && overloads == other.overloads && complete == other.complete
+
+        override fun hashCode(): Int = 31 * (31 * declaration.hashCode() + overloads.hashCode()) + complete.hashCode()
+
+        override fun toString(): String = "Method($declaration, $overloads, complete=$complete)"
+    }
+
     /** Not found or not provable: the type's attribute chain is not fully known to the project. */
     data class Incomplete(
         override val declaration: ProjectTypeDeclaration
@@ -122,6 +158,9 @@ sealed interface ProjectRecordMemberResolution {
         override val declaration: ProjectTypeDeclaration
     ) : ProjectRecordMemberResolution
 }
+
+/** A method of an overload set and the object type that declares it. */
+data class ProjectMethodCandidate(val declaringType: StandaloneTypeDeclaration, val method: ProjectTypeMethod)
 
 private fun Collection<ProjectRecordField>.deterministicallySorted(): List<ProjectRecordField> = sortedWith(
     compareBy(

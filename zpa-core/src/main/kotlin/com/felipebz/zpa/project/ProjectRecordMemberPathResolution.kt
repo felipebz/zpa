@@ -72,6 +72,7 @@ internal sealed interface ProjectRecordMemberPathResolution {
         MEMBER_NOT_FOUND,
         MEMBER_AMBIGUOUS,
         MEMBER_INCOMPLETE,
+        MEMBER_IS_METHOD,
         UNSUPPORTED_TYPE,
         FIELD_TYPE_UNRESOLVED
     }
@@ -139,6 +140,7 @@ internal class ProjectRecordMemberPathResolver(
             is ProjectRecordMemberResolution.NotFound -> ProjectRecordMemberPathResolution.StopReason.MEMBER_NOT_FOUND
             is ProjectRecordMemberResolution.Ambiguous -> ProjectRecordMemberPathResolution.StopReason.MEMBER_AMBIGUOUS
             is ProjectRecordMemberResolution.Incomplete -> ProjectRecordMemberPathResolution.StopReason.MEMBER_INCOMPLETE
+            is ProjectRecordMemberResolution.Method -> ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_METHOD
             is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
             is ProjectRecordMemberResolution.Resolved -> error("Resolved member was not expected here")
         }

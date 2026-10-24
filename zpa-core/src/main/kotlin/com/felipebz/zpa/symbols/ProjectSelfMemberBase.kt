@@ -47,7 +47,7 @@ internal class ProjectSelfMemberBase(
         val agrees = when (val local = self.member) {
             is LocalSelfMember.Attribute -> project is ProjectRecordMemberResolution.Resolved &&
                 project.field.sourceRange.fileId == fileId && LocalRangeKey.of(project.field.sourceRange) == local.declaration
-            LocalSelfMember.Undeclared -> project !is ProjectRecordMemberResolution.Resolved
+            LocalSelfMember.Undeclared -> project !is ProjectRecordMemberResolution.Resolved && project !is ProjectRecordMemberResolution.Method
             LocalSelfMember.Other -> true
         }
         if (!agrees) {

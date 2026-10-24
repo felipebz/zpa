@@ -105,9 +105,9 @@ internal class LocalSpecificationCoverage private constructor(
         if (!visited.add(typeName)) return false
         val type = index.findOccurrences(typeName).map { it.declaration }
             .singleOrNull { it is StandaloneTypeDeclaration } as? StandaloneTypeDeclaration ?: return false
-        if (type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete) return false
-        if (index.alteredTypeAttributes.any { it.last == type.name.last }) return false
-        if (type.attributes.any { it.name == name } || (!own && name in type.methodNames)) return false
+        if (type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete || !type.methodsComplete) return false
+        if (index.alteredTypes.attributesOf(type.name) || index.alteredTypes.methodsOf(type.name)) return false
+        if (type.attributes.any { it.name == name } || (!own && type.methods.any { it.name == name })) return false
         val supertype = type.supertype ?: return true
         return freeOfName(supertype.name, name, own = false, visited)
     }
