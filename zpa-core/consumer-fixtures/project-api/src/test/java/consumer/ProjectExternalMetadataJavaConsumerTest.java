@@ -59,7 +59,7 @@ class ProjectExternalMetadataJavaConsumerTest {
         assertThat(employees.getRowFields()).extracting(ProjectExternalColumn::getName).containsExactly(id("id"), id("salary"), id("name"));
         assertThat(employees.getRowFields()).extracting(c -> c.getPosition().getAsInt()).containsExactly(1, 2, 3);
         var employeesRowFields = employees.getRowFields();
-        assertThatThrownBy(() -> employeesRowFields.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(employeesRowFields::clear).isInstanceOf(UnsupportedOperationException.class);
         var employeesColumns = employees.getColumns();
         assertThatThrownBy(() -> employeesColumns.add(null)).isInstanceOf(UnsupportedOperationException.class);
 

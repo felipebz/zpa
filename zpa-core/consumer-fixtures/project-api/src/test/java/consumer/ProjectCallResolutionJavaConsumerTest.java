@@ -104,7 +104,7 @@ class ProjectCallResolutionJavaConsumerTest {
         assertThat(ProjectCallArguments.of(List.of(a, named("\"a\""))).getNotation())
             .isEqualTo(ProjectCallArguments.Notation.VALID);
         var argumentsList = arguments.getArguments();
-        assertThatThrownBy(() -> argumentsList.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(argumentsList::clear).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -141,12 +141,10 @@ class ProjectCallResolutionJavaConsumerTest {
         assertThat(bindings.get(0).getArgument()).isSameAs(arguments.getArguments().get(0));
         assertThat(bindings.get(1).getArgument()).isSameAs(arguments.getArguments().get(1));
         ProjectParameterView c = bindings.get(1).getParameter();
-        assertThat(c).isSameAs(declaration.getParameters().get(2));
-        assertThat(c.getOrdinal()).isEqualTo(3);
-        assertThat(c.getMode()).isEqualTo(ProjectParameterMode.OUT);
-        assertThat(c.isNocopy()).isTrue();
-        assertThat(c.getTypeRef().getName()).isEqualTo(ProjectQualifiedName.of("VARCHAR2"));
-        assertThat(c.getSourceRange().getFileId()).isEqualTo("spec.sql");
+        assertThat(c).isSameAs(declaration.getParameters().get(2))
+            .extracting(ProjectParameterView::getOrdinal, ProjectParameterView::getMode, ProjectParameterView::isNocopy,
+                p -> p.getTypeRef().getName(), p -> p.getSourceRange().getFileId())
+            .containsExactly(3, ProjectParameterMode.OUT, true, ProjectQualifiedName.of("VARCHAR2"), "spec.sql");
         assertThat(candidate.getOmittedParameters()).singleElement().isSameAs(declaration.getParameters().get(1));
         assertThat(candidate.getOmittedParameters().get(0).isDefaultPresent()).isTrue();
     }
@@ -158,19 +156,19 @@ class ProjectCallResolutionJavaConsumerTest {
         ProjectCallResolution resolution = snapshot.resolveCall(member("run"), ProjectCallKind.PROCEDURE, arguments);
         ProjectCallCandidate candidate = resolution.getSelected().orElseThrow();
         var resolutionCandidates = resolution.getCandidates();
-        assertThatThrownBy(() -> resolutionCandidates.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(resolutionCandidates::clear).isInstanceOf(UnsupportedOperationException.class);
         var resolutionUncertainties = resolution.getUncertainties();
-        assertThatThrownBy(() -> resolutionUncertainties.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(resolutionUncertainties::clear).isInstanceOf(UnsupportedOperationException.class);
         var resolutionPackageSpecifications = resolution.getPackageSpecifications();
-        assertThatThrownBy(() -> resolutionPackageSpecifications.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(resolutionPackageSpecifications::clear).isInstanceOf(UnsupportedOperationException.class);
         var resolutionFailures = resolution.getFailures();
-        assertThatThrownBy(() -> resolutionFailures.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(resolutionFailures::clear).isInstanceOf(UnsupportedOperationException.class);
         var candidateBindings = candidate.getBindings();
-        assertThatThrownBy(() -> candidateBindings.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(candidateBindings::clear).isInstanceOf(UnsupportedOperationException.class);
         var candidateOmittedParameters = candidate.getOmittedParameters();
-        assertThatThrownBy(() -> candidateOmittedParameters.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(candidateOmittedParameters::clear).isInstanceOf(UnsupportedOperationException.class);
         var candidateMissingParameters = candidate.getMissingParameters();
-        assertThatThrownBy(() -> candidateMissingParameters.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(candidateMissingParameters::clear).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

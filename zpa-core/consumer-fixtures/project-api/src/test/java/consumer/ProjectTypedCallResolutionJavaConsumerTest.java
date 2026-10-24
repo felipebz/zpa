@@ -101,7 +101,7 @@ class ProjectTypedCallResolutionJavaConsumerTest {
         assertThat(rejected.getActualFamily()).contains(ProjectDatatypeFamily.DATETIME);
         assertThat(rejected.getFormalFamily()).contains(ProjectDatatypeFamily.NUMERIC);
         var typedEvaluations = typed.getEvaluations();
-        assertThatThrownBy(() -> typedEvaluations.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(typedEvaluations::clear).isInstanceOf(UnsupportedOperationException.class);
         List<ProjectArgumentType> noArguments = List.of();
         var noMetadata = ProjectExternalMetadata.none();
         assertThatThrownBy(() -> snapshot.narrowCall(structural, noArguments, noMetadata, HR))
