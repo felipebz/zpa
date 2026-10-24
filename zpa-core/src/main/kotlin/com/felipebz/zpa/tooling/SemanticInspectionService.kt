@@ -178,6 +178,7 @@ public enum class ProjectRecordMemberResolutionState {
     INCOMPLETE,
     /** A method set of an object type; the overloads are not listed. */
     METHOD,
+    /** A built-in method of a collection type (COUNT, EXTEND, …). */
     COLLECTION_METHOD,
     UNSUPPORTED_TYPE
 }

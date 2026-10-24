@@ -54,7 +54,7 @@ internal class SemanticAnalysisPipeline(
             val projectIndex = (projectAnalysisContext.state as ProjectAnalysisContext.State.Prepared).result.index
             visitors.add(ProjectSubprogramDeclarationResolutionVisitor(projectIndex, fileId))
             visitors.add(ProjectTypeResolutionVisitor(projectTypeResolver, fileId))
-            val selfBase = ProjectSelfMemberBase(projectTypeResolver, projectRecordMemberResolver, fileId)
+            val selfBase = ProjectSelfMemberBase(projectTypeResolver, projectRecordMemberResolver, projectRecordFieldTypeResolver, fileId)
             val memberVisitor = ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver, selfBase)
             visitors.add(memberVisitor)
             visitors.add(ProjectRecordFieldTypeResolutionVisitor(projectRecordFieldTypeResolver))

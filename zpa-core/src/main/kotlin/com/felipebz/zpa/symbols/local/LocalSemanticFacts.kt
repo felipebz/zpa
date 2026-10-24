@@ -167,6 +167,16 @@ internal class LocalSemanticFacts(
         LocalTypeScope.enclosingTypeName(model, reference)
             ?.takeIf { isTypeName(reference) && reference.segments.isEmpty() && it.last == reference.name }
 
+    /**
+     * For a first segment that the project decided is a member of the enclosing object type's specification (named alone,
+     * the specification in another file), the type's written name; null otherwise.
+     */
+    fun enclosingTypeOfSpecificationMember(line: Int, column: Int): QualifiedName? {
+        val index = byStart[Triple(false, line, column)]?.singleOrNull() ?: return null
+        if (!LocalReferenceOutcomes.isSpecificationMember(resolutions[index].first())) return null
+        return LocalTypeScope.enclosingTypeName(model, references[index])
+    }
+
     /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
     fun differential(): List<LocalShadowPair> {
         fun pair(kind: LocalShadowPair.Kind, gate: LegacyGate): LocalShadowPair {

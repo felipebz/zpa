@@ -27,19 +27,21 @@ import com.felipebz.zpa.symbols.local.LocalSelfMember
 import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 
 /**
- * The project base of a member expression whose first segment is the implicit `SELF` of a method, which has no legacy
- * symbol: the object type that encloses the method, looked up by its written name.
+ * The project base of a member expression whose first segment has no legacy symbol and stands for the implicit `SELF`
+ * of a method: `SELF` itself, whose base is the enclosing object type, or an attribute of that type named alone, whose
+ * base is the attribute's declared type.
  */
 internal class ProjectSelfMemberBase(
     private val typeResolver: ProjectTypeResolver,
     private val memberResolver: ProjectRecordMemberResolver,
+    private val fieldTypeResolver: ProjectRecordFieldTypeResolver,
     private val fileId: FileId
 ) {
-    fun of(context: PlSqlVisitorContext, first: AstNode, firstMember: OracleIdentifier): StandaloneTypeDeclaration? {
+    fun of(context: PlSqlVisitorContext, first: AstNode, firstMember: OracleIdentifier): ProjectTypeDeclaration? {
         if (!LocalSemanticSwitches.selfMemberBase) return null
         val facts = context.localSemanticFacts ?: return null
         val token = first.token
-        val self = facts.implicitSelf(token.line, token.column) ?: return null
+        val self = facts.implicitSelf(token.line, token.column) ?: return attribute(facts, first)
         val range = SourceRange(fileId, token.line, token.column, token.line, token.column + token.originalValue.length)
         val type = ((typeResolver.resolve(NamedTypeRef(self.typeName, range)) as? ProjectTypeResolution.Resolved)?.declaration
             as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return null
@@ -55,5 +57,21 @@ internal class ProjectSelfMemberBase(
             return null
         }
         return type
+    }
+
+    /**
+     * An attribute named alone: decided a specification member from the project (the local side keeps a static method's
+     * attribute as a gap, and a local declaration first), resolved on the enclosing type and typed as a path field is.
+     */
+    private fun attribute(facts: com.felipebz.zpa.symbols.local.LocalSemanticFacts, first: AstNode): ProjectTypeDeclaration? {
+        val token = first.token
+        val typeName = facts.enclosingTypeOfSpecificationMember(token.line, token.column) ?: return null
+        val range = SourceRange(fileId, token.line, token.column, token.line, token.column + token.originalValue.length)
+        val type = ((typeResolver.resolve(NamedTypeRef(typeName, range)) as? ProjectTypeResolution.Resolved)?.declaration
+            as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return null
+        val attribute = memberResolver.resolve(type, OracleIdentifier.fromSource(token.originalValue)) as? ProjectRecordMemberResolution.Resolved
+            ?: return null
+        val typed = fieldTypeResolver.resolve(attribute).resolution as? TypeRefSemanticResolution.Project ?: return null
+        return (typed.resolution as? ProjectTypeResolution.Resolved)?.declaration
     }
 }
