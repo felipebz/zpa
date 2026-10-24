@@ -58,13 +58,16 @@ internal class SemanticAnalysisPipeline(
             val memberVisitor = ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver, selfBase)
             visitors.add(memberVisitor)
             visitors.add(ProjectRecordFieldTypeResolutionVisitor(projectRecordFieldTypeResolver))
+            val pathResolver = ProjectRecordMemberPathResolver(projectRecordMemberResolver, projectRecordFieldTypeResolver)
+            val pathVisitor = ProjectRecordMemberPathResolutionVisitor(pathResolver, selfBase)
+            visitors.add(pathVisitor)
+            visitors.add(ProjectMethodCallVisitor(projectTypeResolver, projectRecordMemberResolver, projectIndex, fileId, memberVisitor))
             visitors.add(
-                ProjectRecordMemberPathResolutionVisitor(
-                    ProjectRecordMemberPathResolver(projectRecordMemberResolver, projectRecordFieldTypeResolver),
-                    selfBase
+                ProjectReceiverMemberVisitor(
+                    TypeRefSemanticResolver(projectTypeResolver), projectRecordMemberResolver, projectRecordFieldTypeResolver,
+                    pathResolver, projectIndex, memberVisitor, pathVisitor, selfBase
                 )
             )
-            visitors.add(ProjectMethodCallVisitor(projectTypeResolver, projectRecordMemberResolver, projectIndex, fileId, memberVisitor))
         }
 
         return Visitors(symbolVisitor, visitors)

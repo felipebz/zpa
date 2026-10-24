@@ -21,7 +21,6 @@ package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
@@ -49,6 +48,8 @@ internal class ProjectMethodCallVisitor(
     }
 
     override fun visitNode(node: AstNode) {
+        // A call on an expression receiver is bound on the receiver's type.
+        if (ProjectReceiverMemberVisitor.isReceiverItem(node)) return
         val call = if (node.type == PlSqlGrammar.METHOD_CALL) methodCall(node) else parameterless(node)
         call ?: return
         val facts = context.localSemanticFacts
@@ -63,10 +64,7 @@ internal class ProjectMethodCallVisitor(
     private fun methodCall(node: AstNode): ProjectMethodCall? {
         val lists = node.getChildren(PlSqlGrammar.ARGUMENTS)
         if (lists.size != 1) return null
-        val arguments = ProjectCallArguments.of(lists.single().getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
-            if (argument.hasDirectChildren(PlSqlPunctuator.ASSOCIATION)) ProjectCallArgument.named(OracleIdentifier.fromSource(argument.firstChild.tokenOriginalValue))
-            else ProjectCallArgument.positional()
-        })
+        val arguments = callArguments(lists.single())
         val kind = if (node.parent.type == PlSqlGrammar.CALL_STATEMENT) ProjectCallKind.PROCEDURE else ProjectCallKind.FUNCTION
         val called = node.firstChild
         return when {

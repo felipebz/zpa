@@ -27,6 +27,7 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
 import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
 
 /** Resolves project RECORD member paths from a semantic base symbol. */
@@ -40,26 +41,32 @@ internal class ProjectRecordMemberPathResolutionVisitor(
     }
 
     override fun visitNode(node: AstNode) {
-        val memberExpression = node as? SemanticAstNode ?: return
-        if (memberExpression.symbol != null || node.parent.type == PlSqlGrammar.METHOD_CALL || node.hasDirectChildren(PlSqlPunctuator.MOD)) return
+        if (node.parent.type == PlSqlGrammar.METHOD_CALL) return
+        pathOf(node)?.let { (node as SemanticAstNode).projectRecordMemberPathResolution = it }
+    }
+
+    /** The path a `base.member.member…` expression names from its base symbol, without decorating it; null for another shape. */
+    fun pathOf(node: AstNode): ProjectRecordMemberPathResolution? {
+        val memberExpression = node as? SemanticAstNode ?: return null
+        if (memberExpression.symbol != null || node.hasDirectChildren(PlSqlPunctuator.MOD) || ProjectReceiverMemberVisitor.isReceiverItem(node)) return null
 
         val children = node.children
         if (children.size < 5 || children.size % 2 == 0 ||
-            children.first().type != PlSqlGrammar.VARIABLE_NAME) return
+            children.first().type != PlSqlGrammar.VARIABLE_NAME) return null
         for (index in 1 until children.size) {
             val expectedType = if (index % 2 == 1) DOT else PlSqlGrammar.IDENTIFIER_NAME
-            if (children[index].type != expectedType) return
+            if (children[index].type != expectedType) return null
         }
 
         val memberNames = (2 until children.size step 2)
             .map { OracleIdentifier.fromSource(children[it].tokenOriginalValue) }
         val baseSymbol = (children.first() as? SemanticAstNode)?.symbol
         val baseType = if (baseSymbol != null) {
-            if (baseSymbol.kind !in setOf(Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER, Symbol.Kind.CURSOR)) return
-            baseSymbol.projectTypeDeclaration ?: return
+            if (baseSymbol.kind !in setOf(Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER, Symbol.Kind.CURSOR)) return null
+            baseSymbol.projectTypeDeclaration ?: return null
         } else {
-            selfBase?.of(context, children.first(), memberNames.first()) ?: return
+            selfBase?.of(context, children.first(), memberNames.first()) ?: return null
         }
-        memberExpression.projectRecordMemberPathResolution = resolver.resolve(baseType, memberNames)
+        return resolver.resolve(baseType, memberNames)
     }
 }

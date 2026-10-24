@@ -48,7 +48,8 @@ class SemanticAnalysisPipelineTest {
             ProjectRecordMemberResolutionVisitor::class,
             ProjectRecordFieldTypeResolutionVisitor::class,
             ProjectRecordMemberPathResolutionVisitor::class,
-            ProjectMethodCallVisitor::class
+            ProjectMethodCallVisitor::class,
+            ProjectReceiverMemberVisitor::class
         )
     }
 

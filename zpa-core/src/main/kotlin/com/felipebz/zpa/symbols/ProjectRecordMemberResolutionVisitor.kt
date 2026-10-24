@@ -51,6 +51,8 @@ internal class ProjectRecordMemberResolutionVisitor(
         val memberExpression = node as? SemanticAstNode ?: return
         // `c%NOTFOUND` is a cursor attribute, not a member.
         if (memberExpression.symbol != null || node.hasDirectChildren(PlSqlPunctuator.MOD)) return
+        // A member of an expression receiver is resolved on the receiver's type, not on a symbol of its own name.
+        if (ProjectReceiverMemberVisitor.isReceiverItem(node)) return
 
         val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
         if (parts.size != 2 || parts.first().type != PlSqlGrammar.VARIABLE_NAME ||
