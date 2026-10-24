@@ -20,18 +20,12 @@
 package com.felipebz.zpa.checks.utplsql
 
 import com.felipebz.flr.api.Token
-import java.util.Locale
+import java.util.*
 
 internal object UtPlSqlAnnotationParser {
 
-    private val annotationNamePattern = Regex(
-        "^ *%([A-Za-z][A-Za-z0-9#_$]*)",
-        RegexOption.IGNORE_CASE
-    )
-    private val annotationArgumentPattern = Regex(
-        "^ *%([A-Za-z][A-Za-z0-9#_$]*)[ \\t]*(?:\\((.*)\\)[ \\t]*)$",
-        RegexOption.IGNORE_CASE
-    )
+    private val annotationNamePattern = Regex("^ *%([A-Za-z][A-Za-z0-9#_$]*)")
+    private val annotationArgumentPattern = Regex("^ *%([A-Za-z][A-Za-z0-9#_$]*)[ \\t]*(?:\\((.*)\\)[ \\t]*)$")
 
     fun parse(token: Token, content: String): UtPlSqlAnnotation? {
         if (!token.originalValue.startsWith("--")) return null
