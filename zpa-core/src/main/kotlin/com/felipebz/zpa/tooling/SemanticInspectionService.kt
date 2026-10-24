@@ -178,6 +178,7 @@ public enum class ProjectRecordMemberResolutionState {
     INCOMPLETE,
     /** A method set of an object type; the overloads are not listed. */
     METHOD,
+    COLLECTION_METHOD,
     UNSUPPORTED_TYPE
 }
 
@@ -362,6 +363,12 @@ private object SemanticInspectionMapper {
         )
         is ProjectRecordMemberResolution.Method -> ProjectRecordMemberResolutionSummary(
             ProjectRecordMemberResolutionState.METHOD,
+            declaration(resolution.declaration),
+            null,
+            emptyList()
+        )
+        is ProjectRecordMemberResolution.CollectionMethod -> ProjectRecordMemberResolutionSummary(
+            ProjectRecordMemberResolutionState.COLLECTION_METHOD,
             declaration(resolution.declaration),
             null,
             emptyList()

@@ -73,12 +73,16 @@ internal sealed interface ProjectRecordMemberPathResolution {
         MEMBER_AMBIGUOUS,
         MEMBER_INCOMPLETE,
         MEMBER_IS_METHOD,
+        MEMBER_IS_COLLECTION_METHOD,
         UNSUPPORTED_TYPE,
         FIELD_TYPE_UNRESOLVED
     }
 }
 
-/** Composes a finite member path (record fields, object attributes) from an already known base type. */
+/**
+ * Composes a finite member path (record fields, object attributes) from an already known base type. A collection
+ * method stops the path at its segment, whether it is the last one or not.
+ */
 internal class ProjectRecordMemberPathResolver(
     private val memberResolver: ProjectRecordMemberResolver,
     private val fieldTypeResolver: ProjectRecordFieldTypeResolver
@@ -116,8 +120,8 @@ internal class ProjectRecordMemberPathResolver(
             }
 
             val nested = nextDeclaration.takeIf {
-                (it is PackageTypeDeclaration && it.shape == ProjectTypeShape.RECORD) ||
-                    (it is StandaloneTypeDeclaration && it.shape == ProjectTypeShape.OBJECT)
+                (it is PackageTypeDeclaration && (it.shape == ProjectTypeShape.RECORD || it.shape == ProjectTypeShape.COLLECTION)) ||
+                    (it is StandaloneTypeDeclaration && (it.shape == ProjectTypeShape.OBJECT || it.shape == ProjectTypeShape.COLLECTION))
             } ?: return stopped(
                 segments,
                 memberNames[index + 1],
@@ -141,6 +145,7 @@ internal class ProjectRecordMemberPathResolver(
             is ProjectRecordMemberResolution.Ambiguous -> ProjectRecordMemberPathResolution.StopReason.MEMBER_AMBIGUOUS
             is ProjectRecordMemberResolution.Incomplete -> ProjectRecordMemberPathResolution.StopReason.MEMBER_INCOMPLETE
             is ProjectRecordMemberResolution.Method -> ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_METHOD
+            is ProjectRecordMemberResolution.CollectionMethod -> ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_COLLECTION_METHOD
             is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
             is ProjectRecordMemberResolution.Resolved -> error("Resolved member was not expected here")
         }

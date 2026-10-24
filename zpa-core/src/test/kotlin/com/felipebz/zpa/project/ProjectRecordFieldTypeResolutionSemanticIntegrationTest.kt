@@ -541,7 +541,8 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
             .projectRecordMemberPathResolution as ProjectRecordMemberPathResolution.Stopped
         assertThat(anchoredPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
         assertThat(refPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
-        assertThat(collectionPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
+        // A collection has no member `name` (PLS-00302).
+        assertThat(collectionPath.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.MEMBER_NOT_FOUND)
         assertThat(anchored.result.issues).isEmpty()
     }
 

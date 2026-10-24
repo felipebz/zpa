@@ -24,8 +24,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectRecordMemberResolver
+import com.felipebz.zpa.project.*
 import java.util.*
 
 /** Connects existing base symbols to project RECORD member metadata without re-resolving types. */
@@ -61,6 +60,20 @@ internal class ProjectRecordMemberResolutionVisitor(
         val baseSymbol = (parts.first() as? SemanticAstNode)?.symbol
         val projectType = if (baseSymbol != null) baseSymbol.projectTypeDeclaration ?: return
         else selfBase?.of(context, parts.first(), memberName) ?: return
-        memberExpression.projectRecordMemberResolution = resolver.resolve(projectType, memberName)
+        val resolution = resolver.resolve(projectType, memberName)
+        if (resolution is ProjectRecordMemberResolution.CollectionMethod || isCollection(projectType) && resolution is ProjectRecordMemberResolution.NotFound) {
+            val facts = context.localSemanticFacts
+            val token = parts.first().token
+            val local = facts?.localCollectionMember(token.line, token.column)
+            if (local != null && local != (resolution is ProjectRecordMemberResolution.CollectionMethod)) {
+                facts.collectionMemberMismatches += "${token.line}:${token.column}"
+                return
+            }
+        }
+        memberExpression.projectRecordMemberResolution = resolution
     }
+
+    private fun isCollection(type: ProjectTypeDeclaration) =
+        (type as? PackageTypeDeclaration)?.shape == ProjectTypeShape.COLLECTION ||
+            (type as? StandaloneTypeDeclaration)?.shape == ProjectTypeShape.COLLECTION
 }

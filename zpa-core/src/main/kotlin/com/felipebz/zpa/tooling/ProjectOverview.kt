@@ -377,6 +377,7 @@ internal class ProjectOverviewBuilder(
         is ProjectRecordMemberResolution.Incomplete -> "Attribute list incomplete in ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.Method ->
             "Method (${resolution.overloads.size} overloads${if (resolution.complete) "" else ", incomplete"}) of ${resolution.declaration.qualifiedName}"
+        is ProjectRecordMemberResolution.CollectionMethod -> "Collection method ${resolution.name} of ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.UnsupportedType -> "Unsupported type ${resolution.declaration.qualifiedName}"
     }
 

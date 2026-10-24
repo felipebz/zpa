@@ -80,7 +80,7 @@ class ProjectRecordMemberResolverTest {
     }
 
     @Test
-    fun rejectsCollectionsAndSubtypesAndResolvesObjectAttributes() {
+    fun collectionsHaveTheirMethodsSubtypesAreUnsupportedAndObjectsResolveAttributes() {
         val collection = extractor.extract(FileId("types.sql"), "CREATE PACKAGE p AS TYPE t IS TABLE OF NUMBER; END p;")
             .filterIsInstance<PackageTypeDeclaration>().single()
         val standalone = extractor.extract(FileId("standalone.sql"), "CREATE TYPE t AS OBJECT (id NUMBER);")
@@ -88,8 +88,11 @@ class ProjectRecordMemberResolverTest {
         val subtype = extractor.extract(FileId("subtype.sql"), "CREATE PACKAGE p AS SUBTYPE t IS NUMBER; END p;")
             .filterIsInstance<PackageSubtypeDeclaration>().single()
 
+        // A collection has only its built-in methods as members.
         assertThat(resolver.resolve(collection, OracleIdentifier.fromSource("id")))
-            .isEqualTo(ProjectRecordMemberResolution.UnsupportedType(collection))
+            .isEqualTo(ProjectRecordMemberResolution.NotFound(collection))
+        assertThat(resolver.resolve(collection, OracleIdentifier.fromSource("count")))
+            .isEqualTo(ProjectRecordMemberResolution.CollectionMethod(collection, OracleIdentifier.fromSource("count")))
         assertThat(resolver.resolve(standalone, OracleIdentifier.fromSource("id")))
             .isEqualTo(ProjectRecordMemberResolution.Resolved(standalone, standalone.attributes.single()))
         assertThat(resolver.resolve(subtype, OracleIdentifier.fromSource("id")))

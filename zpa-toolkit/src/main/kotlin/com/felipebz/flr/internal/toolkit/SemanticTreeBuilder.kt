@@ -440,6 +440,7 @@ internal class SemanticTreeBuilder {
         ProjectRecordMemberResolutionState.AMBIGUOUS -> "Ambiguous"
         ProjectRecordMemberResolutionState.INCOMPLETE -> "Attribute list incomplete"
         ProjectRecordMemberResolutionState.METHOD -> "Method"
+        ProjectRecordMemberResolutionState.COLLECTION_METHOD -> "Collection method"
         ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE -> "Unsupported type"
     }
 
@@ -453,6 +454,7 @@ internal class SemanticTreeBuilder {
         "MEMBER_AMBIGUOUS" -> "Ambiguous member"
         "MEMBER_INCOMPLETE" -> "Attribute list incomplete"
         "MEMBER_IS_METHOD" -> "Method"
+        "MEMBER_IS_COLLECTION_METHOD" -> "Collection method"
         "UNSUPPORTED_TYPE" -> "Unsupported type"
         "FIELD_TYPE_UNRESOLVED" -> "Field type unresolved"
         null -> "Unknown"

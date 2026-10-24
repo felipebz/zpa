@@ -28,17 +28,29 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
         memberName: OracleIdentifier
     ): ProjectRecordMemberResolution = when (declaration) {
         is PackageTypeDeclaration -> {
-            if (declaration.shape != ProjectTypeShape.RECORD) {
+            if (declaration.shape == ProjectTypeShape.COLLECTION) {
+                collectionMember(declaration, memberName)
+            } else if (declaration.shape != ProjectTypeShape.RECORD) {
                 ProjectRecordMemberResolution.UnsupportedType(declaration)
             } else {
                 found(declaration, declaration.recordFields, memberName) ?: ProjectRecordMemberResolution.NotFound(declaration)
             }
         }
-        is StandaloneTypeDeclaration ->
-            if (declaration.shape != ProjectTypeShape.OBJECT) ProjectRecordMemberResolution.UnsupportedType(declaration)
-            else member(declaration, memberName)
+        is StandaloneTypeDeclaration -> when (declaration.shape) {
+            ProjectTypeShape.OBJECT -> member(declaration, memberName)
+            ProjectTypeShape.COLLECTION -> collectionMember(declaration, memberName)
+            else -> ProjectRecordMemberResolution.UnsupportedType(declaration)
+        }
         else -> ProjectRecordMemberResolution.UnsupportedType(declaration)
     }
+
+    /**
+     * A collection has only its built-in methods as members (PLS-00302 otherwise, even for an attribute of the element
+     * type). EXTEND and TRIM on an associative array are calls Oracle rejects (PLS-00306), not unknown members.
+     */
+    private fun collectionMember(declaration: ProjectTypeDeclaration, memberName: OracleIdentifier): ProjectRecordMemberResolution =
+        if (memberName.lookupName in COLLECTION_METHODS) ProjectRecordMemberResolution.CollectionMethod(declaration, memberName)
+        else ProjectRecordMemberResolution.NotFound(declaration)
 
     /**
      * An attribute or the methods of that name along the chain from [type]. Methods form one overload set: the type's
@@ -169,6 +181,12 @@ sealed interface ProjectRecordMemberResolution {
         override fun toString(): String = "Method($declaration, $overloads, complete=$complete)"
     }
 
+    /** A built-in method of a collection type (COUNT, DELETE, EXISTS, EXTEND, FIRST, LAST, LIMIT, NEXT, PRIOR, TRIM). */
+    data class CollectionMethod(
+        override val declaration: ProjectTypeDeclaration,
+        val name: OracleIdentifier
+    ) : ProjectRecordMemberResolution
+
     /** Not found or not provable: the type's attribute chain is not fully known to the project. */
     data class Incomplete(
         override val declaration: ProjectTypeDeclaration
@@ -178,6 +196,8 @@ sealed interface ProjectRecordMemberResolution {
         override val declaration: ProjectTypeDeclaration
     ) : ProjectRecordMemberResolution
 }
+
+private val COLLECTION_METHODS = setOf("COUNT", "DELETE", "EXISTS", "EXTEND", "FIRST", "LAST", "LIMIT", "NEXT", "PRIOR", "TRIM")
 
 /** A method of an overload set and the object type that declares it. */
 data class ProjectMethodCandidate(val declaringType: StandaloneTypeDeclaration, val method: ProjectTypeMethod)

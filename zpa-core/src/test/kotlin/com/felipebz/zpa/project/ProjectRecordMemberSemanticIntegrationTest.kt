@@ -196,7 +196,7 @@ class ProjectRecordMemberSemanticIntegrationTest {
     }
 
     @Test
-    fun nonRecordProjectBaseRetainsUnsupportedMemberResolution() {
+    fun anUnknownMemberOfAProjectCollectionIsNotFound() {
         val packageFile = FileId("package.sql")
         val useFile = FileId("use.sql")
         val check = RecordingCheck()
@@ -207,7 +207,7 @@ class ProjectRecordMemberSemanticIntegrationTest {
 
         val resolution = check.members.single { it.memberParts() == listOf("value", "id") }
             .projectRecordMemberResolution
-        assertThat(resolution).isInstanceOf(ProjectRecordMemberResolution.UnsupportedType::class.java)
+        assertThat(resolution).isInstanceOf(ProjectRecordMemberResolution.NotFound::class.java)
         assertThat(check.members.single { it.memberParts() == listOf("value", "id") }
             .projectRecordFieldTypeResolution).isNull()
     }

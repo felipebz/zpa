@@ -362,7 +362,10 @@ class ProjectRecordMemberPathResolverTest {
             assertThat(stopped.segments).hasSize(3)
             assertThat(stopped.nextMember).isEqualTo(OracleIdentifier.fromSource("next"))
             assertThat(stopped.nextMemberOrdinal).isEqualTo(3)
-            assertThat(stopped.reason).isEqualTo(ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE)
+            // NEXT on the collection is a built-in method: the path stops there.
+            val reason = if (result === collection) ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_COLLECTION_METHOD
+            else ProjectRecordMemberPathResolution.StopReason.UNSUPPORTED_TYPE
+            assertThat(stopped.reason).isEqualTo(reason)
         }
     }
 

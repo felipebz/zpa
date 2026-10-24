@@ -53,6 +53,25 @@ internal class LocalSemanticFacts(
     /** Method calls where the project binding disagrees with the local call resolution, as `line:column`. */
     val methodCallMismatches = ArrayList<String>()
 
+    /** Collection members where the project result disagrees with the local member step, as `line:column`. */
+    val collectionMemberMismatches = ArrayList<String>()
+
+    /**
+     * What the local side decides for the first member of the qualified name starting at line, column, when that member
+     * is on a local collection type: true for a collection method (or one the collection form rejects as a call), false
+     * for an undeclared member, null when the local side does not decide it.
+     */
+    fun localCollectionMember(line: Int, column: Int): Boolean? {
+        val index = byStart[Triple(false, line, column)]?.singleOrNull() ?: return null
+        val step = resolutions[index].getOrNull(1) ?: return null
+        return when (step) {
+            is LocalResolution.CollectionMethod -> true
+            is LocalResolution.WrongKind -> (model.declaration(step.declaration).details is LocalCollectionType).takeIf { it }
+            LocalResolution.Undeclared -> false
+            else -> null
+        }
+    }
+
     /** The local resolution of the call whose name starts at line, column; null when the local side has none. */
     fun localCall(line: Int, column: Int): LocalCallResolution? =
         calls.singleOrNull { it.reference.range.startLine == line && it.reference.range.startColumn == column }?.local
