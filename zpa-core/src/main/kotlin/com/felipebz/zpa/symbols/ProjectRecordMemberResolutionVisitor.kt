@@ -28,7 +28,8 @@ import com.felipebz.zpa.project.ProjectRecordMemberResolver
 
 /** Connects existing base symbols to project RECORD member metadata without re-resolving types. */
 internal class ProjectRecordMemberResolutionVisitor(
-    private val resolver: ProjectRecordMemberResolver
+    private val resolver: ProjectRecordMemberResolver,
+    private val selfBase: ProjectSelfMemberBase? = null
 ) : PlSqlCheck() {
 
     init {
@@ -43,9 +44,10 @@ internal class ProjectRecordMemberResolutionVisitor(
         if (parts.size != 2 || parts.first().type != PlSqlGrammar.VARIABLE_NAME ||
             parts.last().type != PlSqlGrammar.IDENTIFIER_NAME) return
 
-        val baseSymbol = (parts.first() as? SemanticAstNode)?.symbol ?: return
-        val projectType = baseSymbol.projectTypeDeclaration ?: return
         val memberName = OracleIdentifier.fromSource(parts.last().tokenOriginalValue)
+        val baseSymbol = (parts.first() as? SemanticAstNode)?.symbol
+        val projectType = if (baseSymbol != null) baseSymbol.projectTypeDeclaration ?: return
+        else selfBase?.of(context, parts.first(), memberName) ?: return
         memberExpression.projectRecordMemberResolution = resolver.resolve(projectType, memberName)
     }
 }

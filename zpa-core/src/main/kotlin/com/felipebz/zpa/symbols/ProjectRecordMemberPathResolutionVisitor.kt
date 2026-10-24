@@ -30,7 +30,8 @@ import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
 
 /** Resolves project RECORD member paths from a semantic base symbol. */
 internal class ProjectRecordMemberPathResolutionVisitor(
-    private val resolver: ProjectRecordMemberPathResolver
+    private val resolver: ProjectRecordMemberPathResolver,
+    private val selfBase: ProjectSelfMemberBase? = null
 ) : PlSqlCheck() {
 
     init {
@@ -49,11 +50,15 @@ internal class ProjectRecordMemberPathResolutionVisitor(
             if (children[index].type != expectedType) return
         }
 
-        val baseSymbol = (children.first() as? SemanticAstNode)?.symbol ?: return
-        if (baseSymbol.kind !in setOf(Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER, Symbol.Kind.CURSOR)) return
-        val baseType = baseSymbol.projectTypeDeclaration ?: return
         val memberNames = (2 until children.size step 2)
             .map { OracleIdentifier.fromSource(children[it].tokenOriginalValue) }
+        val baseSymbol = (children.first() as? SemanticAstNode)?.symbol
+        val baseType = if (baseSymbol != null) {
+            if (baseSymbol.kind !in setOf(Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER, Symbol.Kind.CURSOR)) return
+            baseSymbol.projectTypeDeclaration ?: return
+        } else {
+            selfBase?.of(context, children.first(), memberNames.first()) ?: return
+        }
         memberExpression.projectRecordMemberPathResolution = resolver.resolve(baseType, memberNames)
     }
 }

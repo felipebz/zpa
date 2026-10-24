@@ -19,6 +19,7 @@
  */
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
 
 /**
@@ -43,6 +44,9 @@ internal class LocalSemanticFacts(
 ) {
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
+
+    /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
+    val selfMismatches = ArrayList<String>()
 
     private val typeGates = ArrayList<LegacyGate>()
     private val firstSegments = ArrayList<LegacyGate>()
@@ -92,6 +96,25 @@ internal class LocalSemanticFacts(
         }
     }
 
+    /**
+     * The implicit `SELF` of the qualified name whose first segment starts at line, column, when that outcome is certain:
+     * the enclosing type's written name and what the local side says of the first member.
+     */
+    fun implicitSelf(line: Int, column: Int): LocalSelfBase? {
+        val index = byStart[Triple(false, line, column)]?.singleOrNull() ?: return null
+        val steps = resolutions[index]
+        val self = steps.first() as? LocalResolution.ImplicitSelf ?: return null
+        val body = (model.declaration(self.method).details as LocalSubprogram).body ?: return null
+        val type = model.parent(body)?.let { model.index.unit(it.id) } ?: return null
+        val member = when (val step = steps.getOrNull(1)) {
+            is LocalResolution.Bound -> model.declaration(step.declaration).takeIf { it.kind == LocalDeclarationKind.ATTRIBUTE }
+                ?.let { LocalSelfMember.Attribute(LocalRangeKey.of(it.range)) } ?: LocalSelfMember.Other
+            LocalResolution.Undeclared -> LocalSelfMember.Undeclared
+            else -> LocalSelfMember.Other
+        }
+        return LocalSelfBase(type.unitName, member)
+    }
+
     /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
     fun differential(): List<LocalShadowPair> {
         fun pair(kind: LocalShadowPair.Kind, gate: LegacyGate): LocalShadowPair {
@@ -116,6 +139,19 @@ internal data class LocalRangeKey(val startLine: Int, val startColumn: Int, val 
     companion object {
         fun of(range: SourceRange) = LocalRangeKey(range.startLine, range.startColumn, range.endLine, range.endColumn)
     }
+}
+
+internal class LocalSelfBase(val typeName: QualifiedName, val member: LocalSelfMember)
+
+/** The local outcome of the first member of `SELF`. */
+internal sealed interface LocalSelfMember {
+    /** An attribute declared in this file. */
+    data class Attribute(val declaration: LocalRangeKey) : LocalSelfMember
+
+    /** Undeclared, with no lookup gap. */
+    data object Undeclared : LocalSelfMember
+
+    data object Other : LocalSelfMember
 }
 
 /** The type-name gate's decision from the local outcome. */

@@ -31,4 +31,11 @@ internal object LocalSemanticSwitches {
      */
     @Volatile
     var typeNameGate: Boolean = System.getenv("ZPA_INTERNAL_LOCAL_TYPE_GATE") != "false"
+
+    /**
+     * The project member resolution takes an implicit `SELF` base from the local outcome where legacy has no base symbol.
+     * On by default; `ZPA_INTERNAL_LOCAL_SELF_BASE=false` turns it off.
+     */
+    @Volatile
+    var selfMemberBase: Boolean = System.getenv("ZPA_INTERNAL_LOCAL_SELF_BASE") != "false"
 }

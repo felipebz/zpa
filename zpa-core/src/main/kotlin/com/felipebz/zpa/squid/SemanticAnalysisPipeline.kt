@@ -19,21 +19,9 @@
  */
 package com.felipebz.zpa.squid
 
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolver
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
-import com.felipebz.zpa.project.ProjectRecordMemberResolver
-import com.felipebz.zpa.project.ProjectTypeResolver
-import com.felipebz.zpa.project.TypeRefSemanticResolver
-import com.felipebz.zpa.symbols.DefaultTypeSolver
-import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
-import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.*
 import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 
 /**
@@ -66,11 +54,13 @@ internal class SemanticAnalysisPipeline(
             val projectIndex = (projectAnalysisContext.state as ProjectAnalysisContext.State.Prepared).result.index
             visitors.add(ProjectSubprogramDeclarationResolutionVisitor(projectIndex, fileId))
             visitors.add(ProjectTypeResolutionVisitor(projectTypeResolver, fileId))
-            visitors.add(ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver))
+            val selfBase = ProjectSelfMemberBase(projectTypeResolver, projectRecordMemberResolver, fileId)
+            visitors.add(ProjectRecordMemberResolutionVisitor(projectRecordMemberResolver, selfBase))
             visitors.add(ProjectRecordFieldTypeResolutionVisitor(projectRecordFieldTypeResolver))
             visitors.add(
                 ProjectRecordMemberPathResolutionVisitor(
-                    ProjectRecordMemberPathResolver(projectRecordMemberResolver, projectRecordFieldTypeResolver)
+                    ProjectRecordMemberPathResolver(projectRecordMemberResolver, projectRecordFieldTypeResolver),
+                    selfBase
                 )
             )
         }
