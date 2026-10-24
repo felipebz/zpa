@@ -1,6 +1,5 @@
 {
   "source/core/types/ut_logical_suite.tpb" : [ 40, 41 ],
-  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 32 ],
   "source/expectations/matchers/ut_be_empty.tpb" : [ 31 ],
   "source/expectations/matchers/ut_contain.tpb" : [ 68 ],
   "source/expectations/matchers/ut_equal.tpb" : [ 39, 325 ],
@@ -17,9 +16,9 @@
   "test/ut3_tester_helper/run_helper.pkb" : [ 184 ],
   "test/ut3_user/api/test_ut_run.pkb" : [ 582, 1000 ],
   "test/ut3_user/api/test_ut_runner.pkb" : [ 418 ],
-  "test/ut3_user/expectations/test_expectation_anydata.pkb" : [ 220, 221, 367, 368, 693, 813, 832, 833, 1193, 1194 ],
+  "test/ut3_user/expectations/test_expectation_anydata.pkb" : [ 220, 221, 367, 368, 693, 813, 832, 833 ],
   "test/ut3_user/expectations/test_expectations_cursor.pkb" : [ 761, 762, 1129, 1130, 1727, 1728, 1794, 1795, 1901, 1902 ],
-  "test/ut3_user/expectations/test_expectations_json.pkb" : [ 10, 232, 233, 268, 269, 301, 302, 1720, 1721, 1756, 1757 ],
+  "test/ut3_user/expectations/test_expectations_json.pkb" : [ 10, 232, 233, 268, 269, 301, 302 ],
   "test/ut3_user/reporters/test_coverage/test_extended_coverage.pkb" : [ 302 ],
   "test/ut3_user/reporters/test_coverage/test_html_coverage_reporter.pkb" : [ 80 ],
   "test/ut3_user/reporters/test_junit_reporter.pkb" : [ 282, 283 ]

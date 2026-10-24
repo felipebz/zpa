@@ -22,31 +22,29 @@ package com.felipebz.zpa.checks
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
-import com.felipebz.zpa.api.symbols.Scope
-import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.semantics.UsageEvidence
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class UnusedVariableCheck : AbstractBaseCheck() {
 
-    override fun leaveFile(node: AstNode) {
-        val scopes = context.symbolTable.scopes
-        for (scope in scopes) {
-            if (scope.type !in arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.FOR_STATEMENT)) {
-                checkScope(scope)
-            }
-        }
+    override fun init() {
+        subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.EXCEPTION_DECLARATION)
     }
 
-    private fun checkScope(scope: Scope) {
-        val symbols = scope.getSymbols(Symbol.Kind.VARIABLE)
-        for (symbol in symbols) {
-            if (symbol.usages.isEmpty()) {
-                addIssue(symbol.declaration, getLocalizedMessage(), symbol.name)
-            }
-        }
+    override fun visitNode(node: AstNode) {
+        // Package specification members are visible to other units.
+        if (node.parent.parentOrNull?.type == PlSqlGrammar.CREATE_PACKAGE)
+            return
+
+        if (context.usageEvidence(node) != UsageEvidence.Unused)
+            return
+
+        val name = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+        addIssue(name, getLocalizedMessage(), name.tokenValue)
     }
 
 }

@@ -23,12 +23,14 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
+import com.felipebz.zpa.api.semantics.UsageEvidence
+import com.felipebz.zpa.api.semantics.UsageUnavailability
+import com.felipebz.zpa.api.symbols.Scope
+import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.SymbolTableImpl
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
-import com.felipebz.zpa.api.symbols.Scope
-import com.felipebz.zpa.api.symbols.SymbolTable
 
 open class PlSqlVisitorContext private constructor(private val rootTree: AstNode?,
                                                    private val plSqlFile: PlSqlFile?,
@@ -79,5 +81,17 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun dynamicSql(parts: List<AstNode>): DynamicSqlText? = dynamicSqlSupport().fromParts(parts)
+
+    /**
+     * Whether the variable or exception [declaration] (a `VARIABLE_DECLARATION` or `EXCEPTION_DECLARATION` node of this
+     * file) is used, from the file's local name resolution, with the project's coverage of package specifications in
+     * other files when the project is prepared.
+     *
+     * [UsageEvidence.Unused] is the only proven absence; [UsageEvidence.Unknown] never is one. When the local analysis of
+     * the file did not complete, the answer is [UsageEvidence.Unavailable] for every declaration: report nothing then.
+     */
+    @ZpaExperimentalApi
+    fun usageEvidence(declaration: AstNode): UsageEvidence =
+        localSemanticFacts?.usages?.evidence(declaration) ?: UsageEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
 }

@@ -47,6 +47,9 @@ internal class LocalSemanticFacts(
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
 
+    /** The usage evidence of the file's declarations, computed when first asked. */
+    val usages: LocalUsages by lazy { LocalUsages(this) }
+
     /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
     val selfMismatches = ArrayList<String>()
 

@@ -94,3 +94,95 @@ create or replace package body test is
   end;
 end;
 /
+
+-- A use through the block label.
+<<main>>
+declare
+  i number := 5;
+begin
+  for i in 1..1 loop
+    dbms_output.put_line(main.i);
+  end loop;
+end;
+/
+
+-- A record field named like the variable is not a use of the variable.
+declare
+  type r_t is record (i number);
+  type tab_t is table of r_t index by pls_integer;
+  fonts tab_t;
+  i pls_integer; -- Noncompliant {{Remove this unused "I" local variable.}}
+begin
+  fonts(1).i := 1;
+end;
+/
+
+-- The loop index shadows the variable: the references are the index's.
+declare
+  i number; -- Noncompliant {{Remove this unused "I" local variable.}}
+begin
+  for i in 1..2 loop
+    dbms_output.put_line(i);
+  end loop;
+end;
+/
+
+-- In SQL a column of the same name may take the name: not provably unused without the table's columns.
+declare
+  x number;
+  n number;
+begin
+  select count(x) into n from some_table;
+  dbms_output.put_line(n);
+end;
+/
+
+-- A use inside conditional compilation may exist: not provably unused.
+declare
+  v number;
+begin
+  $if $$use_v $then
+  null;
+  $else
+  v := 1;
+  $end
+  null;
+end;
+/
+
+-- Substitution text may hold a use: not provably unused.
+declare
+  w number;
+  n number;
+begin
+  n := 1 &plus_w;
+  dbms_output.put_line(n);
+end;
+/
+
+-- Two declarations of one name in a block: neither is used, so both are reported.
+declare
+  id boolean; -- Noncompliant {{Remove this unused "ID" local variable.}}
+  id varchar2(5); -- Noncompliant {{Remove this unused "ID" local variable.}}
+begin
+  null;
+end;
+/
+
+-- A reference names both declarations (Oracle rejects it with PLS-00371), so neither is reported.
+declare
+  dup boolean;
+  dup varchar2(5);
+begin
+  dup := 'a';
+end;
+/
+
+-- A reference written before its declaration still names it (Oracle rejects it), so neither is reported.
+declare
+  a number := b;
+  b number := 1;
+begin
+  dbms_output.put_line(a);
+end;
+/
