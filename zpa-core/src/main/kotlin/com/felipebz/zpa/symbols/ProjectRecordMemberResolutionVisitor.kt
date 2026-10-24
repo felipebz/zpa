@@ -25,6 +25,7 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.ProjectRecordMemberResolver
+import java.util.*
 
 /** Connects existing base symbols to project RECORD member metadata without re-resolving types. */
 internal class ProjectRecordMemberResolutionVisitor(
@@ -36,7 +37,17 @@ internal class ProjectRecordMemberResolutionVisitor(
         subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION)
     }
 
-    override fun visitNode(node: AstNode) {
+    private val decorated = Collections.newSetFromMap(IdentityHashMap<AstNode, Boolean>())
+
+    override fun visitFile(node: AstNode) {
+        decorated.clear()
+    }
+
+    override fun visitNode(node: AstNode) = decorate(node)
+
+    /** Decorates [node] once; a call visitor may need the member before the walker reaches it. */
+    fun decorate(node: AstNode) {
+        if (!decorated.add(node)) return
         val memberExpression = node as? SemanticAstNode ?: return
         if (memberExpression.symbol != null) return
 

@@ -48,6 +48,30 @@ internal class LocalSemanticFacts(
     /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
     val selfMismatches = ArrayList<String>()
 
+    /** Method calls where the project binding disagrees with the local call resolution, as `line:column`. */
+    val methodCallMismatches = ArrayList<String>()
+
+    /** The local resolution of the call whose name starts at line, column; null when the local side has none. */
+    fun localCall(line: Int, column: Int): LocalCallResolution? =
+        calls.singleOrNull { it.reference.range.startLine == line && it.reference.range.startColumn == column }?.local
+
+    /** The range of a local declaration, or of its specification heading when a body subprogram is linked to one. */
+    fun declarationRange(declaration: LocalDeclarationId): LocalRangeKey {
+        val specification = (model.declaration(declaration).details as? LocalSubprogram)?.specificationCounterpart ?: declaration
+        return LocalRangeKey.of(model.declaration(specification).range)
+    }
+
+    /** The first segment's local outcome of the name starting at line, column, when a single non-type reference starts there. */
+    fun firstOutcome(line: Int, column: Int): LocalResolution? =
+        byStart[Triple(false, line, column)]?.singleOrNull()?.let { resolutions[it].first() }
+
+    /** Whether [outcome] binds the name to a schema unit declared in this file at [range]. */
+    fun bindsUnitAt(outcome: LocalResolution, range: LocalRangeKey): Boolean {
+        val bound = outcome as? LocalResolution.Bound ?: return false
+        val declaration = model.declaration(bound.declaration)
+        return declaration.details is LocalUnit && LocalRangeKey.of(declaration.range) == range
+    }
+
     private val typeGates = ArrayList<LegacyGate>()
     private val firstSegments = ArrayList<LegacyGate>()
 

@@ -58,9 +58,11 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
                     return if (isDropped(current, memberName)) ProjectRecordMemberResolution.Incomplete(type) else found
                 }
             }
+            val nearer = methods.toList()
             for (method in current.methods) {
                 if (method.name != memberName || method.methodKind == ProjectMethodKind.CONSTRUCTOR) continue
-                if (methods.none { it.method.overloadKey() == method.overloadKey() }) methods += ProjectMethodCandidate(current, method)
+                // A nearer type's method of the same kind and parameters overrides it.
+                if (nearer.none { it.method.overrides(method) }) methods += ProjectMethodCandidate(current, method)
             }
             if (!current.attributesComplete || !current.methodsComplete || isAltered(current)) complete = false
             val supertype = current.supertype ?: break
@@ -86,6 +88,24 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
             else -> ProjectRecordMemberResolution.Ambiguous(declaration, candidates)
         }
     }
+
+    /** Every attribute of [type], inherited first and in order; null when a list of the chain is not fully known. */
+    internal fun attributeChain(type: StandaloneTypeDeclaration): List<ProjectRecordField>? {
+        val chain = ArrayList<StandaloneTypeDeclaration>()
+        var current: StandaloneTypeDeclaration? = type
+        while (current != null) {
+            if (current in chain || !current.attributesComplete || isAttributesAltered(current)) return null
+            chain += current
+            current = current.supertype?.let { supertypeOf(it) ?: return null }
+        }
+        return chain.asReversed().flatMap { it.attributes }
+    }
+
+    internal fun methodsAltered(type: StandaloneTypeDeclaration): Boolean =
+        (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes?.methodsOf(type.name) ?: false
+
+    private fun isAttributesAltered(type: StandaloneTypeDeclaration): Boolean =
+        (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes?.attributesOf(type.name) ?: false
 
     private fun supertypeOf(reference: TypeRef): StandaloneTypeDeclaration? {
         val named = reference as? NamedTypeRef ?: return null

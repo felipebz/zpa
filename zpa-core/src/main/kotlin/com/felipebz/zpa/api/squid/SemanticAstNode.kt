@@ -22,16 +22,11 @@ package com.felipebz.zpa.api.squid
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.Token
-
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
-import com.felipebz.zpa.project.ProjectRecordMemberResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
-import com.felipebz.zpa.project.PackageSubprogramDeclaration
-import com.felipebz.zpa.project.ProjectTypeResolution
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
+import com.felipebz.zpa.project.*
 
 class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
     constructor(token: Token) : this(token.type, token.type.name, token)
@@ -61,6 +56,9 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     /** Project RECORD member path information, separate from legacy AST semantics. */
     internal var projectRecordMemberPathResolution: ProjectRecordMemberPathResolution? = null
+
+    /** The project binding of an object method or constructor call, kept separate from legacy symbol state. */
+    internal var projectMethodCall: ProjectMethodCall? = null
 
     /** Exact AST-free project fact for an immediate PACKAGE BODY subprogram, when available. */
     internal var projectSubprogramDeclaration: PackageSubprogramDeclaration? = null

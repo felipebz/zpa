@@ -101,6 +101,17 @@ class ObjectTypeMethodTest {
     }
 
     @Test
+    fun aFunctionOverrideLeavesTheInheritedProcedureOfTheSameParameters() {
+        val context = prepare(
+            "sup.sql" to "CREATE TYPE sup AS OBJECT (x NUMBER, NOT INSTANTIABLE MEMBER FUNCTION run(SELF IN OUT NOCOPY sup) RETURN BOOLEAN, " +
+                "FINAL MEMBER PROCEDURE run(SELF IN OUT NOCOPY sup)) NOT FINAL NOT INSTANTIABLE;",
+            "sub.sql" to "CREATE TYPE sub UNDER sup (OVERRIDING MEMBER FUNCTION run(SELF IN OUT NOCOPY sub) RETURN BOOLEAN);"
+        )
+        assertThat(member(context, "sup", "run")).isEqualTo("Method [sup.run/0 MEMBER, sup.run/0 MEMBER]")
+        assertThat(member(context, "sub", "run")).isEqualTo("Method [sub.run/0 MEMBER, sup.run/0 MEMBER]")
+    }
+
+    @Test
     fun theSetIsIncompleteWhenTheChainMayMissMethods() {
         val orphan = prepare("sub.sql" to "CREATE TYPE sub UNDER missing_t (MEMBER FUNCTION f RETURN NUMBER);")
         assertThat(member(orphan, "sub", "f")).isEqualTo("Method incomplete [sub.f/0 MEMBER]")

@@ -23,12 +23,7 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectRecordMemberPathResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectRecordMemberResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
-import com.felipebz.zpa.symbols.ProjectTypeResolutionVisitor
-import com.felipebz.zpa.symbols.SymbolVisitor
+import com.felipebz.zpa.symbols.*
 import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -52,7 +47,8 @@ class SemanticAnalysisPipelineTest {
             ProjectTypeResolutionVisitor::class,
             ProjectRecordMemberResolutionVisitor::class,
             ProjectRecordFieldTypeResolutionVisitor::class,
-            ProjectRecordMemberPathResolutionVisitor::class
+            ProjectRecordMemberPathResolutionVisitor::class,
+            ProjectMethodCallVisitor::class
         )
     }
 
