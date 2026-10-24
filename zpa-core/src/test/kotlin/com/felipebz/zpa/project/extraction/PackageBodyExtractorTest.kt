@@ -38,14 +38,14 @@ class PackageBodyExtractorTest {
         val extractor = PackageBodyExtractor(
             stream, BodyBoundaryScanner(stream),
             PackageMemberParser(stream, references, CollectionElementSyntax(stream, shape, references), shape),
-            references
+            references, UnitBounds(stream)
         )
     }
 
     /** Parses `CREATE PACKAGE BODY p AS ...`: the name `p` is the fourth token, the rest starts right after it. */
     private fun body(text: String): Pair<ParsedUnit?, Fixture> {
         val fixture = Fixture(text, fileId)
-        return fixture.extractor.parsePackageBody(owner, 4) to fixture
+        return fixture.extractor.parsePackageBody(0, owner, 4) to fixture
     }
 
     @Test

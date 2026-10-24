@@ -176,16 +176,16 @@ class ObjectMethodCallTest {
         val (rows, mismatches) = scanWithMismatches("t.sql" to spec + typeBody)
         assertThat(rows).containsExactly("13 SELF FUNCTION RESOLVED t.two/1")
         assertThat(mismatches).isEmpty()
-        // The extractor does not read one heading (an ACCESSIBLE BY clause), so the project's incomplete set binds g(p)
-        // alone, where the local analysis sees two applicable overloads: they disagree, and nothing is set.
+        // Both overloads of g are read, one with an ACCESSIBLE BY clause: the project and the local analysis both see two
+        // applicable overloads for self.g(1), agree that the call is ambiguous, and bind nothing.
         val own = "CREATE TYPE u AS OBJECT (a NUMBER, MEMBER FUNCTION g(p NUMBER) RETURN NUMBER,\n" +
             "  MEMBER FUNCTION g(q NUMBER) RETURN NUMBER ACCESSIBLE BY (FUNCTION x), MEMBER FUNCTION h RETURN NUMBER);\n/\n" +
             "CREATE TYPE BODY u AS\n  MEMBER FUNCTION g(p NUMBER) RETURN NUMBER IS BEGIN RETURN 1; END;\n" +
             "  MEMBER FUNCTION g(q NUMBER) RETURN NUMBER ACCESSIBLE BY (FUNCTION x) IS BEGIN RETURN 2; END;\n" +
             "  MEMBER FUNCTION h RETURN NUMBER IS BEGIN RETURN self.g(1); END;\nEND;\n/\n"
         val (rows2, mismatches2) = scanWithMismatches("u.sql" to own)
-        assertThat(rows2).isEmpty()
-        assertThat(mismatches2).hasSize(1)
+        assertThat(rows2).containsExactly("7 SELF FUNCTION AMBIGUOUS")
+        assertThat(mismatches2).isEmpty()
     }
 
     @Test

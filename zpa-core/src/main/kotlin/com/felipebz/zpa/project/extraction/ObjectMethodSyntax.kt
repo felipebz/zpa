@@ -96,6 +96,6 @@ internal class ObjectMethodSyntax(
         val SELF = OracleIdentifier.fromSource("SELF")
 
         /** What may follow a method heading in a type specification. */
-        val PROPERTIES = setOf("DETERMINISTIC", "PARALLEL_ENABLE", "PIPELINED", "RESULT_CACHE", "AS", "IS", "EXTERNAL", "AGGREGATE", "SQL_MACRO")
+        val PROPERTIES = setOf("DETERMINISTIC", "PARALLEL_ENABLE", "PIPELINED", "RESULT_CACHE", "AS", "IS", "EXTERNAL", "AGGREGATE", "SQL_MACRO", "ACCESSIBLE")
     }
 }

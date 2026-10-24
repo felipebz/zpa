@@ -64,6 +64,7 @@ internal object ProjectTypeNameLookup {
      * without that name. Declarations of a package body are not consulted.
      */
     fun typeOccurrences(index: ProjectSymbolIndex, name: QualifiedName, packageOwner: QualifiedName?): List<IndexedDeclaration> {
+        if (isPseudoType(name)) return emptyList()
         val owner = owner(name, packageOwner)
         return index.findTypeOccurrences(owner, name.last).ifEmpty {
             if (name.segments.size == 1 && owner != null && packageDoesNotDeclare(index, owner, name.last)) {
@@ -73,6 +74,15 @@ internal object ProjectTypeNameLookup {
             }
         }
     }
+
+    /**
+     * `TABLE` and `COLUMNS` unquoted are the pseudo-types of a polymorphic table function. Both are reserved in PL/SQL
+     * (PLS-00103 as a type name, PLS-00765 elsewhere), so they never name a schema type; a quoted `"TABLE"` can.
+     */
+    private fun isPseudoType(name: QualifiedName): Boolean =
+        name.segments.size == 1 && !name.last.quoted && name.last.lookupName in PSEUDO_TYPES
+
+    private val PSEUDO_TYPES = setOf("TABLE", "COLUMNS")
 
     // NOT_DECLARED means the specification has no member of that name at all, so the reference position is irrelevant.
     private fun packageDoesNotDeclare(index: ProjectSymbolIndex, owner: QualifiedName, name: OracleIdentifier): Boolean {

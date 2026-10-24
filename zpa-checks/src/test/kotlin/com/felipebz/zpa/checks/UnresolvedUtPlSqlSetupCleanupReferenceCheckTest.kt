@@ -80,7 +80,7 @@ class UnresolvedUtPlSqlSetupCleanupReferenceCheckTest : BaseCheckTest() {
                     "skipped_pkg.pks",
                     """
                     CREATE PACKAGE skipped_pkg AS
-                      FUNCTION setup(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING skipped_pkg;
+                      PROCEDURE setup AS LANGUAGE JAVA NAME 'A.setup()';
                     END skipped_pkg;
                     """.trimIndent()
                 ),

@@ -51,7 +51,7 @@ class ProjectOverviewTest {
     @Test
     fun omittedCallablesAndSequencesAreListed() {
         assertThat(overview.single("Omitted standalone callables (1)").childLabels())
-            .anyMatch { it.startsWith("ptf · written-name discovery: PARTIAL_DECLARATIONS") }
+            .anyMatch { it.startsWith("opaque · written-name discovery: PARTIAL_DECLARATIONS") }
         assertThat(overview.labels()).anyMatch { it.startsWith("SEQUENCE s1 @") }
     }
 
@@ -61,7 +61,7 @@ class ProjectOverviewTest {
         val entries = overview.singleStartingWith("Resolutions in this file (").children
             .filter { it.label.startsWith("RECORD member paths") || it.label.startsWith("RECORD members") }
             .flatMap { it.children }
-        assertThat(entries).anyMatch { it.astNode != null && it.sourceRange?.startLine == 25 }
+        assertThat(entries).anyMatch { it.astNode != null && it.sourceRange?.startLine == 26 }
     }
 
     private fun ProjectOverviewNode.all(): Sequence<ProjectOverviewNode> = sequence {
@@ -98,7 +98,8 @@ class ProjectOverviewTest {
               FUNCTION total RETURN money IS BEGIN RETURN 1; END;
             END types_pkg;
             /
-            CREATE FUNCTION ptf(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING types_pkg;
+            CREATE FUNCTION opaque wrapped
+            abc
             /
             CREATE SEQUENCE s1;
             DECLARE

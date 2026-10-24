@@ -208,7 +208,7 @@ class ProjectSnapshotRetentionTest {
         val sourceMarker = "call-discovery-retention-8d2f6b1e-4c7a-4f0e-9b3d-6a1e5c2d7f90"
         val source = "-- $sourceMarker\n" +
             "CREATE PACKAGE x AS PROCEDURE run(a NUMBER); " +
-            "FUNCTION run(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING x; END x;\n/\n" +
+            "FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END x;\n/\n" +
             "CREATE PACKAGE BODY x AS PROCEDURE run(a NUMBER) IS BEGIN NULL; END; END x;\n/\n" +
             "CREATE PROCEDURE x.run IS BEGIN NULL; END;"
         val reader = ProjectSourceReader { source }

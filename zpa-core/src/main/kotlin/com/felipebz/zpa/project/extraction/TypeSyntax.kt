@@ -203,6 +203,10 @@ internal class TypeReferences(private val stream: TokenStream) {
      * returns, record fields, subtypes). Anything else after the datatype rejects the slice.
      */
     fun declaredType(start: Int, endExclusive: Int): TypeRef? {
+        // The TABLE pseudo-type of a polymorphic table function: a reserved word, never a datatype name.
+        if (endExclusive == start + 1 && stream.isKeyword(start, "TABLE")) {
+            return NamedTypeRef(QualifiedName(listOf(OracleIdentifier.fromSource("TABLE"))), stream.range(start, start))
+        }
         val charset = stream.firstKeywordAtTopLevel(start, setOf("CHARACTER"), endExclusive)
         if (charset == null || !stream.isKeyword(charset + 1, "SET")) {
             if (!DatatypeShape(stream).strictDatatype(start, endExclusive)) return null

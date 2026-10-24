@@ -26,14 +26,14 @@ import org.junit.jupiter.api.Test
 import com.felipebz.zpa.project.ProjectCallKind as InternalCallKind
 
 /**
- * Standalone callables whose heading names them but whose signature cannot be represented (an Oracle-valid
- * polymorphic table function with `TABLE` formals): they are namespace evidence and incomplete coverage, never
+ * Standalone callables whose heading names them but whose signature cannot be read (a wrapped unit): they are
+ * namespace evidence and incomplete coverage, never
  * candidates. Every case is checked through the internal finder and binder and the public snapshot API.
  */
 @OptIn(ZpaExperimentalApi::class)
 class ProjectCallOmittedStandaloneTest {
     private val spec = "CREATE PACKAGE app AS FUNCTION fn(a NUMBER) RETURN NUMBER; END app;"
-    private val omittedPtf = "CREATE FUNCTION app.fn(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;"
+    private val omittedWrapped = "CREATE FUNCTION app.fn wrapped\nabc\n/"
     private val retained = "CREATE FUNCTION app.fn(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;"
 
     private class Project(val snapshot: ProjectSnapshot, val context: ProjectAnalysisContext)
@@ -85,17 +85,11 @@ class ProjectCallOmittedStandaloneTest {
     fun onlyStrictlyNamedHeadingsWithoutAFactAreRecorded() {
         val extraction = ProjectDeclarationExtractor().extractFile(
             FileId("a.sql"),
-            """
-            $omittedPtf
-            /
-            CREATE OR REPLACE FUNCTION "Quoted"(tab TABLE, c COLUMNS DEFAULT NULL) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;
-            /
-            CREATE FUNCTION a.b.c(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;
-            /
-            CREATE FUNCTION kept(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;
-            /
-            CREATE PACKAGE p AS FUNCTION f(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p; END p;
-            """.trimIndent()
+            "$omittedWrapped\n" +
+                "CREATE OR REPLACE FUNCTION \"Quoted\" wrapped\nabc\n/\n" +
+                "CREATE FUNCTION a.b.c(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;\n/\n" +
+                "CREATE FUNCTION kept(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;\n/\n" +
+                "CREATE PACKAGE p AS FUNCTION f(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END p;\n"
         )
         assertThat(extraction.omittedStandaloneCallables.map { it.toString() }).containsExactlyInAnyOrder("app.fn", "\"Quoted\"")
         assertThat(extraction.declarations.map { it.qualifiedName().toString() }).containsExactly("kept", "p")
@@ -103,7 +97,7 @@ class ProjectCallOmittedStandaloneTest {
 
     @Test
     fun writtenNameWithRetainedMemberAndOmittedStandaloneIsNotSettled() {
-        val result = outcome(project("spec.sql" to spec, "ptf.sql" to omittedPtf), written("app", "fn"))
+        val result = outcome(project("spec.sql" to spec, "wrapped.sql" to omittedWrapped), written("app", "fn"))
         assertThat(result).isEqualTo(
             Outcome("AMBIGUOUS_TARGET", "AMBIGUOUS_TARGET", setOf("NAMESPACE_COMPETITION", "PARTIAL_DECLARATIONS"), listOf("spec.sql#1:SPECIFICATION"), null)
         )
@@ -111,16 +105,16 @@ class ProjectCallOmittedStandaloneTest {
 
     @Test
     fun explicitPackageMemberStillExcludesTheStandaloneReading() {
-        val result = outcome(project("spec.sql" to spec, "ptf.sql" to omittedPtf), member("app", "fn"))
+        val result = outcome(project("spec.sql" to spec, "wrapped.sql" to omittedWrapped), member("app", "fn"))
         assertThat(result).isEqualTo(Outcome("FOUND", "RESOLVED", emptySet(), listOf("spec.sql#1:SPECIFICATION"), "spec.sql#1"))
     }
 
     @Test
     fun explicitStandaloneOfAnOmittedHeadingHasNoCandidateAndNoCertainty() {
-        val withPackage = outcome(project("spec.sql" to spec, "ptf.sql" to omittedPtf), standalone("app", "fn"))
+        val withPackage = outcome(project("spec.sql" to spec, "wrapped.sql" to omittedWrapped), standalone("app", "fn"))
         assertThat(withPackage).isEqualTo(Outcome("PARTIAL_DECLARATIONS", "PARTIAL_DECLARATIONS", setOf("PARTIAL_DECLARATIONS"), emptyList(), null))
         // A retained duplicate of the same standalone name does not make the incomplete evidence certain.
-        val withRetained = outcome(project("ptf.sql" to omittedPtf, "retained.sql" to retained), standalone("app", "fn"))
+        val withRetained = outcome(project("wrapped.sql" to omittedWrapped, "retained.sql" to retained), standalone("app", "fn"))
         assertThat(withRetained).isEqualTo(
             Outcome("PARTIAL_DECLARATIONS", "PARTIAL_DECLARATIONS", setOf("PARTIAL_DECLARATIONS"), listOf("retained.sql#0:STANDALONE"), null)
         )
@@ -128,11 +122,11 @@ class ProjectCallOmittedStandaloneTest {
 
     @Test
     fun omittedStandaloneWithoutPackageIsNotDefinitiveAbsence() {
-        val single = project("ptf.sql" to "CREATE FUNCTION fn(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;")
+        val single = project("wrapped.sql" to "CREATE FUNCTION fn wrapped\nabc\n/")
         assertThat(outcome(single, written("fn"))).isEqualTo(
             Outcome("PARTIAL_DECLARATIONS", "PARTIAL_DECLARATIONS", setOf("PARTIAL_DECLARATIONS"), emptyList(), null)
         )
-        assertThat(outcome(project("ptf.sql" to omittedPtf), written("app", "fn")).resolution).isEqualTo("PARTIAL_DECLARATIONS")
+        assertThat(outcome(project("wrapped.sql" to omittedWrapped), written("app", "fn")).resolution).isEqualTo("PARTIAL_DECLARATIONS")
         // The omitted object `fn` is evidence for the package reading of `fn.x`, exactly like a retained `fn`.
         val retainedFn = project("fn.sql" to "CREATE FUNCTION fn(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;")
         assertThat(outcome(single, written("fn", "x"))).isEqualTo(outcome(retainedFn, written("fn", "x")))
@@ -152,8 +146,8 @@ class ProjectCallOmittedStandaloneTest {
 
     @Test
     fun unrelatedOmittedNamesHaveNoEffect() {
-        val other = "CREATE FUNCTION app.other(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;\n/\n" +
-            "CREATE FUNCTION fn(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;\n/\n" +
+        val other = "CREATE FUNCTION app.other wrapped\nabc\n/\n" +
+            "CREATE FUNCTION fn wrapped\nabc\n/\n" +
             "CREATE FUNCTION x.app.fn(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;"
         val project = project("spec.sql" to spec, "retained.sql" to "CREATE FUNCTION solo(a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;", "other.sql" to other)
         assertThat(outcome(project, written("app", "fn"))).isEqualTo(
@@ -165,12 +159,12 @@ class ProjectCallOmittedStandaloneTest {
 
     @Test
     fun failuresAndDuplicatesKeepTheOmittedEvidence() {
-        val failed = outcome(project("spec.sql" to spec, "ptf.sql" to omittedPtf, failed = true), written("app", "fn"))
+        val failed = outcome(project("spec.sql" to spec, "wrapped.sql" to omittedWrapped, failed = true), written("app", "fn"))
         assertThat(failed.resolution).isEqualTo("INCOMPLETE_INDEX")
         assertThat(failed.uncertainties).containsExactlyInAnyOrder("NAMESPACE_COMPETITION", "PARTIAL_DECLARATIONS")
 
         val duplicates = outcome(
-            project("spec.sql" to spec, "spec2.sql" to spec, "ptf.sql" to omittedPtf, "ptf2.sql" to omittedPtf),
+            project("spec.sql" to spec, "spec2.sql" to spec, "wrapped.sql" to omittedWrapped, "wrapped2.sql" to omittedWrapped),
             written("app", "fn")
         )
         assertThat(duplicates).isEqualTo(
@@ -194,9 +188,9 @@ class ProjectCallOmittedStandaloneTest {
     fun serialConcurrentAndReversedPreparationAgree() {
         val files = listOf(
             "spec.sql" to spec,
-            "ptf.sql" to omittedPtf,
+            "wrapped.sql" to omittedWrapped,
             "retained.sql" to retained,
-            "fn.sql" to "CREATE FUNCTION fn(tab TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING impl;"
+            "fn.sql" to "CREATE FUNCTION fn wrapped\nabc\n/"
         )
         val targets = listOf(written("app", "fn"), member("app", "fn"), standalone("app", "fn"), written("fn"), written("fn", "x"))
         fun summary(project: Project) = targets.map { outcome(project, it) }

@@ -54,7 +54,7 @@ class PackageCallableCoverageTest {
     }
 
     @Test
-    fun polymorphicTableFunctionHeadersAreOmittedByName() {
+    fun polymorphicTableFunctionHeadersAreRetained() {
         val c = coverage(
             """
             CREATE PACKAGE skip_col_pkg AS
@@ -63,7 +63,7 @@ class PackageCallableCoverageTest {
             END skip_col_pkg;
             """.trimIndent()
         )
-        assertThat(c.omittedNames).containsExactly("SKIP_COL")
+        assertThat(c.omittedNames).isEmpty()
         assertThat(c.unknown).isFalse()
     }
 
@@ -72,9 +72,9 @@ class PackageCallableCoverageTest {
         val source = """
             CREATE PACKAGE p AS
               FUNCTION run(a NUMBER) RETURN NUMBER;
-              FUNCTION run(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p;
-              FUNCTION "Mixed"(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p;
-              FUNCTION "RUN2"(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p;
+              FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';
+              FUNCTION "Mixed"(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';
+              FUNCTION "RUN2"(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';
             END p;
             """.trimIndent()
         assertThat(facts(source).map { it.qualifiedName().toString() }).containsExactly("p.run")
@@ -160,7 +160,7 @@ class PackageCallableCoverageTest {
         assertThat(coverage(swallowing).omittedNames).containsExactly("F")
         assertThat(coverage(swallowing).gaps).containsExactly(SWALLOWED_CALLABLE_HEADER)
         // Valid neighbours and clauses with nested callable keywords are unaffected.
-        assertThat(coverage("CREATE PACKAGE p AS FUNCTION f(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p; " +
+        assertThat(coverage("CREATE PACKAGE p AS FUNCTION f(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; " +
             "FUNCTION g RETURN NUMBER ACCESSIBLE BY (FUNCTION caller); PROCEDURE ok; END p;"))
             .isEqualTo(PackageCallableCoverage(listOf("F"), emptyList()))
         assertThat(coverage("CREATE PACKAGE p AS PROCEDURE broken(a NUMBER, b IN OUT); PROCEDURE ok; END p;"))
@@ -175,7 +175,7 @@ class PackageCallableCoverageTest {
 
     @Test
     fun duplicateSpecificationsKeepIndependentMarkers() {
-        val source = "CREATE PACKAGE p AS PROCEDURE a; END p;\n/\nCREATE PACKAGE p AS FUNCTION a(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p; END p;\n/\n" +
+        val source = "CREATE PACKAGE p AS PROCEDURE a; END p;\n/\nCREATE PACKAGE p AS FUNCTION a(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END p;\n/\n" +
             "CREATE PACKAGE q AS ${'$'}IF ${'$'}${'$'}x ${'$'}THEN PROCEDURE a; ${'$'}END END q;\n/\n"
         val markers = specs(source).map { it.name.toString() to it.callableCoverage }
         assertThat(markers).containsExactly(
@@ -188,7 +188,7 @@ class PackageCallableCoverageTest {
     @Test
     fun preparationOrderAndConcurrencyDoNotChangeMarkers() {
         val sources = (1..12).map { i ->
-            "f$i.sql" to "CREATE PACKAGE p$i AS FUNCTION a(t TABLE) RETURN TABLE PIPELINED ROW POLYMORPHIC USING p; ${if (i % 3 == 0) "\$IF \$\$x \$THEN \$END" else ""} PROCEDURE b; END p$i;"
+            "f$i.sql" to "CREATE PACKAGE p$i AS FUNCTION a(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; ${if (i % 3 == 0) "\$IF \$\$x \$THEN \$END" else ""} PROCEDURE b; END p$i;"
         }
         fun markers(list: List<Pair<String, String>>, concurrent: Boolean): Map<String, PackageCallableCoverage> {
             val result = com.felipebz.zpa.project.ProjectIndexPreparation(extractor)

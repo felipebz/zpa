@@ -39,7 +39,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
     private val schemaUnits = SchemaUnitExtractor(stream, typeReferences, bounds, collectionElements, ObjectMethodSyntax(stream, typeReferences, memberParser))
     private val callableProperties = CallableProperties(stream)
     private val callSpecifications = CallSpecificationScanner(stream, datatypeShape)
-    private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences)
+    private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences, bounds)
     private val packageSpecifications = PackageSpecificationExtractor(stream, bounds, packageValues, memberParser, discardedText)
     private val standaloneCallables = StandaloneCallableExtractor(
         stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
@@ -139,7 +139,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
         val nameIndex = if (ifNotExists) kindEnd + 3 else kindEnd
         if (!body) return packageSpecifications.parsePackageSpecification(create, nameIndex)
         val name = stream.qualifiedName(nameIndex) ?: return null
-        return packageBodies.parsePackageBody(name.first, name.second)
+        return packageBodies.parsePackageBody(create, name.first, name.second)
     }
 
     /** `CREATE [OR REPLACE] [EDITIONABLE|NONEDITIONABLE] PACKAGE` validated with token types. */

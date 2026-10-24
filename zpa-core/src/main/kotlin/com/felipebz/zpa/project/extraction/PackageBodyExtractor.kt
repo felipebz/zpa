@@ -23,27 +23,30 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.*
 
 /**
- * Value-based extraction of the subprograms of a package body. Like the code it was moved from, the walk is
- * bounded by the end of the token list, not by the unit boundaries.
+ * Value-based extraction of the subprograms of a package body. Like a specification, the walk stops at the unit limit
+ * (the next real `CREATE` or lone-line `/`): a body without its `;` or its final `END` never takes the next unit's text.
  */
 internal class PackageBodyExtractor(
     private val stream: TokenStream,
     private val bodyBoundaries: BodyBoundaryScanner,
     private val memberParser: PackageMemberParser,
     private val typeReferences: TypeReferences,
+    private val bounds: UnitBounds,
 ) {
-    fun parsePackageBody(owner: QualifiedName, afterName: Int): ParsedUnit? {
+    fun parsePackageBody(create: Int, owner: QualifiedName, afterName: Int): ParsedUnit? {
+        val limit = bounds.unitLimit(create)
         val header = stream.firstAtTopLevel(afterName, setOf("IS", "AS")) ?: return null
-        val parsed = parsePackageBodySubprograms(header + 1, owner)
+        if (header >= limit) return null
+        val parsed = parsePackageBodySubprograms(header + 1, owner, limit)
         return ParsedUnit(parsed.declarations, parsed.end + 1)
     }
 
-    private fun parsePackageBodySubprograms(start: Int, owner: QualifiedName): ParsedPackageBody {
+    private fun parsePackageBodySubprograms(start: Int, owner: QualifiedName, limit: Int): ParsedPackageBody {
         val result = mutableListOf<ProjectDeclaration>()
         var cursor = start
         val blocks = mutableListOf<BlockKind>()
-        while (cursor < stream.tokens.size) {
-            val parsed = subprogramAt(cursor, blocks, owner)
+        while (cursor < limit) {
+            val parsed = subprogramAt(cursor, blocks, owner, limit)
             if (parsed != null) {
                 parsed.declaration?.let(result::add)
                 cursor = parsed.nextIndex
@@ -55,24 +58,24 @@ internal class PackageBodyExtractor(
                 opened != null -> blocks += opened
                 stream.isKeyword(cursor, "BEGIN") -> {
                     if (blocks.isEmpty()) {
-                        val end = bodyBoundaries.executableBlockEnd(cursor, stream.tokens.size) ?: stream.tokens.lastIndex
+                        val end = bodyBoundaries.executableBlockEnd(cursor, limit)?.coerceAtMost(limit - 1) ?: (limit - 1)
                         return ParsedPackageBody(immutableList(result), end)
                     }
                     blocks += BlockKind.BEGIN
                 }
                 stream.isKeyword(cursor, "END") ->
                     if (bodyBoundaries.closeBlock(cursor, blocks) == BlockClose.UNBALANCED) {
-                        return ParsedPackageBody(immutableList(result), stream.semicolonAfter(cursor))
+                        return ParsedPackageBody(immutableList(result), minOf(stream.semicolonAfter(cursor), limit - 1))
                     }
             }
             cursor++
         }
-        return ParsedPackageBody(immutableList(result), stream.tokens.lastIndex)
+        return ParsedPackageBody(immutableList(result), limit - 1)
     }
 
     /** The subprogram that starts at [cursor], only outside any block. */
-    private fun subprogramAt(cursor: Int, blocks: List<BlockKind>, owner: QualifiedName): ParsedBodySubprogram? =
-        if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) parseBodySubprogram(cursor, stream.tokens.size, owner) else null
+    private fun subprogramAt(cursor: Int, blocks: List<BlockKind>, owner: QualifiedName, limit: Int): ParsedBodySubprogram? =
+        if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) parseBodySubprogram(cursor, limit, owner) else null
 
     private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
         val function = stream.isKeyword(index, "FUNCTION")
