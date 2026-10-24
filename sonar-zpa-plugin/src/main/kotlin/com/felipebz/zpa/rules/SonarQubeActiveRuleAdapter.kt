@@ -54,7 +54,7 @@ class SonarQubeActiveRuleAdapter(private val activeRule: ActiveRule) : ZpaActive
 
     override fun toString(): String = activeRule.toString()
 
-    override fun equals(other: Any?): Boolean = activeRule == other
+    override fun equals(other: Any?): Boolean = other is SonarQubeActiveRuleAdapter && activeRule == other.activeRule
 
     override fun hashCode(): Int = activeRule.hashCode()
 

@@ -31,7 +31,7 @@ class SonarQubeRuleKeyAdapter(val ruleKey: RuleKey) : ZpaRuleKey {
 
     override fun toString(): String = ruleKey.toString()
 
-    override fun equals(other: Any?): Boolean = ruleKey == (other as SonarQubeRuleKeyAdapter).ruleKey
+    override fun equals(other: Any?): Boolean = other is SonarQubeRuleKeyAdapter && ruleKey == other.ruleKey
 
     override fun hashCode(): Int = ruleKey.hashCode()
 
