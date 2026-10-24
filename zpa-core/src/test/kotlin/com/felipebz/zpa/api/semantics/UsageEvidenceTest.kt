@@ -87,6 +87,24 @@ class UsageEvidenceTest {
         return rows
     }
 
+    private fun cursors(text: String): List<String> {
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            init {
+                subscribeTo(PlSqlGrammar.CURSOR_DECLARATION)
+            }
+
+            override fun visitNode(node: AstNode) {
+                rows += "${node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue}: ${context.usageEvidence(node)}"
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
+    }
+
     @Test
     fun usedUnusedAndUnknownWithTheirReasons() {
         val text = "declare\n  used number;\n  unused number;\n  in_sql number;\n  e exception;\n  n number;\nbegin\n" +
@@ -128,6 +146,20 @@ class UsageEvidenceTest {
             "UNUSED_C: Unused",
             "X: Unavailable(NOT_A_COVERED_DECLARATION)",
             "HP: Unavailable(NOT_A_COVERED_DECLARATION)"
+        )
+    }
+
+    @Test
+    fun cursors() {
+        val text = "declare\n  cursor c_rowtype is select 1 a from dual;\n  r c_rowtype%rowtype;\n" +
+            "  cursor c_attribute is select 1 from dual;\n  cursor dummy is select 1 from dual;\n" +
+            "  cursor c_unused is select 1 from dual;\n  v varchar2(1);\nbegin\n" +
+            "  if c_attribute%isopen then null; end if;\n  select dummy into v from dual;\nend;\n/\n"
+        assertThat(cursors(text)).containsExactly(
+            "C_ROWTYPE: Used",
+            "C_ATTRIBUTE: Used",
+            "DUMMY: Unknown[UNSUPPORTED_REFERENCE]",
+            "C_UNUSED: Unused"
         )
     }
 

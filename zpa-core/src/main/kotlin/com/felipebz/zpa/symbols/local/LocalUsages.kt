@@ -137,7 +137,8 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
             PlSqlGrammar.VARIABLE_DECLARATION to setOf(LocalDeclarationKind.VARIABLE),
             PlSqlGrammar.EXCEPTION_DECLARATION to setOf(LocalDeclarationKind.EXCEPTION),
             PlSqlGrammar.PARAMETER_DECLARATION to setOf(LocalDeclarationKind.PARAMETER),
-            PlSqlGrammar.CURSOR_PARAMETER_DECLARATION to setOf(LocalDeclarationKind.CURSOR_PARAMETER)
+            PlSqlGrammar.CURSOR_PARAMETER_DECLARATION to setOf(LocalDeclarationKind.CURSOR_PARAMETER),
+            PlSqlGrammar.CURSOR_DECLARATION to setOf(LocalDeclarationKind.CURSOR)
         )
     }
 

@@ -23,34 +23,28 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
-import com.felipebz.zpa.api.symbols.Scope
-import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.semantics.UsageEvidence
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.UNUSED])
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class UnusedCursorCheck : AbstractBaseCheck() {
 
-    override fun leaveFile(node: AstNode) {
-        val scopes = context.symbolTable.scopes
-        for (scope in scopes) {
-            if (scope.type == PlSqlGrammar.CREATE_PACKAGE) {
-                continue
-            }
-            checkScope(scope)
-        }
+    override fun init() {
+        subscribeTo(PlSqlGrammar.CURSOR_DECLARATION)
     }
 
-    private fun checkScope(scope: Scope) {
-        val symbols = scope.getSymbols(Symbol.Kind.CURSOR)
-        for (symbol in symbols) {
-            val parent = symbol.declaration.parent
+    override fun visitNode(node: AstNode) {
+        // Package specification members are visible to other units; a cursor with RETURN may be defined elsewhere.
+        if (node.parent.parentOrNull?.type == PlSqlGrammar.CREATE_PACKAGE || node.hasDirectChildren(PlSqlKeyword.RETURN))
+            return
 
-            if (symbol.usages.isEmpty() && !parent.hasDirectChildren(PlSqlKeyword.RETURN)) {
-                addIssue(parent, getLocalizedMessage(), symbol.name)
-            }
-        }
+        if (context.usageEvidence(node) != UsageEvidence.Unused)
+            return
+
+        addIssue(node, getLocalizedMessage(), node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue)
     }
 
 }

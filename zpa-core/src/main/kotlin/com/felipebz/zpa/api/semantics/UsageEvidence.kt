@@ -101,8 +101,8 @@ enum class UsageUnavailability {
     FILE_NOT_ANALYZED,
 
     /**
-     * The node is not a declaration this evidence covers: not a variable, exception, parameter or cursor parameter
-     * declaration, or one the local analysis holds no declaration for (a call specification's parameters).
+     * The node is not a declaration this evidence covers: not a variable, exception, cursor, parameter or cursor
+     * parameter declaration, or one the local analysis holds no declaration for (a call specification's parameters).
      */
     NOT_A_COVERED_DECLARATION
 }
