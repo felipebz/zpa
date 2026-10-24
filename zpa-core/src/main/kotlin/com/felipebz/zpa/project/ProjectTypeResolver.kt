@@ -32,10 +32,15 @@ class ProjectTypeResolver(
     ): ProjectTypeResolution = when (val state = projectAnalysisContext.state) {
         ProjectAnalysisContext.State.NotPrepared -> ProjectTypeResolution.NotPrepared(reference)
         is ProjectAnalysisContext.State.Prepared -> {
-            val candidates = state.result.index.findTypes(
-                ProjectTypeNameLookup.owner(reference.name, lookupContext.packageOwner),
-                reference.name.last
-            )
+            val index = state.result.index
+            val owner = ProjectTypeNameLookup.owner(reference.name, lookupContext.packageOwner)
+            val candidates = index.findTypes(owner, reference.name.last).ifEmpty {
+                if (reference.name.segments.size == 1 && owner != null && packageDoesNotDeclare(index, owner, reference)) {
+                    index.findTypes(null, reference.name.last)
+                } else {
+                    emptyList()
+                }
+            }
             if (state.result.failures.isNotEmpty()) {
                 ProjectTypeResolution.IncompleteIndex(reference, candidates, state.result.failures)
             } else {
@@ -47,6 +52,24 @@ class ProjectTypeResolver(
             }
         }
     }
+
+    /**
+     * A one-segment name inside a package reaches a schema type only when the package declares nothing of that name:
+     * the project holds one specification of the package and its member names are complete without it. Declarations of
+     * the package body are the local side's.
+     */
+    private fun packageDoesNotDeclare(index: ProjectSymbolIndex, owner: QualifiedName, reference: NamedTypeRef): Boolean {
+        val specification = index.findOccurrences(owner).singleOrNull {
+            (it.declaration as? PackageDeclaration)?.role == DeclarationRole.SPECIFICATION
+        } ?: return false
+        val range = specification.declaration.sourceRange
+        val inside = reference.sourceRange.takeIf { it.fileId == range.fileId && contains(range, it) }
+        return PackageMemberNames.at(index, specification, reference.name.last, inside).status == MemberNameStatus.NOT_DECLARED
+    }
+
+    private fun contains(outer: SourceRange, inner: SourceRange): Boolean =
+        (outer.startLine < inner.startLine || (outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn)) &&
+            (inner.endLine < outer.endLine || (inner.endLine == outer.endLine && inner.endColumn <= outer.endColumn))
 }
 
 /** Name/context rules shared by the reference-based resolver and the public name-based query. */
