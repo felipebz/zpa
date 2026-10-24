@@ -75,7 +75,8 @@ class ProjectDeclarationInventoryJavaApiTest {
         second.getDeclarations().forEach(d -> map.put(d.getId(), d));
 
         assertThat(map).hasSize(6);
-        assertThatThrownBy(() -> first.getDeclarations().clear())
+        var firstDeclarations = first.getDeclarations();
+        assertThatThrownBy(firstDeclarations::clear)
             .isInstanceOf(UnsupportedOperationException.class);
         ProjectInventory<ProjectDeclarationView> fileInventory = first.declarationsFor("seq.sql");
         List<ProjectDeclarationView> fileDeclarations = fileInventory.getDeclarations();

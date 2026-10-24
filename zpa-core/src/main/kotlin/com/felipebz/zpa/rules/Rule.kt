@@ -33,9 +33,7 @@ class Rule(override val key: String) : ZpaRule {
 
     override var remediationConstant: String = ""
         set(value) {
-            if (!REMEDIATION_PATTERN.matches(value)) {
-                throw IllegalArgumentException("Invalid base effort: $value")
-            }
+            require(REMEDIATION_PATTERN.matches(value)) { "Invalid base effort: $value" }
             field = value
         }
 

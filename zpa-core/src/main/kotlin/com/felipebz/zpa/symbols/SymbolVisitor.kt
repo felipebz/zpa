@@ -21,7 +21,6 @@ package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
-import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
@@ -30,6 +29,7 @@ import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.*
+import com.felipebz.zpa.typeIs
 
 class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlobalContext: Boolean = false) : PlSqlCheck() {
 
@@ -104,59 +104,28 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlo
     }
 
     private fun visitNodeInternal(node: AstNode): Boolean {
-        if (node.type === PlSqlGrammar.VARIABLE_DECLARATION) {
-            visitVariableDeclaration(node)
-        } else if (node.type === PlSqlGrammar.EXCEPTION_DECLARATION) {
-            visitExceptionDeclaration(node)
-        } else if (node.type === PlSqlGrammar.CUSTOM_SUBTYPE) {
-            visitCustomSubtypeDeclaration(node)
-        } else if (node.type === PlSqlGrammar.TABLE_OF_DECLARATION) {
-            visitAssociativeArrayDeclaration(node)
-        } else if (node.type === PlSqlGrammar.VARRAY_DECLARATION) {
-            visitVarrayDeclaration(node)
-        } else if (node.type === PlSqlGrammar.RECORD_DECLARATION) {
-            visitRecordDeclaration(node)
-        } else if (node.type === PlSqlGrammar.VARIABLE_NAME) {
-            visitVariableName(node)
-        } else if (node.type === PlSqlGrammar.MEMBER_EXPRESSION) {
-            visitMemberExpression(node)
-        } else if (node.type === PlSqlGrammar.CURSOR_DECLARATION) {
-            visitCursor(node)
-            return true
-        } else if (node.type === PlSqlGrammar.BLOCK_STATEMENT) {
-            visitBlock(node)
-            return true
-        } else if (node.type === PlSqlGrammar.FOR_STATEMENT) {
-            visitFor(node)
-            return true
-        } else if (node.type === PlSqlGrammar.FORALL_STATEMENT) {
-            visitForAll(node)
-            return true
-        } else if (node.type === PlSqlGrammar.PARAMETER_DECLARATION || node.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) {
-            visitParameterDeclaration(node)
-        } else if (node.type === PlSqlGrammar.CREATE_PROCEDURE ||
-            node.type === PlSqlGrammar.PROCEDURE_DECLARATION ||
-            node.type === PlSqlGrammar.CREATE_FUNCTION ||
-            node.type === PlSqlGrammar.FUNCTION_DECLARATION ||
-            node.type === PlSqlGrammar.SIMPLE_DML_TRIGGER ||
-            node.type === PlSqlGrammar.INSTEAD_OF_DML_TRIGGER ||
-            node.type === PlSqlGrammar.COMPOUND_DML_TRIGGER ||
-            node.type === PlSqlGrammar.SYSTEM_TRIGGER ||
-            node.type === PlSqlGrammar.CREATE_TYPE ||
-            node.type === PlSqlGrammar.CREATE_TYPE_BODY ||
-            node.type === PlSqlGrammar.TYPE_CONSTRUCTOR) {
-            visitUnit(node)
-            return true
-        } else if (node.type === PlSqlGrammar.CREATE_PACKAGE || node.type === PlSqlGrammar.CREATE_PACKAGE_BODY) {
-            visitPackage(node)
-            return true
-        } else if (node.type === PlSqlGrammar.LITERAL) {
-            visitLiteral(node)
-        } else if (node.type === DmlGrammar.SELECT_EXPRESSION) {
-            visitSelectExpression(node)
-            return true
+        when (node.type) {
+            PlSqlGrammar.VARIABLE_DECLARATION -> visitVariableDeclaration(node)
+            PlSqlGrammar.EXCEPTION_DECLARATION -> visitExceptionDeclaration(node)
+            PlSqlGrammar.CUSTOM_SUBTYPE -> visitCustomSubtypeDeclaration(node)
+            PlSqlGrammar.TABLE_OF_DECLARATION -> visitAssociativeArrayDeclaration(node)
+            PlSqlGrammar.VARRAY_DECLARATION -> visitVarrayDeclaration(node)
+            PlSqlGrammar.RECORD_DECLARATION -> visitRecordDeclaration(node)
+            PlSqlGrammar.VARIABLE_NAME -> visitVariableName(node)
+            PlSqlGrammar.MEMBER_EXPRESSION -> visitMemberExpression(node)
+            PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_PARAMETER_DECLARATION -> visitParameterDeclaration(node)
+            PlSqlGrammar.LITERAL -> visitLiteral(node)
+            PlSqlGrammar.CURSOR_DECLARATION -> { visitCursor(node); return true }
+            PlSqlGrammar.BLOCK_STATEMENT -> { visitBlock(node); return true }
+            PlSqlGrammar.FOR_STATEMENT -> { visitFor(node); return true }
+            PlSqlGrammar.FORALL_STATEMENT -> { visitForAll(node); return true }
+            PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.CREATE_FUNCTION,
+            PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.SIMPLE_DML_TRIGGER, PlSqlGrammar.INSTEAD_OF_DML_TRIGGER,
+            PlSqlGrammar.COMPOUND_DML_TRIGGER, PlSqlGrammar.SYSTEM_TRIGGER, PlSqlGrammar.CREATE_TYPE,
+            PlSqlGrammar.CREATE_TYPE_BODY, PlSqlGrammar.TYPE_CONSTRUCTOR -> { visitUnit(node); return true }
+            PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY -> { visitPackage(node); return true }
+            DmlGrammar.SELECT_EXPRESSION -> { visitSelectExpression(node); return true }
         }
-
         return false
     }
 
@@ -378,14 +347,10 @@ class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlo
     }
 
     private fun createSymbol(identifier: AstNode, kind: Symbol.Kind, plSqlDatatype: PlSqlDatatype): Symbol {
-        val scope = currentScope
-        if (scope == null) {
-            throw IllegalStateException("Cannot create a symbol without a scope.")
-        } else {
-            val symbol = symbolTable.declareSymbol(identifier, kind, scope, plSqlDatatype)
-            semantic(identifier).symbol = symbol
-            return symbol
-        }
+        val scope = checkNotNull(currentScope) { "Cannot create a symbol without a scope." }
+        val symbol = symbolTable.declareSymbol(identifier, kind, scope, plSqlDatatype)
+        semantic(identifier).symbol = symbol
+        return symbol
     }
 
     private fun enterScope(node: AstNode,

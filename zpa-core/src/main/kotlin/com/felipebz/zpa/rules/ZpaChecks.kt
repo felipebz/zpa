@@ -20,8 +20,8 @@
 package com.felipebz.zpa.rules
 
 import com.felipebz.zpa.CustomAnnotationBasedRulesDefinition.Companion.getRuleKey
-import com.felipebz.zpa.utils.getFields
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.utils.getFields
 import java.lang.reflect.Field
 import java.util.*
 
@@ -128,7 +128,7 @@ open class ZpaChecks constructor(private val activeRules: ZpaActiveRules,
                 Long::class.java -> field.set(check, java.lang.Long.parseLong(value))
                 Double::class.java -> field.set(check, java.lang.Double.parseDouble(value))
                 Boolean::class.java -> field.set(check, java.lang.Boolean.parseBoolean(value))
-                else -> throw IllegalStateException("The type of the field " + field + " is not supported: " + field.type)
+                else -> error("The type of the field $field is not supported: ${field.type}")
             }
         } catch (e: IllegalAccessException) {
             throw IllegalStateException("Can not set the value of the field " + field + " in the class: " + check.javaClass.name, e)

@@ -21,10 +21,10 @@ package com.felipebz.zpa.checks.verifier
 
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.TestPlSqlVisitorRunner
+import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.DefaultTypeSolver
 import com.felipebz.zpa.symbols.SymbolVisitor
-import com.felipebz.zpa.api.checks.PlSqlCheck
 import java.io.File
 
 class PlSqlCheckVerifier : PlSqlCheck() {
@@ -77,17 +77,11 @@ class PlSqlCheckVerifier : PlSqlCheck() {
         val token = trivia.token
         val line = token.line
         val text = token.value
-        if (token.column > 1) {
-            throw IllegalStateException("Line $line: comments asserting a precise location should start at column 1")
-        }
+        check(token.column <= 1) { "Line $line: comments asserting a precise location should start at column 1" }
         val missingAssertionMessage = "Invalid test file: a precise location is provided at line $line but no issue is asserted at line ${line - 1}"
-        if (expectedIssues.isEmpty()) {
-            throw IllegalStateException(missingAssertionMessage)
-        }
+        check(expectedIssues.isNotEmpty()) { missingAssertionMessage }
         val issue = expectedIssues[expectedIssues.size - 1]
-        if (issue.line != line - 1) {
-            throw IllegalStateException(missingAssertionMessage)
-        }
+        check(issue.line == line - 1) { missingAssertionMessage }
         issue.endLine = issue.line
         issue.startColumn = text.indexOf('^') + 1
         issue.endColumn = text.lastIndexOf('^') + 2
@@ -160,9 +154,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
         private fun addParams(issue: TestIssue, params: String) {
             for (param in params.split(';')) {
                 val equalIndex = param.indexOf('=')
-                if (equalIndex == -1) {
-                    throw IllegalStateException("Invalid param at line 1: $param")
-                }
+                check(equalIndex != -1) { "Invalid param at line 1: $param" }
                 val name = param.substring(0, equalIndex)
                 val value = param.substring(equalIndex + 1)
 
@@ -172,7 +164,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
                     "ec".equals(name, ignoreCase = true) -> issue.endColumn = Integer.valueOf(value)
                     "el".equals(name, ignoreCase = true) -> issue.endLine = lineValue(issue.line, value)
                     "secondary".equals(name, ignoreCase = true) -> addSecondaryLines(issue, value)
-                    else -> throw IllegalStateException("Invalid param at line 1: $name")
+                    else -> error("Invalid param at line 1: $name")
                 }
             }
         }

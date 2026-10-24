@@ -21,17 +21,8 @@ package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
-import com.felipebz.zpa.api.ConditionsGrammar
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlPunctuator
-import com.felipebz.zpa.api.PlSqlTokenType
-import com.felipebz.zpa.api.SingleRowSqlFunctionsGrammar
-import com.felipebz.zpa.api.annotations.ConstantRemediation
-import com.felipebz.zpa.api.annotations.Priority
-import com.felipebz.zpa.api.annotations.Rule
-import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.*
+import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.api.project.PackageProcedureReference
 import com.felipebz.zpa.api.project.PackageProcedureResolution
@@ -184,8 +175,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             .lastOrNull { it.type !== PlSqlGrammar.LABEL }
             ?: return false
         val expression = statement.children.subList(assignmentIndex + 1, statement.children.size)
-            .filter { it.type !== PlSqlPunctuator.SEMICOLON }
-            .singleOrNull()
+            .singleOrNull { it.type !== PlSqlPunctuator.SEMICOLON }
             ?: return false
 
         val targetSymbol = writableSymbol(target) ?: return false
@@ -316,8 +306,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         if (firstWhenIndex < 0) return false
 
         val selector = statement.children.subList(0, firstWhenIndex)
-            .filter { it.type !== PlSqlKeyword.CASE && it.type !== PlSqlGrammar.LABEL }
-            .singleOrNull()
+            .singleOrNull { it.type !== PlSqlKeyword.CASE && it.type !== PlSqlGrammar.LABEL }
         if (selector != null) return false
 
         var index = firstWhenIndex
@@ -737,8 +726,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         val keywordIndex = node.children.indexOfFirst { it.type === keyword }
         if (keywordIndex < 0) return null
         return node.children.subList(keywordIndex + 1, node.children.size)
-            .filter { it.type !== PlSqlPunctuator.SEMICOLON }
-            .singleOrNull()
+            .singleOrNull { it.type !== PlSqlPunctuator.SEMICOLON }
     }
 
     private fun expressionBefore(node: AstNode, markerIndex: Int, vararg ignoredTypes: AstNodeType): AstNode? {

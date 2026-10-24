@@ -111,7 +111,7 @@ internal class SemanticTreeBuilder {
         for (index in 0 until root.childCount) {
             val child = root.getChildAt(index) as DefaultMutableTreeNode
             val label = child.userObject.toString()
-            if (label == "Resolution" || label == "Legacy semantics" ||
+            if (label == "Resolution" || label == LEGACY_SEMANTICS ||
                 label.startsWith("Declaration:") || label.startsWith("Type resolution") ||
                 label.startsWith("RECORD path:")
             ) {
@@ -168,7 +168,7 @@ internal class SemanticTreeBuilder {
 
     private fun resolutionSource(inspection: SemanticNodeInspection, hasProjectMetadata: Boolean): String = when {
         hasProjectMetadata -> "Project semantics"
-        inspection.legacy != null -> "Legacy semantics"
+        inspection.legacy != null -> LEGACY_SEMANTICS
         else -> "No semantic resolution"
     }
 
@@ -275,7 +275,7 @@ internal class SemanticTreeBuilder {
 
     private fun getLegacySemanticTreeNode(
         legacy: LegacySemanticSummary,
-        label: String = "Legacy semantics"
+        label: String = LEGACY_SEMANTICS
     ): DefaultMutableTreeNode {
         val node = DefaultMutableTreeNode(label)
         legacy.symbol?.let {
@@ -459,3 +459,5 @@ internal class SemanticTreeBuilder {
         else -> reason.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
     }
 }
+
+private const val LEGACY_SEMANTICS = "Legacy semantics"

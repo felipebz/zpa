@@ -235,7 +235,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         val configurationProperty = requireNotNull(getConfigurationPropertyByName(name)) {
             "No such configuration property: $name"
         }
-        val newValueCandidate = checkNotNull(view.getConfigurationPropertyValue(name))
+        val newValueCandidate = view.getConfigurationPropertyValue(name)
         val errorMessage = configurationProperty.validate(newValueCandidate)
         view.setConfigurationPropertyErrorMessage(configurationProperty.name, errorMessage)
         if ("" == errorMessage) {

@@ -53,11 +53,8 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             val scopeNode = scope.tree ?: continue
 
             // ignore procedure/function specification and overriding members
-            if (scope.type in DECLARATION_OR_CONSTRUCTOR) {
-                // is specification?
-                if (!scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
-                    continue
-                }
+            if (scope.type in DECLARATION_OR_CONSTRUCTOR && !scopeNode.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) {
+                continue
             }
 
             // standalone function implemented elsewhere (AGGREGATE USING or PIPELINED ... USING)
@@ -100,7 +97,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
 
 
             if (symbol.usages.isEmpty()) {
-                val parent = checkNotNull(symbol.declaration.parent)
+                val parent = symbol.declaration.parent
                 addIssue(parent, getLocalizedMessage(), symbol.name)
             }
 

@@ -41,11 +41,9 @@ open class DefaultTypeSolver {
         return UnknownDatatype
     }
 
-    open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype
-        if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE)) {
-            type = CharacterDatatype(evaluateCharacterLength(node, scope))
-        } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE)) {
+    open fun solveDatatype(node: AstNode, scope: Scope?): PlSqlDatatype = when {
+        node.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE) -> CharacterDatatype(evaluateCharacterLength(node, scope))
+        node.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE) -> {
             val constraint = node.firstChild.getFirstChildOrNull(PlSqlGrammar.NUMERIC_DATATYPE_CONSTRAINT)
             val precision = constraint
                 ?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_PRECISION)
@@ -53,24 +51,18 @@ open class DefaultTypeSolver {
             val scale = constraint
                 ?.getFirstChildOrNull(PlSqlGrammar.NUMERIC_SCALE)
                 ?.let { staticExpressionEvaluator.evaluateIntegerAsInt(it, scope) }
-            type = NumericDatatype(precision, scale)
-        } else if (node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE)) {
-            type = DateDatatype()
-        } else if (node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE)) {
-            type = LobDatatype()
-        } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE)) {
-            type = BooleanDatatype()
-        } else if (node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE)) {
-            val anchoredDatatype = node.firstChild
-            if (anchoredDatatype.lastChild.type === PlSqlKeyword.ROWTYPE) {
-                type = RowtypeDatatype()
-            }
-        } else if (node.hasDirectChildren(PlSqlGrammar.JSON_DATATYPE)) {
-            type = JsonDatatype()
-        } else {
+            NumericDatatype(precision, scale)
+        }
+        node.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE) -> DateDatatype()
+        node.hasDirectChildren(PlSqlGrammar.LOB_DATATYPE) -> LobDatatype()
+        node.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE) -> BooleanDatatype()
+        node.hasDirectChildren(PlSqlGrammar.ANCHORED_DATATYPE) ->
+            if (node.firstChild.lastChild.type === PlSqlKeyword.ROWTYPE) RowtypeDatatype() else UnknownDatatype
+        node.hasDirectChildren(PlSqlGrammar.JSON_DATATYPE) -> JsonDatatype()
+        else -> {
             val datatype = node.firstChild
             val member = datatype.getFirstChildOrNull(PlSqlGrammar.MEMBER_EXPRESSION)
-            type = if (member != null) {
+            if (member != null) {
                 val parts = member.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
                 val path = parts.dropLast(1).map { it.tokenValue }.reversed()
                 scope?.getSymbol(parts.last().tokenValue, path, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
@@ -78,7 +70,6 @@ open class DefaultTypeSolver {
                 scope?.getSymbol(datatype.tokenValue, Symbol.Kind.TYPE)?.datatype ?: UnknownDatatype
             }
         }
-        return type
     }
 
     private fun evaluateCharacterLength(node: AstNode, scope: Scope?): Int? {
@@ -94,20 +85,13 @@ open class DefaultTypeSolver {
         return staticExpressionEvaluator.evaluateIntegerAsInt(lengthExpression, scope)
     }
 
-    open fun solveLiteral(node: AstNode): PlSqlDatatype {
-        var type: PlSqlDatatype = UnknownDatatype
-        if (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node)) {
-            type = NullDatatype()
-        } else if (node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL)) {
-            type = CharacterDatatype(node)
-        } else if (node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL)) {
-            type = NumericDatatype(node)
-        } else if (node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL)) {
-            type = DateDatatype()
-        } else if (node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL)) {
-            type = BooleanDatatype()
-        }
-        return type
+    open fun solveLiteral(node: AstNode): PlSqlDatatype = when {
+        node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node) -> NullDatatype()
+        node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) -> CharacterDatatype(node)
+        node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL) -> NumericDatatype(node)
+        node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL) -> DateDatatype()
+        node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL) -> BooleanDatatype()
+        else -> UnknownDatatype
     }
 
     private fun isEmptyString(node: AstNode): Boolean {

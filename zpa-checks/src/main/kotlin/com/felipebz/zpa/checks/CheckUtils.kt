@@ -21,12 +21,12 @@ package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
-import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.typeIs
 
 object CheckUtils {
 
@@ -64,8 +64,8 @@ object CheckUtils {
             return first.token.value == second.token.value
         }
 
-        val children1 = first.children
-        val children2 = second.children
+        val children1: List<AstNode> = first.children
+        val children2: List<AstNode> = second.children
         for (i in children1.indices) {
             if (!equalNodes(children1[i], children2[i])) {
                 return false

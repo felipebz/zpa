@@ -66,7 +66,7 @@ class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {
         }
     }
 
-    private fun checkReference(references: MutableList<TableReference>) {
+    private fun checkReference(references: List<TableReference>) {
         if (references.size == 1) {
             val reference: TableReference = references[0]
 
