@@ -39,6 +39,8 @@ dependencies {
 }
 
 val oracleProbePluginJar = tasks.register<Jar>("oracleProbePluginJar") {
+    group = "build"
+    description = "Packages the plugin used by the Oracle metadata probe."
     from(oracleProbePlugin.output)
     archiveBaseName.set("zpa-oracle-probe-plugin")
     destinationDirectory.set(layout.buildDirectory.dir("oracle-probe-plugin"))

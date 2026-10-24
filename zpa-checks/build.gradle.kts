@@ -16,6 +16,8 @@ testing {
     suites {
         register<JvmTestSuite>("integrationTest") {
             val downloadZipFile = tasks.register<Download>("downloadZipFile") {
+                group = "build setup"
+                description = "Downloads the SQLcl archive used by the integration tests."
                 val sqlclVersion = "26.3.0.260.1620"
                 src("https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-$sqlclVersion.zip")
                 overwrite(false)
@@ -23,6 +25,8 @@ testing {
             }
 
             val downloadAndUnzipFile = tasks.register<Copy>("downloadAndUnzipFile") {
+                group = "build setup"
+                description = "Extracts the SQLcl archive into tools/ for the integration tests."
                 dependsOn(downloadZipFile)
                 from(zipTree(downloadZipFile.get().dest))
                 into(layout.projectDirectory.dir("tools"))

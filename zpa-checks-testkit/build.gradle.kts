@@ -1,9 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.api.attributes.Bundling
-import org.gradle.api.attributes.Category
-import org.gradle.api.attributes.LibraryElements
-import org.gradle.api.attributes.Usage
-import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     id("com.felipebz.zpa.build-conventions")
@@ -15,6 +10,8 @@ dependencies {
 }
 
 val rawTestkitJar = tasks.register<Jar>("rawTestkitJar") {
+    group = "build"
+    description = "Packages the testkit classes without shading, for the raw runtime variant."
     archiveClassifier.set("raw")
     from(sourceSets.main.get().output)
 }
