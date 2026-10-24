@@ -131,12 +131,15 @@ class ProjectCollectionElementViewsTest {
         }
         assertThat(shaped(s, "s_obj").shape).isEqualTo(Optional.of(ProjectTypeShape.OBJECT))
         assertThat(shaped(s, "p", "cur").shape).isEqualTo(Optional.of(ProjectTypeShape.REF_CURSOR))
-        // Collections whose element is unsupported (database link, FORCE header) or whose unit boundary is unreliable.
-        listOf(arrayOf("p", "omitted"), arrayOf("s_force"), arrayOf("s_w1")).forEach {
+        // Collections whose element is unsupported (database link, FORCE header).
+        listOf(arrayOf("p", "omitted"), arrayOf("s_force")).forEach {
             val view = shaped(s, *it)
             assertThat(view.shape).describedAs(it.joinToString(".")).isEqualTo(Optional.of(ProjectTypeShape.COLLECTION))
             assertThat(view.elementType).describedAs(it.joinToString(".")).isEmpty
         }
+        // A collection ended by a `/` line without `;` keeps its element.
+        assertThat(shaped(s, "s_w1").elementType.get().name).isEqualTo(ProjectQualifiedName.of("NUMBER"))
+        assertThat(shaped(s, "s_next").elementType.get().name).isEqualTo(ProjectQualifiedName.of("DATE"))
     }
 
     @Test

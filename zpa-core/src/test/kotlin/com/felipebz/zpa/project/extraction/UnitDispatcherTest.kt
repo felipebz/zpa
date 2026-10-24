@@ -65,6 +65,59 @@ class UnitDispatcherTest {
     }
 
     @Test
+    fun aTypeOrSequenceWithoutSemicolonEndsAtItsSlashLine() {
+        val followers = mapOf(
+            "CREATE TYPE tb AS OBJECT (y NUMBER);" to listOf(ProjectDeclarationKind.STANDALONE_TYPE to "tb"),
+            "CREATE TYPE tc AS TABLE OF NUMBER;" to listOf(ProjectDeclarationKind.STANDALONE_TYPE to "tc"),
+            "CREATE PACKAGE p AS x NUMBER; END p;" to listOf(ProjectDeclarationKind.PACKAGE to "p", ProjectDeclarationKind.PACKAGE_VARIABLE to "p.x"),
+            "CREATE PACKAGE BODY p AS PROCEDURE q IS BEGIN NULL; END; END p;" to listOf(ProjectDeclarationKind.PACKAGE_PROCEDURE to "p.q"),
+            "CREATE PROCEDURE pr IS BEGIN NULL; END;" to listOf(ProjectDeclarationKind.STANDALONE_PROCEDURE to "pr"),
+            "CREATE FUNCTION fn RETURN NUMBER IS BEGIN RETURN 1; END;" to listOf(ProjectDeclarationKind.STANDALONE_FUNCTION to "fn"),
+            "CREATE SEQUENCE s1;" to listOf(ProjectDeclarationKind.SEQUENCE to "s1")
+        )
+        val leaders = mapOf(
+            "CREATE TYPE ta AS OBJECT (x NUMBER)" to (ProjectDeclarationKind.STANDALONE_TYPE to "ta"),
+            "CREATE TYPE tl AS TABLE OF NUMBER" to (ProjectDeclarationKind.STANDALONE_TYPE to "tl"),
+            "CREATE TYPE tu UNDER ta (z NUMBER)" to (ProjectDeclarationKind.STANDALONE_TYPE to "tu"),
+            "CREATE OR REPLACE TYPE tf FORCE AS OBJECT (x NUMBER) NOT FINAL" to (ProjectDeclarationKind.STANDALONE_TYPE to "tf"),
+            "CREATE SEQUENCE s0 START WITH 1" to (ProjectDeclarationKind.SEQUENCE to "s0"),
+            "CREATE SEQUENCE s1" to (ProjectDeclarationKind.SEQUENCE to "s1")
+        )
+        for ((leader, leaderFact) in leaders) {
+            for ((follower, followerFacts) in followers) {
+                val facts = extract("$leader\n/\n$follower\n/\n")
+                assertThat(facts.map { it.kind to it.qualifiedName().toString() }).describedAs("$leader / $follower")
+                    .containsExactlyElementsOf(listOf(leaderFact) + followerFacts)
+                assertThat(facts.first().sourceRange.endLine).isEqualTo(1)
+            }
+        }
+    }
+
+    @Test
+    fun aBareSequenceEndedBySlashAtEndOfFileEndsOnItsLine() {
+        val sequence = extract("CREATE SEQUENCE s\n/\n").single()
+        assertThat(sequence.sourceRange).isEqualTo(SourceRange(fileId, 1, 0, 1, 17))
+    }
+
+    @Test
+    fun semicolonAndSlashEndingsMayAlternate() {
+        val text = "CREATE TYPE a AS OBJECT (x NUMBER)\n/\nCREATE TYPE b AS OBJECT (y NUMBER);\n/\n" +
+            "CREATE SEQUENCE s\n/\nCREATE TYPE c AS TABLE OF a;\nCREATE TYPE d AS VARRAY(2) OF b\n/\n" +
+            "CREATE PROCEDURE p IS BEGIN NULL; END;\n/\nCREATE TYPE e UNDER a (z NUMBER)\n/\n"
+        assertThat(described(text).map { it.second }).containsExactly("a", "b", "s", "c", "d", "p", "e")
+    }
+
+    @Test
+    fun onlyASlashAloneOnItsLineEndsTheStatement() {
+        // A slash line inside a comment, a slash inside a string and a division do not end a statement.
+        val text = "CREATE TYPE ta AS OBJECT (\n  x NUMBER,\n  /*\n/\n  */\n  y NUMBER\n)\n/\n" +
+            "CREATE PACKAGE p AS\n  s VARCHAR2(5) := '\n/\n';\n  c CONSTANT NUMBER := 10\n  / 2;\n  d NUMBER;\nEND p;\n/\n"
+        val facts = extract(text)
+        assertThat(facts.map { it.qualifiedName().toString() }).containsExactly("ta", "p", "p.s", "p.c", "p.d")
+        assertThat((facts.first() as StandaloneTypeDeclaration).attributes.map { it.name.originalSpelling }).containsExactly("x", "y")
+    }
+
+    @Test
     fun prefixesAndNamesAreRecognizedAsBefore() {
         assertThat(described("CREATE OR REPLACE EDITIONABLE PROCEDURE app.p IS BEGIN NULL; END;")).containsExactly(ProjectDeclarationKind.STANDALONE_PROCEDURE to "app.p")
         assertThat(described("CREATE OR REPLACE NONEDITIONABLE PACKAGE \"Mixed\" AS END;")).containsExactly(ProjectDeclarationKind.PACKAGE to "\"Mixed\"")

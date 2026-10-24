@@ -181,9 +181,9 @@ class StandaloneCollectionElementTest {
 
     @Test
     fun anElementIsNeverAddedWhenTheDeclarationRunsIntoAnotherUnit() {
-        // No terminating semicolon before a lone `/`: the existing fact range is unreliable, so there is no element.
-        val missing = types("CREATE TYPE t AS TABLE OF NUMBER\n/\nCREATE TYPE u AS TABLE OF DATE;\n/\n")
-        assertThat(missing.first { it.name.last.originalSpelling == "t" }.elementType).isNull()
+        // A lone `/` ends the unit without a semicolon: both units keep their element.
+        val slash = types("CREATE TYPE t AS TABLE OF NUMBER\n/\nCREATE TYPE u AS TABLE OF DATE;\n/\n")
+        assertThat(slash.map { it.elementType!!.name.last.originalSpelling }).containsExactly("NUMBER", "DATE")
         // The same without a lone `/`: the next CREATE bounds the unit.
         val adjacent = types("CREATE TYPE t AS TABLE OF NUMBER\nCREATE TYPE u AS TABLE OF DATE;")
         assertThat(adjacent.first { it.name.last.originalSpelling == "t" }.elementType).isNull()

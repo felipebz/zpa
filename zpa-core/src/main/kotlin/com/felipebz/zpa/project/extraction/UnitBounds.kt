@@ -35,6 +35,8 @@ internal class UnitBounds(private val stream: TokenStream) {
         }.toIntArray()
     }
 
+    private val loneSlashes: IntArray by lazy { unitBoundaries.filter(::isLoneSlash).toIntArray() }
+
     private fun isLoneSlash(index: Int): Boolean {
         if (!stream.isPunctuator(index, PlSqlPunctuator.DIVISION)) return false
         val token = stream.tokens[index]
@@ -45,9 +47,17 @@ internal class UnitBounds(private val stream: TokenStream) {
     }
 
     /** First boundary strictly after [create]; scans of that unit never reach it. */
-    fun unitLimit(create: Int): Int {
-        var position = Arrays.binarySearch(unitBoundaries, create + 1)
+    fun unitLimit(create: Int): Int = firstFrom(unitBoundaries, create + 1)
+
+    /**
+     * Last token of a SQL statement that continues at [start]: its top-level `;`, or, as in SQL*Plus, the token before
+     * the next `/` alone on its line. That is `start - 1` when the `/` is at [start].
+     */
+    fun statementEnd(start: Int): Int = minOf(stream.semicolonAfter(start), firstFrom(loneSlashes, start) - 1)
+
+    private fun firstFrom(sorted: IntArray, index: Int): Int {
+        var position = Arrays.binarySearch(sorted, index)
         if (position < 0) position = -position - 1
-        return if (position < unitBoundaries.size) unitBoundaries[position] else stream.tokens.size
+        return if (position < sorted.size) sorted[position] else stream.tokens.size
     }
 }

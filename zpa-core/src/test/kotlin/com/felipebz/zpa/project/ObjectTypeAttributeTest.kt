@@ -141,6 +141,24 @@ class ObjectTypeAttributeTest {
     }
 
     @Test
+    fun typesEndedBySlashesAreAllIndexedAndTheirSubtypesInherit() {
+        val context = prepare(
+            "element.sql" to "create or replace type path_segment as object (\n  indx number(32),\n  name varchar2(4000)\n)\n/\n" +
+                "create or replace type path as table of path_segment\n/\n" +
+                "create or replace type element force as object\n(\n  typeval number(1),\n  mapname varchar2(4000),\n" +
+                "  member function is_object return boolean\n) not final\n/\n" +
+                "create or replace type element_array as table of element\n/\n",
+            "string.sql" to "create or replace type string force under element (\n  str varchar2(32767)\n)\n/\n"
+        )
+        val index = (context.state as ProjectAnalysisContext.State.Prepared).result.index
+        assertThat(index.declarations.filterIsInstance<StandaloneTypeDeclaration>().map { it.name.toString() })
+            .containsExactlyInAnyOrder("path_segment", "path", "element", "element_array", "string")
+        assertThat(member(context, "string", "typeval")).isEqualTo("Resolved element.typeval")
+        assertThat(member(context, "string", "str")).isEqualTo("Resolved string.str")
+        assertThat(member(context, "string", "nothing")).isEqualTo("NotFound")
+    }
+
+    @Test
     fun quotedNamesKeepTheirCase() {
         val context = prepare("t.sql" to "CREATE TYPE q AS OBJECT (Mixed NUMBER, \"Quoted\" NUMBER);")
         assertThat(member(context, "q", "MIXED")).isEqualTo("Resolved q.Mixed")

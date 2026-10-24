@@ -20,12 +20,7 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.flr.api.Token
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectDeclaration
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectFileExtraction
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.immutableList
+import com.felipebz.zpa.project.*
 
 /**
  * Per-extraction unit discovery and dispatch: finds candidate `CREATE` units by value, selects the extractor, and
@@ -75,8 +70,8 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
             cursor = alter + 1
             if (!stream.isKeyword(alter, "ALTER") || stream.valueAt(alter + 1) != "TYPE") continue
             val name = stream.qualifiedName(alter + 2) ?: continue
-            val end = statementEnd(name.second)
-            val attributes = (name.second until end).filter { stream.valueAt(it) == "ATTRIBUTE" }
+            val end = bounds.statementEnd(name.second)
+            val attributes = (name.second..end).filter { stream.valueAt(it) == "ATTRIBUTE" }
             if (attributes.isEmpty()) continue
             val dropped = altered.getOrPut(name.first) { HashSet() }
             for (attribute in attributes) {
@@ -94,15 +89,6 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
             }
         }
         return altered
-    }
-
-    /** A statement ends at its `;` or at a `/` that opens a line. */
-    private fun statementEnd(start: Int): Int {
-        val semicolon = stream.semicolonAfter(start)
-        val slash = (start until semicolon).firstOrNull { index ->
-            stream.valueAt(index) == "/" && (index == 0 || stream.tokens[index - 1].line < stream.tokens[index].line)
-        }
-        return slash ?: semicolon
     }
 
     private fun parseCreate(create: Int): ParsedUnit? {

@@ -20,12 +20,7 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.zpa.api.PlSqlPunctuator
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectTypeShape
-import com.felipebz.zpa.project.SequenceDeclaration
-import com.felipebz.zpa.project.StandaloneTypeDeclaration
-import com.felipebz.zpa.project.TypeRef
+import com.felipebz.zpa.project.*
 
 /** `CREATE SEQUENCE` and `CREATE [OR REPLACE] TYPE [BODY]` units, recognized with the value-based token operations. */
 internal class SchemaUnitExtractor(
@@ -46,7 +41,7 @@ internal class SchemaUnitExtractor(
         val parsedName = stream.qualifiedName(nameIndex) ?: return null
         if (parsedName.first.segments.size !in 1..2) return null
 
-        val end = stream.semicolonAfter(parsedName.second)
+        val end = bounds.statementEnd(parsedName.second)
         return ParsedUnit(
             listOf(SequenceDeclaration(parsedName.first, stream.fileId, stream.range(create, end))),
             end + 1
@@ -55,7 +50,7 @@ internal class SchemaUnitExtractor(
 
     fun parseStandaloneType(create: Int, typeIndex: Int): ParsedUnit? {
         val name = stream.qualifiedName(typeIndex + 1) ?: return null
-        val end = stream.semicolonAfter(typeIndex + 1)
+        val end = bounds.statementEnd(typeIndex + 1)
         val collection = standaloneCollection(create, name.second, end)
         val objectSyntax = objectSyntax(create, name.second)
         val shape = if (objectSyntax != null) ProjectTypeShape.OBJECT
@@ -81,7 +76,7 @@ internal class SchemaUnitExtractor(
     private fun standaloneCollection(create: Int, afterName: Int, end: Int): CollectionSyntax? {
         if (!stream.isKeyword(afterName, "IS") && !stream.isKeyword(afterName, "AS")) return null
         val limit = bounds.unitLimit(create)
-        return collectionElements.parseStandalone(afterName, limit, reliableEnd(afterName, limit)?.takeIf { it == end })
+        return collectionElements.parseStandalone(afterName, limit, reliableEnd(afterName, limit)?.takeIf { it == end || it == end + 1 && it == limit })
     }
 
     private class ObjectSyntax(
