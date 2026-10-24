@@ -103,7 +103,8 @@ class ProjectCallResolutionJavaConsumerTest {
             .isEqualTo(ProjectCallArguments.Notation.DUPLICATE_LABEL);
         assertThat(ProjectCallArguments.of(List.of(a, named("\"a\""))).getNotation())
             .isEqualTo(ProjectCallArguments.Notation.VALID);
-        assertThatThrownBy(() -> arguments.getArguments().clear()).isInstanceOf(UnsupportedOperationException.class);
+        var argumentsList = arguments.getArguments();
+        assertThatThrownBy(() -> argumentsList.clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -149,13 +150,20 @@ class ProjectCallResolutionJavaConsumerTest {
         assertThat(candidate.getOmittedParameters()).singleElement().isSameAs(declaration.getParameters().get(1));
         assertThat(candidate.getOmittedParameters().get(0).isDefaultPresent()).isTrue();
 
-        assertThatThrownBy(() -> resolution.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> resolution.getUncertainties().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> resolution.getPackageSpecifications().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> resolution.getFailures().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> candidate.getBindings().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> candidate.getOmittedParameters().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> candidate.getMissingParameters().clear()).isInstanceOf(UnsupportedOperationException.class);
+        var resolutionCandidates = resolution.getCandidates();
+        assertThatThrownBy(() -> resolutionCandidates.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var resolutionUncertainties = resolution.getUncertainties();
+        assertThatThrownBy(() -> resolutionUncertainties.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var resolutionPackageSpecifications = resolution.getPackageSpecifications();
+        assertThatThrownBy(() -> resolutionPackageSpecifications.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var resolutionFailures = resolution.getFailures();
+        assertThatThrownBy(() -> resolutionFailures.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var candidateBindings = candidate.getBindings();
+        assertThatThrownBy(() -> candidateBindings.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var candidateOmittedParameters = candidate.getOmittedParameters();
+        assertThatThrownBy(() -> candidateOmittedParameters.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var candidateMissingParameters = candidate.getMissingParameters();
+        assertThatThrownBy(() -> candidateMissingParameters.clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

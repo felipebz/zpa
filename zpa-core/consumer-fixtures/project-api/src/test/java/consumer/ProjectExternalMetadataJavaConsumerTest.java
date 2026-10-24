@@ -57,8 +57,10 @@ class ProjectExternalMetadataJavaConsumerTest {
         assertThat(employees.getRowObjectType()).isEmpty();
         assertThat(employees.getRowFields()).extracting(ProjectExternalColumn::getName).containsExactly(id("id"), id("salary"), id("name"));
         assertThat(employees.getRowFields()).extracting(c -> c.getPosition().getAsInt()).containsExactly(1, 2, 3);
-        assertThatThrownBy(() -> employees.getRowFields().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> employees.getColumns().add(null)).isInstanceOf(UnsupportedOperationException.class);
+        var employeesRowFields = employees.getRowFields();
+        assertThatThrownBy(() -> employeesRowFields.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var employeesColumns = employees.getColumns();
+        assertThatThrownBy(() -> employeesColumns.add(null)).isInstanceOf(UnsupportedOperationException.class);
 
         ProjectExternalLookup salary = metadata.findColumn(id("HR"), id("EMPLOYEES"), id("SALARY"));
         ProjectExternalDatatype type = salary.getColumn().orElseThrow().getDatatype().orElseThrow();
@@ -109,8 +111,8 @@ class ProjectExternalMetadataJavaConsumerTest {
         assertThat(rowType.getCategory()).isEmpty();
         assertThat(rowType.getTypeOwner()).contains(id("hr"));
         assertThat(ProjectExternalDatatype.of("XMLTYPE", "PUBLIC", null, null, null, null).getCategory()).isEmpty();
-        assertThatThrownBy(() -> ProjectExternalRelation.of("HR", "T", true,
-            List.of(ProjectExternalColumn.of("A", 1, null), ProjectExternalColumn.of("B", 1, null)))).isInstanceOf(IllegalArgumentException.class);
+        var duplicateColumns = List.of(ProjectExternalColumn.of("A", 1, null), ProjectExternalColumn.of("B", 1, null));
+        assertThatThrownBy(() -> ProjectExternalRelation.of("HR", "T", true, duplicateColumns)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

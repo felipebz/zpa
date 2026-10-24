@@ -91,7 +91,8 @@ class ProjectWrittenAnchorJavaConsumerTest {
 
         ProjectTypeDescription byName = snapshot.describeType(ProjectQualifiedName.of("numeric_t"), ProjectQualifiedName.of("p"));
         assertThat(byName.getWrittenAnchor()).isEmpty();
-        assertThatThrownBy(() -> builtIn.getSteps().clear()).isInstanceOf(UnsupportedOperationException.class);
+        var builtInSteps = builtIn.getSteps();
+        assertThatThrownBy(() -> builtInSteps.clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

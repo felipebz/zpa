@@ -216,6 +216,7 @@ class ProjectDeclarationInventoryJavaApiTest {
         List<ProjectPackageSubprogramView> correlationCandidates = correlation.getCandidates();
         assertThatThrownBy(correlationCandidates::clear).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> snapshot.correlateSpecification(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> snapshot.correlateSpecification(spec.getId())).isInstanceOf(IllegalArgumentException.class);
+        var specId = spec.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(specId)).isInstanceOf(IllegalArgumentException.class);
     }
 }

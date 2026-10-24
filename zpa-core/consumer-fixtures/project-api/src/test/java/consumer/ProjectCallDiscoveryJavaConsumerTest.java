@@ -87,10 +87,14 @@ class ProjectCallDiscoveryJavaConsumerTest {
         assertThat(found.getPackageSpecifications()).singleElement()
             .extracting(ProjectDeclarationView::getKind).isEqualTo(ProjectDeclarationKind.PACKAGE);
 
-        assertThatThrownBy(() -> found.getCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> found.getPackageSpecifications().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> found.getFailures().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> found.getUncertainties().add(ProjectCallUncertainty.NAMESPACE_COMPETITION))
+        var foundCandidates = found.getCandidates();
+        assertThatThrownBy(() -> foundCandidates.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var foundPackageSpecifications = found.getPackageSpecifications();
+        assertThatThrownBy(() -> foundPackageSpecifications.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var foundFailures = found.getFailures();
+        assertThatThrownBy(() -> foundFailures.clear()).isInstanceOf(UnsupportedOperationException.class);
+        var foundUncertainties = found.getUncertainties();
+        assertThatThrownBy(() -> foundUncertainties.add(ProjectCallUncertainty.NAMESPACE_COMPETITION))
             .isInstanceOf(UnsupportedOperationException.class);
     }
 

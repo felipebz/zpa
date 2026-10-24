@@ -100,8 +100,11 @@ class ProjectTypedCallResolutionJavaConsumerTest {
         assertThat(rejected.getBinding()).isSameAs(structural.getCandidates().get(0).getBindings().get(0));
         assertThat(rejected.getActualFamily()).contains(ProjectDatatypeFamily.DATETIME);
         assertThat(rejected.getFormalFamily()).contains(ProjectDatatypeFamily.NUMERIC);
-        assertThatThrownBy(() -> typed.getEvaluations().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> snapshot.narrowCall(structural, List.of(), ProjectExternalMetadata.none(), HR))
+        var typedEvaluations = typed.getEvaluations();
+        assertThatThrownBy(() -> typedEvaluations.clear()).isInstanceOf(UnsupportedOperationException.class);
+        List<ProjectArgumentType> noArguments = List.of();
+        var noMetadata = ProjectExternalMetadata.none();
+        assertThatThrownBy(() -> snapshot.narrowCall(structural, noArguments, noMetadata, HR))
             .isInstanceOf(IllegalArgumentException.class);
     }
 

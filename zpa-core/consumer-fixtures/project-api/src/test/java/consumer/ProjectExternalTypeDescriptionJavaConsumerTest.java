@@ -63,7 +63,8 @@ class ProjectExternalTypeDescriptionJavaConsumerTest {
         assertThat(label(snapshot.describeExternalType(
             ProjectWrittenAnchor.of(ProjectQualifiedName.of("employees"), ProjectTypeReference.Anchor.ROWTYPE), null,
             ProjectExternalMetadata.none(), HR).getStatus())).isEqualTo("unavailable");
-        assertThatThrownBy(() -> row.getSourceCandidates().clear()).isInstanceOf(UnsupportedOperationException.class);
+        var rowSourceCandidates = row.getSourceCandidates();
+        assertThatThrownBy(() -> rowSourceCandidates.clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

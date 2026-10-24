@@ -160,7 +160,8 @@ class ProjectApiJavaConsumerTest {
 
         ProjectSnapshot other = project();
         assertThatThrownBy(() -> other.correlateSpecification(placeBody)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> snapshot.correlateSpecification(spec.getId())).isInstanceOf(IllegalArgumentException.class);
+        var specId = spec.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(specId)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> snapshot.correlateSpecification(null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -359,8 +360,10 @@ class ProjectApiJavaConsumerTest {
         ProjectSubprogramView sync = (ProjectSubprogramView) snapshot.findDeclarations(name("app", "sync_orders"))
             .getDeclarations().get(0);
         ProjectFunctionView tax = (ProjectFunctionView) snapshot.findDeclarations(name("tax")).getDeclarations().get(0);
-        assertThatThrownBy(() -> snapshot.correlateSpecification(tax.getId())).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> snapshot.correlateSpecification(sync.getId())).isInstanceOf(IllegalArgumentException.class);
+        var taxId = tax.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(taxId)).isInstanceOf(IllegalArgumentException.class);
+        var syncId = sync.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(syncId)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -393,7 +396,8 @@ class ProjectApiJavaConsumerTest {
         ProjectSpecificationCorrelation correlation = snapshot.correlateSpecification(bodyId);
         assertThat(correlation.getStatus()).isEqualTo(ProjectSpecificationCorrelation.Status.RESOLVED);
         assertThat(correlation.getCandidates()).extracting(ProjectDeclarationView::getId).doesNotContain(standalone.getId());
-        assertThatThrownBy(() -> snapshot.correlateSpecification(standalone.getId())).isInstanceOf(IllegalArgumentException.class);
+        var standaloneId = standalone.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(standaloneId)).isInstanceOf(IllegalArgumentException.class);
     }
 
     // ---- Package variables and constants ----
@@ -540,7 +544,8 @@ class ProjectApiJavaConsumerTest {
         assertThat(type.getStatus()).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED);
         assertThat(type.getDeclaration().orElseThrow()).isInstanceOf(ProjectPackageTypeView.class);
 
-        assertThatThrownBy(() -> snapshot.correlateSpecification(g.getId())).isInstanceOf(IllegalArgumentException.class);
+        var gId = g.getId();
+        assertThatThrownBy(() -> snapshot.correlateSpecification(gId)).isInstanceOf(IllegalArgumentException.class);
         // Existing shop queries are unchanged by the new values.
         assertThat(snapshot.findPackageSubprograms(name("shop"), ProjectIdentifier.fromSource("place")).getDeclarations())
             .hasSize(3);
