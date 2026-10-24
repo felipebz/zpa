@@ -90,7 +90,7 @@ internal class LocalForwardCalls(
     private val outcomes: LocalReferenceOutcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, snapshot))
 ) {
     private val walk = LocalTypeWalk(model, snapshot, external, outcomes)
-    private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot))
+    private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot), outcomes::specificationDefaults)
     private val callsByPosition = calls.associateBy { it.line to it.column }
     private val namesByPosition = references.filter { it.context != Ctx.TYPE && it.context != Ctx.ANCHOR_TYPE && it.context != Ctx.ANCHOR_ROWTYPE }
         .groupBy { it.range.startLine to it.range.startColumn }

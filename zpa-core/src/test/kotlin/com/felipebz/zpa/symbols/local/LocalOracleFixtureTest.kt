@@ -140,7 +140,7 @@ class LocalOracleFixtureTest {
 
         private val EMPTY_PROJECT = ProjectSnapshots.prepare(emptyList(), false)
 
-        private fun declaration(model: LocalSemanticModel, id: LocalDeclarationId) = model.declaration(id).let {
+        internal fun declaration(model: LocalSemanticModel, id: LocalDeclarationId) = model.declaration(id).let {
             "${it.kind} ${it.name.originalSpelling}@${it.nameRange.startLine}:${it.nameRange.startColumn}"
         }
 

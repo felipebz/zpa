@@ -26,12 +26,8 @@ import com.felipebz.zpa.api.project.ProjectBindingCompatibility.Outcome
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.UnknownReason
 import com.felipebz.zpa.api.project.ProjectCallNarrower
 import com.felipebz.zpa.api.project.ProjectDatatypeFamily
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ParameterListBinding
-import com.felipebz.zpa.project.ProjectCallArguments
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.ProjectCallCandidate.Applicability
-import com.felipebz.zpa.project.ProjectCallKind
-import com.felipebz.zpa.project.QualifiedName
 
 /** The kind of method a method call is written in: with an instance (a member) or without (a static). */
 internal enum class LocalMethodCaller { MEMBER, STATIC }
@@ -126,12 +122,15 @@ internal class LocalCallResolution(
  * over the parameters every form shows (a call specification's heading included; a wrapped unit is never a member of
  * a set, since it is reached only through the project);
  * a formal's evidence is its written type walked at its declaration site, an actual's the same evidence a forwarded
- * call gets, and the two are compared exactly as the project's narrowing compares them.
+ * call gets, and the two are compared exactly as the project's narrowing compares them. A package subprogram defined in
+ * its body has the defaults of its specification heading too: Oracle applies them to calls inside the body.
  */
 internal class LocalOverloads(
     private val model: LocalSemanticModel,
     private val walk: LocalTypeWalk,
-    private val shadowed: (QualifiedName, OracleIdentifier) -> Boolean
+    private val shadowed: (QualifiedName, OracleIdentifier) -> Boolean,
+    /** For a body definition whose specification heading is in another file, the heading's defaults by parameter. */
+    private val specificationDefaults: (LocalDeclarationId) -> List<Boolean>? = { null }
 ) {
     fun resolve(
         entities: List<LocalDeclarationId>,
@@ -170,7 +169,10 @@ internal class LocalOverloads(
         val declaredKind = if (declaration.kind == LocalDeclarationKind.FUNCTION) ProjectCallKind.FUNCTION else ProjectCallKind.PROCEDURE
         // A written SELF never binds to an actual (a label `self =>` is rejected): it is the method's instance.
         val parameters = if (subprogram.methodKind == null) subprogram.parameters else subprogram.parameters.filter { it.name != LocalResolver.SELF }
-        val bound = ParameterListBinding.bind(declaredKind, kind, parameters, LocalParameter::name, LocalParameter::hasDefault, arguments)
+        val headingDefaults = headingDefaults(declaration, subprogram)
+        val hasDefault: (LocalParameter) -> Boolean =
+            if (headingDefaults == null) LocalParameter::hasDefault else { parameter -> parameter.hasDefault || headingDefaults.getOrElse(parameter.ordinal - 1) { false } }
+        val bound = ParameterListBinding.bind(declaredKind, kind, parameters, LocalParameter::name, hasDefault, arguments)
         val bindings = if (bound.applicability != Applicability.APPLICABLE) emptyList() else actuals.mapIndexed { index, actual ->
             val parameter = parameters[bound.formalIndices[index]]
             val formal = formal(walk.written(parameter.type))
@@ -182,6 +184,13 @@ internal class LocalOverloads(
             declaration.id, bound.applicability, bindings, bound.omitted.map { it.ordinal }, bound.missing.map { it.ordinal },
             bound.rejectedArgumentOrdinal
         )
+    }
+
+    /** The defaults of the package specification heading [declaration] implements, by parameter ordinal; null for none. */
+    private fun headingDefaults(declaration: LocalDeclaration, subprogram: LocalSubprogram): List<Boolean>? {
+        if (subprogram.methodKind != null || subprogram.form != LocalSubprogramForm.BODY) return null
+        subprogram.specificationCounterpart?.let { heading -> return (model.declaration(heading).details as LocalSubprogram).parameters.map { it.hasDefault } }
+        return specificationDefaults(declaration.id)
     }
 
     /** A formal's evidence: the family of its walked type, or inconclusive (the project's reasons for a formal). */

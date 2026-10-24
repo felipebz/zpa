@@ -41,8 +41,14 @@ import java.util.*
  * | NOT_DECLARED | no | absent |
  * | NOT_DECLARED | yes | the body's own decision |
  * | DECLARED_BEFORE | no | [LocalResolution.SpecificationMember] |
- * | DECLARED_BEFORE | yes | the gap stays: overloads across specification and body form one set |
+ * | DECLARED_BEFORE | yes | the decision with the specification in the file, when the project proves each heading's definition |
  * | REJECTED or UNKNOWN | either | the gap stays |
+ *
+ * A name both declare is decided only when every specification member of the name is a subprogram heading the
+ * project fully knows (no omitted heading, no conditional compilation, no parse gap) and each heading has exactly one
+ * body definition with the same heading. Like the specification itself, those definitions are visible throughout the
+ * body; the body's other declarations keep the order rule. An overload set only partly declared before the reference
+ * stops the resolver without a gap, and is decided the same way.
  *
  * Every decision is wrapped in [LocalResolution.SpecificationCovered], so a consumer can tell it from one the file
  * proved alone. Absence is still the only outcome after which a caller looks past the local scope: an absent name is
@@ -59,25 +65,36 @@ internal class LocalSpecificationCoverage private constructor(
     private val specifications = HashMap<LocalRegionId, Optional<IndexedDeclaration>>()
 
     fun refine(reference: LocalReference, steps: List<LocalResolution>): List<LocalResolution> {
+        (steps.first() as? LocalResolution.Unsupported)?.let { return partlyLater(reference, it)?.let(::listOf) ?: steps }
         val first = steps.first() as? LocalResolution.Incomplete ?: return steps
         typeBody(reference, first)?.let { return listOf(LocalResolution.SpecificationCovered(it)) }
         if (!onlySpecificationGap(first)) return steps
-        val chain = LocalResolver.chain(model, reference.region)
-        if (chain.any { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }) return steps
-        val body = chain.firstOrNull { it.kind == LocalRegionKind.PACKAGE_BODY } ?: return steps
-        val specification = specification(body) ?: return steps
-        val decided = decide(specification, body, reference.name, first.provisional, LocalResolution.ProvenAbsent) ?: return steps
-        if (decided == LocalResolution.ProvenAbsent || decided == LocalResolution.SpecificationMember || steps.size == 1) {
-            return listOf(LocalResolution.SpecificationCovered(decided))
-        }
+        val (body, specification) = bodyWithSpecification(reference) ?: return steps
+        val decided = decide(specification, body, reference, first.provisional, LocalResolution.ProvenAbsent, member = false) ?: return steps
+        // Absent or a specification member: nothing after it is read locally.
+        val final = decided == LocalResolution.ProvenAbsent || decided == LocalResolution.SpecificationMember
+        // A body decision other than the provisional one: the later segments were read after the provisional outcome.
+        if (!final && decided != first.provisional && hasMembers(reference)) return steps
+        // An unmodeled construct is reported as such, as the resolver reports it with the specification in the file.
+        if (decided is LocalResolution.Unsupported) return listOf(decided)
+        if (final || steps.size == 1) return listOf(LocalResolution.SpecificationCovered(decided))
+        return withLaterSteps(decided, body, specification, reference, steps)
+    }
+
+    /** The decided first segment [decided] followed by the later steps, a member of the package's own name decided too. */
+    private fun withLaterSteps(
+        decided: LocalResolution,
+        body: LocalRegion,
+        specification: IndexedDeclaration,
+        reference: LocalReference,
+        steps: List<LocalResolution>
+    ): List<LocalResolution> {
         val result = arrayListOf<LocalResolution>(LocalResolution.SpecificationCovered(decided))
         var rest = steps.drop(1)
         // The package's own name as qualifier: the next segment is a member of the body and its specification.
         if (isOwnUnit(decided, body)) {
-            val member = rest.first() as? LocalResolution.Incomplete
-            val decidedMember = member?.takeIf(::onlySpecificationGap)
-                ?.let { decide(specification, body, reference.segments.first().name, it.provisional, LocalResolution.Undeclared) }
-                ?: return result + rest
+            val decidedMember = ownUnitMember(specification, body, reference, rest) ?: return result + rest
+            if (decidedMember is LocalResolution.Unsupported) return result + decidedMember
             result += LocalResolution.SpecificationCovered(decidedMember)
             if (decidedMember == LocalResolution.SpecificationMember) return result
             rest = rest.drop(1)
@@ -87,6 +104,58 @@ internal class LocalSpecificationCoverage private constructor(
         }
         return result
     }
+
+    /**
+     * The member after the package's own name, whose resolver outcome is the first of [rest]; null keeps it. A member
+     * decided differently from its provisional outcome is kept only when nothing was read after it.
+     */
+    private fun ownUnitMember(specification: IndexedDeclaration, body: LocalRegion, reference: LocalReference, rest: List<LocalResolution>): LocalResolution? {
+        val memberReference = LocalQualifiedResolver.member(reference, 0)
+        val member = rest.first()
+        return when {
+            member is LocalResolution.Incomplete && onlySpecificationGap(member) ->
+                decide(specification, body, memberReference, member.provisional, LocalResolution.Undeclared, member = true)
+                    ?.takeIf { it == member.provisional || rest.size == 1 }
+            isPartlyLater(member) && rest.size == 1 -> sharedName(specification, body, memberReference, member = true)
+            else -> null
+        }
+    }
+
+    /**
+     * A one-segment name that stopped at an overload set only partly declared before it, in a package body whose
+     * specification is in another file: the resolver reached the body (no inner region declares the name) through
+     * complete regions, so the only unknown is which of the body's subprograms the specification makes visible.
+     */
+    private fun partlyLater(reference: LocalReference, outcome: LocalResolution.Unsupported): LocalResolution? {
+        if (!isPartlyLater(outcome) || hasMembers(reference)) return null
+        val chain = LocalResolver.chain(model, reference.region)
+        val body = packageBody(chain) ?: return null
+        val bodyIndex = chain.indexOf(body)
+        if (LocalTypeScope.unitOf(model, body.id)?.counterpart != null) return null
+        val inner = chain.subList(0, bodyIndex)
+        if (inner.any { region -> LocalResolver.scopeOf(model, region).named(reference.name).any { LocalTypeScope.capturesIn(it, reference.context) } }) return null
+        if (chain.subList(0, bodyIndex + 1).any { it.completeness.reasons.isNotEmpty() }) return null
+        val specification = specification(body) ?: return null
+        if (PackageMemberNames.at(index, specification, reference.name, null).status != MemberNameStatus.DECLARED_BEFORE) return null
+        return sharedName(specification, body, reference, member = false)?.takeIf { it !is LocalResolution.Unsupported }
+            ?.let(LocalResolution::SpecificationCovered)
+    }
+
+    /** The package body enclosing [reference] with the one specification the project holds for it. */
+    private fun bodyWithSpecification(reference: LocalReference): Pair<LocalRegion, IndexedDeclaration>? {
+        val body = packageBody(LocalResolver.chain(model, reference.region)) ?: return null
+        return specification(body)?.let { body to it }
+    }
+
+    /** The package body enclosing [chain], outside any object type. */
+    private fun packageBody(chain: List<LocalRegion>): LocalRegion? =
+        if (chain.any { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE }) null
+        else chain.firstOrNull { it.kind == LocalRegionKind.PACKAGE_BODY }
+
+    private fun isPartlyLater(outcome: LocalResolution) =
+        (outcome as? LocalResolution.Unsupported)?.construct == LocalUnsupportedConstruct.OVERLOADS_PARTLY_LATER
+
+    private fun hasMembers(reference: LocalReference) = reference.segments.firstOrNull()?.isAttribute == false
 
     /** Names decided in an object type body or specification by the project: `name:line:column` where it disagrees. */
     val mismatches = ArrayList<String>()
@@ -139,17 +208,73 @@ internal class LocalSpecificationCoverage private constructor(
     private fun onlySpecificationGap(outcome: LocalResolution.Incomplete) =
         outcome.regionReasons.isEmpty() && outcome.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE)
 
-    /** The decision for [name], whose resolver outcome without the gap is [provisional]; null keeps the gap. */
+    /**
+     * The decision for [reference]'s name, whose resolver outcome without the gap is [provisional]; null keeps the gap.
+     * A [member] follows the package's own name.
+     */
     private fun decide(
         specification: IndexedDeclaration,
         body: LocalRegion,
-        name: OracleIdentifier,
+        reference: LocalReference,
         provisional: LocalResolution,
-        absent: LocalResolution
-    ): LocalResolution? = when (PackageMemberNames.at(index, specification, name, null).status) {
+        absent: LocalResolution,
+        member: Boolean
+    ): LocalResolution? = when (PackageMemberNames.at(index, specification, reference.name, null).status) {
         MemberNameStatus.NOT_DECLARED -> provisional.takeIf { it == absent || declaredByBody(it, body) }
-        MemberNameStatus.DECLARED_BEFORE -> LocalResolution.SpecificationMember.takeIf { provisional == absent }
+        MemberNameStatus.DECLARED_BEFORE ->
+            if (provisional == absent) LocalResolution.SpecificationMember else sharedName(specification, body, reference, member)
         MemberNameStatus.REJECTED, MemberNameStatus.UNKNOWN -> null
+    }
+
+    /** A name the body and its specification both declare, decided as with the specification in the file; null keeps the gap. */
+    private fun sharedName(specification: IndexedDeclaration, body: LocalRegion, reference: LocalReference, member: Boolean): LocalResolution? {
+        val definitions = definitions(specification, body, reference.name) ?: return null
+        val decided = LocalResolver.decideInBody(model, reference, body, definitions, member) ?: return null
+        return if (member) LocalQualifiedResolver.memberOutcome(model, decided) else decided
+    }
+
+    /**
+     * The body's definition of each specification heading of [name], in heading order. Null unless every member of the
+     * name is a retained, unconditional subprogram heading of a specification whose members are all known, and each
+     * heading has exactly one definition in the body with the same heading (Oracle's PLS-00323 otherwise).
+     */
+    private fun definitions(specification: IndexedDeclaration, body: LocalRegion, name: OracleIdentifier): List<LocalDeclarationId>? =
+        matches(specification, body, name)?.map { it.second }
+
+    private val defaults = HashMap<LocalDeclarationId, Optional<List<Boolean>>>()
+
+    /**
+     * For a body subprogram [definition] that implements a heading of its specification in another file, whether each
+     * parameter has a default in that heading: inside the body, Oracle applies the specification's defaults.
+     */
+    fun specificationDefaults(definition: LocalDeclarationId): List<Boolean>? = defaults.getOrPut(definition) {
+        val declaration = model.declaration(definition)
+        val body = model.region(declaration.region)
+        val specification = if (body.kind == LocalRegionKind.PACKAGE_BODY) specification(body) else null
+        val heading = specification?.let { matches(it, body, declaration.name) }?.firstOrNull { it.second == definition }?.first
+        Optional.ofNullable(heading?.parameters?.map { it.defaultPresent })
+    }.orElse(null)
+
+    /** Each specification heading of [name] with its body definition, in heading order; see [definitions]. */
+    private fun matches(
+        specification: IndexedDeclaration,
+        body: LocalRegion,
+        name: OracleIdentifier
+    ): List<Pair<PackageSubprogramDeclaration, LocalDeclarationId>>? {
+        val spec = specification.declaration as PackageDeclaration
+        val names = spec.memberNames ?: return null
+        val coverage = spec.callableCoverage
+        if (!names.complete || coverage.unknown || name.lookupName in coverage.omittedNames || names.unretained.any { it.name == name }) return null
+        val headings = PackageMemberNames.members(index, specification, name)
+            .sortedWith(compareBy({ it.sourceRange.startLine }, { it.sourceRange.startColumn }))
+        if (headings.isEmpty() || headings.any { it !is PackageSubprogramDeclaration || !names.isUnconditional(it.sourceRange) }) return null
+        val subprograms = headings.map { it as PackageSubprogramDeclaration }
+        val keys = subprograms.map(LocalDeclarationLinker::signatureKey)
+        if (keys.toSet().size != keys.size) return null
+        val implementations = model.index.named(body.id, name)
+            .filter { (it.details as? LocalSubprogram)?.form == LocalSubprogramForm.BODY }
+            .groupBy { LocalDeclarationLinker.signatureKey(it.kind, it.details as LocalSubprogram) }
+        return subprograms.zip(keys) { heading, key -> heading to (implementations[key]?.singleOrNull()?.id ?: return null) }
     }
 
     /** A decision made by declarations of the body region, or by the body's own unit name. */
@@ -200,6 +325,9 @@ internal class LocalReferenceOutcomes(private val model: LocalSemanticModel, pri
     }
 
     fun first(reference: LocalReference): LocalResolution = steps(reference).first()
+
+    /** See [LocalSpecificationCoverage.specificationDefaults]; null without a prepared project. */
+    fun specificationDefaults(definition: LocalDeclarationId): List<Boolean>? = coverage?.specificationDefaults(definition)
 
     companion object {
         /** An outcome after which the caller looks past the local scope: proven by the file, or with project coverage. */

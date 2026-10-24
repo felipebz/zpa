@@ -147,10 +147,7 @@ object PackageMemberNames {
         require(reference == null || (reference.fileId == spec.fileId && contains(spec.sourceRange, reference))) {
             "The reference must lie inside the specification"
         }
-        val retained = index.findOccurrences(spec.name.append(name))
-            .map { it.declaration }
-            .filter { it !is PackageDeclaration && it.fileId == spec.fileId && contains(spec.sourceRange, it.sourceRange) }
-            .map { it.sourceRange }
+        val retained = members(index, unit, name).map { it.sourceRange }
         val unretained = spec.memberNames?.unretained.orEmpty().filter { it.name == name }.map { it.sourceRange }
         val members = (retained + unretained).sortedWith(compareBy({ it.startLine }, { it.startColumn }))
         val coverage = spec.memberNames
@@ -163,6 +160,14 @@ object PackageMemberNames {
             else -> MemberNameStatus.UNKNOWN
         }
         return MemberNameEvidence(status, members)
+    }
+
+    /** The retained declarations of [name] in the specification [unit], in index order (unretained names excluded). */
+    fun members(index: ProjectSymbolIndex, unit: IndexedDeclaration, name: OracleIdentifier): List<ProjectDeclaration> {
+        val spec = unit.declaration as PackageDeclaration
+        return index.findOccurrences(spec.name.append(name))
+            .map { it.declaration }
+            .filter { it !is PackageDeclaration && it.fileId == spec.fileId && contains(spec.sourceRange, it.sourceRange) }
     }
 
     private fun completedBefore(member: SourceRange, reference: SourceRange): Boolean =

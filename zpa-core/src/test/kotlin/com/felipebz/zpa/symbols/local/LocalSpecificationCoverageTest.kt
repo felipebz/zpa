@@ -96,8 +96,8 @@ class LocalSpecificationCoverageTest {
         assertThat(call.typed!!.status).isEqualTo(ProjectTypedCallResolution.Status.RESOLVED)
         // Declared by the body only: the body's decision.
         assertThat(outcome(facts, "b_only", 9)).isEqualTo("SpecificationCovered(Bound(VARIABLE b_only@2:2))")
-        // Declared by both (an overload set across specification and body): the gap stays.
-        assertThat(outcome(facts, "p", 10)).startsWith("Incomplete[SPECIFICATION_NOT_IN_FILE]")
+        // Declared by both: the specification's heading and its body definition are one subprogram.
+        assertThat(outcome(facts, "p", 10)).isEqualTo("SpecificationCovered(OverloadSet(PROCEDURE p@3:12))")
     }
 
     @Test

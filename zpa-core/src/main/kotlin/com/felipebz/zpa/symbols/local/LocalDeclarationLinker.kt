@@ -19,8 +19,7 @@
  */
 package com.felipebz.zpa.symbols.local
 
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.headerIdentityKey
+import com.felipebz.zpa.project.*
 
 /**
  * The passes that run after the walk of one build call: forward-declaration links, unit links and heading links.
@@ -102,21 +101,35 @@ internal class LocalDeclarationLinker(private val regions: List<RegionDraft>, pr
         /**
          * The heading identity of a subprogram: kind, method kind, name, and each parameter's name, mode and written type,
          * plus the RETURN type of a function. Null when a type cannot be represented. Also used by the resolver to find two
-         * bodies of one heading.
+         * bodies of one heading. Like Oracle, it ignores case, `NOCOPY`, defaults and whether `IN` is written.
          */
-        fun signatureKey(kind: LocalDeclarationKind, subprogram: LocalSubprogram): String? {
-            val key = StringBuilder(kind.name).append('|').append(subprogram.methodKind ?: "").append('|')
-                .append(QualifiedName(subprogram.unitName.last).lookupKey())
-            for (parameter in subprogram.parameters) {
-                val type = parameter.type?.typeRef ?: return null
-                key.append('|').append(QualifiedName(parameter.name).lookupKey()).append(' ').append(parameter.mode)
-                    .append(' ').append(type.headerIdentityKey())
+        fun signatureKey(kind: LocalDeclarationKind, subprogram: LocalSubprogram): String? = key(
+            kind.name, subprogram.methodKind, subprogram.unitName.last,
+            subprogram.parameters.map { Triple(it.name, it.mode, it.type?.typeRef ?: return null) },
+            subprogram.returnsSelf,
+            if (kind == LocalDeclarationKind.FUNCTION && !subprogram.returnsSelf) subprogram.returnType?.typeRef ?: return null else null
+        )
+
+        /** The heading identity of a package specification subprogram of the project, comparable with the local one. */
+        fun signatureKey(declaration: PackageSubprogramDeclaration): String = key(
+            if (declaration is PackageFunctionDeclaration) LocalDeclarationKind.FUNCTION.name else LocalDeclarationKind.PROCEDURE.name,
+            null, declaration.name, declaration.parameters.map { Triple(it.name, it.mode, it.typeRef) },
+            false, (declaration as? PackageFunctionDeclaration)?.returnType
+        )
+
+        private fun key(
+            kind: String,
+            methodKind: LocalMethodKind?,
+            name: OracleIdentifier,
+            parameters: List<Triple<OracleIdentifier, ParameterMode, TypeRef>>,
+            returnsSelf: Boolean,
+            returnType: TypeRef?
+        ): String {
+            val key = StringBuilder(kind).append('|').append(methodKind ?: "").append('|').append(QualifiedName(name).lookupKey())
+            for ((parameterName, mode, type) in parameters) {
+                key.append('|').append(QualifiedName(parameterName).lookupKey()).append(' ').append(mode).append(' ').append(type.headerIdentityKey())
             }
-            if (subprogram.returnsSelf) {
-                key.append("|return SELF")
-            } else if (kind == LocalDeclarationKind.FUNCTION) {
-                key.append("|return ").append((subprogram.returnType?.typeRef ?: return null).headerIdentityKey())
-            }
+            if (returnsSelf) key.append("|return SELF") else if (returnType != null) key.append("|return ").append(returnType.headerIdentityKey())
             return key.toString()
         }
 

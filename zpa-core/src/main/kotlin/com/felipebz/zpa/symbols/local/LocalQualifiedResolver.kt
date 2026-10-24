@@ -65,9 +65,8 @@ internal object LocalQualifiedResolver {
             gaps += current.lookupReasons
             current = current.provisional
         }
-        for ((index, segment) in members.withIndex()) {
-            val context = if (index == members.lastIndex) reference.lastSegmentContext else Ctx.QUALIFIER
-            val member = LocalReference(segment.name, reference.range, context, reference.region, emptyList(), context, false, reference.handler)
+        for (index in members.indices) {
+            val member = member(reference, index)
             val step = step(model, current, member, chain) ?: break
             if (step.outcome is LocalResolution.Unsupported) {
                 steps += step.outcome
@@ -76,18 +75,28 @@ internal object LocalQualifiedResolver {
             step.regions.forEach { reasons += it.completeness.reasons }
             reasons += step.reasons
             gaps += step.gaps
-            // A qualified name is never a SQL built-in: the stored functions or the value it names bind.
-            val outcome = (step.outcome as? LocalResolution.SqlBuiltinOrLocal)?.let { builtinOrLocal ->
-                val declarations = builtinOrLocal.declarations
-                if (model.declaration(declarations.first()).kind in CALLABLES) LocalResolution.OverloadSet(declarations)
-                else LocalResolution.Bound(declarations.single())
-            } ?: step.outcome
+            val outcome = memberOutcome(model, step.outcome)
             steps += if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
             if (step.outcome !is LocalResolution.Bound && step.outcome !is LocalResolution.Field) break
             current = step.outcome
         }
         return steps
     }
+
+    /** The member segment [index] of [reference] (attributes excluded) as a reference of its own. */
+    fun member(reference: LocalReference, index: Int): LocalReference {
+        val members = reference.segments.takeWhile { !it.isAttribute }
+        val context = if (index == members.lastIndex) reference.lastSegmentContext else Ctx.QUALIFIER
+        return LocalReference(members[index].name, reference.range, context, reference.region, emptyList(), context, false, reference.handler)
+    }
+
+    /** A qualified name is never a SQL built-in: the stored functions or the value it names bind. */
+    fun memberOutcome(model: LocalSemanticModel, outcome: LocalResolution): LocalResolution =
+        (outcome as? LocalResolution.SqlBuiltinOrLocal)?.let { builtinOrLocal ->
+            val declarations = builtinOrLocal.declarations
+            if (model.declaration(declarations.first()).kind in CALLABLES) LocalResolution.OverloadSet(declarations)
+            else LocalResolution.Bound(declarations.single())
+        } ?: outcome
 
     /** The member step after [qualifier], or null when [qualifier] takes no member step (it already stopped). */
     private fun step(model: LocalSemanticModel, qualifier: LocalResolution, member: LocalReference, chain: List<LocalRegion>): Step? =

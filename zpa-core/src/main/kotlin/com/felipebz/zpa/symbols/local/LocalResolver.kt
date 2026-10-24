@@ -159,7 +159,12 @@ internal object LocalResolver {
         /** Gaps that matter only when the scope does not declare the name. */
         val absenceGaps: Set<LocalLookupGap> = emptySet(),
         /** Regions of which only the attributes are visible (supertypes seen unqualified). */
-        private val attributesOnly: Set<LocalRegionId> = emptySet()
+        private val attributesOnly: Set<LocalRegionId> = emptySet(),
+        /**
+         * Body definitions of a specification in another file, in the order of its headings: visible throughout the
+         * scope, and ordered first, as the headings they implement would be with the specification in the file.
+         */
+        val definitions: List<LocalDeclarationId> = emptyList()
     ) {
         fun named(name: OracleIdentifier): List<LocalDeclaration> = regions.flatMap { region ->
             val found = model.index.named(region.id, name)
@@ -172,6 +177,27 @@ internal object LocalResolver {
             ?: Scope(model, listOf(region), null, gaps = setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE))
         LocalRegionKind.TYPE_BODY, LocalRegionKind.OBJECT_TYPE -> LocalTypeScope.of(model, region, supertypeMethods = false)
         else -> Scope(model, listOf(region), null)
+    }
+
+    /**
+     * The decision of a package [body] whose specification is in another file, where [definitions] are the body's
+     * definitions of every specification heading of the name, in heading order: the decision with the specification in
+     * the file, where each heading and its definition are one entity visible throughout the body. A [member] follows the
+     * package's own name (a member step: every kind, no SQL reading). Null when the body does not declare the name.
+     */
+    fun decideInBody(
+        model: LocalSemanticModel,
+        reference: LocalReference,
+        body: LocalRegion,
+        definitions: List<LocalDeclarationId>,
+        member: Boolean
+    ): LocalResolution? {
+        val scope = Scope(model, listOf(body), null, definitions = definitions)
+        val named = scope.named(reference.name)
+        val candidates = if (member) named else named.filter { LocalTypeScope.capturesIn(it, reference.context) }
+        if (candidates.isEmpty()) return null
+        val outcome = decide(model, reference, scope, candidates, chain(model, reference.region))
+        return if (!member && reference.context == Ctx.SQL_VALUE) sqlOutcome(outcome, EnumSet.noneOf(LocalLookupGap::class.java)) else outcome
     }
 
     /** File-region declarations a reference may see: enclosing top-level labels, and enclosing unit names as qualifiers. */
@@ -194,7 +220,7 @@ internal object LocalResolver {
         candidates: List<LocalDeclaration>,
         chain: List<LocalRegion>
     ): LocalResolution {
-        val entities = entities(candidates)
+        val entities = entities(candidates, scope.definitions)
         val earlier = entities.map { isEarlier(it, reference, scope, chain) }
         if (entities.size > 1) {
             if (entities.any { !isCallable(it) } || hasTwoBodiesOfOneHeading(entities)) {
@@ -349,8 +375,11 @@ internal object LocalResolver {
         else -> LocalResolution.Unsupported(LocalUnsupportedConstruct.SQL_NAME_WITHOUT_SINGLE_DECLARATION)
     }
 
-    /** Candidates grouped into entities, each sorted by id, in order of their first member. */
-    private fun entities(candidates: List<LocalDeclaration>): List<List<LocalDeclaration>> {
+    /**
+     * Candidates grouped into entities, each sorted by id, in order of their first member; entities holding one of
+     * [definitions] come first, in that order.
+     */
+    private fun entities(candidates: List<LocalDeclaration>, definitions: List<LocalDeclarationId>): List<List<LocalDeclaration>> {
         val byId = candidates.associateBy { it.id }
         val parent = HashMap<LocalDeclarationId, LocalDeclarationId>()
         fun find(id: LocalDeclarationId): LocalDeclarationId {
@@ -371,8 +400,10 @@ internal object LocalResolver {
         val cursors = candidates.filter { it.kind == CURSOR }
         val definition = cursors.singleOrNull { !(it.details as LocalCursor).isForward }
         if (definition != null) cursors.forEach { union(it.id, definition.id) }
-        return candidates.groupBy { find(it.id) }.values.map { members -> members.sortedBy { it.id.ordinal } }
-            .sortedBy { it.first().id.ordinal }
+        val grouped = candidates.groupBy { find(it.id) }.values.map { members -> members.sortedBy { it.id.ordinal } }
+        if (definitions.isEmpty()) return grouped.sortedBy { it.first().id.ordinal }
+        fun rank(entity: List<LocalDeclaration>) = entity.minOf { member -> definitions.indexOf(member.id).takeIf { it >= 0 } ?: definitions.size }
+        return grouped.sortedWith(compareBy({ rank(it) }, { it.first().id.ordinal }))
     }
 
     private fun isCallable(entity: List<LocalDeclaration>) = entity.all { it.kind in CALLABLES }
@@ -402,7 +433,7 @@ internal object LocalResolver {
         return entity.any { member ->
             when {
                 member.kind == LABEL -> true
-                member.region in scope.earlierRegions -> true
+                member.region in scope.earlierRegions || member.id in scope.definitions -> true
                 encloses(member, chain) -> true
                 hasDefinition && (member.details as? LocalCursor)?.isForward == true -> false
                 else -> endsBefore(member.range, reference.range)
