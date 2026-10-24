@@ -66,7 +66,7 @@ internal class OracleMetadataSettings(
         const val DEFAULT_PASSWORD_ENV = "ZPA_ORACLE_PASSWORD"
 
         /** `jdbc:oracle:thin:user/password@...` or a `password=` connection property. */
-        private val CREDENTIALS_IN_URL = Regex("^jdbc:oracle:[a-z0-9]+:[^@]*/[^@]*@|password\\s*=", RegexOption.IGNORE_CASE)
+        private val CREDENTIALS_IN_URL = Regex("(?:^jdbc:oracle:[a-z0-9]+:[^@]*/[^@]*@)|(?:password\\s*=)", RegexOption.IGNORE_CASE)
 
         private fun failure(message: String) = MessageException.of("ZPA Oracle metadata: $message")
 
