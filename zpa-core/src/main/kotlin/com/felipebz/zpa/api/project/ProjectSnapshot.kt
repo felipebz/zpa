@@ -93,16 +93,16 @@ class ProjectSnapshot private constructor(
 
     /**
      * As [resolveNamedType], with explicit package context used only for one-segment names.
-     * A qualified [name] overrides [packageOwner]; there is no fallback to standalone types.
+     * A qualified [name] overrides [packageOwner]. A one-segment name resolves to the package's own type; when the
+     * package has none, it reaches standalone types only if the project holds exactly one specification of the package
+     * and its member names prove the name undeclared, as the analysis does. A candidate's
+     * [ProjectDeclarationView.kind] tells a package type from a standalone one.
      */
     fun resolveNamedType(name: ProjectQualifiedName, packageOwner: ProjectQualifiedName?): ProjectNamedTypeResolution {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectNamedTypeResolution.notPrepared(name, packageOwner)
         }
-        val occurrences = preparationResult.index.findTypeOccurrences(
-            ProjectTypeNameLookup.owner(name.name, packageOwner?.name),
-            name.name.last
-        )
+        val occurrences = ProjectTypeNameLookup.typeOccurrences(preparationResult.index, name.name, packageOwner?.name)
         val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectTypeDeclarationView }
         return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
     }
@@ -110,9 +110,10 @@ class ProjectSnapshot private constructor(
     /**
      * Bounded description of a type [name]: follows package subtype aliases only and classifies recognized built-in
      * names, using the lookup rules of [resolveNamedType]. [packageOwner] has the same meaning as there (one-segment
-     * names use it, or the standalone namespace when null; qualified names use their own prefix; no schema inference,
-     * no fallback); pass the owner of the declaration that contains the name, not a guess from file paths. A name has
-     * no source range, so [ProjectTypeDescription.terminalReference] is empty when the query stops at the initial name.
+     * names use it, reaching standalone types only where the package proves the name undeclared, or the standalone
+     * namespace when null; qualified names use their own prefix; no schema inference); pass the owner of the declaration
+     * that contains the name, not a guess from file paths. A name has no source range, so
+     * [ProjectTypeDescription.terminalReference] is empty when the query stops at the initial name.
      */
     fun describeType(name: ProjectQualifiedName, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
         ProjectTypeDescriber.describe(this, name, null, packageOwner)

@@ -178,8 +178,8 @@ class ProjectTypeDescriptionTest {
         val external = snapshot.describeType((view("s_var") as ProjectShapedTypeView).elementType.get(), null)
         assertThat(external.status).isEqualTo(Status.UNRESOLVED_NAME)
         assertThat(external.resolution.get().status).isEqualTo(Resolution.NOT_FOUND_IN_PROJECT)
-        // With a package context a one-segment standalone name is not found.
-        assertThat(snapshot.describeType(n("ids"), p).resolution.get().status).isEqualTo(Resolution.NOT_FOUND_IN_PROJECT)
+        // With a package context that declares nothing of the name, the standalone type.
+        assertThat(snapshot.describeType(n("ids"), p).declaration.get().kind).isEqualTo(ProjectDeclarationKind.STANDALONE_TYPE)
     }
 
     @Test

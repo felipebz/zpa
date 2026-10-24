@@ -67,7 +67,7 @@ class ProjectNamedTypeResolutionTest {
     }
 
     @Test
-    fun namespaceRulesHaveNoFallbackOrInference() {
+    fun namespaceRulesInferNoOwner() {
         val s = prepare(*fixture)
         // Unqualified without context: standalone namespace only (standalone t, not p.t).
         val bare = s.resolveNamedType(n("t"))
@@ -76,8 +76,8 @@ class ProjectNamedTypeResolutionTest {
         // Qualified name overrides supplied context.
         assertThat(s.resolveNamedType(n("p", "t"), n("other")).declaration.get().kind)
             .isEqualTo(ProjectDeclarationKind.PACKAGE_TYPE)
-        // No fallback from a package context to standalone: obj exists only standalone.
-        assertThat(s.resolveNamedType(n("obj"), n("p")).status).isEqualTo(Status.NOT_FOUND_IN_PROJECT)
+        // A package that declares nothing of the name reaches the standalone type.
+        assertThat(s.resolveNamedType(n("obj"), n("p")).declaration.get().kind).isEqualTo(ProjectDeclarationKind.STANDALONE_TYPE)
         // No owner inferred from file identity or from a package that has no spec.
         assertThat(s.resolveNamedType(n("s")).status).isEqualTo(Status.NOT_FOUND_IN_PROJECT)
         assertThat(s.resolveNamedType(n("t"), n("nopkg")).status).isEqualTo(Status.NOT_FOUND_IN_PROJECT)
