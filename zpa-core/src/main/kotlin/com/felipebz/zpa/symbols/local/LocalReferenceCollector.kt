@@ -222,7 +222,7 @@ internal object LocalReferenceCollector {
                 if (separator !== PlSqlPunctuator.DOT && separator !== PlSqlPunctuator.MOD) continue
                 val name = children[index + 1]
                 if (!name.hasToken()) continue
-                result += LocalSegment(LocalSyntax.identifier(name), separator === PlSqlPunctuator.MOD)
+                result += LocalSegment(LocalSyntax.identifier(name), separator === PlSqlPunctuator.MOD, LocalSyntax.range(fileId, name))
             }
             return result
         }
@@ -284,7 +284,7 @@ internal object LocalReferenceCollector {
             }
         }
         val actual = if (segments.size > 1) LocalReferenceContext.QUALIFIER else context
-        val rest = segments.drop(1).map { LocalSegment(it, false) }
+        val rest = segments.drop(1).mapIndexed { index, name -> LocalSegment(name, false, use.segmentRanges[index + 1]) }
         return LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null)
     }
 

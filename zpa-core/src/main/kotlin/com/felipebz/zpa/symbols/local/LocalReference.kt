@@ -82,8 +82,8 @@ internal enum class LocalReferenceContext {
     FOR_CONTROL
 }
 
-/** A segment written after the first one: a member (`.name`) or an attribute (`%name`). */
-internal class LocalSegment(val name: OracleIdentifier, val isAttribute: Boolean) {
+/** A segment written after the first one: a member (`.name`) or an attribute (`%name`), with its source [range]. */
+internal class LocalSegment(val name: OracleIdentifier, val isAttribute: Boolean, val range: SourceRange) {
     override fun toString() = (if (isAttribute) "%" else ".") + name
 }
 

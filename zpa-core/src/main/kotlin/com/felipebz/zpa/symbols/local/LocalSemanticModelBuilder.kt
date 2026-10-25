@@ -20,6 +20,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.extraction.TokenStream
@@ -477,7 +478,27 @@ internal object LocalSemanticModelBuilder {
             val typeRef = TypeReferences(TokenStream(fileId, tokens)).declaredType(0, tokens.size)
             // The written type's range is the TypeRef's own range: share the instance instead of holding an equal copy.
             val range = range(datatype).let { if (typeRef?.sourceRange == it) typeRef.sourceRange else it }
-            return LocalTypeUse(typeRef, range, lookupRegion.id)
+            return LocalTypeUse(typeRef, range, lookupRegion.id, typeRef?.let { segmentRanges(tokens, it.name.segments) }.orEmpty())
+        }
+
+        /**
+         * The token of each segment of a written type's name: its qualified name `name(.name)*`, starting at the first
+         * token that spells the first segment (after `REF`, for example). Empty when the tokens do not spell it so.
+         */
+        private fun segmentRanges(tokens: List<Token>, segments: List<OracleIdentifier>): List<SourceRange> {
+            var index = tokens.indexOfFirst { OracleIdentifier.fromSource(it.originalValue) == segments.first() }
+            if (index < 0) return emptyList()
+            val result = ArrayList<SourceRange>(segments.size)
+            for ((position, segment) in segments.withIndex()) {
+                if (position > 0) {
+                    if (index + 1 >= tokens.size || tokens[index].value != ".") return emptyList()
+                    index++
+                }
+                val token = tokens[index++]
+                if (OracleIdentifier.fromSource(token.originalValue) != segment) return emptyList()
+                result += SourceRange(fileId, token.line, token.column, token.endLine, token.endColumn)
+            }
+            return result
         }
 
         private fun gap(kind: LocalGapKind, node: AstNode) = LocalCoverageGap(kind, node.type.toString(), range(node))

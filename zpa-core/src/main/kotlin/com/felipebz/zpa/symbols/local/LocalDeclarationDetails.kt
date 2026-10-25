@@ -40,7 +40,12 @@ internal class LocalTypeUse(
     /** The written datatype as unresolved syntax, or null when it cannot be represented as a [TypeRef]. */
     val typeRef: TypeRef?,
     val range: SourceRange,
-    val lookupRegion: LocalRegionId
+    val lookupRegion: LocalRegionId,
+    /**
+     * The range of each segment of the written type's name, in order: the tokens of its leading `name(.name)*`. Empty
+     * when [typeRef] is null or its name is not written that way (a multi-word built-in type).
+     */
+    val segmentRanges: List<SourceRange> = emptyList()
 ) {
     override fun toString() = "${typeRef?.name ?: "?"} from $lookupRegion"
 }

@@ -50,7 +50,9 @@ internal class LocalSemanticFacts(
      */
     val specificationValues: Map<Pair<LocalRegionId, String>, LocalSpecificationValue> = emptyMap(),
     /** See [LocalSpecificationCoverage.sqlSpecificationMembers]. */
-    val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap()
+    val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap(),
+    /** The names written as members of a value (after a call, an element access or a parenthesized expression). */
+    val members: List<LocalMember> = emptyList()
 ) {
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
