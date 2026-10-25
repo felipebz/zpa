@@ -50,27 +50,27 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val first = steps.first()
         val target = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
         if (LocalReferenceOutcomes.isSpecificationMember(first)) {
-            return walk.specificationMember(target.segments, reference.region)?.let { of(walk.projectValue(it, reference.region)) }
+            return walk.specificationMember(target.segments, reference.region)?.let { of(reference.region, walk.projectValue(it, reference.region)) }
                 ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         }
         if (LocalReferenceOutcomes.isAbsent(first)) {
             // One segment: a built-in, a function or a column; a qualified one is a schema object's value.
             return if (reference.segments.isEmpty()) unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            else of(walk.projectValue(target, reference.region))
+            else of(reference.region, walk.projectValue(target, reference.region))
         }
         val last = covered(steps.last())
         if (last is LocalResolution.Incomplete) return ValueCategory.Unknown(reasons(last))
         if (steps.size != reference.segments.size + 1) return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        if (LocalReferenceOutcomes.isSpecificationMember(steps.last())) return of(walk.projectValue(target, reference.region))
+        if (LocalReferenceOutcomes.isSpecificationMember(steps.last())) return of(reference.region, walk.projectValue(target, reference.region))
         return when (last) {
             // In SQL a column of the same name would take it.
             is LocalResolution.SqlColumnOrLocal ->
-                if (reference.sql?.excludesColumn(reference.name) == true) of(walk.value(last.declaration))
+                if (reference.sql?.excludesColumn(reference.name) == true) of(reference.region, walk.value(last.declaration))
                 else unknown(UsageUncertainty.SQL_NAME_MAY_BE_COLUMN)
             // `name(…)` in SQL: the local value, whose elements the call reads.
-            is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let { of(walk.value(it)) }
+            is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let { of(reference.region, walk.value(it)) }
                 ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-            else -> of(walk.outcome(last))
+            else -> of(reference.region, walk.outcome(last))
         }
     }
 
@@ -82,9 +82,9 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         else -> null
     }
 
-    private fun of(evidence: LocalTypeEvidence): ValueCategory {
+    private fun of(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory {
         if (isRefCursorBuiltIn(evidence)) return ValueCategory.CursorVariable
-        return terminal(evidence)
+        return terminal(region, evidence)
     }
 
     /**
@@ -97,18 +97,18 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return written.name.segments.size == 1 && written.name.last.lookupName == "SYS_REFCURSOR"
     }
 
-    private fun terminal(evidence: LocalTypeEvidence): ValueCategory = when (evidence.terminal) {
-        LocalTypeEvidence.Terminal.COMPOSITE -> composite(evidence)
+    private fun terminal(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory = when (evidence.terminal) {
+        LocalTypeEvidence.Terminal.COMPOSITE -> composite(region, evidence)
         LocalTypeEvidence.Terminal.BUILT_IN ->
             if (evidence.argumentType.family.isPresent) ValueCategory.Scalar else unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let(::described) ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { described(region, it) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         LocalTypeEvidence.Terminal.LITERAL -> unavailable()
         LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { ValueCategory.Unknown(reasons(it)) }
             ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
     }
 
     /** A local record, collection or ref cursor type, a cursor's row, a query loop's record, or `SELF`. */
-    private fun composite(evidence: LocalTypeEvidence): ValueCategory {
+    private fun composite(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory {
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return ValueCategory.ObjectInstance
         return when (last.kind) {
             LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
@@ -121,18 +121,21 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
                     LocalCollectionForm.VARRAY -> CollectionKind.VARRAY
                     null -> null
                 }
-                ValueCategory.Collection(kind, of(walk.written(last.type)))
+                ValueCategory.Collection(kind, of(region, walk.written(last.type)))
             }
             else -> unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         }
     }
 
-    /** A type the project describes; only a conclusive description classifies. */
-    private fun described(description: ProjectExternalTypeDescription): ValueCategory {
+    /**
+     * A type the project describes; only a conclusive description classifies. [seen] holds the project collection types
+     * whose element is being classified, so that a cycle stops there.
+     */
+    private fun described(region: LocalRegionId, description: ProjectExternalTypeDescription, seen: Set<ProjectDeclarationId> = emptySet()): ValueCategory {
         if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return ValueCategory.Record(RecordOrigin.ROWTYPE)
         val source = description.source
         return when (source.status) {
-            ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(source.declaration.orElse(null) as? ProjectShapedTypeView)
+            ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
             ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
                 if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) ValueCategory.Record(RecordOrigin.ROWTYPE)
@@ -141,19 +144,16 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         }
     }
 
-    private fun shaped(type: ProjectShapedTypeView?): ValueCategory = when (type?.shape?.orElse(null)) {
+    private fun shaped(region: LocalRegionId, type: ProjectShapedTypeView?, seen: Set<ProjectDeclarationId>): ValueCategory = when (type?.shape?.orElse(null)) {
         ProjectTypeShape.RECORD -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
         ProjectTypeShape.OBJECT -> ValueCategory.ObjectInstance
         ProjectTypeShape.REF_CURSOR -> ValueCategory.CursorVariable
-        ProjectTypeShape.COLLECTION -> {
-            // The project keeps the element's written reference only: a %ROWTYPE element is a row, anything else unknown.
-            val element = type.elementType.orElse(null)
-            ValueCategory.Collection(
-                null,
-                if (element?.anchor?.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) ValueCategory.Record(RecordOrigin.ROWTYPE)
-                else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            )
-        }
+        // The project keeps no collection kind; its element is classified like any type it describes.
+        ProjectTypeShape.COLLECTION ->
+            // A collection whose element leads back to it (Oracle rejects it, the index may still hold it) is unknown.
+            if (type.id in seen) unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            else ValueCategory.Collection(null, walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
+                ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         null -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
     }
 

@@ -131,8 +131,8 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     fun regionUncertainty(node: AstNode): Set<UsageUncertainty>? = localSemanticFacts?.exceptions?.regionUncertainty(node)
 
     /**
-     * What [name], a `VARIABLE_NAME` read in an expression (in PL/SQL, or in SQL inside PL/SQL) or naming a call in a
-     * PL/SQL expression, binds among the file's declarations. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
+     * What [name], a `VARIABLE_NAME` read in an expression (in PL/SQL, or in SQL inside PL/SQL), naming a call in a
+     * PL/SQL expression, or naming the cursor of `OPEN`, `FETCH` or `CLOSE`, binds among the file's declarations. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
      * may still take it ([NameBinding.NothingLocal.sqlColumnPossible]). [NameBinding.Unknown] is never a proof.
      */
     @ZpaExperimentalApi

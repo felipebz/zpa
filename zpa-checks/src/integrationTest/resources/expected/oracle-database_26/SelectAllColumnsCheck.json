@@ -84,7 +84,6 @@
   "lnpls/plsql-program-limits-2.sql" : [ 2 ],
   "lnpls/predefined-exceptions-3.sql" : [ 18, 21 ],
   "lnpls/processing-query-result-sets-4.sql" : [ 4 ],
-  "lnpls/sql-data-types-34.sql" : [ 5 ],
   "lnpls/sql-data-types-36.sql" : [ 18 ],
   "lnpls/sql-injection-10.sql" : [ 2 ],
   "lnpls/sql-injection-14.sql" : [ 2 ],

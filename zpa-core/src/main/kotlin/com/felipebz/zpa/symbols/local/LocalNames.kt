@@ -124,10 +124,13 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     private fun unavailable() = NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
 
     private companion object {
-        /** A plain name read in an expression, or the name of a call in a PL/SQL expression (`f`, `f()`, `f(x)`). */
+        /**
+         * A plain name read in an expression, the name of a call in a PL/SQL expression (`f`, `f()`, `f(x)`), or the
+         * cursor of `OPEN`, `FETCH` or `CLOSE`.
+         */
         val CONTEXTS = EnumSet.of(
             LocalReferenceContext.VALUE, LocalReferenceContext.SQL_VALUE, LocalReferenceContext.INSERT_VALUE,
-            LocalReferenceContext.CALL_EXPRESSION
+            LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.CURSOR_OPERAND
         )
     }
 }

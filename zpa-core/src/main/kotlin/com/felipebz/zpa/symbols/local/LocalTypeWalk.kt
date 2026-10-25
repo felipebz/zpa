@@ -156,6 +156,17 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
+    /**
+     * The project's description of the element of [collection], a collection type the project describes, read from
+     * [region]: a package type's element is looked up with its package as owner. Null without a project or an element.
+     */
+    fun projectElement(collection: ProjectShapedTypeView, region: LocalRegionId): ProjectExternalTypeDescription? {
+        val element = collection.elementType.orElse(null) ?: return null
+        val snapshot = snapshot ?: return null
+        val owner = (collection as? ProjectPackageTypeView)?.owner
+        return snapshot.describeExternalType(element, owner, metadata, compilationSchema(region))
+    }
+
     /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
     fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown(NO_WRITTEN_TYPE)
 

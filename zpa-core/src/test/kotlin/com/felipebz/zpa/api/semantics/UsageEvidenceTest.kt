@@ -369,6 +369,41 @@ class UsageEvidenceTest {
     }
 
     @Test
+    fun elementsOfCollectionsTheProjectDescribes() {
+        val spec = "create package pkg is\n  type rec is record (a number);\n  type recs is table of rec;\n  type nums is table of number;\n" +
+            "  type rows is table of t%rowtype;\n  v_recs recs;\n  v_nums nums;\n  v_rows rows;\n  procedure p;\nend;\n/\n"
+        val type = "create type str_list as table of varchar2(4000);\n/\n"
+        val body = "create package body pkg is\n  procedure p is\n    l_list str_list;\n    l_other other_schema.str_list;\n  begin\n" +
+            "    insert into t values v_recs(1);\n    insert into t values v_nums(1);\n    insert into t values v_rows(1);\n" +
+            "    insert into t values l_list(1);\n    insert into t values l_other(1);\n  end;\nend;\n/\n"
+        // The project keeps no collection kind. A schema-qualified type it cannot place stays unknown.
+        assertThat(valueCategories(body, "s.sql" to spec, "type.sql" to type, prepared = true)).containsExactly(
+            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar)", "8:v_rows=Collection(? of Record(ROWTYPE))",
+            "9:l_list=Collection(? of Scalar)", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
+        )
+    }
+
+    @Test
+    fun cyclicCollectionTypes() {
+        val types = "create type a as table of a;\n/\ncreate type b as table of c;\n/\ncreate type c as table of b;\n/\n"
+        val proc = "create procedure p is\n  la a;\n  lb b;\n  type x is table of a;\n  lx x;\nbegin\n" +
+            "  insert into t values la;\n  insert into t values lb;\n  insert into t values lx;\nend;\n/\n"
+        // A collection reached again while its own element is being classified is unknown, as in the file.
+        assertThat(valueCategories(proc, "types.sql" to types, prepared = true)).containsExactly(
+            "7:la=Collection(? of Unknown[UNSUPPORTED_REFERENCE])",
+            "8:lb=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))",
+            "9:lx=Collection(NESTED_TABLE of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+        )
+        val spec = "create package pkg is\n  type s is table of s;\n  type x is table of y;\n  type y is table of x;\n  vs s;\n  vx x;\n  procedure p;\nend;\n/\n"
+        val body = "create package body pkg is\n  procedure p is\n  begin\n    insert into t values vs;\n    insert into t values vx;\n  end;\nend;\n/\n"
+        assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly(
+            "4:vs=Collection(? of Unknown[UNSUPPORTED_REFERENCE])", "5:vx=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+        )
+        assertThat(valueCategories("declare\n  type x is table of x;\n  l x;\nbegin\n  insert into t values l;\nend;\n/\n"))
+            .containsExactly("5:l=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])")
+    }
+
+    @Test
     fun aSysRefcursorIsACursorVariable() {
         val text = "declare\n  rc sys_refcursor;\n  subtype cur is sys_refcursor;\n  rs cur;\nbegin\n  insert into t values rc;\n  insert into t values rs;\nend;\n/\n"
         assertThat(valueCategories(text)).containsExactly("6:rc=CursorVariable", "7:rs=CursorVariable")

@@ -22,8 +22,8 @@ package com.felipebz.zpa.api.semantics
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
 /**
- * What a plain name written in an expression (or the name of a call in a PL/SQL expression) binds among the file's
- * declarations, in PL/SQL or in SQL inside PL/SQL,
+ * What a plain name written in an expression (or the name of a call in a PL/SQL expression, or the cursor of `OPEN`,
+ * `FETCH` or `CLOSE`) binds among the file's declarations, in PL/SQL or in SQL inside PL/SQL,
  * as the local name resolution decides it. Built-ins (`SYSDATE`, `USER`…) and schema objects are not declarations of
  * the file: a caller that knows one decides with [NothingLocal].
  */
