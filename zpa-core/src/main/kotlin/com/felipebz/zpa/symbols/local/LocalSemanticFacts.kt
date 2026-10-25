@@ -59,6 +59,9 @@ internal class LocalSemanticFacts(
     /** Which declaration each of the file's declarations hides, computed when first asked. */
     val hiding: LocalHiding by lazy { LocalHiding(this) }
 
+    /** The exceptions named in `RAISE` statements and handlers, computed when first asked. */
+    val exceptions: LocalExceptions by lazy { LocalExceptions(this) }
+
     /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
     val selfMismatches = ArrayList<String>()
 

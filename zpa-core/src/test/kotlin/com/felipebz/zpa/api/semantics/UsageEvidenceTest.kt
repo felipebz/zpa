@@ -217,6 +217,56 @@ class UsageEvidenceTest {
     }
 
     @Test
+    fun exceptionNamesBindTheirDeclarations() {
+        val text = "declare\n  e exception;\n  no_data_found exception;\nbegin\n  begin\n    raise e;\n  exception\n    when e then raise no_data_found;\n" +
+            "    when no_data_found then raise too_many_rows;\n    when too_many_rows then raise pkg.e;\n  end;\nend;\n/\n"
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val bindings = ArrayList<ExceptionBinding>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                val names = node.getDescendants(PlSqlGrammar.RAISE_STATEMENT, PlSqlGrammar.EXCEPTION_HANDLER).sortedBy { it.token.line * 1000 + it.token.column }
+                    .mapNotNull { it.getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) }
+                names.forEach { bindings += this.context.exceptionBinding(it) }
+            }
+        }
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        // raise e / when e, raise no_data_found / when no_data_found (the local one), raise too_many_rows, when too_many_rows, raise pkg.e
+        assertThat(bindings.map { it.toString() }).containsExactly(
+            "Declared(BLOCK@2:2)", "Declared(BLOCK@2:2)", "Declared(BLOCK@3:2)", "Declared(BLOCK@3:2)",
+            "Predefined(TOO_MANY_ROWS)", "Predefined(TOO_MANY_ROWS)", "NotLocal"
+        )
+        assertThat(bindings[0]).isInstanceOf(ExceptionBinding.Declared::class.java)
+        assertThat((bindings[0] as ExceptionBinding.Declared).exception).isEqualTo((bindings[1] as ExceptionBinding.Declared).exception)
+        assertThat((bindings[0] as ExceptionBinding.Declared).exception).isNotEqualTo((bindings[2] as ExceptionBinding.Declared).exception)
+    }
+
+    @Test
+    fun exceptionsTiedToAnErrorCode() {
+        val text = "declare\n  e1 exception;\n  pragma exception_init(e1, -20001);\n  e2 exception;\nbegin\n  raise e1;\n  raise e2;\nend;\n/\n" +
+            "declare\n  e3 exception;\n  \$if \$\$x \$then pragma exception_init(e3, 100); \$end\nbegin\n  raise e3;\nend;\n/\n"
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val codes = ArrayList<Any>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.RAISE_STATEMENT).forEach {
+                    val binding = this.context.exceptionBinding(it.getFirstChild(PlSqlGrammar.VARIABLE_NAME))
+                    codes += (binding as? ExceptionBinding.Declared)?.exception?.errorCode ?: binding
+                }
+            }
+        }
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        // A raise in the region the conditional compilation hides is not bound at all.
+        assertThat(codes).containsExactly(
+            ExceptionErrorCode.Associated(-20001), ExceptionErrorCode.None,
+            ExceptionBinding.Unknown(setOf(UsageUncertainty.CONDITIONAL_COMPILATION))
+        )
+    }
+
+    @Test
     fun aSpecificationVariableInAnotherFile() {
         val spec = "create package p as\n  counter number;\n  procedure run;\nend;\n/\n"
         val body = "create package body p as\n  procedure run is\n    counter number;\n  begin\n    null;\n  end;\nend;\n/\n"

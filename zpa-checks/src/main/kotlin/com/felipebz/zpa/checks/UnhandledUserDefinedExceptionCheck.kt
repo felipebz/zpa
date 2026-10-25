@@ -20,19 +20,20 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
-import com.felipebz.zpa.api.annotations.ConstantRemediation
-import com.felipebz.zpa.api.annotations.Priority
-import com.felipebz.zpa.api.annotations.Rule
-import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.api.symbols.Symbol
-import java.util.*
+import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.semantics.ExceptionBinding
+import com.felipebz.zpa.api.semantics.ExceptionDeclaration
+import com.felipebz.zpa.api.semantics.ExceptionErrorCode
+import com.felipebz.zpa.api.semantics.ExceptionScope
 
 @Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
+@OptIn(ZpaExperimentalApi::class)
 class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
 
     override fun init() {
@@ -40,18 +41,15 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val identifier = raisedException(node)
-                ?: return
+        val identifier = raisedException(node) ?: return
+        val exception = (context.exceptionBinding(identifier) as? ExceptionBinding.Declared)?.exception ?: return
 
-        val identifierName = identifier.tokenValue
-        val symbols = context.currentScope?.getSymbolsAcessibleInScope(identifierName) ?: ArrayDeque()
-
-        if (symbols.isNotEmpty()) {
-            val checkException = exceptionShouldBeChecked(symbols.first)
-
-            if (checkException && !isHandled(identifierName)) {
-                addIssue(node, getLocalizedMessage(), identifierName)
-            }
+        // Another subprogram of the package may handle it: not enough information.
+        if (exception.scope == ExceptionScope.PACKAGE_SPECIFICATION || exception.scope == ExceptionScope.PACKAGE_BODY) return
+        // Tied to an error code (or maybe): raised as that error, which any handler for the code, in any unit, catches.
+        if (exception.errorCode != ExceptionErrorCode.None) return
+        if (isHandled(node, exception) == false) {
+            addIssue(node, getLocalizedMessage(), identifier.tokens.joinToString("") { it.value })
         }
     }
 
@@ -60,39 +58,82 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
             ?.takeUnless { it.type === PlSqlPunctuator.SEMICOLON }
     }
 
-    private fun exceptionShouldBeChecked(exceptionDeclaration: Symbol): Boolean {
-        return exceptionDeclaration.scope.type !in PACKAGE_SPEC_OR_BODY
-    }
+    private fun isHandled(raise: AstNode, exception: ExceptionDeclaration): Boolean? {
+        var block = enclosingBlock(raise)
+        while (block != null) {
+            if (context.regionUncertainty(block)?.isEmpty() != true)
+                return null
 
-    private fun isHandled(identifierName: String): Boolean {
-        var outerScope = context.currentScope
-        do {
-            val scopeNode = outerScope?.tree
-
-            val statements = scopeNode?.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)
-            val exceptionHandlers = statements?.getFirstChildOrNull(PlSqlGrammar.EXCEPTION_HANDLERS)
-            if (statements != null && exceptionHandlers != null) {
-                for (handler in exceptionHandlers.getChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
-                    if (handler.hasDirectChildren(PlSqlKeyword.OTHERS) && !handler.hasDescendant(PlSqlKeyword.SQLERRM)) {
-                        return true
-                    }
-
-                    for (exceptionName in handler.getChildren(PlSqlGrammar.VARIABLE_NAME)) {
-                        if (exceptionName.tokenValue == identifierName) {
-                            return true
-                        }
-                    }
+            if (!raisedOutsideBody(raise, block)) {
+                when (handles(block, exception)) {
+                    true -> return true
+                    null -> return null
+                    false -> Unit
                 }
             }
+            if (block.type != PlSqlGrammar.BLOCK_STATEMENT) {
+                // A caller may handle an exception it can name: only one declared in this unit is out of its reach.
+                return false.takeIf { declaredIn(exception, block) }
+            }
+            block = enclosingBlock(block)
+        }
+        return false
+    }
 
-            outerScope = outerScope?.outer
-        } while (outerScope != null)
+    private fun raisedOutsideBody(raise: AstNode, block: AstNode): Boolean {
+        val handlers = block.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)?.getFirstChildOrNull(PlSqlGrammar.EXCEPTION_HANDLERS)
+        val declarations = block.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION)
+        return (handlers != null && raise.isInside(handlers)) || (declarations != null && raise.isInside(declarations))
+    }
 
+    private fun handles(block: AstNode, exception: ExceptionDeclaration): Boolean? {
+        // A unit whose handlers are elsewhere (the timing points of a compound trigger) is not followed.
+        val statements = block.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION) ?: return null
+        val handlers = statements.getFirstChildOrNull(PlSqlGrammar.EXCEPTION_HANDLERS) ?: return false
+        var undecided = false
+        for (handler in handlers.getChildren(PlSqlGrammar.EXCEPTION_HANDLER)) {
+            if (handler.hasDirectChildren(PlSqlKeyword.OTHERS) && !handler.hasDescendant(PlSqlKeyword.SQLERRM)) {
+                return true
+            }
+            for (name in handler.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)) {
+                when (val binding = context.exceptionBinding(name)) {
+                    is ExceptionBinding.Declared -> if (binding.exception == exception) return true
+                    is ExceptionBinding.Unknown, is ExceptionBinding.Unavailable -> undecided = true
+                    else -> Unit
+                }
+            }
+        }
+        return false.takeUnless { undecided }
+    }
+
+    private fun declaredIn(exception: ExceptionDeclaration, unit: AstNode): Boolean {
+        val line = exception.line ?: return false
+        val column = exception.column ?: return false
+        val first = unit.token
+        val last = unit.lastToken ?: return false
+        return (line > first.line || line == first.line && column >= first.column) &&
+            (line < last.line || line == last.line && column <= last.column)
+    }
+
+    private fun enclosingBlock(node: AstNode): AstNode? = node.getFirstAncestorOrNull(*BLOCKS)
+
+    private fun AstNode.isInside(ancestor: AstNode): Boolean {
+        var current: AstNode? = parentOrNull
+        while (current != null) {
+            if (current === ancestor) return true
+            current = current.parentOrNull
+        }
         return false
     }
 
     companion object {
-        val PACKAGE_SPEC_OR_BODY = arrayOf(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
+        /** The nodes with handlers: blocks, and the subprograms and triggers that bound propagation. */
+        private val BLOCKS = arrayOf<AstNodeType>(
+            PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION,
+            PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.TYPE_CONSTRUCTOR,
+            PlSqlGrammar.SIMPLE_DML_TRIGGER, PlSqlGrammar.INSTEAD_OF_DML_TRIGGER, PlSqlGrammar.SYSTEM_TRIGGER,
+            PlSqlGrammar.CREATE_TRIGGER, PlSqlGrammar.CREATE_PACKAGE_BODY
+        )
     }
 
 }

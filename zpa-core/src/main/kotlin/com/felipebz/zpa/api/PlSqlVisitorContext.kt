@@ -23,9 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
-import com.felipebz.zpa.api.semantics.HidingEvidence
-import com.felipebz.zpa.api.semantics.UsageEvidence
-import com.felipebz.zpa.api.semantics.UsageUnavailability
+import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
@@ -110,5 +108,22 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun hidingEvidence(declaration: AstNode): HidingEvidence =
         localSemanticFacts?.hiding?.evidence(declaration) ?: HidingEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * The exception that [name] names: a `VARIABLE_NAME` or `MEMBER_EXPRESSION` written in a `RAISE` statement or as a
+     * handler's exception in `WHEN`. User-defined exceptions are compared with [ExceptionBinding.Declared.exception];
+     * a predefined exception and a local exception that redeclares its name are told apart.
+     * [ExceptionBinding.Unknown] is never a proof.
+     */
+    @ZpaExperimentalApi
+    fun exceptionBinding(name: AstNode): ExceptionBinding =
+        localSemanticFacts?.exceptions?.binding(name) ?: ExceptionBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * What the analysis cannot see in the region that holds [node] (for a block, subprogram or trigger, the region of
+     * its body): empty when that region, and every region inside it, is complete. Null when the file was not analyzed.
+     */
+    @ZpaExperimentalApi
+    fun regionUncertainty(node: AstNode): Set<UsageUncertainty>? = localSemanticFacts?.exceptions?.regionUncertainty(node)
 
 }
