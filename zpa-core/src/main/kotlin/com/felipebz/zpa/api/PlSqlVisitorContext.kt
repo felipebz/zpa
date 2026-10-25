@@ -23,6 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
+import com.felipebz.zpa.api.semantics.HidingEvidence
 import com.felipebz.zpa.api.semantics.UsageEvidence
 import com.felipebz.zpa.api.semantics.UsageUnavailability
 import com.felipebz.zpa.api.symbols.Scope
@@ -96,5 +97,18 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun usageEvidence(declaration: AstNode): UsageEvidence =
         localSemanticFacts?.usages?.evidence(declaration) ?: UsageEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * Which declaration the variable or exception [declaration] (a `VARIABLE_DECLARATION` or `EXCEPTION_DECLARATION` node
+     * of this file) hides: the outermost variable, constant, exception, parameter, cursor parameter or loop index of the
+     * same name visible where it is written, from the file's local name resolution and, when the project is prepared,
+     * the package specification in another file. A declaration of the same block is a duplicate, not a hidden one.
+     *
+     * [HidingEvidence.HidesNothing] is the only proven absence; [HidingEvidence.Unknown] never is one. When the local
+     * analysis of the file did not complete, the answer is [HidingEvidence.Unavailable]: report nothing then.
+     */
+    @ZpaExperimentalApi
+    fun hidingEvidence(declaration: AstNode): HidingEvidence =
+        localSemanticFacts?.hiding?.evidence(declaration) ?: HidingEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
 }

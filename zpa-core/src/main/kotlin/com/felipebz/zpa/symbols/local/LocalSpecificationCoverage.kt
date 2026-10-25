@@ -293,6 +293,55 @@ internal class LocalSpecificationCoverage private constructor(
     private fun isOwnUnit(outcome: LocalResolution, body: LocalRegion): Boolean =
         ((outcome as? LocalResolution.Bound)?.let { model.declaration(it.declaration).details } as? LocalUnit)?.region == body.id
 
+    /**
+     * For each variable or exception declared inside (not directly in) a package body whose specification is in another
+     * file: the specification's variable or exception of the same name, [LocalSpecificationValue.Unknown] when the
+     * project does not prove it, nothing when the specification declares no such value. Plain data, AST- and index-free.
+     */
+    fun specificationValues(): Map<Pair<LocalRegionId, String>, LocalSpecificationValue> {
+        val result = HashMap<Pair<LocalRegionId, String>, LocalSpecificationValue>()
+        for (declaration in model.declarations) {
+            if (declaration.kind != LocalDeclarationKind.VARIABLE && declaration.kind != LocalDeclarationKind.EXCEPTION) continue
+            for (body in bodiesWithoutSpecification(declaration.region)) {
+                result.getOrPut(body.id to declaration.name.lookupName) { specificationValue(body, declaration.name) }
+            }
+        }
+        return result
+    }
+
+    /** The package bodies strictly enclosing [region] whose specification is not in the file. */
+    private fun bodiesWithoutSpecification(region: LocalRegionId): List<LocalRegion> {
+        val bodies = ArrayList<LocalRegion>()
+        var current = model.parent(region)
+        while (current != null) {
+            if (current.kind == LocalRegionKind.PACKAGE_BODY && LocalTypeScope.unitOf(model, current.id)?.counterpart == null) bodies += current
+            current = model.parent(current.id)
+        }
+        return bodies
+    }
+
+    private fun specificationValue(body: LocalRegion, name: OracleIdentifier): LocalSpecificationValue {
+        val members = specificationMembers(body, name) ?: return LocalSpecificationValue.Unknown
+        val value = members.firstOrNull { it is PackageValueDeclaration || it is PackageExceptionDeclaration } ?: return LocalSpecificationValue.None
+        return LocalSpecificationValue.Declared(value.sourceRange.startLine, value.sourceRange.startColumn, value.fileId.value)
+    }
+
+    /**
+     * The declarations named [name] in the specification, in another file, of the package [body], when the project
+     * proves the list: empty when the specification does not declare the name. Null when it is not proven (no single
+     * specification, an unretained member of the name, conditional members, or incomplete coverage).
+     */
+    private fun specificationMembers(body: LocalRegion, name: OracleIdentifier): List<ProjectDeclaration>? {
+        val specification = specification(body) ?: return null
+        val spec = specification.declaration as PackageDeclaration
+        if (spec.memberNames?.unretained.orEmpty().any { it.name == name }) return null
+        return when (PackageMemberNames.at(index, specification, name, null).status) {
+            MemberNameStatus.NOT_DECLARED -> emptyList()
+            MemberNameStatus.DECLARED_BEFORE -> PackageMemberNames.members(index, specification, name)
+            MemberNameStatus.REJECTED, MemberNameStatus.UNKNOWN -> null
+        }
+    }
+
     /** The one specification occurrence the project holds for the body's package, or null. */
     private fun specification(body: LocalRegion): IndexedDeclaration? = specifications.getOrPut(body.id) {
         val name = LocalTypeScope.unitOf(model, body.id)?.unitName
@@ -337,4 +386,16 @@ internal class LocalReferenceOutcomes(private val model: LocalSemanticModel, pri
         fun isSpecificationMember(outcome: LocalResolution) =
             (outcome as? LocalResolution.SpecificationCovered)?.outcome == LocalResolution.SpecificationMember
     }
+}
+
+/** What a package specification in another file declares for a name, as plain data. */
+internal sealed interface LocalSpecificationValue {
+    /** A variable or exception of the specification, at its name's position in [fileId]. */
+    data class Declared(val line: Int, val column: Int, val fileId: String) : LocalSpecificationValue
+
+    /** The specification declares no variable or exception of the name. */
+    object None : LocalSpecificationValue
+
+    /** The project does not prove what the specification declares. */
+    object Unknown : LocalSpecificationValue
 }

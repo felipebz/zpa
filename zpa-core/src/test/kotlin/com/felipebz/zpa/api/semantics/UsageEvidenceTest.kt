@@ -163,6 +163,71 @@ class UsageEvidenceTest {
         )
     }
 
+    /** `NAME: hiding evidence` for each variable and exception declaration of [text]. */
+    private fun hiding(text: String, vararg others: Pair<String, String>, prepared: Boolean = true): List<String> {
+        val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation().prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
+        )
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            init {
+                subscribeTo(PlSqlGrammar.VARIABLE_DECLARATION, PlSqlGrammar.EXCEPTION_DECLARATION)
+            }
+
+            override fun visitNode(node: AstNode) {
+                rows += "${node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue}: ${context.hidingEvidence(node)}"
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
+    }
+
+    @Test
+    fun hidingFollowsOracleVisibility() {
+        val text = "create procedure p(par number) is\n  v number;\nbegin\n  for i in 1..2 loop\n    declare\n" +
+            "      v number;\n      par number;\n      i number;\n      fresh number;\n    begin\n      null;\n    end;\n" +
+            "  end loop;\nend;\n/\ndeclare\n  d number;\n  d number;\nbegin\n  null;\nend;\n/\n"
+        assertThat(hiding(text)).containsExactly(
+            "V: HidesNothing",
+            "V: Hides(2:2)",
+            "PAR: Hides(1:19)",
+            "I: Hides(4:6)",
+            "FRESH: HidesNothing",
+            "D: HidesNothing",
+            "D: HidesNothing"
+        )
+    }
+
+    @Test
+    fun aPairTheAnalysisCannotFullySeeIsUnknown() {
+        val text = "declare\n  y number;\nbegin\n  \$if \$\$a \$then null; \$end\n  declare\n    y number;\n  begin\n    null;\n  end;\nend;\n/\n"
+        assertThat(hiding(text)).containsExactly("Y: HidesNothing", "Y: Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    @Test
+    fun aHiddenDeclarationNamesItsFileTheSameWayOnEveryMachine() {
+        fun name(fileId: String?) = HiddenDeclaration(2, 2, fileId, null).fileName
+        assertThat(name("counter_pkg.pks")).isEqualTo("counter_pkg.pks")
+        assertThat(name("src/db/counter_pkg.pks")).isEqualTo("counter_pkg.pks")
+        assertThat(name("file:///home/runner/work/my%20app/src/counter_pkg.pks")).isEqualTo("counter_pkg.pks")
+        assertThat(name("C:\\work\\app\\counter_pkg.pks")).isEqualTo("counter_pkg.pks")
+        assertThat(name(null)).isNull()
+    }
+
+    @Test
+    fun aSpecificationVariableInAnotherFile() {
+        val spec = "create package p as\n  counter number;\n  procedure run;\nend;\n/\n"
+        val body = "create package body p as\n  procedure run is\n    counter number;\n  begin\n    null;\n  end;\nend;\n/\n"
+        assertThat(hiding(body, "s.sql" to spec)).containsExactly("COUNTER: Hides(s.sql:2:2)")
+        assertThat(hiding(body, prepared = false)).containsExactly("COUNTER: Unknown[DECLARATION_OUTSIDE_FILE]")
+        // A body declaration is a duplicate of the specification's, not hiding: the same answer with or without the project.
+        val duplicate = "create package body p as\n  counter number;\n  procedure run is begin null; end;\nend;\n/\n"
+        assertThat(hiding(duplicate, "s.sql" to spec)).containsExactly("COUNTER: HidesNothing")
+        assertThat(hiding(duplicate, prepared = false)).containsExactly("COUNTER: HidesNothing")
+    }
+
     @Test
     fun aSpecificationVariableIsVisibleOutsideTheFile() {
         assertThat(evidence("create package p as\n  g number;\nend;\n/\n")).containsExactly("G: Unknown[VISIBLE_OUTSIDE_FILE]")

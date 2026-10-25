@@ -42,13 +42,22 @@ internal class LocalSemanticFacts(
      */
     private val projectHeld: Set<LocalRangeKey> = emptySet(),
     /** Names in an object type body where the project's member lists disagree with the specification in this file. */
-    val coverageMismatches: List<String> = emptyList()
+    val coverageMismatches: List<String> = emptyList(),
+    /**
+     * For each variable or exception name declared inside a package body whose specification is in another file, keyed
+     * by the body region and the name's lookup form: the specification's variable or exception of that name, or
+     * [LocalSpecificationValue.Unknown]. Absent when the project is not prepared.
+     */
+    val specificationValues: Map<Pair<LocalRegionId, String>, LocalSpecificationValue> = emptyMap()
 ) {
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
 
     /** The usage evidence of the file's declarations, computed when first asked. */
     val usages: LocalUsages by lazy { LocalUsages(this) }
+
+    /** Which declaration each of the file's declarations hides, computed when first asked. */
+    val hiding: LocalHiding by lazy { LocalHiding(this) }
 
     /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
     val selfMismatches = ArrayList<String>()

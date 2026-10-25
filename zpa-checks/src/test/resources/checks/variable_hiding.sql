@@ -63,8 +63,10 @@ create package test2 is
 end;
 /
 create package body test2 is
-  var number; -- Noncompliant {{This variable "VAR" hides the declaration on line 61.}} [[secondary=61]]
-  exc exception; -- Noncompliant {{This variable "EXC" hides the declaration on line 62.}} [[secondary=62]]
+  -- A specification and its body are one scope: these are duplicates of the specification's declarations (Oracle
+  -- rejects a reference to them), not hiding.
+  var number;
+  exc exception;
 end;
 /
 
@@ -83,6 +85,63 @@ begin
   
   declare
     var number;
+  begin
+    null;
+  end;
+end;
+/
+
+-- A local variable hiding a parameter of the enclosing subprogram.
+create procedure with_param(p number) is
+begin
+  declare
+    p number; -- Noncompliant {{This variable "P" hides the declaration on line 95.}} [[secondary=95]]
+  begin
+    null;
+  end;
+end;
+/
+
+-- The package variable is written after the procedure (Oracle rejects that order): it is not visible in the procedure.
+create package body after_pkg is
+  procedure p is
+    w number;
+  begin
+    null;
+  end;
+  w number;
+end;
+/
+
+-- Two declarations of one name in one block are a duplicate, not hiding.
+declare
+  d number;
+  d number;
+begin
+  null;
+end;
+/
+
+-- Conditional compilation touches the outer block: the outer declaration may not exist for Oracle.
+declare
+  y number;
+begin
+  $if $$a $then null; $end
+  declare
+    y number;
+  begin
+    null;
+  end;
+end;
+/
+
+-- Substitution text in the outer declarations: the same.
+declare
+  z number;
+  &more_declarations
+begin
+  declare
+    z number;
   begin
     null;
   end;

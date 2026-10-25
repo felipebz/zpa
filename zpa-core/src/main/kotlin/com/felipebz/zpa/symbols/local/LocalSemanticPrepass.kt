@@ -55,7 +55,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             val calls = LocalForwardCalls(model, references, LocalCallCollector.collect(node), analysis.snapshot, analysis.externalContext, outcomes).analyze()
             val held = if (analysis.snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) emptySet()
             else analysis.snapshot.projectIndex.declarationsFor(fileId).mapTo(HashSet()) { LocalRangeKey.of(it.sourceRange) }
-            LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.mismatches.orEmpty())
+            LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.mismatches.orEmpty(), coverage?.specificationValues().orEmpty())
         }
     }
 

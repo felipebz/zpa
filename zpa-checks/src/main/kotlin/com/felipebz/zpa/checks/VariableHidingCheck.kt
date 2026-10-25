@@ -20,15 +20,15 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.asSemantic
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
-import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.semantics.HidingEvidence
 
 @Rule(priority = Priority.MAJOR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class VariableHidingCheck : AbstractBaseCheck() {
 
     override fun init() {
@@ -36,21 +36,16 @@ class VariableHidingCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
+        val hidden = (context.hidingEvidence(node) as? HidingEvidence.Hides)?.hidden ?: return
         val identifier = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
         val name = identifier.tokenValue
-
-        val scope = identifier.asSemantic().symbol?.scope
-        if (scope != null) {
-            val symbols = scope.getSymbolsAcessibleInScope(name, Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER)
-
-            if (symbols.size > 1) {
-                val originalVariable = symbols.last.declaration
-
-                if (originalVariable != identifier) {
-                    addIssue(identifier, getLocalizedMessage(), name, originalVariable.tokenLine)
-                            .secondary(originalVariable, "Original")
-                }
-            }
+        val hiddenNode = hidden.node
+        if (hiddenNode != null) {
+            addIssue(identifier, getLocalizedMessage(), name, hidden.line).secondary(hiddenNode, "Original")
+        } else {
+            // A package specification in another file: no secondary location there. The message names the file by its name
+            // alone, which does not depend on the machine or on how the runner identifies files.
+            addIssue(identifier, getLocalizedMessage("otherFileMessage"), name, hidden.line, hidden.fileName ?: "")
         }
     }
 
