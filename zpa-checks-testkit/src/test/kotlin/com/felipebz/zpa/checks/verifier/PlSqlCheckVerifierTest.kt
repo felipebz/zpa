@@ -21,13 +21,21 @@ package com.felipebz.zpa.checks.verifier
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.GenericTokenType
+import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.api.Token
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
+import com.felipebz.zpa.api.DmlGrammar
+import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.annotations.RuleInfo
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.semantics.ValueCategory
 import com.felipebz.zpa.checks.IssueLocation
 import com.felipebz.zpa.squid.AnalysisException
-import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.fail
 
 class PlSqlCheckVerifierTest {
 
@@ -162,6 +170,54 @@ class PlSqlCheckVerifierTest {
         }
     }
 
+    @Test
+    fun conditional_compilation_settings_change_what_the_check_sees() {
+        // Without settings the first branch is kept; with $$flag false the ELSE branch, and its null statement.
+        try {
+            PlSqlCheckVerifier.verify(FILENAME_CONDITIONAL, NullStatementCheck())
+            fail("Test should fail")
+        } catch (e: AssertionError) {
+            assertThat(e).hasMessage("Missing issue at line 5")
+        }
+        PlSqlCheckVerifier.verify(FILENAME_CONDITIONAL, NullStatementCheck(), conditionalCompilation = ConditionalCompilationSettings.of("flag:false", null))
+    }
+
+    @Test
+    fun a_fixture_that_does_not_parse_fails_unless_recovery_is_on() {
+        assertThrows<RecognitionException> {
+            PlSqlCheckVerifier.verify(FILENAME_RECOVERY, NullStatementCheck())
+        }
+        PlSqlCheckVerifier.verify(FILENAME_RECOVERY, NullStatementCheck(), errorRecovery = true)
+    }
+
+    @Test
+    fun a_test_scope_check_runs_on_a_main_fixture() {
+        PlSqlCheckVerifier.verify(FILENAME_NULL, TestScopeNullStatementCheck())
+    }
+
+    private open class NullStatementCheck : PlSqlCheck() {
+        override fun init() {
+            subscribeTo(PlSqlGrammar.NULL_STATEMENT)
+        }
+
+        override fun visitNode(node: AstNode) {
+            addIssue(node, "null statement")
+        }
+    }
+
+    @RuleInfo(scope = RuleInfo.Scope.TEST)
+    private class TestScopeNullStatementCheck : NullStatementCheck()
+
+    @Test
+    fun a_fixture_runs_prepared_by_default_and_unprepared_on_request() {
+        // From an anonymous block, pkg.v is a schema object's value: only the prepared project describes it.
+        PlSqlCheckVerifier.verify(FILENAME_PREPARED, ScalarDestinationCheck())
+        val failure = assertThrows<AssertionError> {
+            PlSqlCheckVerifier.verify(FILENAME_PREPARED, ScalarDestinationCheck(), prepared = false)
+        }
+        assertThat(failure).hasMessage("Missing issue at line 6")
+    }
+
     private class FakeCheck : PlSqlCheck() {
 
         var issues = hashMapOf<Int, MutableList<String>>()
@@ -243,9 +299,28 @@ class PlSqlCheckVerifierTest {
     companion object {
         private const val FILENAME_ISSUES = "src/test/resources/check_verifier.sql"
         private const val FILENAME_NO_ISSUE = "src/test/resources/check_verifier_no_issue.sql"
+        private const val FILENAME_CONDITIONAL = "src/test/resources/check_verifier_conditional.sql"
+        private const val FILENAME_RECOVERY = "src/test/resources/check_verifier_recovery.sql"
+        private const val FILENAME_NULL = "src/test/resources/check_verifier_null.sql"
+        private const val FILENAME_PREPARED = "src/test/resources/check_verifier_prepared.sql"
 
         private val noEffectCheck: PlSqlCheck
             get() = object : PlSqlCheck() { }
     }
 
+
+}
+
+/** Reports each `INTO` destination whose value category is a scalar. */
+@OptIn(ZpaExperimentalApi::class)
+internal class ScalarDestinationCheck : PlSqlCheck() {
+    override fun init() {
+        subscribeTo(DmlGrammar.INTO_CLAUSE)
+    }
+
+    override fun visitNode(node: AstNode) {
+        node.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
+            .filter { context.valueCategory(it) is ValueCategory.Scalar }
+            .forEach { addIssue(it, "scalar destination") }
+    }
 }

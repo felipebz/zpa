@@ -19,12 +19,16 @@
  */
 package com.felipebz.zpa.checks.verifier
 
+import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.PackageSpecificationResolution
-import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class ProjectPlSqlCheckVerifierTest {
 
@@ -54,6 +58,50 @@ class ProjectPlSqlCheckVerifierTest {
             ),
             NocopyCheck()
         )
+    }
+
+    @Test
+    fun checksThePreciseDetailsAFixtureWrites() {
+        val source = "begin\n  null; -- Noncompliant {{null statement}} [[sc=3;ec=8;el=+0]]\nend;\n/\n"
+        ProjectPlSqlCheckVerifier.verify(listOf(ProjectTestSource("precise.sql", source)), NullStatementCheck())
+
+        val wrong = source.replace("ec=8", "ec=9")
+        val failure = assertThrows<AssertionError> {
+            ProjectPlSqlCheckVerifier.verify(listOf(ProjectTestSource("precise.sql", wrong)), NullStatementCheck())
+        }
+        assertThat(failure).hasMessage("precise.sql: Bad end column at line 2 ==> expected: \"9\" but was: \"8\"")
+    }
+
+    @Test
+    fun settingsApplyToThePreparationAndTheScan() {
+        // The settings remove the whole $IF from the specification: w is no longer declared for the other file.
+        val spec = ProjectTestSource("pkg.pks", "create package pkg is\n  v number;\n  \$if \$\$extra \$then\n  w varchar2(10);\n  \$end\nend;\n/\n")
+        val use = ProjectTestSource("use.sql", "begin\n  select 1 into pkg.w from dual; -- Noncompliant {{scalar destination}}\nend;\n/\n")
+        ProjectPlSqlCheckVerifier.verify(listOf(spec, use), ScalarDestinationCheck())
+
+        val failure = assertThrows<AssertionError> {
+            ProjectPlSqlCheckVerifier.verify(listOf(spec, use), ScalarDestinationCheck(), conditionalCompilation = ConditionalCompilationSettings.of("extra:false", null))
+        }
+        assertThat(failure).hasMessage("use.sql: Missing issue at line 2")
+    }
+
+    @Test
+    fun aSourceThatDoesNotParseFailsWithRecoveryOff() {
+        val broken = ProjectTestSource("broken.sql", "begin\n  this is not plsql;\nend;\n/\n")
+        ProjectPlSqlCheckVerifier.verify(listOf(broken), NullStatementCheck())
+        assertThrows<RecognitionException> {
+            ProjectPlSqlCheckVerifier.verify(listOf(broken), NullStatementCheck(), errorRecovery = false)
+        }
+    }
+
+    private class NullStatementCheck : PlSqlCheck() {
+        override fun init() {
+            subscribeTo(PlSqlGrammar.NULL_STATEMENT)
+        }
+
+        override fun visitNode(node: AstNode) {
+            addIssue(node, "null statement")
+        }
     }
 
     @OptIn(ZpaExperimentalApi::class)

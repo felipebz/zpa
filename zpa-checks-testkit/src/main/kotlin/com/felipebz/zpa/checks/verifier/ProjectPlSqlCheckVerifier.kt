@@ -22,112 +22,65 @@ package com.felipebz.zpa.checks.verifier
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.metadata.FormsMetadata
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.parser.PlSqlParser
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import com.felipebz.zpa.squid.PlSqlConfiguration
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 /**
- * Verifies a check against a complete, in-memory project while preserving per-file findings.
- *
- * The existing [PlSqlCheckVerifier] intentionally remains a single-file, legacy-semantics
- * verifier. This verifier is additive and prepares all [sources] before scanning any of them.
+ * Verifies a check against a complete, in-memory project while preserving per-file findings: all [sources] are
+ * prepared before any of them is scanned. Expectations are written as for [PlSqlCheckVerifier]; the details a fixture
+ * writes (message, columns, cost, secondary locations) are checked.
  */
 class ProjectPlSqlCheckVerifier private constructor() {
 
     companion object {
+        /**
+         * [conditionalCompilation] applies to the preparation and to the scan alike. With [errorRecovery] off, a source
+         * that does not parse fails.
+         */
         @JvmStatic
         @JvmOverloads
         fun verify(
             sources: Collection<ProjectTestSource>,
             check: PlSqlCheck,
-            metadata: FormsMetadata? = null
+            metadata: FormsMetadata? = null,
+            conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE,
+            errorRecovery: Boolean = true
         ) {
             require(sources.isNotEmpty()) { "At least one project source is required" }
             require(sources.map { it.fileName }.distinct().size == sources.size) {
                 "Project test sources must have unique file names"
             }
 
+            val configuration = PlSqlConfiguration(StandardCharsets.UTF_8, errorRecovery, conditionalCompilation)
+            if (!errorRecovery) {
+                val parser = PlSqlParser.create(configuration)
+                sources.forEach { parser.parse(it.contents) }
+            }
             val projectSources = sources.map { source ->
                 ProjectSource(FileId(source.fileName)) { source.contents }
             }
-            val preparation = ProjectIndexPreparation().prepare(projectSources, concurrent = false)
-            val projectContext = ProjectAnalysisContext.prepared(preparation)
+            val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(configuration)).prepare(projectSources, concurrent = false)
             val scanner = AstScanner(
                 checks = emptyList(),
                 formsMetadata = metadata,
-                isErrorRecoveryEnabled = true,
+                isErrorRecoveryEnabled = errorRecovery,
                 charset = StandardCharsets.UTF_8,
-                projectAnalysisContext = projectContext
+                projectAnalysisContext = ProjectAnalysisContext.prepared(preparation),
+                conditionalCompilation = conditionalCompilation
             )
 
             sources.forEach { source ->
                 val file = FixtureFile(source.fileName, source.contents)
-                scanner.scanFile(file, extraVisitors = listOf(check), fileId = FileId(source.fileName))
-                verifyIssues(source, check.issues())
+                val expectations = PlSqlCheckVerifier()
+                scanner.scanFile(file, extraVisitors = listOf(expectations, check), fileId = FileId(source.fileName))
+                IssueAssertions.assertIssues(expectations.expectedIssues, check.issues(), source.fileName)
             }
         }
-
-        private fun verifyIssues(source: ProjectTestSource, actualIssues: List<PlSqlCheck.PreciseIssue>) {
-            val expectedIssues = expectedIssues(source.contents)
-            val actual = actualIssues.sortedBy { it.primaryLocation().startLine() }
-            if (actual.size != expectedIssues.size) {
-                throw AssertionError(
-                    "Unexpected issue count in ${source.fileName}: expected ${expectedIssues.size}, " +
-                        "but was ${actual.size}"
-                )
-            }
-
-            expectedIssues.zip(actual).forEach { (expected, issue) ->
-                val actualLine = issue.primaryLocation().startLine()
-                if (actualLine != expected.line) {
-                    throw AssertionError(
-                        "Unexpected issue location in ${source.fileName}: expected line ${expected.line}, " +
-                            "but was $actualLine"
-                    )
-                }
-                expected.message?.let { expectedMessage ->
-                    val actualMessage = issue.primaryLocation().message()
-                    if (actualMessage != expectedMessage) {
-                        throw AssertionError(
-                            "Unexpected issue message in ${source.fileName} at line ${expected.line}: " +
-                                "expected '$expectedMessage', but was '$actualMessage'"
-                        )
-                    }
-                }
-            }
-        }
-
-        private fun expectedIssues(contents: String): List<ExpectedIssue> =
-            contents.lineSequence().mapIndexedNotNull { index, line ->
-                val markerIndex = line.indexOf("-- Noncompliant")
-                if (markerIndex < 0) {
-                    null
-                } else {
-                    var marker = line.substring(markerIndex + "-- Noncompliant".length).trim()
-                    var issueLine = index + 1
-                    if (marker.startsWith("@")) {
-                        val shiftEnd = marker.indexOfFirst { it.isWhitespace() || it == '{' }
-                        val shift = if (shiftEnd < 0) marker else marker.substring(0, shiftEnd)
-                        require(shift.length > 2 && (shift[1] == '+' || shift[1] == '-')) {
-                            "Use only '@+N' or '@-N' to shift project verifier messages."
-                        }
-                        issueLine += shift.substring(2).toInt() * if (shift[1] == '+') 1 else -1
-                        marker = if (shiftEnd < 0) "" else marker.substring(shiftEnd).trim()
-                    }
-                    val message = if (marker.startsWith("{{") && marker.endsWith("}}")) {
-                        marker.substring(2, marker.length - 2)
-                    } else {
-                        null
-                    }
-                    ExpectedIssue(issueLine, message)
-                }
-            }.toList()
-
-        private data class ExpectedIssue(val line: Int, val message: String?)
     }
 
     private class FixtureFile(
