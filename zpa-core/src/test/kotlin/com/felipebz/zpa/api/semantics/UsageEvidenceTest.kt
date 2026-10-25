@@ -22,6 +22,7 @@
 package com.felipebz.zpa.api.semantics
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
@@ -306,6 +307,94 @@ class UsageEvidenceTest {
         // A declaration of the body.
         assertThat(nameBindings(bodyCol, "s.sql" to spec, prepared = true)).contains("6:COL=ColumnOrLocal(VARIABLE@2:2)")
         assertThat(nameBindings(spec + bodyCol)).contains("10:COL=ColumnOrLocal(VARIABLE@6:2)")
+    }
+
+    @Test
+    fun valueCategoriesFollowTheDeclaredType() {
+        val text = """
+            declare
+              r t%rowtype;
+              type rec is record (a number, b varchar2(10));
+              rr rec;
+              type outer_rec is record (r t%rowtype, k number);
+              x outer_rec;
+              cursor c is select a, b from t;
+              rc c%rowtype;
+              subtype row_t is t%rowtype;
+              rs row_t;
+              ra r%type;
+              type aa is table of t%rowtype index by pls_integer;
+              va aa;
+              type nt is table of number;
+              vn nt;
+              type vr is varray(3) of rec;
+              vv vr;
+              n number;
+              o my_object;
+            begin
+              insert into t values r;
+              insert into t values rr;
+              insert into t values x.r;
+              insert into t values rc;
+              insert into t values rs;
+              insert into t values ra;
+              insert into t values va(1);
+              insert into t values vn(1);
+              insert into t values vv(1);
+              insert into t values n;
+              insert into t values o;
+              insert into t values unknown_name;
+              for q in (select * from t) loop
+                insert into t values q;
+              end loop;
+            end;
+            /
+            """.trimIndent() + "\n"
+        assertThat(valueCategories(text)).containsExactly(
+            "21:r=Record(ROWTYPE)", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE)", "24:rc=Record(ROWTYPE)",
+            "25:rs=Record(ROWTYPE)", "26:ra=Record(ROWTYPE)",
+            "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE))", "28:vn=Collection(NESTED_TABLE of Scalar)",
+            "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar",
+            // A schema type, or a name, the file does not declare and no project describes.
+            "31:o=Unknown[DECLARATION_OUTSIDE_FILE]", "32:unknown_name=Unknown[DECLARATION_OUTSIDE_FILE]",
+            "34:q=Record(ROWTYPE)"
+        )
+        val spec = "create package pkg is\n  pr t%rowtype;\n  procedure p;\nend;\n/\n"
+        val body = "create package body pkg is\n  procedure p is\n  begin\n    insert into t values pr;\n    insert into t values pkg.pr;\n  end;\nend;\n/\n"
+        assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly("4:pr=Record(ROWTYPE)", "5:pkg=Record(ROWTYPE)")
+        assertThat(valueCategories(body, "s.sql" to spec))
+            .containsExactly("4:pr=Unknown[DECLARATION_OUTSIDE_FILE]", "5:pkg=Unknown[DECLARATION_OUTSIDE_FILE]")
+        val cc = "create procedure p is\n  r t%rowtype;\n  \$if \$\$x \$then r number; \$end\nbegin\n  insert into t values r;\nend;\n/\n"
+        assertThat(valueCategories(cc)).containsExactly("5:r=Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    @Test
+    fun aSysRefcursorIsACursorVariable() {
+        val text = "declare\n  rc sys_refcursor;\n  subtype cur is sys_refcursor;\n  rs cur;\nbegin\n  insert into t values rc;\n  insert into t values rs;\nend;\n/\n"
+        assertThat(valueCategories(text)).containsExactly("6:rc=CursorVariable", "7:rs=CursorVariable")
+        // A local declaration of the name decides.
+        val local = "declare\n  type sys_refcursor is record (a number);\n  rc sys_refcursor;\nbegin\n  insert into t values rc;\nend;\n/\n"
+        assertThat(valueCategories(local)).containsExactly("5:rc=Record(RECORD_TYPE)")
+    }
+
+    private fun valueCategories(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {
+        val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation().prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
+        )
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                for (values in node.getDescendants(DmlGrammar.VALUES_CLAUSE)) {
+                    val value = values.lastChild
+                    val name = if (value.type === PlSqlGrammar.METHOD_CALL) value.firstChild else value
+                    rows += "${value.token.line}:${name.tokenOriginalValue}=${this.context.valueCategory(name)}"
+                }
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
     }
 
     @Test

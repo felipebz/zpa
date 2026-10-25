@@ -30,6 +30,7 @@ import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.SymbolTableImpl
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import com.felipebz.zpa.symbols.local.LocalValueCategories
 
 open class PlSqlVisitorContext private constructor(private val rootTree: AstNode?,
                                                    private val plSqlFile: PlSqlFile?,
@@ -56,6 +57,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
 
     /** The file's local semantic resolution, left by the pipeline's pre-pass; null when it did not run or failed. */
     internal var localSemanticFacts: LocalSemanticFacts? = null
+
+    /** The categories of the file's named values, left by the pre-pass with the scan's project; null when it did not run. */
+    internal var valueCategories: LocalValueCategories? = null
 
     /** Installed by the scanner with the file's configuration and project; created on first use otherwise. */
     internal var dynamicSqlSupport: DynamicSqlSupport? = null
@@ -134,5 +138,16 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun nameBinding(name: AstNode): NameBinding =
         localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * The category of the declared type of the value [name] denotes: a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as
+     * `pkg.v`, `r.f` or `block.v`, read as a value in PL/SQL or SQL, or called (`v(i)` names the collection `v`).
+     * Subtypes and `%TYPE` anchors are followed; a declaration in another file is described by the prepared project.
+     * [ValueCategory.Unknown] is never a proof of any category.
+     */
+    @ZpaExperimentalApi
+    fun valueCategory(name: AstNode): ValueCategory =
+        if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        else valueCategories?.category(name) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
 }

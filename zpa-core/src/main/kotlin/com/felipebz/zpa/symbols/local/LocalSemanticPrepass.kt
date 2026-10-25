@@ -45,6 +45,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
 
     override fun visitFile(node: AstNode) {
         context.localSemanticFacts = null
+        context.valueCategories = null
         context.localSemanticFacts = guarded("computing") {
             val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents())
             val references = LocalReferenceCollector.collect(node, model)
@@ -56,7 +57,9 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             val held = if (analysis.snapshot.preparationState == ProjectPreparationState.NOT_PREPARED) emptySet()
             else analysis.snapshot.projectIndex.declarationsFor(fileId).mapTo(HashSet()) { LocalRangeKey.of(it.sourceRange) }
             LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.mismatches.orEmpty(), coverage?.specificationValues().orEmpty(),
-                coverage?.sqlSpecificationMembers.orEmpty().toMap())
+                coverage?.sqlSpecificationMembers.orEmpty().toMap()).also {
+                context.valueCategories = LocalValueCategories(it, LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes))
+            }
         }
     }
 

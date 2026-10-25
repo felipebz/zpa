@@ -36,7 +36,11 @@ internal class LocalTypeEvidence(
     val terminal: Terminal,
     /** The local declarations followed, in order: the value, then each subtype or anchored declaration. */
     val followed: List<LocalDeclarationId>,
-    val unknownReason: String?
+    val unknownReason: String?,
+    /** For a [Terminal.PROJECT] evidence, the project's description it classifies. */
+    val description: ProjectExternalTypeDescription? = null,
+    /** For an unknown evidence, the incomplete lookup that stopped the walk, when one did. */
+    val incomplete: LocalResolution.Incomplete? = null
 ) {
     enum class Terminal {
         /** A predefined type name, written or reached through local subtypes. */
@@ -58,8 +62,8 @@ internal class LocalTypeEvidence(
     override fun toString() = "$terminal $argumentType${unknownReason?.let { " ($it)" } ?: ""}"
 
     companion object {
-        fun unknown(reason: String, followed: List<LocalDeclarationId> = emptyList()) =
-            LocalTypeEvidence(ProjectArgumentType.unknown(), Terminal.UNKNOWN, followed, reason)
+        fun unknown(reason: String, followed: List<LocalDeclarationId> = emptyList(), incomplete: LocalResolution.Incomplete? = null) =
+            LocalTypeEvidence(ProjectArgumentType.unknown(), Terminal.UNKNOWN, followed, reason, incomplete = incomplete)
 
         fun literal(literal: LocalLiteral?): LocalTypeEvidence = when {
             literal == null -> unknown("literal not classified")
@@ -149,7 +153,7 @@ internal class LocalTypeWalk(
         val described = snapshot?.describeExternalType(
             ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(name), ProjectTypeReference.Anchor.TYPE), owner, metadata, compilationSchema(region)
         ) ?: return LocalTypeEvidence.unknown("no project snapshot")
-        return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null)
+        return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
     /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
@@ -165,7 +169,7 @@ internal class LocalTypeWalk(
         val function = typed.selected.get().declaration as? ProjectFunctionView ?: return LocalTypeEvidence.unknown("not a function")
         val owner = (function as? ProjectPackageSubprogramView)?.packageOwner
         val described = snapshot!!.describeExternalType(function.returnType, owner, metadata, compilationSchema(region))
-        return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null)
+        return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
     private fun composite(followed: List<LocalDeclarationId>) =
@@ -190,7 +194,8 @@ internal class LocalTypeWalk(
         private val followed = ArrayList<LocalDeclarationId>()
         private val fields = HashSet<Pair<LocalDeclarationId, Int>>()
 
-        private fun unknown(reason: String) = LocalTypeEvidence.unknown(reason, followed.toList())
+        private fun unknown(reason: String, incomplete: LocalResolution.Incomplete? = null) =
+            LocalTypeEvidence.unknown(reason, followed.toList(), incomplete)
 
         fun value(declaration: LocalDeclaration): LocalTypeEvidence {
             if (declaration.kind !in VALUES) return unknown("${declaration.kind} ${declaration.name} is not a value")
@@ -272,6 +277,7 @@ internal class LocalTypeWalk(
                 return name?.let { project(it, anchor, use.lookupRegion) } ?: unknown("no package for a specification member")
             }
             val last = covered(steps.last())
+            if (last is LocalResolution.Incomplete) return unknown(last.toString(), last)
             if (steps.size != reference.segments.size + 1) return unknown("stopped at $last")
             return when (last) {
                 is LocalResolution.Bound -> declared(model.declaration(last.declaration), typeRef)
@@ -305,7 +311,7 @@ internal class LocalTypeWalk(
                     return LocalTypeEvidence(ProjectArgumentType.builtIn(spelling), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
                 }
                 val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
-                return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
+                return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
             }
             return project(name, (typeRef as? AnchoredTypeRef)?.anchor, use.lookupRegion)
         }
@@ -322,7 +328,7 @@ internal class LocalTypeWalk(
                     owner, metadata, compilationSchema(region)
                 )
             }
-            return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
+            return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
         }
 
         /**
@@ -346,7 +352,7 @@ internal class LocalTypeWalk(
                 r.startLine == range.startLine && r.startColumn == range.startColumn && r.endLine == range.endLine && r.endColumn == range.endColumn
             } ?: return null
             val described = snapshot.describeExternalType(view.typeRef, view.owner, metadata, compilationSchema(declaration.region))
-            return LocalTypeEvidence(ProjectArgumentType.described(described, view.owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null)
+            return LocalTypeEvidence(ProjectArgumentType.described(described, view.owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
         }
     }
 

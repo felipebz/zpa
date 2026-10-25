@@ -56,3 +56,54 @@ create or replace package body sample_pkg is
   end;
 end sample_pkg;
 /
+
+create or replace procedure record_inserts is
+  type rec is record (a number, b varchar2(10));
+  r_rec rec;
+  type outer_rec is record (r tab%rowtype, k number);
+  x outer_rec;
+  cursor c is select a, b from tab;
+  r_cur c%rowtype;
+  r_row tab%rowtype;
+  type numbers is table of number;
+  v_numbers numbers;
+  type recs is table of rec index by pls_integer;
+  v_recs recs;
+begin
+  -- a record maps to the columns by position, as a value list does
+  insert into tab values r_rec; -- Noncompliant
+  insert into tab values v_recs(1); -- Noncompliant
+
+  -- a %ROWTYPE record of a cursor, or a field of tab%rowtype type, also maps by position, but is skipped as before
+  insert into tab values x.r;
+  insert into tab values r_cur;
+
+  -- with a column list Oracle rejects the record (ORA-00947), but that is not this rule
+  insert into tab (a, b) values r_row;
+
+  -- parentheses make it a list of column values
+  insert into tab values (r_row); -- Noncompliant
+
+  -- an element of a collection of scalars is not a row
+  insert into tab values v_numbers(1); -- Noncompliant
+end;
+/
+-- Conditional compilation may declare another "r": nothing is proven.
+create or replace procedure conditional_record is
+  r tab%rowtype;
+  $if $$plain $then
+  r number;
+  $end
+begin
+  insert into tab values r;
+end;
+/
+-- The specification of pkg is not in this file: nothing proves what the names are.
+create package body pkg is
+  procedure p is
+  begin
+    insert into tab values r_row;
+    insert into tab values n;
+  end;
+end;
+/
