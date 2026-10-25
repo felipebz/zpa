@@ -285,7 +285,7 @@ internal object LocalReferenceCollector {
         }
         val actual = if (segments.size > 1) LocalReferenceContext.QUALIFIER else context
         val rest = segments.drop(1).mapIndexed { index, name -> LocalSegment(name, false, use.segmentRanges[index + 1]) }
-        return LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null)
+        return LocalReference(segments.first(), use.range, actual, use.lookupRegion, rest, context, false, null, null, use.segmentRanges.firstOrNull())
     }
 
     /** The innermost region of [model] containing the start of [range]. Regions nest and children are in start order. */

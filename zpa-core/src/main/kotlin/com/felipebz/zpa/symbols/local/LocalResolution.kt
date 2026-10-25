@@ -82,7 +82,8 @@ internal sealed interface LocalResolution {
      * relied on were complete. It is never itself [Incomplete] or [Unsupported]: an unmodeled construct is reported
      * as such, unwrapped. It exists so that references in incomplete regions can still be compared with the legacy
      * symbol table. It is diagnostic evidence only: it is not a binding, it must never let a caller look past the local
-     * scope, and nothing may consume it as a resolution.
+     * scope, and nothing may consume it as a resolution. [LocalHighlighting] shows it as a reference, which decides
+     * nothing.
      */
     class Incomplete(
         regionReasons: Set<LocalIncompleteness>,
@@ -116,12 +117,24 @@ internal sealed interface LocalResolution {
     /**
      * The reference is in a context the resolver does not model; [kind] and [context] name the pair when the construct
      * is a kind used in a context without evidence.
+     *
+     * [candidate] is the one declaration the lookup found when only its fit to the context is unobserved. Like
+     * [Incomplete.provisional] it is not a binding: [LocalHighlighting] shows it as a reference, nothing else reads it.
+     * It takes no part in equality or the printed form.
      */
-    data class Unsupported(
+    class Unsupported(
         val construct: LocalUnsupportedConstruct,
         val kind: LocalDeclarationKind? = null,
-        val context: LocalReferenceContext? = null
-    ) : LocalResolution
+        val context: LocalReferenceContext? = null,
+        val candidate: LocalDeclarationId? = null
+    ) : LocalResolution {
+        override fun equals(other: Any?) =
+            other is Unsupported && construct == other.construct && kind == other.kind && context == other.context
+
+        override fun hashCode() = Objects.hash(construct, kind, context)
+
+        override fun toString() = "Unsupported(construct=$construct, kind=$kind, context=$context)"
+    }
 
     /**
      * No region declares the name and it cannot be a schema object: a label target nothing declares (PLS-00201), or a

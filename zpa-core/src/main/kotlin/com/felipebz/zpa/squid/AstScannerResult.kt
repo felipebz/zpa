@@ -17,11 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.squid
 
 import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.symbols.Symbol
 
 data class AstScannerResult internal constructor(
@@ -34,7 +38,13 @@ data class AstScannerResult internal constructor(
     val complexity: Int,
     val numberOfFunctions:  Int,
     val executableLines: Set<Int>,
-    val issues: List<ZpaIssue>
+    val issues: List<ZpaIssue>,
+    /**
+     * The file's highlighting pairs from its local name resolution; empty when the file was not analyzed (a parse
+     * failure, or a local resolution that failed).
+     */
+    @property:ZpaExperimentalApi
+    val highlightingPairs: List<HighlightingPair> = emptyList()
 )
 
 data class ZpaIssue internal constructor(

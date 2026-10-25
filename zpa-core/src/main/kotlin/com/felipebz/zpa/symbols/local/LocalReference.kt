@@ -107,7 +107,12 @@ internal class LocalReference(
     /** The innermost exception handler holding the reference, for the branching rule of `GOTO`. */
     val handler: SourceRange?,
     /** For a name inside SQL, the relations that can qualify it. */
-    val sql: LocalSqlScope? = null
+    val sql: LocalSqlScope? = null,
+    /**
+     * The range of the first segment's own token: [range], except for a written datatype, whose [range] is the type
+     * use's. Null when the datatype's name is not written as `name(.name)*` (a multi-word built-in type).
+     */
+    val nameRange: SourceRange? = range
 ) {
     val remainingSegments: Int get() = segments.size
 

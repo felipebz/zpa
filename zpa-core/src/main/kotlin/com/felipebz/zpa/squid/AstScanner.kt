@@ -23,23 +23,28 @@ import com.felipebz.flr.api.Grammar
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.flr.impl.Parser
 import com.felipebz.zpa.FormsMetadataAwareCheck
+import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.annotations.RuleInfo
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.api.project.ProjectPreparationState
+import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.dynamicsql.DynamicSqlTools
 import com.felipebz.zpa.metadata.FormsMetadata
-import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.metrics.ComplexityVisitor
 import com.felipebz.zpa.metrics.FunctionComplexityVisitor
 import com.felipebz.zpa.metrics.MetricsVisitor
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectSymbolIndex
+import com.felipebz.zpa.symbols.local.LocalHighlighting
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import com.felipebz.zpa.utils.getAnnotation
 import com.felipebz.zpa.utils.log.Loggers
-import com.felipebz.zpa.api.PlSqlFile
-import com.felipebz.zpa.api.PlSqlVisitorContext
-import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.checks.PlSqlVisitor
 import java.io.InterruptedIOException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -123,9 +128,24 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
             complexity = complexityVisitor.complexity,
             numberOfFunctions = functionComplexityVisitor.numberOfFunctions,
             executableLines = metricsVisitor.getExecutableLines(),
-            issues = issues
+            issues = issues,
+            highlightingPairs = newVisitorContext.localSemanticFacts?.let { highlightingPairs(it, inputFile) }.orEmpty()
         )
     }
+
+    /** The project index a name proven absent may be found in, when the project is prepared. */
+    private val highlightingIndex: ProjectSymbolIndex? by lazy {
+        projectAnalysisContext.createSnapshot().takeIf { it.preparationState != ProjectPreparationState.NOT_PREPARED }?.projectIndex
+    }
+
+    @OptIn(ZpaExperimentalApi::class)
+    private fun highlightingPairs(facts: LocalSemanticFacts, inputFile: PlSqlFile): List<HighlightingPair> =
+        try {
+            LocalHighlighting(facts, highlightingIndex, LocalHighlighting.lineLengths(inputFile.contents())).build().pairs
+        } catch (e: Exception) {
+            LOG.warn("Highlighting pairs failed for $inputFile: $e")
+            emptyList()
+        }
 
     private fun ruleHasScope(check: PlSqlVisitor, scope: RuleInfo.Scope): Boolean {
         val ruleInfo = getAnnotation(check, RuleInfo::class.java)

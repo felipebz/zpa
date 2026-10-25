@@ -241,7 +241,7 @@ internal object LocalResolver {
         return when (fit(declaration.kind, reference.context)) {
             Fit.APPLICABLE -> LocalResolution.Bound(declaration.id)
             Fit.WRONG -> LocalResolution.WrongKind(declaration.id)
-            Fit.UNSUPPORTED -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, declaration.kind, reference.context)
+            Fit.UNSUPPORTED -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, declaration.kind, reference.context, declaration.id)
         }
     }
 
@@ -269,7 +269,7 @@ internal object LocalResolver {
         return when (fit) {
             Fit.APPLICABLE -> LocalResolution.OverloadSet(representatives)
             Fit.WRONG -> LocalResolution.WrongKind(representatives.first())
-            Fit.UNSUPPORTED -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, kinds.first(), context)
+            Fit.UNSUPPORTED -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, kinds.first(), context, representatives.singleOrNull())
         }
     }
 
