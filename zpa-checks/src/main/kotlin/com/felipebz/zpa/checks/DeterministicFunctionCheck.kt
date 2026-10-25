@@ -23,17 +23,12 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.annotations.ActivatedByDefault
-import com.felipebz.zpa.api.annotations.ConstantRemediation
-import com.felipebz.zpa.api.annotations.Priority
-import com.felipebz.zpa.api.annotations.Rule
-import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.project.PackageSpecificationResolution
 import com.felipebz.zpa.api.project.SequenceReferenceResolution
+import com.felipebz.zpa.api.semantics.NameBinding
 import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.api.syntax.SyntaxViews
-import com.felipebz.zpa.api.squid.SemanticAstNode
 
 /**
  * Reports deterministic functions only when their own implementation contains strong syntactic or
@@ -128,10 +123,21 @@ class DeterministicFunctionCheck : AbstractBaseCheck() {
                 val name = variable.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
                     ?.tokenOriginalValue
                     ?: return@any false
-                isUnquoted(name) && name.equalsAnyIgnoreCase(EXTERNAL_ENVIRONMENT_NAMES) &&
-                    (variable as? SemanticAstNode)?.symbol == null
+                isUnquoted(name) && name.equalsAnyIgnoreCase(EXTERNAL_ENVIRONMENT_NAMES) && readsBuiltin(variable, name)
             }
     }
+
+    private fun readsBuiltin(variable: AstNode, name: String): Boolean {
+        val arguments = variable.nextSiblingOrNull?.takeIf { variable.parentOrNull?.type === PlSqlGrammar.METHOD_CALL && it.type === PlSqlGrammar.ARGUMENTS }
+        if (arguments != null && arguments.hasDirectChildren(PlSqlGrammar.ARGUMENT) && isInSql(variable)) {
+            return name.equalsAnyIgnoreCase(SQL_BUILTIN_CALLS)
+        }
+        // Any doubt about a local declaration of the name gives no evidence.
+        return context.nameBinding(variable) is NameBinding.NothingLocal
+    }
+
+    private fun isInSql(node: AstNode): Boolean =
+        generateSequence(node.parentOrNull) { it.parentOrNull }.any { it.type is DmlGrammar }
 
     private fun hasSequenceReference(function: AstNode, roots: List<AstNode>): Boolean {
         return roots.asSequence()
@@ -240,6 +246,9 @@ class DeterministicFunctionCheck : AbstractBaseCheck() {
             "SYSTIMESTAMP",
             "USER",
         )
+
+        /** The listed names with a built-in form that takes arguments in SQL. */
+        val SQL_BUILTIN_CALLS = setOf("CURRENT_TIMESTAMP", "LOCALTIMESTAMP", "SYSTIMESTAMP")
 
         val KNOWN_NON_DETERMINISTIC_CALLS = setOf("SYS_CONTEXT", "SYS_GUID")
         val DBMS_RANDOM_CALLS = setOf("RANDOM", "VALUE")

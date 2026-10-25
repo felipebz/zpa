@@ -254,3 +254,71 @@ BEGIN
   RETURN 'SYSDATE NEXTVAL COMMIT ROLLBACK';
 END;
 /
+
+-- A local declaration of a listed name takes it instead of the built-in, in PL/SQL and in SQL.
+CREATE OR REPLACE FUNCTION local_sysdate RETURN DATE DETERMINISTIC IS
+  sysdate DATE := DATE '2000-01-01';
+BEGIN
+  RETURN sysdate;
+END;
+/
+
+CREATE OR REPLACE FUNCTION parameter_user(user VARCHAR2) RETURN VARCHAR2 DETERMINISTIC IS
+  v VARCHAR2(128);
+BEGIN
+  SELECT user INTO v FROM dual;
+  RETURN v;
+END;
+/
+
+-- In SQL Oracle reads the built-in CURRENT_DATE even with a local of that name, but the name alone gives no evidence.
+CREATE OR REPLACE FUNCTION local_current_date_in_sql RETURN DATE DETERMINISTIC IS
+  current_date DATE := DATE '2000-01-01';
+  v DATE;
+BEGIN
+  SELECT current_date INTO v FROM dual;
+  RETURN v;
+END;
+/
+
+-- Conditional compilation may declare the name: no evidence from it.
+CREATE OR REPLACE FUNCTION conditional_sysdate RETURN DATE DETERMINISTIC IS
+  $IF $$local_date $THEN
+  sysdate DATE := DATE '2000-01-01';
+  $END
+BEGIN
+  RETURN sysdate;
+END;
+/
+
+-- Called with arguments in SQL, the timestamp built-ins win over any local of the same name.
+CREATE OR REPLACE FUNCTION current_timestamp_in_sql RETURN TIMESTAMP DETERMINISTIC IS -- Noncompliant
+  v TIMESTAMP;
+BEGIN
+  SELECT current_timestamp(3) INTO v FROM dual;
+  RETURN v;
+END;
+/
+
+CREATE OR REPLACE FUNCTION local_timestamp_function_in_sql RETURN TIMESTAMP DETERMINISTIC IS -- Noncompliant
+  v TIMESTAMP;
+  FUNCTION systimestamp(p NUMBER) RETURN TIMESTAMP IS
+  BEGIN
+    RETURN NULL;
+  END;
+BEGIN
+  SELECT systimestamp(3) INTO v FROM dual;
+  RETURN v;
+END;
+/
+
+-- SYSDATE has no form with arguments: in SQL this reads an element of the local collection.
+CREATE OR REPLACE FUNCTION local_sysdate_collection_in_sql RETURN VARCHAR2 DETERMINISTIC IS
+  TYPE names IS TABLE OF VARCHAR2(30);
+  sysdate names := names('a');
+  v VARCHAR2(30);
+BEGIN
+  SELECT sysdate(1) INTO v FROM dual;
+  RETURN v;
+END;
+/

@@ -104,5 +104,8 @@ enum class UsageUnavailability {
      * The node is not a declaration this evidence covers: not a variable, exception, cursor, parameter or cursor
      * parameter declaration, or one the local analysis holds no declaration for (a call specification's parameters).
      */
-    NOT_A_COVERED_DECLARATION
+    NOT_A_COVERED_DECLARATION,
+
+    /** The node is not a name the query covers (for example a qualified name, or a name outside an expression). */
+    NOT_A_COVERED_NAME
 }

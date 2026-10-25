@@ -267,6 +267,42 @@ class UsageEvidenceTest {
     }
 
     @Test
+    fun plainNamesBindLocalDeclarationsOrNothing() {
+        val text = "declare\n  v date;\n  user varchar2(30);\nbegin\n  v := sysdate;\n  select sysdate into v from t;\n" +
+            "  select user into v from t;\n  v := user;\nend;\n/\nbegin\n  x.y := 1;\nend;\n/\n"
+        assertThat(nameBindings(text)).containsExactly(
+            "5:V=Local(VARIABLE@2:2)", "5:SYSDATE=NothingLocal",
+            "6:SYSDATE=NothingLocal(column possible)", "6:V=Local(VARIABLE@2:2)",
+            "7:USER=ColumnOrLocal(VARIABLE@3:2)", "7:V=Local(VARIABLE@2:2)",
+            "8:V=Local(VARIABLE@2:2)", "8:USER=Local(VARIABLE@3:2)",
+            "12:X=Unavailable(NOT_A_COVERED_NAME)"
+        )
+    }
+
+    @Test
+    fun aNameInARegionTheAnalysisCannotSee() {
+        val text = "declare\n  v date;\n  \$if \$\$x \$then sysdate date; \$end\nbegin\n  v := sysdate;\nend;\n/\n"
+        assertThat(nameBindings(text)).containsExactly(
+            "5:V=Unknown[CONDITIONAL_COMPILATION]", "5:SYSDATE=Unknown[CONDITIONAL_COMPILATION]"
+        )
+    }
+
+    private fun nameBindings(text: String): List<String> {
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val bindings = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME)
+                    .forEach { bindings += "${it.token.line}:${it.tokenValue}=${this.context.nameBinding(it)}" }
+            }
+        }
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return bindings
+    }
+
+    @Test
     fun aSpecificationVariableInAnotherFile() {
         val spec = "create package p as\n  counter number;\n  procedure run;\nend;\n/\n"
         val body = "create package body p as\n  procedure run is\n    counter number;\n  begin\n    null;\n  end;\nend;\n/\n"

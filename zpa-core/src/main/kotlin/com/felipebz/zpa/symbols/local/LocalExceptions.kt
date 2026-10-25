@@ -187,7 +187,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         return depth
     }
 
-    private fun unavailable() = ExceptionBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
+    private fun unavailable() = ExceptionBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
 
     private companion object {
         /** The exceptions package STANDARD declares. */
