@@ -27,6 +27,9 @@ import com.felipebz.zpa.api.project.ProjectSnapshot
 import com.felipebz.zpa.project.*
 import java.util.*
 
+/** A declaration of a package specification in another project file: its kind and where it starts. Plain data. */
+internal class LocalSpecificationMember(val kind: LocalDeclarationKind, val line: Int, val column: Int, val fileId: String)
+
 /**
  * Decides lookups that stopped only at a package body's missing specification, with the project's member-name
  * coverage of that specification when it is in another project file. A step over the resolver's outcomes: the
@@ -54,6 +57,11 @@ import java.util.*
  * proved alone. Absence is still the only outcome after which a caller looks past the local scope: an absent name is
  * one neither the body nor the specification declares.
  *
+ * An unqualified name in SQL also carries the column gap, and is decided as with the specification in the file, wrapped:
+ * when the specification does not declare it, the column gap over an absent name, or [LocalResolution.SqlColumnOrLocal]
+ * for a declaration of the body; when only the specification declares it, once, the column gap over
+ * [LocalResolution.SpecificationMember], described in [sqlSpecificationMembers]. Otherwise its gaps stay.
+ *
  * For a qualified name, the first segment is decided this way; when it is the package's own name, the second segment
  * (a member of the body and specification) too, where "absent" is the member lookup's own `Undeclared`. Later
  * segments inherit the first segments' gap only, and carry the covered decision.
@@ -68,6 +76,7 @@ internal class LocalSpecificationCoverage private constructor(
         (steps.first() as? LocalResolution.Unsupported)?.let { return partlyLater(reference, it)?.let(::listOf) ?: steps }
         val first = steps.first() as? LocalResolution.Incomplete ?: return steps
         typeBody(reference, first)?.let { return listOf(LocalResolution.SpecificationCovered(it)) }
+        sqlName(reference, first)?.let { return listOf(LocalResolution.SpecificationCovered(it)) }
         if (!onlySpecificationGap(first)) return steps
         val (body, specification) = bodyWithSpecification(reference) ?: return steps
         val decided = decide(specification, body, reference, first.provisional, LocalResolution.ProvenAbsent, member = false) ?: return steps
@@ -204,6 +213,46 @@ internal class LocalSpecificationCoverage private constructor(
         }
         return types
     }
+
+    /** The specification member that an unqualified SQL name may bind, by the name's position, when it is the only reading besides a column. */
+    val sqlSpecificationMembers = HashMap<Pair<Int, Int>, LocalSpecificationMember>()
+
+    /** An unqualified SQL name decided as with the specification in the file; null keeps the gaps. */
+    private fun sqlName(reference: LocalReference, outcome: LocalResolution.Incomplete): LocalResolution? {
+        if (reference.segments.isNotEmpty() || outcome.regionReasons.isNotEmpty()) return null
+        val provisional = outcome.provisional
+        // With a declaration of the body found, the column gap is already in the provisional outcome.
+        val sql = outcome.lookupReasons == SQL_GAPS ||
+            outcome.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE) && provisional is LocalResolution.SqlColumnOrLocal
+        if (!sql) return null
+        val body = packageBody(LocalResolver.chain(model, reference.region)) ?: return null
+        val members = specificationMembers(body, reference.name) ?: return null
+        return when {
+            members.isEmpty() && provisional == LocalResolution.ProvenAbsent -> columnOr(LocalResolution.ProvenAbsent)
+            members.isEmpty() && provisional is LocalResolution.SqlColumnOrLocal ->
+                provisional.takeIf { declaredByBody(LocalResolution.Bound(it.declaration), body) }
+            provisional == LocalResolution.ProvenAbsent -> specificationMember(reference, members.singleOrNull() ?: return null)
+            else -> null
+        }
+    }
+
+    private fun specificationMember(reference: LocalReference, member: ProjectDeclaration): LocalResolution? {
+        val kind = when (member) {
+            is PackageValueDeclaration -> LocalDeclarationKind.VARIABLE
+            is PackageExceptionDeclaration -> LocalDeclarationKind.EXCEPTION
+            is PackageCursorDeclaration -> LocalDeclarationKind.CURSOR
+            is PackageFunctionDeclaration -> LocalDeclarationKind.FUNCTION
+            is PackageProcedureDeclaration -> LocalDeclarationKind.PROCEDURE
+            is PackageTypeDeclaration, is PackageSubtypeDeclaration -> LocalDeclarationKind.SUBTYPE
+            else -> return null
+        }
+        sqlSpecificationMembers[reference.range.startLine to reference.range.startColumn] =
+            LocalSpecificationMember(kind, member.sourceRange.startLine, member.sourceRange.startColumn, member.fileId.value)
+        return columnOr(LocalResolution.SpecificationMember)
+    }
+
+    private fun columnOr(outcome: LocalResolution) =
+        LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SQL_COLUMN_UNKNOWN), outcome)
 
     private fun onlySpecificationGap(outcome: LocalResolution.Incomplete) =
         outcome.regionReasons.isEmpty() && outcome.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE)
@@ -353,6 +402,7 @@ internal class LocalSpecificationCoverage private constructor(
 
     companion object {
         private val TYPE_GAPS = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE)
+        private val SQL_GAPS = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SQL_COLUMN_UNKNOWN)
 
         /** The refinement over [snapshot]'s project, or null when the project is not prepared. */
         fun of(model: LocalSemanticModel, snapshot: ProjectSnapshot): LocalSpecificationCoverage? =

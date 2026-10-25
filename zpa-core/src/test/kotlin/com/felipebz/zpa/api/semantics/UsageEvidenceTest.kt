@@ -280,6 +280,35 @@ class UsageEvidenceTest {
     }
 
     @Test
+    fun overDualOnlyDummyIsAColumn() {
+        val text = "declare\n  v number;\n  dummy varchar2(1);\nbegin\n  select v into v from dual;\n  select dummy into dummy from sys.dual;\n" +
+            "  select w into v from dual;\n  with dual as (select 1 v from t) select v into v from dual;\nend;\n/\n"
+        assertThat(nameBindings(text).filter { it.startsWith("5:") || it.startsWith("6:") || it.startsWith("7:W") || it.startsWith("8:") }).containsExactly(
+            "5:V=Local(VARIABLE@2:2)", "5:V=Local(VARIABLE@2:2)",
+            "6:DUMMY=ColumnOrLocal(VARIABLE@3:2)", "6:DUMMY=Local(VARIABLE@3:2)",
+            "7:W=NothingLocal",
+            "8:V=ColumnOrLocal(VARIABLE@2:2)", "8:V=Local(VARIABLE@2:2)"
+        )
+    }
+
+    @Test
+    fun sqlNamesInABodyWhoseSpecificationIsInAnotherFile() {
+        val spec = "create package pkg is\n  procedure p;\nend;\n/\n"
+        val declaringSpec = "create package pkg is\n  col number;\n  procedure p;\nend;\n/\n"
+        val body = "create package body pkg is\n  procedure p is\n    n number;\n  begin\n    select col into n from tab, tab2;\n  end;\nend;\n/\n"
+        val bodyCol = "create package body pkg is\n  col number;\n  procedure p is\n    n number;\n  begin\n    select col into n from tab, tab2;\n  end;\nend;\n/\n"
+        // The project shows the specification does not declare it; without the project it may.
+        assertThat(nameBindings(body, "s.sql" to spec, prepared = true)).contains("5:COL=NothingLocal(column possible)")
+        assertThat(nameBindings(body, "s.sql" to spec)).contains("5:COL=Unknown[SQL_NAME_MAY_BE_COLUMN, DECLARATION_OUTSIDE_FILE]")
+        // As with the specification in the file: a column, or the specification's variable.
+        assertThat(nameBindings(body, "s.sql" to declaringSpec, prepared = true)).contains("5:COL=ColumnOrLocal(VARIABLE@s.sql:2:2)")
+        assertThat(nameBindings(declaringSpec + body)).contains("10:COL=ColumnOrLocal(VARIABLE@2:2)")
+        // A declaration of the body.
+        assertThat(nameBindings(bodyCol, "s.sql" to spec, prepared = true)).contains("6:COL=ColumnOrLocal(VARIABLE@2:2)")
+        assertThat(nameBindings(spec + bodyCol)).contains("10:COL=ColumnOrLocal(VARIABLE@6:2)")
+    }
+
+    @Test
     fun aNameInARegionTheAnalysisCannotSee() {
         val text = "declare\n  v date;\n  \$if \$\$x \$then sysdate date; \$end\nbegin\n  v := sysdate;\nend;\n/\n"
         assertThat(nameBindings(text)).containsExactly(
@@ -287,7 +316,10 @@ class UsageEvidenceTest {
         )
     }
 
-    private fun nameBindings(text: String): List<String> {
+    private fun nameBindings(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {
+        val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation().prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
+        )
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
         val bindings = ArrayList<String>()
         val check = object : PlSqlCheck() {
@@ -296,7 +328,6 @@ class UsageEvidenceTest {
                     .forEach { bindings += "${it.token.line}:${it.tokenValue}=${this.context.nameBinding(it)}" }
             }
         }
-        val project = ProjectAnalysisContext.NOT_PREPARED
         PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
             .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
         return bindings

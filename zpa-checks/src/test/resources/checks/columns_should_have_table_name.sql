@@ -50,3 +50,12 @@ select rownum, sysdate, systimestamp, current_date, current_timestamp,
 
 select level, connect_by_isleaf, connect_by_iscycle
   from tab, tab2 connect by nocycle level < 3;
+
+declare
+  col number;
+begin
+  -- a local of the same name: a column "col" of tab or tab2 would win over it, but the query may read the local
+  select col into col
+    from tab, tab2;
+end;
+/

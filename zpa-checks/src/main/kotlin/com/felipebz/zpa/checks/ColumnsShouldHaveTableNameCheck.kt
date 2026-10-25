@@ -20,15 +20,17 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.typeIs
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.api.semantics.NameBinding
+import com.felipebz.zpa.typeIs
 
 @Rule(priority = Priority.MAJOR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
+@OptIn(ZpaExperimentalApi::class)
 class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
 
     override fun init() {
@@ -47,10 +49,15 @@ class ColumnsShouldHaveTableNameCheck : AbstractBaseCheck() {
             selectExpression.getFirstChild(DmlGrammar.FROM_CLAUSE).getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE).size > 1 &&
             candidate.typeIs(PlSqlGrammar.IDENTIFIER_NAME) &&
             !isStandaloneQueryValue(candidate) &&
-            semantic(candidate).symbol == null) {
+            isColumn(candidate)) {
 
             addIssue(candidate, getLocalizedMessage(), candidate.tokenOriginalValue)
         }
+    }
+
+    private fun isColumn(identifier: AstNode): Boolean {
+        val name = identifier.parentOrNull?.takeIf { it.type === PlSqlGrammar.VARIABLE_NAME } ?: return false
+        return (context.nameBinding(name) as? NameBinding.NothingLocal)?.sqlColumnPossible == true
     }
 
     private fun isStandaloneQueryValue(node: AstNode): Boolean {

@@ -37,22 +37,36 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     fun binding(name: AstNode): NameBinding {
         if (name.type != PlSqlGrammar.VARIABLE_NAME) return unavailable()
         val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
+        val reference = facts.references[index]
         val outcome = facts.resolutions[index].last()
+        // Over DUAL alone no column but DUMMY exists: the SQL reading is decided.
+        val noColumn = reference.sql?.excludesColumn(reference.name) == true
         return when (val decided = unwrap(outcome)) {
-            is LocalResolution.Incomplete -> incomplete(decided)
+            is LocalResolution.Incomplete -> specificationMember(reference, decided, noColumn) ?: incomplete(decided, noColumn)
+            is LocalResolution.SqlColumnOrLocal ->
+                if (noColumn) NameBinding.Local(declaration(decided.declaration)) else NameBinding.ColumnOrLocal(declaration(decided.declaration))
             else -> decided(decided)
         }
     }
 
     private fun unwrap(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
+    /** A member of the specification in another file, the only reading besides a column. */
+    private fun specificationMember(reference: LocalReference, outcome: LocalResolution.Incomplete, noColumn: Boolean): NameBinding? {
+        if (outcome.provisional != LocalResolution.SpecificationMember || outcome.regionReasons.isNotEmpty() ||
+            outcome.lookupReasons != setOf(LocalLookupGap.SQL_COLUMN_UNKNOWN)) return null
+        val member = facts.sqlSpecificationMembers[reference.range.startLine to reference.range.startColumn] ?: return null
+        val declaration = NameDeclaration(kind(member.kind), member.line, member.column, member.fileId)
+        return if (noColumn) NameBinding.Local(declaration) else NameBinding.ColumnOrLocal(declaration)
+    }
+
     /** Only a missing column scope keeps "nothing local" decided: the rest is Unknown. */
-    private fun incomplete(outcome: LocalResolution.Incomplete): NameBinding {
+    private fun incomplete(outcome: LocalResolution.Incomplete, noColumn: Boolean): NameBinding {
         val provisional = unwrap(outcome.provisional)
         return if (outcome.regionReasons.isEmpty() && outcome.lookupReasons == setOf(LocalLookupGap.SQL_COLUMN_UNKNOWN) &&
             provisional == LocalResolution.ProvenAbsent
         ) {
-            NameBinding.NothingLocal(sqlColumnPossible = true)
+            NameBinding.NothingLocal(sqlColumnPossible = !noColumn)
         } else {
             NameBinding.Unknown(reasons(outcome))
         }
@@ -68,27 +82,27 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         is LocalResolution.DeclaredLater -> NameBinding.Local(declaration(outcome.declaration))
         is LocalResolution.Duplicate -> NameBinding.Local(declaration(outcome.declarations.first()))
         is LocalResolution.OutOfScope -> NameBinding.Local(declaration(outcome.declaration))
-        is LocalResolution.SqlColumnOrLocal -> NameBinding.ColumnOrLocal(declaration(outcome.declaration))
         LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
     }
 
     private fun declaration(id: LocalDeclarationId): NameDeclaration {
         val declaration = model.declaration(id)
-        val kind = when (declaration.kind) {
-            LocalDeclarationKind.VARIABLE -> NameDeclarationKind.VARIABLE
-            LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER -> NameDeclarationKind.PARAMETER
-            LocalDeclarationKind.LOOP_INDEX -> NameDeclarationKind.LOOP_INDEX
-            LocalDeclarationKind.FUNCTION -> NameDeclarationKind.FUNCTION
-            LocalDeclarationKind.PROCEDURE -> NameDeclarationKind.PROCEDURE
-            LocalDeclarationKind.CURSOR -> NameDeclarationKind.CURSOR
-            LocalDeclarationKind.EXCEPTION -> NameDeclarationKind.EXCEPTION
-            LocalDeclarationKind.SUBTYPE, LocalDeclarationKind.RECORD_TYPE, LocalDeclarationKind.COLLECTION_TYPE,
-            LocalDeclarationKind.REF_CURSOR_TYPE, LocalDeclarationKind.OBJECT_TYPE -> NameDeclarationKind.TYPE
-            LocalDeclarationKind.ATTRIBUTE -> NameDeclarationKind.ATTRIBUTE
-            else -> NameDeclarationKind.OTHER
-        }
-        return NameDeclaration(kind, declaration.nameRange.startLine, declaration.nameRange.startColumn)
+        return NameDeclaration(kind(declaration.kind), declaration.nameRange.startLine, declaration.nameRange.startColumn)
+    }
+
+    private fun kind(kind: LocalDeclarationKind) = when (kind) {
+        LocalDeclarationKind.VARIABLE -> NameDeclarationKind.VARIABLE
+        LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER -> NameDeclarationKind.PARAMETER
+        LocalDeclarationKind.LOOP_INDEX -> NameDeclarationKind.LOOP_INDEX
+        LocalDeclarationKind.FUNCTION -> NameDeclarationKind.FUNCTION
+        LocalDeclarationKind.PROCEDURE -> NameDeclarationKind.PROCEDURE
+        LocalDeclarationKind.CURSOR -> NameDeclarationKind.CURSOR
+        LocalDeclarationKind.EXCEPTION -> NameDeclarationKind.EXCEPTION
+        LocalDeclarationKind.SUBTYPE, LocalDeclarationKind.RECORD_TYPE, LocalDeclarationKind.COLLECTION_TYPE,
+        LocalDeclarationKind.REF_CURSOR_TYPE, LocalDeclarationKind.OBJECT_TYPE -> NameDeclarationKind.TYPE
+        LocalDeclarationKind.ATTRIBUTE -> NameDeclarationKind.ATTRIBUTE
+        else -> NameDeclarationKind.OTHER
     }
 
     private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {

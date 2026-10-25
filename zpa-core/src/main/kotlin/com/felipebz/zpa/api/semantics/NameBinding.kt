@@ -29,7 +29,10 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
  */
 @ZpaExperimentalApi
 sealed interface NameBinding {
-    /** A declaration of the file named by the name; in SQL, no relation of the statement can have a column of that name. */
+    /**
+     * A declaration of the file named by the name; in SQL, no relation of the statement can have a column of that name
+     * (the only relations are the `DUAL` table, and the name is not `DUMMY`).
+     */
     class Local(val declaration: NameDeclaration) : NameBinding {
         override fun equals(other: Any?) = other is Local && declaration == other.declaration
 
@@ -39,8 +42,9 @@ sealed interface NameBinding {
     }
 
     /**
-     * In SQL: a column of a relation in scope would take the name before [declaration], which binds it otherwise. The
-     * analysis does not know the relations' columns.
+     * In SQL: a column of a relation in scope would take the name before [declaration], which binds it otherwise (a
+     * declaration of the file, or of the package's specification in another project file). The analysis does not know
+     * the relations' columns.
      */
     class ColumnOrLocal(val declaration: NameDeclaration) : NameBinding {
         override fun equals(other: Any?) = other is ColumnOrLocal && declaration == other.declaration
@@ -52,7 +56,7 @@ sealed interface NameBinding {
 
     /**
      * Proven: no declaration of the file is visible under the name. [sqlColumnPossible] is true in SQL when a relation
-     * of the statement could have a column of that name.
+     * of the statement could have a column of that name (any relation but the `DUAL` table, or the name `DUMMY`).
      */
     class NothingLocal(val sqlColumnPossible: Boolean) : NameBinding {
         override fun equals(other: Any?) = other is NothingLocal && sqlColumnPossible == other.sqlColumnPossible
@@ -83,14 +87,18 @@ sealed interface NameBinding {
     }
 }
 
-/** A declaration of the file that a name binds: its kind and its name's position. */
+/**
+ * A declaration that a name binds: its kind and position. In this file ([fileId] null) the position is its name's; a
+ * member of the package specification in another project file [fileId] is placed at the start of its declaration.
+ */
 @ZpaExperimentalApi
-class NameDeclaration internal constructor(val kind: NameDeclarationKind, val line: Int, val column: Int) {
-    override fun equals(other: Any?) = other is NameDeclaration && kind == other.kind && line == other.line && column == other.column
+class NameDeclaration internal constructor(val kind: NameDeclarationKind, val line: Int, val column: Int, val fileId: String? = null) {
+    override fun equals(other: Any?) = other is NameDeclaration && kind == other.kind && line == other.line && column == other.column &&
+        fileId == other.fileId
 
-    override fun hashCode() = (kind.hashCode() * 31 + line) * 31 + column
+    override fun hashCode() = ((kind.hashCode() * 31 + line) * 31 + column) * 31 + fileId.hashCode()
 
-    override fun toString() = "$kind@$line:$column"
+    override fun toString() = "$kind@" + (fileId?.let { "$it:" } ?: "") + "$line:$column"
 }
 
 /** The kind of a declaration a name binds. */

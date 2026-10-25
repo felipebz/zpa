@@ -36,8 +36,23 @@ internal class LocalSqlScope(
     val relations: Set<OracleIdentifier>,
     /** Tables written without an alias: `schema.table.column` reaches them. */
     val unaliasedTables: Set<OracleIdentifier>,
-    val parent: LocalSqlScope?
+    val parent: LocalSqlScope?,
+    /**
+     * Every relation is the `DUAL` table (`DUAL` or `SYS.DUAL`, not a `WITH` query), whose only column is `DUMMY`. An
+     * unqualified `DUAL` is taken as `SYS.DUAL`: a table named `DUAL` in the owner's schema would hide it.
+     */
+    val dualOnly: Boolean = false
 ) {
+    /** Whether no relation this scope or an enclosing one sees can have a column named [name]. */
+    fun excludesColumn(name: OracleIdentifier): Boolean {
+        var scope: LocalSqlScope? = this
+        while (scope != null) {
+            if (!scope.dualOnly || name.lookupName == "DUMMY") return false
+            scope = scope.parent
+        }
+        return true
+    }
+
     /** Whether a name with these [segments] after [first] qualifies a column or object path of a relation. */
     fun qualifies(first: OracleIdentifier, segments: List<LocalSegment>): Boolean {
         var scope: LocalSqlScope? = this
@@ -89,7 +104,9 @@ internal class LocalSqlScope(
         fun of(node: AstNode, parent: LocalSqlScope?): LocalSqlScope {
             val relations = LinkedHashSet<OracleIdentifier>()
             val tables = LinkedHashSet<OracleIdentifier>()
+            var dualOnly = true
             fun add(table: AstNode?, alias: AstNode?) {
+                if (table == null || !isDual(table)) dualOnly = false
                 val name = alias ?: table?.let(::tableName) ?: return
                 relations += LocalSyntax.identifier(name)
                 if (alias == null) tables += LocalSyntax.identifier(name)
@@ -114,8 +131,25 @@ internal class LocalSqlScope(
                 }
                 node.children.forEach(::walk)
             }
-            return LocalSqlScope(relations, tables, parent)
+            return LocalSqlScope(relations, tables, parent, relations.isNotEmpty() && dualOnly && !dualIsWithQuery(node))
         }
+
+        private fun isDual(reference: AstNode): Boolean {
+            if (reference.type !== DmlGrammar.TABLE_REFERENCE || reference.hasDescendant(PlSqlPunctuator.REMOTE)) return false
+            val names = reference.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map { LocalSyntax.identifier(it).lookupName }
+            return names == listOf("DUAL") || names == listOf("SYS", "DUAL")
+        }
+
+        /** Whether a `WITH` query named `DUAL` is visible from [node], hiding the table. */
+        private fun dualIsWithQuery(node: AstNode): Boolean =
+            generateSequence(node) { it.parentOrNull }
+                .filter { it.type === DmlGrammar.SELECT_EXPRESSION }
+                .any { select ->
+                    select.getDescendants(DmlGrammar.SUBQUERY_FACTORING_CLAUSE).any {
+                        it.getFirstAncestorOrNull(DmlGrammar.SELECT_EXPRESSION) === select &&
+                            it.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)?.let { name -> LocalSyntax.identifier(name).lookupName } == "DUAL"
+                    }
+                }
 
         /** The table name of a `TABLE_REFERENCE`: its last identifier before a database link. */
         private fun tableName(reference: AstNode): AstNode? =

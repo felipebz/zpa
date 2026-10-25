@@ -48,7 +48,9 @@ internal class LocalSemanticFacts(
      * by the body region and the name's lookup form: the specification's variable or exception of that name, or
      * [LocalSpecificationValue.Unknown]. Absent when the project is not prepared.
      */
-    val specificationValues: Map<Pair<LocalRegionId, String>, LocalSpecificationValue> = emptyMap()
+    val specificationValues: Map<Pair<LocalRegionId, String>, LocalSpecificationValue> = emptyMap(),
+    /** See [LocalSpecificationCoverage.sqlSpecificationMembers]. */
+    val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap()
 ) {
     /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
     val gateMismatches = ArrayList<String>()
