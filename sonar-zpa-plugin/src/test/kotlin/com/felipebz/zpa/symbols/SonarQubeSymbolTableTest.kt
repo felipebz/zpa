@@ -17,17 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.symbols
 
-import com.felipebz.flr.api.AstNode
-import com.felipebz.flr.api.GenericTokenType
-import com.felipebz.flr.api.Token
-import com.felipebz.zpa.api.symbols.Scope
-import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.HighlightingPair
+import com.felipebz.zpa.api.semantics.HighlightingRange
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import org.sonar.api.batch.sensor.internal.SensorContextTester
 import java.io.File
@@ -36,9 +35,9 @@ import java.nio.charset.StandardCharsets
 class SonarQubeSymbolTableTest {
 
     @Test
-    fun test() {
+    fun savesEachDeclarationWithItsReferences() {
         val inputFile = TestInputFileBuilder("key", File("test.sql").path)
-                .setContents("abcde")
+                .setContents("v := v + w;\nw")
                 .setLanguage("plsqlopen")
                 .setCharset(StandardCharsets.UTF_8)
                 .build()
@@ -47,42 +46,18 @@ class SonarQubeSymbolTableTest {
         val context = SensorContextTester.create(File(""))
         context.fileSystem().add(inputFile)
 
-        val symbol = createSymbol(createNode(1))
-        symbol.addUsage(createNode(2))
-        symbol.addUsage(createNode(3))
+        SonarQubeSymbolTable(context, inputFile).save(listOf(
+            HighlightingPair(HighlightingRange(1, 0, 1, 1), listOf(HighlightingRange(1, 5, 1, 6))),
+            HighlightingPair(HighlightingRange(2, 0, 2, 1), listOf(HighlightingRange(1, 9, 1, 10))),
+            HighlightingPair(HighlightingRange(1, 7, 1, 8), emptyList())
+        ))
 
-        val symbolTable = SonarQubeSymbolTable(context, inputFile)
-        symbolTable.save(listOf(symbol))
-
-        assertThat(context.referencesForSymbolAt(key, 1, 1))
+        assertThat(context.referencesForSymbolAt(key, 1, 0))
+                .extracting("start.line", "start.lineOffset", "end.lineOffset")
+                .containsExactly(tuple(1, 5, 6))
+        assertThat(context.referencesForSymbolAt(key, 2, 0))
                 .extracting("start.line", "start.lineOffset")
-                .containsExactly(tuple(1, 2), tuple(1, 3))
+                .containsExactly(tuple(1, 9))
+        assertThat(context.referencesForSymbolAt(key, 1, 7)).isEmpty()
     }
-
-    private fun createNode(character: Int): AstNode {
-        val token = Token.builder()
-                .setLine(1)
-                .setColumn(character)
-                .setValueAndOriginalValue(" ")
-                .setType(GenericTokenType.IDENTIFIER)
-                .build()
-
-        val lastToken = Token.builder()
-                .setLine(1)
-                .setColumn(character + 2)
-                .setValueAndOriginalValue(" ")
-                .setType(GenericTokenType.IDENTIFIER)
-                .build()
-
-        val node = AstNode(token)
-        node.addChild(AstNode(token))
-        node.addChild(AstNode(lastToken))
-
-        return node
-    }
-
-    private fun createSymbol(node: AstNode): Symbol {
-        return Symbol(node, Symbol.Kind.VARIABLE, mock(Scope::class.java), null)
-    }
-
 }

@@ -17,28 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.symbols
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.HighlightingPair
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.sensor.SensorContext
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable
-import com.felipebz.zpa.api.symbols.Symbol
 
 class SonarQubeSymbolTable(context: SensorContext, inputFile: InputFile) {
 
     private val symbolizable: NewSymbolTable = context.newSymbolTable().onFile(inputFile)
 
-    fun save(symbols: List<Symbol>) {
-        for (symbol in symbols) {
-            val symbolNode = symbol.declaration
-
-            val symbolToken = symbolNode.token
-            val newSymbol = symbolizable.newSymbol(symbolToken.line, symbolToken.column,
-                symbolToken.endLine, symbolToken.endColumn)
-
-            for (usage in symbol.usages) {
-                val usageToken = usage.token
-                newSymbol.newReference(usageToken.line, usageToken.column, usageToken.endLine, usageToken.endColumn)
+    fun save(pairs: List<HighlightingPair>) {
+        for (pair in pairs) {
+            val declaration = pair.declaration
+            val symbol = symbolizable.newSymbol(declaration.startLine, declaration.startColumn, declaration.endLine, declaration.endColumn)
+            for (reference in pair.references) {
+                symbol.newReference(reference.startLine, reference.startColumn, reference.endLine, reference.endColumn)
             }
         }
         symbolizable.save()

@@ -19,6 +19,20 @@
  */
 package com.felipebz.zpa.squid
 
+import com.felipebz.zpa.PlSqlChecks
+import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.checks.IssueLocation
+import com.felipebz.zpa.highlight.PlSqlHighlighterVisitor
+import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.metrics.CpdVisitor
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
+import com.felipebz.zpa.symbols.MappedObject
+import com.felipebz.zpa.symbols.ObjectLocationVisitor
+import com.felipebz.zpa.symbols.SonarQubeSymbolTable
 import org.sonar.api.batch.fs.InputFile
 import org.sonar.api.batch.fs.TextRange
 import org.sonar.api.batch.measure.Metric
@@ -28,19 +42,6 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation
 import org.sonar.api.issue.NoSonarFilter
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContextFactory
-import com.felipebz.zpa.PlSqlChecks
-import com.felipebz.zpa.checks.IssueLocation
-import com.felipebz.zpa.highlight.PlSqlHighlighterVisitor
-import com.felipebz.zpa.metadata.FormsMetadata
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.metrics.CpdVisitor
-import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
-import com.felipebz.zpa.symbols.MappedObject
-import com.felipebz.zpa.symbols.ObjectLocationVisitor
-import com.felipebz.zpa.symbols.SonarQubeSymbolTable
-import com.felipebz.zpa.api.PlSqlFile
-import com.felipebz.zpa.api.checks.PlSqlVisitor
 import java.io.Serializable
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantLock
@@ -102,6 +103,7 @@ class PlSqlAstScanner(private val context: SensorContext,
         }
     }
 
+    @OptIn(ZpaExperimentalApi::class)
     private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
         val result = try {
@@ -125,7 +127,7 @@ class PlSqlAstScanner(private val context: SensorContext,
             saveIssues(inputFile, result.issues)
 
             val symbolSaver = SonarQubeSymbolTable(context, inputFile)
-            symbolSaver.save(result.symbols)
+            symbolSaver.save(result.highlightingPairs)
 
             saveMetricOnFile(inputFile, CoreMetrics.STATEMENTS, result.numberOfStatements)
             saveMetricOnFile(inputFile, CoreMetrics.NCLOC, result.linesOfCode)
@@ -144,6 +146,7 @@ class PlSqlAstScanner(private val context: SensorContext,
         }
     }
 
+    @OptIn(ZpaExperimentalApi::class)
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
         val result = astScanner.scanFile(
@@ -161,7 +164,7 @@ class PlSqlAstScanner(private val context: SensorContext,
             saveIssues(inputFile, result.issues)
 
             val symbolTable = SonarQubeSymbolTable(context, inputFile)
-            symbolTable.save(result.symbols)
+            symbolTable.save(result.highlightingPairs)
         }
     }
 
