@@ -511,3 +511,21 @@ BEGIN
   RETURN TIME '19:00:00';
 END;
 /
+
+-- A local named like a built-in takes the name: the call is not the built-in.
+CREATE FUNCTION local_nvl(p_number NUMBER) RETURN NUMBER IS
+  nvl NUMBER := 0;
+BEGIN
+  RETURN nvl(p_number, 0);
+END;
+/
+
+CREATE FUNCTION nested_ltrim(p_value VARCHAR2) RETURN VARCHAR2 IS
+  FUNCTION ltrim(p VARCHAR2) RETURN VARCHAR2 IS
+  BEGIN
+    RETURN p;
+  END;
+BEGIN
+  RETURN ltrim(p_value);
+END;
+/

@@ -58,9 +58,13 @@ sealed interface ValueCategory {
         override fun toString() = "CursorVariable"
     }
 
-    /** A value of a predefined scalar type (numeric, character, date, boolean, LOB, JSON). */
-    object Scalar : ValueCategory {
-        override fun toString() = "Scalar"
+    /** A value of a predefined scalar type; [family] is null when the analysis does not place the type in one. */
+    class Scalar(val family: ScalarFamily?) : ValueCategory {
+        override fun equals(other: Any?) = other is Scalar && family == other.family
+
+        override fun hashCode() = family.hashCode()
+
+        override fun toString() = "Scalar(${family ?: "?"})"
     }
 
     /** Not decided; [reasons] says what the analysis could not see. Never a proof of any category. */
@@ -82,6 +86,34 @@ sealed interface ValueCategory {
 
         override fun toString() = "Unavailable($reason)"
     }
+}
+
+/** The family of a predefined scalar type. */
+@ZpaExperimentalApi
+enum class ScalarFamily {
+    /** NUMBER, PLS_INTEGER, BINARY_FLOAT, BINARY_DOUBLE and their predefined subtypes. */
+    NUMERIC,
+
+    /** VARCHAR2, CHAR, NVARCHAR2, NCHAR and their predefined subtypes. */
+    CHARACTER,
+
+    /** CLOB and NCLOB. */
+    CLOB,
+
+    BLOB,
+    RAW,
+
+    /** DATE and every TIMESTAMP variant. */
+    DATETIME,
+
+    /** INTERVAL DAY TO SECOND and INTERVAL YEAR TO MONTH. */
+    INTERVAL,
+
+    BOOLEAN,
+    JSON,
+
+    /** ROWID and UROWID. */
+    ROWID
 }
 
 /** Where a record's type comes from. */

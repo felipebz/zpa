@@ -27,9 +27,10 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.api.project.PackageProcedureReference
 import com.felipebz.zpa.api.project.PackageProcedureResolution
 import com.felipebz.zpa.api.project.PackageSpecificationResolution
-import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.api.symbols.Symbol
+import com.felipebz.zpa.api.semantics.NameBinding
+import com.felipebz.zpa.api.semantics.NameDeclarationKind
+import com.felipebz.zpa.api.semantics.ScalarFamily
+import com.felipebz.zpa.api.semantics.ValueCategory
 
 /**
  * Recommends DETERMINISTIC only for a deliberately small, locally verifiable subset of functions.
@@ -90,8 +91,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             val assignment = parameter.getFirstChildOrNull(PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT)
                 ?: return@all true
             val initializer = assignment.lastChildOrNull ?: return@all false
-            val symbol = (parameter.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) as? SemanticAstNode)?.symbol
-            isSafeExpression(initializer) && isTypeCompatible(initializer, symbol?.type)
+            isSafeExpression(initializer) && isTypeCompatible(initializer, declaredFamily(parameter))
         }
 
     private fun isCandidateDeclaration(function: AstNode): Boolean = when (function.type) {
@@ -127,8 +127,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
     private fun isSafeVariableInitializer(declaration: AstNode): Boolean {
         val assignment = declaration.getFirstChildOrNull(PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT) ?: return true
         val initializer = assignment.lastChildOrNull ?: return false
-        val symbol = (declaration.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) as? SemanticAstNode)?.symbol
-        return isSafeExpression(initializer) && isTypeCompatible(initializer, symbol?.type)
+        return isSafeExpression(initializer) && isTypeCompatible(initializer, declaredFamily(declaration))
     }
 
     private fun isSafeStatementsSection(section: AstNode): Boolean {
@@ -178,30 +177,19 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             .singleOrNull { it.type !== PlSqlPunctuator.SEMICOLON }
             ?: return false
 
-        val targetSymbol = writableSymbol(target) ?: return false
-        return isSafeWritableReference(target) &&
+        val targetName = writableName(target) ?: return false
+        val targetDeclaration = ownDeclaration(targetName) ?: return false
+        return !targetDeclaration.hasDirectChildren(PlSqlKeyword.CONSTANT) &&
             isSafeExpression(expression) &&
-            isTypeCompatible(expression, targetSymbol.type)
+            isTypeCompatible(expression, declaredFamily(targetDeclaration))
     }
 
-    private fun isSafeWritableReference(node: AstNode): Boolean {
-        return when (node.type) {
-            PlSqlGrammar.VARIABLE_NAME,
-            PlSqlGrammar.MEMBER_EXPRESSION -> safeWritableSymbol((node as? SemanticAstNode)?.symbol)
-            PlSqlGrammar.OBJECT_REFERENCE -> node.children.singleOrNull()?.let(::isSafeWritableReference) == true
-            else -> false
-        }
-    }
-
-    private fun writableSymbol(node: AstNode): Symbol? = when (node.type) {
+    private fun writableName(node: AstNode): AstNode? = when (node.type) {
         PlSqlGrammar.VARIABLE_NAME,
-        PlSqlGrammar.MEMBER_EXPRESSION -> (node as? SemanticAstNode)?.symbol
-        PlSqlGrammar.OBJECT_REFERENCE -> node.children.singleOrNull()?.let(::writableSymbol)
+        PlSqlGrammar.MEMBER_EXPRESSION -> node
+        PlSqlGrammar.OBJECT_REFERENCE -> node.children.singleOrNull()?.let(::writableName)
         else -> null
     }
-
-    private fun safeWritableSymbol(symbol: Symbol?): Boolean =
-        isSafeSymbol(symbol) && symbol?.hasModifier("constant") != true
 
     private fun isSafeIfStatement(statement: AstNode): Boolean {
         val thenIndex = statement.children.indexOfFirst { it.type === PlSqlKeyword.THEN }
@@ -390,7 +378,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             return false
         }
         val operand = node.children[1]
-        return isSafeExpressionNode(operand) && expressionType(operand) == PlSqlType.NUMERIC
+        return isSafeExpressionNode(operand) && expressionType(operand) == Family.NUMERIC
     }
 
     private fun isSafeArithmeticExpression(node: AstNode): Boolean {
@@ -409,7 +397,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         return node.children.indices
             .filter { it % 2 == 0 }
             .map { node.children[it] }
-            .all { isSafeExpressionNode(it) && expressionType(it) == PlSqlType.NUMERIC }
+            .all { isSafeExpressionNode(it) && expressionType(it) == Family.NUMERIC }
     }
 
     private fun isSafeConcatenationExpression(node: AstNode): Boolean {
@@ -425,7 +413,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             .map { node.children[it] }
             .all {
                 isSafeExpressionNode(it) &&
-                    expressionType(it) in setOf(PlSqlType.CHARACTER, PlSqlType.NULL)
+                    expressionType(it) in setOf(Family.CHARACTER, Family.NULL)
             }
     }
 
@@ -442,7 +430,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         if (node.children.size == 1) return isSafeExpressionNode(node.firstChild)
         if (node.children.size != 2 || node.children[0].type !== PlSqlKeyword.NOT) return false
         val operand = node.children[1]
-        return isSafeExpressionNode(operand) && expressionType(operand) == PlSqlType.BOOLEAN
+        return isSafeExpressionNode(operand) && expressionType(operand) == Family.BOOLEAN
     }
 
     private fun isSafeBooleanExpression(node: AstNode): Boolean {
@@ -453,30 +441,30 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         return node.children.indices
             .filter { it % 2 == 0 }
             .map { node.children[it] }
-            .all { isSafeExpressionNode(it) && expressionType(it) == PlSqlType.BOOLEAN }
+            .all { isSafeExpressionNode(it) && expressionType(it) == Family.BOOLEAN }
     }
 
     /** Validates the entire supported call shape so safety and inferred result type cannot diverge. */
-    private fun safeBuiltinResultType(node: AstNode): PlSqlType? = when (node.type) {
+    private fun safeBuiltinResultType(node: AstNode): Family? = when (node.type) {
         PlSqlGrammar.METHOD_CALL -> safeBuiltinMethodCall(
             node,
             nvlCall,
             "NVL",
-            PlSqlType.NUMERIC,
-            PlSqlType.NUMERIC,
-            PlSqlType.NUMERIC,
+            Family.NUMERIC,
+            Family.NUMERIC,
+            Family.NUMERIC,
         ) ?: safeBuiltinMethodCall(
             node,
             ltrimCall,
             "LTRIM",
-            PlSqlType.CHARACTER,
-            PlSqlType.CHARACTER,
+            Family.CHARACTER,
+            Family.CHARACTER,
         ) ?: safeBuiltinMethodCall(
             node,
             rtrimCall,
             "RTRIM",
-            PlSqlType.CHARACTER,
-            PlSqlType.CHARACTER,
+            Family.CHARACTER,
+            Family.CHARACTER,
         )
         SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION -> node.children.singleOrNull()
             ?.takeIf { it.type === SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION }
@@ -489,9 +477,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         node: AstNode,
         matcher: MethodMatcher,
         builtinName: String,
-        resultType: PlSqlType,
-        vararg argumentTypes: PlSqlType,
-    ): PlSqlType? {
+        resultType: Family,
+        vararg argumentTypes: Family,
+    ): Family? {
         if (!matcher.matches(node)) return null
         val arguments = positionalArguments(node) ?: return null
         if (!hasNoPackageShadow(node, builtinName)) return null
@@ -510,16 +498,15 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         val identifier = target.children.single()
         if (identifier.type !== PlSqlGrammar.IDENTIFIER_NAME || !isUnquoted(identifier.tokenOriginalValue)) return null
 
-        // A locally resolved routine or other declaration with the same name is not the Oracle built-in.
-        val targetSemantic = target as? SemanticAstNode ?: return null
-        if (targetSemantic.symbol != null) return null
+        // Only the built-in when nothing local takes the name.
+        if (context.nameBinding(target) !is NameBinding.NothingLocal) return null
 
         return call.children[1].getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
             argument.children.singleOrNull() ?: return null
         }
     }
 
-    private fun safeSimpleTrimResultType(node: AstNode): PlSqlType? {
+    private fun safeSimpleTrimResultType(node: AstNode): Family? {
         if (node.children.size != 4 ||
             node.children[0].type !== PlSqlKeyword.TRIM ||
             node.children[1].type !== PlSqlPunctuator.LPARENTHESIS ||
@@ -528,16 +515,16 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             return null
         }
         val argument = node.children[2]
-        return PlSqlType.CHARACTER.takeIf {
+        return Family.CHARACTER.takeIf {
             hasNoPackageShadow(node, "TRIM") &&
                 hasNoLocalTrimShadow(node) &&
-                isSafeExpressionNode(argument) && expressionType(argument) == PlSqlType.CHARACTER
+                isSafeExpressionNode(argument) && expressionType(argument) == Family.CHARACTER
         }
     }
 
     /**
      * TRIM has a dedicated SQL-function AST node, so it has no METHOD_CALL target for the
-     * lexical symbol check used by NVL/LTRIM/RTRIM. Inspect the enclosing routine declarations
+     * name binding check used by NVL/LTRIM/RTRIM. Inspect the enclosing routine declarations
      * instead. Package bodies are searched as a whole to include private and later declarations;
      * for standalone functions, only that function and its declarative section are relevant.
      */
@@ -584,15 +571,14 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
     private fun areComparable(left: AstNode, right: AstNode): Boolean {
         val leftType = expressionType(left) ?: return false
         val rightType = expressionType(right) ?: return false
-        if (leftType == PlSqlType.CHARACTER || rightType == PlSqlType.CHARACTER) return false
-        return leftType == rightType || leftType == PlSqlType.NULL || rightType == PlSqlType.NULL
+        if (leftType == Family.CHARACTER || rightType == Family.CHARACTER) return false
+        return leftType == rightType || leftType == Family.NULL || rightType == Family.NULL
     }
 
     private fun isSafeVariable(node: AstNode): Boolean {
         val name = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)?.tokenOriginalValue ?: return false
         if (isKnownExternalName(name)) return false
-        val symbol = (node as? SemanticAstNode)?.symbol
-        return symbol?.let(::isSafeSymbol) == true
+        return ownDeclaration(node) != null
     }
 
     private fun isSafeMember(node: AstNode): Boolean {
@@ -601,27 +587,24 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         val components = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
             .mapNotNull(::componentName)
         if (components.any(::isKnownExternalName)) return false
-
-        val symbol = (node as? SemanticAstNode)?.symbol
-        return symbol?.let(::isSafeSymbol) == true
+        return ownDeclaration(node) != null
     }
 
-    private fun expressionType(node: AstNode): PlSqlType? {
+    private fun expressionType(node: AstNode): Family? {
         when (node.type) {
-            PlSqlGrammar.LITERAL -> return (node as? SemanticAstNode)?.plSqlType?.takeUnless { it.isUnknown }
+            PlSqlGrammar.LITERAL -> return literalFamily(node)
             PlSqlGrammar.METHOD_CALL,
             SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION,
             SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> return safeBuiltinResultType(node)
             PlSqlGrammar.VARIABLE_NAME,
-            PlSqlGrammar.MEMBER_EXPRESSION -> return (node as? SemanticAstNode)?.symbol?.type
-                ?.takeUnless { it.isUnknown }
+            PlSqlGrammar.MEMBER_EXPRESSION -> return family(context.valueCategory(node))
             PlSqlGrammar.UNARY_EXPRESSION -> {
                 if (node.children.size == 1) return expressionType(node.firstChild)
                 if (node.children.size == 2 &&
                     (node.children[0].type === PlSqlPunctuator.PLUS || node.children[0].type === PlSqlPunctuator.MINUS)
                 ) {
                     return expressionType(node.children[1])
-                        ?.takeIf { it == PlSqlType.NUMERIC }
+                        ?.takeIf { it == Family.NUMERIC }
                 }
             }
             PlSqlGrammar.ADDITIVE_EXPRESSION,
@@ -636,9 +619,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
                     node.children.indices.filter { it % 2 == 1 }.all { node.children[it].type in operatorTypes } &&
                     node.children.indices.filter { it % 2 == 0 }
                         .map { node.children[it] }
-                        .all { expressionType(it) == PlSqlType.NUMERIC }
+                        .all { expressionType(it) == Family.NUMERIC }
                 ) {
-                    return PlSqlType.NUMERIC
+                    return Family.NUMERIC
                 }
             }
             PlSqlGrammar.CONCATENATION_EXPRESSION -> {
@@ -648,9 +631,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
                         .all { node.children[it].type === PlSqlGrammar.CONCATENATION_OPERATOR } &&
                     node.children.indices.filter { it % 2 == 0 }
                         .map { node.children[it] }
-                        .all { expressionType(it) in setOf(PlSqlType.CHARACTER, PlSqlType.NULL) }
+                        .all { expressionType(it) in setOf(Family.CHARACTER, Family.NULL) }
                 ) {
-                    return PlSqlType.CHARACTER
+                    return Family.CHARACTER
                 }
             }
             PlSqlGrammar.COMPARISON_EXPRESSION -> {
@@ -658,13 +641,13 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
                 if (node.children.size == 3 && node.children[1].type === ConditionsGrammar.RELATIONAL_OPERATOR &&
                     areComparable(node.children[0], node.children[2])
                 ) {
-                    return PlSqlType.BOOLEAN
+                    return Family.BOOLEAN
                 }
             }
             PlSqlGrammar.NOT_EXPRESSION -> {
                 if (node.children.size == 1) return expressionType(node.firstChild)
                 if (node.children.size == 2 && node.children[0].type === PlSqlKeyword.NOT) {
-                    return expressionType(node.children[1])?.takeIf { it == PlSqlType.BOOLEAN }
+                    return expressionType(node.children[1])?.takeIf { it == Family.BOOLEAN }
                 }
             }
             PlSqlGrammar.AND_EXPRESSION,
@@ -673,9 +656,9 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
                 if (node.children.size >= 3 && node.children.size % 2 == 1 &&
                     node.children.indices.filter { it % 2 == 0 }
                         .map { node.children[it] }
-                        .all { expressionType(it) == PlSqlType.BOOLEAN }
+                        .all { expressionType(it) == Family.BOOLEAN }
                 ) {
-                    return PlSqlType.BOOLEAN
+                    return Family.BOOLEAN
                 }
             }
             PlSqlGrammar.BRACKED_EXPRESSION -> {
@@ -696,30 +679,60 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         return null
     }
 
-    private fun isTypeCompatible(expression: AstNode, targetType: PlSqlType?): Boolean {
+    private fun isTypeCompatible(expression: AstNode, targetType: Family?): Boolean {
         val sourceType = expressionType(expression) ?: return false
-        return targetType != null && targetType != PlSqlType.UNKNOWN &&
-            (sourceType == targetType || sourceType == PlSqlType.NULL)
+        return targetType != null && (sourceType == targetType || sourceType == Family.NULL)
     }
 
-    private fun declaredType(datatype: AstNode): PlSqlType? {
-        if (datatype.type !== PlSqlGrammar.DATATYPE) return null
-        return when {
-            datatype.hasDirectChildren(PlSqlGrammar.NUMERIC_DATATYPE) -> PlSqlType.NUMERIC
-            datatype.hasDirectChildren(PlSqlGrammar.CHARACTER_DATAYPE) -> PlSqlType.CHARACTER
-            datatype.hasDirectChildren(PlSqlGrammar.DATE_DATATYPE) -> PlSqlType.DATE
-            datatype.hasDirectChildren(PlSqlGrammar.BOOLEAN_DATATYPE) -> PlSqlType.BOOLEAN
-            else -> (datatype as? SemanticAstNode)?.plSqlType?.takeUnless { it.isUnknown }
-        }
+    private fun declaredType(datatype: AstNode): Family? =
+        if (datatype.type === PlSqlGrammar.DATATYPE) family(context.typeCategory(datatype)) else null
+
+    private fun declaredFamily(declaration: AstNode): Family? =
+        declaration.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let(::declaredType)
+
+    private fun family(category: ValueCategory): Family? = when ((category as? ValueCategory.Scalar)?.family) {
+        ScalarFamily.NUMERIC -> Family.NUMERIC
+        ScalarFamily.CHARACTER -> Family.CHARACTER
+        ScalarFamily.DATETIME -> Family.DATE
+        ScalarFamily.INTERVAL -> Family.INTERVAL
+        ScalarFamily.BOOLEAN -> Family.BOOLEAN
+        else -> null
     }
 
-    private fun isSafeSymbol(symbol: Symbol?): Boolean {
-        if (symbol == null || symbol.scope.type !in FUNCTION_SCOPE_TYPES) return false
-        return when (symbol.kind) {
-            Symbol.Kind.VARIABLE,
-            Symbol.Kind.PARAMETER -> !symbol.hasModifier("out")
-            else -> false
+    /** Literals are typed by their syntax, as Oracle types them. */
+    private fun literalFamily(node: AstNode): Family? = when {
+        node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node) -> Family.NULL
+        node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) -> Family.CHARACTER
+        node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL) -> Family.NUMERIC
+        node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL) -> Family.DATE
+        node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL) -> Family.BOOLEAN
+        else -> null
+    }
+
+    private fun isEmptyString(node: AstNode): Boolean {
+        val value = node.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL)?.tokenValue ?: return false
+        val openingQuote = value.indexOf('\'')
+        val closingQuote = value.lastIndexOf('\'')
+        if (openingQuote < 0 || closingQuote <= openingQuote) return false
+        val content = value.substring(openingQuote + 1, closingQuote)
+        return if (value.substring(0, openingQuote).endsWith('q', ignoreCase = true)) content.length == 2 else content.isEmpty()
+    }
+
+    private fun ownDeclaration(name: AstNode): AstNode? {
+        val declaration = (context.nameBinding(name) as? NameBinding.Local)?.declaration ?: return null
+        if (declaration.fileId != null) return null
+        val function = name.getFirstAncestorOrNull(PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION) ?: return null
+        val candidates = when (declaration.kind) {
+            NameDeclarationKind.PARAMETER -> function.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)
+                ?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
+            NameDeclarationKind.VARIABLE -> function.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION)
+                ?.getChildren(PlSqlGrammar.VARIABLE_DECLARATION).orEmpty()
+            else -> return null
         }
+        return candidates.firstOrNull { candidate ->
+            candidate.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)?.token
+                ?.let { it.line == declaration.line && it.column == declaration.column } == true
+        }?.takeUnless { it.hasDirectChildren(PlSqlKeyword.OUT) }
     }
 
     private fun expressionAfter(node: AstNode, keyword: AstNodeType): AstNode? {
@@ -806,9 +819,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             PlSqlGrammar.SQL_MACRO_CLAUSE,
         )
 
-        val FUNCTION_SCOPE_TYPES = setOf<AstNodeType>(
-            PlSqlGrammar.CREATE_FUNCTION,
-            PlSqlGrammar.FUNCTION_DECLARATION,
-        )
     }
+
+    private enum class Family { NUMERIC, CHARACTER, DATE, INTERVAL, BOOLEAN, NULL }
 }

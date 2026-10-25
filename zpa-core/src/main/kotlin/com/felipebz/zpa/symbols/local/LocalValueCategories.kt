@@ -100,7 +100,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     private fun terminal(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory = when (evidence.terminal) {
         LocalTypeEvidence.Terminal.COMPOSITE -> composite(region, evidence)
         LocalTypeEvidence.Terminal.BUILT_IN ->
-            if (evidence.argumentType.family.isPresent) ValueCategory.Scalar else unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            evidence.argumentType.family.orElse(null)?.let { ValueCategory.Scalar(scalarFamily(it)) } ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { described(region, it) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         LocalTypeEvidence.Terminal.LITERAL -> unavailable()
         LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { ValueCategory.Unknown(reasons(it)) }
@@ -136,7 +136,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val source = description.source
         return when (source.status) {
             ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
-            ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar
+            ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar(DatatypeFamilies.ofDescription(description, null, null)?.let(::scalarFamily))
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
                 if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) ValueCategory.Record(RecordOrigin.ROWTYPE)
                 else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
@@ -155,6 +155,38 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             else ValueCategory.Collection(null, walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
                 ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         null -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+    }
+
+    private fun scalarFamily(family: ProjectDatatypeFamily): ScalarFamily? = when (family) {
+        ProjectDatatypeFamily.NUMERIC -> ScalarFamily.NUMERIC
+        ProjectDatatypeFamily.CHARACTER -> ScalarFamily.CHARACTER
+        ProjectDatatypeFamily.CLOB -> ScalarFamily.CLOB
+        ProjectDatatypeFamily.BLOB -> ScalarFamily.BLOB
+        ProjectDatatypeFamily.RAW -> ScalarFamily.RAW
+        ProjectDatatypeFamily.DATETIME -> ScalarFamily.DATETIME
+        ProjectDatatypeFamily.INTERVAL -> ScalarFamily.INTERVAL
+        ProjectDatatypeFamily.BOOLEAN -> ScalarFamily.BOOLEAN
+        ProjectDatatypeFamily.JSON -> ScalarFamily.JSON
+        ProjectDatatypeFamily.ROWID -> ScalarFamily.ROWID
+        ProjectDatatypeFamily.COMPOSITE -> null
+    }
+
+    private val typeUses: Map<Pair<Int, Int>, LocalTypeUse> by lazy {
+        val uses = model.declarations.mapNotNull { it.type } +
+            model.declarations.mapNotNull { (it.details as? LocalSubprogram)?.returnType } +
+            model.declarations.flatMap { declaration -> (declaration.details as? LocalRecordType)?.fields.orEmpty().mapNotNull { it.type } }
+        uses.associateBy { it.range.startLine to it.range.startColumn }
+    }
+
+    /** The category of the type a `DATATYPE` node writes: a declaration's or a function's RETURN type. */
+    fun typeCategory(datatype: AstNode): ValueCategory {
+        if (datatype.type !== PlSqlGrammar.DATATYPE) return unavailable()
+        val use = typeUses[datatype.token.line to datatype.token.column] ?: return unavailable()
+        val evidence = walk.written(use)
+        val written = use.typeRef as? NamedTypeRef
+        val refCursor = written != null && written.name.segments.size == 1 && written.name.last.lookupName == "SYS_REFCURSOR" &&
+            (evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
+        return if (refCursor) ValueCategory.CursorVariable else of(use.lookupRegion, evidence)
     }
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome

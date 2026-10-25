@@ -33,8 +33,12 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     private val referencesByStart = facts.references.indices
         .filter { facts.references[it].segments.isEmpty() && facts.references[it].context in CONTEXTS }
         .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val qualifiedByStart = facts.references.indices
+        .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].lastSegmentContext in CONTEXTS }
+        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
 
     fun binding(name: AstNode): NameBinding {
+        if (name.type == PlSqlGrammar.MEMBER_EXPRESSION) return qualified(name)
         if (name.type != PlSqlGrammar.VARIABLE_NAME) return unavailable()
         val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
         val reference = facts.references[index]
@@ -46,6 +50,28 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
             is LocalResolution.SqlColumnOrLocal ->
                 if (noColumn) NameBinding.Local(declaration(decided.declaration)) else NameBinding.ColumnOrLocal(declaration(decided.declaration))
             else -> decided(decided)
+        }
+    }
+
+    /**
+     * A qualified name (`fn.v`, `block.v`, `pkg.v`): the declaration its last segment binds, nothing local when its first
+     * segment is not declared in the file, or Unknown (a record field or a member is not a declaration).
+     */
+    private fun qualified(name: AstNode): NameBinding {
+        val index = qualifiedByStart[name.token.line to name.token.column] ?: return unavailable()
+        val reference = facts.references[index]
+        val written = name.children.count { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME } - 1
+        if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
+        val steps = facts.resolutions[index]
+        val first = unwrap(steps.first())
+        if (first == LocalResolution.ProvenAbsent) return NameBinding.NothingLocal(sqlColumnPossible = false)
+        val last = unwrap(steps.last())
+        return when {
+            last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
+            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            last is LocalResolution.Bound -> NameBinding.Local(declaration(last.declaration))
+            last == LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+            else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
         }
     }
 

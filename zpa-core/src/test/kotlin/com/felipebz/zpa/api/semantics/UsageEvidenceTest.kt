@@ -353,8 +353,8 @@ class UsageEvidenceTest {
         assertThat(valueCategories(text)).containsExactly(
             "21:r=Record(ROWTYPE)", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE)", "24:rc=Record(ROWTYPE)",
             "25:rs=Record(ROWTYPE)", "26:ra=Record(ROWTYPE)",
-            "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE))", "28:vn=Collection(NESTED_TABLE of Scalar)",
-            "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar",
+            "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE))", "28:vn=Collection(NESTED_TABLE of Scalar(NUMERIC))",
+            "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar(NUMERIC)",
             // A schema type, or a name, the file does not declare and no project describes.
             "31:o=Unknown[DECLARATION_OUTSIDE_FILE]", "32:unknown_name=Unknown[DECLARATION_OUTSIDE_FILE]",
             "34:q=Record(ROWTYPE)"
@@ -378,8 +378,8 @@ class UsageEvidenceTest {
             "    insert into t values l_list(1);\n    insert into t values l_other(1);\n  end;\nend;\n/\n"
         // The project keeps no collection kind. A schema-qualified type it cannot place stays unknown.
         assertThat(valueCategories(body, "s.sql" to spec, "type.sql" to type, prepared = true)).containsExactly(
-            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar)", "8:v_rows=Collection(? of Record(ROWTYPE))",
-            "9:l_list=Collection(? of Scalar)", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
+            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar(NUMERIC))", "8:v_rows=Collection(? of Record(ROWTYPE))",
+            "9:l_list=Collection(? of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
         )
     }
 
@@ -401,6 +401,32 @@ class UsageEvidenceTest {
         )
         assertThat(valueCategories("declare\n  type x is table of x;\n  l x;\nbegin\n  insert into t values l;\nend;\n/\n"))
             .containsExactly("5:l=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])")
+    }
+
+    @Test
+    fun qualifiedNamesAndWrittenTypes() {
+        val text = "create function f(p number) return date is\n  subtype amount is number;\n  v amount;\n  a v%type;\n  d date;\n" +
+            "  i interval day to second;\n  b boolean;\n  c varchar2(10);\n  type rec is record (x number);\n  r rec;\nbegin\n" +
+            "  v := f.p;\n  v := r.x;\n  v := pkg.x;\n  return d;\nend;\n/\n"
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).filter { it.parent.type !== PlSqlGrammar.CUSTOM_DATATYPE && it.parent.type !== PlSqlGrammar.ANCHORED_DATATYPE }
+                    .forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.nameBinding(it)}" }
+                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.typeCategory(it)}" }
+            }
+        }
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        // `f.p` through the function's name; a record field is not a declaration; `pkg` is not in the file.
+        assertThat(rows).containsExactly(
+            "12:f=Local(PARAMETER@1:18)", "13:r=Unknown[UNSUPPORTED_REFERENCE]", "14:pkg=NothingLocal",
+            "1:number=Scalar(NUMERIC)", "1:date=Scalar(DATETIME)", "2:number=Scalar(NUMERIC)", "3:amount=Scalar(NUMERIC)",
+            "4:v=Scalar(NUMERIC)", "5:date=Scalar(DATETIME)", "6:interval=Scalar(INTERVAL)", "7:boolean=Scalar(BOOLEAN)",
+            "8:varchar2=Scalar(CHARACTER)", "9:number=Scalar(NUMERIC)", "10:rec=Record(RECORD_TYPE)"
+        )
     }
 
     @Test

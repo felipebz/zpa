@@ -132,7 +132,8 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
 
     /**
      * What [name], a `VARIABLE_NAME` read in an expression (in PL/SQL, or in SQL inside PL/SQL), naming a call in a
-     * PL/SQL expression, or naming the cursor of `OPEN`, `FETCH` or `CLOSE`, binds among the file's declarations. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
+     * PL/SQL expression, or naming the cursor of `OPEN`, `FETCH` or `CLOSE`, binds among the file's declarations. A
+     * qualified name there (a `MEMBER_EXPRESSION` such as `fn.v` or `block.v`) binds the declaration of its last segment. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
      * may still take it ([NameBinding.NothingLocal.sqlColumnPossible]). [NameBinding.Unknown] is never a proof.
      */
     @ZpaExperimentalApi
@@ -149,5 +150,14 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     fun valueCategory(name: AstNode): ValueCategory =
         if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
         else valueCategories?.category(name) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * The category of the type a `DATATYPE` node writes: the type of a variable, parameter or field declaration, or a
+     * function's RETURN type, followed as [valueCategory] follows a value's type.
+     */
+    @ZpaExperimentalApi
+    fun typeCategory(datatype: AstNode): ValueCategory =
+        if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        else valueCategories?.typeCategory(datatype) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
 }

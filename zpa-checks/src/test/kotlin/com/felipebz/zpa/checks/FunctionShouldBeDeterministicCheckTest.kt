@@ -424,4 +424,103 @@ class FunctionShouldBeDeterministicCheckTest : BaseCheckTest() {
             FunctionShouldBeDeterministicCheck()
         )
     }
+    @Test
+    fun followsAnchorsAndSubtypesOfTheSpecification() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "typed_pkg.pks",
+                    """
+                    CREATE PACKAGE typed_pkg AS
+                      g_count NUMBER;
+                      SUBTYPE amount IS NUMBER;
+                      FUNCTION positive(p_value g_count%TYPE) RETURN NUMBER;
+                      FUNCTION doubled(p_value NUMBER) RETURN NUMBER;
+                    END typed_pkg;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "typed_pkg.pkb",
+                    """
+                    CREATE PACKAGE BODY typed_pkg AS
+                      FUNCTION positive(p_value g_count%TYPE) RETURN NUMBER IS -- Noncompliant
+                      BEGIN
+                        IF p_value > 0 THEN
+                          RETURN p_value;
+                        END IF;
+                        RETURN 0;
+                      END;
+
+                      FUNCTION doubled(p_value NUMBER) RETURN NUMBER IS -- Noncompliant
+                        l_amount amount := 2;
+                      BEGIN
+                        RETURN p_value * l_amount;
+                      END;
+                    END typed_pkg;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
+    fun packageFunctionWithoutItsSpecification() {
+        // The specification in another file is not in the project: nothing proves the function is public.
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "typed_pkg.pkb",
+                    """
+                    CREATE PACKAGE BODY typed_pkg AS
+                      FUNCTION doubled(p_value NUMBER) RETURN NUMBER IS
+                      BEGIN
+                        RETURN p_value * 2;
+                      END;
+                    END typed_pkg;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
+    @Test
+    fun conditionalCompilation() {
+        // A $IF in the function's own body may hide another reading of the name it returns: nothing is proven. Without
+        // it, the same function is a candidate.
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource(
+                    "conditional.sql",
+                    """
+                    CREATE FUNCTION conditional_value(p_value NUMBER) RETURN NUMBER IS
+                    BEGIN
+                      ${'$'}IF ${'$'}${'$'}doubled ${'$'}THEN
+                      RETURN p_value * 2;
+                      ${'$'}ELSE
+                      RETURN p_value;
+                      ${'$'}END
+                    END;
+                    /
+                    """.trimIndent()
+                ),
+                ProjectTestSource(
+                    "plain.sql",
+                    """
+                    CREATE FUNCTION plain_value(p_value NUMBER) RETURN NUMBER IS -- Noncompliant
+                    BEGIN
+                      RETURN p_value * 2;
+                    END;
+                    /
+                    """.trimIndent()
+                )
+            ),
+            FunctionShouldBeDeterministicCheck()
+        )
+    }
+
 }

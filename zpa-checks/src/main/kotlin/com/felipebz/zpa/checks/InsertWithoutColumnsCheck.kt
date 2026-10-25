@@ -70,7 +70,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
     private fun mayBeRow(category: ValueCategory) = when (category) {
         is ValueCategory.Record -> category.origin == RecordOrigin.ROWTYPE
         ValueCategory.ObjectInstance, is ValueCategory.Unknown, is ValueCategory.Unavailable -> true
-        is ValueCategory.Collection, ValueCategory.Scalar, ValueCategory.CursorVariable -> false
+        is ValueCategory.Collection, is ValueCategory.Scalar, ValueCategory.CursorVariable -> false
     }
 
     private fun mayBeElementRow(name: AstNode): Boolean {
