@@ -10,6 +10,7 @@
   "lnpls/autonomous-transactions-9.sql" : [ 25 ],
   "lnpls/avoiding-inner-capture-select-and-dml-statements-10.sql" : [ 6, 12, 18 ],
   "lnpls/avoiding-inner-capture-select-and-dml-statements-7.sql" : [ 6 ],
+  "lnpls/bulk-sql-and-bulk-binding-22.sql" : [ 39 ],
   "lnpls/column-name-precedence-6.sql" : [ 8 ],
   "lnpls/conditional-compilation1-18.sql" : [ 36 ],
   "lnpls/external-subprograms-5.sql" : [ 8 ],

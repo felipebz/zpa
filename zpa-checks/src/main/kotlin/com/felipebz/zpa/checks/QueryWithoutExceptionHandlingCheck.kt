@@ -20,6 +20,7 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.AggregateSqlFunctionsGrammar
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
@@ -55,18 +56,39 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
             return
         }
 
-        if (strictMode) {
-            val parentBlock = statement.astNode.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
-
-            if (parentBlock?.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS) == false) {
-                addIssue(statement, getLocalizedMessage())
-            }
-        } else {
-            val hasExceptionHandler = context.currentScope?.hasExceptionHandler ?: false
-            if (!hasExceptionHandler) {
-                addIssue(statement, getLocalizedMessage())
-            }
+        val handled = if (strictMode) isHandledByItsBlock(statement.astNode) else isHandledByAnEnclosingUnit(statement.astNode)
+        if (handled == false) {
+            addIssue(statement, getLocalizedMessage())
         }
+    }
+
+    /**
+     * Strict: the nearest block whose statements hold [node] has handlers. A handler covers the statements of its own
+     * block only, so a query in an `EXCEPTION` section is covered by an enclosing block, if any. Null for a query in no
+     * block at all.
+     */
+    private fun isHandledByItsBlock(node: AstNode): Boolean? {
+        val sections = generateSequence(node.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)) {
+            it.getFirstAncestorOrNull(PlSqlGrammar.STATEMENTS_SECTION)
+        }.toList()
+        if (sections.isEmpty()) return null
+        val nearest = sections.firstOrNull { !isInHandlers(node, it) } ?: return false
+        return nearest.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS)
+    }
+
+    /**
+     * Not strict: a block or unit enclosing [node] has handlers that cover it, nested subprograms included (a handler
+     * of the enclosing unit counts for them); a package's initialization section does not.
+     */
+    private fun isHandledByAnEnclosingUnit(node: AstNode): Boolean =
+        generateSequence(node.getFirstAncestorOrNull(*HANDLER_OWNERS)) { it.getFirstAncestorOrNull(*HANDLER_OWNERS) }.any { owner ->
+            val section = owner.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)
+            section != null && section.hasDirectChildren(PlSqlGrammar.EXCEPTION_HANDLERS) && !isInHandlers(node, section)
+        }
+
+    private fun isInHandlers(node: AstNode, section: AstNode): Boolean {
+        val handlers = section.getFirstChildOrNull(PlSqlGrammar.EXCEPTION_HANDLERS) ?: return false
+        return generateSequence(node.parentOrNull) { it.parentOrNull }.takeWhile { it !== section }.any { it === handlers }
     }
 
     private fun isGuaranteedSingleRowAggregate(selectStatement: AstNode): Boolean {
@@ -135,6 +157,13 @@ class QueryWithoutExceptionHandlingCheck : AbstractBaseCheck() {
 
     private companion object {
         val COMMON_AGGREGATE_FUNCTIONS = setOf("count", "sum", "avg", "min", "max")
+
+        val HANDLER_OWNERS = arrayOf<AstNodeType>(
+            PlSqlGrammar.BLOCK_STATEMENT, PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION,
+            PlSqlGrammar.CREATE_FUNCTION, PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.TYPE_CONSTRUCTOR,
+            PlSqlGrammar.SIMPLE_DML_TRIGGER, PlSqlGrammar.INSTEAD_OF_DML_TRIGGER, PlSqlGrammar.COMPOUND_DML_TRIGGER,
+            PlSqlGrammar.SYSTEM_TRIGGER
+        )
     }
 
 }

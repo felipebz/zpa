@@ -13,3 +13,20 @@ create package body pkg is
     select dummy from dual;
 end;
 /
+create package pkg is
+  cursor cur(p number) is -- Noncompliant {{Move the body of the cursor "CUR" to the package body.}}
+    select dummy from dual where p = 1;
+  cursor cur(p varchar2) is -- Noncompliant {{Move the body of the cursor "CUR" to the package body.}}
+    select dummy from dual where p = 'x';
+end;
+/
+create package pkg is
+  $if $$with_cursor $then
+  cursor kept is -- Noncompliant {{Move the body of the cursor "KEPT" to the package body.}}
+    select dummy from dual;
+  $else
+  cursor skipped is
+    select dummy from dual;
+  $end
+end;
+/

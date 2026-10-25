@@ -26,7 +26,6 @@ import com.felipebz.zpa.api.annotations.ConstantRemediation
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
 import com.felipebz.zpa.api.annotations.RuleInfo
-import com.felipebz.zpa.api.symbols.Symbol.Kind
 
 @Rule(priority = Priority.MAJOR)
 @ConstantRemediation("10min")
@@ -38,11 +37,10 @@ class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val cursors = context.currentScope?.getSymbols(Kind.CURSOR) ?: emptyList()
+        val cursors = node.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION)?.getChildren(PlSqlGrammar.CURSOR_DECLARATION).orEmpty()
         for (cursor in cursors) {
-            val cursorDeclaration = cursor.declaration.parent
-            if (cursorDeclaration.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
-                addIssue(cursorDeclaration, getLocalizedMessage(), cursor.name)
+            if (cursor.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION)) {
+                addIssue(cursor, getLocalizedMessage(), cursor.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue)
             }
         }
     }

@@ -701,21 +701,12 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
 
     /** Literals are typed by their syntax, as Oracle types them. */
     private fun literalFamily(node: AstNode): Family? = when {
-        node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node) -> Family.NULL
+        CheckUtils.isNullLiteralOrEmptyString(node) -> Family.NULL
         node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) -> Family.CHARACTER
         node.hasDirectChildren(PlSqlGrammar.NUMERIC_LITERAL) -> Family.NUMERIC
         node.hasDirectChildren(PlSqlTokenType.DATE_LITERAL) -> Family.DATE
         node.hasDirectChildren(PlSqlGrammar.BOOLEAN_LITERAL) -> Family.BOOLEAN
         else -> null
-    }
-
-    private fun isEmptyString(node: AstNode): Boolean {
-        val value = node.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL)?.tokenValue ?: return false
-        val openingQuote = value.indexOf('\'')
-        val closingQuote = value.lastIndexOf('\'')
-        if (openingQuote < 0 || closingQuote <= openingQuote) return false
-        val content = value.substring(openingQuote + 1, closingQuote)
-        return if (value.substring(0, openingQuote).endsWith('q', ignoreCase = true)) content.length == 2 else content.isEmpty()
     }
 
     private fun ownDeclaration(name: AstNode): AstNode? {

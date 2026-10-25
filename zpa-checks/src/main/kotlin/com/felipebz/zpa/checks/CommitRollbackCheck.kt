@@ -20,10 +20,11 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.typeIs
+import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
+import com.felipebz.zpa.typeIs
 
 @Rule(priority = Priority.MAJOR)
 @ConstantRemediation("30min")
@@ -36,21 +37,35 @@ class CommitRollbackCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        val scope = context.currentScope
-
-        var outerScope = scope
-        while (outerScope?.outer != null && outerScope.outer?.type != null) {
-            outerScope = outerScope.outer
+        if (node.typeIs(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO)) {
+            return
         }
 
-        val isRollbackToSavepoint = node.typeIs(PlSqlGrammar.ROLLBACK_STATEMENT) && node.hasDirectChildren(PlSqlKeyword.TO)
+        if (node.getFirstAncestorOrNull(PlSqlGrammar.ANONYMOUS_BLOCK) != null) {
+            return
+        }
 
-        val currentScopeIsAutonomousTransaction = scope?.isAutonomousTransaction ?: false
-        val isInsideABlockStatement = outerScope?.type == PlSqlGrammar.BLOCK_STATEMENT
-
-        if (!isRollbackToSavepoint && !currentScopeIsAutonomousTransaction && !isInsideABlockStatement) {
+        if (!mayBeAutonomous(node)) {
             addLineIssue(getLocalizedMessage(), node.tokenLine, node.tokenValue)
         }
+    }
+
+    private fun mayBeAutonomous(node: AstNode): Boolean =
+        generateSequence(node.getFirstAncestorOrNull(*UNITS)) { it.getFirstAncestorOrNull(*UNITS) }.any { unit ->
+            declaresAutonomousTransaction(unit) || PlSqlStructure.hasKeptConditionalBranchInDeclarations(unit)
+        }
+
+    private fun declaresAutonomousTransaction(unit: AstNode): Boolean =
+        unit.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION)
+            ?.getChildren(PlSqlGrammar.PRAGMA_DECLARATION)
+            ?.any { it.hasDirectChildren(PlSqlGrammar.AUTONOMOUS_TRANSACTION_PRAGMA) } == true
+
+    private companion object {
+        val UNITS = arrayOf<AstNodeType>(
+            PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.CREATE_FUNCTION,
+            PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.TYPE_CONSTRUCTOR, PlSqlGrammar.SIMPLE_DML_TRIGGER,
+            PlSqlGrammar.INSTEAD_OF_DML_TRIGGER, PlSqlGrammar.COMPOUND_DML_TRIGGER, PlSqlGrammar.SYSTEM_TRIGGER
+        )
     }
 
 }

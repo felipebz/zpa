@@ -34,7 +34,7 @@ class EmptyBlockCheck : AbstractBaseCheck() {
     }
 
     override fun visitNode(node: AstNode) {
-        if (context.currentScope?.isOverridingMember == true) {
+        if (node.parentOrNull?.let(PlSqlStructure::isOverridingMember) == true) {
             return
         }
 

@@ -331,3 +331,41 @@ begin
     from values_table;
 end;
 /
+
+-- A handler covers the statements of its own block only.
+begin
+  null;
+exception
+  when others then
+    select 1 -- Noncompliant
+      into var
+      from dual;
+end;
+/
+
+begin
+  begin
+    null;
+  exception
+    when others then
+      select 1 -- covered by the enclosing block
+        into var
+        from dual;
+  end;
+exception
+  when others then
+    null;
+end;
+/
+
+begin
+  begin
+    select 1 -- Noncompliant
+      into var
+      from dual;
+  end;
+exception
+  when others then
+    null;
+end;
+/

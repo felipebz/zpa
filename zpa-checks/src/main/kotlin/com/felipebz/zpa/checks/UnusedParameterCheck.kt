@@ -23,7 +23,6 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.semantics.UsageEvidence
 import java.util.regex.Pattern
@@ -64,7 +63,7 @@ class UnusedParameterCheck : AbstractBaseCheck() {
     /** The rules that exclude every parameter of [owner], the subprogram or cursor that declares them. */
     private fun isExempt(owner: AstNode): Boolean {
         // is overriding something?
-        if (isOverridingMember(owner)) return true
+        if (PlSqlStructure.isOverridingMember(owner)) return true
 
         // ignore procedure/function specification and overriding members
         if (owner.type in DECLARATION_OR_CONSTRUCTOR && !owner.hasDirectChildren(PlSqlGrammar.STATEMENTS_SECTION)) return true
@@ -90,12 +89,6 @@ class UnusedParameterCheck : AbstractBaseCheck() {
             if (regex.matcher(identifier.tokenValue).matches()) return true
         }
         return false
-    }
-
-    /** A method marked `OVERRIDING` (and not `NOT OVERRIDING`) in its type's inheritance clause. */
-    private fun isOverridingMember(owner: AstNode): Boolean {
-        val inheritance = owner.parentOrNull?.getFirstChildOrNull(PlSqlGrammar.INHERITANCE_CLAUSE) ?: return false
-        return inheritance.firstChild.type !== PlSqlKeyword.NOT && inheritance.hasDirectChildren(PlSqlKeyword.OVERRIDING)
     }
 
     companion object {

@@ -34,3 +34,15 @@ begin
   var := 1;
 end;
 /
+create type body t2 as
+  overriding member function f return number as
+  begin
+    null;  -- Compliant, an overriding member
+  end;
+
+  not overriding member function g return number as
+  begin
+    null; -- Noncompliant
+  end;
+end;
+/

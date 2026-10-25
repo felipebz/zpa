@@ -24,8 +24,6 @@ import com.felipebz.flr.api.AstNodeType
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.matchers.MethodMatcher
-import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.typeIs
 
 object CheckUtils {
@@ -36,7 +34,7 @@ object CheckUtils {
 
     private val WHEN = arrayOf<AstNodeType>(PlSqlKeyword.WHEN)
 
-    private val NVL_WITH_NULL_MATCHER = MethodMatcher.create().name("nvl").addParameters(PlSqlType.UNKNOWN, PlSqlType.NULL)
+    private val NVL_MATCHER = MethodMatcher.create().name("nvl").addParameters(2)
 
     private val RAISE_APPLICATION_ERROR_MATCHER = MethodMatcher.create().name("raise_application_error").withNoParameterConstraint()
 
@@ -44,11 +42,19 @@ object CheckUtils {
         get() = TERMINATION_STATEMENTS.clone()
 
     fun isNullLiteralOrEmptyString(node: AstNode): Boolean {
-        return (node as SemanticAstNode).plSqlType === PlSqlType.NULL
+        return node.type === PlSqlGrammar.LITERAL && (node.hasDirectChildren(PlSqlGrammar.NULL_LITERAL) || isEmptyString(node))
     }
 
     fun isEmptyString(node: AstNode): Boolean {
-        return node.hasDirectChildren(PlSqlGrammar.CHARACTER_LITERAL) && (node as SemanticAstNode).plSqlType === PlSqlType.NULL
+        val value = node.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL)?.tokenValue ?: return false
+        val openingQuote = value.indexOf('\'')
+        val closingQuote = value.lastIndexOf('\'')
+        if (openingQuote < 0 || closingQuote <= openingQuote) {
+            return false
+        }
+        val content = value.substring(openingQuote + 1, closingQuote)
+        // An alternative-quoted literal holds one opening and one closing delimiter.
+        return if (value.substring(0, openingQuote).endsWith('q', ignoreCase = true)) content.length == 2 else content.isEmpty()
     }
 
     @JvmStatic
@@ -109,9 +115,11 @@ object CheckUtils {
     }
 
     fun skipNvlWithNull(node: AstNode): AstNode {
-        if (NVL_WITH_NULL_MATCHER.matches(node)) {
-            val arguments = NVL_WITH_NULL_MATCHER.getArgumentsValues(node)
-            return arguments[0]
+        if (NVL_MATCHER.matches(node)) {
+            val arguments = NVL_MATCHER.getArgumentsValues(node)
+            if (isNullLiteralOrEmptyString(arguments[1])) {
+                return arguments[0]
+            }
         }
         return node
     }

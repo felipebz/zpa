@@ -95,3 +95,57 @@ exception
     null;
 end;
 /
+
+-- A handler covers the statements of its own block only.
+begin
+  null;
+exception
+  when others then
+    select 1 -- Noncompliant
+      into var
+      from dual;
+end;
+/
+
+begin
+  begin
+    null;
+  exception
+    when others then
+      select 1 -- covered by the enclosing block
+        into var
+        from dual;
+  end;
+exception
+  when others then
+    null;
+end;
+/
+
+begin
+  begin
+    select 1 -- covered by the enclosing block
+      into var
+      from dual;
+  end;
+exception
+  when others then
+    null;
+end;
+/
+
+-- A nested subprogram counts the handler of its enclosing unit.
+create procedure outer_with_handler is
+  procedure nested is
+  begin
+    select 1
+      into var
+      from dual;
+  end;
+begin
+  nested;
+exception
+  when others then
+    null;
+end;
+/
