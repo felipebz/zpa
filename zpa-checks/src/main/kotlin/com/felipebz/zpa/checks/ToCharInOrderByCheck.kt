@@ -22,11 +22,11 @@ package com.felipebz.zpa.checks
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
-import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.internal.InternalSemanticTypeBridge
-import com.felipebz.zpa.internal.ZpaInternalApi
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
@@ -38,7 +38,6 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
         subscribeTo(DmlGrammar.ORDER_BY_ITEM)
     }
 
-    @OptIn(ZpaInternalApi::class)
     override fun visitNode(node: AstNode) {
         val expression = node.firstChild
 
@@ -46,27 +45,40 @@ class ToCharInOrderByCheck : AbstractBaseCheck() {
             addIssue(node, getLocalizedMessage())
         }
 
-        if (expression.type === PlSqlGrammar.LITERAL &&
-            InternalSemanticTypeBridge.effectivePlSqlType(semantic(expression)) === PlSqlType.NUMERIC
-        ) {
-            val index = Integer.parseInt(expression.tokenOriginalValue)
+        val position = position(expression) ?: return
+        val selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)
+        val queryBlock = selectExpression.getFirstChild(DmlGrammar.QUERY_BLOCK)
+        val columns = queryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
 
-            val selectExpression = node.getFirstAncestor(DmlGrammar.SELECT_EXPRESSION)
-            val queryBlock = selectExpression.getFirstChild(DmlGrammar.QUERY_BLOCK)
-            val columns = queryBlock.getChildren(DmlGrammar.SELECT_COLUMN)
-
-            if (index > 0 && index <= columns.size) {
-                val selectColumn = columns[index - 1].firstChild
-
-                if (toChar.matches(selectColumn)) {
-                    addIssue(node, getLocalizedMessage())
-                }
-            }
+        if (position >= BigDecimal.ONE && position <= columns.size.toBigDecimal() && toChar.matches(columns[position.toInt() - 1].firstChild)) {
+            addIssue(node, getLocalizedMessage())
         }
+    }
+
+    private fun position(expression: AstNode): BigDecimal? = when (expression.type) {
+        PlSqlGrammar.BRACKED_EXPRESSION ->
+            expression.children.takeIf { it.size == 3 && it[0].type === PlSqlPunctuator.LPARENTHESIS && it[2].type === PlSqlPunctuator.RPARENTHESIS }
+                ?.let { position(it[1]) }
+        PlSqlGrammar.UNARY_EXPRESSION ->
+            expression.children.takeIf { it.size == 2 && it[0].type === PlSqlPunctuator.PLUS }?.let { position(it[1]) }
+        PlSqlGrammar.EXPRESSION, PlSqlGrammar.PRIMARY_EXPRESSION -> expression.children.singleOrNull()?.let(::position)
+        PlSqlGrammar.LITERAL -> expression.getFirstChildOrNull(PlSqlGrammar.NUMERIC_LITERAL)?.tokenValue
+            ?.takeUnless { it.endsWith('f', ignoreCase = true) || it.endsWith('d', ignoreCase = true) }
+            ?.toBigDecimalOrNull()
+            ?.let(::truncated)
+        else -> null
+    }
+
+    private fun truncated(value: BigDecimal): BigDecimal? {
+        val integerDigits = value.precision().toLong() - value.scale()
+        return if (integerDigits in 1..MAX_POSITION_DIGITS) value.setScale(0, RoundingMode.DOWN) else null
     }
 
     companion object {
         private val toChar = MethodMatcher.create().name("to_char").withNoParameterConstraint()
+
+        /** More than the columns a select list can have (1000): any longer integer is out of range. */
+        private const val MAX_POSITION_DIGITS = 10L
     }
 
 }
