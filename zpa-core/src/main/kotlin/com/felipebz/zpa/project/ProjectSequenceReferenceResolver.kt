@@ -25,6 +25,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
 internal enum class ProjectSequenceReferenceResolution {
     RESOLVED_SEQUENCE,
@@ -39,7 +40,9 @@ internal class ProjectSequenceReferenceResolver(
 
     fun resolve(node: AstNode): ProjectSequenceReferenceResolution {
         val candidate = sequenceCandidate(node) ?: return ProjectSequenceReferenceResolution.UNKNOWN
-        if (hasAuthoritativeNonSequenceResolution(node)) {
+        // Without the local resolution, nothing proves the name is not a local one.
+        val facts = (rootOf(node) as? SemanticAstNode)?.localSemanticFacts ?: return ProjectSequenceReferenceResolution.UNKNOWN
+        if (hasAuthoritativeNonSequenceResolution(node, facts)) {
             return ProjectSequenceReferenceResolution.RESOLVED_NON_SEQUENCE
         }
         if (hasLocalQualifierConflict(node, candidate.prefix)) {
@@ -85,11 +88,22 @@ internal class ProjectSequenceReferenceResolver(
         return source.takeIf { it.isNotEmpty() }?.let(OracleIdentifier::fromSource)
     }
 
-    private fun hasAuthoritativeNonSequenceResolution(node: AstNode): Boolean {
+    /**
+     * The name is not a sequence: the whole dotted name is a local qualified name, or its first segment names a local
+     * declaration (a local name hides a schema object), or the project resolved it as a member.
+     */
+    private fun hasAuthoritativeNonSequenceResolution(node: AstNode, facts: LocalSemanticFacts): Boolean {
         val semantic = node as? SemanticAstNode ?: return false
-        return semantic.symbol != null ||
+        val first = node.firstChild.token
+        return facts.qualifiedDeclaration(node.token.line, node.token.column) != null ||
+            facts.nameDeclaration(first.line, first.column) != null ||
             semantic.projectRecordMemberResolution != null ||
             semantic.projectRecordMemberPathResolution != null
+    }
+
+    private fun rootOf(node: AstNode): AstNode {
+        var current = node
+        while (true) current = current.parentOrNull ?: return current
     }
 
     private fun hasLocalQualifierConflict(node: AstNode, prefix: List<OracleIdentifier>): Boolean {

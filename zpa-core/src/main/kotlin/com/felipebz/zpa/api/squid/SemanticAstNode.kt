@@ -27,6 +27,7 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
 class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
     constructor(token: Token) : this(token.type, token.type.name, token)
@@ -62,6 +63,9 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
 
     /** Exact AST-free project fact for an immediate PACKAGE BODY subprogram, when available. */
     internal var projectSubprogramDeclaration: PackageSubprogramDeclaration? = null
+
+    /** On the root of a tree: the local resolution of the whole tree, left by the pre-pass; null when it failed. */
+    internal var localSemanticFacts: LocalSemanticFacts? = null
 
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type

@@ -26,13 +26,7 @@ import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectIndexPreparationFailure
-import com.felipebz.zpa.project.ProjectIndexPreparationResult
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.ProjectSymbolIndexBuilder
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import org.assertj.core.api.Assertions.assertThat
@@ -362,6 +356,35 @@ class ProjectAnalysisTest {
         )
 
         assertThat(probe.results).containsExactly(SequenceReferenceResolution.RESOLVED_SEQUENCE)
+    }
+
+    private fun sequenceResults(source: String): List<SequenceReferenceResolution> {
+        val sequenceFile = FileId("seq.sql")
+        val referenceFile = FileId("use.sql")
+        val probe = SequenceResolutionProbe()
+        scan(referenceFile, source, ProjectAnalysisContext.prepared(prepare(sequenceFile to "CREATE SEQUENCE x;", referenceFile to source)), probe)
+        return probe.results
+    }
+
+    @Test
+    fun aLocalRecordNamedLikeASequenceIsNotASequence() {
+        // A local name hides the schema object: x.nextval is a field of the record.
+        val source = "DECLARE\n  TYPE r IS RECORD (nextval NUMBER);\n  x r;\n  n NUMBER;\nBEGIN\n  n := x.nextval;\nEND;\n/\n"
+        assertThat(sequenceResults(source)).containsExactly(SequenceReferenceResolution.RESOLVED_NON_SEQUENCE)
+    }
+
+    @Test
+    fun aSequenceWithNoLocalNameIsASequence() {
+        val source = "DECLARE\n  n NUMBER;\nBEGIN\n  n := x.nextval;\nEND;\n/\n"
+        assertThat(sequenceResults(source)).containsExactly(SequenceReferenceResolution.RESOLVED_SEQUENCE)
+    }
+
+    @Test
+    fun aLocalNameWithOneProvisionalCandidateIsNotASequence() {
+        // The conditional declaration makes the block incomplete: x's only candidate is the local record.
+        val source = "DECLARE\n  TYPE r IS RECORD (nextval NUMBER);\n  x r;\n  \$IF \$\$flag \$THEN y NUMBER; \$END\n  n NUMBER;\n" +
+            "BEGIN\n  n := x.nextval;\nEND;\n/\n"
+        assertThat(sequenceResults(source)).containsExactly(SequenceReferenceResolution.RESOLVED_NON_SEQUENCE)
     }
 
     @Test

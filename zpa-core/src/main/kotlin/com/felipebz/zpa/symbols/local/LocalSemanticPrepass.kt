@@ -25,6 +25,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.ProjectPreparationState
+import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.utils.log.Loggers
 
@@ -42,6 +43,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
     override fun visitFile(node: AstNode) {
         context.localSemanticFacts = null
         context.valueCategories = null
+        (node as? SemanticAstNode)?.localSemanticFacts = null
         context.localSemanticFacts = guarded("computing") {
             val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents())
             val references = LocalReferenceCollector.collect(node, model)
@@ -57,6 +59,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
                 context.valueCategories = LocalValueCategories(it, LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes))
             }
         }
+        (node as? SemanticAstNode)?.localSemanticFacts = context.localSemanticFacts
     }
 
     private inline fun <T> guarded(step: String, block: () -> T): T? =
