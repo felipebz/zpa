@@ -75,25 +75,27 @@ internal class ProjectTypeResolutionVisitor(
             return
         }
         (node as SemanticAstNode).projectTypeResolution = resolution
-        if (resolution is ProjectTypeResolution.Resolved) {
+        if (resolution is ProjectTypeResolution.Resolved && isDirectDeclaredType(node)) {
             declaredTypeSymbol(node)?.projectTypeDeclaration = resolution.declaration
+            val last = node.lastToken
+            facts?.recordDeclaredType(SourceRange(fileId, node.token.line, node.token.column, last.endLine, last.endColumn), resolution.declaration)
         }
     }
 
     /** Only direct declared types, never collection elements or record fields' enclosing type. */
+    private fun isDirectDeclaredType(datatype: AstNode): Boolean = when (datatype.parent.type) {
+        PlSqlGrammar.VARIABLE_DECLARATION,
+        PlSqlGrammar.PARAMETER_DECLARATION,
+        PlSqlGrammar.CURSOR_PARAMETER_DECLARATION,
+        PlSqlGrammar.CUSTOM_SUBTYPE,
+        PlSqlGrammar.ITERAND_DECLARATION,
+        PlSqlGrammar.CREATE_FUNCTION,
+        PlSqlGrammar.FUNCTION_DECLARATION -> true
+        else -> false
+    }
+
     private fun declaredTypeSymbol(datatype: AstNode): Symbol? {
-        val declaration = datatype.parent
-        when (declaration.type) {
-            PlSqlGrammar.VARIABLE_DECLARATION,
-            PlSqlGrammar.PARAMETER_DECLARATION,
-            PlSqlGrammar.CURSOR_PARAMETER_DECLARATION,
-            PlSqlGrammar.CUSTOM_SUBTYPE,
-            PlSqlGrammar.ITERAND_DECLARATION,
-            PlSqlGrammar.CREATE_FUNCTION,
-            PlSqlGrammar.FUNCTION_DECLARATION -> Unit
-            else -> return null
-        }
-        val identifier = declaration.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
+        val identifier = datatype.parent.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
         return (identifier as? SemanticAstNode)?.symbol
     }
 

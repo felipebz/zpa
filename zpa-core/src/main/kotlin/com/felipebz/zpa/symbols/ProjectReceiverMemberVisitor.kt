@@ -29,7 +29,6 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.ProjectReceiverMemberVisitor.Companion.NOT_A_VALUE
 import com.felipebz.zpa.symbols.local.*
@@ -228,12 +227,9 @@ internal class ProjectReceiverMemberVisitor(
                     LocalReferenceOutcomes.isSpecificationMember(outcome) ->
                         enclosingPackage(callee)?.let { packageValueType(it, name(callee)) } ?: selfBase.of(context, callee, name(callee))
                     else -> {
-                        val bound = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
-                        val declaration = (bound as? LocalResolution.Bound)?.declaration?.let(facts.model::declaration) ?: return Base.None(NOT_A_VALUE, Form.ELEMENT)
+                        val declaration = facts.nameDeclaration(token.line, token.column) ?: return Base.None(NOT_A_VALUE, Form.ELEMENT)
                         if (declaration.kind != LocalDeclarationKind.VARIABLE && declaration.kind != LocalDeclarationKind.PARAMETER) return Base.None(NOT_A_VALUE, Form.ELEMENT)
-                        val symbol = (callee as SemanticAstNode).symbol
-                        if (symbol == null || (symbol.kind != Symbol.Kind.VARIABLE && symbol.kind != Symbol.Kind.PARAMETER)) return Base.None("value without a symbol", Form.ELEMENT)
-                        symbol.projectTypeDeclaration
+                        facts.declaredType(declaration)
                     }
                 }
             }

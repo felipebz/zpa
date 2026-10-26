@@ -24,10 +24,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
-import com.felipebz.zpa.symbols.local.LocalCallResolution
-import com.felipebz.zpa.symbols.local.LocalRangeKey
-import com.felipebz.zpa.symbols.local.LocalReferenceOutcomes
-import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import com.felipebz.zpa.symbols.local.*
 
 /**
  * Binds object method and constructor calls through the project index: `v.m(…)`, `self.m(…)`, `t.s(…)`, `t(…)`, and
@@ -90,7 +87,10 @@ internal class ProjectMethodCallVisitor(
             val self = OracleIdentifier.fromSource(children[0].tokenOriginalValue) == SELF
             return set to if (self) ProjectMethodReceiver.SELF else ProjectMethodReceiver.VALUE
         }
-        if ((children[0] as SemanticAstNode).symbol != null && (children[0] as SemanticAstNode).symbol?.kind != com.felipebz.zpa.api.symbols.Symbol.Kind.TYPE) return null
+        // A base the local side names as anything but a type is not a type-name receiver.
+        val facts = context.localSemanticFacts ?: return null
+        val base = facts.nameDeclaration(children[0].token.line, children[0].token.column)
+        if (base != null && base.kind !in TYPE_KINDS) return null
         val type = objectType(children[0]) ?: return null
         val set = memberResolver.resolve(type, OracleIdentifier.fromSource(children[2].tokenOriginalValue)) as? ProjectRecordMemberResolution.Method
             ?: return null
@@ -156,5 +156,9 @@ internal class ProjectMethodCallVisitor(
 
     private companion object {
         val SELF = OracleIdentifier.fromSource("SELF")
+        val TYPE_KINDS = setOf(
+            LocalDeclarationKind.SUBTYPE, LocalDeclarationKind.RECORD_TYPE, LocalDeclarationKind.COLLECTION_TYPE,
+            LocalDeclarationKind.REF_CURSOR_TYPE, LocalDeclarationKind.OBJECT_TYPE
+        )
     }
 }

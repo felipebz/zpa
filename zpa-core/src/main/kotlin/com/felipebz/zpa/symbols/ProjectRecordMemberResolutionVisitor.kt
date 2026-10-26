@@ -49,9 +49,10 @@ internal class ProjectRecordMemberResolutionVisitor(
     fun decorate(node: AstNode) {
         if (!decorated.add(node)) return
         val memberExpression = node as? SemanticAstNode ?: return
-        // `c%NOTFOUND` is a cursor attribute, not a member.
-        if (memberExpression.symbol != null || node.hasDirectChildren(PlSqlPunctuator.MOD)) return
-        // A member of an expression receiver is resolved on the receiver's type, not on a symbol of its own name.
+        val facts = context.localSemanticFacts ?: return
+        // `c%NOTFOUND` is a cursor attribute, not a member; `proc.v` or `label.v` is a local name, not a member.
+        if (node.hasDirectChildren(PlSqlPunctuator.MOD) || facts.qualifiedDeclaration(node.token.line, node.token.column) != null) return
+        // A member of an expression receiver is resolved on the receiver's type, not on a declaration of its own name.
         if (ProjectReceiverMemberVisitor.isReceiverItem(node)) return
 
         val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
@@ -59,14 +60,14 @@ internal class ProjectRecordMemberResolutionVisitor(
             parts.last().type != PlSqlGrammar.IDENTIFIER_NAME) return
 
         val memberName = OracleIdentifier.fromSource(parts.last().tokenOriginalValue)
-        val baseSymbol = (parts.first() as? SemanticAstNode)?.symbol
-        val projectType = if (baseSymbol != null) baseSymbol.projectTypeDeclaration ?: return
-        else selfBase?.of(context, parts.first(), memberName) ?: return
+        val base = parts.first()
+        val baseDeclaration = facts.nameDeclaration(base.token.line, base.token.column)
+        val projectType = if (baseDeclaration != null) facts.declaredType(baseDeclaration) ?: return
+        else selfBase?.of(context, base, memberName) ?: return
         val resolution = resolver.resolve(projectType, memberName)
         if (resolution is ProjectRecordMemberResolution.CollectionMethod || isCollection(projectType) && resolution is ProjectRecordMemberResolution.NotFound) {
-            val facts = context.localSemanticFacts
-            val token = parts.first().token
-            val local = facts?.localCollectionMember(token.line, token.column)
+            val token = base.token
+            val local = facts.localCollectionMember(token.line, token.column)
             if (local != null && local != (resolution is ProjectRecordMemberResolution.CollectionMethod)) {
                 facts.collectionMemberMismatches += "${token.line}:${token.column}"
                 return

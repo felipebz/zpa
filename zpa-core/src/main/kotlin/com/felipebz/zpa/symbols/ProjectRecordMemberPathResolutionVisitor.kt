@@ -25,12 +25,12 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlPunctuator.DOT
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
 import com.felipebz.zpa.project.ProjectRecordMemberPathResolver
+import com.felipebz.zpa.symbols.local.LocalDeclarationKind
 
-/** Resolves project RECORD member paths from a semantic base symbol. */
+/** Resolves project RECORD member paths from the declared project type of a local base. */
 internal class ProjectRecordMemberPathResolutionVisitor(
     private val resolver: ProjectRecordMemberPathResolver,
     private val selfBase: ProjectSelfMemberBase? = null
@@ -45,10 +45,11 @@ internal class ProjectRecordMemberPathResolutionVisitor(
         pathOf(node)?.let { (node as SemanticAstNode).projectRecordMemberPathResolution = it }
     }
 
-    /** The path a `base.member.member…` expression names from its base symbol, without decorating it; null for another shape. */
+    /** The path a `base.member.member…` expression names from its base, without decorating it; null for another shape. */
     fun pathOf(node: AstNode): ProjectRecordMemberPathResolution? {
-        val memberExpression = node as? SemanticAstNode ?: return null
-        if (memberExpression.symbol != null || node.hasDirectChildren(PlSqlPunctuator.MOD) || ProjectReceiverMemberVisitor.isReceiverItem(node)) return null
+        val facts = context.localSemanticFacts ?: return null
+        if (node.hasDirectChildren(PlSqlPunctuator.MOD) || ProjectReceiverMemberVisitor.isReceiverItem(node) ||
+            facts.qualifiedDeclaration(node.token.line, node.token.column) != null) return null
 
         val children = node.children
         if (children.size < 5 || children.size % 2 == 0 ||
@@ -60,13 +61,21 @@ internal class ProjectRecordMemberPathResolutionVisitor(
 
         val memberNames = (2 until children.size step 2)
             .map { OracleIdentifier.fromSource(children[it].tokenOriginalValue) }
-        val baseSymbol = (children.first() as? SemanticAstNode)?.symbol
-        val baseType = if (baseSymbol != null) {
-            if (baseSymbol.kind !in setOf(Symbol.Kind.VARIABLE, Symbol.Kind.PARAMETER, Symbol.Kind.CURSOR)) return null
-            baseSymbol.projectTypeDeclaration ?: return null
+        val base = children.first()
+        val baseDeclaration = facts.nameDeclaration(base.token.line, base.token.column)
+        val baseType = if (baseDeclaration != null) {
+            if (baseDeclaration.kind !in VALUE_KINDS) return null
+            facts.declaredType(baseDeclaration) ?: return null
         } else {
             selfBase?.of(context, children.first(), memberNames.first()) ?: return null
         }
         return resolver.resolve(baseType, memberNames)
+    }
+
+    private companion object {
+        val VALUE_KINDS = setOf(
+            LocalDeclarationKind.VARIABLE, LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR,
+            LocalDeclarationKind.CURSOR_PARAMETER, LocalDeclarationKind.LOOP_INDEX
+        )
     }
 }

@@ -133,38 +133,13 @@ internal class LocalHighlighting(
 
     /** The declaration [outcome] names, and whether it is certain. */
     private fun target(reference: LocalReference, outcome: LocalResolution, whole: Boolean): Pair<LocalDeclaration, Boolean>? {
-        val (id, certain) = declaration(reference, outcome, whole) ?: return null
+        val (id, certain) = facts.declarationOf(reference, outcome, whole) ?: return null
         val declaration = model.declaration(id)
         if (isTypeName(reference) && (declaration.kind == LocalDeclarationKind.FUNCTION || declaration.kind == LocalDeclarationKind.PROCEDURE)) {
             drop(Drop.CONSTRUCTOR_FOR_TYPE, reference.nameRange ?: reference.range)
             return null
         }
         return (bodyToSpecification[id] ?: declaration) to certain
-    }
-
-    private fun declaration(reference: LocalReference, outcome: LocalResolution, whole: Boolean): Pair<LocalDeclarationId, Boolean>? =
-        when (outcome) {
-            is LocalResolution.Bound -> outcome.declaration to true
-            is LocalResolution.WrongKind -> outcome.declaration to true
-            is LocalResolution.DeclaredLater -> outcome.declaration to true
-            is LocalResolution.OutOfScope -> outcome.declaration to true
-            is LocalResolution.InstanceMemberInStatic -> outcome.declaration to true
-            is LocalResolution.OverloadSet -> overload(reference, outcome.declarations, whole)?.let { it to true }
-            is LocalResolution.LocalFunctionInSql -> overload(reference, outcome.declarations, whole)?.let { it to true }
-            is LocalResolution.SqlColumnOrLocal -> outcome.declaration to false
-            is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations.singleOrNull()?.let { it to false }
-            is LocalResolution.SpecificationCovered -> declaration(reference, outcome.outcome, whole)
-            is LocalResolution.Incomplete -> declaration(reference, outcome.provisional, whole)?.let { it.first to false }
-            is LocalResolution.Unsupported -> outcome.candidate?.let { it to false }
-            else -> null
-        }
-
-    /** One overload, or the one the call resolution selects when the whole name is a call. */
-    private fun overload(reference: LocalReference, declarations: List<LocalDeclarationId>, whole: Boolean): LocalDeclarationId? {
-        declarations.singleOrNull()?.let { return it }
-        if (!whole) return null
-        val call = facts.localCall(reference.range.startLine, reference.range.startColumn) ?: return null
-        return call.selected.takeIf { call.status == LocalCallResolution.Status.RESOLVED }
     }
 
     /** The schema unit of this file whose name is written before [reference], when the project holds only it under that name. */
