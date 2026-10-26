@@ -20,8 +20,10 @@
 package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
@@ -30,7 +32,9 @@ import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.SemanticAnalysisPipeline
 import com.felipebz.zpa.squid.SemanticScanCapabilities
 import com.felipebz.zpa.squid.createProjectAnalysis
+import com.felipebz.zpa.symbols.local.LocalHighlighting
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import java.nio.file.Path
 
 /**
  * Runs ZPA's semantic decoration pipeline and exposes a read-only diagnostic snapshot.
@@ -39,14 +43,20 @@ import com.felipebz.zpa.symbols.local.LocalSemanticFacts
  * API for custom rules and deliberately converts project semantic state to immutable DTOs.
  */
 public class SemanticInspectionService {
+    /**
+     * [sourceCode] is the text [root] was parsed from: with it the local resolution, and so the highlighting pairs, are
+     * the scanner's for the same file and project.
+     */
     @OptIn(ZpaExperimentalApi::class)
+    @JvmOverloads
     public fun analyze(
         root: AstNode,
         fileId: FileId,
-        projectAnalysisContext: ProjectAnalysisContext
+        projectAnalysisContext: ProjectAnalysisContext,
+        sourceCode: String? = null
     ): SemanticInspectionResult {
         val visitors = SemanticAnalysisPipeline.forTooling(projectAnalysisContext).create(fileId)
-        val context = PlSqlVisitorContext(root, null, null)
+        val context = PlSqlVisitorContext(root, sourceCode?.let { InspectedFile(fileId, it) }, null)
         // The scan's project analysis, as the scanner installs it.
         PlSqlAstWalker(visitors.all).walk(context, SemanticScanCapabilities(createProjectAnalysis(projectAnalysisContext)))
         return SemanticInspectionResult(
@@ -55,7 +65,18 @@ public class SemanticInspectionService {
             visitors.symbolVisitor.symbolTable,
             projectAnalysisSummary(projectAnalysisContext),
             projectAnalysisContext
-        ).also { it.localSemanticFacts = context.localSemanticFacts }
+        ).also {
+            val facts = context.localSemanticFacts
+            it.localSemanticFacts = facts
+            it.highlightingPairs = facts?.let { local -> LocalHighlighting.pairs(local, LocalHighlighting.indexOf(projectAnalysisContext), sourceCode) }.orEmpty()
+        }
+    }
+
+    private class InspectedFile(private val fileId: FileId, private val text: String) : PlSqlFile {
+        override fun contents() = text
+        override fun fileName() = fileId.value
+        override fun path(): Path = Path.of("")
+        override fun type() = PlSqlFile.Type.MAIN
     }
 }
 
@@ -69,6 +90,17 @@ public class SemanticInspectionResult internal constructor(
 ) {
     /** The local semantic resolution the pipeline's pre-pass left; internal, for diagnostics and tests. */
     internal var localSemanticFacts: LocalSemanticFacts? = null
+
+    /** The file's highlighting pairs, the ones the scanner gives for the same file and project; empty when not analyzed. */
+    @ZpaExperimentalApi
+    public var highlightingPairs: List<HighlightingPair> = emptyList()
+        internal set
+
+    /** The local resolution's regions, declarations and references, built on first access; null when not analyzed. */
+    @OptIn(ZpaExperimentalApi::class)
+    public val symbolTree: SymbolTreeNode? by lazy {
+        localSemanticFacts?.let { SymbolTreeBuilder(fileId, it, highlightingPairs).build() }
+    }
 
     /** Everything the Project System captured for this file, built on first access. */
     public val projectOverview: ProjectOverviewNode by lazy {

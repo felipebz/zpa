@@ -22,12 +22,10 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.semantics.HighlightingRange
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.*
 
 /**
  * The highlighting pairs of a file from its local facts: each declaration's name and the names that refer to it.
@@ -204,6 +202,14 @@ internal class LocalHighlighting(
     private fun highlighting(range: SourceRange) = HighlightingRange(range.startLine, range.startColumn, range.endLine, range.endColumn)
 
     companion object {
+        /** The project index a name proven absent may be found in, when [context] is prepared. */
+        fun indexOf(context: ProjectAnalysisContext): ProjectSymbolIndex? =
+            context.createSnapshot().takeIf { it.preparationState != ProjectPreparationState.NOT_PREPARED }?.projectIndex
+
+        /** The file's pairs, as the scanner and the toolkit both build them. */
+        fun pairs(facts: LocalSemanticFacts, index: ProjectSymbolIndex?, text: String?): List<HighlightingPair> =
+            LocalHighlighting(facts, index, text?.let(::lineLengths)).build().pairs
+
         /** The lengths of the lines of [text], split as the lexer counts lines. */
         fun lineLengths(text: String): IntArray = text.split("\r\n", "\n", "\r").map { it.length }.toIntArray()
     }

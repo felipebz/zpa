@@ -24,7 +24,6 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.toolkit.ConfigurationModel
 import com.felipebz.flr.toolkit.ConfigurationProperty
-import com.felipebz.zpa.symbols.SymbolTableImpl
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
 import com.felipebz.zpa.tooling.SemanticSourceRange
@@ -150,7 +149,6 @@ class ToolkitPresenterTest {
         whenever(model.sourceCode).thenReturn("my_mocked_highlighted_source_code")
         whenever(model.astNode).thenReturn(astNode)
         whenever(model.xml).thenReturn("my_mocked_xml")
-        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(
             whenever(mock<ConfigurationModel>().charset).thenReturn(StandardCharsets.UTF_8).getMock(),
             model
@@ -218,7 +216,6 @@ class ToolkitPresenterTest {
         val astNode = mock<AstNode>()
         whenever(model.astNode).thenReturn(astNode)
         whenever(model.xml).thenReturn("my_mocked_xml")
-        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onSourceCodeParseButtonClick()
@@ -240,7 +237,6 @@ class ToolkitPresenterTest {
         val model = mock<SourceCodeModel>()
         val astNode = AstNode(GenericTokenType.IDENTIFIER, "foo", mock())
         whenever(model.astNode).thenReturn(astNode)
-        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onXPathEvaluateButtonClick()
@@ -260,7 +256,6 @@ class ToolkitPresenterTest {
         val childAstNode = AstNode(GenericTokenType.IDENTIFIER, "foo", null)
         astNode.addChild(childAstNode)
         whenever(model.astNode).thenReturn(astNode)
-        whenever(model.symbolTable).thenReturn(SymbolTableImpl())
         val presenter = ToolkitPresenter(mock(), model)
         presenter.setView(view)
         presenter.onXPathEvaluateButtonClick()

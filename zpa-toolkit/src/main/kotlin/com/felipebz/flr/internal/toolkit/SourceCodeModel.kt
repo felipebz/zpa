@@ -21,15 +21,11 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.impl.ast.AstXmlPrinter
-import com.felipebz.zpa.api.symbols.SymbolTable
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectDeclarationExtractor
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticInspectionResult
 import com.felipebz.zpa.tooling.SemanticInspectionService
+import com.felipebz.zpa.tooling.SymbolTreeNode
 import com.felipebz.zpa.toolkit.ZpaConfigurationModel
 import java.io.File
 import java.nio.charset.Charset
@@ -40,8 +36,6 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
     lateinit var sourceCode: String
         private set
     lateinit var astNode: AstNode
-        private set
-    lateinit var symbolTable: SymbolTable
         private set
     var parseTime: Long = 0
         private set
@@ -66,6 +60,9 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
     val projectOverview: ProjectOverviewNode?
         get() = semanticInspectionResult?.projectOverview
 
+    val symbolTree: SymbolTreeNode?
+        get() = semanticInspectionResult?.symbolTree
+
     private fun setSourceCode(sourceCode: String, fileId: FileId) {
         semanticInspectionResult = null
         parseTime = measureNanoTime {
@@ -83,10 +80,10 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
         val result = semanticInspectionService.analyze(
             astNode,
             fileId,
-            ProjectAnalysisContext.prepared(preparation)
+            ProjectAnalysisContext.prepared(preparation),
+            sourceCode
         )
         semanticInspectionResult = result
-        symbolTable = result.symbolTable
     }
 
     val xml: String

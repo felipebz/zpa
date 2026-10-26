@@ -29,7 +29,6 @@ import com.felipebz.zpa.api.annotations.RuleInfo
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.checks.PlSqlVisitor
-import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.dynamicsql.DynamicSqlTools
@@ -135,13 +134,13 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
 
     /** The project index a name proven absent may be found in, when the project is prepared. */
     private val highlightingIndex: ProjectSymbolIndex? by lazy {
-        projectAnalysisContext.createSnapshot().takeIf { it.preparationState != ProjectPreparationState.NOT_PREPARED }?.projectIndex
+        LocalHighlighting.indexOf(projectAnalysisContext)
     }
 
     @OptIn(ZpaExperimentalApi::class)
     private fun highlightingPairs(facts: LocalSemanticFacts, inputFile: PlSqlFile): List<HighlightingPair> =
         try {
-            LocalHighlighting(facts, highlightingIndex, LocalHighlighting.lineLengths(inputFile.contents())).build().pairs
+            LocalHighlighting.pairs(facts, highlightingIndex, inputFile.contents())
         } catch (e: Exception) {
             LOG.warn("Highlighting pairs failed for $inputFile: $e")
             emptyList()

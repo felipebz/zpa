@@ -73,7 +73,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.displaySourceCode("", emptyList())
         view.displayAst(null)
         view.displayXml("")
-        view.displayScope(null)
+        view.displaySymbolTree(null)
         view.displaySemantics(null)
         view.displayProjectOverview(null)
         view.displayStatistics(0, 0, 0, 0)
@@ -93,11 +93,10 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
                 throw RuntimeException(e)
             }
             model.setSourceCode(fileToParse, configurationModel.charset)
-            val symbolTable = model.symbolTable
             view.displaySourceCode(model.sourceCode, model.astNode.tokens)
             view.displayAst(model.astNode)
             view.displayXml(model.xml)
-            view.displayScope(symbolTable.scopes.firstOrNull())
+            view.displaySymbolTree(model.symbolTree)
             view.displaySemantics(null)
             view.displayProjectOverview(model.projectOverview)
             view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
@@ -111,12 +110,11 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
         view.clearConsole()
         val sourceCode = view.sourceCode
         model.setSourceCode(sourceCode)
-        val symbolTable = model.symbolTable
         val sourceCodeScrollbarPosition = view.sourceCodeScrollbarPosition
         view.displaySourceCode(model.sourceCode, model.astNode.tokens)
         view.displayAst(model.astNode)
         view.displayXml(model.xml)
-        view.displayScope(symbolTable.scopes.firstOrNull())
+        view.displaySymbolTree(model.symbolTree)
         view.displaySemantics(null)
         view.displayProjectOverview(model.projectOverview)
         view.displayStatistics(model.sourceCode.length, model.astNode.lastTokenOrNull?.endLine, model.astNode.tokens.size, model.parseTime)
@@ -163,7 +161,7 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
     fun onSourceCodeKeyTyped() {
         view.displayAst(null)
         view.displayXml("")
-        view.displayScope(null)
+        view.displaySymbolTree(null)
         view.displayStatistics(0, 0, 0, 0)
         view.displaySemantics(null)
         view.displayProjectOverview(null)
@@ -221,14 +219,9 @@ internal class ToolkitPresenter(private val configurationModel: ConfigurationMod
 
     fun onSymbolSelectionChanged() {
         view.clearSourceCodeHighlights()
-        var firstAstNode: AstNode? = null
-        for (astNode in view.selectedSymbolOrScopeTrees) {
-            if (firstAstNode == null) {
-                firstAstNode = astNode
-            }
-            view.highlightSourceCode(astNode.token, astNode.lastToken)
-        }
-        view.scrollSourceCodeTo(firstAstNode?.tokenOrNull)
+        val ranges = view.selectedSymbolTreeNodes.flatMap { it.sourceRanges }
+        ranges.forEach { view.highlightSourceRange(it) }
+        ranges.firstOrNull()?.let { view.scrollSourceCodeToLine(it.startLine) }
     }
 
     fun onConfigurationPropertyFocusLost(name: String) {

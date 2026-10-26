@@ -22,10 +22,10 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
-import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
 import com.felipebz.zpa.tooling.SemanticSourceRange
+import com.felipebz.zpa.tooling.SymbolTreeNode
 import java.awt.Point
 import java.io.File
 
@@ -85,11 +85,11 @@ internal interface ToolkitView {
     fun displayXml(xml: String)
 
     /**
-     * Display the given scope.
+     * Display the local resolution's symbol tree: regions, declarations and their references.
      *
-     * @param scope The scope to display
+     * @param tree The tree, or null when there is nothing to show
      */
-    fun displayScope(scope: Scope?)
+    fun displaySymbolTree(tree: SymbolTreeNode?)
 
     /**
      * Display the diagnostic semantic information for the currently selected AST node.
@@ -214,7 +214,7 @@ internal interface ToolkitView {
 
     val selectedTrivias: List<Trivia>
 
-    val selectedSymbolOrScopeTrees: List<AstNode>
+    val selectedSymbolTreeNodes: List<SymbolTreeNode>
 
     /**
      * Append the given message to the console view.

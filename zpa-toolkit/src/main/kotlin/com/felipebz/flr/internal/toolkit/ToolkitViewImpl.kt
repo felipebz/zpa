@@ -22,11 +22,10 @@ package com.felipebz.flr.internal.toolkit
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
-import com.felipebz.zpa.api.symbols.Scope
-import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.tooling.ProjectOverviewNode
 import com.felipebz.zpa.tooling.SemanticNodeInspection
 import com.felipebz.zpa.tooling.SemanticSourceRange
+import com.felipebz.zpa.tooling.SymbolTreeNode
 import com.formdev.flatlaf.util.UIScale
 import java.awt.*
 import java.awt.event.FocusAdapter
@@ -265,13 +264,8 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         xmlTextArea.text = xml
     }
 
-    override fun displayScope(scope: Scope?) {
-        if (scope == null) {
-            symbolTree.model = EMPTY_TREE_MODEL
-        } else {
-            val treeNode = getScopeTreeNode(scope)
-            symbolTree.model = DefaultTreeModel(treeNode)
-        }
+    override fun displaySymbolTree(tree: SymbolTreeNode?) {
+        symbolTree.model = if (tree == null) EMPTY_TREE_MODEL else DefaultTreeModel(toSymbolTreeNode(tree))
     }
 
     override fun displaySemantics(inspection: SemanticNodeInspection?) {
@@ -495,25 +489,9 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
             return acc
         }
 
-    override val selectedSymbolOrScopeTrees: List<AstNode>
-        get() {
-            val acc = mutableListOf<AstNode>()
-            val selectedPaths = symbolTree.selectionPaths
-            if (selectedPaths != null) {
-                for (selectedPath in selectedPaths) {
-                    val treeNode = selectedPath.lastPathComponent as DefaultMutableTreeNode
-                    val node = when (val userObject = treeNode.userObject) {
-                        is Symbol -> userObject.declaration
-                        is Scope -> userObject.tree
-                        is AstNode -> userObject
-                        else -> null
-                    }
-                    if (node != null) {
-                        acc.add(node)
-                    }
-                }
-            }
-            return acc
+    override val selectedSymbolTreeNodes: List<SymbolTreeNode>
+        get() = symbolTree.selectionPaths.orEmpty().mapNotNull {
+            (it.lastPathComponent as DefaultMutableTreeNode).userObject as? SymbolTreeNode
         }
 
     override fun appendToConsole(message: String?) {
@@ -590,36 +568,10 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
                 overview.children.forEach { add(toOverviewTreeNode(it)) }
             }
 
-        private fun getScopeTreeNode(scope: Scope): DefaultMutableTreeNode {
-            val treeNode = DefaultMutableTreeNode(scope)
-            if (scope.symbols.isEmpty()) {
-                treeNode.add(DefaultMutableTreeNode("<no symbols>"))
-            } else {
-                val symbolsNode = DefaultMutableTreeNode("Symbols")
-                for (symbol in scope.symbols) {
-                    val symbolNode = DefaultMutableTreeNode(symbol)
-                    if (symbol.usages.isEmpty()) {
-                        symbolNode.add(DefaultMutableTreeNode("<no usages>"))
-                    } else {
-                        val usagesNode = DefaultMutableTreeNode("Usages")
-                        for (usage in symbol.usages) {
-                            usagesNode.add(DefaultMutableTreeNode(usage))
-                        }
-                        symbolNode.add(usagesNode)
-                    }
-                    symbolsNode.add(symbolNode)
-                }
-                treeNode.add(symbolsNode)
+        fun toSymbolTreeNode(node: SymbolTreeNode): DefaultMutableTreeNode =
+            DefaultMutableTreeNode(node).apply {
+                node.children.forEach { add(toSymbolTreeNode(it)) }
             }
-            if (scope.innerScopes.isNotEmpty()) {
-                val innerScopesNode = DefaultMutableTreeNode("Scopes")
-                for (innerScope in scope.innerScopes) {
-                    innerScopesNode.add(getScopeTreeNode(innerScope))
-                }
-                treeNode.add(innerScopesNode)
-            }
-            return treeNode
-        }
     }
 
     private fun toRectangle(rectangle2D: Rectangle2D?): Rectangle? {
