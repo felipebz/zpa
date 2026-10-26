@@ -20,13 +20,14 @@
 package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.project.ProjectCallTarget
 import com.felipebz.zpa.api.project.ProjectDeclarationKind
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
 /** One labelled entry of the project overview; [astNode] is set only for resolutions attached to AST nodes. */
 public class ProjectOverviewNode(
@@ -45,7 +46,7 @@ public class ProjectOverviewNode(
 internal class ProjectOverviewBuilder(
     private val fileId: FileId,
     private val root: AstNode,
-    private val symbolTable: SymbolTable,
+    private val facts: LocalSemanticFacts?,
     context: ProjectAnalysisContext
 ) {
     private val snapshot = ProjectSnapshot.create(context)
@@ -337,14 +338,7 @@ internal class ProjectOverviewBuilder(
                 bodySubprograms += astEntry("${it.kind} ${it.owner}.${it.name} (${it.role})", astNode)
             }
         }
-        val typedSymbols = symbolTable.symbols.mapNotNull { symbol ->
-            val declaration = symbol.projectTypeDeclaration ?: return@mapNotNull null
-            val astNode = symbol.node ?: return@mapNotNull null
-            astEntry(
-                "${symbol.kind.value} ${symbol.name}: ${declaration.qualifiedName} (${declaration.kind})",
-                astNode
-            )
-        }
+        val typedSymbols = typedDeclarations()
         val subgroups = listOfNotNull(
             section("Type references", typeReferences),
             section("RECORD members", members),
@@ -379,6 +373,20 @@ internal class ProjectOverviewBuilder(
             "Method (${resolution.overloads.size} overloads${if (resolution.complete) "" else ", incomplete"}) of ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.CollectionMethod -> "Collection method ${resolution.name} of ${resolution.declaration.qualifiedName}"
         is ProjectRecordMemberResolution.UnsupportedType -> "Unsupported type ${resolution.declaration.qualifiedName}"
+    }
+
+    /** The local declarations with a declared project type, linked to the node of their name. */
+    private fun typedDeclarations(): List<ProjectOverviewNode> {
+        val facts = facts ?: return emptyList()
+        val names = root.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).associateBy { it.token.line to it.token.column }
+        return facts.model.declarations.mapNotNull { declaration ->
+            val type = facts.declaredType(declaration) ?: return@mapNotNull null
+            val astNode = names[declaration.nameRange.startLine to declaration.nameRange.startColumn] ?: return@mapNotNull null
+            astEntry(
+                "${declaration.kind.name.lowercase()} ${declaration.name.originalSpelling}: ${type.qualifiedName} (${type.kind})",
+                astNode
+            )
+        }
     }
 
     private fun astEntry(label: String, astNode: AstNode) = ProjectOverviewNode(label, nodeRange(astNode), astNode)

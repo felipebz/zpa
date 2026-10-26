@@ -82,7 +82,7 @@ class SemanticInspectionTest {
                 it.parentOrNull?.type === PlSqlGrammar.VARIABLE_DECLARATION
         }
 
-        val declaration = model.inspect(variable)!!.symbolProjectTypeDeclaration!!
+        val declaration = model.inspect(variable)!!.declaredProjectType!!
 
         assertThat(declaration.qualifiedName).isEqualTo("types_pkg.customer_rec")
         assertThat(declaration.kind).isEqualTo("PACKAGE_TYPE")

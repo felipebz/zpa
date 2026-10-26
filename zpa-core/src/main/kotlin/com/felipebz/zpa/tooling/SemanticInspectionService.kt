@@ -104,11 +104,11 @@ public class SemanticInspectionResult internal constructor(
 
     /** Everything the Project System captured for this file, built on first access. */
     public val projectOverview: ProjectOverviewNode by lazy {
-        ProjectOverviewBuilder(fileId, root, symbolTable, projectAnalysisContext).build()
+        ProjectOverviewBuilder(fileId, root, localSemanticFacts, projectAnalysisContext).build()
     }
 
     public fun inspect(node: AstNode): SemanticNodeInspection =
-        SemanticInspectionMapper.inspect(fileId, node, projectAnalysis)
+        SemanticInspectionMapper.inspect(fileId, node, projectAnalysis, localSemanticFacts)
 }
 
 /** Immutable summary of the project preparation used by one semantic inspection. */
@@ -157,7 +157,8 @@ public data class SemanticNodeInspection(
     public val projectAnalysis: ProjectAnalysisSummary,
     public val legacy: LegacySemanticSummary?,
     public val projectTypeResolution: ProjectTypeResolutionSummary?,
-    public val symbolProjectTypeDeclaration: ProjectDeclarationSummary?,
+    /** The declared project type of the local declaration the node names or declares; null when there is none. */
+    public val declaredProjectType: ProjectDeclarationSummary?,
     public val projectRecordMemberResolution: ProjectRecordMemberResolutionSummary?,
     public val projectRecordFieldTypeResolution: ProjectRecordFieldTypeResolutionSummary?,
     public val projectRecordMemberPathResolution: ProjectRecordMemberPathResolutionSummary?
@@ -256,10 +257,25 @@ public data class ProjectRecordMemberPathResolutionSummary(
 )
 
 private object SemanticInspectionMapper {
+    /**
+     * The declared type of the local declaration [node] names (certain, or the single provisional candidate) or
+     * declares. Only the name itself answers: a node of exactly one token. A larger node starting with the name (a
+     * statement, a member expression) has a type of its own, so it gets null.
+     */
+    fun declaredProjectType(facts: LocalSemanticFacts, node: AstNode): ProjectTypeDeclaration? {
+        val token = node.tokenOrNull ?: return null
+        if (node.lastTokenOrNull !== token) return null
+        val declaration = facts.nameDeclaration(token.line, token.column)
+            ?: facts.model.declarations.firstOrNull { it.nameRange.startLine == token.line && it.nameRange.startColumn == token.column }
+            ?: return null
+        return facts.declaredType(declaration)
+    }
+
     fun inspect(
         fileId: FileId,
         node: AstNode,
-        projectAnalysis: ProjectAnalysisSummary
+        projectAnalysis: ProjectAnalysisSummary,
+        facts: LocalSemanticFacts?
     ): SemanticNodeInspection {
         val semanticNode = node as? SemanticAstNode
         return SemanticNodeInspection(
@@ -267,7 +283,7 @@ private object SemanticInspectionMapper {
             projectAnalysis = projectAnalysis,
             legacy = semanticNode?.let(::legacySummary),
             projectTypeResolution = semanticNode?.projectTypeResolution?.let(::projectTypeResolution),
-            symbolProjectTypeDeclaration = semanticNode?.symbol?.projectTypeDeclaration?.let(::declaration),
+            declaredProjectType = facts?.let { declaredProjectType(it, node) }?.let(::declaration),
             projectRecordMemberResolution = semanticNode?.projectRecordMemberResolution?.let(::recordMemberResolution),
             projectRecordFieldTypeResolution = semanticNode?.projectRecordFieldTypeResolution?.let(::fieldTypeResolution),
             projectRecordMemberPathResolution = semanticNode?.projectRecordMemberPathResolution?.let(::memberPathResolution)

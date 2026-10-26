@@ -32,7 +32,7 @@ internal class SemanticTreeBuilder {
         val memberResolution = inspection.projectRecordMemberResolution
         val fieldTypeResolution = inspection.projectRecordFieldTypeResolution
         val typeResolution = inspection.projectTypeResolution
-        val symbolDeclaration = inspection.symbolProjectTypeDeclaration
+        val declaredType = inspection.declaredProjectType
         val hasProjectMetadata = hasProjectMetadata(inspection)
         val resolution = DefaultMutableTreeNode("Resolution")
         resolution.add(DefaultMutableTreeNode("source: ${resolutionSource(inspection, hasProjectMetadata)}"))
@@ -66,9 +66,9 @@ internal class SemanticTreeBuilder {
                     "project declaration: ${projectTypeState(type.state)}"
                 ))
             }
-            symbolDeclaration != null -> {
+            declaredType != null -> {
                 resolution.add(DefaultMutableTreeNode(
-                    "symbol type: ${symbolDeclaration.qualifiedName}"
+                    "declared type: ${declaredType.qualifiedName}"
                 ))
                 resolution.add(DefaultMutableTreeNode("project declaration: Resolved"))
             }
@@ -89,7 +89,7 @@ internal class SemanticTreeBuilder {
             }
             typeResolution?.declaration != null ->
                 root.add(getDeclarationTreeNode("Declaration", typeResolution.declaration!!))
-            symbolDeclaration != null -> root.add(getDeclarationTreeNode("Declaration", symbolDeclaration))
+            declaredType != null -> root.add(getDeclarationTreeNode("Declaration", declaredType))
             !hasProjectMetadata && inspection.legacy != null ->
                 root.add(getLegacySemanticTreeNode(inspection.legacy!!))
         }
@@ -158,7 +158,7 @@ internal class SemanticTreeBuilder {
 
     private fun hasProjectMetadata(inspection: SemanticNodeInspection): Boolean =
         inspection.projectTypeResolution != null ||
-            inspection.symbolProjectTypeDeclaration != null ||
+            inspection.declaredProjectType != null ||
             inspection.projectRecordMemberResolution != null ||
             inspection.projectRecordFieldTypeResolution != null ||
             inspection.projectRecordMemberPathResolution != null
@@ -235,8 +235,8 @@ internal class SemanticTreeBuilder {
         inspection.projectTypeResolution?.let {
             details.add(getProjectTypeResolutionTreeNode("Project type resolution", it))
         }
-        inspection.symbolProjectTypeDeclaration?.let {
-            details.add(getDeclarationTreeNode("Symbol project type declaration", it))
+        inspection.declaredProjectType?.let {
+            details.add(getDeclarationTreeNode("Declared project type", it))
         }
         inspection.projectRecordMemberResolution?.let {
             details.add(getRecordMemberResolutionTreeNode("Direct RECORD member", it))

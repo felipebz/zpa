@@ -21,11 +21,7 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.tooling.ProjectAnalysisSummary
-import com.felipebz.zpa.tooling.ProjectTypeResolutionState
-import com.felipebz.zpa.tooling.ProjectTypeResolutionSummary
-import com.felipebz.zpa.tooling.SemanticNodeInspection
-import com.felipebz.zpa.tooling.SemanticNodeSummary
+import com.felipebz.zpa.tooling.*
 import com.felipebz.zpa.toolkit.ZpaConfigurationModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -166,7 +162,7 @@ class SemanticTreeBuilderTest {
             ),
             legacy = null,
             projectTypeResolution = resolution,
-            symbolProjectTypeDeclaration = null,
+            declaredProjectType = null,
             projectRecordMemberResolution = null,
             projectRecordFieldTypeResolution = null,
             projectRecordMemberPathResolution = null
@@ -189,7 +185,7 @@ class SemanticTreeBuilderTest {
             projectAnalysis = ProjectAnalysisSummary("PREPARED_EMPTY", 0, 0, 0, emptyList()),
             legacy = null,
             projectTypeResolution = null,
-            symbolProjectTypeDeclaration = null,
+            declaredProjectType = null,
             projectRecordMemberResolution = null,
             projectRecordFieldTypeResolution = null,
             projectRecordMemberPathResolution = null
