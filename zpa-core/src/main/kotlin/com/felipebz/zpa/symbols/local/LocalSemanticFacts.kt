@@ -24,9 +24,8 @@ import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
 
 /**
- * The local semantic resolution of one file, computed by the pipeline's pre-pass and consumed by nothing yet: the
- * model, the references with their segment-by-segment outcomes, the calls, and the comparison with the decisions the
- * legacy lexical lookup makes for the same names. AST-detached.
+ * The local semantic resolution of one file, computed by the pipeline's pre-pass: the model, the references with their
+ * segment-by-segment outcomes, and the calls. AST-detached.
  */
 internal class LocalSemanticFacts(
     val model: LocalSemanticModel,
@@ -196,19 +195,6 @@ internal class LocalSemanticFacts(
         return declaration.details is LocalUnit && LocalRangeKey.of(declaration.range) == range
     }
 
-    private val typeGates = ArrayList<LegacyGate>()
-    private val firstSegments = ArrayList<LegacyGate>()
-
-    /** The legacy type-name gate's decision for the type name starting at [range]: true when it found the name lexically. */
-    fun recordTypeGate(range: SourceRange, lexical: Boolean) {
-        typeGates += LegacyGate(range.startLine, range.startColumn, lexical)
-    }
-
-    /** The legacy lookup's hit for the first segment of a call or qualified name starting at line, column. */
-    fun recordFirstSegment(line: Int, column: Int, lexical: Boolean) {
-        firstSegments += LegacyGate(line, column, lexical)
-    }
-
     private val byStart: Map<Triple<Boolean, Int, Int>, List<Int>> by lazy {
         val map = HashMap<Triple<Boolean, Int, Int>, MutableList<Int>>()
         for ((index, reference) in references.withIndex()) {
@@ -217,35 +203,49 @@ internal class LocalSemanticFacts(
         map
     }
 
-    /** The local outcome deciding the name of [kind] starting at line, column; null when no single reference starts there. */
-    private fun localOutcome(kind: LocalShadowPair.Kind, line: Int, column: Int): LocalResolution? =
-        byStart[Triple(kind == LocalShadowPair.Kind.TYPE_NAME, line, column)]?.singleOrNull()
-            ?.let { decidingOutcome(references[it], resolutions[it]) }
-
     /**
-     * The type-name gate's decision taken from the local outcome, paired as [differential] pairs it:
-     * - [LocalTypeGate.Local]: a local declaration the project does not hold decides the name (no project resolution);
-     * - [LocalTypeGate.Held]: the local binding is a declaration the project index also holds; project resolution runs,
-     *   and must resolve to that declaration;
-     * - [LocalTypeGate.NotLocal]: absent, absent with the project's coverage, or a member of the specification in another
-     *   file;
-     * - null when the local outcome is uncertain or no reference is paired: the legacy decision stands.
+     * The type-name gate's decision for the type name starting at [range], from its local outcome only:
+     * - [LocalPresence.DECLARED]: a local declaration decides the name. [LocalTypeGate.Held] when it is a binding to a
+     *   declaration the project index also holds (project resolution runs and must resolve to it), otherwise
+     *   [LocalTypeGate.Local] (no project resolution).
+     * - [LocalPresence.UNCERTAIN] with exactly one candidate declaration ([declarationOf]): decided as a binding to that
+     *   candidate would be. A provisional [LocalResolution.Duplicate] is decided as the certain one: every candidate is a
+     *   local declaration, so [LocalTypeGate.Local].
+     * - [LocalPresence.ABSENT], an uncertain outcome without a single candidate, or no single reference at [range]: not
+     *   local, so project resolution runs ([notLocal]). The type names the collector does not gather are those of TREAT,
+     *   IS OF, table and XMLTABLE columns and external parameter properties: they name SQL types, never a local PL/SQL
+     *   type. A member of the specification named in a type position of the
+     *   type's own body is the exception: it captures the position (PLS-00488), so it is [LocalTypeGate.Local].
      */
-    fun localTypeGate(range: SourceRange): LocalTypeGate? {
-        val index = byStart[Triple(true, range.startLine, range.startColumn)]?.singleOrNull() ?: return null
-        val outcome = decidingOutcome(references[index], resolutions[index])
-        return when (LocalShadowPair.classify(false, outcome)) {
-            // In a type body, a member of the specification captures a type position (PLS-00488): no project type.
-            LocalShadowPair.ShadowClass.SAME -> if (LocalReferenceOutcomes.isSpecificationMember(outcome) && LocalTypeScope.enclosingTypeName(model, references[index]) != null) LocalTypeGate.Local
-            else enclosingType(references[index])?.let(LocalTypeGate::EnclosingType) ?: LocalTypeGate.NotLocal
-            LocalShadowPair.ShadowClass.LEGACY_ALLOWS -> {
-                val bound = ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Bound
-                val key = bound?.let { LocalRangeKey.of(model.declaration(it.declaration).range) }
-                if (key != null && key in projectHeld) LocalTypeGate.Held(key) else LocalTypeGate.Local
+    fun localTypeGate(range: SourceRange): LocalTypeGate {
+        // No reference: a written type the collector does not gather names a SQL type, never a local one.
+        val index = byStart[Triple(true, range.startLine, range.startColumn)]?.singleOrNull() ?: return LocalTypeGate.NotLocal
+        val reference = references[index]
+        val outcome = decidingOutcome(reference, resolutions[index])
+        return when (LocalPresence.of(outcome)) {
+            LocalPresence.ABSENT ->
+                if (LocalReferenceOutcomes.isSpecificationMember(outcome) && LocalTypeScope.enclosingTypeName(model, reference) != null) LocalTypeGate.Local
+                else notLocal(reference)
+            LocalPresence.DECLARED -> declared(((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Bound)
+            LocalPresence.UNCERTAIN -> when {
+                provisionalDuplicate(outcome) -> LocalTypeGate.Local
+                else -> declarationOf(reference, outcome, false)?.let { declared(LocalResolution.Bound(it.first)) } ?: notLocal(reference)
             }
-            else -> null
         }
     }
+
+    private fun provisionalDuplicate(outcome: LocalResolution): Boolean =
+        (((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome) as? LocalResolution.Incomplete)?.provisional is LocalResolution.Duplicate
+
+    /** A local declaration decides: held by the project when [bound] binds one it holds. */
+    private fun declared(bound: LocalResolution.Bound?): LocalTypeGate {
+        val key = bound?.let { LocalRangeKey.of(model.declaration(it.declaration).range) }
+        return if (key != null && key in projectHeld) LocalTypeGate.Held(key) else LocalTypeGate.Local
+    }
+
+    /** Not local: the enclosing object type's own name, or any other name for the project to resolve. */
+    private fun notLocal(reference: LocalReference): LocalTypeGate =
+        enclosingType(reference)?.let(LocalTypeGate::EnclosingType) ?: LocalTypeGate.NotLocal
 
     /**
      * The implicit `SELF` of the qualified name whose first segment starts at line, column, when that outcome is certain:
@@ -280,23 +280,12 @@ internal class LocalSemanticFacts(
         return LocalTypeScope.enclosingTypeName(model, references[index])
     }
 
-    /** Each recorded legacy decision paired with the local outcome for the same name, in recording order. */
-    fun differential(): List<LocalShadowPair> {
-        fun pair(kind: LocalShadowPair.Kind, gate: LegacyGate): LocalShadowPair {
-            val outcome = localOutcome(kind, gate.line, gate.column)
-            return LocalShadowPair(kind, gate.line, gate.column, gate.lexical, outcome, LocalShadowPair.classify(gate.lexical, outcome))
-        }
-        return typeGates.map { pair(LocalShadowPair.Kind.TYPE_NAME, it) } + firstSegments.map { pair(LocalShadowPair.Kind.FIRST_SEGMENT, it) }
-    }
-
     /** A type name is decided by its whole name; a call or qualified name by its first segment. */
     private fun decidingOutcome(reference: LocalReference, steps: List<LocalResolution>): LocalResolution =
         if (isTypeName(reference) && !notLocal(steps.first())) steps.last() else steps.first()
 
     private fun notLocal(outcome: LocalResolution) =
         LocalReferenceOutcomes.isAbsent(outcome) || LocalReferenceOutcomes.isSpecificationMember(outcome)
-
-    private class LegacyGate(val line: Int, val column: Int, val lexical: Boolean)
 }
 
 /** A source range as plain coordinates, detached from any file object. */
@@ -338,62 +327,27 @@ private val QUALIFIER_KINDS = setOf(
 /** A written type name, one segment or qualified (whose first segment is a qualifier of a type position). */
 internal fun isTypeName(reference: LocalReference) = reference.lastSegmentContext == LocalReferenceContext.TYPE
 
-/** One legacy lexical decision and the local outcome for the same name. */
-internal class LocalShadowPair(
-    val kind: Kind,
-    val line: Int,
-    val column: Int,
-    /** The legacy lookup found the name (its project resolution is suppressed). */
-    val legacyLexical: Boolean,
-    /** Null when no local reference starts there. */
-    val local: LocalResolution?,
-    val shadowClass: ShadowClass
-) {
-    enum class Kind {
-        /** The project type resolution's lexical gate. */
-        TYPE_NAME,
+/** What a local outcome says about whether the name is declared in this file. */
+internal enum class LocalPresence {
+    /** Proven absent, by the file alone or with the project's coverage, or a member of the specification in another file. */
+    ABSENT,
 
-        /** The legacy symbol of the first segment of a call or a qualified name. */
-        FIRST_SEGMENT
-    }
+    /** A local declaration decides the name: it binds it, or it rejects the use. */
+    DECLARED,
 
-    enum class ShadowClass {
-        /** Both find the name locally, or both prove it absent. */
-        SAME,
-
-        /** Legacy finds the name; the local resolver proves it absent, so project evidence is suppressed today. */
-        LEGACY_SUPPRESSES,
-
-        /** Legacy finds nothing; the local resolver finds a local declaration, so project evidence is let through today. */
-        LEGACY_ALLOWS,
-
-        /** The local outcome is incomplete, unsupported or a SQL uncertainty. */
-        LOCAL_UNCERTAIN,
-
-        /** No local reference at that position. */
-        UNPAIRED
-    }
-
-    override fun toString() = "$kind $line:$column legacy=${if (legacyLexical) "lexical" else "absent"} local=$local $shadowClass"
+    /** Incomplete, unsupported, or a SQL name that may be a column, a relation path or a built-in. */
+    UNCERTAIN;
 
     companion object {
-        fun classify(legacyLexical: Boolean, local: LocalResolution?): ShadowClass {
-            // Decided with the project's coverage: absent and a specification member are both "not local".
-            val decided = (local as? LocalResolution.SpecificationCovered)?.outcome?.takeIf { it != LocalResolution.SpecificationMember }
-                ?: if (local is LocalResolution.SpecificationCovered) LocalResolution.ProvenAbsent else local
-            val declares = when (decided) {
-                null -> return ShadowClass.UNPAIRED
+        fun of(outcome: LocalResolution): LocalPresence {
+            // Decided with the project's coverage: absent and a specification member are both absent from this file.
+            val decided = (outcome as? LocalResolution.SpecificationCovered)?.outcome?.takeIf { it != LocalResolution.SpecificationMember }
+                ?: if (outcome is LocalResolution.SpecificationCovered) LocalResolution.ProvenAbsent else outcome
+            return when (decided) {
                 is LocalResolution.Incomplete, is LocalResolution.Unsupported, is LocalResolution.SqlColumnOrLocal,
-                LocalResolution.SqlRelation, is LocalResolution.LocalFunctionInSql, is LocalResolution.SqlBuiltinOrLocal ->
-                    return ShadowClass.LOCAL_UNCERTAIN
-                LocalResolution.ProvenAbsent -> false
-                // A binding, or a local declaration that rejects the use: either way the name is local.
-                else -> true
-            }
-            return when {
-                legacyLexical == declares -> ShadowClass.SAME
-                legacyLexical -> ShadowClass.LEGACY_SUPPRESSES
-                else -> ShadowClass.LEGACY_ALLOWS
+                LocalResolution.SqlRelation, is LocalResolution.LocalFunctionInSql, is LocalResolution.SqlBuiltinOrLocal -> UNCERTAIN
+                LocalResolution.ProvenAbsent -> ABSENT
+                else -> DECLARED
             }
         }
     }

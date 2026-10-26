@@ -26,28 +26,12 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
-import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 class AttributeNamedAloneBaseTest {
-    private var saved = true
-
-    @BeforeEach
-    fun save() {
-        saved = LocalSemanticSwitches.selfMemberBase
-        LocalSemanticSwitches.selfMemberBase = true
-    }
-
-    @AfterEach
-    fun restore() {
-        LocalSemanticSwitches.selfMemberBase = saved
-    }
-
     private val types = "CREATE TYPE val_t AS OBJECT (x NUMBER, MEMBER FUNCTION report RETURN VARCHAR2);\n/\n" +
         "CREATE TYPE names_t AS TABLE OF VARCHAR2(30);\n/\n" +
         "CREATE TYPE holder_t AS OBJECT (inner val_t);\n/\n" +
@@ -90,12 +74,6 @@ class AttributeNamedAloneBaseTest {
     fun noBaseWhenTheChainIsNotFullyKnown() {
         val orphan = "CREATE TYPE names_t AS TABLE OF VARCHAR2(30);\n/\nCREATE TYPE t UNDER missing_t (names names_t, MEMBER PROCEDURE m, STATIC PROCEDURE s);\n/\n"
         assertThat(scan("types.sql" to orphan, "body.sql" to body("n := names.count;"))).isEmpty()
-    }
-
-    @Test
-    fun theSwitchOffRestoresTodaysResult() {
-        LocalSemanticSwitches.selfMemberBase = false
-        assertThat(scan("types.sql" to types, "body.sql" to body("n := expected.x; n := names.count;"))).isEmpty()
     }
 
     private fun scan(vararg sources: Pair<String, String>): List<String> {

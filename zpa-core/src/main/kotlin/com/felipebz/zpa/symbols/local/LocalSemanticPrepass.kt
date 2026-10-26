@@ -22,18 +22,14 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.ProjectPreparationState
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.utils.log.Loggers
 
 /**
- * Computes the file's [LocalSemanticFacts] before any other visitor runs and leaves them on the visitor context. Shadow
- * mode: nothing reads them to decide anything. At the end of the walk it records, for each call and qualified name,
- * whether the legacy lookup found its first segment, for comparison with the local outcome.
+ * Computes the file's [LocalSemanticFacts] before any other visitor runs and leaves them on the visitor context.
  *
  * Forwarded calls use the scan's own project analysis: its snapshot (a not-prepared one answers them with no evidence)
  * and its external metadata.
@@ -63,33 +59,6 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
         }
     }
 
-    override fun leaveFile(node: AstNode) {
-        val facts = context.localSemanticFacts ?: return
-        val recorded = guarded("comparing") {
-            val identifiers = HashMap<Long, AstNode>()
-            for (identifier in node.getDescendants(PlSqlGrammar.IDENTIFIER_NAME)) identifiers.putIfAbsent(key(identifier.token.line, identifier.token.column), identifier)
-            for (reference in facts.references) {
-                if (reference.context !in FIRST_SEGMENT_CONTEXTS || isTypeName(reference)) continue
-                val identifier = identifiers[key(reference.range.startLine, reference.range.startColumn)] ?: continue
-                facts.recordFirstSegment(reference.range.startLine, reference.range.startColumn, legacyHit(identifier))
-            }
-        }
-        if (recorded == null) context.localSemanticFacts = null
-    }
-
-    /** The legacy symbol of the name, of its VARIABLE_NAME, or of the whole qualified name it starts. */
-    private fun legacyHit(identifier: AstNode): Boolean {
-        var current: AstNode? = identifier
-        while (current != null) {
-            if ((current as? SemanticAstNode)?.symbol != null) return true
-            val parent = current.parentOrNull ?: return false
-            if (parent.type !== PlSqlGrammar.VARIABLE_NAME && parent.type !== PlSqlGrammar.MEMBER_EXPRESSION) return false
-            if (parent.firstChild !== current) return false
-            current = parent
-        }
-        return false
-    }
-
     private inline fun <T> guarded(step: String, block: () -> T): T? =
         try {
             block()
@@ -104,10 +73,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
         return null
     }
 
-    private fun key(line: Int, column: Int) = line.toLong() shl 32 or column.toLong()
-
     private companion object {
         val LOG = Loggers.getLogger(LocalSemanticPrepass::class.java)
-        val FIRST_SEGMENT_CONTEXTS = setOf(LocalReferenceContext.QUALIFIER, LocalReferenceContext.CALL_STATEMENT, LocalReferenceContext.CALL_EXPRESSION)
     }
 }

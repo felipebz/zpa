@@ -22,9 +22,7 @@ package com.felipebz.zpa.api.dynamicsql
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.symbols.SymbolTable
-import java.util.Collections
-import java.util.IdentityHashMap
+import java.util.*
 
 /** A part of a dynamic statement whose text is not known statically, written into the built text as [placeholder]. */
 @ZpaExperimentalApi
@@ -46,9 +44,9 @@ class DynamicSqlHole internal constructor(
  * - Token values are the built text. A literal nested in the built SQL, written `'',.''` in the file, has the value
  *   `',.'`; an end position computed from a value (such as `Token.endColumn`) therefore falls short by the number of
  *   escapes the file needed, and spans lines differently when the value does.
- * - The tree has its own [symbolTable]: Oracle compiles dynamic SQL on its own, so names in it never bind to the
- *   locals, parameters or private members of the code that runs it. Placeholders bind to nothing. Declarations inside
- *   the text never become project declarations.
+ * - The tree is analyzed on its own: Oracle compiles dynamic SQL on its own, so names in it never bind to the locals,
+ *   parameters or private members of the code that runs it. Placeholders bind to nothing. Declarations inside the text
+ *   never become project declarations.
  */
 @ZpaExperimentalApi
 class DynamicSqlText internal constructor(
@@ -67,8 +65,6 @@ class DynamicSqlText internal constructor(
      * may have held more of the statement (a condition, a list of columns…), so the tree may be partial.
      */
     val holesDropped: Boolean,
-    /** The symbol table built for [root]. */
-    val symbolTable: SymbolTable,
     private val holesByToken: Map<Token, List<DynamicSqlHole>>,
     private val exactByToken: Map<Token, DynamicSqlHole>
 ) {

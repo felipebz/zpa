@@ -22,6 +22,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.AstNodeType
 import com.felipebz.flr.api.GenericTokenType
+import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
@@ -30,6 +31,8 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.extraction.TokenStream
+import com.felipebz.zpa.project.extraction.TypeReferences
 
 /** Source facts shared by the local extraction code: identifiers and ranges of AST nodes, never the nodes. */
 internal object LocalSyntax {
@@ -50,6 +53,35 @@ internal object LocalSyntax {
         val name = (if (expression.type === PlSqlGrammar.METHOD_CALL) expression.firstChild else expression)
             .takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
         return LocalLoopControl(LocalLoopControl.Form.NAME, identifier(name), range(fileId, name))
+    }
+
+    /** The written datatype [datatype], looked up from [lookupRegion]. */
+    fun typeUse(fileId: FileId, datatype: AstNode, lookupRegion: LocalRegionId): LocalTypeUse {
+        val tokens = datatype.tokens
+        val typeRef = TypeReferences(TokenStream(fileId, tokens)).declaredType(0, tokens.size)
+        // The written type's range is the TypeRef's own range: share the instance instead of holding an equal copy.
+        val range = range(fileId, datatype).let { if (typeRef?.sourceRange == it) typeRef.sourceRange else it }
+        return LocalTypeUse(typeRef, range, lookupRegion, typeRef?.let { segmentRanges(fileId, tokens, it.name.segments) }.orEmpty())
+    }
+
+    /**
+     * The token of each segment of a written type's name: its qualified name `name(.name)*`, starting at the first token
+     * that spells the first segment (after `REF`, for example). Empty when the tokens do not spell it so.
+     */
+    private fun segmentRanges(fileId: FileId, tokens: List<Token>, segments: List<OracleIdentifier>): List<SourceRange> {
+        var index = tokens.indexOfFirst { OracleIdentifier.fromSource(it.originalValue) == segments.first() }
+        if (index < 0) return emptyList()
+        val result = ArrayList<SourceRange>(segments.size)
+        for ((position, segment) in segments.withIndex()) {
+            if (position > 0) {
+                if (index + 1 >= tokens.size || tokens[index].value != ".") return emptyList()
+                index++
+            }
+            val token = tokens[index++]
+            if (OracleIdentifier.fromSource(token.originalValue) != segment) return emptyList()
+            result += SourceRange(fileId, token.line, token.column, token.endLine, token.endColumn)
+        }
+        return result
     }
 
     fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromSource(node.token.originalValue)

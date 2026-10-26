@@ -35,13 +35,9 @@ import com.felipebz.zpa.lexer.StringLiteralSyntax
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.squid.PlSqlAstWalker
-import com.felipebz.zpa.squid.PlSqlConfiguration
-import com.felipebz.zpa.squid.SemanticAnalysisPipeline
-import com.felipebz.zpa.squid.SemanticScanCapabilities
-import com.felipebz.zpa.squid.createNotPreparedProjectAnalysis
+import com.felipebz.zpa.squid.*
 import java.nio.charset.StandardCharsets
-import java.util.IdentityHashMap
+import java.util.*
 
 /** A lexer and a parser for built texts, with the configuration of the scanned files; created on first use. */
 internal class DynamicSqlTools(configuration: PlSqlConfiguration) {
@@ -261,8 +257,7 @@ internal class DynamicSqlSupport(
         val context = PlSqlVisitorContext(root, null as PlSqlFile?, null)
         PlSqlAstWalker(pipeline.create(treeFileId).all).walk(context, capabilities)
         return DynamicSqlText(
-            root, expression, parts, built.text, holes, dropHoles, context.symbolTable,
-            holesByToken, exactByToken
+            root, expression, parts, built.text, holes, dropHoles, holesByToken, exactByToken
         )
     }
 

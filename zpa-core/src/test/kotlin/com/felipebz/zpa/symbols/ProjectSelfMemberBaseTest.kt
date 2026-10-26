@@ -26,28 +26,12 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
-import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 class ProjectSelfMemberBaseTest {
-    private var saved = true
-
-    @BeforeEach
-    fun save() {
-        saved = LocalSemanticSwitches.selfMemberBase
-        LocalSemanticSwitches.selfMemberBase = true
-    }
-
-    @AfterEach
-    fun restore() {
-        LocalSemanticSwitches.selfMemberBase = saved
-    }
-
     private val spec = "CREATE TYPE t AS OBJECT (\n  a NUMBER,\n  MEMBER FUNCTION f RETURN NUMBER,\n  MEMBER PROCEDURE p,\n" +
         "  CONSTRUCTOR FUNCTION t RETURN SELF AS RESULT,\n  STATIC FUNCTION s RETURN NUMBER\n);\n/\n"
     private val body = "CREATE TYPE BODY t AS\n" +
@@ -87,23 +71,17 @@ class ProjectSelfMemberBaseTest {
     }
 
     @Test
-    fun noBaseInAStaticMethodWithTheSwitchOffOrForAnAmbiguousType() {
+    fun noBaseInAStaticMethodOrForAnAmbiguousType() {
         val staticBody = "CREATE TYPE BODY t AS\n  STATIC FUNCTION s RETURN NUMBER IS BEGIN RETURN self.a; END;\nEND;\n/\n"
         assertThat(scan("spec.sql" to spec, "body.sql" to staticBody)).isEmpty()
-        LocalSemanticSwitches.selfMemberBase = false
-        assertThat(scan("spec.sql" to spec, "body.sql" to body)).isEmpty()
-        LocalSemanticSwitches.selfMemberBase = true
         assertThat(scan("spec.sql" to spec, "again.sql" to spec, "body.sql" to body)).isEmpty()
     }
 
     @Test
-    fun anExplicitSelfParameterKeepsItsLegacyBase() {
+    fun anExplicitSelfParameterIsAValueBase() {
         val explicit = "CREATE TYPE BODY t AS\n  CONSTRUCTOR FUNCTION t(SELF IN OUT t) RETURN SELF AS RESULT IS BEGIN self.a := 0; RETURN; END;\nEND;\n/\n"
-        for (switch in listOf(true, false)) {
-            LocalSemanticSwitches.selfMemberBase = switch
-            assertThat(scan("t.sql" to spec + explicit)).describedAs("switch $switch").containsExactly("10 self.a Resolved t.a")
-            assertThat(scan("spec.sql" to spec, "body.sql" to explicit)).describedAs("switch $switch").containsExactly("2 self.a Resolved t.a")
-        }
+        assertThat(scan("t.sql" to spec + explicit)).containsExactly("10 self.a Resolved t.a")
+        assertThat(scan("spec.sql" to spec, "body.sql" to explicit)).containsExactly("2 self.a Resolved t.a")
     }
 
     private fun scan(vararg sources: Pair<String, String>): List<String> {

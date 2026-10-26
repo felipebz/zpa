@@ -20,10 +20,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.DmlGrammar
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.*
 import com.felipebz.zpa.project.*
 
 /**
@@ -116,7 +113,11 @@ internal object LocalReferenceCollector {
                     reference(node, state)
                     return
                 }
-                type === PlSqlGrammar.DATATYPE || type === PlSqlGrammar.CUSTOM_DATATYPE || type === PlSqlGrammar.DEPRECATE_PRAGMA ||
+                type === PlSqlGrammar.DATATYPE -> {
+                    castType(node, state)
+                    return
+                }
+                type === PlSqlGrammar.CUSTOM_DATATYPE || type === PlSqlGrammar.DEPRECATE_PRAGMA ||
                     type === DmlGrammar.INSERT_COLUMNS -> return
                 // Names after the first child (`a(i).f`, `a(i).m(j)`, `(x as t).m(j)`) are members, not lookups; arguments are.
                 type === PlSqlGrammar.OBJECT_REFERENCE -> {
@@ -163,6 +164,17 @@ internal object LocalReferenceCollector {
                     !parent.hasDirectChildren(PlSqlKeyword.LATERAL) && parent.parent.type !== DmlGrammar.CROSS_OUTER_APPLY_CLAUSE
                 else -> false
             }
+        }
+
+        /**
+         * The target type of CAST, unlike the other written types of expressions (TREAT, IS OF), may be a local PL/SQL
+         * type: it is looked up like a declared type, from the region holding the expression.
+         */
+        private fun castType(datatype: AstNode, state: State) {
+            if (datatype.parent.type !== SingleRowSqlFunctionsGrammar.CAST_EXPRESSION) return
+            val region = innermostRegion(model, LocalSyntax.range(fileId, datatype))
+            if (state.inTrigger && model.region(region).kind == LocalRegionKind.FILE) return
+            typeUseReference(LocalSyntax.typeUse(fileId, datatype, region))?.let { out += it }
         }
 
         /** The label named by `GOTO`, `EXIT` or `CONTINUE` (an `IDENTIFIER_NAME`, absent for a plain `EXIT`). */

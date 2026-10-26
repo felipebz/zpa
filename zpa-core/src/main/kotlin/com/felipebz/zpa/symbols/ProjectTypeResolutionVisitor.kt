@@ -23,11 +23,9 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.local.LocalRangeKey
-import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 import com.felipebz.zpa.symbols.local.LocalTypeGate
 
 /** Adds project resolution facts without changing the legacy datatype result. */
@@ -42,17 +40,10 @@ internal class ProjectTypeResolutionVisitor(
 
     override fun visitNode(node: AstNode) {
         val reference = namedTypeReference(node) ?: return
-        val legacy = isResolvedLexically(reference, context.currentScope)
         val facts = context.localSemanticFacts
-        facts?.recordTypeGate(reference.sourceRange, legacy)
-        // With the switch on, a certain local outcome decides; an uncertain or unpaired one keeps the legacy decision.
-        val gate = if (LocalSemanticSwitches.typeNameGate) facts?.localTypeGate(reference.sourceRange) else null
-        val lexical = when (gate) {
-            null -> legacy
-            LocalTypeGate.Local -> true
-            LocalTypeGate.NotLocal, is LocalTypeGate.Held, is LocalTypeGate.EnclosingType -> false
-        }
-        if (lexical) return
+        // Without local facts (a failed prepass), nothing proves the name local: the project resolves it.
+        val gate = facts?.localTypeGate(reference.sourceRange) ?: LocalTypeGate.NotLocal
+        if (gate == LocalTypeGate.Local) return
 
         val owner = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
             ?.let(::packageName)
@@ -115,14 +106,6 @@ internal class ProjectTypeResolutionVisitor(
             QualifiedName(identifiers),
             SourceRange(fileId, firstToken.line, firstToken.column, lastToken.endLine, lastToken.endColumn)
         )
-    }
-
-    private fun isResolvedLexically(reference: NamedTypeRef, scope: Scope?): Boolean {
-        if (scope == null) return false
-        val path = reference.name.segments.dropLast(1)
-            .map { it.originalSpelling }
-            .reversed()
-        return scope.getSymbol(reference.name.last.originalSpelling, path, Symbol.Kind.TYPE) != null
     }
 
     private fun packageName(node: AstNode): QualifiedName? {

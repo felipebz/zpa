@@ -55,13 +55,14 @@ class EnclosingTypeNameTest {
     }
 
     @Test
-    fun aSubtypeResolvesItsOwnNameOnlyWithTheWholeChainInTheProject() {
+    fun aSubtypeResolvesItsOwnNameAlsoWithoutItsSupertypeInTheProject() {
         val sup = "CREATE TYPE sup AS OBJECT (a NUMBER) NOT FINAL;\n/\n"
         val sub = "CREATE TYPE sub UNDER sup (b NUMBER, MEMBER FUNCTION f RETURN NUMBER);\n/\n"
         val subBody = "CREATE TYPE BODY sub AS\n  MEMBER FUNCTION f RETURN NUMBER IS v sub; BEGIN RETURN v.b; END;\nEND;\n/\n"
         assertThat(scan("sup.sql" to sup, "sub.sql" to sub, "body.sql" to subBody)).containsExactly("2 sub type sub.sql", "2 v.b Resolved sub.b")
-        // The supertype outside the project may declare an attribute of that name.
-        assertThat(scan("sub.sql" to sub, "body.sql" to subBody)).isEmpty()
+        // The supertype outside the project leaves the name uncertain with no local candidate: the project resolves it,
+        // and it must resolve to the enclosing type itself.
+        assertThat(scan("sub.sql" to sub, "body.sql" to subBody)).containsExactly("2 sub type sub.sql", "2 v.b Resolved sub.b")
     }
 
     @Test

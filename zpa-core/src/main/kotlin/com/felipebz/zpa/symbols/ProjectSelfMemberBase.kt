@@ -24,12 +24,11 @@ import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.local.LocalRangeKey
 import com.felipebz.zpa.symbols.local.LocalSelfMember
-import com.felipebz.zpa.symbols.local.LocalSemanticSwitches
 
 /**
- * The project base of a member expression whose first segment has no legacy symbol and stands for the implicit `SELF`
- * of a method: `SELF` itself, whose base is the enclosing object type, or an attribute of that type named alone, whose
- * base is the attribute's declared type.
+ * The project base of a member expression whose first segment names no local declaration and stands for the implicit
+ * `SELF` of a method: `SELF` itself, whose base is the enclosing object type, or an attribute of that type named alone,
+ * whose base is the attribute's declared type.
  */
 internal class ProjectSelfMemberBase(
     private val typeResolver: ProjectTypeResolver,
@@ -38,7 +37,6 @@ internal class ProjectSelfMemberBase(
     private val fileId: FileId
 ) {
     fun of(context: PlSqlVisitorContext, first: AstNode, firstMember: OracleIdentifier): ProjectTypeDeclaration? {
-        if (!LocalSemanticSwitches.selfMemberBase) return null
         val facts = context.localSemanticFacts ?: return null
         val token = first.token
         val self = facts.implicitSelf(token.line, token.column) ?: return attribute(facts, first)

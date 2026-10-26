@@ -33,6 +33,7 @@ import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.symbols.local.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -252,7 +253,11 @@ class DynamicSqlTextTest {
         val x = text.root.descendants().filter { it.tokenOrNull?.originalValue == "x" }
         assertThat(x).isNotEmpty
         assertThat(x.map { (it as SemanticAstNode).symbol }).containsOnlyNulls()
-        assertThat(text.symbolTable.symbols.map { it.name }).doesNotContain("x")
+        val (model, outcomes) = local(text)
+        assertThat(model.declarations.map { it.name.originalSpelling }).doesNotContain("x")
+        // The tree has no file text, so its regions are incomplete; the provisional answer still finds no declaration.
+        assertThat(outcomes.filter { it.first.name.originalSpelling == "x" }.map { (it.second as LocalResolution.Incomplete).provisional })
+            .containsOnly(LocalResolution.ProvenAbsent)
     }
 
     @Test
@@ -262,7 +267,17 @@ class DynamicSqlTextTest {
         assertThat(v).hasSize(1)
         assertThat(v.single().declaration.tokens.first().line).isEqualTo(2)
         assertThat(v.single().usages).isNotEmpty
-        assertThat(text.symbolTable.symbols).contains(v.single())
+        val (model, outcomes) = local(text)
+        val declaration = model.declarations.single { it.name.originalSpelling == "v" }
+        assertThat(declaration.nameRange.startLine).isEqualTo(2)
+        assertThat(outcomes.filter { it.first.name.originalSpelling == "v" }.map { (it.second as LocalResolution.Incomplete).provisional })
+            .containsOnly(LocalResolution.Bound(declaration.id))
+    }
+
+    /** The local model of the dynamic tree alone, as the pipeline's pre-pass builds it, with each reference's first outcome. */
+    private fun local(text: DynamicSqlText): Pair<LocalSemanticModel, List<Pair<LocalReference, LocalResolution>>> {
+        val model = LocalSemanticModelBuilder.build(text.root, fileId, null)
+        return model to LocalReferenceCollector.collect(text.root, model).map { it to LocalResolver.resolveQualified(model, it).first() }
     }
 
     // Project.
