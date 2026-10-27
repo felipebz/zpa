@@ -25,8 +25,9 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.ActivatedByDefault
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.project.SequenceReferenceResolution
 import com.felipebz.zpa.checks.verifier.ProjectPlSqlCheckVerifier
 import com.felipebz.zpa.checks.verifier.ProjectTestSource
 import com.felipebz.zpa.project.FileId
@@ -34,8 +35,6 @@ import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.AstScanner
-import com.felipebz.zpa.symbols.DefaultTypeSolver
-import com.felipebz.zpa.symbols.SymbolVisitor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -50,35 +49,50 @@ class SequenceNextvalInConditionalResultCheckTest : BaseCheckTest() {
             .getAnnotation(ActivatedByDefault::class.java)).isNotNull
     }
 
-    @Test
-    fun unresolvedMembersAreNotResolvedAsSequences() {
-        val members = mutableListOf<SemanticAstNode>()
-        val probe = object : PlSqlCheck() {
-            override fun init() {
-                subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION)
-            }
+    /** The sequence resolution of each NEXTVAL member, through the API the check uses. */
+    @OptIn(ZpaExperimentalApi::class)
+    private class SequenceProbe : PlSqlCheck() {
+        val results = mutableListOf<SequenceReferenceResolution>()
 
-            override fun visitNode(node: AstNode) {
-                if (node.getDescendants(PlSqlKeyword.NEXTVAL).isNotEmpty()) {
-                    members += node as SemanticAstNode
-                }
+        override fun init() {
+            subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION)
+        }
+
+        override fun visitNode(node: AstNode) {
+            if (node.getDescendants(PlSqlKeyword.NEXTVAL).isNotEmpty()) {
+                results += projectAnalysis().resolveSequenceReference(node)
             }
         }
+    }
+
+    @Test
+    @OptIn(ZpaExperimentalApi::class)
+    fun unresolvedMembersAreNotResolvedAsSequences() {
+        val source = "select case when flag = 1 then t.nextval else 0 end from some_table t;"
         val file = File.createTempFile("sequence-nextval-ambiguous-member", ".sql")
-        file.writeText(
-            "select case when flag = 1 then t.nextval else 0 end from some_table t;"
-        )
+        file.writeText(source)
 
         try {
-            TestPlSqlVisitorRunner.scanFile(
-                file,
-                null,
-                SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true),
-                probe
-            )
+            // Without project preparation.
+            val unprepared = SequenceProbe()
+            TestPlSqlVisitorRunner.scanFile(file, null, unprepared)
+            assertThat(unprepared.results).containsExactly(SequenceReferenceResolution.UNKNOWN)
 
-            assertThat(members).hasSize(1)
-            assertThat(members.single().symbol).isNull()
+            // Prepared, with a project that declares no sequence named t.
+            val fileId = FileId(file.name)
+            val projectContext = ProjectAnalysisContext.prepared(
+                ProjectIndexPreparation().prepare(
+                    listOf(
+                        ProjectSource(FileId("sequence-declarations.sql")) { "CREATE SEQUENCE other_sequence;" },
+                        ProjectSource(fileId) { source }
+                    ),
+                    concurrent = false
+                )
+            )
+            val prepared = SequenceProbe()
+            AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, projectContext)
+                .scanFile(FixtureFile(fileId, source), listOf(prepared), fileId)
+            assertThat(prepared.results).containsExactly(SequenceReferenceResolution.UNKNOWN)
         } finally {
             file.delete()
         }

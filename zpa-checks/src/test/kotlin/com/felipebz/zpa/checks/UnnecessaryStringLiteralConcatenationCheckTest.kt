@@ -21,8 +21,6 @@ package com.felipebz.zpa.checks
 
 import com.felipebz.zpa.TestPlSqlVisitorRunner
 import com.felipebz.zpa.checks.verifier.PlSqlCheckVerifier
-import com.felipebz.zpa.symbols.DefaultTypeSolver
-import com.felipebz.zpa.symbols.SymbolVisitor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -43,7 +41,6 @@ class UnnecessaryStringLiteralConcatenationCheckTest : BaseCheckTest() {
         TestPlSqlVisitorRunner.scanFile(
             File(getPath("unnecessary_string_literal_concatenation_multiple_runs.sql")),
             null,
-            SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true),
             check
         )
 
@@ -63,7 +60,6 @@ class UnnecessaryStringLiteralConcatenationCheckTest : BaseCheckTest() {
             TestPlSqlVisitorRunner.scanFile(
                 file,
                 null,
-                SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true),
                 check
             )
 
@@ -84,7 +80,6 @@ class UnnecessaryStringLiteralConcatenationCheckTest : BaseCheckTest() {
             TestPlSqlVisitorRunner.scanFile(
                 file,
                 null,
-                SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true),
                 check
             )
 
