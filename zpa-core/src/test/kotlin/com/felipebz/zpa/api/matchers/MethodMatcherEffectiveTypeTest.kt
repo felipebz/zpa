@@ -17,36 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.matchers
 
-import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.datatype.CharacterDatatype
-import com.felipebz.zpa.project.AnchoredTypeRef
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectIndexPreparationFailure
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathSegment
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.ProjectTypeDeclaration
-import com.felipebz.zpa.project.ProjectTypeResolution
-import com.felipebz.zpa.project.ProjectTypeShape
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.TypeAnchor
-import com.felipebz.zpa.project.TypeRef
-import com.felipebz.zpa.project.TypeRefSemanticResolution
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
 import com.felipebz.zpa.symbols.EffectiveTypeCategory
@@ -162,7 +146,7 @@ class MethodMatcherEffectiveTypeTest : RuleTest() {
                 )),
                 ProjectRecordMemberPathSegment(id, fieldTypeResolution(
                     id,
-                    TypeRefSemanticResolution.BuiltIn(idReference, PlSqlType.NUMERIC)
+                    TypeRefSemanticResolution.BuiltIn(idReference, ProjectBuiltInTypeCategory.NUMERIC)
                 ))
             ))
         }
@@ -270,7 +254,7 @@ class MethodMatcherEffectiveTypeTest : RuleTest() {
         val typeRef = named(typeName)
         argument.projectRecordFieldTypeResolution = fieldTypeResolution(
             field("value", typeRef),
-            TypeRefSemanticResolution.BuiltIn(typeRef, type)
+            TypeRefSemanticResolution.BuiltIn(typeRef, ProjectBuiltInTypeCategory.valueOf(type.name))
         )
         decorate(argument)
     }

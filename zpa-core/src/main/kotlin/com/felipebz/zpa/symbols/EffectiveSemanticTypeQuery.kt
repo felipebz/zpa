@@ -17,17 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
-import com.felipebz.zpa.project.ProjectTypeDeclaration
-import com.felipebz.zpa.project.ProjectTypeResolution
-import com.felipebz.zpa.project.ProjectTypeShape
-import com.felipebz.zpa.project.TypeRefSemanticResolution
+import com.felipebz.zpa.project.*
 
 /** The source from which an effective broad type category was proven. */
 internal enum class EffectiveTypeSource {
@@ -47,6 +45,7 @@ internal sealed interface EffectiveTypeCategory {
 }
 
 /** Interprets existing semantic decorations without performing another resolution pass. */
+@OptIn(ZpaExperimentalApi::class)
 internal object EffectiveSemanticTypeQuery {
     fun typeCategory(node: SemanticAstNode): EffectiveTypeCategory {
         node.plSqlType.takeUnless { it == PlSqlType.UNKNOWN }?.let {
@@ -83,7 +82,7 @@ internal object EffectiveSemanticTypeQuery {
 
     private fun typeCategory(resolution: TypeRefSemanticResolution): EffectiveTypeCategory = when (resolution) {
         is TypeRefSemanticResolution.BuiltIn ->
-            EffectiveTypeCategory.Known(resolution.type, EffectiveTypeSource.BUILT_IN_TYPE_REF)
+            EffectiveTypeCategory.Known(legacyType(resolution.type), EffectiveTypeSource.BUILT_IN_TYPE_REF)
         is TypeRefSemanticResolution.Project -> typeCategory(resolution.resolution)
         is TypeRefSemanticResolution.Unsupported -> EffectiveTypeCategory.Unknown
     }
@@ -103,5 +102,15 @@ internal object EffectiveSemanticTypeQuery {
             EffectiveTypeCategory.Unknown
         }
         else -> EffectiveTypeCategory.Unknown
+    }
+
+    /** The legacy type category the typed parameters of [com.felipebz.zpa.api.matchers.MethodMatcher] compare with. */
+    private fun legacyType(category: ProjectBuiltInTypeCategory): PlSqlType = when (category) {
+        ProjectBuiltInTypeCategory.NUMERIC -> PlSqlType.NUMERIC
+        ProjectBuiltInTypeCategory.CHARACTER -> PlSqlType.CHARACTER
+        ProjectBuiltInTypeCategory.LOB -> PlSqlType.LOB
+        ProjectBuiltInTypeCategory.BOOLEAN -> PlSqlType.BOOLEAN
+        ProjectBuiltInTypeCategory.DATE -> PlSqlType.DATE
+        ProjectBuiltInTypeCategory.JSON -> PlSqlType.JSON
     }
 }

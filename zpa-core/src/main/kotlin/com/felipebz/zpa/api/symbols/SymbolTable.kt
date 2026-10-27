@@ -17,10 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.symbols
 
 import com.felipebz.flr.api.AstNode
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. Use the read queries of
+ * PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty,
+ * valueCategory and typeCategory.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. Use the read queries of " +
+    "PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
+    "regionUncertainty, valueCategory and typeCategory."
+)
 interface SymbolTable {
 
     val symbols: List<Symbol>

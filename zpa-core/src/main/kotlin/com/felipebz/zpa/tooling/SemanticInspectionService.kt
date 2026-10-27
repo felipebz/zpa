@@ -84,6 +84,7 @@ public class SemanticInspectionService {
 public class SemanticInspectionResult internal constructor(
     private val fileId: FileId,
     private val root: AstNode,
+    @Suppress("DEPRECATION")
     public val symbolTable: SymbolTable,
     public val projectAnalysis: ProjectAnalysisSummary,
     private val projectAnalysisContext: ProjectAnalysisContext
@@ -310,6 +311,7 @@ private object SemanticInspectionMapper {
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun legacySummary(node: SemanticAstNode): LegacySemanticSummary? {
         val symbol = node.symbol
         val datatype = node.plSqlDatatype
@@ -430,6 +432,7 @@ private object SemanticInspectionMapper {
         )
     }
 
+    @OptIn(ZpaExperimentalApi::class)
     private fun fieldTypeResolution(
         resolution: ProjectRecordFieldTypeResolution
     ): ProjectRecordFieldTypeResolutionSummary {

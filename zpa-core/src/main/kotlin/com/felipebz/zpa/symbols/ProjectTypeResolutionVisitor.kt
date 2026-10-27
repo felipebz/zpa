@@ -85,6 +85,7 @@ internal class ProjectTypeResolutionVisitor(
         else -> false
     }
 
+    @Suppress("DEPRECATION")
     private fun declaredTypeSymbol(datatype: AstNode): Symbol? {
         val identifier = datatype.parent.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.UNIT_NAME)
         return (identifier as? SemanticAstNode)?.symbol

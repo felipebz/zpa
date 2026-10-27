@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
@@ -31,6 +33,14 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.*
 import com.felipebz.zpa.typeIs
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: it was never
+ * meant as API.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: it " +
+    "was never meant as API."
+)
 class SymbolVisitor(private val typeSolver: DefaultTypeSolver, private val isGlobalContext: Boolean = false) : PlSqlCheck() {
 
     private val scopeHolders = arrayOf<AstNodeType>(

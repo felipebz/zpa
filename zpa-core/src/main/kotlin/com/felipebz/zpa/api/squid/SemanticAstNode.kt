@@ -32,6 +32,15 @@ import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
     constructor(token: Token) : this(token.type, token.type.name, token)
 
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use
+     * PlSqlVisitorContext.nameBinding instead.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. Use " +
+        "PlSqlVisitorContext.nameBinding instead."
+    )
+    @Suppress("DEPRECATION")
     var symbol: Symbol? = null
         set(symbol) {
             field = symbol
@@ -40,6 +49,17 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
             (child as SemanticAstNode).symbol = symbol
         }
 
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. For a name use
+     * PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node.
+     * Length, precision and scale are read from the DATATYPE node of the declaration.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. For a name use " +
+        "PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar " +
+        "node. Length, precision and scale are read from the DATATYPE node of the declaration."
+    )
+    @Suppress("DEPRECATION")
     var plSqlDatatype: PlSqlDatatype = UnknownDatatype
         get() = this.symbol?.datatype ?: field
 
@@ -67,12 +87,24 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
     /** On the root of a tree: the local resolution of the whole tree, left by the pre-pass; null when it failed. */
     internal var localSemanticFacts: LocalSemanticFacts? = null
 
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. For a name use
+     * PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node.
+     * Length, precision and scale are read from the DATATYPE node of the declaration.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. For a name use " +
+        "PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar " +
+        "node. Length, precision and scale are read from the DATATYPE node of the declaration."
+    )
+    @Suppress("DEPRECATION")
     val plSqlType: PlSqlType
         get() = plSqlDatatype.type
 
     val allTokensToString: String
         get() = tokens.joinToString(" ") { it.originalValue }
 
+    @Suppress("DEPRECATION")
     override fun toString(): String {
         return buildString {
             append(name)

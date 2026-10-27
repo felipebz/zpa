@@ -17,9 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project
 
-import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 
 /**
  * AST-free semantic facts for a retained project TypeRef.
@@ -33,7 +36,7 @@ internal sealed interface TypeRefSemanticResolution {
 
     data class BuiltIn(
         override val reference: NamedTypeRef,
-        val type: PlSqlType
+        val type: ProjectBuiltInTypeCategory
     ) : TypeRefSemanticResolution
 
     data class Project(
@@ -68,32 +71,32 @@ internal class TypeRefSemanticResolver(
  * Built-in classification that can be applied to the information retained in a NamedTypeRef.
  *
  * The parser grammar remains the authoritative source for the accepted spellings and for
- * datatype constraints. This classifier only provides the broad PlSqlType category that is
+ * datatype constraints. This classifier only provides the broad built-in category that is
  * still recoverable after TypeRef extraction. Qualified and quoted names are deliberately
  * excluded because their meaning is namespace- or identifier-dependent.
  */
 internal object BuiltInTypeRefClassifier {
-    fun classify(name: QualifiedName): PlSqlType? {
+    fun classify(name: QualifiedName): ProjectBuiltInTypeCategory? {
         if (name.segments.size != 1) return null
         val identifier = name.last
         if (identifier.quoted) return null
         return classifyLookupName(identifier.lookupName)
     }
 
-    private fun classifyLookupName(lookupName: String): PlSqlType? {
+    private fun classifyLookupName(lookupName: String): ProjectBuiltInTypeCategory? {
         return when (lookupName) {
             "BINARY_DOUBLE", "BINARY_FLOAT", "BINARY_INTEGER", "DEC", "DECIMAL",
             "DOUBLE", "FLOAT", "INT", "INTEGER", "NATURAL", "NATURALN", "NUMBER",
             "NUMERIC", "PLS_INTEGER", "POSITIVE", "POSITIVEN", "REAL", "SIGNTYPE",
-            "SMALLINT" -> PlSqlType.NUMERIC
+            "SMALLINT" -> ProjectBuiltInTypeCategory.NUMERIC
 
             "CHAR", "CHARACTER", "LONG", "NCHAR", "NVARCHAR2", "RAW", "ROWID",
-            "STRING", "UROWID", "VARCHAR", "VARCHAR2" -> PlSqlType.CHARACTER
+            "STRING", "UROWID", "VARCHAR", "VARCHAR2" -> ProjectBuiltInTypeCategory.CHARACTER
 
-            "BFILE", "BLOB", "CLOB", "NCLOB" -> PlSqlType.LOB
-            "BOOLEAN" -> PlSqlType.BOOLEAN
-            "DATE", "INTERVAL", "TIMESTAMP" -> PlSqlType.DATE
-            "JSON" -> PlSqlType.JSON
+            "BFILE", "BLOB", "CLOB", "NCLOB" -> ProjectBuiltInTypeCategory.LOB
+            "BOOLEAN" -> ProjectBuiltInTypeCategory.BOOLEAN
+            "DATE", "INTERVAL", "TIMESTAMP" -> ProjectBuiltInTypeCategory.DATE
+            "JSON" -> ProjectBuiltInTypeCategory.JSON
             else -> null
         }
     }

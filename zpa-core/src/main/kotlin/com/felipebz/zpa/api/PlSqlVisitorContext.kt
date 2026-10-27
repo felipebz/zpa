@@ -36,7 +36,29 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
                                                    private val plSqlFile: PlSqlFile?,
                                                    private val parsingException: RecognitionException?,
                                                    var formsMetadata: FormsMetadata?) {
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use the read queries of
+     * PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty,
+     * valueCategory and typeCategory.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. Use the read queries of " +
+        "PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
+        "regionUncertainty, valueCategory and typeCategory."
+    )
+    @Suppress("DEPRECATION")
     var symbolTable: SymbolTable = SymbolTableImpl()
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use the read queries of
+     * PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty,
+     * valueCategory and typeCategory.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. Use the read queries of " +
+        "PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
+        "regionUncertainty, valueCategory and typeCategory."
+    )
+    @Suppress("DEPRECATION")
     var currentScope: Scope? = null
 
     constructor(rootTree: AstNode,

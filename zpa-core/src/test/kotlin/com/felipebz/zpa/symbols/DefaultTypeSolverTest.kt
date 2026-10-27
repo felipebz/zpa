@@ -17,17 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
-import com.felipebz.zpa.api.symbols.datatype.CharacterDatatype
-import com.felipebz.zpa.api.symbols.datatype.NullDatatype
-import com.felipebz.zpa.api.symbols.datatype.NumericDatatype
-import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
-import com.felipebz.zpa.api.symbols.datatype.RowtypeDatatype
+import com.felipebz.zpa.api.symbols.datatype.*
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import org.assertj.core.api.Assertions.assertThat

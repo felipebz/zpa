@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.symbols
 
 import com.felipebz.flr.api.AstNode
@@ -25,6 +27,18 @@ import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlFile
 import java.util.*
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. For names use the read queries of
+ * PlSqlVisitorContext: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty, valueCategory
+ * and typeCategory. For properties of a unit (autonomous transaction, overriding member and the others) read the unit's
+ * AST.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. For names use the read " +
+    "queries of PlSqlVisitorContext: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
+    "regionUncertainty, valueCategory and typeCategory. For properties of a unit (autonomous transaction, " +
+    "overriding member and the others) read the unit's AST."
+)
 interface Scope {
     val isAutonomousTransaction: Boolean
     val isOverridingMember: Boolean

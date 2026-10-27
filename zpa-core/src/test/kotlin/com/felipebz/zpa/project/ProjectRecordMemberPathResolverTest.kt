@@ -17,9 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project
 
-import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -56,7 +58,7 @@ class ProjectRecordMemberPathResolverTest {
         val secondType = completed.segments[1].fieldTypeResolution
         assertThat(secondType.field).isSameAs(child.recordFields.single())
         assertThat(secondType.resolution)
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(secondType.field.typeRef as NamedTypeRef, PlSqlType.CHARACTER))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(secondType.field.typeRef as NamedTypeRef, ProjectBuiltInTypeCategory.CHARACTER))
         assertThatThrownBy { (completed.segments as MutableList).clear() }
             .isInstanceOf(UnsupportedOperationException::class.java)
     }
@@ -109,7 +111,7 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(completed.segments[2].fieldTypeResolution.resolution)
             .isEqualTo(TypeRefSemanticResolution.BuiltIn(
                 completed.segments[2].field.typeRef as NamedTypeRef,
-                PlSqlType.NUMERIC
+                ProjectBuiltInTypeCategory.NUMERIC
             ))
     }
 
@@ -225,7 +227,7 @@ class ProjectRecordMemberPathResolverTest {
         assertThat(completed.segments.last().fieldTypeResolution.resolution)
             .isEqualTo(TypeRefSemanticResolution.BuiltIn(
                 completed.segments.last().field.typeRef as NamedTypeRef,
-                PlSqlType.NUMERIC
+                ProjectBuiltInTypeCategory.NUMERIC
             ))
         assertThatThrownBy {
             ProjectRecordMemberPathResolution.Completed(completed.segments.take(1))

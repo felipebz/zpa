@@ -17,12 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.matchers
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import com.felipebz.zpa.asSemantic
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
 import com.felipebz.zpa.api.squid.SemanticAstNode
@@ -31,6 +29,10 @@ import com.felipebz.zpa.api.symbols.datatype.CharacterDatatype
 import com.felipebz.zpa.api.symbols.datatype.DateDatatype
 import com.felipebz.zpa.api.symbols.datatype.NumericDatatype
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
+import com.felipebz.zpa.asSemantic
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class MethodMatcherWithTypesTest : RuleTest() {
 

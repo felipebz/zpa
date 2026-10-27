@@ -19,6 +19,16 @@
  */
 package com.felipebz.zpa.api.symbols
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. For a built-in type name use
+ * ProjectBuiltInTypeCategory; otherwise, for a name PlSqlVisitorContext.valueCategory, for a DATATYPE node
+ * typeCategory, and for a literal its grammar node.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. For a built-in type name use " +
+    "ProjectBuiltInTypeCategory; otherwise, for a name PlSqlVisitorContext.valueCategory, for a DATATYPE node " +
+    "typeCategory, and for a literal its grammar node."
+)
 enum class PlSqlType {
 
     UNKNOWN,

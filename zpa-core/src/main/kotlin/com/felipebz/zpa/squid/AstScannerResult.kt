@@ -31,6 +31,15 @@ import com.felipebz.zpa.api.symbols.Symbol
 data class AstScannerResult internal constructor(
     val executedChecks: List<PlSqlVisitor>,
     val linesWithNoSonar: Set<Int>,
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use highlightingPairs for
+     * declarations and their references, or PlSqlVisitorContext.nameBinding for one name.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. Use highlightingPairs for " +
+        "declarations and their references, or PlSqlVisitorContext.nameBinding for one name."
+    )
+    @Suppress("DEPRECATION")
     val symbols: List<Symbol>,
     val numberOfStatements: Int,
     val linesOfCode: Int,

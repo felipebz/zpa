@@ -17,32 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.NumericDatatype
 import com.felipebz.zpa.api.symbols.datatype.RecordDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
-import com.felipebz.zpa.project.AnchoredTypeRef
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.PackageTypeDeclaration
-import com.felipebz.zpa.project.ProjectIndexPreparationFailure
-import com.felipebz.zpa.project.ProjectRecordField
-import com.felipebz.zpa.project.ProjectRecordFieldTypeResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathResolution
-import com.felipebz.zpa.project.ProjectRecordMemberPathSegment
-import com.felipebz.zpa.project.ProjectTypeResolution
-import com.felipebz.zpa.project.ProjectTypeShape
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.RefTypeRef
-import com.felipebz.zpa.project.SourceRange
-import com.felipebz.zpa.project.TypeAnchor
-import com.felipebz.zpa.project.TypeRef
-import com.felipebz.zpa.project.TypeRefSemanticResolution
+import com.felipebz.zpa.project.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -105,7 +93,7 @@ class EffectiveSemanticTypeQueryTest {
         val node = node()
         node.projectRecordFieldTypeResolution = fieldResolution(
             field,
-            TypeRefSemanticResolution.BuiltIn(named("NUMBER"), PlSqlType.NUMERIC)
+            TypeRefSemanticResolution.BuiltIn(named("NUMBER"), ProjectBuiltInTypeCategory.NUMERIC)
         )
 
         assertThat(EffectiveSemanticTypeQuery.typeCategory(node)).isEqualTo(
@@ -119,7 +107,7 @@ class EffectiveSemanticTypeQueryTest {
         val node = node()
         node.projectRecordFieldTypeResolution = fieldResolution(
             field,
-            TypeRefSemanticResolution.BuiltIn(named("VARCHAR2"), PlSqlType.CHARACTER)
+            TypeRefSemanticResolution.BuiltIn(named("VARCHAR2"), ProjectBuiltInTypeCategory.CHARACTER)
         )
 
         assertThat(EffectiveSemanticTypeQuery.typeCategory(node)).isEqualTo(
@@ -168,7 +156,7 @@ class EffectiveSemanticTypeQueryTest {
                     terminalField,
                     TypeRefSemanticResolution.BuiltIn(
                         terminalField.typeRef as NamedTypeRef,
-                        PlSqlType.NUMERIC
+                        ProjectBuiltInTypeCategory.NUMERIC
                     )
                 )
             )

@@ -17,16 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.symbols.Symbol
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

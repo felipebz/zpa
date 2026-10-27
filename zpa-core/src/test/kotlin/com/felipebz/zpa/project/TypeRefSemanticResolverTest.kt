@@ -17,10 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.project
 
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import com.felipebz.zpa.symbols.DefaultTypeSolver
@@ -36,17 +39,17 @@ class TypeRefSemanticResolverTest {
     @Test
     fun classifiesRepresentativeBuiltInsWithoutCreatingDatatypes() {
         assertThat(resolver.resolve(named("NUMBER")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("NUMBER"), PlSqlType.NUMERIC))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("NUMBER"), ProjectBuiltInTypeCategory.NUMERIC))
         assertThat(resolver.resolve(named("VARCHAR2")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("VARCHAR2"), PlSqlType.CHARACTER))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("VARCHAR2"), ProjectBuiltInTypeCategory.CHARACTER))
         assertThat(resolver.resolve(named("DATE")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("DATE"), PlSqlType.DATE))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("DATE"), ProjectBuiltInTypeCategory.DATE))
         assertThat(resolver.resolve(named("CLOB")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("CLOB"), PlSqlType.LOB))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("CLOB"), ProjectBuiltInTypeCategory.LOB))
         assertThat(resolver.resolve(named("BOOLEAN")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("BOOLEAN"), PlSqlType.BOOLEAN))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("BOOLEAN"), ProjectBuiltInTypeCategory.BOOLEAN))
         assertThat(resolver.resolve(named("JSON")))
-            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("JSON"), PlSqlType.JSON))
+            .isEqualTo(TypeRefSemanticResolution.BuiltIn(named("JSON"), ProjectBuiltInTypeCategory.JSON))
     }
 
     @Test
@@ -72,7 +75,7 @@ class TypeRefSemanticResolverTest {
             val semantic = resolver.resolve(named(referenceName))
 
             assertThat(semantic).isInstanceOf(TypeRefSemanticResolution.BuiltIn::class.java)
-            assertThat((semantic as TypeRefSemanticResolution.BuiltIn).type).isEqualTo(legacyType)
+            assertThat((semantic as TypeRefSemanticResolution.BuiltIn).type.name).isEqualTo(legacyType.name)
         }
     }
 
@@ -160,7 +163,7 @@ class TypeRefSemanticResolverTest {
         val result = typeResolver.resolve(named("number"))
 
         assertThat(result).isEqualTo(
-            TypeRefSemanticResolution.BuiltIn(named("number"), PlSqlType.NUMERIC)
+            TypeRefSemanticResolution.BuiltIn(named("number"), ProjectBuiltInTypeCategory.NUMERIC)
         )
     }
 

@@ -23,8 +23,8 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.api.symbols.PlSqlType
+import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
 import com.felipebz.zpa.symbols.EffectiveTypeCategory
 
@@ -38,6 +38,7 @@ class MethodMatcher private constructor()
     private var schemaIsOptional = false
     var methodName: String = ""
         private set
+    @Suppress("DEPRECATION")
     private val expectedArgumentTypes = ArrayList<PlSqlType>()
 
     fun name(methodNameCriteria: String) =
@@ -73,20 +74,44 @@ class MethodMatcher private constructor()
         this.schemaIsOptional = true
     }
 
+    @Suppress("DEPRECATION")
     fun addParameter() =
         addParameter(PlSqlType.UNKNOWN)
 
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: use
+     * addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name or the grammar
+     * node for a literal.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: " +
+        "use addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name " +
+        "or the grammar node for a literal."
+    )
+    @Suppress("DEPRECATION")
     fun addParameter(type: PlSqlType) = apply {
         check(this.shouldCheckParameters)
         expectedArgumentTypes.add(type)
     }
 
+    @Suppress("DEPRECATION")
     fun addParameters(quantity: Int) = apply {
         for (i in 0 until quantity) {
             addParameter(PlSqlType.UNKNOWN)
         }
     }
 
+    /**
+     * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: use
+     * addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name or the grammar
+     * node for a literal.
+     */
+    @Deprecated(
+        "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: " +
+        "use addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name " +
+        "or the grammar node for a literal."
+    )
+    @Suppress("DEPRECATION")
     fun addParameters(vararg types: PlSqlType) = apply {
         check(this.shouldCheckParameters)
         for (type in types) {
@@ -227,6 +252,7 @@ class MethodMatcher private constructor()
         return !shouldCheckParameters || arguments.size == expectedArgumentTypes.size && argumentTypesAreCorrect(arguments)
     }
 
+    @Suppress("DEPRECATION")
     private fun argumentTypesAreCorrect(arguments: List<AstNode>): Boolean {
         var result = true
         for ((i, type) in expectedArgumentTypes.withIndex()) {

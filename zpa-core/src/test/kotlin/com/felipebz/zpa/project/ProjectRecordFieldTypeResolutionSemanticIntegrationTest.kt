@@ -17,14 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.project
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.symbols.ProjectRecordFieldTypeResolutionVisitor
@@ -212,7 +215,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
             TypeRefSemanticResolution.BuiltIn(
                 (check.member(listOf("value", "id")).projectRecordFieldTypeResolution!!.field.typeRef
                     as NamedTypeRef),
-                PlSqlType.NUMERIC
+                ProjectBuiltInTypeCategory.NUMERIC
             )
         )
         assertThat((resolutions[1] as TypeRefSemanticResolution.Project).resolution)
@@ -338,7 +341,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
                 .isEqualTo(ProjectTypeResolution.Resolved(firstField.typeRef as NamedTypeRef, customerType))
             val secondTypeResolution = completed.segments[1].fieldTypeResolution
             assertThat(secondTypeResolution.resolution).isEqualTo(
-                TypeRefSemanticResolution.BuiltIn(secondField.typeRef as NamedTypeRef, PlSqlType.CHARACTER)
+                TypeRefSemanticResolution.BuiltIn(secondField.typeRef as NamedTypeRef, ProjectBuiltInTypeCategory.CHARACTER)
             )
             assertThat(pathNode.projectRecordMemberResolution).isNull()
             assertThat(pathNode.projectRecordFieldTypeResolution).isNull()
@@ -419,7 +422,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(path.segments[1].fieldTypeResolution.resolution).isEqualTo(
             TypeRefSemanticResolution.BuiltIn(
                 path.segments[1].field.typeRef as NamedTypeRef,
-                PlSqlType.CHARACTER
+                ProjectBuiltInTypeCategory.CHARACTER
             )
         )
     }
@@ -577,7 +580,7 @@ class ProjectRecordFieldTypeResolutionSemanticIntegrationTest {
         assertThat(path.segments[2].fieldTypeResolution.resolution).isEqualTo(
             TypeRefSemanticResolution.BuiltIn(
                 path.segments[2].field.typeRef as NamedTypeRef,
-                PlSqlType.NUMERIC
+                ProjectBuiltInTypeCategory.NUMERIC
             )
         )
     }

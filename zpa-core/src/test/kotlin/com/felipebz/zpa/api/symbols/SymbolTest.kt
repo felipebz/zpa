@@ -17,14 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.symbols
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.symbols.Symbol.Kind
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
-import com.felipebz.zpa.api.symbols.Symbol.Kind
 
 class SymbolTest {
 

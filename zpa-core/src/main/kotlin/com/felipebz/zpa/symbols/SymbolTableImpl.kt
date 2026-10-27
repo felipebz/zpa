@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
@@ -25,6 +27,14 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: it was never
+ * meant as API.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: it " +
+    "was never meant as API."
+)
 class SymbolTableImpl : SymbolTable {
 
     override val symbols = ArrayList<Symbol>()

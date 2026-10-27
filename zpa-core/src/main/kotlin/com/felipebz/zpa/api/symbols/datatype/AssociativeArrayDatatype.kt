@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.api.symbols.datatype
 
 import com.felipebz.flr.api.AstNode
@@ -24,6 +26,16 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Scope
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. For a name use
+ * PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node. Length,
+ * precision and scale are read from the DATATYPE node of the declaration.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. For a name use " +
+    "PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node. " +
+    "Length, precision and scale are read from the DATATYPE node of the declaration."
+)
 class AssociativeArrayDatatype(node: AstNode? = null, currentScope: Scope?, val nestedType: PlSqlDatatype) : PlSqlDatatype {
     override val type = PlSqlType.ASSOCIATIVE_ARRAY
 

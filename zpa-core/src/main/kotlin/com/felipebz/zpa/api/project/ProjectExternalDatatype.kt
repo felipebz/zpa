@@ -20,6 +20,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.BuiltInTypeRefClassifier
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import java.util.*
@@ -120,7 +121,7 @@ class ProjectExternalDatatype private constructor(
                 return ProjectBuiltInTypeCategory.DATE
             }
             if (base.isEmpty() || base.any { it.isWhitespace() || it == '"' }) return null
-            return builtInCategory(QualifiedName(OracleIdentifier.fromSource(base)))
+            return BuiltInTypeRefClassifier.classify(QualifiedName(OracleIdentifier.fromSource(base)))
         }
     }
 }

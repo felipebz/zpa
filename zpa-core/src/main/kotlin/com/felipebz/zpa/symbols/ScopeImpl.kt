@@ -17,6 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@file:Suppress("DEPRECATION")
+
 package com.felipebz.zpa.symbols
 
 import com.felipebz.flr.api.AstNode
@@ -30,6 +32,14 @@ import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+/**
+ * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: it was never
+ * meant as API.
+ */
+@Deprecated(
+    "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: it " +
+    "was never meant as API."
+)
 class ScopeImpl(override val outer: Scope? = null,
                 node: AstNode? = null,
                 override val firstToken: Token? = null,

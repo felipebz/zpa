@@ -35,14 +35,16 @@ internal class SemanticAnalysisPipeline(
     private val projectAnalysisContext: ProjectAnalysisContext
 ) {
 
+    @Suppress("DEPRECATION")
     data class Visitors(
         val symbolVisitor: SymbolVisitor,
         val all: List<PlSqlVisitor>
     )
 
+    @Suppress("DEPRECATION")
     fun create(fileId: FileId): Visitors {
         val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true)
-        // Shadow mode: computes the local resolution first; no visitor reads it yet.
+        // The local resolution first: the project visitors read it.
         val visitors = mutableListOf<PlSqlVisitor>(LocalSemanticPrepass(fileId), symbolVisitor)
 
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
