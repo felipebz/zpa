@@ -136,7 +136,8 @@ internal class LocalCompletenessEvidence private constructor(
          * and recovery nodes from the tree.
          */
         fun of(root: AstNode, source: String?): LocalCompletenessEvidence {
-            val tokens = parserTokens(root)
+            val recovery = ArrayList<AstNode>()
+            val tokens = parserTokens(root, recovery)
             val global = EnumSet.noneOf(LocalIncompleteness::class.java)
             if (!isStrictlyOrdered(tokens)) global += LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS
             val points = HashMap<LocalIncompleteness, MutableList<Int>>()
@@ -180,7 +181,6 @@ internal class LocalCompletenessEvidence private constructor(
             val spans = keptBranches(runs, dollarFallback, points[LocalIncompleteness.CONDITIONAL_COMPILATION].orEmpty())
 
             // Recovery: file-level nodes only; one below the file level taints everything.
-            val recovery = root.getDescendants(PlSqlGrammar.RECOVERY)
             val recoveryStarts = if (recovery.isEmpty()) IntArray(0) else {
                 if (recovery.any { it.parent !== root }) global += LocalIncompleteness.PARSE_RECOVERY
                 val index = IdentityHashMap<Token, Int>()
@@ -213,10 +213,27 @@ internal class LocalCompletenessEvidence private constructor(
          * the repeats it equals the lexer output, except where the grammar consumes tokens without nodes (the Java source
          * of `CREATE JAVA`), which [DiscardedSourceText] then reports as discarded text.
          */
-        private fun parserTokens(root: AstNode): List<Token> {
-            val tokens = root.tokens
-            val seen = Collections.newSetFromMap(IdentityHashMap<Token, Boolean>(tokens.size))
-            return tokens.filter { seen.add(it) }
+        private fun parserTokens(root: AstNode, recovery: MutableList<AstNode>): List<Token> {
+            val tokens = ArrayList<Token>()
+            val seen = Collections.newSetFromMap(IdentityHashMap<Token, Boolean>())
+            // The root is not one of its own descendants: only the nodes below it are recovery candidates.
+            if (!root.hasChildren()) root.tokenOrNull?.let { if (seen.add(it)) tokens += it }
+            else for (child in root.children) leafTokens(child, seen, tokens, recovery)
+            return tokens
+        }
+
+        /**
+         * The tokens of the leaves under [node], in order, as `AstNode.tokens` lists them, each once; the same walk
+         * collects the `RECOVERY` nodes in document order.
+         */
+        private fun leafTokens(node: AstNode, seen: MutableSet<Token>, tokens: MutableList<Token>, recovery: MutableList<AstNode>) {
+            if (node.type === PlSqlGrammar.RECOVERY) recovery += node
+            if (!node.hasChildren()) {
+                val token = node.tokenOrNull
+                if (token != null && seen.add(token)) tokens += token
+            } else {
+                for (child in node.children) leafTokens(child, seen, tokens, recovery)
+            }
         }
 
         /**

@@ -84,6 +84,21 @@ internal object LocalSyntax {
         return result
     }
 
+    /**
+     * The descendants of [root] (not [root] itself) whose type is one of [types], in document order: what
+     * `AstNode.getDescendants` returns, without the arrays it copies at every node.
+     */
+    fun descendants(root: AstNode, vararg types: AstNodeType): List<AstNode> {
+        val result = ArrayList<AstNode>()
+        for (child in root.children) collect(child, types, result)
+        return result
+    }
+
+    private fun collect(node: AstNode, types: Array<out AstNodeType>, result: MutableList<AstNode>) {
+        for (type in types) if (node.type === type) result += node
+        for (child in node.children) collect(child, types, result)
+    }
+
     fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromSource(node.token.originalValue)
 
     fun range(fileId: FileId, node: AstNode): SourceRange =

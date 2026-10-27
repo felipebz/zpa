@@ -302,7 +302,7 @@ private class Composition(
      */
     private fun guarded(outcome: Outcome): Outcome {
         if (outcome.status != Status.RESOLVED && outcome.status != Status.NOT_EXTERNAL && outcome.status != Status.CONFLICT) return outcome
-        val conditional = (provenance() + outcome.dependencies).distinct().filter(::conditional)
+        val conditional = (provenance() + outcome.dependencies).filter(::conditional).distinct()
         if (conditional.isEmpty()) return outcome
         val anchor = outcome.anchor ?: stoppedAnchor()
         val reading = if (outcome.relationName == null) anchor?.let { reading(it) } else null

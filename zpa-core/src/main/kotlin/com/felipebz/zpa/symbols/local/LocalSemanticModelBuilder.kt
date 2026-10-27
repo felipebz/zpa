@@ -138,7 +138,7 @@ internal object LocalSemanticModelBuilder {
                 PlSqlGrammar.LABEL -> declareLabel(node, region, null)
                 PlSqlGrammar.DECLARE_SECTION -> node.children.forEach { declarationItem(it, region) }
                 else -> {
-                    val with = node.getFirstChildOrNull(DmlGrammar.WITH_CLAUSE)
+                    val with = node.children.firstOrNull { it.type === DmlGrammar.WITH_CLAUSE }
                     if (with != null && with.children.any { it.type in SUBPROGRAMS }) sqlWith(node, with, region) else walk(node, region)
                 }
             }

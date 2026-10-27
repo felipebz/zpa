@@ -32,7 +32,7 @@ import com.felipebz.zpa.project.CallableCoverageGap
  * character offsets (tab width 1, the lexer default). Used only during one extraction; nothing retains it.
  */
 internal class DiscardedSourceText(private val source: String) {
-    private val lineStarts: IntArray by lazy {
+    private val lineStarts: IntArray by lazy(LazyThreadSafetyMode.NONE) {
         val starts = ArrayList<Int>()
         starts += 0
         var index = 0

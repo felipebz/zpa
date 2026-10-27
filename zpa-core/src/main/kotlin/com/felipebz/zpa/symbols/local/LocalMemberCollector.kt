@@ -41,7 +41,7 @@ internal object LocalMemberCollector {
 
     fun collect(root: AstNode, fileId: FileId): List<LocalMember> {
         val members = ArrayList<LocalMember>()
-        for (chain in root.getDescendants(PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.MEMBER_EXPRESSION, DdlGrammar.CALL_COMMAND)) {
+        for (chain in LocalSyntax.descendants(root, PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.MEMBER_EXPRESSION, DdlGrammar.CALL_COMMAND)) {
             when {
                 chain.type === PlSqlGrammar.OBJECT_REFERENCE -> Chain(chain.children, 0, fileId, members).walk()
                 chain.type === DdlGrammar.CALL_COMMAND -> Chain(chain.children, 1, fileId, members).walk()

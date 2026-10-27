@@ -45,14 +45,22 @@ internal object ReferenceHolders {
     fun find(index: ProjectSymbolIndex, reference: ProjectTypeReference): ReferenceHolder? {
         val fileId = reference.sourceRange.fileId
         if (fileId.isBlank()) return null
-        val matches = ArrayList<Pair<IndexedDeclaration, Retained>>()
+        var match: IndexedDeclaration? = null
+        var position = -1
+        var count = 0
         for (occurrence in index.occurrencesFor(FileId(fileId))) {
-            for (retained in retained(occurrence.declaration)) {
-                if (matches(retained.reference, reference)) matches += occurrence to retained
+            var at = 0
+            forEachRetained(occurrence.declaration) { typeRef, _ ->
+                if (matches(typeRef, reference)) {
+                    count++
+                    match = occurrence
+                    position = at
+                }
+                at++
             }
         }
-        val match = matches.singleOrNull() ?: return null
-        return holder(index, match.first, match.second.capturing)
+        val found = match?.takeIf { count == 1 } ?: return null
+        return holder(index, found, retained(found.declaration)[position].capturing)
     }
 
     /** The holder of the declared type (or base) of an already identified value or subtype occurrence. */
@@ -98,26 +106,68 @@ internal object ReferenceHolders {
         (outer.startLine < inner.startLine || (outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn)) &&
             (inner.endLine < outer.endLine || (inner.endLine == outer.endLine && inner.endColumn <= outer.endColumn))
 
-    private fun retained(fact: ProjectDeclaration): List<Retained> = when (fact) {
-        is PackageValueDeclaration -> listOf(Retained(fact.typeRef, emptyList()))
-        is PackageSubtypeDeclaration -> listOf(Retained(fact.baseType, emptyList()))
-        is PackageTypeDeclaration -> listOfNotNull(fact.elementType?.let { Retained(it, emptyList()) }) +
-            fact.recordFields.map { Retained(it.typeRef, fact.recordFields.map { sibling -> sibling.name }) }
-        is StandaloneTypeDeclaration -> listOfNotNull(fact.elementType?.let { Retained(it, emptyList()) })
-        is PackageProcedureDeclaration -> parameters(fact.parameters)
-        is PackageFunctionDeclaration -> parameters(fact.parameters) + Retained(fact.returnType, fact.parameters.map { it.name })
-        is StandaloneProcedureDeclaration -> parameters(fact.parameters)
-        is StandaloneFunctionDeclaration -> parameters(fact.parameters) + Retained(fact.returnType, fact.parameters.map { it.name })
-        is PackageCursorDeclaration -> parameters(fact.parameters) +
-            listOfNotNull(fact.returnType?.let { Retained(it, fact.parameters.map { p -> p.name }) })
-        else -> emptyList()
+    /** Visits a list by index: the lists are unmodifiable views, whose iterators would be allocated on every scan. */
+    private inline fun <T> List<T>.forEachByIndex(action: (T) -> Unit) {
+        for (i in indices) action(this[i])
     }
 
-    private fun parameters(parameters: List<ProjectParameter>) =
-        parameters.map { Retained(it.typeRef, parameters.map { sibling -> sibling.name }) }
+    /** The names that may capture the first segment of a retained reference. */
+    private enum class Capture { NONE, FIELDS, PARAMETERS }
+
+    /** Each type reference [fact] retains, in order, with the names that may capture its first segment. */
+    private inline fun forEachRetained(fact: ProjectDeclaration, action: (TypeRef, Capture) -> Unit) {
+        when (fact) {
+            is PackageValueDeclaration -> action(fact.typeRef, Capture.NONE)
+            is PackageSubtypeDeclaration -> action(fact.baseType, Capture.NONE)
+            is PackageTypeDeclaration -> {
+                fact.elementType?.let { action(it, Capture.NONE) }
+                fact.recordFields.forEachByIndex { action(it.typeRef, Capture.FIELDS) }
+            }
+            is StandaloneTypeDeclaration -> fact.elementType?.let { action(it, Capture.NONE) }
+            is PackageProcedureDeclaration -> fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+            is PackageFunctionDeclaration -> {
+                fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+                action(fact.returnType, Capture.PARAMETERS)
+            }
+            is StandaloneProcedureDeclaration -> fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+            is StandaloneFunctionDeclaration -> {
+                fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+                action(fact.returnType, Capture.PARAMETERS)
+            }
+            is PackageCursorDeclaration -> {
+                fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+                fact.returnType?.let { action(it, Capture.PARAMETERS) }
+            }
+            else -> Unit
+        }
+    }
+
+    private fun retained(fact: ProjectDeclaration): List<Retained> {
+        val result = ArrayList<Retained>()
+        forEachRetained(fact) { typeRef, capture -> result += Retained(typeRef, capturing(fact, capture)) }
+        return result
+    }
+
+    private fun capturing(fact: ProjectDeclaration, capture: Capture): List<OracleIdentifier> = when (capture) {
+        Capture.NONE -> emptyList()
+        Capture.FIELDS -> (fact as PackageTypeDeclaration).recordFields.map { it.name }
+        Capture.PARAMETERS -> when (fact) {
+            is PackageProcedureDeclaration -> fact.parameters.map { it.name }
+            is PackageFunctionDeclaration -> fact.parameters.map { it.name }
+            is StandaloneProcedureDeclaration -> fact.parameters.map { it.name }
+            is StandaloneFunctionDeclaration -> fact.parameters.map { it.name }
+            is PackageCursorDeclaration -> fact.parameters.map { it.name }
+            else -> emptyList()
+        }
+    }
+
+    /** Whether [range] equals [public] in every field, as its public form would, without building that form. */
+    private fun sameRange(range: SourceRange, public: ProjectSourceRange): Boolean =
+        range.startLine == public.startLine && range.startColumn == public.startColumn && range.endLine == public.endLine &&
+            range.endColumn == public.endColumn && range.fileId.value == public.fileId
 
     private fun matches(fact: TypeRef, reference: ProjectTypeReference): Boolean {
-        if (fact.sourceRange.toPublic() != reference.sourceRange || fact.name != reference.name.name) return false
+        if (!sameRange(fact.sourceRange, reference.sourceRange) || fact.name != reference.name.name) return false
         return when (fact) {
             is NamedTypeRef -> reference.kind == ProjectTypeReference.Kind.NAMED
             is RefTypeRef -> reference.kind == ProjectTypeReference.Kind.REF
