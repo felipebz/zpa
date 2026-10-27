@@ -25,15 +25,15 @@ import com.felipebz.flr.api.TokenType
 import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
-import java.util.Locale
+import com.felipebz.zpa.api.UnquotedIdentifier
+import java.util.*
 
 class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutput> {
 
     private val keywordsMap = keywordTypes.associateBy { it.value.uppercase(Locale.getDefault()) }
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        val nextChar = code.peek().toChar()
-        if (!nextChar.isLetter()) {
+        if (!UnquotedIdentifier.isStart(code.peek())) {
             return false
         }
 
@@ -60,27 +60,15 @@ class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutpu
         return true
     }
 
+    /** The UTF-16 length of the next character if it goes on the identifier, or 0. */
     private fun identifierCharacterLength(code: CodeReader): Int {
         val character = code.peek()
-        if (isAsciiWordCharacter(character) || character == '$'.code || character == '#'.code) {
-            return 1
-        }
-
         if (character in Character.MIN_HIGH_SURROGATE.code..Character.MAX_HIGH_SURROGATE.code) {
             val nextCharacter = code.intAt(1)
-            if (nextCharacter in Character.MIN_LOW_SURROGATE.code..Character.MAX_LOW_SURROGATE.code &&
-                Character.isLetter(Character.toCodePoint(character.toChar(), nextCharacter.toChar()))
-            ) {
-                return 2
-            }
+            val pair = nextCharacter in Character.MIN_LOW_SURROGATE.code..Character.MAX_LOW_SURROGATE.code &&
+                UnquotedIdentifier.isPart(Character.toCodePoint(character.toChar(), nextCharacter.toChar()))
+            return if (pair) 2 else 0
         }
-
-        return if (Character.isLetter(character.toChar())) 1 else 0
+        return if (UnquotedIdentifier.isPart(character)) 1 else 0
     }
-
-    private fun isAsciiWordCharacter(character: Int): Boolean =
-        character in 'a'.code..'z'.code ||
-            character in 'A'.code..'Z'.code ||
-            character in '0'.code..'9'.code ||
-            character == '_'.code
 }
