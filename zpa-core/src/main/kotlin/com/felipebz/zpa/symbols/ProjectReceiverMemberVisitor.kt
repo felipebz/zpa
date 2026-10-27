@@ -225,7 +225,7 @@ internal class ProjectReceiverMemberVisitor(
                 when {
                     // A package variable of the specification in another file, or an attribute of the enclosing type named alone.
                     LocalReferenceOutcomes.isSpecificationMember(outcome) ->
-                        enclosingPackage(callee)?.let { packageValueType(it, name(callee)) } ?: selfBase.of(context, callee, name(callee))
+                        enclosingPackageName(callee)?.let { packageValueType(it, name(callee)) } ?: selfBase.of(context, callee, name(callee))
                     else -> {
                         val declaration = facts.nameDeclaration(token.line, token.column) ?: return Base.None(NOT_A_VALUE, Form.ELEMENT)
                         if (declaration.kind != LocalDeclarationKind.VARIABLE && declaration.kind != LocalDeclarationKind.PARAMETER) return Base.None(NOT_A_VALUE, Form.ELEMENT)
@@ -341,21 +341,13 @@ internal class ProjectReceiverMemberVisitor(
     /** The names of a `name.name…` member expression, or null for another shape. */
     private fun memberNames(node: AstNode): List<OracleIdentifier>? {
         val children = node.children
-        if (children.size < 3 || children.size % 2 == 0 || children.first().type != PlSqlGrammar.VARIABLE_NAME) return null
-        for (index in 1 until children.size) {
-            if (children[index].type != (if (index % 2 == 1) PlSqlPunctuator.DOT else PlSqlGrammar.IDENTIFIER_NAME)) return null
-        }
+        if (!isNameChain(children, 3)) return null
         return (0 until children.size step 2).map { name(children[it]) }
     }
 
     private fun kind(reference: AstNode) = if (reference.parent.type == PlSqlGrammar.CALL_STATEMENT) ProjectCallKind.PROCEDURE else ProjectCallKind.FUNCTION
 
     private fun name(node: AstNode) = OracleIdentifier.fromSource(node.tokenOriginalValue)
-
-    private fun enclosingPackage(node: AstNode): QualifiedName? =
-        node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
-            ?.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME)
-            ?.let { unit -> QualifiedName(unit.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).map { OracleIdentifier.fromSource(it.tokenOriginalValue) }) }
 
     companion object {
         private const val NOT_A_VALUE = "not proven a value"
@@ -373,6 +365,15 @@ internal class ProjectReceiverMemberVisitor(
                 current = current.parentOrNull
             }
             return false
+        }
+
+        /** `name.name…`: a variable name followed by at least ([minSize] - 1) / 2 dotted member names. */
+        fun isNameChain(children: List<AstNode>, minSize: Int): Boolean {
+            if (children.size < minSize || children.size % 2 == 0 || children.first().type != PlSqlGrammar.VARIABLE_NAME) return false
+            for (index in 1 until children.size) {
+                if (children[index].type != (if (index % 2 == 1) PlSqlPunctuator.DOT else PlSqlGrammar.IDENTIFIER_NAME)) return false
+            }
+            return true
         }
 
         /** An item after the first child of an `OBJECT_REFERENCE`, or the callee of one: a member of an expression receiver. */

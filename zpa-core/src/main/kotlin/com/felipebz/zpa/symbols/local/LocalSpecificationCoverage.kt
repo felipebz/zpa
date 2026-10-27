@@ -166,9 +166,6 @@ internal class LocalSpecificationCoverage private constructor(
 
     private fun hasMembers(reference: LocalReference) = reference.segments.firstOrNull()?.isAttribute == false
 
-    /** Names decided in an object type body or specification by the project: `name:line:column` where it disagrees. */
-    val mismatches = ArrayList<String>()
-
     /**
      * A first segment in an object type body or specification that stopped only because the specification or a
      * supertype is not in the file, decided from the project's attribute and method lists of the type and its `UNDER`
@@ -191,10 +188,7 @@ internal class LocalSpecificationCoverage private constructor(
         fun StandaloneTypeDeclaration.methods() = methods.filter { it.name == name && it.methodKind != ProjectMethodKind.CONSTRUCTOR }
         if (types.none { it.attribute() || it.methods().isNotEmpty() }) return LocalResolution.ProvenAbsent
         // The specification is in this file and the local side found nothing of the name in it.
-        if (LocalLookupGap.SPECIFICATION_NOT_IN_FILE !in outcome.lookupReasons && (types.first().attribute() || types.first().methods().isNotEmpty())) {
-            mismatches += "$name:${reference.range.startLine}:${reference.range.startColumn}"
-            return null
-        }
+        if (LocalLookupGap.SPECIFICATION_NOT_IN_FILE !in outcome.lookupReasons && (types.first().attribute() || types.first().methods().isNotEmpty())) return null
         val instanceMember = types.any { it.attribute() || it.methods().any { m -> m.methodKind != ProjectMethodKind.STATIC } }
         if (instanceMember && reference.context != LocalReferenceContext.TYPE && LocalTypeScope.method(model, chain)?.isStatic == true) return null
         return LocalResolution.SpecificationMember

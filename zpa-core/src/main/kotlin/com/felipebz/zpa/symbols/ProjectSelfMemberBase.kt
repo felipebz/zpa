@@ -50,11 +50,7 @@ internal class ProjectSelfMemberBase(
             LocalSelfMember.Undeclared -> project !is ProjectRecordMemberResolution.Resolved && project !is ProjectRecordMemberResolution.Method
             LocalSelfMember.Other -> true
         }
-        if (!agrees) {
-            facts.selfMismatches += "${token.line}:${token.column}"
-            return null
-        }
-        return type
+        return type.takeIf { agrees }
     }
 
     /**

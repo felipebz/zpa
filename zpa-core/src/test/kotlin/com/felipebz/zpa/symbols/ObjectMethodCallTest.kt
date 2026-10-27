@@ -26,6 +26,8 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.symbols.local.LocalCallResolution
+import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -173,9 +175,8 @@ class ObjectMethodCallTest {
             "  MEMBER PROCEDURE proc IS BEGIN NULL; END;\n" +
             "  STATIC FUNCTION s RETURN NUMBER IS BEGIN RETURN 1; END;\n" +
             "END;\n/\n"
-        val (rows, mismatches) = scanWithMismatches("t.sql" to spec + typeBody)
+        val (rows, _) = scanWithFacts("t.sql" to spec + typeBody)
         assertThat(rows).containsExactly("13 SELF FUNCTION RESOLVED t.two/1")
-        assertThat(mismatches).isEmpty()
         // Both overloads of g are read, one with an ACCESSIBLE BY clause: the project and the local analysis both see two
         // applicable overloads for self.g(1), agree that the call is ambiguous, and bind nothing.
         val own = "CREATE TYPE u AS OBJECT (a NUMBER, MEMBER FUNCTION g(p NUMBER) RETURN NUMBER,\n" +
@@ -183,9 +184,8 @@ class ObjectMethodCallTest {
             "CREATE TYPE BODY u AS\n  MEMBER FUNCTION g(p NUMBER) RETURN NUMBER IS BEGIN RETURN 1; END;\n" +
             "  MEMBER FUNCTION g(q NUMBER) RETURN NUMBER ACCESSIBLE BY (FUNCTION x) IS BEGIN RETURN 2; END;\n" +
             "  MEMBER FUNCTION h RETURN NUMBER IS BEGIN RETURN self.g(1); END;\nEND;\n/\n"
-        val (rows2, mismatches2) = scanWithMismatches("u.sql" to own)
+        val (rows2, _) = scanWithFacts("u.sql" to own)
         assertThat(rows2).containsExactly("7 SELF FUNCTION AMBIGUOUS")
-        assertThat(mismatches2).isEmpty()
     }
 
     @Test
@@ -193,17 +193,19 @@ class ObjectMethodCallTest {
         val own = "CREATE TYPE d AS OBJECT (a NUMBER, MEMBER FUNCTION g(p DATE) RETURN NUMBER, MEMBER FUNCTION h RETURN NUMBER);\n/\n" +
             "CREATE TYPE BODY d AS\n  MEMBER FUNCTION g(p DATE) RETURN NUMBER IS BEGIN RETURN 1; END;\n" +
             "  MEMBER FUNCTION h RETURN NUMBER IS BEGIN RETURN self.g(TRUE); END;\nEND;\n/\n"
-        val (rows, mismatches) = scanWithMismatches("d.sql" to own)
+        // The local analysis proves no candidate is compatible with self.g(TRUE): the project's binding is dropped.
+        val (rows, facts) = scanWithFacts("d.sql" to own)
+        assertThat(facts!!.localCall(5, 50)!!.status).isEqualTo(LocalCallResolution.Status.NO_COMPATIBLE_CANDIDATE)
         assertThat(rows).isEmpty()
-        assertThat(mismatches).containsExactly("5:50")
     }
 
-    private fun scan(vararg sources: Pair<String, String>) = scanWithMismatches(*sources).first
+    private fun scan(vararg sources: Pair<String, String>) = scanWithFacts(*sources).first
 
-    private fun scanWithMismatches(vararg sources: Pair<String, String>): Pair<List<String>, List<String>> {
+    /** The method-call decorations of the last source, and its local facts. */
+    private fun scanWithFacts(vararg sources: Pair<String, String>): Pair<List<String>, LocalSemanticFacts?> {
         val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
         val rows = ArrayList<String>()
-        val mismatches = ArrayList<String>()
+        var facts: LocalSemanticFacts? = null
         val check = object : PlSqlCheck() {
             init { subscribeTo(PlSqlGrammar.METHOD_CALL, PlSqlGrammar.MEMBER_EXPRESSION) }
             override fun visitNode(node: AstNode) {
@@ -212,13 +214,13 @@ class ObjectMethodCallTest {
                     (if (call.complete) "" else " (incomplete)")
             }
             override fun leaveFile(node: AstNode) {
-                this.context.localSemanticFacts?.methodCallMismatches?.let { mismatches += it }
+                facts = this.context.localSemanticFacts
             }
         }
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)
         val observed = sources.last().first
         for ((id, text) in sources) scanner.scanFile(Source(id, text), if (id == observed) listOf(check) else emptyList(), FileId(id))
-        return rows to mismatches
+        return rows to facts
     }
 
     private fun describe(candidate: ProjectMethodCallCandidate) =

@@ -45,24 +45,21 @@ internal class ProjectTypeResolutionVisitor(
         val gate = facts?.localTypeGate(reference.sourceRange) ?: LocalTypeGate.NotLocal
         if (gate == LocalTypeGate.Local) return
 
-        val owner = node.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
-            ?.let(::packageName)
+        val owner = enclosingPackageName(node)
         val resolution = resolver.resolve(
             reference,
             ProjectTypeLookupContext(owner)
         )
         // A declaration both sides hold: the project must resolve to the one the local side binds; otherwise the local
-        // declaration decides, and the mismatch is recorded.
+        // declaration decides.
         if (gate is LocalTypeGate.Held && resolution is ProjectTypeResolution.Resolved &&
             (resolution.declaration.fileId != fileId || LocalRangeKey.of(resolution.declaration.sourceRange) != gate.declaration)
         ) {
-            facts?.gateMismatches?.add("${reference.sourceRange.startLine}:${reference.sourceRange.startColumn}")
             return
         }
         if (gate is LocalTypeGate.EnclosingType && resolution is ProjectTypeResolution.Resolved &&
             (resolution.declaration !is StandaloneTypeDeclaration || resolution.declaration.qualifiedName != gate.name)
         ) {
-            facts?.gateMismatches?.add("${reference.sourceRange.startLine}:${reference.sourceRange.startColumn}")
             return
         }
         (node as SemanticAstNode).projectTypeResolution = resolution
@@ -107,12 +104,5 @@ internal class ProjectTypeResolutionVisitor(
             QualifiedName(identifiers),
             SourceRange(fileId, firstToken.line, firstToken.column, lastToken.endLine, lastToken.endColumn)
         )
-    }
-
-    private fun packageName(node: AstNode): QualifiedName? {
-        val unitName = node.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME) ?: return null
-        val identifiers = unitName.getDescendants(PlSqlGrammar.IDENTIFIER_NAME)
-            .map { OracleIdentifier.fromSource(it.tokenOriginalValue) }
-        return identifiers.takeIf { it.isNotEmpty() }?.let(::QualifiedName)
     }
 }

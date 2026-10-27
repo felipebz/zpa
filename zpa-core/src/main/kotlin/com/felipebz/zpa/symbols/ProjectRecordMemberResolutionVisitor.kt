@@ -68,10 +68,7 @@ internal class ProjectRecordMemberResolutionVisitor(
         if (resolution is ProjectRecordMemberResolution.CollectionMethod || isCollection(projectType) && resolution is ProjectRecordMemberResolution.NotFound) {
             val token = base.token
             val local = facts.localCollectionMember(token.line, token.column)
-            if (local != null && local != (resolution is ProjectRecordMemberResolution.CollectionMethod)) {
-                facts.collectionMemberMismatches += "${token.line}:${token.column}"
-                return
-            }
+            if (local != null && local != (resolution is ProjectRecordMemberResolution.CollectionMethod)) return
         }
         memberExpression.projectRecordMemberResolution = resolution
     }

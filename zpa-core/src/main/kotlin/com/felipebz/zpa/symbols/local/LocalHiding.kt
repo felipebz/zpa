@@ -93,14 +93,7 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
         return Search(outermost, specification, unseen)
     }
 
-    private fun reasons(region: LocalRegion): Set<UsageUncertainty> = region.completeness.reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) {
-        when (it) {
-            LocalIncompleteness.CONDITIONAL_COMPILATION -> UsageUncertainty.CONDITIONAL_COMPILATION
-            LocalIncompleteness.SUBSTITUTION -> UsageUncertainty.SUBSTITUTION
-            LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
-            else -> UsageUncertainty.INCOMPLETE_SOURCE
-        }
-    }
+    private fun reasons(region: LocalRegion): Set<UsageUncertainty> = region.completeness.reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
 
     /** The declaration name node at [range] in the tree of [anyNode]. */
     private fun node(anyNode: AstNode, range: SourceRange): AstNode? {

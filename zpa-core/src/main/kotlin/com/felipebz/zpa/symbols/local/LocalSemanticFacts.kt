@@ -41,8 +41,6 @@ internal class LocalSemanticFacts(
      * standalone units), as plain coordinates: a local binding to one of them is also a project declaration.
      */
     private val projectHeld: Set<LocalRangeKey> = emptySet(),
-    /** Names in an object type body where the project's member lists disagree with the specification in this file. */
-    val coverageMismatches: List<String> = emptyList(),
     /**
      * For each variable or exception name declared inside a package body whose specification is in another file, keyed
      * by the body region and the name's lookup form: the specification's variable or exception of that name, or
@@ -54,9 +52,6 @@ internal class LocalSemanticFacts(
     /** The names written as members of a value (after a call, an element access or a parenthesized expression). */
     val members: List<LocalMember> = emptyList()
 ) {
-    /** Type names where the project resolved another declaration than the one the local side binds, as `line:column`. */
-    val gateMismatches = ArrayList<String>()
-
     /** The usage evidence of the file's declarations, computed when first asked. */
     val usages: LocalUsages by lazy { LocalUsages(this) }
 
@@ -68,15 +63,6 @@ internal class LocalSemanticFacts(
 
     /** What the plain names in expressions bind, computed when first asked. */
     val names: LocalNames by lazy { LocalNames(this) }
-
-    /** `SELF` members where the project result disagrees with the local member step, as `line:column`. */
-    val selfMismatches = ArrayList<String>()
-
-    /** Method calls where the project binding disagrees with the local call resolution, as `line:column`. */
-    val methodCallMismatches = ArrayList<String>()
-
-    /** Collection members where the project result disagrees with the local member step, as `line:column`. */
-    val collectionMemberMismatches = ArrayList<String>()
 
     /**
      * What the local side decides for the first member of the qualified name starting at line, column, when that member

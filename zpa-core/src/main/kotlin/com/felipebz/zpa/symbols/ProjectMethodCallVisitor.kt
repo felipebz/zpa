@@ -29,7 +29,7 @@ import com.felipebz.zpa.symbols.local.*
 /**
  * Binds object method and constructor calls through the project index: `v.m(…)`, `self.m(…)`, `t.s(…)`, `t(…)`, and
  * a parameterless `v.m` that names a method. A binding is kept only where the local call analysis has none or agrees;
- * a disagreement is recorded in [LocalSemanticFacts.methodCallMismatches] and sets nothing.
+ * a disagreement sets nothing.
  */
 internal class ProjectMethodCallVisitor(
     private val typeResolver: ProjectTypeResolver,
@@ -51,10 +51,7 @@ internal class ProjectMethodCallVisitor(
         call ?: return
         val facts = context.localSemanticFacts
         val first = node.token
-        if (facts != null && !agrees(facts, facts.localCall(first.line, first.column), call)) {
-            facts.methodCallMismatches += "${first.line}:${first.column}"
-            return
-        }
+        if (facts != null && !agrees(facts, facts.localCall(first.line, first.column), call)) return
         (node as SemanticAstNode).projectMethodCall = call
     }
 
@@ -109,9 +106,7 @@ internal class ProjectMethodCallVisitor(
         val outcome = facts.firstOutcome(token.line, token.column) ?: return null
         val written = QualifiedName(listOf(OracleIdentifier.fromSource(token.originalValue)))
         val range = SourceRange(fileId, token.line, token.column, token.line, token.column + token.originalValue.length)
-        val owner = name.getFirstAncestorOrNull(PlSqlGrammar.CREATE_PACKAGE, PlSqlGrammar.CREATE_PACKAGE_BODY)
-            ?.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME)
-            ?.let { unit -> QualifiedName(unit.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).map { OracleIdentifier.fromSource(it.tokenOriginalValue) }) }
+        val owner = enclosingPackageName(name)
         val type = ((typeResolver.resolve(NamedTypeRef(written, range), ProjectTypeLookupContext(owner)) as? ProjectTypeResolution.Resolved)
             ?.declaration as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return null
         if (index.findOccurrences(type.name).any { it.declaration !== type }) return null

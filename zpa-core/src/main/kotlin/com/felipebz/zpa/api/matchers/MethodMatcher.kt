@@ -256,12 +256,13 @@ class MethodMatcher private constructor()
     private fun argumentTypesAreCorrect(arguments: List<AstNode>): Boolean {
         var result = true
         for ((i, type) in expectedArgumentTypes.withIndex()) {
+            if (type === PlSqlType.UNKNOWN) continue
             val actualArgument = arguments[i].firstChild
             val actualType = when (val category = EffectiveSemanticTypeQuery.typeCategory(semantic(actualArgument))) {
                 is EffectiveTypeCategory.Known -> category.type
                 EffectiveTypeCategory.Unknown -> PlSqlType.UNKNOWN
             }
-            result = result and (type === PlSqlType.UNKNOWN || type === actualType)
+            result = result and (type === actualType)
         }
         return result
     }

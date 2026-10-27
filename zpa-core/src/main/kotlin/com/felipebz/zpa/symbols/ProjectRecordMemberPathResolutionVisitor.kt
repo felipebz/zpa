@@ -22,7 +22,6 @@ package com.felipebz.zpa.symbols
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
-import com.felipebz.zpa.api.PlSqlPunctuator.DOT
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.OracleIdentifier
@@ -52,12 +51,7 @@ internal class ProjectRecordMemberPathResolutionVisitor(
             facts.qualifiedDeclaration(node.token.line, node.token.column) != null) return null
 
         val children = node.children
-        if (children.size < 5 || children.size % 2 == 0 ||
-            children.first().type != PlSqlGrammar.VARIABLE_NAME) return null
-        for (index in 1 until children.size) {
-            val expectedType = if (index % 2 == 1) DOT else PlSqlGrammar.IDENTIFIER_NAME
-            if (children[index].type != expectedType) return null
-        }
+        if (!ProjectReceiverMemberVisitor.isNameChain(children, 5)) return null
 
         val memberNames = (2 until children.size step 2)
             .map { OracleIdentifier.fromSource(children[it].tokenOriginalValue) }

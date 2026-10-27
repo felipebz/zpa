@@ -134,12 +134,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
         outcome.regionReasons.forEach {
-            reasons += when (it) {
-                LocalIncompleteness.CONDITIONAL_COMPILATION -> UsageUncertainty.CONDITIONAL_COMPILATION
-                LocalIncompleteness.SUBSTITUTION -> UsageUncertainty.SUBSTITUTION
-                LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
-                else -> UsageUncertainty.INCOMPLETE_SOURCE
-            }
+            reasons += it.usageUncertainty()
         }
         outcome.lookupReasons.forEach {
             reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE

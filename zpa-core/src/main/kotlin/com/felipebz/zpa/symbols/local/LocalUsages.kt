@@ -59,7 +59,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
         possible[declaration.id]?.let(reasons::addAll)
         if (model.region(declaration.region).kind == LocalRegionKind.PACKAGE_SPEC) reasons += UsageUncertainty.VISIBLE_OUTSIDE_FILE
-        incompleteness[declaration.region]?.forEach { reasons += uncertainty(it) }
+        incompleteness[declaration.region]?.forEach { reasons += it.usageUncertainty() }
         if ((declaration.region to declaration.name.lookupName) in unsupported) reasons += UsageUncertainty.UNSUPPORTED_REFERENCE
         return if (reasons.isEmpty()) UsageEvidence.Unused else UsageEvidence.Unknown(reasons)
     }
@@ -76,7 +76,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
             is LocalResolution.SpecificationCovered -> record(reference, outcome.outcome)
             is LocalResolution.Incomplete -> {
                 val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
-                outcome.regionReasons.forEach { reasons += uncertainty(it) }
+                outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
                 outcome.lookupReasons.forEach { reasons += uncertainty(it) }
                 named(outcome.provisional).forEach { possible.getOrPut(it) { EnumSet.noneOf(UsageUncertainty::class.java) } += reasons }
             }
@@ -123,13 +123,6 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         return result
     }
 
-    private fun uncertainty(reason: LocalIncompleteness) = when (reason) {
-        LocalIncompleteness.CONDITIONAL_COMPILATION -> UsageUncertainty.CONDITIONAL_COMPILATION
-        LocalIncompleteness.SUBSTITUTION -> UsageUncertainty.SUBSTITUTION
-        LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
-        LocalIncompleteness.PARTIAL_EXTRACTION, LocalIncompleteness.DISCARDED_SOURCE_TEXT,
-        LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS, LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE -> UsageUncertainty.INCOMPLETE_SOURCE
-    }
 
     private companion object {
         /** The declaration nodes covered, with the kinds of declaration each may hold. */

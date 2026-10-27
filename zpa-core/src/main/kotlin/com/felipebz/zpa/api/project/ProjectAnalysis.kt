@@ -24,6 +24,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.packageNameOf
 
 /** Read-only project information available to a custom check during one analysis run. */
 @ZpaExperimentalApi
@@ -97,7 +98,7 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
                 PlSqlGrammar.CREATE_PACKAGE_BODY
             )
         } ?: return PackageProcedureResolution.of(PackageProcedureResolution.Status.NOT_APPLICABLE)
-        val currentPackage = packageName(packageNode)
+        val currentPackage = packageNameOf(packageNode)
             ?: return PackageProcedureResolution.of(PackageProcedureResolution.Status.NOT_APPLICABLE)
 
         val packageName = reference.getPackageName().orElse(null)
@@ -163,13 +164,6 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
             parameters.map { PackageParameter(it.ordinal, it.nocopy, it.defaultPresent) },
             (this as? PackageFunctionDeclaration)?.deterministic == true
         )
-    }
-
-    private fun packageName(node: AstNode): QualifiedName? {
-        val unitName = node.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME) ?: return null
-        val identifiers = unitName.getDescendants(PlSqlGrammar.IDENTIFIER_NAME)
-            .map { OracleIdentifier.fromSource(it.tokenOriginalValue) }
-        return identifiers.takeIf { it.isNotEmpty() }?.let(::QualifiedName)
     }
 
     internal companion object {

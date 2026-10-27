@@ -107,7 +107,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         val codes = codes.orEmpty()
         val hidden = model.region(declaration.region).completeness.reasons
         return when {
-            hidden.isNotEmpty() -> ExceptionErrorCode.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { uncertainty(it) })
+            hidden.isNotEmpty() -> ExceptionErrorCode.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() })
             declaration.id in codes -> ExceptionErrorCode.Associated(codes[declaration.id])
             else -> undecidedPragmas[declaration.region to declaration.name.lookupName]?.let { ExceptionErrorCode.Unknown(it) } ?: ExceptionErrorCode.None
         }
@@ -145,19 +145,12 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         val token = (node.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION) ?: node).token
         val region = model.regions.filter { contains(it, token.line, token.column) }.maxByOrNull { depth(it) } ?: return emptySet()
         val reasons = model.regions.filter { within(it, region) }.flatMapTo(EnumSet.noneOf(LocalIncompleteness::class.java)) { it.completeness.reasons }
-        return reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { uncertainty(it) }
-    }
-
-    private fun uncertainty(reason: LocalIncompleteness) = when (reason) {
-        LocalIncompleteness.CONDITIONAL_COMPILATION -> UsageUncertainty.CONDITIONAL_COMPILATION
-        LocalIncompleteness.SUBSTITUTION -> UsageUncertainty.SUBSTITUTION
-        LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
-        else -> UsageUncertainty.INCOMPLETE_SOURCE
+        return reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
     }
 
     private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
-        outcome.regionReasons.forEach { reasons += uncertainty(it) }
+        outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
         outcome.lookupReasons.forEach {
             reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
         }
