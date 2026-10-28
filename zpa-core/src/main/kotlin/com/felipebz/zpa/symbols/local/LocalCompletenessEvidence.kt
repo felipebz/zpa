@@ -35,7 +35,9 @@ import java.util.*
  *
  * - **Points**: hidden text between two consecutive tokens `a` and `b` — a conditional-compilation branch boundary
  *   reported by the lexer as trivia of `b`, or text the lexer discarded (substitutions, other discarded text, a `$`
- *   left in a gap). A point is recorded as the indexes of `a` and `b`; a region containing either is touched.
+ *   left in a gap). A point is recorded as the index of `b`. It is inside a region whose tokens hold both `a` and `b`;
+ *   right before an anonymous block's first token too, where a hidden `DECLARE` section would belong to the block.
+ *   Text right after a region's last token, or right before a subprogram or unit, is outside it.
  * - **Spans**: the kept branches of conditional-compilation selections (tokens that may not exist for Oracle), as
  *   disjoint, sorted token-index ranges.
  * - **Recovery**: the token index where each file-level `RECOVERY` node starts.
@@ -74,13 +76,24 @@ internal class LocalCompletenessEvidence private constructor(
         // A region whose ends are not token boundaries (never seen) is treated as the whole file, conservatively.
         val bounds = regions.map { if (it.kind == LocalRegionKind.FILE) tokens.indices else tokenBounds(it.range) ?: tokens.indices }
         val beforeRecovery = topLevelBeforeRecovery(regions, bounds)
+        // Each CREATE and each top-level block is compiled on its own: hidden text inside one cannot declare or
+        // change another, nor a name of the file. The file region keeps only what lies outside every unit.
+        val units = regions.indices.filter { regions[it].parent?.kind == LocalRegionKind.FILE }.map { bounds[it] to regions[it].kind }
         return regions.mapIndexed { index, region ->
             val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
             reasons += global
             if (region.gaps.isNotEmpty()) reasons += LocalIncompleteness.PARTIAL_EXTRACTION
             val range = bounds[index]
-            for ((reason, indexes) in points) if (anyWithin(indexes, range)) reasons += reason
-            if (spans.any { it.first <= range.last && range.first <= it.last }) reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+            val file = region.kind == LocalRegionKind.FILE
+            for ((reason, indexes) in points) {
+                val inside = if (file) indexes.any { b -> units.none { (unit, kind) -> holds(unit, kind, b) } }
+                else anyWithin(indexes, if (opensAtFirst(region.kind)) range else range.first + 1..range.last)
+                if (inside) reasons += reason
+            }
+            val touched = spans.filter { it.first <= range.last && range.first <= it.last }
+            if (if (file) touched.any { span -> units.none { (unit, _) -> unit.first <= span.first && span.last <= unit.last } } else touched.isNotEmpty()) {
+                reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+            }
             if (recoveryStarts.isNotEmpty() && (range.last >= recoveryStarts[0] || index in beforeRecovery)) {
                 reasons += LocalIncompleteness.PARSE_RECOVERY
             }
@@ -99,7 +112,14 @@ internal class LocalCompletenessEvidence private constructor(
         return result
     }
 
+    /** Whether the hidden text right before token [b] is inside a region of [kind] whose tokens are [range]. */
+    private fun holds(range: IntRange, kind: LocalRegionKind, b: Int): Boolean = b in range && (b > range.first || opensAtFirst(kind))
+
+    /** Hidden text right before the first token of a region of [kind] belongs to it: a block's hidden `DECLARE`. */
+    private fun opensAtFirst(kind: LocalRegionKind) = kind == LocalRegionKind.ANONYMOUS_BLOCK || kind == LocalRegionKind.FILE
+
     private fun anyWithin(sorted: IntArray, range: IntRange): Boolean {
+        if (range.isEmpty()) return false
         var low = Arrays.binarySearch(sorted, range.first)
         if (low < 0) low = -low - 1
         return low < sorted.size && sorted[low] <= range.last
@@ -142,9 +162,7 @@ internal class LocalCompletenessEvidence private constructor(
             if (!isStrictlyOrdered(tokens)) global += LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS
             val points = HashMap<LocalIncompleteness, MutableList<Int>>()
             fun point(reason: LocalIncompleteness, before: Int) {
-                val list = points.getOrPut(reason) { ArrayList() }
-                if (before > 0) list += before - 1
-                list += before
+                points.getOrPut(reason) { ArrayList() } += before
             }
 
             // Conditional compilation, from the lexer's trivia types.

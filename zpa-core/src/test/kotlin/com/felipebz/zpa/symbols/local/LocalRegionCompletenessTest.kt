@@ -59,7 +59,7 @@ class LocalRegionCompletenessTest {
         // Only `x := 1;` is kept; the skipped branch could have opened a declaration section.
         val model = build("BEGIN\n  \$IF \$\$a \$THEN x := 1; \$ELSE \$IF \$\$b \$THEN x := 2; \$END x := 3; \$END\nEND;\n/\n")
         assertThat(verdicts(model)).containsExactly(
-            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
     }
@@ -79,7 +79,7 @@ class LocalRegionCompletenessTest {
             """.trimIndent()
         )
         assertThat(verdicts(model)).containsExactly(
-            "FILE[p] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[p] COMPLETE",
             "PACKAGE_BODY[f,g] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[a] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[] COMPLETE"
@@ -93,7 +93,7 @@ class LocalRegionCompletenessTest {
             "BEGIN\n  \$IF v \$THEN \$ERROR 'unsupported' \$END \$ELSE\n    x := 1;\n    DECLARE z NUMBER; BEGIN NULL; END;\n    y := 2;\n  \$END\nEND;\n/\n"
         )
         assertThat(verdicts(model)).containsExactly(
-            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "ANONYMOUS_BLOCK[z] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
@@ -114,7 +114,7 @@ class LocalRegionCompletenessTest {
         // carries both runs. No run lies inside its range, yet it is incomplete.
         val model = build("BEGIN\n  \$IF c \$THEN \$ELSE DECLARE y NUMBER; \$END BEGIN NULL; END;\nEND;\n/\n")
         assertThat(verdicts(model)).containsExactly(
-            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "ANONYMOUS_BLOCK[] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
@@ -138,7 +138,7 @@ class LocalRegionCompletenessTest {
             """.trimIndent()
         )
         assertThat(verdicts(model)).containsExactly(
-            "FILE[p] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[p] COMPLETE",
             "PACKAGE_BODY[a,b,c] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[v] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[w] COMPLETE",
@@ -162,7 +162,7 @@ class LocalRegionCompletenessTest {
             """.trimIndent()
         )
         assertThat(verdicts(model)).containsExactly(
-            "FILE[p] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[p] COMPLETE",
             "PACKAGE_BODY[a,b,c,d] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[] INCOMPLETE[CONDITIONAL_COMPILATION]",
             "SUBPROGRAM[w] INCOMPLETE[CONDITIONAL_COMPILATION]",
@@ -175,14 +175,14 @@ class LocalRegionCompletenessTest {
     fun aSubstitutionTouchesItsRegion() {
         val model = build("BEGIN\n  DECLARE\n    x NUMBER;\n    &more_declarations\n  BEGIN NULL; END;\n  DECLARE y NUMBER; BEGIN NULL; END;\nEND;\n/\n")
         assertThat(verdicts(model)).containsExactly(
-            "FILE[] INCOMPLETE[SUBSTITUTION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[] INCOMPLETE[SUBSTITUTION]",
             "ANONYMOUS_BLOCK[x] INCOMPLETE[SUBSTITUTION]",
             "ANONYMOUS_BLOCK[y] COMPLETE"
         )
         // Text before the first token touches the region starting there; text after the last token, only the file.
         assertThat(verdicts(build(" &head\nBEGIN NULL; END;\n/\nBEGIN NULL; END;\n/\n"))).containsExactly(
-            "FILE[] INCOMPLETE[SUBSTITUTION]", "ANONYMOUS_BLOCK[] INCOMPLETE[SUBSTITUTION]", "ANONYMOUS_BLOCK[] COMPLETE"
+            "FILE[] COMPLETE", "ANONYMOUS_BLOCK[] INCOMPLETE[SUBSTITUTION]", "ANONYMOUS_BLOCK[] COMPLETE"
         )
         assertThat(verdicts(build("BEGIN NULL; END;\n/\n-- trailer\n&tail\n"))).containsExactly(
             "FILE[] INCOMPLETE[SUBSTITUTION]", "ANONYMOUS_BLOCK[] COMPLETE"
@@ -256,7 +256,8 @@ class LocalRegionCompletenessTest {
     fun theVerdictIsDetachedAndShared() {
         val model = build("BEGIN \$IF a \$THEN NULL; \$END END;\n/\nBEGIN NULL; END;\n/\n")
         assertThat(model.regions.last().completeness).isSameAs(LocalRegionCompleteness.COMPLETE)
-        assertThat(model.regions.first().completeness.reasons).containsExactly(CONDITIONAL_COMPILATION)
+        // The first block's verdict; the file region keeps only what lies outside its units.
+        assertThat(model.regions[1].completeness.reasons).containsExactly(CONDITIONAL_COMPILATION)
     }
 
     @Test
@@ -269,14 +270,14 @@ class LocalRegionCompletenessTest {
         assertThat(verdicts(evaluated)).containsExactly("FILE[] COMPLETE", "ANONYMOUS_BLOCK[] COMPLETE")
         // Without settings the first branch is kept unevaluated.
         assertThat(verdicts(build(source))).containsExactly(
-            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
         // A branch kept because its condition is proven TRUE stays incomplete (the lexer does not say why it was kept).
         val on = ConditionalCompilationSettings(mapOf("off" to com.felipebz.zpa.squid.CcValue.True))
         val kept = LocalSemanticModelBuilder.build(parse(source, settings = on), FileId("f.sql"), source)
         assertThat(verdicts(kept)).containsExactly(
-            "FILE[] INCOMPLETE[CONDITIONAL_COMPILATION]",
+            "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
     }

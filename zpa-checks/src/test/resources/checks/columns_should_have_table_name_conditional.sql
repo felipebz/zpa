@@ -1,5 +1,5 @@
--- Conditional compilation anywhere in the file may hide a declaration that the file's top-level blocks and
--- statements see: nothing is proven there.
+-- Conditional compilation may hide a declaration in the unit it is in, and only there: each CREATE, block and
+-- statement of the file is compiled on its own.
 create procedure conditional_col is
   $if $$extra $then
   col number;
@@ -12,5 +12,5 @@ begin
 end;
 /
 
-select col
+select col -- Noncompliant {{Specify the table of column "col".}}
   from tab, tab2;

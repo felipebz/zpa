@@ -466,6 +466,50 @@ class UsageEvidenceTest {
         )
     }
 
+    /** A package body whose `p1` holds a `$IF` among its statements, and a query in `p2`. */
+    private val ccInP1 = "create or replace package body pack_cc is\n  procedure p1 is\n  begin\n" +
+        "    \$IF \$\$flag_a \$THEN null; \$ELSE null; \$END\n    null;\n  end;\n" +
+        "  procedure p2 is\n    v number;\n  begin\n    select order_total into v from shop_orders;\n  end;\nend;\n/\n"
+
+    @Test
+    fun aDroppedBranchInOneSubprogramMayDeclareASubprogramOfThePackageBody() {
+        // Oracle accepts the body with `$ELSE null; end; function order_total return number is begin return 1;`: under
+        // those settings p1 ends early and the package body declares `order_total`, visible in p2. So it stays unknown.
+        assertThat(nameBindings(ccInP1)).anyMatch { it.startsWith("10:ORDER_TOTAL=Unknown[") && it.contains("CONDITIONAL_COMPILATION") }
+    }
+
+    @Test
+    fun aSelectionInOneUnitLeavesTheOtherUnitsOfTheFileAlone() {
+        val procedure = "create or replace procedure proc_cc is\nbegin\n  \$IF \$\$flag_a \$THEN null; \$ELSE null; \$END\n  null;\nend;\n/\n"
+        val block = "declare\n  v number;\nbegin\n  select order_total into v from shop_orders;\nend;\n/\n"
+        val function = "create or replace function fn_total(p_amount amount_t) return number is\nbegin\n  return 1;\nend;\n/\n"
+        // Each CREATE and each top-level block is compiled on its own: the answers are those of the file without proc_cc.
+        assertThat(nameBindings(procedure + block)).contains("10:ORDER_TOTAL=NothingLocal(column possible)")
+        assertThat(typeCategories(procedure + function).map { it.substringAfter(':') }).isEqualTo(typeCategories(function).map { it.substringAfter(':') })
+        assertThat(typeCategories(procedure + function)).noneMatch { it.contains("CONDITIONAL_COMPILATION") }
+    }
+
+    @Test
+    fun aDroppedDeclarationOfThePackageBodyKeepsTheNameUnknown() {
+        val text = "create or replace package body pack_cc is\n  \$IF \$\$flag_a \$THEN\n  \$ELSE\n    order_total number;\n  \$END\n" +
+            "  procedure p2 is\n    v number;\n  begin\n    select order_total into v from shop_orders;\n  end;\nend;\n/\n"
+        assertThat(nameBindings(text)).anyMatch { it.startsWith("9:ORDER_TOTAL=Unknown[") && it.contains("CONDITIONAL_COMPILATION") }
+    }
+
+    private fun typeCategories(text: String): List<String> {
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.typeCategory(it)}" }
+            }
+        }
+        val project = ProjectAnalysisContext.NOT_PREPARED
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
+    }
+
     private fun nameBindings(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {
         val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
             ProjectIndexPreparation().prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
