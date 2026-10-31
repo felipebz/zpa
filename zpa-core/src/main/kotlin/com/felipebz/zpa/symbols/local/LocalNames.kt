@@ -27,7 +27,10 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.*
 import java.util.*
 
-/** What the plain names and call names written in expressions bind, from the file's reference outcomes. */
+/**
+ * What the plain names and call names written in expressions bind, and the segments of qualified names, from the
+ * file's reference outcomes.
+ */
 internal class LocalNames(private val facts: LocalSemanticFacts) {
     private val model = facts.model
     private val referencesByStart = facts.references.indices
@@ -37,19 +40,73 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].lastSegmentContext in CONTEXTS }
         .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
 
-    fun binding(name: AstNode): NameBinding {
-        if (name.type == PlSqlGrammar.MEMBER_EXPRESSION) return qualified(name)
-        if (name.type != PlSqlGrammar.VARIABLE_NAME) return unavailable()
-        val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
+    /** The qualified names whose segments are answered one by one: those of [CONTEXTS], and method call statements. */
+    private val chainIndices = facts.references.indices
+        .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].lastSegmentContext in CHAIN_CONTEXTS }
+    private val chainsByStart = chainIndices.associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+
+    /** The segments after the first, by the start of their name: the reference and the segment's position in it (1 for the second). */
+    private val segmentsByStart = chainIndices.flatMap { index ->
+        facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
+    }.toMap()
+
+    fun binding(name: AstNode): NameBinding = when (name.type) {
+        PlSqlGrammar.MEMBER_EXPRESSION -> qualified(name)
+        PlSqlGrammar.VARIABLE_NAME -> {
+            val start = name.token.line to name.token.column
+            val index = referencesByStart[start]
+            when {
+                index != null -> first(index, facts.resolutions[index].last())
+                else -> chainsByStart[start]?.let { first(it, facts.resolutions[it].first()) } ?: unavailable()
+            }
+        }
+        PlSqlGrammar.IDENTIFIER_NAME -> segmentsByStart[name.token.line to name.token.column]?.let { (index, position) -> segment(index, position) }
+            ?: unavailable()
+        else -> unavailable()
+    }
+
+    /** A plain name, or the first name of a qualified one: [outcome] is what the reference's own name resolved to. */
+    private fun first(index: Int, outcome: LocalResolution): NameBinding {
         val reference = facts.references[index]
-        val outcome = facts.resolutions[index].last()
         // Over DUAL alone no column but DUMMY exists: the SQL reading is decided.
         val noColumn = reference.sql?.excludesColumn(reference.name) == true
         return when (val decided = unwrap(outcome)) {
             is LocalResolution.Incomplete -> specificationMember(reference, decided, noColumn) ?: incomplete(decided, noColumn)
             is LocalResolution.SqlColumnOrLocal ->
                 if (noColumn) NameBinding.Local(declaration(decided.declaration)) else NameBinding.ColumnOrLocal(declaration(decided.declaration))
+            // A table, view or alias of the statement takes the first name of `x.f`.
+            LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
             else -> decided(decided)
+        }
+    }
+
+    /**
+     * The segment at [position] of a qualified name: the declaration it binds when every segment before it names a unit
+     * or a block (`pkg.v`, `pkg.g_rec.f`, `fn.p`). A segment after a value (a record field, a collection method, an
+     * object member) or an attribute after `%` is not such a name, nor is the procedure a call statement names.
+     */
+    private fun segment(index: Int, position: Int): NameBinding {
+        val reference = facts.references[index]
+        val segments = reference.segments
+        if (segments[position - 1].isAttribute) return unavailable()
+        if (reference.lastSegmentContext == LocalReferenceContext.CALL_STATEMENT && position == segments.size) return unavailable()
+        val steps = facts.resolutions[index]
+        when (val first = unwrap(steps.first())) {
+            LocalResolution.ProvenAbsent -> return NameBinding.NothingLocal(sqlColumnPossible = false)
+            LocalResolution.SqlRelation -> return NameBinding.NothingLocal(sqlColumnPossible = true)
+            else -> if (first is LocalResolution.Incomplete) return NameBinding.Unknown(reasons(first))
+        }
+        for (step in 0 until position) {
+            when (val before = unwrap(steps.getOrNull(step) ?: return NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)))) {
+                is LocalResolution.Incomplete -> return NameBinding.Unknown(reasons(before))
+                is LocalResolution.Bound -> if (model.declaration(before.declaration).kind !in QUALIFIERS) return unavailable()
+                else -> return unavailable()
+            }
+        }
+        return when (val own = unwrap(steps.getOrNull(position) ?: return NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)))) {
+            is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(own))
+            is LocalResolution.Field, is LocalResolution.CollectionMethod, is LocalResolution.Unsupported -> unavailable()
+            else -> decided(own)
         }
     }
 
@@ -152,6 +209,15 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         val CONTEXTS = EnumSet.of(
             LocalReferenceContext.VALUE, LocalReferenceContext.SQL_VALUE, LocalReferenceContext.INSERT_VALUE,
             LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.CURSOR_OPERAND
+        )
+
+        /** The positions of a qualified name whose segments are answered: [CONTEXTS], and a call statement (`v.delete;`). */
+        val CHAIN_CONTEXTS: EnumSet<LocalReferenceContext> = EnumSet.copyOf(CONTEXTS).apply { add(LocalReferenceContext.CALL_STATEMENT) }
+
+        /** The declarations a segment can be reached through: a unit or a block, never a value. */
+        val QUALIFIERS = EnumSet.of(
+            LocalDeclarationKind.PACKAGE, LocalDeclarationKind.PACKAGE_BODY, LocalDeclarationKind.PROCEDURE, LocalDeclarationKind.FUNCTION,
+            LocalDeclarationKind.LABEL, LocalDeclarationKind.TRIGGER, LocalDeclarationKind.TYPE_BODY
         )
     }
 }

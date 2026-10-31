@@ -157,6 +157,14 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * PL/SQL expression, or naming the cursor of `OPEN`, `FETCH` or `CLOSE`, binds among the file's declarations. A
      * qualified name there (a `MEMBER_EXPRESSION` such as `fn.v` or `block.v`) binds the declaration of its last segment. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
      * may still take it ([NameBinding.NothingLocal.sqlColumnPossible]). [NameBinding.Unknown] is never a proof.
+     *
+     * Each written segment of such a qualified name, and of a method call statement (`v.delete;`), is answered on its
+     * own node, whatever follows it:
+     * - the first, a `VARIABLE_NAME`: what that name binds (`g_rec` of `g_rec.f`, `g_tab` of `g_tab.delete;`, `pkg` of
+     *   `pkg.v`). In SQL, a table, view or alias of the statement that takes it gives [NameBinding.NothingLocal];
+     * - a later one, an `IDENTIFIER_NAME`: the declaration it binds when every segment before it names a unit or a block
+     *   (`g_rec` of `pkg.g_rec.f`, `p` of `fn.p`). A record field, a collection method or an object member after a
+     *   value, an attribute after `%`, and the procedure a call statement names are [NameBinding.Unavailable].
      */
     @ZpaExperimentalApi
     fun nameBinding(name: AstNode): NameBinding =

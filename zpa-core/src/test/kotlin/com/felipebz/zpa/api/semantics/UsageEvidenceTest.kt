@@ -276,7 +276,8 @@ class UsageEvidenceTest {
             "6:SYSDATE=NothingLocal(column possible)", "6:V=Local(VARIABLE@2:2)",
             "7:USER=ColumnOrLocal(VARIABLE@3:2)", "7:V=Local(VARIABLE@2:2)",
             "8:V=Local(VARIABLE@2:2)", "8:USER=Local(VARIABLE@3:2)",
-            "12:X=Unavailable(NOT_A_COVERED_NAME)"
+            // The first name of a chain: nothing of the file is named `x`.
+            "12:X=NothingLocal"
         )
     }
 
@@ -508,6 +509,118 @@ class UsageEvidenceTest {
         PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
             .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
         return rows
+    }
+
+    /** `line:column:name=binding` for each name written in a qualified name of [text], the project prepared with [text] alone. */
+    private fun chainBindings(text: String): List<String> {
+        val project = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(listOf(ProjectSource(FileId("u.sql")) { text }), concurrent = false))
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).flatMap { it.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME) }
+                    .forEach { rows += "${it.token.line}:${it.token.column}:${it.tokenValue}=${this.context.nameBinding(it)}" }
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return rows
+    }
+
+    private val chains = "create or replace package acct as\n  procedure run(p_rec in out nocopy acct_rec_t);\nend;\n/\n" +
+        "create or replace package body acct as\n" +
+        "  type rec_t is record (f number, g varchar2(10));\n" +
+        "  type tab_t is table of rec_t index by pls_integer;\n" +
+        "  type num_tab is table of number;\n" +
+        "  g_rec rec_t;\n" +
+        "  g_tab tab_t;\n" +
+        "  g_nums num_tab := num_tab();\n" +
+        "  g_x number;\n" +
+        "  procedure take(o out number) is begin o := 1; end;\n" +
+        "  procedure run(p_rec in out nocopy acct_rec_t) is\n" +
+        "    l_rec rec_t;\n" +
+        "    n number;\n" +
+        "  begin\n" +
+        "    n := g_rec.f;\n" +
+        "    g_rec.f := 1;\n" +
+        "    n := g_tab.count;\n" +
+        "    if g_tab.exists(3) then null; end if;\n" +
+        "    g_tab.delete;\n" +
+        "    g_nums.extend;\n" +
+        "    g_nums.delete(1);\n" +
+        "    take(g_rec.f);\n" +
+        "    select 1 into g_rec.f from dual;\n" +
+        "    n := acct.g_x;\n" +
+        "    n := acct.g_rec.f;\n" +
+        "    n := g_tab(1).f;\n" +
+        "    l_rec.f := g_rec.f;\n" +
+        "    n := p_rec.f;\n" +
+        "    for i in 1 .. g_tab.count loop null; end loop;\n" +
+        "    insert into t values (g_rec.f);\n" +
+        "    n := other_pkg.v.f;\n" +
+        "    declare\n" +
+        "      g_rec rec_t;\n" +
+        "    begin\n" +
+        "      n := g_rec.f;\n" +
+        "    end;\n" +
+        "  end;\nend;\n/\n"
+
+    @Test
+    fun theFirstNameOfAChainBindsItsDeclaration() {
+        val rec = "Local(VARIABLE@9:2)"
+        val tab = "Local(VARIABLE@10:2)"
+        val nums = "Local(VARIABLE@11:2)"
+        val member = "Unavailable(NOT_A_COVERED_NAME)"
+        assertThat(chainBindings(chains)).containsExactly(
+            // Read, assignment target, collection method, method call statements.
+            "18:9:G_REC=$rec", "18:15:F=$member",
+            "19:4:G_REC=$rec", "19:10:F=$member",
+            "20:9:G_TAB=$tab", "20:15:COUNT=$member",
+            "21:7:G_TAB=$tab", "21:13:EXISTS=$member",
+            "22:4:G_TAB=$tab", "22:10:DELETE=$member",
+            "23:4:G_NUMS=$nums", "23:11:EXTEND=$member",
+            "24:4:G_NUMS=$nums", "24:11:DELETE=$member",
+            // An OUT actual, an INTO target.
+            "25:9:G_REC=$rec", "25:15:F=$member",
+            "26:18:G_REC=$rec", "26:24:F=$member",
+            // Through the package's own name: the package, then the variable.
+            "27:9:ACCT=Local(OTHER@5:31)", "27:14:G_X=Local(VARIABLE@12:2)",
+            "28:9:ACCT=Local(OTHER@5:31)", "28:14:G_REC=$rec", "28:20:F=$member",
+            // `g_tab(1).f` keeps its answer on the call's name, not listed here: a local, a global.
+            "30:4:L_REC=Local(VARIABLE@15:4)", "30:10:F=$member",
+            "30:15:G_REC=$rec", "30:21:F=$member",
+            // A parameter whose type the analysis cannot see.
+            "31:9:P_REC=Local(PARAMETER@14:16)", "31:15:F=$member",
+            "32:18:G_TAB=$tab", "32:24:COUNT=$member",
+            "33:26:G_REC=$rec", "33:32:F=$member",
+            // Nothing of the file is named `other_pkg`.
+            "34:9:OTHER_PKG=NothingLocal", "34:19:V=NothingLocal", "34:21:F=NothingLocal",
+            // An inner declaration hides the body's.
+            "38:11:G_REC=Local(VARIABLE@36:6)", "38:17:F=$member"
+        )
+    }
+
+    @Test
+    fun aRelationOfTheStatementTakesTheFirstNameOfAChainBeforeAVariable() {
+        val text = "create or replace package shop as\n  procedure run;\nend;\n/\n" +
+            "create or replace package body shop as\n  type rec_t is record (f number);\n  g_rec rec_t;\n  procedure run is\n    n number;\n  begin\n" +
+            "    select g_rec.f into n from shop_orders g_rec;\n    select g_rec.f into n from shop_orders;\n  end;\nend;\n/\n"
+        // With no relation of that name, `g_rec.f` cannot be a column: an object column's attribute needs the table alias.
+        assertThat(chainBindings(text)).containsExactly(
+            "11:11:G_REC=NothingLocal(column possible)", "11:17:F=NothingLocal(column possible)",
+            "12:11:G_REC=Local(VARIABLE@7:2)", "12:17:F=Unavailable(NOT_A_COVERED_NAME)"
+        )
+    }
+
+    @Test
+    fun theFirstNameOfAChainIsUnknownWhereAPlainNameIs() {
+        val text = "create or replace package shop_cc as\n  procedure run;\nend;\n/\n" +
+            "create or replace package body shop_cc as\n  type rec_t is record (f number);\n  \$if \$\$flag_a \$then g_cc rec_t; \$end\n" +
+            "  procedure run is\n    n number;\n  begin\n    n := g_cc.f;\n    n := g_cc;\n  end;\nend;\n/\n"
+        assertThat(chainBindings(text)).containsExactly(
+            "11:9:G_CC=Unknown[CONDITIONAL_COMPILATION]", "11:14:F=Unknown[CONDITIONAL_COMPILATION]"
+        )
+        assertThat(nameBindings(text)).contains("12:G_CC=Unknown[CONDITIONAL_COMPILATION]")
     }
 
     private fun nameBindings(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {

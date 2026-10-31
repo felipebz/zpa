@@ -22,8 +22,8 @@ package com.felipebz.zpa.api.semantics
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
 /**
- * What a plain name written in an expression (or the name of a call in a PL/SQL expression, or the cursor of `OPEN`,
- * `FETCH` or `CLOSE`) binds among the file's declarations, in PL/SQL or in SQL inside PL/SQL,
+ * What a plain name written in an expression (or the name of a call in a PL/SQL expression, the cursor of `OPEN`,
+ * `FETCH` or `CLOSE`, or a segment of a qualified name) binds among the file's declarations, in PL/SQL or in SQL inside PL/SQL,
  * as the local name resolution decides it. Built-ins (`SYSDATE`, `USER`…) and schema objects are not declarations of
  * the file: a caller that knows one decides with [NothingLocal].
  */
@@ -56,7 +56,8 @@ sealed interface NameBinding {
 
     /**
      * Proven: no declaration of the file is visible under the name. [sqlColumnPossible] is true in SQL when a relation
-     * of the statement could have a column of that name (any relation but the `DUAL` table, or the name `DUMMY`).
+     * of the statement could have a column of that name (any relation but the `DUAL` table, or the name `DUMMY`), or
+     * takes the first name of a qualified one (`alias.col`).
      */
     class NothingLocal(val sqlColumnPossible: Boolean) : NameBinding {
         override fun equals(other: Any?) = other is NothingLocal && sqlColumnPossible == other.sqlColumnPossible
