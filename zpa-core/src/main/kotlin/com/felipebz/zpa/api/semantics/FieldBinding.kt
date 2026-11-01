@@ -70,6 +70,12 @@ class FieldDeclaration internal constructor(
     override fun toString() = "$kind#$ordinal@" + (fileId?.let { "$it:" } ?: "") + "$line:$column"
 }
 
+/** A field of a record type declared in this file: its [name] as written, and the [declaration] [FieldBinding.Field] gives for it. */
+@ZpaExperimentalApi
+class DeclaredField internal constructor(val name: String, val declaration: FieldDeclaration) {
+    override fun toString() = "$name=$declaration"
+}
+
 /** What a [FieldDeclaration] is a member of. */
 @ZpaExperimentalApi
 enum class FieldDeclarationKind {

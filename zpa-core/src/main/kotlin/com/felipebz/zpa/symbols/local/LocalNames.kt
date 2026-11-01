@@ -118,6 +118,35 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         }
     }
 
+    /** The datatype names (`l_x t_rec;`, `pkg.t_rec`) by the start of their first name. */
+    private val typesByStart = facts.references.indices
+        .filter { facts.references[it].lastSegmentContext == LocalReferenceContext.TYPE }
+        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+
+    /**
+     * A datatype name, as written (a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as `pkg.t_rec`): the type declaration
+     * of the file its whole name binds, nothing local when its first segment is not declared in the file, else Unknown.
+     */
+    fun typeBinding(name: AstNode): NameBinding {
+        if (name.type != PlSqlGrammar.VARIABLE_NAME && name.type != PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
+        val index = typesByStart[name.token.line to name.token.column] ?: return unavailable()
+        val reference = facts.references[index]
+        val written = if (name.type == PlSqlGrammar.MEMBER_EXPRESSION) {
+            name.children.count { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME } - 1
+        } else {
+            0
+        }
+        if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
+        val steps = facts.resolutions[index]
+        if (unwrap(steps.first()) == LocalResolution.ProvenAbsent) return NameBinding.NothingLocal(sqlColumnPossible = false)
+        val last = unwrap(steps.last())
+        return when {
+            last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
+            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            else -> decided(last)
+        }
+    }
+
     private fun unwrap(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
     /** A member of the specification in another file, the only reading besides a column. */

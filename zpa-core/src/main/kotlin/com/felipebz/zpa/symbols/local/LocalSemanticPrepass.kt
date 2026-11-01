@@ -43,10 +43,11 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             else analysis.snapshot.projectIndex.declarationsFor(fileId).mapTo(HashSet()) { LocalRangeKey.of(it.sourceRange) }
             LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.specificationValues().orEmpty(),
                 coverage?.sqlSpecificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId)).also {
-                context.valueCategories = LocalValueCategories(it, LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes))
+                val walk = LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes)
+                context.valueCategories = LocalValueCategories(it, walk)
                 val prepared = analysis.snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
                 context.fields = LocalFields(
-                    it, analysis.snapshot.projectIndex.takeIf { prepared }, coverage, analysis.projectAnalysisContext.takeIf { prepared }
+                    it, analysis.snapshot.projectIndex.takeIf { prepared }, coverage, analysis.projectAnalysisContext.takeIf { prepared }, walk
                 )
             }
         }

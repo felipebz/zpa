@@ -157,19 +157,27 @@ internal object LocalQualifiedResolver {
         return Step(outcome, scope.regions, if (reliesOnSupertypes) scope.gaps + scope.absenceGaps else scope.gaps)
     }
 
-    /** A member of a value whose declared type is [type]: a record field or a collection method of a local type. */
+    /**
+     * A member of a value whose declared type is [type]: a record field or a collection method of a local type. The type
+     * is named by one segment, or qualified by units of the file (`pkg.t_rec` in the body of `pkg`).
+     */
     private fun typed(model: LocalSemanticModel, type: LocalTypeUse?, member: LocalReference): Step {
         val typeRef = type?.typeRef ?: return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
-        if (typeRef is AnchoredTypeRef || typeRef.name.segments.size != 1) return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
-        val lookup = LocalReference(typeRef.name.segments.single(), type.range, Ctx.TYPE, type.lookupRegion, emptyList(), Ctx.TYPE, false, null)
-        var resolved = LocalResolver.resolve(model, lookup)
+        if (typeRef is AnchoredTypeRef) return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
         val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
         val gaps = EnumSet.noneOf(LocalLookupGap::class.java)
-        if (resolved is LocalResolution.Incomplete) {
-            reasons += resolved.regionReasons
-            gaps += resolved.lookupReasons
-            resolved = resolved.provisional
+        val steps = if (typeRef.name.segments.size == 1) {
+            listOf(LocalResolver.resolve(model, LocalReference(typeRef.name.segments.single(), type.range, Ctx.TYPE, type.lookupRegion, emptyList(), Ctx.TYPE, false, null)))
+        } else {
+            val lookup = LocalReferenceCollector.typeUseReference(type) ?: return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
+            resolve(model, lookup).takeIf { it.size == typeRef.name.segments.size } ?: return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
         }
+        var resolved = steps.last()
+        for (step in steps) if (step is LocalResolution.Incomplete) {
+            reasons += step.regionReasons
+            gaps += step.lookupReasons
+        }
+        if (resolved is LocalResolution.Incomplete) resolved = resolved.provisional
         val declaration = (resolved as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
             ?: return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
         val outcome = when (val details = declaration.details) {

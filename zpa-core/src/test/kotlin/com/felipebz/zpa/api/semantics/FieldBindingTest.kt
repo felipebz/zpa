@@ -445,4 +445,164 @@ class FieldBindingTest {
         assertThat(bareAndSelf("ITEMS", 4, 5, "body.tpb" to boxBody)).isEqualTo("Unknown[DECLARATION_OUTSIDE_FILE]" to "Unknown[DECLARATION_OUTSIDE_FILE]")
         assertThat(bareAndSelf("EXTRA", 6, 7, "body.tpb" to boxBody)).isEqualTo("Unknown[DECLARATION_OUTSIDE_FILE]" to "Unknown[DECLARATION_OUTSIDE_FILE]")
     }
+
+    /** The spec is needed: without it, a name of the body may be the spec's (Unknown). */
+    private val shelfSpec = "create or replace package pk_shelf is\n  procedure run;\nend;\n/\n"
+    private val shelfBody = "create or replace package body pk_shelf is\n" +
+        "  type t_tag is record (code varchar2(10));\n" +
+        "  type t_item is record (n number, tag t_tag);\n" +
+        "  type t_items is table of t_item index by pls_integer;\n" +
+        "  g_items t_items;\n" +
+        "  procedure run is\n" +
+        "    l_items t_items;\n" +
+        "  begin\n" +
+        "    l_items(1).n := 1;\n" +                                  // 9
+        "    l_items(1).tag.code := g_items(2).tag.code;\n" +       // 10
+        "    l_items(1).missing := 1;\n" +                            // 11
+        "  end;\n" +
+        "end;\n/\n"
+
+    @Test
+    fun aMemberAfterAnElementOfALocalCollectionOfLocalRecordsIsItsField() {
+        val rows = fields("shelf.pkb", "shelf.pks" to shelfSpec, "shelf.pkb" to shelfBody)
+        val n = "Field(RECORD_FIELD#0@3:25)"
+        val tag = "Field(RECORD_FIELD#1@3:35)"
+        val code = "Field(RECORD_FIELD#0@2:24)"
+        assertThat(rows.filter { it.startsWith("9:") }).containsExactly("9:15:N=$n")
+        assertThat(rows.filter { it.startsWith("10:") }).containsExactly("10:15:TAG=$tag", "10:19:CODE=$code", "10:38:TAG=$tag", "10:42:CODE=$code")
+        // A name the record does not have is left undecided, as before.
+        assertThat(rows.filter { it.startsWith("11:") }).containsExactly("11:15:MISSING=Unknown[UNSUPPORTED_REFERENCE]")
+    }
+
+    @Test
+    fun theFieldsOfARecordTypeAndTheTypeADatatypeNamesAreTheFilesDeclarations() {
+        val configuration = PlSqlConfiguration(StandardCharsets.UTF_8, false, ConditionalCompilationSettings.NONE)
+        val project = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation(ProjectDeclarationExtractor(configuration))
+                .prepare(listOf(ProjectSource(FileId("shelf.pks")) { shelfSpec }, ProjectSource(FileId("shelf.pkb")) { shelfBody }), concurrent = false)
+        )
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.RECORD_DECLARATION).forEach {
+                    val name = it.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
+                    rows += "${name.tokenValue}=${this.context.recordFields(name)}"
+                }
+                node.getDescendants(PlSqlGrammar.CUSTOM_DATATYPE).forEach {
+                    rows += "${it.token.line}:${it.token.column}=${this.context.typeBinding(it.firstChild)}"
+                }
+            }
+        }
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project, ConditionalCompilationSettings.NONE)
+            .scanFile(Source("shelf.pkb", shelfBody), listOf(check), FileId("shelf.pkb"))
+        assertThat(rows).containsExactly(
+            "T_TAG=[code=RECORD_FIELD#0@2:24]",
+            "T_ITEM=[n=RECORD_FIELD#0@3:25, tag=RECORD_FIELD#1@3:35]",
+            "3:39=Local(TYPE@2:7)", "4:27=Local(TYPE@3:7)", "5:10=Local(TYPE@4:7)", "7:12=Local(TYPE@4:7)"
+        )
+    }
+
+    /**
+     * `line:column:NAME=answer` for every name of [file] ([PlSqlGrammar.VARIABLE_NAME], or an [PlSqlGrammar.IDENTIFIER_NAME]
+     * that is not one), with `F` its field binding, and `T=` instead for the name of a `CUSTOM_DATATYPE`, its type binding.
+     */
+    private fun answers(file: String, vararg sources: Pair<String, String>): List<String> {
+        val configuration = PlSqlConfiguration(StandardCharsets.UTF_8, false, ConditionalCompilationSettings.NONE)
+        val project = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation(ProjectDeclarationExtractor(configuration)).prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
+        )
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.CUSTOM_DATATYPE).forEach {
+                    rows += "${it.token.line}:${it.token.column}:${it.tokenValue}:T=${this.context.typeBinding(it.firstChild)}"
+                }
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
+                    .filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.parent.type != PlSqlGrammar.VARIABLE_NAME }
+                    .forEach { rows += "${it.token.line}:${it.token.column}:${it.tokenValue}=${this.context.fieldBinding(it)}" }
+            }
+        }
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project, ConditionalCompilationSettings.NONE)
+            .scanFile(Source(file, sources.toMap().getValue(file)), listOf(check), FileId(file))
+        return rows
+    }
+
+    private val vSpec = "create or replace package pk_v is\n  procedure run;\nend;\n/\n"
+    private val vBody = "create or replace package body pk_v is\n" +
+        "  type t_r is record (x number, z number);\n" +
+        "  type t_rs is table of t_r index by pls_integer;\n" +
+        "  type t_rr is record (items t_rs, one t_r);\n" +
+        "  type t_rrs is table of t_rr index by pls_integer;\n" +
+        "  g_rr t_rr;\n" +
+        "  g_rrs t_rrs;\n" +
+        "  procedure run is\n" +
+        "    l_rr t_rr;\n" +
+        "    n number;\n" +
+        "  begin\n" +
+        "    l_rr.items(1).x := 2;\n" +            // 12
+        "    n := l_rr.items(1).x;\n" +            // 13
+        "    g_rr.items(2).x := 1;\n" +            // 14
+        "    g_rrs(1).items(2).x := 3;\n" +        // 15
+        "    n := g_rrs(1).items.count;\n" +       // 16
+        "    g_rrs(1).items(2).one.x := 4;\n" +    // 17
+        "  end;\n" +
+        "  procedure run2(p_rr in out t_rr) is\n" +
+        "  begin\n" +
+        "    p_rr.items(1).z := 1;\n" +            // 21
+        "  end;\n" +
+        "  procedure run3 is\n" +
+        "  begin\n" +
+        "    g_rrs(1).one.x := 5;\n" +             // 25
+        "  end;\n" +
+        "end;\n/\n"
+
+    @Test
+    fun aFieldAfterAnElementAnswersFromARecordLocalOrParameterAndAcrossASecondElement() {
+        val rows = answers("pk_v.pkb", "pk_v.pks" to vSpec, "pk_v.pkb" to vBody)
+        fun at(line: Int, name: String) = rows.single { it.startsWith("$line:") && it.substringBefore('=').endsWith(":$name") }.substringAfter('=')
+        val x = "Field(RECORD_FIELD#0@2:22)"
+        val items = "Field(RECORD_FIELD#0@4:23)"
+        // A record local or parameter, then an element: as a body global (line 14).
+        for (line in listOf(12, 13, 14)) assertThat(at(line, "X")).describedAs("line $line").isEqualTo(x)
+        assertThat(at(21, "Z")).isEqualTo("Field(RECORD_FIELD#1@2:32)")
+        // A field with its own element, after an element.
+        assertThat(at(15, "ITEMS")).isEqualTo(items)
+        assertThat(at(15, "X")).isEqualTo(x)
+        assertThat(at(25, "ONE")).isEqualTo("Field(RECORD_FIELD#1@4:35)")
+        assertThat(at(25, "X")).isEqualTo(x)
+        // An element of ITEMS is a T_R, which has no ONE (PLS-00302): undecided, as any name a record lacks.
+        assertThat(at(17, "ITEMS")).isEqualTo(items)
+        assertThat(at(17, "ONE")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
+        assertThat(at(17, "X")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
+        // A collection method stays as it was.
+        assertThat(at(16, "ITEMS")).isEqualTo(items)
+        assertThat(at(16, "COUNT")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
+    }
+
+    private val wSpec = "create or replace package pk_w is\n  type t_s is record (y number);\n  procedure run;\nend;\n/\n"
+    private val wBody = "create or replace package body pk_w is\n" +
+        "  type t_r is record (x number);\n" +
+        "  type t_rs is table of pk_w.t_r index by pls_integer;\n" +   // 3
+        "  g_r pk_w.t_r;\n" +                                          // 4
+        "  procedure run is\n" +
+        "    l_r pk_w.t_r;\n" +                                        // 6
+        "    l_o pk_other.t_r;\n" +                                    // 7
+        "  begin\n" +
+        "    l_r.x := 1;\n" +                                          // 9
+        "    g_r.x := 2;\n" +                                          // 10
+        "    l_o.x := 3;\n" +                                          // 11
+        "  end;\n" +
+        "end;\n/\n"
+
+    @Test
+    fun aDatatypeQualifiedByTheFilesOwnPackageNamesTheBodysType() {
+        val rows = answers("pk_w.pkb", "pk_w.pks" to wSpec, "pk_w.pkb" to wBody)
+        val local = "T=Local(TYPE@2:7)"
+        assertThat(rows.filter { ":T=" in it }).containsExactly(
+            "3:24:PK_W:$local", "4:6:PK_W:$local", "6:8:PK_W:$local",
+            // Another package: no declaration of the file takes it.
+            "7:8:PK_OTHER:T=NothingLocal"
+        )
+        assertThat(rows).contains("9:8:X=Field(RECORD_FIELD#0@2:22)", "10:8:X=Field(RECORD_FIELD#0@2:22)", "11:8:X=Unknown[UNSUPPORTED_REFERENCE]")
+    }
 }

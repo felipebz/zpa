@@ -161,6 +161,19 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
     /**
+     * What the datatype name [name] binds among the file's declarations: the `VARIABLE_NAME`, or the `MEMBER_EXPRESSION`
+     * such as `pkg.t_rec`, of the `CUSTOM_DATATYPE` of a declaration (`l_x t_rec;`, a parameter's, a return's or a field's
+     * type, a collection's element type). A record, collection or ref cursor type, a subtype or an object type of the
+     * file is [NameBinding.Local] with [NameDeclarationKind.TYPE], qualified or not (`pkg.t_rec` in the body of `pkg`);
+     * [NameBinding.NothingLocal] proves that no declaration of the file takes the name (`other_pkg.t_rec`), and
+     * [NameBinding.Unknown] is never a proof. A datatype written in an expression (`TREAT(x AS t)`, `SELF AS t`,
+     * `RETURNING t`) and any other node are [NameBinding.Unavailable].
+     */
+    @ZpaExperimentalApi
+    fun typeBinding(name: AstNode): NameBinding =
+        localSemanticFacts?.names?.typeBinding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
      * Which field [segment] names: a segment written after a value, as the `IDENTIFIER_NAME` of a qualified name
      * (`code` of `g_rec.code`, `inner` and `code` of `l_out.inner.code`, `code` of `pkg.v.code`) or the `VARIABLE_NAME`
      * of a member written after an element or a call result (`code` of `f().code`, `items` of `g_rows(1).items`).
@@ -179,6 +192,15 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun fieldBinding(segment: AstNode): FieldBinding =
         fields?.takeIf { localSemanticFacts != null }?.binding(segment) ?: FieldBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * The fields of the record type whose name is [typeName] (the `IDENTIFIER_NAME` of a `TYPE … IS RECORD` of this
+     * file, at any depth), in written order, each with the declaration [fieldBinding] answers for it. Null when
+     * [typeName] names no record type the file's local analysis holds, or the analysis did not complete.
+     */
+    @ZpaExperimentalApi
+    fun recordFields(typeName: AstNode): List<DeclaredField>? =
+        fields?.takeIf { localSemanticFacts != null }?.recordFields(typeName)
 
     /**
      * The category of the declared type of the value [name] denotes: a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as

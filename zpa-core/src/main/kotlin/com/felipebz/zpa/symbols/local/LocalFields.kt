@@ -29,7 +29,9 @@ internal class LocalFields(
     /** The specification coverage of the file's package bodies; null when the project is not prepared. */
     private val coverage: LocalSpecificationCoverage? = null,
     /** The project's analysis context, for what `SELF.name` answers; null when the project is not prepared. */
-    projectAnalysisContext: ProjectAnalysisContext? = null
+    projectAnalysisContext: ProjectAnalysisContext? = null,
+    /** The walk of local declared types, for a member after an element of a local collection. */
+    private val typeWalk: LocalTypeWalk? = null
 ) {
     private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
     private val memberResolver = projectAnalysisContext?.let(::ProjectRecordMemberResolver)
@@ -59,7 +61,91 @@ internal class LocalFields(
         if (local != null && local !is Pending) return local.answer
         project(segment)?.let { return it }
         if (local is Pending) return local.answer
+        if (located == null) elementMember(segment)?.let { return it }
         return located?.let { (index, position) -> residual(index, position) } ?: afterReceiver(segment)
+    }
+
+    /**
+     * A member written after an element of a local collection whose element type is a local record type (`l_tab(1).f`,
+     * `g_rec.items(i).f`, `l_tab(1).inner.f`, `g_rows(1).items(2).f`): the field, each name before it a field of a local
+     * record type, each element after a field an element of that field's local collection type. Null when the local walk
+     * does not reach a local record type for every name (a collection method, a type of another file): the caller
+     * answers as before.
+     */
+    private fun elementMember(segment: AstNode): FieldBinding? {
+        val walk = typeWalk ?: return null
+        var item = segment
+        while (true) {
+            val parent = item.parentOrNull ?: return null
+            if (parent.type == PlSqlGrammar.MEMBER_EXPRESSION || parent.type == PlSqlGrammar.METHOD_CALL && parent.firstChild === item) item = parent else break
+        }
+        val reference = item.parentOrNull?.takeIf { it.type == PlSqlGrammar.OBJECT_REFERENCE && it.firstChild !== item } ?: return null
+        val call = reference.firstChild.takeIf { it.type == PlSqlGrammar.METHOD_CALL } ?: return null
+        // What follows the first element, in order: a name is a field, a call after a name an element of that field.
+        val parts = ArrayList<AstNode?>()
+        fun names(node: AstNode): Boolean = when (node.type) {
+            PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME -> parts.add(node)
+            PlSqlGrammar.MEMBER_EXPRESSION -> parts.addAll(node.children.filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME })
+            else -> false
+        }
+        val elements = HashMap<Int, Int>()
+        for (child in reference.children.drop(1)) {
+            when (child.type) {
+                PlSqlPunctuator.DOT -> Unit
+                PlSqlGrammar.METHOD_CALL -> {
+                    if (!names(child.firstChild)) return null
+                    elements[parts.size] = arguments(child)
+                    parts += null
+                }
+                else -> if (!names(child)) return null
+            }
+        }
+        if (parts.none { it === segment }) return null
+        val head = call.firstChild
+        val written = when (head.type) {
+            PlSqlGrammar.VARIABLE_NAME -> 1
+            PlSqlGrammar.MEMBER_EXPRESSION -> head.children.count { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME }
+            else -> return null
+        }
+        val steps = facts.steps(head.token.line, head.token.column)?.takeIf { it.size == written } ?: return null
+        var evidence = walk.call(decidedStep(steps.last()), arguments(call))
+        var holder: LocalResolution? = null
+        for ((index, part) in parts.withIndex()) {
+            if (part == null) {
+                evidence = walk.call(holder ?: return null, elements.getValue(index))
+                holder = null
+                continue
+            }
+            val record = recordOf(evidence) ?: return null
+            val ordinal = fieldOrdinal(record, part) ?: return null
+            if (part === segment) return FieldBinding.Field(fieldDeclaration(record, ordinal))
+            holder = LocalResolution.Field(record, ordinal)
+            evidence = walk.field(record, ordinal)
+        }
+        return null
+    }
+
+    private fun arguments(call: AstNode) = call.getFirstChildOrNull(PlSqlGrammar.ARGUMENTS)?.getChildren(PlSqlGrammar.ARGUMENT)?.size ?: 0
+
+    /**
+     * The outcome of a step, with the decision [local] makes for a field: a record type of the package body that the
+     * specification, in another file, does not also declare is the body's.
+     */
+    private fun decidedStep(step: LocalResolution): LocalResolution {
+        val own = unwrap(step)
+        if (own !is LocalResolution.Incomplete) return own
+        val provisional = unwrap(own.provisional)
+        return if (provisional is LocalResolution.Field && own.regionReasons.isEmpty() && own.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE) &&
+            coverage?.notDeclaredBySpecification(provisional.recordType) == true) provisional else own
+    }
+
+    /** The local record type [evidence] ends at, or null. */
+    private fun recordOf(evidence: LocalTypeEvidence): LocalDeclarationId? = evidence.followed.lastOrNull()
+        ?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.COMPOSITE && model.declaration(it).kind == LocalDeclarationKind.RECORD_TYPE }
+
+    private fun fieldOrdinal(record: LocalDeclarationId, name: AstNode): Int? {
+        val identifier = OracleIdentifier.fromToken(name.tokenOriginalValue, name.tokenValue)
+        return (model.declaration(record).details as LocalRecordType).fields.indexOfFirst { it.name == identifier }.takeIf { it >= 0 }
     }
 
     /** The non-type references by the start of their first name: a plain name or the first name of a qualified one. */
@@ -201,9 +287,24 @@ internal class LocalFields(
         }
     }
 
-    private fun field(step: LocalResolution.Field): FieldBinding {
-        val field = (model.declaration(step.recordType).details as LocalRecordType).fields[step.ordinal]
-        return FieldBinding.Field(FieldDeclaration(FieldDeclarationKind.RECORD_FIELD, step.ordinal, field.nameRange.startLine, field.nameRange.startColumn))
+    private fun field(step: LocalResolution.Field): FieldBinding = FieldBinding.Field(fieldDeclaration(step.recordType, step.ordinal))
+
+    private fun fieldDeclaration(recordType: LocalDeclarationId, ordinal: Int): FieldDeclaration {
+        val field = (model.declaration(recordType).details as LocalRecordType).fields[ordinal]
+        return FieldDeclaration(FieldDeclarationKind.RECORD_FIELD, ordinal, field.nameRange.startLine, field.nameRange.startColumn)
+    }
+
+    /** The record types of the file by the start of their name. */
+    private val recordTypes: Map<Pair<Int, Int>, LocalDeclaration> by lazy(LazyThreadSafetyMode.NONE) {
+        model.declarations.filter { it.details is LocalRecordType }.associateBy { it.nameRange.startLine to it.nameRange.startColumn }
+    }
+
+    /** The fields of the record type named at [typeName], as [binding] answers them; null when it names none. */
+    fun recordFields(typeName: AstNode): List<DeclaredField>? {
+        val type = recordTypes[typeName.token.line to typeName.token.column] ?: return null
+        return (type.details as LocalRecordType).fields.mapIndexed { ordinal, field ->
+            DeclaredField(field.name.originalSpelling, fieldDeclaration(type.id, ordinal))
+        }
     }
 
     /** An attribute of an object type of this file, or null for another declaration. */
