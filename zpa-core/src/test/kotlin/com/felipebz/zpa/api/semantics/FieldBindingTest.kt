@@ -280,4 +280,169 @@ class FieldBindingTest {
         val alt = "Field(RECORD_FIELD#0@pk_c.pks:4:24)"
         assertThat(objects("11")).containsExactly("9:11:OBJECTS=$alt", "10:8:OBJECTS=$alt")
     }
+
+    /** `line:column:NAME=answer` for each name of [file] that starts an expression (no dot before it), ordered by position. */
+    private fun firstNames(file: String, vararg sources: Pair<String, String>): List<String> {
+        val configuration = PlSqlConfiguration(StandardCharsets.UTF_8, false, ConditionalCompilationSettings.NONE)
+        val project = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation(ProjectDeclarationExtractor(configuration)).prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
+        )
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME)
+                    .filter { it.previousSiblingOrNull?.tokenValue != "." }
+                    .sortedWith(compareBy({ it.token.line }, { it.token.column }))
+                    .forEach { rows += "${it.token.line}:${it.token.column}:${it.tokenValue}=${this.context.fieldBinding(it)}" }
+            }
+        }
+        val scanner = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project, ConditionalCompilationSettings.NONE)
+        scanner.scanFile(Source(file, sources.toMap().getValue(file)), listOf(check), FileId(file))
+        return rows
+    }
+
+    private val crateBase = "create or replace type ty_base as object (base_n number, member procedure show) not final;\n/\n"
+    private val crateList = "create or replace type ty_list as table of number;\n/\n" +
+        "create or replace type ty_peg as object (peg_tag varchar2(10));\n/\n" +
+        "create or replace type ty_peg_list as table of ty_peg;\n/\n"
+    private val crateSpec = "create or replace type ty_crate under ty_base (\n" +
+        "  items ty_list, tag varchar2(10), inner ty_base, pegs ty_peg_list,\n" +
+        "  constructor function ty_crate return self as result,\n" +
+        "  member procedure fill, member procedure clash(items ty_list), member procedure shadow,\n" +
+        "  static procedure make, member function describe return varchar2, member procedure query\n" +
+        ");\n/\n"
+    private val crateBody = "create or replace type body ty_crate is\n" +
+        "  constructor function ty_crate return self as result is\n" +
+        "  begin\n" +
+        "    items := ty_list();\n" +                                                            // 4
+        "    return;\n" +
+        "  end;\n" +
+        "  member procedure fill is\n" +
+        "  begin\n" +
+        "    items.extend;\n" +                                                                  // 9
+        "    items(1) := base_n;\n" +                                                            // 10
+        "    show;\n" +                                                                          // 11
+        "    tag := describe();\n" +                                                             // 12
+        "  end;\n" +
+        "  member procedure clash(items ty_list) is\n" +
+        "  begin\n" +
+        "    items.extend;\n" +                                                                  // 16
+        "  end;\n" +
+        "  member procedure shadow is\n" +
+        "    tag varchar2(10);\n" +
+        "  begin\n" +
+        "    tag := 'x';\n" +                                                                    // 21
+        "  end;\n" +
+        "  static procedure make is\n" +
+        "  begin\n" +
+        "    tag := 'x';\n" +                                                                    // 25
+        "  end;\n" +
+        "  member function describe return varchar2 is begin return tag; end;\n" +              // 27
+        "  member procedure query is\n" +
+        "    n number;\n" +
+        "  begin\n" +
+        "    select count(*) into n from all_objects where object_name = tag;\n" +               // 31
+        "    select count(*) into n from dual where dummy = tag;\n" +                            // 32
+        "    n := inner.base_n; n := self.inner.base_n;\n" +                                     // 33
+        "    pegs(1).peg_tag := 'x'; self.pegs(1).peg_tag := 'x';\n" +                           // 34
+        "  end;\n" +
+        "end;\n/\n"
+
+    /** The same type body with a `$IF` in one method. */
+    private val crateBodyIf = crateBody.replace(
+        "    select count(*) into n from dual where dummy = tag;\n",
+        "    select count(*) into n from dual where dummy = tag;\n    \$if dbms_db_version.ver_le_10 \$then n := 0; \$end\n    n := base_n;\n    n := self.base_n;\n"
+    )
+
+    @Test
+    fun anAttributeNamedWithoutSelfIsAnsweredAsSelfDotNameWouldBe() {
+        val rows = firstNames("crate_body.sql", "base.sql" to crateBase, "list.sql" to crateList, "crate.sql" to crateSpec, "crate_body.sql" to crateBody)
+        val items = "Field(ATTRIBUTE#0@crate.sql:2:2)"
+        val tag = "Field(ATTRIBUTE#1@crate.sql:2:17)"
+        val baseN = "Field(ATTRIBUTE#0@base.sql:1:42)"
+        val none = "Unavailable(NOT_A_COVERED_NAME)"
+        fun at(line: Int) = rows.filter { it.startsWith("$line:") }
+        // In a constructor and in a member method, the attribute, an inherited one with the supertype's declaration.
+        assertThat(at(4)).contains("4:4:ITEMS=$items")
+        assertThat(at(9)).containsExactly("9:4:ITEMS=$items")
+        assertThat(at(10)).containsExactly("10:4:ITEMS=$items", "10:16:BASE_N=$baseN")
+        // A method named alone is not an attribute.
+        assertThat(at(11)).containsExactly("11:4:SHOW=$none")
+        assertThat(at(12)).containsExactly("12:4:TAG=$tag", "12:11:DESCRIBE=$none")
+        // A parameter or a local of the attribute's name hides it.
+        assertThat(at(16)).containsExactly("16:4:ITEMS=$none")
+        assertThat(at(21)).containsExactly("21:4:TAG=$none")
+        // A static method has no instance.
+        assertThat(at(25)).containsExactly("25:4:TAG=$none")
+        assertThat(at(27)).contains("27:59:TAG=$tag")
+        // In SQL a column may take the name first, unless the only relation is DUAL.
+        assertThat(at(31).single { it.contains(":TAG=") }).isEqualTo("31:64:TAG=Unknown[SQL_NAME_MAY_BE_COLUMN, DECLARATION_OUTSIDE_FILE]")
+        assertThat(at(32).single { it.contains(":TAG=") }).isEqualTo("32:51:TAG=$tag")
+        // A chain started by the attribute, a field of it, an element's member: as after SELF.
+        assertThat(at(33).single { it.contains(":INNER=") }).isEqualTo("33:9:INNER=Field(ATTRIBUTE#2@crate.sql:2:35)")
+        assertThat(at(34).single { it.contains(":PEGS=") }).isEqualTo("34:4:PEGS=Field(ATTRIBUTE#3@crate.sql:2:50)")
+        val after = fields("crate_body.sql", "base.sql" to crateBase, "list.sql" to crateList, "crate.sql" to crateSpec, "crate_body.sql" to crateBody)
+        fun member(line: Int, name: String) = after.filter { it.startsWith("$line:") && it.contains(":$name=") }.map { it.substringAfter('=') }
+        assertThat(member(33, "BASE_N")).containsExactly(baseN, baseN)
+        assertThat(member(34, "PEG_TAG")).containsExactly("Field(ATTRIBUTE#0@list.sql:3:41)", "Field(ATTRIBUTE#0@list.sql:3:41)")
+    }
+
+    @Test
+    fun withAnUndecidedIfAnAttributeNamedAloneIsNoMoreCertainThanSelfDotName() {
+        val sources = arrayOf("base.sql" to crateBase, "list.sql" to crateList, "crate.sql" to crateSpec, "crate_body.sql" to crateBodyIf)
+        val bare = firstNames("crate_body.sql", *sources).single { it.startsWith("34:") && it.contains(":BASE_N=") }.substringAfter('=')
+        val qualified = fields("crate_body.sql", *sources).single { it.startsWith("35:") && it.contains(":BASE_N=") }.substringAfter('=')
+        assertThat(bare).isEqualTo(qualified).startsWith("Unknown")
+        // Elsewhere in the body too: the type body is the unit the $IF leaves undecided.
+        assertThat(firstNames("crate_body.sql", *sources).single { it.startsWith("9:") }).startsWith("9:4:ITEMS=Unknown")
+    }
+
+    @Test
+    fun anAttributeNamedWithoutSelfWithTheSpecificationInTheSameFile() {
+        val rows = firstNames("crate.sql", "base.sql" to crateBase, "list.sql" to crateList, "crate.sql" to crateSpec + crateBody)
+        val offset = crateSpec.count { it == '\n' }
+        fun at(line: Int) = rows.filter { it.startsWith("${line + offset}:") }
+        assertThat(at(9)).containsExactly("${9 + offset}:4:ITEMS=Field(ATTRIBUTE#0@2:2)")
+        assertThat(at(10)).containsExactly("${10 + offset}:4:ITEMS=Field(ATTRIBUTE#0@2:2)", "${10 + offset}:16:BASE_N=Field(ATTRIBUTE#0@base.sql:1:42)")
+        assertThat(at(16)).containsExactly("${16 + offset}:4:ITEMS=Unavailable(NOT_A_COVERED_NAME)")
+        assertThat(at(25)).containsExactly("${25 + offset}:4:TAG=Unavailable(NOT_A_COVERED_NAME)")
+    }
+
+    private val boxTypes = "create or replace type ty_list as table of number;\n/\n" +
+        "create or replace type ty_bx as object (\n" +
+        "  items ty_list, tag varchar2(10), n number,\n" +
+        "  member procedure m1\n" +
+        ");\n/\n" +
+        "alter type ty_bx add attribute (extra number) cascade;\n/\n"
+    private val boxBody = "create or replace type body ty_bx is\n" +
+        "  member procedure m1 is\n" +
+        "  begin\n" +
+        "    items.extend;\n" +
+        "    self.items.extend;\n" +
+        "    extra := 1;\n" +
+        "    self.extra := 1;\n" +
+        "  end;\n" +
+        "end;\n/\n"
+
+    /** The answer for the bare name of [bareLine] and for the same name after `SELF.` on [selfLine]. */
+    private fun bareAndSelf(name: String, bareLine: Int, selfLine: Int, vararg sources: Pair<String, String>): Pair<String, String> {
+        val bare = firstNames("body.tpb", *sources).single { it.startsWith("$bareLine:") && it.contains(":$name=") }.substringAfter('=')
+        val qualified = fields("body.tpb", *sources).single { it.startsWith("$selfLine:") && it.contains(":$name=") }.substringAfter('=')
+        return bare to qualified
+    }
+
+    @Test
+    fun afterAnAlterTypeAnAttributeNamedAloneAnswersAsSelfDotName() {
+        val sources = arrayOf("types.sql" to boxTypes, "body.tpb" to boxBody)
+        // Listed by the CREATE TYPE: the attribute, as SELF.ITEMS.
+        assertThat(bareAndSelf("ITEMS", 4, 5, *sources)).isEqualTo("Field(ATTRIBUTE#0@types.sql:4:2)" to "Field(ATTRIBUTE#0@types.sql:4:2)")
+        // Added by the ALTER TYPE: undecided, as SELF.EXTRA, not "no attribute".
+        assertThat(bareAndSelf("EXTRA", 6, 7, *sources)).isEqualTo("Unknown[DECLARATION_OUTSIDE_FILE]" to "Unknown[DECLARATION_OUTSIDE_FILE]")
+    }
+
+    @Test
+    fun withoutTheTypeSpecificationAnAttributeNamedAloneIsUndecidedAsSelfDotName() {
+        assertThat(bareAndSelf("ITEMS", 4, 5, "body.tpb" to boxBody)).isEqualTo("Unknown[DECLARATION_OUTSIDE_FILE]" to "Unknown[DECLARATION_OUTSIDE_FILE]")
+        assertThat(bareAndSelf("EXTRA", 6, 7, "body.tpb" to boxBody)).isEqualTo("Unknown[DECLARATION_OUTSIDE_FILE]" to "Unknown[DECLARATION_OUTSIDE_FILE]")
+    }
 }

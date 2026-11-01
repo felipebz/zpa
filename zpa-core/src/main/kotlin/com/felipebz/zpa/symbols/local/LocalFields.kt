@@ -9,6 +9,7 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.api.squid.SemanticAstNode
@@ -26,8 +27,12 @@ internal class LocalFields(
     /** The prepared project's declarations, for the coverage of a type's specification; null when not prepared. */
     private val projectIndex: ProjectSymbolIndex?,
     /** The specification coverage of the file's package bodies; null when the project is not prepared. */
-    private val coverage: LocalSpecificationCoverage? = null
+    private val coverage: LocalSpecificationCoverage? = null,
+    /** The project's analysis context, for what `SELF.name` answers; null when the project is not prepared. */
+    projectAnalysisContext: ProjectAnalysisContext? = null
 ) {
+    private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
+    private val memberResolver = projectAnalysisContext?.let(::ProjectRecordMemberResolver)
     private val model = facts.model
 
     /** The segments after the first of every qualified name, by the start of their name: the reference and the segment's position (1 for the second). */
@@ -41,6 +46,7 @@ internal class LocalFields(
         val segment = if (node.type == PlSqlGrammar.IDENTIFIER_NAME && node.parentOrNull?.type == PlSqlGrammar.VARIABLE_NAME) node.parent else node
         if (segment.type != PlSqlGrammar.IDENTIFIER_NAME && segment.type != PlSqlGrammar.VARIABLE_NAME) return NOT_A_FIELD
         val located = segmentsByStart[segment.token.line to segment.token.column]
+        if (located == null && segment.type == PlSqlGrammar.VARIABLE_NAME) implicitSelf(segment)?.let { return it }
         val answer = answer(segment, located)
         if (answer !is FieldBinding.Field) return answer
         // A field is never more certain than the name its chain starts from.
@@ -54,6 +60,84 @@ internal class LocalFields(
         project(segment)?.let { return it }
         if (local is Pending) return local.answer
         return located?.let { (index, position) -> residual(index, position) } ?: afterReceiver(segment)
+    }
+
+    /** The non-type references by the start of their first name: a plain name or the first name of a qualified one. */
+    private val namesByStart: Map<Pair<Int, Int>, Int> by lazy(LazyThreadSafetyMode.NONE) {
+        facts.references.indices.filter { facts.references[it].context !in NOT_VALUES }
+            .groupBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+            .mapNotNull { (start, indices) -> indices.singleOrNull()?.let { start to it } }.toMap()
+    }
+
+    /**
+     * A name written alone, or as the first name of a chain, in a member method or a constructor of a type body: when
+     * Oracle reads it as `SELF.name` (an attribute of the type, its own or a supertype's), it is answered as `SELF.name`
+     * is, with the same declaration and no more certainty. Null when [segment] does not start such a reference, or the
+     * reference is not in a type body: the caller answers as before. Anything else the name binds first (a parameter, a
+     * local, a method) is not a field; when the file cannot decide, the answer is [FieldBinding.Unknown] unless the
+     * project's lists of the type prove the name is no attribute.
+     */
+    private fun implicitSelf(segment: AstNode): FieldBinding? {
+        if (segment.previousSiblingOrNull?.type == PlSqlPunctuator.DOT) return null
+        val index = namesByStart[segment.token.line to segment.token.column] ?: return null
+        val reference = facts.references[index]
+        val chain = LocalResolver.chain(model, reference.region)
+        val typeRegion = chain.firstOrNull { it.kind == LocalRegionKind.TYPE_BODY } ?: return null
+        // No instance, no attribute: a static method, or code outside any method.
+        val method = LocalTypeScope.method(model, chain)
+        if (method == null || method.isStatic) return NOT_A_FIELD
+        val first = facts.resolutions[index].first()
+        val noColumn = reference.sql?.excludesColumn(reference.name) == true
+        return when (val outcome = unwrap(first)) {
+            // `items(1)`: an element of the attribute, which the local resolver does not type.
+            is LocalResolution.Unsupported -> outcome.candidate?.takeIf { outcome.kind == LocalDeclarationKind.ATTRIBUTE }?.let(::attribute) ?: NOT_A_FIELD
+            is LocalResolution.Bound -> attribute(outcome.declaration) ?: NOT_A_FIELD
+            // Decided from the project's attribute and method lists of the type and its supertypes.
+            LocalResolution.SpecificationMember -> selfMember(typeRegion, reference)
+            // In SQL a column of a relation of the statement may take the name first.
+            is LocalResolution.SqlColumnOrLocal -> {
+                val field = attribute(outcome.declaration) ?: return NOT_A_FIELD
+                if (noColumn) field else FieldBinding.Unknown(EnumSet.of(UsageUncertainty.SQL_NAME_MAY_BE_COLUMN))
+            }
+            is LocalResolution.Incomplete -> {
+                val provisional = unwrap(outcome.provisional)
+                val candidate = when {
+                    provisional is LocalResolution.Bound -> attribute(provisional.declaration)
+                    provisional is LocalResolution.SqlColumnOrLocal -> attribute(provisional.declaration)
+                    // Nothing in the file takes the name first: the type's lists in the project, as for `SELF.name`.
+                    provisional == LocalResolution.ProvenAbsent || provisional == LocalResolution.SpecificationMember ->
+                        selfMember(typeRegion, reference)
+                    else -> null
+                }
+                val gaps = if (noColumn) outcome.lookupReasons - LocalLookupGap.SQL_COLUMN_UNKNOWN else outcome.lookupReasons
+                when {
+                    candidate == null || candidate == NOT_A_FIELD -> NOT_A_FIELD
+                    // Left only with the type's specification or a supertype in another file (over DUAL alone the
+                    // column gap is closed): the project's answer stands.
+                    outcome.regionReasons.isEmpty() && (provisional == LocalResolution.ProvenAbsent || provisional == LocalResolution.SpecificationMember) &&
+                        TYPE_GAPS.containsAll(gaps) -> candidate
+                    else -> FieldBinding.Unknown(reasons(outcome))
+                }
+            }
+            else -> NOT_A_FIELD
+        }
+    }
+
+    /**
+     * What `SELF.name` answers from the project for the name [reference] starts with, in the type body [typeRegion]:
+     * the attribute, not a field for a method or a name the type's complete lists do not have, and undecided when the
+     * type is not in the project or a list may be incomplete (an `ALTER TYPE`, an unread list, a supertype not found).
+     */
+    private fun selfMember(typeRegion: LocalRegion, reference: LocalReference): FieldBinding {
+        val typeName = LocalTypeScope.unitOf(model, typeRegion.id)?.unitName ?: return OUTSIDE_FILE
+        val types = typeResolver ?: return OUTSIDE_FILE
+        val members = memberResolver ?: return OUTSIDE_FILE
+        val type = ((types.resolve(NamedTypeRef(typeName, reference.range)) as? ProjectTypeResolution.Resolved)?.declaration
+            as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return OUTSIDE_FILE
+        return when (val resolution = members.resolve(type, reference.name)) {
+            is ProjectRecordMemberResolution.NotFound -> NOT_A_FIELD
+            else -> member(resolution)
+        }
     }
 
     /** The steps of the name the expression around [segment] (an element, a call result) starts from, when one starts it. */
@@ -254,5 +338,10 @@ internal class LocalFields(
         val VALUE_KINDS = EnumSet.of(
             LocalDeclarationKind.VARIABLE, LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER, LocalDeclarationKind.LOOP_INDEX
         )
+        /** Positions where a name is never a value of the instance: a datatype, an anchor, a call statement's procedure. */
+        val NOT_VALUES = EnumSet.of(
+            LocalReferenceContext.TYPE, LocalReferenceContext.ANCHOR_TYPE, LocalReferenceContext.ANCHOR_ROWTYPE, LocalReferenceContext.CALL_STATEMENT
+        )
+        val TYPE_GAPS: Set<LocalLookupGap> = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE)
     }
 }

@@ -168,6 +168,11 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * a method, a name the value's type does not have and a column of a `%ROWTYPE` give [FieldBinding.Unavailable];
      * a value whose type is not decided gives [FieldBinding.Unknown].
      *
+     * In a member method or a constructor of a type body, a name written alone or first in a chain (`items` of
+     * `items(1) := 2` or `items.extend`) that is an attribute of the type, its own or a supertype's, is the instance's:
+     * it is answered as `SELF.items` would be there, with the same declaration and no more certainty. A parameter or a
+     * local of that name takes it first, a static method has no instance, and in SQL a column may take it first.
+     *
      * Members after an element, a call result or a package variable of another file are resolved when the file is
      * left: ask from `leaveFile`, or later, for those.
      */

@@ -16,7 +16,7 @@ import com.felipebz.zpa.symbols.packageNameOf
 @ZpaExperimentalApi
 class ProjectAnalysis private constructor(contextHolder: Any) {
 
-    private val projectAnalysisContext = contextHolder as? ProjectAnalysisContext
+    internal val projectAnalysisContext = contextHolder as? ProjectAnalysisContext
         ?: throw IllegalArgumentException("Unexpected project analysis context")
     /**
      * The immutable project snapshot of this analysis run, backed by the already prepared project
