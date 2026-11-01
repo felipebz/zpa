@@ -13,3 +13,9 @@ configure<SpotlessExtension> {
         licenseHeader(lines.joinToString("", prefix = "//\n", postfix = "//\n\n") { "// $it\n" })
     }
 }
+
+tasks.withType<Jar>().configureEach {
+    into("META-INF") {
+        from(rootProject.file("LICENSE"), rootProject.file("COPYING"))
+    }
+}
