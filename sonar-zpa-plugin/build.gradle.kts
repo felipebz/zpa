@@ -24,13 +24,13 @@ dependencies {
 
 // The Oracle JDBC driver used by the database-backed tests. It is passed to them as a JAR path and kept off their class
 // path, so that they load it as users do (sonar.zpa.oracle.driverPath); it is never part of the plugin.
-val oracleJdbcDriver by configurations.creating {
+val oracleJdbcDriver = configurations.create("oracleJdbcDriver") {
     isTransitive = false
 }
 
 // A test-only custom-rules plugin whose check consumes the external metadata, compiled against the relocated API of the
 // shaded plugin JAR exactly as third-party rule plugins are.
-val oracleProbePlugin by sourceSets.creating
+val oracleProbePlugin = sourceSets.create("oracleProbePlugin")
 
 dependencies {
     oracleJdbcDriver(libs.ojdbc)
