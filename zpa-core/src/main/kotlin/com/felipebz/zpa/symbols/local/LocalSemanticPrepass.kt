@@ -43,6 +43,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
     override fun visitFile(node: AstNode) {
         context.localSemanticFacts = null
         context.valueCategories = null
+        context.fields = null
         (node as? SemanticAstNode)?.localSemanticFacts = null
         context.localSemanticFacts = guarded("computing") {
             val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents())
@@ -57,6 +58,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.specificationValues().orEmpty(),
                 coverage?.sqlSpecificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId)).also {
                 context.valueCategories = LocalValueCategories(it, LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes))
+                context.fields = LocalFields(it, analysis.snapshot.projectIndex.takeUnless { analysis.snapshot.preparationState == ProjectPreparationState.NOT_PREPARED })
             }
         }
         (node as? SemanticAstNode)?.localSemanticFacts = context.localSemanticFacts

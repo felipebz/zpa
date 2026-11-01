@@ -78,6 +78,12 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
     /** Project RECORD member path information, separate from legacy AST semantics. */
     internal var projectRecordMemberPathResolution: ProjectRecordMemberPathResolution? = null
 
+    /**
+     * The members written after a package variable of another project file (`pkg.v.f`, `pkg.v.f.g`), on that
+     * `MEMBER_EXPRESSION`. Read only by the field query, so no other answer depends on it.
+     */
+    internal var projectPackageValueMembers: ProjectPackageValueMembers? = null
+
     /** The project binding of an object method or constructor call, kept separate from legacy symbol state. */
     internal var projectMethodCall: ProjectMethodCall? = null
 

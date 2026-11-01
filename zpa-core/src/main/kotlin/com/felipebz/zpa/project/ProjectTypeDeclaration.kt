@@ -55,7 +55,12 @@ data class StandaloneTypeDeclaration(
     /** False when an attribute could not be extracted. `ALTER TYPE` changes are tracked by the index. */
     val attributesComplete: Boolean = true,
     /** False when a method could not be extracted. `ALTER TYPE` changes are tracked by the index. */
-    val methodsComplete: Boolean = true
+    val methodsComplete: Boolean = true,
+    /**
+     * True when conditional-compilation text the configured settings do not decide lies in the declaration: its
+     * attributes and methods may not be those Oracle compiles.
+     */
+    val conditional: Boolean = false
 ) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE

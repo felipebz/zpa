@@ -22,7 +22,9 @@ package com.felipebz.zpa.project
 /** A resolved project RECORD field or OBJECT attribute segment and the type fact for it. */
 internal data class ProjectRecordMemberPathSegment(
     val field: ProjectRecordField,
-    val fieldTypeResolution: ProjectRecordFieldTypeResolution
+    val fieldTypeResolution: ProjectRecordFieldTypeResolution,
+    /** The type [field] is a member of: a record type, or an object type for an attribute. */
+    val owner: ProjectTypeDeclaration? = null
 )
 
 /** A project RECORD member path result; a stopped result records why the next segment was not considered. */
@@ -103,7 +105,7 @@ internal class ProjectRecordMemberPathResolver(
             }
 
             val fieldTypeResolution = fieldTypeResolver.resolve(member)
-            segments += ProjectRecordMemberPathSegment(member.field, fieldTypeResolution)
+            segments += ProjectRecordMemberPathSegment(member.field, fieldTypeResolution, member.declaration)
 
             if (index == memberNames.lastIndex) {
                 return ProjectRecordMemberPathResolution.Completed(segments)

@@ -29,6 +29,7 @@ import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.SymbolTableImpl
+import com.felipebz.zpa.symbols.local.LocalFields
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import com.felipebz.zpa.symbols.local.LocalValueCategories
 
@@ -82,6 +83,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
 
     /** The categories of the file's named values, left by the pre-pass with the scan's project; null when it did not run. */
     internal var valueCategories: LocalValueCategories? = null
+
+    /** The fields of the file's member segments, left by the pre-pass with the scan's project; null when it did not run. */
+    internal var fields: LocalFields? = null
 
     /** Installed by the scanner with the file's configuration and project; created on first use otherwise. */
     internal var dynamicSqlSupport: DynamicSqlSupport? = null
@@ -169,6 +173,21 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun nameBinding(name: AstNode): NameBinding =
         localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * Which field [segment] names: a segment written after a value, as the `IDENTIFIER_NAME` of a qualified name
+     * (`code` of `g_rec.code`, `inner` and `code` of `l_out.inner.code`, `code` of `pkg.v.code`) or the `VARIABLE_NAME`
+     * of a member written after an element or a call result (`code` of `f().code`, `items` of `g_rows(1).items`).
+     * A field of a record type or an attribute of an object type gives [FieldBinding.Field]; the first name of a chain,
+     * a method, a name the value's type does not have and a column of a `%ROWTYPE` give [FieldBinding.Unavailable];
+     * a value whose type is not decided gives [FieldBinding.Unknown].
+     *
+     * Members after an element, a call result or a package variable of another file are resolved when the file is
+     * left: ask from `leaveFile`, or later, for those.
+     */
+    @ZpaExperimentalApi
+    fun fieldBinding(segment: AstNode): FieldBinding =
+        fields?.takeIf { localSemanticFacts != null }?.binding(segment) ?: FieldBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
     /**
      * The category of the declared type of the value [name] denotes: a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as

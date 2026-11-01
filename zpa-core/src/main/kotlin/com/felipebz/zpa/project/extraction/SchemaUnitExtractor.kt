@@ -28,7 +28,8 @@ internal class SchemaUnitExtractor(
     private val typeReferences: TypeReferences,
     private val bounds: UnitBounds,
     private val collectionElements: CollectionElementSyntax,
-    private val methodSyntax: ObjectMethodSyntax
+    private val methodSyntax: ObjectMethodSyntax,
+    private val discardedText: DiscardedSourceText? = null
 ) {
     fun parseSequence(create: Int, sequenceIndex: Int): ParsedUnit? {
         // CREATE SEQUENCE has no OR REPLACE or EDITIONABLE prefix in the supported
@@ -63,7 +64,8 @@ internal class SchemaUnitExtractor(
             methods = objectSyntax?.methods.orEmpty(),
             supertype = objectSyntax?.supertype,
             attributesComplete = objectSyntax?.complete ?: true,
-            methodsComplete = objectSyntax?.methodsComplete ?: true
+            methodsComplete = objectSyntax?.methodsComplete ?: true,
+            conditional = discardedText?.scan(stream.tokens, create, end)?.kinds?.contains(CallableCoverageGap.CONDITIONAL_COMPILATION) == true
         )
         return ParsedUnit(listOf(declaration), end + 1)
     }

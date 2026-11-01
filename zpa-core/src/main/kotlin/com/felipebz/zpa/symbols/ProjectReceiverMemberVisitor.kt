@@ -48,6 +48,10 @@ import com.felipebz.zpa.symbols.local.*
  * Without parentheses, a method or function name followed by a member is rejected by Oracle (PLS-00225), and receivers
  * inside SQL are not modeled: both keep the other visitors' result. The items are decorated when the file is left, once
  * every written type has its project resolution.
+ *
+ * The members after a package variable of another file (`pkg.v.f`, nothing local named `pkg`) are resolved on the same
+ * terms, in PL/SQL only (in SQL `a.b.c` may be a schema, a table and a column), and kept for the field query alone
+ * ([SemanticAstNode.projectPackageValueMembers]).
  */
 internal class ProjectReceiverMemberVisitor(
     private val typeResolver: TypeRefSemanticResolver,
@@ -61,30 +65,50 @@ internal class ProjectReceiverMemberVisitor(
 ) : PlSqlCheck() {
     private val binder = ProjectMethodCallBinder(memberResolver)
     private val receivers = ArrayList<AstNode>()
+    private val packageValueChains = ArrayList<AstNode>()
     private val datatypes = HashMap<Pair<Int, Int>, SemanticAstNode>()
     private var calls: Map<Pair<Int, Int>, LocalCallAnalysis> = emptyMap()
 
     init {
-        subscribeTo(PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.DATATYPE)
+        subscribeTo(PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.DATATYPE, PlSqlGrammar.MEMBER_EXPRESSION)
     }
 
     override fun visitFile(node: AstNode) {
         receivers.clear()
+        packageValueChains.clear()
         datatypes.clear()
         calls = emptyMap()
     }
 
     override fun visitNode(node: AstNode) {
-        if (node.type == PlSqlGrammar.DATATYPE) {
-            datatypes[node.token.line to node.token.column] = node as SemanticAstNode
-        } else if (!inSql(node)) {
-            receivers += node
+        when {
+            node.type == PlSqlGrammar.DATATYPE -> datatypes[node.token.line to node.token.column] = node as SemanticAstNode
+            inSql(node) -> Unit
+            node.type == PlSqlGrammar.MEMBER_EXPRESSION -> packageValueChains += node
+            else -> receivers += node
         }
     }
 
     override fun leaveFile(node: AstNode) {
         calls = context.localSemanticFacts?.calls.orEmpty().associateBy { it.reference.range.startLine to it.reference.range.startColumn }
         receivers.forEach(::decorate)
+        packageValueChains.forEach(::packageValueMembers)
+    }
+
+    /** `pkg.v.f…` with nothing local named `pkg` and `pkg.v` one package variable of the project: its members on v's type. */
+    private fun packageValueMembers(node: AstNode) {
+        val children = node.children
+        if (node.parent.type == PlSqlGrammar.METHOD_CALL || isReceiverItem(node) || !isNameChain(children, 5)) return
+        val facts = context.localSemanticFacts ?: return
+        val first = children.first().token
+        val outcome = facts.firstOutcome(first.line, first.column)
+        if ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome != LocalResolution.ProvenAbsent) return
+        val names = (0 until children.size step 2).map { name(children[it]) }
+        val type = packageValueType(QualifiedName(listOf(names[0])), names[1]) ?: return
+        val members = names.drop(2)
+        (node as SemanticAstNode).projectPackageValueMembers =
+            if (members.size == 1) ProjectPackageValueMembers.of(memberResolver.resolve(type, members.single()))
+            else ProjectPackageValueMembers.of(pathResolver.resolve(type, members))
     }
 
     /** What a receiver is. */
