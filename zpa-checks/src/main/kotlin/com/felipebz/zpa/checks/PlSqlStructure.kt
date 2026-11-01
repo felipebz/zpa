@@ -35,8 +35,8 @@ internal object PlSqlStructure {
 
     /**
      * Whether the declarative part of [unit] holds a kept conditional-compilation branch: the branch the analysis kept
-     * may not be the one Oracle compiles. A directive that keeps no text hides nothing Oracle compiles under the
-     * configured settings.
+     * may not be the one Oracle compiles. A directive that keeps no text, and a branch the configured settings decide,
+     * hide nothing Oracle compiles under those settings.
      */
     fun hasKeptConditionalBranchInDeclarations(unit: AstNode): Boolean {
         val declarations = unit.getFirstChildOrNull(PlSqlGrammar.DECLARE_SECTION)?.tokens.orEmpty()

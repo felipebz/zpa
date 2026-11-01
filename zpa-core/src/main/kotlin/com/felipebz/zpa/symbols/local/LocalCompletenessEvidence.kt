@@ -165,7 +165,8 @@ internal class LocalCompletenessEvidence private constructor(
                 points.getOrPut(reason) { ArrayList() } += before
             }
 
-            // Conditional compilation, from the lexer's trivia types.
+            // Conditional compilation, from the lexer's trivia types. A selection the configured settings decide is what
+            // Oracle compiles: its trivia types are the DECIDED ones, not read here.
             val runs = ArrayList<Pair<Int, Boolean>>() // (token index, opens a level)
             for ((index, token) in tokens.withIndex()) {
                 for (trivia in token.trivia) {

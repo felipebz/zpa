@@ -29,10 +29,7 @@ import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -621,6 +618,74 @@ class UsageEvidenceTest {
             "11:9:G_CC=Unknown[CONDITIONAL_COMPILATION]", "11:14:F=Unknown[CONDITIONAL_COMPILATION]"
         )
         assertThat(nameBindings(text)).contains("12:G_CC=Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    /** `line:NAME=binding` of each plain name of [text], lexed with [settings], the project prepared with [others] and [text] lexed alike. */
+    private fun nameBindingsWith(settings: ConditionalCompilationSettings, text: String, vararg others: Pair<String, String>): List<String> {
+        val configuration = PlSqlConfiguration(StandardCharsets.UTF_8, false, settings)
+        val project = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation(ProjectDeclarationExtractor(configuration))
+                .prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
+        )
+        val root = PlSqlParser.create(configuration).parse(text)
+        val bindings = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME).forEach { bindings += "${it.token.line}:${it.tokenValue}=${this.context.nameBinding(it)}" }
+            }
+        }
+        PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
+            .walk(PlSqlVisitorContext(root, Source("u.sql", text), null), SemanticScanCapabilities(createProjectAnalysis(project)))
+        return bindings
+    }
+
+    private val versionIn19 = ConditionalCompilationSettings(databaseVersion = DatabaseVersion(19, 0))
+
+    private val versionTest = "create or replace package pack_cc is\n  procedure p1;\n  procedure p2;\nend;\n/\n" +
+        "create or replace package body pack_cc is\n  g_total number;\n  procedure p1 is\n  begin\n" +
+        "    \$IF dbms_db_version.ver_le_10 \$THEN\n      null;\n    \$ELSE\n      g_total := 0;\n    \$END\n  end;\n" +
+        "  procedure p2 is\n  begin\n    g_total := g_total + 1;\n  end;\nend;\n/\n"
+
+    @Test
+    fun aSelectionTheSettingsDecideAddsNoUncertainty() {
+        // Version 19: `ver_le_10` is FALSE, Oracle compiles `g_total := 0;`, as the analysis does.
+        assertThat(nameBindingsWith(versionIn19, versionTest)).containsExactly(
+            "13:G_TOTAL=Local(VARIABLE@7:2)", "18:G_TOTAL=Local(VARIABLE@7:2)", "18:G_TOTAL=Local(VARIABLE@7:2)"
+        )
+        // The same file with the directives and the dropped branch removed, lines kept.
+        val replaced = versionTest.replace("    \$IF dbms_db_version.ver_le_10 \$THEN\n      null;\n    \$ELSE\n      g_total := 0;\n    \$END\n", "\n\n\n      g_total := 0;\n\n")
+        assertThat(nameBindingsWith(versionIn19, versionTest)).isEqualTo(nameBindings(replaced, prepared = true))
+        // Without settings, as before.
+        assertThat(nameBindingsWith(ConditionalCompilationSettings.NONE, versionTest)).allMatch { it.endsWith("=Unknown[CONDITIONAL_COMPILATION]") }
+    }
+
+    @Test
+    fun aFlagTheSettingsGiveOrLeaveUnsetDecidesTheSelection() {
+        val text = "declare\n  v number;\nbegin\n  \$IF \$\$trace_on \$THEN\n    v := 1;\n  \$ELSE\n    v := 2;\n  \$END\n  v := v + 1;\nend;\n/\n"
+        val set = nameBindingsWith(ConditionalCompilationSettings(mapOf("trace_on" to CcValue.True)), text)
+        // Flags configured without `trace_on`: NULL, so not TRUE.
+        val unset = nameBindingsWith(ConditionalCompilationSettings(mapOf("other_flag" to CcValue.Integer(1))), text)
+        assertThat(set).containsExactly("5:V=Local(VARIABLE@2:2)", "9:V=Local(VARIABLE@2:2)", "9:V=Local(VARIABLE@2:2)")
+        assertThat(unset).containsExactly("7:V=Local(VARIABLE@2:2)", "9:V=Local(VARIABLE@2:2)", "9:V=Local(VARIABLE@2:2)")
+    }
+
+    @Test
+    fun aConditionTheSettingsCannotDecideStaysUnknown() {
+        val text = versionTest.replace("dbms_db_version.ver_le_10", "pack_cfg.c_on")
+        assertThat(nameBindingsWith(versionIn19, text)).allMatch { it.endsWith("=Unknown[CONDITIONAL_COMPILATION]") }
+    }
+
+    @Test
+    fun aSpecificationInAnotherFileWithADecidedSelection() {
+        val spec = "create or replace package pack_doc is\n  \$IF dbms_db_version.ver_le_10 \$THEN\n    g_size number;\n  \$ELSE\n    g_size pls_integer;\n  \$END\n" +
+            "  procedure run;\nend;\n/\n"
+        val plain = "create or replace package pack_doc is\n  g_size pls_integer;\n  procedure run;\nend;\n/\n"
+        val body = "create or replace package body pack_doc is\n  procedure run is\n    n number;\n  begin\n    select g_size into n from shop_orders;\n  end;\nend;\n/\n"
+        val decided = nameBindingsWith(versionIn19, body, "s.sql" to spec)
+        assertThat(decided).contains("5:G_SIZE=ColumnOrLocal(VARIABLE@s.sql:5:4)")
+        // The same answer as with the selection written out, but for the declaration's place.
+        assertThat(nameBindingsWith(versionIn19, body, "s.sql" to plain)).contains("5:G_SIZE=ColumnOrLocal(VARIABLE@s.sql:2:2)")
+        assertThat(nameBindingsWith(ConditionalCompilationSettings.NONE, body, "s.sql" to spec)).noneMatch { it.startsWith("5:G_SIZE=ColumnOrLocal") }
     }
 
     private fun nameBindings(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {

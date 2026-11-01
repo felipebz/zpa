@@ -26,6 +26,16 @@ import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import java.util.Collections
+import java.util.WeakHashMap
+import kotlin.collections.ArrayDeque
+import kotlin.collections.ArrayList
+import kotlin.collections.List
+import kotlin.collections.MutableMap
+import kotlin.collections.firstOrNull
+import kotlin.collections.plusAssign
+import kotlin.collections.setOf
+import kotlin.collections.withIndex
 
 /**
  * Removes PL/SQL selection and error directives (`$IF … $THEN … $ELSIF … $ELSE … $END`, `$ERROR … $END`) from the
@@ -34,12 +44,19 @@ import com.felipebz.zpa.squid.ConditionalCompilationSettings
  * opens or closes the kept branch, or [PlSqlTokenType.CONDITIONAL_DIRECTIVE] when it is a complete directive that
  * keeps no text.
  *
- * Branch policy (conditions are not evaluated): the first branch whose text is not just an `$ERROR … $END` directive
- * (ignoring whitespace and comments) is kept; an empty branch is kept like any other. When no branch qualifies, the
- * whole `$IF … $END` is removed.
+ * Branch policy without settings (conditions are not evaluated): the first branch whose text is not just an
+ * `$ERROR … $END` directive (ignoring whitespace and comments) is kept; an empty branch is kept like any other. When no
+ * branch qualifies, the whole `$IF … $END` is removed. With settings, the conditions are evaluated in order and the
+ * first `TRUE` one (or the `$ELSE`) is kept; from a condition that cannot be evaluated on, the policy above applies.
  *
- * The channel is stateless (the lexer is reused): it looks ahead with [CodeReader.intAt] and then consumes the
- * decided number of characters, so line and column positions of later tokens stay correct. While scanning it skips
+ * A selection the settings decide (every condition up to the kept branch evaluated, the kept branch not just an
+ * `$ERROR`) has its trivia typed [PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY] (the closing one included) or
+ * [PlSqlTokenType.CONDITIONAL_DECIDED_DIRECTIVE]: the kept tokens are what Oracle compiles.
+ *
+ * The channel looks ahead with [CodeReader.intAt] and then consumes the decided number of characters, so line and
+ * column positions of later tokens stay correct. Its only state is, per [CodeReader], whether each open kept branch
+ * was decided, to type the text that closes it. One lexer, and so one channel, may lex several files at once on
+ * several threads: each lex has its own reader, read by one thread, so no two lexes share that state. While scanning it skips
  * comments, string literals (including q-quoted ones), quoted identifiers, identifiers containing `$`/`#` and
  * inquiry directives (`$$name`), so directive-looking text inside them never counts; `$IF` and `$ERROR` nest and
  * `$END` closes one level. On malformed input (no `$THEN`, no matching `$END`) it consumes nothing and the `$` falls
@@ -49,21 +66,42 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
     private val settings: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE
 ) : Channel<LexerOutput> {
 
+    /**
+     * Per code being read, for each open kept branch, innermost last: whether the settings decided its selection. Keyed
+     * by the reader's identity and weakly, so a finished or abandoned lex is not retained; the map is synchronized,
+     * and each stack is used only by the thread lexing its reader.
+     */
+    private val openBranches: MutableMap<CodeReader, ArrayDeque<Boolean>> = Collections.synchronizedMap(WeakHashMap())
+
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         if (code.peek() != '$'.code) return false
         val scanner = Scanner(code, settings)
         val directive = scanner.directiveAt(0) ?: return false
         var type = PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY
+        var opens: Boolean? = null
+        var closes = false
         val end = when (directive.kind) {
-            Kind.IF -> scanner.selection(directive.end).also { if (it == scanner.lastSelectionEnd) type = PlSqlTokenType.CONDITIONAL_DIRECTIVE }
+            Kind.IF -> scanner.selection(directive.end).also {
+                when {
+                    it < 0 -> Unit
+                    it == scanner.lastSelectionEnd -> type = if (scanner.lastDecided) PlSqlTokenType.CONDITIONAL_DECIDED_DIRECTIVE else PlSqlTokenType.CONDITIONAL_DIRECTIVE
+                    else -> opens = scanner.lastDecided
+                }
+            }
             // The kept branch just ended: skip the rest of this $IF.
-            Kind.ELSIF, Kind.ELSE -> scanner.matchingEnd(directive.end)
+            Kind.ELSIF, Kind.ELSE -> scanner.matchingEnd(directive.end).also { closes = true }
             // The kept branch ends here.
-            Kind.END -> directive.end
+            Kind.END -> directive.end.also { closes = true }
             Kind.ERROR -> scanner.matchingEnd(directive.end).also { type = PlSqlTokenType.CONDITIONAL_DIRECTIVE }
             Kind.THEN -> -1
         }
         if (end < 0) return false
+        opens?.let {
+            openBranches.computeIfAbsent(code) { ArrayDeque() }.addLast(it)
+            if (it) type = PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY
+        }
+        // A closing text with no open kept branch (a stray `$END`) stays a boundary.
+        if (closes && closeBranch(code)) type = PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY
         val line = code.getLinePosition()
         val column = code.getColumnPosition()
         val text = StringBuilder(end)
@@ -74,6 +112,15 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
             )
         )
         return true
+    }
+
+    /** Closes the innermost open kept branch of [code]; whether the settings decided it (false when none is open). */
+    private fun closeBranch(code: CodeReader): Boolean {
+        val branches = openBranches[code] ?: return false
+        val decided = branches.removeLastOrNull() ?: false
+        // The last branch closed: nothing is kept for this reader.
+        if (branches.isEmpty()) openBranches.remove(code)
+        return decided
     }
 
     private enum class Kind { IF, THEN, ELSIF, ELSE, END, ERROR }
@@ -90,6 +137,9 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
     private class Scanner(private val code: CodeReader, private val settings: ConditionalCompilationSettings) {
         /** The end of the `$IF … $END` scanned by the last [selection] call; equal to its result when nothing is kept. */
         var lastSelectionEnd = -1
+
+        /** Whether the settings decided the selection scanned by the last [selection] call. */
+        var lastDecided = false
 
         private fun char(offset: Int): Int = code.intAt(offset)
 
@@ -294,19 +344,30 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
             }
         }
 
-        /** The kept branch, or null when nothing is kept. */
+        /**
+         * The kept branch, or null when nothing is kept; [lastDecided] tells whether the settings decided it: every
+         * condition up to it evaluated, and it is not just an `$ERROR` (Oracle would not compile the unit).
+         */
         private fun select(branches: List<Branch>): Branch? {
+            lastDecided = false
             if (!settings.isActive) return firstNotErrorOnly(branches)
             for ((index, branch) in branches.withIndex()) {
-                val condition = branch.condition ?: return branch.takeUnless { it.errorOnly }
+                val condition = branch.condition ?: return decided(branch)
                 when (ConditionalCompilationEvaluator.evaluate(condition, settings)) {
-                    ConditionResult.TRUE -> return branch.takeUnless { it.errorOnly }
+                    ConditionResult.TRUE -> return decided(branch)
                     ConditionResult.FALSE, ConditionResult.NULL -> Unit
                     // Earlier branches are proven not TRUE; the rest cannot be decided.
                     ConditionResult.UNKNOWN -> return firstNotErrorOnly(branches.subList(index, branches.size))
                 }
             }
+            // No condition is TRUE and there is no `$ELSE`: Oracle compiles none of it.
+            lastDecided = true
             return null
+        }
+
+        private fun decided(branch: Branch): Branch? {
+            lastDecided = !branch.errorOnly
+            return branch.takeUnless { it.errorOnly }
         }
 
         private fun firstNotErrorOnly(branches: List<Branch>) = branches.firstOrNull { !it.errorOnly }

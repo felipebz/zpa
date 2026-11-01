@@ -127,7 +127,8 @@ internal object UtPlSqlAnnotationCollector {
             // Conditional-compilation text is invisible to annotations, as for utPLSQL, which reads the
             // post-processed source.
             val type = trivia.token.type
-            if (type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY || type === PlSqlTokenType.CONDITIONAL_DIRECTIVE) continue
+            if (type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY || type === PlSqlTokenType.CONDITIONAL_DIRECTIVE ||
+                type === PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY || type === PlSqlTokenType.CONDITIONAL_DECIDED_DIRECTIVE) continue
             if (!trivia.isComment) {
                 finishRun()
                 previousSourceLine = max(previousSourceLine, trivia.tokens.maxOf { it.endLine })

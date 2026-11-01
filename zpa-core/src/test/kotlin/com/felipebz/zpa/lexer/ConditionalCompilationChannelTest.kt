@@ -22,7 +22,11 @@ package com.felipebz.zpa.lexer
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.RecognitionException
+import com.felipebz.flr.api.Token
+import com.felipebz.flr.channel.CodeReader
+import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.ConditionalCompilationSettings
 import com.felipebz.zpa.squid.PlSqlConfiguration
@@ -298,6 +302,54 @@ class ConditionalCompilationChannelTest {
             .lex("BEGIN\n\$IF \$\$x = 1 \$THEN a; \$ELSE b; \$END\nEND;")
         val b = tokens.first { it.originalValue == "b" }
         assertThat(b.trivia.single().token.originalValue).isEqualTo("\$IF \$\$x = 1 \$THEN a; \$ELSE")
-        assertThat(b.trivia.single().token.type).isEqualTo(com.felipebz.zpa.api.PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY)
+        assertThat(b.trivia.single().token.type).isEqualTo(PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY)
+    }
+
+    /** The type of each conditional-compilation trivia of [source], in order. */
+    private fun triviaTypes(source: String, settings: ConditionalCompilationSettings) =
+        PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, false, settings)).lex(source)
+            .flatMap { token -> token.trivia.map { it.token.type } }.filterIsInstance<PlSqlTokenType>()
+
+    @Test
+    fun oneChannelReadingSeveralCodesKeepsTheOpenBranchesOfEach() {
+        // One channel, as one lexer shared by threads: a file's kept branch must not be closed by another file's text.
+        val channel = ConditionalCompilationChannel(settings(version = "19"))
+        val first = CodeReader("\$IF dbms_db_version.version >= 12 \$THEN a; \$END")
+        val firstOutput = LexerOutput()
+        assertThat(channel.consume(first, firstOutput)).isTrue()
+        repeat(" a; ".length) { first.pop() }
+        val second = CodeReader("\$IF pack_cfg.c_on \$THEN b; \$END")
+        assertThat(channel.consume(second, LexerOutput())).isTrue()
+        assertThat(channel.consume(first, firstOutput)).isTrue()
+        firstOutput.addToken(Token.builder().setType(GenericTokenType.EOF).setValueAndOriginalValue("EOF").setLine(1).setColumn(36).build())
+        assertThat(firstOutput.tokens.single().trivia.map { it.token.type })
+            .containsExactly(PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY, PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY)
+    }
+
+    @Test
+    fun theSettingsDecideASelectionWhenEveryConditionBeforeTheKeptBranchIsEvaluated() {
+        val decided = listOf(PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY, PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY)
+        val undecided = listOf(PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY, PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY)
+        val version = settings(version = "19")
+        // A version test, a flag set and a flag unset (NULL, so not TRUE): the opening and the closing text.
+        assertThat(triviaTypes("BEGIN\n\$IF dbms_db_version.ver_le_10 \$THEN a; \$ELSE b; \$END\nEND;", version)).isEqualTo(decided)
+        assertThat(triviaTypes("BEGIN\n\$IF \$\$trace_on \$THEN a; \$END\nEND;", settings("trace_on:true"))).isEqualTo(decided)
+        assertThat(triviaTypes("BEGIN\n\$IF \$\$trace_on \$THEN a; \$ELSE b; \$END\nEND;", settings("other:1"))).isEqualTo(decided)
+        // No condition TRUE and no $ELSE: Oracle compiles none of it.
+        assertThat(triviaTypes("BEGIN\n\$IF \$\$trace_on \$THEN a; \$END\nnull;\nEND;", settings("other:1")))
+            .containsExactly(PlSqlTokenType.CONDITIONAL_DECIDED_DIRECTIVE)
+        // Without settings, a condition the lexer cannot evaluate, or a kept $ERROR: as before.
+        assertThat(triviaTypes("BEGIN\n\$IF dbms_db_version.ver_le_10 \$THEN a; \$ELSE b; \$END\nEND;", ConditionalCompilationSettings.NONE))
+            .isEqualTo(undecided)
+        assertThat(triviaTypes("BEGIN\n\$IF pack_cfg.c_on \$THEN a; \$ELSE b; \$END\nEND;", version)).isEqualTo(undecided)
+        assertThat(triviaTypes("BEGIN\n\$IF dbms_db_version.ver_le_10 \$THEN a; \$ELSE \$ERROR 'old' \$END \$END\nnull;\nEND;", version))
+            .containsExactly(PlSqlTokenType.CONDITIONAL_DIRECTIVE)
+        // Each nested selection is decided on its own, and its closing text is typed as its opening one.
+        assertThat(triviaTypes(
+            "BEGIN\n\$IF dbms_db_version.version >= 12 \$THEN \$IF pack_cfg.c_on \$THEN a; \$END b; \$END\nEND;", version
+        )).containsExactly(
+            PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY, PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY,
+            PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY, PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY
+        )
     }
 }

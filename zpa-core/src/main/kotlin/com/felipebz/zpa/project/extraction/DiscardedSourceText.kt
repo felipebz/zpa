@@ -28,7 +28,8 @@ import com.felipebz.zpa.project.CallableCoverageGap
 /**
  * Finds source text the lexer discarded (no token, no trivia) between consecutive tokens, by mapping token starts
  * back to the source string, and the conditional-compilation text the lexer reported as trivia
- * ([PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY], [PlSqlTokenType.CONDITIONAL_DIRECTIVE]). Lines follow the lexer's cursor rules (LF, or CR not followed by LF) and columns are
+ * ([PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY], [PlSqlTokenType.CONDITIONAL_DIRECTIVE]; the `DECIDED` kinds, which
+ * the configured settings decide, are not discarded text). Lines follow the lexer's cursor rules (LF, or CR not followed by LF) and columns are
  * character offsets (tab width 1, the lexer default). Used only during one extraction; nothing retains it.
  */
 internal class DiscardedSourceText(private val source: String) {
@@ -168,6 +169,8 @@ internal class DiscardedSourceText(private val source: String) {
                         return
                     }
                     if (!visitSegment(cursor, pieceStart, index, visit)) return
+                    // A selection the configured settings decide is accounted for like a comment: the kept tokens are
+                    // what Oracle compiles.
                     val boundsBranch = when (piece.type) {
                         PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY -> true
                         PlSqlTokenType.CONDITIONAL_DIRECTIVE -> false

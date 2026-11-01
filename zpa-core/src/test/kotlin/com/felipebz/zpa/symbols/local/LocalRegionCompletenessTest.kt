@@ -273,10 +273,13 @@ class LocalRegionCompletenessTest {
             "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )
-        // A branch kept because its condition is proven TRUE stays incomplete (the lexer does not say why it was kept).
+        // A branch kept because its condition is proven TRUE is what Oracle compiles with those settings.
         val on = ConditionalCompilationSettings(mapOf("off" to com.felipebz.zpa.squid.CcValue.True))
         val kept = LocalSemanticModelBuilder.build(parse(source, settings = on), FileId("f.sql"), source)
-        assertThat(verdicts(kept)).containsExactly(
+        assertThat(verdicts(kept)).containsExactly("FILE[] COMPLETE", "ANONYMOUS_BLOCK[v] COMPLETE")
+        // A condition the settings cannot evaluate keeps the first branch unevaluated, as without settings.
+        val undecidable = source.replace("\$\$off", "pack_cfg.c_on")
+        assertThat(verdicts(LocalSemanticModelBuilder.build(parse(undecidable, settings = on), FileId("f.sql"), undecidable))).containsExactly(
             "FILE[] COMPLETE",
             "ANONYMOUS_BLOCK[v] INCOMPLETE[CONDITIONAL_COMPILATION]"
         )

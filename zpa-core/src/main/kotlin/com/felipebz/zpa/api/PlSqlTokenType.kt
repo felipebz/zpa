@@ -45,7 +45,20 @@ enum class PlSqlTokenType : TokenType {
      * Skipped-text trivia: a complete conditional-compilation directive that keeps no text — `$ERROR … $END`, or a
      * whole `$IF … $END` none of whose branches was kept.
      */
-    CONDITIONAL_DIRECTIVE;
+    CONDITIONAL_DIRECTIVE,
+
+    /**
+     * Skipped-text trivia: as [CONDITIONAL_BRANCH_BOUNDARY], for a selection directive the configured settings decide:
+     * each condition up to the kept branch is `TRUE`, `FALSE` or `NULL`, and the kept branch is not just an `$ERROR`.
+     * The tokens between its opening and its closing boundary are what Oracle compiles with those settings.
+     */
+    CONDITIONAL_DECIDED_BOUNDARY,
+
+    /**
+     * Skipped-text trivia: a whole `$IF … $END` the configured settings decide to keep nothing of (no condition is
+     * `TRUE` and there is no `$ELSE`); Oracle compiles none of it with those settings.
+     */
+    CONDITIONAL_DECIDED_DIRECTIVE;
 
     override val value = name
 
