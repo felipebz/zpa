@@ -13,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 package com.felipebz.zpa.symbols
 
@@ -23,12 +23,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.DeclarationRole
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.PackageSubprogramDeclaration
-import com.felipebz.zpa.project.ProjectDeclarationKind
-import com.felipebz.zpa.project.ProjectSymbolIndex
-import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.*
 
 /**
  * Associates immediate PACKAGE BODY declaration nodes with their already extracted facts.

@@ -16,15 +16,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */package com.felipebz.zpa.api.ddl
+ */
+package com.felipebz.zpa.api.ddl
 
 import com.felipebz.flr.tests.Assertions.assertThat
 import com.felipebz.zpa.api.DdlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
-import org.assertj.core.api.Assertions.assertThat as assertThatAst
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.assertj.core.api.Assertions.assertThat as assertThatAst
 
 class CreateControlfileTest : RuleTest() {
 

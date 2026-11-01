@@ -1,22 +1,15 @@
 package com.felipebz.zpa
 
-import com.hierynomus.gradle.license.tasks.LicenseCheck
-import com.hierynomus.gradle.license.tasks.LicenseFormat
-import java.io.File
-import java.util.*
+import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
-    id("com.github.hierynomus.license")
+    id("com.diffplug.spotless")
 }
 
-tasks.withType<LicenseFormat>().configureEach {
-    extra.set("year", Calendar.getInstance().get(Calendar.YEAR))
-    header = File(this.project.rootDir, "LICENSE_HEADER")
-    include("**/*.kt")
-}
-
-tasks.withType<LicenseCheck>().configureEach {
-    extra.set("year", Calendar.getInstance().get(Calendar.YEAR))
-    header = File(this.project.rootDir, "LICENSE_HEADER")
-    include("**/*.kt")
+configure<SpotlessExtension> {
+    kotlin {
+        target("src/**/*.kt")
+        val lines = rootProject.file("LICENSE_HEADER").readLines().map { it.replace("\${year}", "\$YEAR") }
+        licenseHeader(lines.joinToString("", prefix = "/**\n", postfix = " */\n") { if (it.isBlank()) " *\n" else " * $it\n" })
+    }
 }
