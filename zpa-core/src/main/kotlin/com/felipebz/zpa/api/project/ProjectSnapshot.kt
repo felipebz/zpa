@@ -64,6 +64,14 @@ class ProjectSnapshot private constructor(
         inventory(ProjectSnapshotDeclarations.occurrencesFor(preparationResult.index, fileId))
 
     /**
+     * Whether an `ALTER TYPE` of the project adds, drops or modifies an attribute of a type named [name], matched by its
+     * last segment as the analysis does (the schema of an unqualified name is unknown). The added attributes are not
+     * extracted: the type's [ProjectStandaloneTypeView.attributes] are those of its `CREATE TYPE`.
+     */
+    fun isAttributeListAltered(name: ProjectQualifiedName): Boolean =
+        preparationState != ProjectPreparationState.NOT_PREPARED && preparationResult.index.alteredTypes.attributesOf(name.name)
+
+    /**
      * Exact structured-name matches using existing index name semantics. This is inventory,
      * not resolution: duplicates are kept, nothing is ranked, no scope/schema is inferred.
      */

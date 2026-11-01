@@ -22,6 +22,24 @@ interface ProjectShapedTypeView : ProjectTypeDeclarationView {
     val elementType: Optional<ProjectTypeReference>
 }
 
+/** Standalone (schema-level) `CREATE TYPE` declaration. */
+@ZpaExperimentalApi
+interface ProjectStandaloneTypeView : ProjectShapedTypeView {
+    /**
+     * Runtime-unmodifiable attributes this declaration writes, in source order; empty unless the shape is OBJECT. A
+     * subtype lists its own attributes only: an inherited one is its supertype's. Each [ProjectRecordFieldView.sourceRange]
+     * starts at the attribute's name.
+     */
+    val attributes: List<ProjectRecordFieldView>
+
+    /**
+     * False when an attribute could not be extracted, or when conditional-compilation text the configured settings do
+     * not decide lies in the declaration: [attributes] may then not be those Oracle compiles. `ALTER TYPE` is not
+     * reflected here: see [ProjectSnapshot.isAttributeListAltered].
+     */
+    val attributesComplete: Boolean
+}
+
 /** Package specification TYPE declaration. */
 @ZpaExperimentalApi
 interface ProjectPackageTypeView : ProjectShapedTypeView {

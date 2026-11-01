@@ -83,9 +83,12 @@ internal object ProjectSnapshotDeclarations {
     }
 
     private class BackedStandaloneTypeView(id: ProjectDeclarationId, fact: StandaloneTypeDeclaration) :
-        BackedDeclarationView(id, fact), ProjectShapedTypeView {
+        BackedDeclarationView(id, fact), ProjectStandaloneTypeView {
         override val shape: Optional<ProjectTypeShape> = fact.shape.toPublicShape()
         override val elementType: Optional<ProjectTypeReference> = fact.elementType.toPublicReference()
+        override val attributes: List<ProjectRecordFieldView> =
+            Collections.unmodifiableList(fact.attributes.map { BackedRecordFieldView(it) })
+        override val attributesComplete: Boolean = fact.attributesComplete && !fact.conditional
     }
 
     private class BackedPackageTypeView(id: ProjectDeclarationId, private val typeFact: PackageTypeDeclaration) :

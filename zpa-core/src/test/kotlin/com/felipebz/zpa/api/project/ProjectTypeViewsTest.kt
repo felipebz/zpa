@@ -82,6 +82,29 @@ class ProjectTypeViewsTest {
     }
 
     @Test
+    fun standaloneObjectTypesListTheirOwnAttributesAndWhetherTheListIsComplete() {
+        val snapshot = prepare(
+            "base.sql" to "CREATE TYPE base_t AS OBJECT (a NUMBER,\n  b varchar2(10)) NOT FINAL;",
+            "sub.sql" to "CREATE TYPE sub_t UNDER base_t (c base_t);",
+            "list.sql" to "CREATE TYPE list_t AS TABLE OF NUMBER;",
+            "grow.sql" to "CREATE TYPE grow_t AS OBJECT (x NUMBER);\n/\nALTER TYPE grow_t ADD ATTRIBUTE (y NUMBER) CASCADE;"
+        )
+        fun type(n: String) = snapshot.findDeclarations(ProjectQualifiedName.of(n)).declarations.single() as ProjectStandaloneTypeView
+        val base = type("base_t")
+        assertThat(base.attributes.map { it.name.originalSpelling to it.ordinal }).containsExactly("a" to 0, "b" to 1)
+        // The range starts at the attribute's name: where the analysis places it.
+        assertThat(base.attributes[1].sourceRange.let { it.fileId to (it.startLine to it.startColumn) }).isEqualTo("base.sql" to (2 to 2))
+        assertThat(base.attributesComplete).isTrue()
+        // A subtype lists only what it declares.
+        assertThat(type("sub_t").attributes.map { it.name.originalSpelling }).containsExactly("c")
+        assertThat(type("list_t").attributes).isEmpty()
+        // ALTER TYPE: the attributes are those of CREATE TYPE, and the snapshot says the list changed.
+        assertThat(type("grow_t").attributes.map { it.name.originalSpelling }).containsExactly("x")
+        assertThat(snapshot.isAttributeListAltered(ProjectQualifiedName.of("grow_t"))).isTrue()
+        assertThat(snapshot.isAttributeListAltered(ProjectQualifiedName.of("base_t"))).isFalse()
+    }
+
+    @Test
     fun subtypeBaseReferencesStaySyntax() {
         val snapshot = prepare("p.sql" to pkg)
         fun sub(n: String) = snapshot.findDeclarations(ProjectQualifiedName.of("p", n)).declarations.single() as ProjectSubtypeView
