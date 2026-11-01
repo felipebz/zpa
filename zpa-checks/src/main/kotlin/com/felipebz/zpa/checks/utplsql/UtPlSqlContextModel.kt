@@ -1,28 +1,38 @@
-/**
- * Z PL/SQL Analyzer
- * Copyright (C) 2015-2026 Felipe Zorzo
- * mailto:felipe AT felipezorzo DOT com DOT br
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+//
+// SPDX-FileCopyrightText: 2015 Felipe Zorzo
+// SPDX-License-Identifier: LGPL-3.0-or-later
+//
+
 package com.felipebz.zpa.checks.utplsql
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import java.util.Collections
 import java.util.IdentityHashMap
+import kotlin.collections.ArrayDeque
+import kotlin.collections.List
+import kotlin.collections.MutableList
+import kotlin.collections.associateWith
+import kotlin.collections.drop
+import kotlin.collections.emptyList
+import kotlin.collections.filter
+import kotlin.collections.filterIndexed
+import kotlin.collections.firstOrNull
+import kotlin.collections.flatMap
+import kotlin.collections.forEach
+import kotlin.collections.forEachIndexed
+import kotlin.collections.getValue
+import kotlin.collections.indexOfFirst
+import kotlin.collections.indexOfLast
+import kotlin.collections.lastIndex
+import kotlin.collections.map
+import kotlin.collections.mapNotNull
+import kotlin.collections.mutableListOf
+import kotlin.collections.none
+import kotlin.collections.plusAssign
+import kotlin.collections.set
+import kotlin.collections.take
+import kotlin.collections.toList
 
 internal class UtPlSqlContext(
     val openingAnnotation: UtPlSqlAnnotation,

@@ -9,7 +9,7 @@ plugins {
 configure<SpotlessExtension> {
     kotlin {
         target("src/**/*.kt")
-        val lines = rootProject.file("LICENSE_HEADER").readLines().map { it.replace("\${year}", "\$YEAR") }
-        licenseHeader(lines.joinToString("", prefix = "/**\n", postfix = " */\n") { if (it.isBlank()) " *\n" else " * $it\n" })
+        val lines = rootProject.file("LICENSE_HEADER").readLines().filter { it.isNotBlank() }
+        licenseHeader(lines.joinToString("", prefix = "//\n", postfix = "//\n\n") { "// $it\n" })
     }
 }

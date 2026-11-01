@@ -1,24 +1,16 @@
-/**
- * Z PL/SQL Analyzer
- * Copyright (C) 2015-2026 Felipe Zorzo
- * mailto:felipe AT felipezorzo DOT com DOT br
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+//
+// SPDX-FileCopyrightText: 2015 Felipe Zorzo
+// SPDX-License-Identifier: LGPL-3.0-or-later
+//
+
 package com.felipebz.zpa
 
+import com.felipebz.zpa.api.CustomPlSqlRulesDefinition
+import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
+import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
+import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
@@ -28,12 +20,6 @@ import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.rule.RuleKey
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
-import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
-import com.felipebz.zpa.rules.SonarQubeRuleKeyAdapter
-import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
-import com.felipebz.zpa.api.CustomPlSqlRulesDefinition
-import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.checks.PlSqlVisitor
 
 class PlSqlChecksTest {
 
