@@ -49,9 +49,10 @@ import com.felipebz.zpa.symbols.local.*
  * inside SQL are not modeled: both keep the other visitors' result. The items are decorated when the file is left, once
  * every written type has its project resolution.
  *
- * The members after a package variable of another file (`pkg.v.f`, nothing local named `pkg`) are resolved on the same
- * terms, in PL/SQL only (in SQL `a.b.c` may be a schema, a table and a column), and kept for the field query alone
- * ([SemanticAstNode.projectPackageValueMembers]).
+ * For the field query alone ([SemanticAstNode.projectFieldMembers]), in PL/SQL only (in SQL `a.b.c` may be a schema, a
+ * table and a column), the same resolvers also give the members after a package variable the local model cannot type
+ * (`pkg.v.f` with nothing local named `pkg`; `v.f` or `pkg.v.f` in a body whose specification, in another file,
+ * declares `v`) and those of the name of a call (`v.f.g(1)`).
  */
 internal class ProjectReceiverMemberVisitor(
     private val typeResolver: TypeRefSemanticResolver,
@@ -65,7 +66,7 @@ internal class ProjectReceiverMemberVisitor(
 ) : PlSqlCheck() {
     private val binder = ProjectMethodCallBinder(memberResolver)
     private val receivers = ArrayList<AstNode>()
-    private val packageValueChains = ArrayList<AstNode>()
+    private val fieldChains = ArrayList<AstNode>()
     private val datatypes = HashMap<Pair<Int, Int>, SemanticAstNode>()
     private var calls: Map<Pair<Int, Int>, LocalCallAnalysis> = emptyMap()
 
@@ -75,7 +76,7 @@ internal class ProjectReceiverMemberVisitor(
 
     override fun visitFile(node: AstNode) {
         receivers.clear()
-        packageValueChains.clear()
+        fieldChains.clear()
         datatypes.clear()
         calls = emptyMap()
     }
@@ -84,7 +85,7 @@ internal class ProjectReceiverMemberVisitor(
         when {
             node.type == PlSqlGrammar.DATATYPE -> datatypes[node.token.line to node.token.column] = node as SemanticAstNode
             inSql(node) -> Unit
-            node.type == PlSqlGrammar.MEMBER_EXPRESSION -> packageValueChains += node
+            node.type == PlSqlGrammar.MEMBER_EXPRESSION -> fieldChains += node
             else -> receivers += node
         }
     }
@@ -92,23 +93,45 @@ internal class ProjectReceiverMemberVisitor(
     override fun leaveFile(node: AstNode) {
         calls = context.localSemanticFacts?.calls.orEmpty().associateBy { it.reference.range.startLine to it.reference.range.startColumn }
         receivers.forEach(::decorate)
-        packageValueChains.forEach(::packageValueMembers)
+        fieldChains.forEach(::fieldMembers)
     }
 
-    /** `pkg.v.f…` with nothing local named `pkg` and `pkg.v` one package variable of the project: its members on v's type. */
-    private fun packageValueMembers(node: AstNode) {
+    /** The members of [node], a `name.name…` expression, for the field query: after a package variable, or of a call's name. */
+    private fun fieldMembers(node: AstNode) {
         val children = node.children
-        if (node.parent.type == PlSqlGrammar.METHOD_CALL || isReceiverItem(node) || !isNameChain(children, 5)) return
+        if (isReceiverItem(node) || !isNameChain(children, 3)) return
         val facts = context.localSemanticFacts ?: return
         val first = children.first().token
-        val outcome = facts.firstOutcome(first.line, first.column)
-        if ((outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome != LocalResolution.ProvenAbsent) return
+        val steps = facts.steps(first.line, first.column) ?: return
         val names = (0 until children.size step 2).map { name(children[it]) }
-        val type = packageValueType(QualifiedName(listOf(names[0])), names[1]) ?: return
-        val members = names.drop(2)
-        (node as SemanticAstNode).projectPackageValueMembers =
-            if (members.size == 1) ProjectPackageValueMembers.of(memberResolver.resolve(type, members.single()))
-            else ProjectPackageValueMembers.of(pathResolver.resolve(type, members))
+        val decoration = packageValueMembers(node, names, steps)
+            ?: if (node.parent.type == PlSqlGrammar.METHOD_CALL && names.size >= 3 && (node as SemanticAstNode).projectRecordMemberPathResolution == null) {
+                paths.pathOf(node)?.let { ProjectFieldMembers.of(1, it) }
+            } else null
+        decoration?.let { (node as SemanticAstNode).projectFieldMembers = it }
+    }
+
+    /**
+     * The members after a package variable the project declares: `pkg.v.f…` with nothing local named `pkg`, or, in a
+     * package body whose specification is in another file, `v.f…` and `pkg.v.f…` (its own name) for a variable of that
+     * specification.
+     */
+    private fun packageValueMembers(node: AstNode, names: List<OracleIdentifier>, steps: List<LocalResolution>): ProjectFieldMembers? {
+        val facts = context.localSemanticFacts ?: return null
+        fun specificationMember(step: LocalResolution?) = (step as? LocalResolution.SpecificationCovered)?.outcome == LocalResolution.SpecificationMember
+        val first = steps.first()
+        val (owner, value) = when {
+            first == LocalResolution.ProvenAbsent && names.size >= 3 -> QualifiedName(listOf(names[0])) to 1
+            specificationMember(first) -> (enclosingPackageName(node) ?: return null) to 0
+            names.size >= 3 && specificationMember(steps.getOrNull(1)) &&
+                (((first as? LocalResolution.SpecificationCovered)?.outcome as? LocalResolution.Bound)?.declaration?.let { facts.model.declaration(it).kind } in OWN_UNITS) ->
+                QualifiedName(listOf(names[0])) to 1
+            else -> return null
+        }
+        val type = packageValueType(owner, names[value]) ?: return null
+        val members = names.drop(value + 1)
+        return if (members.size == 1) ProjectFieldMembers.of(value + 1, memberResolver.resolve(type, members.single()))
+        else ProjectFieldMembers.of(value + 1, pathResolver.resolve(type, members))
     }
 
     /** What a receiver is. */
@@ -375,6 +398,7 @@ internal class ProjectReceiverMemberVisitor(
 
     companion object {
         private const val NOT_A_VALUE = "not proven a value"
+        private val OWN_UNITS = setOf(LocalDeclarationKind.PACKAGE, LocalDeclarationKind.PACKAGE_BODY)
         private val SQL_STATEMENTS = setOf(
             DmlGrammar.SELECT_EXPRESSION, DmlGrammar.INSERT_EXPRESSION, DmlGrammar.UPDATE_EXPRESSION,
             DmlGrammar.DELETE_EXPRESSION, DmlGrammar.MERGE_EXPRESSION

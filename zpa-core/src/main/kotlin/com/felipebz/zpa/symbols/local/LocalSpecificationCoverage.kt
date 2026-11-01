@@ -150,6 +150,17 @@ internal class LocalSpecificationCoverage private constructor(
             ?.let(LocalResolution::SpecificationCovered)
     }
 
+    /**
+     * Whether [declaration], a declaration of a package body whose specification is in another file, is the one its
+     * name finds there: the project shows the specification declares no member of that name.
+     */
+    fun notDeclaredBySpecification(declaration: LocalDeclarationId): Boolean {
+        val found = model.declaration(declaration)
+        val body = packageBody(LocalResolver.chain(model, found.region)) ?: return false
+        val specification = specification(body) ?: return false
+        return PackageMemberNames.at(index, specification, found.name, null).status == MemberNameStatus.NOT_DECLARED
+    }
+
     /** The package body enclosing [reference] with the one specification the project holds for it. */
     private fun bodyWithSpecification(reference: LocalReference): Pair<LocalRegion, IndexedDeclaration>? {
         val body = packageBody(LocalResolver.chain(model, reference.region)) ?: return null

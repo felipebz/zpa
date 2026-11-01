@@ -38,7 +38,9 @@ import java.util.*
 internal class LocalFields(
     private val facts: LocalSemanticFacts,
     /** The prepared project's declarations, for the coverage of a type's specification; null when not prepared. */
-    private val projectIndex: ProjectSymbolIndex?
+    private val projectIndex: ProjectSymbolIndex?,
+    /** The specification coverage of the file's package bodies; null when the project is not prepared. */
+    private val coverage: LocalSpecificationCoverage? = null
 ) {
     private val model = facts.model
 
@@ -53,11 +55,44 @@ internal class LocalFields(
         val segment = if (node.type == PlSqlGrammar.IDENTIFIER_NAME && node.parentOrNull?.type == PlSqlGrammar.VARIABLE_NAME) node.parent else node
         if (segment.type != PlSqlGrammar.IDENTIFIER_NAME && segment.type != PlSqlGrammar.VARIABLE_NAME) return NOT_A_FIELD
         val located = segmentsByStart[segment.token.line to segment.token.column]
+        val answer = answer(segment, located)
+        if (answer !is FieldBinding.Field) return answer
+        // A field is never more certain than the name its chain starts from.
+        val start = located?.let { (index, position) -> facts.resolutions[index].take(position) } ?: startSteps(segment)
+        return start?.let(::uncertainStart) ?: answer
+    }
+
+    private fun answer(segment: AstNode, located: Pair<Int, Int>?): FieldBinding {
         val local = located?.let { (index, position) -> local(index, position) }
         if (local != null && local !is Pending) return local.answer
         project(segment)?.let { return it }
         if (local is Pending) return local.answer
         return located?.let { (index, position) -> residual(index, position) } ?: afterReceiver(segment)
+    }
+
+    /** The steps of the name the expression around [segment] (an element, a call result) starts from, when one starts it. */
+    private fun startSteps(segment: AstNode): List<LocalResolution>? {
+        var outer = segment
+        while (outer.parentOrNull?.type.let { it == PlSqlGrammar.MEMBER_EXPRESSION || it == PlSqlGrammar.METHOD_CALL || it == PlSqlGrammar.OBJECT_REFERENCE }) {
+            outer = outer.parent
+        }
+        val first = outer.token
+        return facts.steps(first.line, first.column)
+    }
+
+    /**
+     * Unknown when the name the chain starts from (its first name, or the first after units and blocks) is undecided
+     * because of text this file may hold (a `$IF`, a recovered region); a declaration outside the file does not count.
+     */
+    private fun uncertainStart(steps: List<LocalResolution>): FieldBinding? {
+        for (step in steps) {
+            when (val outcome = unwrap(step)) {
+                is LocalResolution.Incomplete -> return if (outcome.regionReasons.isEmpty()) null else FieldBinding.Unknown(reasons(outcome))
+                is LocalResolution.Bound -> if (model.declaration(outcome.declaration).kind !in LocalNames.QUALIFIERS) return null
+                else -> return null
+            }
+        }
+        return null
     }
 
     /** What the local member step says: [Decided] stands, [Pending] stands unless the project decides. */
@@ -79,6 +114,10 @@ internal class LocalFields(
                 val provisional = unwrap(own.provisional)
                 when {
                     provisional is LocalResolution.Bound && attribute(provisional.declaration) == null -> Decided(NOT_A_FIELD)
+                    // A record type of the package body that the specification, in another file, does not also declare.
+                    provisional is LocalResolution.Field && own.regionReasons.isEmpty() &&
+                        own.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE) &&
+                        coverage?.notDeclaredBySpecification(provisional.recordType) == true -> Decided(field(provisional))
                     // Text this file may hold (a `$IF`, a recovered region): the project cannot see it either.
                     own.regionReasons.isNotEmpty() -> Decided(FieldBinding.Unknown(reasons(own)))
                     // A specification or supertype in another file: the project's member lists may decide.
@@ -118,9 +157,10 @@ internal class LocalFields(
         // A member of an expression receiver: the path covers every name of the item, the first included.
         if (ProjectReceiverMemberVisitor.isReceiverItem(parent)) return semantic.projectRecordMemberPathResolution?.let { path(it, position) }
         if (position < 1) return null
-        semantic.projectPackageValueMembers?.let { members ->
-            if (position < 2) return null
-            return members.member?.takeIf { position == 2 }?.let(::member) ?: members.path?.let { path(it, position - 2) }
+        semantic.projectFieldMembers?.let { members ->
+            if (position < members.firstMember) return null
+            return members.member?.takeIf { position == members.firstMember }?.let(::member)
+                ?: members.path?.let { path(it, position - members.firstMember) }
         }
         if (names.size == 2) semantic.projectRecordMemberResolution?.let { return member(it) }
         return semantic.projectRecordMemberPathResolution?.let { path(it, position - 1) }

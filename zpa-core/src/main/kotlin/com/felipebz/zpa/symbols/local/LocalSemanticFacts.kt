@@ -174,6 +174,10 @@ internal class LocalSemanticFacts(
     fun firstOutcome(line: Int, column: Int): LocalResolution? =
         byStart[Triple(false, line, column)]?.singleOrNull()?.let { resolutions[it].first() }
 
+    /** Every step of the name starting at line, column, when a single non-type reference starts there. */
+    fun steps(line: Int, column: Int): List<LocalResolution>? =
+        byStart[Triple(false, line, column)]?.singleOrNull()?.let { resolutions[it] }
+
     /** Whether [outcome] binds the name to a schema unit declared in this file at [range]. */
     fun bindsUnitAt(outcome: LocalResolution, range: LocalRangeKey): Boolean {
         val bound = outcome as? LocalResolution.Bound ?: return false
