@@ -3,6 +3,8 @@ kotlin = "2.4.21"
 dokka = "2.2.0"
 download = "5.7.0"
 jreleaser = "1.26.0"
+# The JGit version JReleaser depends on; see build-logic/build.gradle.kts.
+jgit = "5.13.5.202508271544-r"
 shadow = "9.6.1"
 spotless = "8.10.4"
 sonarscanner = "7.5.0.8588"
