@@ -36,6 +36,18 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
     }.toMap()
 
+    /**
+     * The names written with an argument list inside SQL (`v(1)`, `v(1).f`, `r.f(1)`, `o.m(x)`), by the start of their
+     * first name: plain call names, and the first name of qualified call names.
+     */
+    private val sqlCallsByStart = facts.references.indices
+        .filter {
+            val reference = facts.references[it]
+            reference.context == LocalReferenceContext.SQL_CALL ||
+                reference.context == LocalReferenceContext.QUALIFIER && reference.lastSegmentContext == LocalReferenceContext.SQL_CALL
+        }
+        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+
     fun binding(name: AstNode): NameBinding = when (name.type) {
         PlSqlGrammar.MEMBER_EXPRESSION -> qualified(name)
         PlSqlGrammar.VARIABLE_NAME -> {
@@ -43,7 +55,9 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
             val index = referencesByStart[start]
             when {
                 index != null -> first(index, facts.resolutions[index].last())
-                else -> chainsByStart[start]?.let { first(it, facts.resolutions[it].first()) } ?: unavailable()
+                else -> chainsByStart[start]?.let { first(it, facts.resolutions[it].first()) }
+                    ?: sqlCallsByStart[start]?.let(::sqlCall)
+                    ?: unavailable()
             }
         }
         PlSqlGrammar.IDENTIFIER_NAME -> segmentsByStart[name.token.line to name.token.column]?.let { (index, position) -> segment(index, position) }
@@ -64,6 +78,40 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
             LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
             else -> decided(decided)
         }
+    }
+
+    /**
+     * The first name of a name written with an argument list in SQL. A variable or parameter binds as in PL/SQL unless
+     * a SQL built-in function has the name: the built-in is called whatever the regions declare. Neither a column nor
+     * a relation of the statement takes `v(1)`; a relation takes the first name of `a.col.m()` (SqlRelation). A function,
+     * a call of something no local declares, or any other declaration keeps no answer; a name the local side cannot
+     * decide is Unknown.
+     */
+    private fun sqlCall(index: Int): NameBinding {
+        val reference = facts.references[index]
+        if (reference.segments.isEmpty() && SqlBuiltinFunctions.mayTake(reference.name)) return unavailable()
+        return when (val outcome = unwrap(facts.resolutions[index].first())) {
+            is LocalResolution.SqlBuiltinOrLocal, is LocalResolution.Bound -> value(outcome)?.let { NameBinding.Local(declaration(it)) } ?: unavailable()
+            LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
+            LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+            is LocalResolution.Incomplete -> {
+                val provisional = unwrap(outcome.provisional)
+                val mayBeValue = value(provisional) != null || provisional == LocalResolution.ProvenAbsent ||
+                    provisional == LocalResolution.SpecificationMember
+                if (mayBeValue) NameBinding.Unknown(reasons(outcome)) else unavailable()
+            }
+            else -> unavailable()
+        }
+    }
+
+    /** The one variable, parameter or loop index [outcome] binds, or null. */
+    private fun value(outcome: LocalResolution): LocalDeclarationId? {
+        val declaration = when (outcome) {
+            is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations.singleOrNull()
+            is LocalResolution.Bound -> outcome.declaration
+            else -> null
+        } ?: return null
+        return declaration.takeIf { model.declaration(it).kind in VALUES }
     }
 
     /**
@@ -228,6 +276,11 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
 
         /** The positions of a qualified name whose segments are answered: [CONTEXTS], and a call statement (`v.delete;`). */
         val CHAIN_CONTEXTS: EnumSet<LocalReferenceContext> = EnumSet.copyOf(CONTEXTS).apply { add(LocalReferenceContext.CALL_STATEMENT) }
+
+        /** The declarations that hold a value an argument list can index or a member can follow. */
+        private val VALUES = EnumSet.of(
+            LocalDeclarationKind.VARIABLE, LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER, LocalDeclarationKind.LOOP_INDEX
+        )
 
         /** The declarations a segment can be reached through: a unit or a block, never a value. */
         val QUALIFIERS = EnumSet.of(

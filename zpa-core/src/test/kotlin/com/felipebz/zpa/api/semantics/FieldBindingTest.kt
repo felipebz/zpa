@@ -49,7 +49,11 @@ class FieldBindingTest {
                     val names = member.getChildren(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.IDENTIFIER_NAME)
                     // A member written after an expression receiver starts with a member.
                     if (member.parent.type == PlSqlGrammar.OBJECT_REFERENCE && member.parent.firstChild !== member) names else names.drop(1)
-                } + node.getDescendants(PlSqlGrammar.OBJECT_REFERENCE).flatMap { it.getChildren(PlSqlGrammar.VARIABLE_NAME) }
+                } + node.getDescendants(PlSqlGrammar.OBJECT_REFERENCE).flatMap { reference ->
+                    // A member after an expression receiver, alone (`.f`) or with an argument list (`.f(1)`).
+                    reference.getChildren(PlSqlGrammar.VARIABLE_NAME) + reference.children.drop(1)
+                        .filter { it.type == PlSqlGrammar.METHOD_CALL && it.firstChild.type == PlSqlGrammar.VARIABLE_NAME }.map { it.firstChild }
+                }
                 segments.sortedWith(compareBy({ it.token.line }, { it.token.column }))
                     .forEach { rows += "${it.token.line}:${it.token.column}:${it.tokenValue}=${this.context.fieldBinding(it)}" }
             }
@@ -605,4 +609,32 @@ class FieldBindingTest {
         )
         assertThat(rows).contains("9:8:X=Field(RECORD_FIELD#0@2:22)", "10:8:X=Field(RECORD_FIELD#0@2:22)", "11:8:X=Unknown[UNSUPPORTED_REFERENCE]")
     }
+    @Test
+    fun aFieldAfterAnElementInStaticSql() {
+        val spec = "create or replace package pk_lines is\n" +
+            "  type t_nums is table of number;\n" +
+            "  type t_row is record (items t_nums);\n" +
+            "  type t_rows is table of t_row index by pls_integer;\n" +
+            "  procedure run(p_rows t_rows);\n" +
+            "end pk_lines;\n/\n"
+        val body = "create or replace package body pk_lines is\n" +
+            "  procedure run(p_rows t_rows) is\n" +
+            "    l number;\n" +
+            "  begin\n" +
+            "    insert into line_tab (x) values (p_rows(1).items(1));\n" +
+            "    update line_tab set x = 1 where x = p_rows(1).items(1);\n" +
+            "    select count(*) into l from line_tab p_rows where x = p_rows(1).items(1);\n" +
+            "    l := p_rows(1).items(1);\n" +
+            "  end;\n" +
+            "end pk_lines;\n/\n"
+        val items = "Field(RECORD_FIELD#0@spec.sql:3:24)"
+        assertThat(fields("body.sql", "spec.sql" to spec, "body.sql" to body).filter { ":ITEMS=" in it }).containsExactly(
+            "5:47:ITEMS=$items",
+            "6:50:ITEMS=$items",
+            // A relation named like the collection does not take `p_rows(1)`.
+            "7:68:ITEMS=$items",
+            "8:19:ITEMS=$items"
+        )
+    }
 }
+

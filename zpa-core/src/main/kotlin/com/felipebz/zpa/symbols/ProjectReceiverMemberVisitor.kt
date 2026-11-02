@@ -14,6 +14,7 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.ProjectTypedCallResolution
+import com.felipebz.zpa.api.semantics.NameBinding
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.ProjectReceiverMemberVisitor.Companion.NOT_A_VALUE
@@ -31,9 +32,11 @@ import com.felipebz.zpa.symbols.local.*
  *   call binding. An ambiguous call has no result type (PLS-00307 on Oracle, even when every candidate returns the same
  *   type).
  *
- * Without parentheses, a method or function name followed by a member is rejected by Oracle (PLS-00225), and receivers
- * inside SQL are not modeled: both keep the other visitors' result. The items are decorated when the file is left, once
- * every written type has its project resolution.
+ * Without parentheses, a method or function name followed by a member is rejected by Oracle (PLS-00225): it keeps the
+ * other visitors' result. Inside SQL, a receiver is modeled only when it starts from a name SQL leaves to a local value
+ * (`v(1).f`, where [com.felipebz.zpa.api.PlSqlVisitorContext.nameBinding] answers `Local` for `v`); any other receiver
+ * in SQL keeps the other visitors' result. The items are decorated when the file is left, once every written type has
+ * its project resolution.
  *
  * For the field query alone ([SemanticAstNode.projectFieldMembers]), in PL/SQL only (in SQL `a.b.c` may be a schema, a
  * table and a column), the same resolvers also give the members after a package variable the local model cannot type
@@ -52,6 +55,7 @@ internal class ProjectReceiverMemberVisitor(
 ) : PlSqlCheck() {
     private val binder = ProjectMethodCallBinder(memberResolver)
     private val receivers = ArrayList<AstNode>()
+    private val sqlReceivers = ArrayList<AstNode>()
     private val fieldChains = ArrayList<AstNode>()
     private val datatypes = HashMap<Pair<Int, Int>, SemanticAstNode>()
     private var calls: Map<Pair<Int, Int>, LocalCallAnalysis> = emptyMap()
@@ -62,6 +66,7 @@ internal class ProjectReceiverMemberVisitor(
 
     override fun visitFile(node: AstNode) {
         receivers.clear()
+        sqlReceivers.clear()
         fieldChains.clear()
         datatypes.clear()
         calls = emptyMap()
@@ -70,7 +75,7 @@ internal class ProjectReceiverMemberVisitor(
     override fun visitNode(node: AstNode) {
         when {
             node.type == PlSqlGrammar.DATATYPE -> datatypes[node.token.line to node.token.column] = node as SemanticAstNode
-            inSql(node) -> Unit
+            inSql(node) -> if (node.type == PlSqlGrammar.OBJECT_REFERENCE) sqlReceivers += node
             node.type == PlSqlGrammar.MEMBER_EXPRESSION -> fieldChains += node
             else -> receivers += node
         }
@@ -79,7 +84,16 @@ internal class ProjectReceiverMemberVisitor(
     override fun leaveFile(node: AstNode) {
         calls = context.localSemanticFacts?.calls.orEmpty().associateBy { it.reference.range.startLine to it.reference.range.startColumn }
         receivers.forEach(::decorate)
+        sqlReceivers.filter(::startsFromLocalValue).forEach(::decorate)
         fieldChains.forEach(::fieldMembers)
+    }
+
+    /** Whether the receiver of [reference], in SQL, is an element of a name that binds a local value (`v(1)`, `v(1)(2)`). */
+    private fun startsFromLocalValue(reference: AstNode): Boolean {
+        var head = reference.firstChild
+        if (head.type != PlSqlGrammar.METHOD_CALL) return false
+        while (head.type == PlSqlGrammar.METHOD_CALL) head = head.firstChild
+        return head.type == PlSqlGrammar.VARIABLE_NAME && context.nameBinding(head) is NameBinding.Local
     }
 
     /** The members of [node], a `name.name…` expression, for the field query: after a package variable, or of a call's name. */

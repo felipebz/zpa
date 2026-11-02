@@ -735,4 +735,124 @@ class UsageEvidenceTest {
             .walk(PlSqlVisitorContext(root, Source("u.sql", "declare\n  v number;\nbegin\n  null;\nend;\n/\n"), null), SemanticScanCapabilities(createProjectAnalysis(project)))
         assertThat(rows).containsExactly(UsageEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION))
     }
+    private val sqlCallSpec =
+        "create or replace package pk_lines is\n" +
+        "  type t_nums is table of number;\n" +
+        "  type t_row is record (items t_nums);\n" +
+        "  type t_rows is table of t_row index by pls_integer;\n" +
+        "  procedure run(p_rows t_rows, p_rec t_row);\n" +
+        "end pk_lines;\n" +
+        "/\n"
+
+    private val sqlCallBody =
+        "create or replace package body pk_lines is\n" +
+        "  procedure run(p_rows t_rows, p_rec t_row) is\n" +
+        "    l number;\n" +
+        "    l_nums t_nums := t_nums(7);\n" +
+        "    l_row t_row;\n" +
+        "  begin\n" +
+        "    insert into line_tab (x) values (p_rows(1).items(1));\n" +
+        "    insert into line_tab (x) values (p_rec.items(1));\n" +
+        "    insert into line_tab (x) values (l_nums(1));\n" +
+        "    insert into line_tab (x) values (l_row.items(1));\n" +
+        "    select count(*) into l from line_tab where x = p_rec.items(1);\n" +
+        "    update line_tab set x = l_nums(1) where x = p_rows(1).items(1);\n" +
+        "    select p_rec.items(1) into l from dual;\n" +
+        "    l := p_rows(1).items(1);\n" +
+        "    l := p_rec.items(1);\n" +
+        "  end;\n" +
+        "end pk_lines;\n" +
+        "/\n"
+
+    @Test
+    fun aValueWithAnArgumentListInStaticSqlBindsAsInPlSql() {
+        // The SQL statements of the body; INTO targets and columns are left out.
+        val rows = nameBindings(sqlCallBody, "s.sql" to sqlCallSpec, prepared = true)
+            .filter { it.substringBefore(':').toInt() in 7..13 && !it.startsWith("${it.substringBefore(':')}:X=") && !it.contains(":L=") }
+        val pRows = "Local(PARAMETER@2:16)"
+        val pRec = "Local(PARAMETER@2:31)"
+        assertThat(rows).containsExactly(
+            // A field after an element is not a declaration of the file.
+            "7:P_ROWS=$pRows", "7:ITEMS=Unavailable(NOT_A_COVERED_NAME)",
+            "8:P_REC=$pRec",
+            "9:L_NUMS=Local(VARIABLE@4:4)",
+            "10:L_ROW=Local(VARIABLE@5:4)",
+            "11:COUNT=Unavailable(NOT_A_COVERED_NAME)", "11:P_REC=$pRec",
+            "12:L_NUMS=Local(VARIABLE@4:4)", "12:P_ROWS=$pRows", "12:ITEMS=Unavailable(NOT_A_COVERED_NAME)",
+            "13:P_REC=$pRec"
+        )
+    }
+
+    private val sqlCallUtil =
+        "create or replace package pk_lines_util is\n" +
+        "  function f(p number) return number;\n" +
+        "end pk_lines_util;\n" +
+        "/\n"
+
+    private val sqlCallEdges =
+        "create or replace procedure use_lines is\n" +
+        "  type t_nums is table of number;\n" +
+        "  l_nums t_nums := t_nums(1);\n" +
+        "  upper t_nums := t_nums(2);\n" +
+        "  l number;\n" +
+        "  c clob;\n" +
+        "  l_xml xmltype;\n" +
+        "begin\n" +
+        "  select l_nums(1) into l from line_tab l_nums;\n" +
+        "  select count(*) into l from line_tab l_nums where x in (select l_nums(1) from dual);\n" +
+        "  select l_xml.doc.getclobval() into c from xml_tab l_xml;\n" +
+        "  select l_xml.getclobval() into c from dual;\n" +
+        "  select pk_lines_util.f(l_nums(1)) into l from dual;\n" +
+        "  select fn_schema(l_nums(1)) into l from dual;\n" +
+        "  select upper(1), nvl(l, 1) into l, l from dual;\n" +
+        "end;\n" +
+        "/\n" +
+        "create or replace procedure use_cc is\n" +
+        "  type t_nums is table of number;\n" +
+        "  \$if \$\$flag \$then\n" +
+        "  l_c t_nums := t_nums(1);\n" +
+        "  \$end\n" +
+        "  l number;\n" +
+        "begin\n" +
+        "  select l_c(1) into l from dual;\n" +
+        "end;\n" +
+        "/\n"
+
+    @Test
+    fun sqlTakesANameWithAnArgumentListBeforeALocalValue() {
+        val rows = nameBindings(sqlCallEdges, "util.sql" to sqlCallUtil, prepared = true)
+            .filter { it.substringBefore(':').toInt() >= 9 && !it.contains(":L=") && !it.contains(":C=") && !it.contains(":X=") }
+        val lNums = "Local(VARIABLE@3:2)"
+        assertThat(rows).containsExactly(
+            // Neither a relation of the statement nor one of an enclosing query takes `v(1)`: Oracle reads the collection.
+            "9:L_NUMS=$lNums",
+            "10:COUNT=Unavailable(NOT_A_COVERED_NAME)", "10:L_NUMS=$lNums",
+            // The alias takes the first name of an object column's method; without one, the local object does.
+            "11:L_XML=NothingLocal(column possible)",
+            "12:L_XML=Local(VARIABLE@7:2)",
+            // A package or schema function keeps no answer; its argument is the local collection.
+            "13:PK_LINES_UTIL=Unavailable(NOT_A_COVERED_NAME)", "13:L_NUMS=$lNums",
+            "14:FN_SCHEMA=Unavailable(NOT_A_COVERED_NAME)", "14:L_NUMS=$lNums",
+            // A SQL built-in wins over a local collection of the same name.
+            "15:UPPER=Unavailable(NOT_A_COVERED_NAME)", "15:NVL=Unavailable(NOT_A_COVERED_NAME)",
+            "21:T_NUMS=Unavailable(NOT_A_COVERED_NAME)", "21:T_NUMS=Unknown[CONDITIONAL_COMPILATION]",
+            // A declaration under an undecided `${'$'}IF` leaves the name undecided.
+            "25:L_C=Unknown[CONDITIONAL_COMPILATION]"
+        )
+    }
+
+    @Test
+    fun aBuiltInDocumentedUnderAnotherEntryWinsOverALocalCollection() {
+        val text = "create or replace procedure check_lines is\n" +
+            "  type t_nums is table of number;\n" +
+            "  lengthb t_nums := t_nums(9);\n" +
+            "  substrb t_nums := t_nums(10);\n" +
+            "  l varchar2(100);\n" +
+            "begin\n" +
+            "  select lengthb('abc'), substrb('abc', 1) into l, l from dual;\n" +
+            "end;\n/\n"
+        // Oracle runs LENGTHB and SUBSTRB, not the collections.
+        assertThat(nameBindings(text).filter { it.startsWith("7:") && !it.contains(":L=") })
+            .containsExactly("7:LENGTHB=Unavailable(NOT_A_COVERED_NAME)", "7:SUBSTRB=Unavailable(NOT_A_COVERED_NAME)")
+    }
 }
