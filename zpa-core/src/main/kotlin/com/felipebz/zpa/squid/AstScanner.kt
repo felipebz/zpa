@@ -57,6 +57,16 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
     fun scanFile(inputFile: PlSqlFile, extraVisitors: List<PlSqlVisitor>, fileId: String): AstScannerResult =
         scanFile(inputFile, extraVisitors, FileId(fileId))
 
+    /**
+     * Parses [inputFile] and walks it with the semantic visitors, the rule checks given to the constructor that apply to
+     * the file's type, the metrics visitors and [extraVisitors].
+     *
+     * The rule checks are shared by every file of this scanner and keep their issues and per-file state on the
+     * instance, so a walk that runs any of them holds a lock shared by every scanner: such walks run one at a time.
+     * A walk that runs no rule check (none was given, or none applies to the file's type) takes no lock, and walks of
+     * other files may run at the same time on other threads. [extraVisitors] then must not share mutable state between
+     * calls: create them for each call.
+     */
     @JvmOverloads
     fun scanFile(
         inputFile: PlSqlFile,
@@ -76,25 +86,22 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         val checksToRun = mutableListOf<PlSqlVisitor>()
         checksToRun.addAll(semanticVisitors.all)
 
-        if (inputFile.type() == PlSqlFile.Type.MAIN) {
-            checksToRun.addAll(
-                checks.filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
-                    .filterIsInstance<PlSqlCheck>()
-                    .filter { check -> ruleHasScope(check, RuleInfo.Scope.MAIN) }
-                    .toList())
+        val ruleChecks = if (inputFile.type() == PlSqlFile.Type.MAIN) {
+            checks.filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
+                .filterIsInstance<PlSqlCheck>()
+                .filter { check -> ruleHasScope(check, RuleInfo.Scope.MAIN) }
         } else {
-            checksToRun.addAll(
-                checks.filterIsInstance<PlSqlCheck>()
-                    .filter { check -> ruleHasScope(check, RuleInfo.Scope.TEST) }
-                    .toList())
+            checks.filterIsInstance<PlSqlCheck>()
+                .filter { check -> ruleHasScope(check, RuleInfo.Scope.TEST) }
         }
+        checksToRun.addAll(ruleChecks)
 
         checksToRun.add(metricsVisitor)
         checksToRun.add(complexityVisitor)
         checksToRun.add(functionComplexityVisitor)
         checksToRun.addAll(extraVisitors)
 
-        val issues = lock.withLock {
+        val walk = {
             val newWalker = PlSqlAstWalker(checksToRun)
             newWalker.walk(newVisitorContext, semanticScanCapabilities)
 
@@ -102,6 +109,8 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
                 (it as PlSqlCheck).issues().map { issue -> ZpaIssue(inputFile, it, issue) }
             }
         }
+        // Shared rule checks keep per-file state on the instance: their walks run one at a time.
+        val issues = if (ruleChecks.isEmpty()) walk() else lock.withLock(walk)
 
         return AstScannerResult(
             executedChecks = checksToRun,

@@ -25,6 +25,7 @@ class CpdVisitorTest {
 
         val visitor = CpdVisitor(context, inputFile)
         TestPlSqlVisitorRunner.scanFile(File(Paths.get(BASE_DIR, FILE).toString()), null, visitor)
+        visitor.save()
         val cpdTokenLines = context.cpdTokens(inputFile.key())
         assertThat(cpdTokenLines).hasSize(17)
     }

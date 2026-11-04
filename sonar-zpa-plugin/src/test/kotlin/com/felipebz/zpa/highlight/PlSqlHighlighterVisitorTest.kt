@@ -52,6 +52,7 @@ class PlSqlHighlighterVisitorTest {
 
         val visitor = PlSqlHighlighterVisitor(context, inputFile)
         TestPlSqlVisitorRunner.scanFile(file, null, visitor)
+        visitor.save()
 
         val key = inputFile.key()
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD)

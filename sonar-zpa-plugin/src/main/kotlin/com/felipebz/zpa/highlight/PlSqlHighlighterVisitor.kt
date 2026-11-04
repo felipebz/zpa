@@ -5,7 +5,6 @@
 
 package com.felipebz.zpa.highlight
 
-import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlKeyword
@@ -38,7 +37,11 @@ class PlSqlHighlighterVisitor(context: SensorContext, inputFile: InputFile) : Pl
         }
     }
 
-    override fun leaveFile(node: AstNode) {
+    /**
+     * Saves the highlighting of the walked file. Called once the scan returns, under the sensor's lock: a walk without
+     * rule checks runs beside the walks of other files.
+     */
+    fun save() {
         highlighting.save()
     }
 

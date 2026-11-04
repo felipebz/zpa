@@ -92,14 +92,12 @@ class PlSqlAstScanner(private val context: SensorContext,
     @OptIn(ZpaExperimentalApi::class)
     private fun scanMainFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
+        val highlighter = PlSqlHighlighterVisitor(context, inputFile)
+        val cpd = CpdVisitor(context, inputFile)
         val result = try {
             astScanner.scanFile(
                 plSqlFile,
-                listOf(
-                    ObjectLocationVisitor(plSqlFile, mappedObjects),
-                    PlSqlHighlighterVisitor(context, inputFile),
-                    CpdVisitor(context, inputFile)
-                ),
+                listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter, cpd),
                 FileId(inputFile.uri().toString())
             )
         } catch (e: Exception) {
@@ -110,6 +108,8 @@ class PlSqlAstScanner(private val context: SensorContext,
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
         lock.withLock { // needed because SonarQube 7.6 save this data in a non thread-safe way
+            highlighter.save()
+            cpd.save()
             saveIssues(inputFile, result.issues)
 
             val symbolSaver = SonarQubeSymbolTable(context, inputFile)
@@ -135,18 +135,17 @@ class PlSqlAstScanner(private val context: SensorContext,
     @OptIn(ZpaExperimentalApi::class)
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
+        val highlighter = PlSqlHighlighterVisitor(context, inputFile)
         val result = astScanner.scanFile(
             plSqlFile,
-            listOf(
-                ObjectLocationVisitor(plSqlFile, mappedObjects),
-                PlSqlHighlighterVisitor(context, inputFile)
-            ),
+            listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter),
             FileId(inputFile.uri().toString())
         )
 
         noSonarFilter.noSonarInFile(inputFile, result.linesWithNoSonar)
 
         lock.withLock { // needed because SonarQube 7.6 save this data in a non thread-safe way
+            highlighter.save()
             saveIssues(inputFile, result.issues)
 
             val symbolTable = SonarQubeSymbolTable(context, inputFile)

@@ -35,7 +35,11 @@ class CpdVisitor(context: SensorContext, inputFile: InputFile) : PlSqlCheck() {
         newCpdTokens.addToken(token.line, token.column, token.endLine, token.endColumn, token.value)
     }
 
-    override fun leaveFile(node: AstNode) {
+    /**
+     * Saves the duplication tokens of the walked file. Called once the scan returns, under the sensor's lock: a walk
+     * without rule checks runs beside the walks of other files.
+     */
+    fun save() {
         newCpdTokens.save()
     }
 
