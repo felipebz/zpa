@@ -143,6 +143,74 @@ internal class LocalTypeWalk(
     }
 
     /**
+     * Evidence of the qualified name [name] whose first segment the file does not declare: the package value the project
+     * describes for the whole name, else a member chain after the one prefix of it that names such a value (`p.g.n`
+     * is field `n` of `p.g`). Two prefixes that both name a value leave the whole name's evidence.
+     */
+    fun projectChain(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence {
+        val whole = projectValue(name, region)
+        if (!stoppedBeforeValue(whole)) return whole
+        val readings = (name.segments.size - 1 downTo 1).mapNotNull { size ->
+            projectValue(QualifiedName(name.segments.take(size)), region).takeUnless { stoppedBeforeValue(it) || it.description?.source?.values.isNullOrEmpty() }
+                ?.let { size to it }
+        }
+        val (size, value) = readings.singleOrNull() ?: return whole
+        return members(value, name.segments.drop(size), region)
+    }
+
+    /** The project names no value for the whole name: none found, or one whose fields the name goes into. */
+    private fun stoppedBeforeValue(evidence: LocalTypeEvidence): Boolean {
+        val source = evidence.description?.source ?: return false
+        return source.status == ProjectTypeDescription.Status.UNRESOLVED_VALUE ||
+            source.status == ProjectTypeDescription.Status.ANCHORED_REFERENCE && source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.FIELD_PATH
+    }
+
+    /**
+     * Evidence of `SELF` in the body of an object type, for the members its specification or supertypes in other files
+     * hold: the type the project describes under the body's name. Null when [region] is in no type body.
+     */
+    fun enclosingType(region: LocalRegionId): LocalTypeEvidence? {
+        val body = LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.TYPE_BODY } ?: return null
+        val unit = LocalTypeScope.unitOf(model, body.id) ?: return null
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown("no prepared project")
+        val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(unit.unitName), null, metadata, compilationSchema(region))
+        return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
+    /** [members], one step after another, from the value [evidence] gives. */
+    fun members(evidence: LocalTypeEvidence, members: List<OracleIdentifier>, region: LocalRegionId): LocalTypeEvidence =
+        // An undecided value keeps its reasons: its members are no more decided.
+        members.fold(evidence) { current, member -> if (current.terminal == LocalTypeEvidence.Terminal.UNKNOWN) current else member(current, member, region) }
+
+    /**
+     * Evidence of the member [name] of a value whose type [evidence] gives, when the project describes that type: a
+     * field of a record type or an attribute of an object type ([ProjectSnapshot.memberType]), typed as the project
+     * describes the member's written type; or a column of a `%ROWTYPE` of a relation the external metadata confirms,
+     * typed as the column's `%TYPE`. Anything else (a method, no such member, a local type, no prepared project) is
+     * unknown.
+     */
+    fun member(evidence: LocalTypeEvidence, name: OracleIdentifier, region: LocalRegionId): LocalTypeEvidence {
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown("no prepared project")
+        val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT }
+            ?: return LocalTypeEvidence.unknown("member $name of a value the project does not describe")
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) {
+            val relation = description.anchorName.orElse(null)?.takeIf { description.status == ProjectExternalTypeDescription.Status.RESOLVED }
+                ?: return LocalTypeEvidence.unknown("member $name of a row the external metadata does not confirm")
+            val owner = packageOwner(region)
+            val column = snapshot.describeExternalType(
+                ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(relation.name.append(name)), ProjectTypeReference.Anchor.TYPE),
+                owner, metadata, compilationSchema(region)
+            )
+            return LocalTypeEvidence(ProjectArgumentType.described(column, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, column)
+        }
+        val type = description.source.declaration.orElse(null)?.takeIf { description.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
+            ?: return LocalTypeEvidence.unknown("member $name of a value of no declared project type")
+        val member = snapshot.memberType(type.id, name) ?: return LocalTypeEvidence.unknown("$name is not one field or attribute of ${type.qualifiedName}")
+        val described = snapshot.describeExternalType(member.typeRef, member.owner, metadata, compilationSchema(region))
+        return LocalTypeEvidence(ProjectArgumentType.described(described, member.owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
+    /**
      * The project's description of the element of [collection], a collection type the project describes, read from
      * [region]: a package type's element is looked up with its package as owner. Null without a project or an element.
      */
@@ -354,7 +422,8 @@ internal class LocalTypeWalk(
     }
 
     companion object {
-        private val VALUES = setOf(VARIABLE, PARAMETER, CURSOR_PARAMETER, LOOP_INDEX)
+        /** The declarations that hold a value: an object type's attribute is one (`self.a`, or `a` alone in a method). */
+        private val VALUES = setOf(VARIABLE, PARAMETER, CURSOR_PARAMETER, LOOP_INDEX, ATTRIBUTE)
     }
 }
 

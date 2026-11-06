@@ -36,18 +36,24 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val first = steps.first()
         val target = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
         if (LocalReferenceOutcomes.isSpecificationMember(first)) {
-            return walk.specificationMember(target.segments, reference.region)?.let { of(reference.region, walk.projectValue(it, reference.region)) }
+            walk.specificationMember(target.segments, reference.region)?.let { return of(reference.region, walk.projectChain(it, reference.region)) }
+            // A member of an object type whose specification is in another file, named alone in its body.
+            return walk.enclosingType(reference.region)?.let { of(reference.region, walk.members(it, target.segments, reference.region)) }
                 ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         }
         if (LocalReferenceOutcomes.isAbsent(first)) {
             // One segment: a built-in, a function or a column; a qualified one is a schema object's value.
             return if (reference.segments.isEmpty()) unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            else of(reference.region, walk.projectValue(target, reference.region))
+            else of(reference.region, walk.projectChain(target, reference.region))
         }
+        // `pkg.v…` in the body of `pkg`, with `v` a member of its specification in another file.
+        if (steps.drop(1).any(LocalReferenceOutcomes::isSpecificationMember) && steps.none { covered(it) is LocalResolution.Incomplete }) {
+            return of(reference.region, walk.projectChain(target, reference.region))
+        }
+        projectMembers(reference, steps)?.let { return it }
         val last = covered(steps.last())
         if (last is LocalResolution.Incomplete) return ValueCategory.Unknown(reasons(last))
         if (steps.size != reference.segments.size + 1) return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        if (LocalReferenceOutcomes.isSpecificationMember(steps.last())) return of(reference.region, walk.projectValue(target, reference.region))
         return when (last) {
             // In SQL a column of the same name would take it.
             is LocalResolution.SqlColumnOrLocal ->
@@ -58,6 +64,40 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
                 ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
             else -> of(reference.region, walk.outcome(last))
         }
+    }
+
+    /**
+     * A member chain the local steps leave to the project: they stop at a member of a value whose type the file does
+     * not declare, or at a member of `SELF` in the body of an object type whose specification is in another file. The
+     * steps before must be decided; each member from there is a step through the project's description of the type
+     * reached ([LocalTypeWalk.member]). Null when the steps do not stop so.
+     */
+    private fun projectMembers(reference: LocalReference, steps: List<LocalResolution>): ValueCategory? {
+        val stop = steps.indexOfFirst { needsProjectMember(it) }
+        if (stop < 1 || stop != steps.lastIndex) return null
+        steps.subList(0, stop).firstOrNull { covered(it) is LocalResolution.Incomplete }?.let { return ValueCategory.Unknown(reasons(covered(it) as LocalResolution.Incomplete)) }
+        val base = covered(steps[stop - 1])
+        val stopped = covered(steps[stop])
+        val evidence = when {
+            base is LocalResolution.ImplicitSelf || isSelfParameter(base) -> walk.enclosingType(reference.region) ?: return null
+            // Only SELF's members wait for a specification in another file.
+            stopped is LocalResolution.Incomplete -> return null
+            else -> walk.outcome(base)
+        }
+        val members = reference.segments.drop(stop - 1).map { it.name }
+        return of(reference.region, walk.members(evidence, members, reference.region))
+    }
+
+    /** `SELF` written as a parameter of a method (`SELF IN OUT t` of a constructor). */
+    private fun isSelfParameter(outcome: LocalResolution): Boolean =
+        outcome is LocalResolution.Bound && model.declaration(outcome.declaration).let { it.kind == LocalDeclarationKind.PARAMETER && it.name == LocalResolver.SELF }
+
+    /** A member step the local resolver cannot take: a value of a type it does not hold, or a specification in another file. */
+    private fun needsProjectMember(step: LocalResolution): Boolean = when (val outcome = covered(step)) {
+        is LocalResolution.Unsupported -> outcome.construct == LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING
+        is LocalResolution.Incomplete -> outcome.regionReasons.isEmpty() && outcome.lookupReasons.isNotEmpty() &&
+            TYPE_GAPS.containsAll(outcome.lookupReasons)
+        else -> false
     }
 
     /** The number of segments after the first that [name] writes; null when it is not a value name of its own. */
@@ -194,6 +234,9 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     private fun unavailable() = ValueCategory.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
 
     private companion object {
+        /** The gaps of a lookup in an object type whose specification or supertype is in another file. */
+        val TYPE_GAPS: Set<LocalLookupGap> = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE)
+
         /** A name read as a value: in PL/SQL, in SQL, in `VALUES`, or called (an element access or a call). */
         val CONTEXTS = EnumSet.of(
             LocalReferenceContext.VALUE, LocalReferenceContext.SQL_VALUE, LocalReferenceContext.INSERT_VALUE,

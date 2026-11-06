@@ -297,6 +297,22 @@ class ProjectSnapshot private constructor(
     @get:JvmSynthetic
     internal val projectIndex: ProjectSymbolIndex get() = preparationResult.index
 
+    /**
+     * The written type of the member [name] of a value of the type [type] declares: one record field, or one attribute
+     * of an object type, inherited ones included, as [ProjectRecordMemberResolver] finds it, with the package its
+     * field is looked up from. Null when the member is not one field or attribute (a method, a collection method, no such
+     * member, several, or an attribute list not fully known), or [type] is no such type of this snapshot.
+     */
+    @JvmSynthetic
+    internal fun memberType(type: ProjectDeclarationId, name: OracleIdentifier): ProjectMemberType? {
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) return null
+        val declaration = occurrenceOf(type)?.declaration as? ProjectTypeDeclaration ?: return null
+        // Built per call: the snapshot retains only durable facts.
+        val resolved = ProjectRecordMemberResolver(callContext()).resolve(declaration, name) as? ProjectRecordMemberResolution.Resolved ?: return null
+        val owner = (resolved.declaration as? PackageTypeDeclaration)?.owner?.let(ProjectQualifiedName::wrap)
+        return ProjectMemberType(ProjectTypeReference.from(resolved.field.typeRef), owner)
+    }
+
     /** The canonical occurrence behind an ID issued by this snapshot, or null. */
     @JvmSynthetic
     internal fun occurrenceOf(id: ProjectDeclarationId): IndexedDeclaration? =
@@ -351,3 +367,7 @@ class ProjectSnapshot private constructor(
         ) = ProjectSnapshot(preparationResult, preparationState, failures, fileIds)
     }
 }
+
+/** The written type of a record field or object attribute, and the package it is looked up from (null for a schema type). */
+@OptIn(ZpaExperimentalApi::class)
+internal class ProjectMemberType(val typeRef: ProjectTypeReference, val owner: ProjectQualifiedName?)
