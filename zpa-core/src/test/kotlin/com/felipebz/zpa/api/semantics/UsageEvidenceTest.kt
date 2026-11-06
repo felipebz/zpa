@@ -855,4 +855,36 @@ class UsageEvidenceTest {
         assertThat(nameBindings(text).filter { it.startsWith("7:") && !it.contains(":L=") })
             .containsExactly("7:LENGTHB=Unavailable(NOT_A_COVERED_NAME)", "7:SUBSTRB=Unavailable(NOT_A_COVERED_NAME)")
     }
+
+    @Test
+    fun theTypesOfSpecificationHeadingsAreCategorizedAsInABody() {
+        val spec = "create or replace package p as\n" +
+            "  type t_rec is record (n number);\n" +
+            "  g_n number;\n" +
+            "  procedure run(a number, b varchar2, c t_rec, d g_n%type);\n" +
+            "  function total(a number) return varchar2;\n" +
+            "end;\n/\n"
+        val body = "create or replace package body p as\n" +
+            "  procedure run(a number, b varchar2, c t_rec, d g_n%type) is begin null; end;\n" +
+            "  function total(a number) return varchar2 is begin return null; end;\n" +
+            "end;\n/\n"
+        val expected = listOf(
+            "number=Scalar(NUMERIC)", "varchar2=Scalar(CHARACTER)", "t_rec=Record(RECORD_TYPE)", "g_n=Scalar(NUMERIC)",
+            "number=Scalar(NUMERIC)", "varchar2=Scalar(CHARACTER)"
+        )
+        val rows = typeCategories(spec + body).map { it.substringBefore(':').toInt() to it.substringAfter(':') }
+        // The field's and the variable's types come first; then the heading (lines 4 and 5) and the body (lines 9 and 10).
+        assertThat(rows.filter { it.first in 4..5 }.map { it.second }).isEqualTo(expected)
+        assertThat(rows.filter { it.first in 9..10 }.map { it.second }).isEqualTo(expected)
+    }
+
+    @Test
+    fun theParametersOfObjectTypeMethodHeadingsAreCategorized() {
+        val text = "create or replace type t_obj as object (\n  n number,\n" +
+            "  member procedure put(p_value varchar2, p_when date),\n" +
+            "  constructor function t_obj(p_n number) return self as result\n);\n/\n"
+        assertThat(typeCategories(text)).containsExactly(
+            "2:number=Scalar(NUMERIC)", "3:varchar2=Scalar(CHARACTER)", "3:date=Scalar(DATETIME)", "4:number=Scalar(NUMERIC)"
+        )
+    }
 }

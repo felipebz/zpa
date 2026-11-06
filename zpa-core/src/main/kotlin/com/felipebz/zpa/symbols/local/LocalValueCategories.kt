@@ -160,11 +160,12 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     private val typeUses: Map<Pair<Int, Int>, LocalTypeUse> by lazy {
         val uses = model.declarations.mapNotNull { it.type } +
             model.declarations.mapNotNull { (it.details as? LocalSubprogram)?.returnType } +
+            model.declarations.flatMap { declaration -> (declaration.details as? LocalSubprogram)?.parameters.orEmpty().mapNotNull { it.type } } +
             model.declarations.flatMap { declaration -> (declaration.details as? LocalRecordType)?.fields.orEmpty().mapNotNull { it.type } }
         uses.associateBy { it.range.startLine to it.range.startColumn }
     }
 
-    /** The category of the type a `DATATYPE` node writes: a declaration's or a function's RETURN type. */
+    /** The category of the type a `DATATYPE` node writes: a declaration's, a parameter's or a function's RETURN type. */
     fun typeCategory(datatype: AstNode): ValueCategory {
         if (datatype.type !== PlSqlGrammar.DATATYPE) return unavailable()
         val use = typeUses[datatype.token.line to datatype.token.column] ?: return unavailable()
