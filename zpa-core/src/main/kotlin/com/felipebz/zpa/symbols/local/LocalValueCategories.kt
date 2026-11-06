@@ -9,11 +9,14 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.NamedTypeRef
+import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.symbols.callArguments
 import java.util.*
 
 /**
@@ -28,65 +31,207 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
 
     fun category(name: AstNode): ValueCategory {
+        receiverOf(name)?.let { receiver ->
+            val walked = receivers.getOrPut(receiver) { walkReceiver(receiver) } ?: return unavailable()
+            return walked.evidence[name]?.let { of(walked.region, it) } ?: unavailable()
+        }
         val written = writtenSegments(name) ?: return unavailable()
         val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
         val reference = facts.references[index]
         if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
-        val steps = facts.resolutions[index]
+        return of(reference.region, nameEvidence(reference, facts.resolutions[index].map(::fieldStep), reference.segments.size))
+    }
+
+    private val calls by lazy { facts.calls.associateBy { it.reference.range.startLine to it.reference.range.startColumn } }
+
+    /** The walked receivers, by their `OBJECT_REFERENCE`; null for one this does not model. */
+    private val receivers = IdentityHashMap<AstNode, Walked?>()
+
+    /** The evidence of an `OBJECT_REFERENCE` and of each of its member items, read from [region]. */
+    private class Walked(val region: LocalRegionId, val evidence: Map<AstNode, LocalTypeEvidence>)
+
+    /**
+     * The `OBJECT_REFERENCE` that [name] is, or whose member item (or the name of a call item) [name] is: a member written
+     * after an element or a call result. Null for any other node, the receiver's first child included.
+     */
+    private fun receiverOf(name: AstNode): AstNode? {
+        if (name.type === PlSqlGrammar.OBJECT_REFERENCE) return name
+        if (name.type !== PlSqlGrammar.VARIABLE_NAME && name.type !== PlSqlGrammar.MEMBER_EXPRESSION && name.type !== PlSqlGrammar.METHOD_CALL) return null
+        var current = name
+        while (current.parentOrNull?.type === PlSqlGrammar.METHOD_CALL && current.parent.firstChild === current) current = current.parent
+        val parent = current.parentOrNull ?: return null
+        return parent.takeIf { it.type === PlSqlGrammar.OBJECT_REFERENCE && it.firstChild !== current }
+    }
+
+    /**
+     * Walks a receiver: the value its first child gives (an element of a collection, one step per argument list, or
+     * the result of a call bound to one function or method), then each member item after it. Receivers in SQL, and
+     * first children of another form, are not modeled.
+     */
+    private fun walkReceiver(receiver: AstNode): Walked? {
+        val head = receiver.firstChild.takeIf { it.type === PlSqlGrammar.METHOD_CALL } ?: return null
+        val (callee, lists) = callParts(head)
+        if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return null
+        val index = referencesByStart[callee.token.line to callee.token.column] ?: return null
+        val reference = facts.references[index]
+        if (reference.sql != null || reference.lastSegmentContext != LocalReferenceContext.CALL_EXPRESSION) return null
+        if (writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
+        val region = reference.region
+        val evidence = IdentityHashMap<AstNode, LocalTypeEvidence>()
+        var current = head(reference, facts.resolutions[index].map(::fieldStep), lists, region)
+        for (item in receiver.children.drop(1)) {
+            when (item.type) {
+                PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION -> current = walk.members(current, names(item), region)
+                PlSqlGrammar.METHOD_CALL -> current = callItem(item, current, region, evidence)
+                else -> if (item.type !== PlSqlPunctuator.DOT) current = LocalTypeEvidence.unknown("item ${item.type}")
+            }
+            if (item.type !== PlSqlPunctuator.DOT) evidence[item] = current
+        }
+        if (receiver.parentOrNull?.type === PlSqlGrammar.CALL_STATEMENT) current = procedureCall(receiver, evidence)
+        evidence[receiver] = current
+        return Walked(region, evidence)
+    }
+
+    /** A call statement's last item calls a procedure: neither it nor the statement has a value. */
+    private fun procedureCall(receiver: AstNode, evidence: MutableMap<AstNode, LocalTypeEvidence>): LocalTypeEvidence {
+        val none = LocalTypeEvidence.unknown("a procedure call")
+        var call: AstNode = receiver.children.last()
+        while (call.type === PlSqlGrammar.METHOD_CALL) {
+            evidence[call] = none
+            call = call.firstChild
+        }
+        return none
+    }
+
+    /** The innermost name of a call `name(…)(…)`, and its argument lists in written order. */
+    private fun callParts(call: AstNode): Pair<AstNode, List<AstNode>> {
+        val calls = ArrayList<AstNode>()
+        var current = call
+        while (current.type === PlSqlGrammar.METHOD_CALL) {
+            calls += current
+            current = current.firstChild
+        }
+        return current to calls.asReversed().flatMap { it.getChildren(PlSqlGrammar.ARGUMENTS) }
+    }
+
+    private fun names(item: AstNode): List<OracleIdentifier> =
+        if (item.type === PlSqlGrammar.VARIABLE_NAME) listOf(LocalSyntax.identifier(item.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)))
+        else item.children.filter { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME }
+            .map { LocalSyntax.identifier(it.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: it) }
+
+    /**
+     * The value of the first child of a receiver, `name(…)…`: the result of a call the call analysis binds to one local
+     * or project function, else an element of the collection the name gives (one step per list), else the result of a
+     * method call `v.m(…)` on a value of a project object type. Text a `$IF` or a substitution touches keeps it undecided.
+     */
+    private fun head(reference: LocalReference, steps: List<LocalResolution>, lists: List<AstNode>, region: LocalRegionId): LocalTypeEvidence {
+        steps.map(::covered).filterIsInstance<LocalResolution.Incomplete>().firstOrNull { it.regionReasons.isNotEmpty() }
+            ?.let { return LocalTypeEvidence.unknown("undecided text", incomplete = it) }
+        val analysis = calls[reference.range.startLine to reference.range.startColumn]
+        when {
+            analysis?.outcome == LocalCallOutcome.PROJECT && analysis.typed?.status == ProjectTypedCallResolution.Status.RESOLVED ->
+                return elements(walk.projectResult(analysis.typed, region), lists.drop(1), region)
+            analysis?.outcome == LocalCallOutcome.LOCAL_CAPTURE && analysis.local != null -> {
+                // A call that binds no single candidate is unknown: Oracle rejects it (PLS-00307), or the candidates differ
+                // only by argument types, which this analysis does not compare.
+                val selected = analysis.local.selected ?: return LocalTypeEvidence.unknown("local call ${analysis.local.status}")
+                return elements(walk.result(selected), lists.drop(1), region)
+            }
+        }
+        val value = nameEvidence(reference, steps, reference.segments.size)
+        if (value.terminal != LocalTypeEvidence.Terminal.UNKNOWN || value.incomplete != null || reference.segments.isEmpty()) return elements(value, lists, region)
+        // `v.m(…)`: a method of the value's object type.
+        val receiver = nameEvidence(reference, steps, reference.segments.size - 1)
+        val result = walk.methodResult(receiver, reference.segments.last().name, callArguments(lists.first()), region)
+        return elements(result, lists.drop(1), region)
+    }
+
+    /** A call item `.m(…)…` or `.f(i)…` after [before]: a method's result, or an element of a collection member. */
+    private fun callItem(item: AstNode, before: LocalTypeEvidence, region: LocalRegionId, evidence: MutableMap<AstNode, LocalTypeEvidence>): LocalTypeEvidence {
+        val (callee, lists) = callParts(item)
+        if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return LocalTypeEvidence.unknown("call item ${callee.type}")
+        val names = names(callee)
+        val owner = walk.members(before, names.dropLast(1), region)
+        val member = walk.members(owner, names.takeLast(1), region)
+        evidence[callee] = member
+        val result = if (member.terminal == LocalTypeEvidence.Terminal.UNKNOWN && member.incomplete == null && owner.terminal == LocalTypeEvidence.Terminal.PROJECT) {
+            elements(walk.methodResult(owner, names.last(), callArguments(lists.first()), region), lists.drop(1), region)
+        } else {
+            elements(member, lists, region)
+        }
+        var call = callee.parent
+        while (call !== item) { evidence[call] = result; call = call.parent }
+        return result
+    }
+
+    /** An element per argument list: each indexes the collection before it with one positional actual. */
+    private fun elements(evidence: LocalTypeEvidence, lists: List<AstNode>, region: LocalRegionId): LocalTypeEvidence =
+        lists.fold(evidence) { current, list ->
+            val arguments = list.getChildren(PlSqlGrammar.ARGUMENT)
+            if (arguments.size != 1 || arguments.single().hasDirectChildren(PlSqlPunctuator.ASSOCIATION)) {
+                if (current.terminal == LocalTypeEvidence.Terminal.UNKNOWN) current else LocalTypeEvidence.unknown("not one index")
+            } else {
+                walk.element(current, region)
+            }
+        }
+
+    /**
+     * Evidence of the value the first [count] segments after the first name of [reference] give: a local value or field,
+     * a member of a specification in another file, a package value of another file, a member chain the project types,
+     * or a name in SQL a column may take. Both [category] and the first child of a receiver read a name's value here.
+     */
+    private fun nameEvidence(reference: LocalReference, steps: List<LocalResolution>, count: Int): LocalTypeEvidence {
+        val region = reference.region
+        val segments = reference.segments.take(count)
+        val target = QualifiedName(listOf(reference.name) + segments.map { it.name })
         val first = steps.first()
-        val target = QualifiedName(listOf(reference.name) + reference.segments.map { it.name })
         if (LocalReferenceOutcomes.isSpecificationMember(first)) {
-            walk.specificationMember(target.segments, reference.region)?.let { return of(reference.region, walk.projectChain(it, reference.region)) }
-            // A member of an object type whose specification is in another file, named alone in its body.
-            return walk.enclosingType(reference.region)?.let { of(reference.region, walk.members(it, target.segments, reference.region)) }
-                ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+            walk.specificationMember(target.segments, region)?.let { return walk.projectChain(it, region) }
+            return walk.enclosingType(region)?.let { walk.members(it, target.segments, region) } ?: outsideFile()
         }
-        if (LocalReferenceOutcomes.isAbsent(first)) {
-            // One segment: a built-in, a function or a column; a qualified one is a schema object's value.
-            return if (reference.segments.isEmpty()) unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            else of(reference.region, walk.projectChain(target, reference.region))
+        if (LocalReferenceOutcomes.isAbsent(first)) return if (count == 0) outsideFile() else walk.projectChain(target, region)
+        val relevant = steps.take(count + 1)
+        if (relevant.drop(1).any(LocalReferenceOutcomes::isSpecificationMember) && relevant.none { covered(it) is LocalResolution.Incomplete }) {
+            return walk.projectChain(target, region)
         }
-        // `pkg.v…` in the body of `pkg`, with `v` a member of its specification in another file.
-        if (steps.drop(1).any(LocalReferenceOutcomes::isSpecificationMember) && steps.none { covered(it) is LocalResolution.Incomplete }) {
-            return of(reference.region, walk.projectChain(target, reference.region))
+        val stop = relevant.indexOfFirst { needsProjectMember(it) }
+        if (stop >= 1 && stop == relevant.lastIndex) {
+            relevant.subList(0, stop).map(::covered).filterIsInstance<LocalResolution.Incomplete>().firstOrNull()
+                ?.let { return LocalTypeEvidence.unknown("undecided", incomplete = it) }
+            val base = covered(relevant[stop - 1])
+            val evidence = when {
+                base is LocalResolution.ImplicitSelf || isSelfParameter(base) -> walk.enclosingType(region)
+                covered(relevant[stop]) is LocalResolution.Incomplete -> null
+                else -> walk.outcome(base)
+            }
+            if (evidence != null) return walk.members(evidence, segments.drop(stop - 1).map { it.name }, region)
         }
-        projectMembers(reference, steps)?.let { return it }
-        val last = covered(steps.last())
-        if (last is LocalResolution.Incomplete) return ValueCategory.Unknown(reasons(last))
-        if (steps.size != reference.segments.size + 1) return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+        val last = covered(relevant.last())
+        if (last is LocalResolution.Incomplete) return LocalTypeEvidence.unknown("undecided", incomplete = last)
+        if (relevant.size != count + 1) return LocalTypeEvidence.unknown("stopped at $last")
         return when (last) {
             // In SQL a column of the same name would take it.
             is LocalResolution.SqlColumnOrLocal ->
-                if (reference.sql?.excludesColumn(reference.name) == true) of(reference.region, walk.value(last.declaration))
-                else unknown(UsageUncertainty.SQL_NAME_MAY_BE_COLUMN)
+                if (reference.sql?.excludesColumn(reference.name) == true) walk.value(last.declaration)
+                else LocalTypeEvidence.unknown("a column may take it", incomplete = LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SQL_COLUMN_UNKNOWN), last))
             // `name(…)` in SQL: the local value, whose elements the call reads.
-            is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let { of(reference.region, walk.value(it)) }
-                ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-            else -> of(reference.region, walk.outcome(last))
+            is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let(walk::value) ?: LocalTypeEvidence.unknown("several declarations")
+            else -> walk.outcome(last)
         }
     }
 
     /**
-     * A member chain the local steps leave to the project: they stop at a member of a value whose type the file does
-     * not declare, or at a member of `SELF` in the body of an object type whose specification is in another file. The
-     * steps before must be decided; each member from there is a step through the project's description of the type
-     * reached ([LocalTypeWalk.member]). Null when the steps do not stop so.
+     * A field of a record type declared in a package body whose specification is in another file: the resolver keeps
+     * the specification's gap on the step, but a record's fields are its own, whatever the specification declares.
      */
-    private fun projectMembers(reference: LocalReference, steps: List<LocalResolution>): ValueCategory? {
-        val stop = steps.indexOfFirst { needsProjectMember(it) }
-        if (stop < 1 || stop != steps.lastIndex) return null
-        steps.subList(0, stop).firstOrNull { covered(it) is LocalResolution.Incomplete }?.let { return ValueCategory.Unknown(reasons(covered(it) as LocalResolution.Incomplete)) }
-        val base = covered(steps[stop - 1])
-        val stopped = covered(steps[stop])
-        val evidence = when {
-            base is LocalResolution.ImplicitSelf || isSelfParameter(base) -> walk.enclosingType(reference.region) ?: return null
-            // Only SELF's members wait for a specification in another file.
-            stopped is LocalResolution.Incomplete -> return null
-            else -> walk.outcome(base)
-        }
-        val members = reference.segments.drop(stop - 1).map { it.name }
-        return of(reference.region, walk.members(evidence, members, reference.region))
-    }
+    private fun fieldStep(step: LocalResolution): LocalResolution =
+        if (step is LocalResolution.Incomplete && step.regionReasons.isEmpty() && step.lookupReasons == setOf(LocalLookupGap.SPECIFICATION_NOT_IN_FILE) &&
+            step.provisional is LocalResolution.Field
+        ) step.provisional else step
+
+    private fun outsideFile() = LocalTypeEvidence.unknown(
+        "declared outside the file", incomplete = LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE), LocalResolution.ProvenAbsent)
+    )
 
     /** `SELF` written as a parameter of a method (`SELF IN OUT t` of a constructor). */
     private fun isSelfParameter(outcome: LocalResolution): Boolean =

@@ -153,9 +153,12 @@ class ValueCategoryMemberTest {
         ).build()
         val rows = mapOf("r.sql" to "create procedure r is e employees%rowtype; y employees.id%type; x number; begin x := e.id; x := e.name; x := e.nope; x := y; end;\n/\n")
         val context = prepared(rows).withExternalContext(ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("\"HR\"")))
-        // A column of the row is categorized as the column's `%TYPE` is (`y`), by the same rules.
-        val answers = assigned("r.sql", context, rows).map { it.substringAfter(':') }
-        assertThat(answers.take(2).map { it.substringAfter('=') }).containsOnly(answers.last().substringAfter('='))
+        // A column of the row is categorized as the column's `%TYPE` is (`y`): the category does not read external
+        // column types yet, so both are undecided. A column the table does not have is undecided too.
+        assertThat(assigned("r.sql", context, rows)).containsExactly(
+            "1:e.id=Unknown[DECLARATION_OUTSIDE_FILE]", "1:e.name=Unknown[DECLARATION_OUTSIDE_FILE]",
+            "1:e.nope=Unknown[DECLARATION_OUTSIDE_FILE]", "1:y=Unknown[DECLARATION_OUTSIDE_FILE]"
+        )
         // Without the metadata, nothing confirms the row's columns.
         assertThat(assigned("r.sql", prepared(rows), rows)).allMatch { it.substringAfter('=').startsWith("Unknown") }
     }

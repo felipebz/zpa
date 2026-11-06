@@ -11,6 +11,8 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
+import com.felipebz.zpa.api.project.ProjectTypeShape as PublicTypeShape
+import com.felipebz.zpa.project.ProjectCallArguments as InternalCallArguments
 
 /**
  * Datatype evidence of a local value, as an AST-detached fact: the [argumentType] given to
@@ -172,7 +174,7 @@ internal class LocalTypeWalk(
     fun enclosingType(region: LocalRegionId): LocalTypeEvidence? {
         val body = LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.TYPE_BODY } ?: return null
         val unit = LocalTypeScope.unitOf(model, body.id) ?: return null
-        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown("no prepared project")
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
         val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(unit.unitName), null, metadata, compilationSchema(region))
         return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
@@ -190,7 +192,13 @@ internal class LocalTypeWalk(
      * unknown.
      */
     fun member(evidence: LocalTypeEvidence, name: OracleIdentifier, region: LocalRegionId): LocalTypeEvidence {
-        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown("no prepared project")
+        localRecord(evidence)?.let { record ->
+            val fields = (record.details as LocalRecordType).fields
+            val ordinal = fields.indexOfFirst { it.name == name }.takeIf { it >= 0 && fields.count { field -> field.name == name } == 1 }
+                ?: return LocalTypeEvidence.unknown("$name is not one field of ${record.name}")
+            return field(record.id, ordinal)
+        }
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
         val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT }
             ?: return LocalTypeEvidence.unknown("member $name of a value the project does not describe")
         if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) {
@@ -206,8 +214,53 @@ internal class LocalTypeWalk(
         val type = description.source.declaration.orElse(null)?.takeIf { description.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?: return LocalTypeEvidence.unknown("member $name of a value of no declared project type")
         val member = snapshot.memberType(type.id, name) ?: return LocalTypeEvidence.unknown("$name is not one field or attribute of ${type.qualifiedName}")
-        val described = snapshot.describeExternalType(member.typeRef, member.owner, metadata, compilationSchema(region))
+        return described(snapshot, member, region)
+    }
+
+    private fun described(snapshot: ProjectSnapshot, member: ProjectMemberType, region: LocalRegionId): LocalTypeEvidence {
+        val schema = compilationSchema(region)
+        val typeRef = member.typeRef
+        val described = if (typeRef != null) snapshot.describeExternalType(typeRef, member.owner, metadata, schema)
+        else snapshot.describeExternalType(member.typeName ?: return LocalTypeEvidence.unknown("no member type"), null, metadata, schema)
         return LocalTypeEvidence(ProjectArgumentType.described(described, member.owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
+    /** The local record type [evidence] ends at, or null. */
+    private fun localRecord(evidence: LocalTypeEvidence): LocalDeclaration? =
+        evidence.followed.lastOrNull()?.let(model::declaration)
+            ?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.COMPOSITE && it.kind == RECORD_TYPE }
+
+    /**
+     * Evidence of an element of the collection value [evidence] gives, indexed once (`v(i)`): the element type of a
+     * local collection type, or the project's description of a project collection type's element. Anything else is
+     * unknown; an undecided value stays so.
+     */
+    fun element(evidence: LocalTypeEvidence, region: LocalRegionId): LocalTypeEvidence {
+        if (evidence.terminal == LocalTypeEvidence.Terminal.UNKNOWN) return evidence
+        val local = evidence.followed.lastOrNull()?.let(model::declaration)
+        if (evidence.terminal == LocalTypeEvidence.Terminal.COMPOSITE) {
+            return local?.takeIf { it.kind == COLLECTION_TYPE }?.let { written(it.type) } ?: LocalTypeEvidence.unknown("an element of a value that is not a collection")
+        }
+        val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT && it.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
+            ?: return LocalTypeEvidence.unknown("an element of a value of no declared type")
+        val collection = (description.source.declaration.orElse(null) as? ProjectShapedTypeView)?.takeIf { it.shape.orElse(null) == PublicTypeShape.COLLECTION }
+            ?: return LocalTypeEvidence.unknown("an element of a value that is not a collection")
+        val element = projectElement(collection, region) ?: return LocalTypeEvidence.unknown("no element type")
+        val owner = (collection as? ProjectPackageTypeView)?.owner
+        return LocalTypeEvidence(ProjectArgumentType.described(element, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, element)
+    }
+
+    /**
+     * Evidence of the result of calling the method [name] with [arguments] on the value [evidence] gives, a value of an
+     * object type the project describes ([ProjectSnapshot.methodResultType]). Anything else is unknown.
+     */
+    fun methodResult(evidence: LocalTypeEvidence, name: OracleIdentifier, arguments: InternalCallArguments, region: LocalRegionId): LocalTypeEvidence {
+        if (evidence.terminal == LocalTypeEvidence.Terminal.UNKNOWN) return evidence
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        val type = evidence.description?.source?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT && it.status == ProjectTypeDescription.Status.DECLARED_TYPE }
+            ?.declaration?.orElse(null) ?: return LocalTypeEvidence.unknown("method $name of a value of no declared project type")
+        val result = snapshot.methodResultType(type.id, name, arguments) ?: return LocalTypeEvidence.unknown("$name binds no single function of ${type.qualifiedName}")
+        return described(snapshot, result, region)
     }
 
     /**
@@ -428,3 +481,4 @@ internal class LocalTypeWalk(
 }
 
 private const val NO_WRITTEN_TYPE = "no written type"
+private const val NO_PREPARED_PROJECT = "no prepared project"

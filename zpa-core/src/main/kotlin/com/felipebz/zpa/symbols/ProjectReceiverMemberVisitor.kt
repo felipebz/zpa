@@ -433,10 +433,3 @@ internal class ProjectReceiverMemberVisitor(
         }
     }
 }
-
-/** The structural arguments of an `ARGUMENTS` node: positional, or named by `=>`. */
-internal fun callArguments(arguments: AstNode): ProjectCallArguments =
-    ProjectCallArguments.of(arguments.getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
-        if (argument.hasDirectChildren(PlSqlPunctuator.ASSOCIATION)) ProjectCallArgument.named(OracleIdentifier.fromSource(argument.firstChild.tokenOriginalValue))
-        else ProjectCallArgument.positional()
-    })

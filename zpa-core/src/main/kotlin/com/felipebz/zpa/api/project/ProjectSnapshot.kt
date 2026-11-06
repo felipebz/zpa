@@ -313,6 +313,26 @@ class ProjectSnapshot private constructor(
         return ProjectMemberType(ProjectTypeReference.from(resolved.field.typeRef), owner)
     }
 
+    /**
+     * The result of calling the method [name], with [arguments], on a value of the object type [type]: the RETURN type
+     * of the one method the call binds ([ProjectMethodCallBinder]), or the type itself for a function returning `SELF`
+     * as result. Null when the call binds no single method (ambiguous, several applicable, none, a procedure, an
+     * incomplete set), or [name] names no method.
+     */
+    @JvmSynthetic
+    internal fun methodResultType(type: ProjectDeclarationId, name: OracleIdentifier, arguments: com.felipebz.zpa.project.ProjectCallArguments): ProjectMemberType? {
+        if (preparationState == ProjectPreparationState.NOT_PREPARED) return null
+        val declaration = occurrenceOf(type)?.declaration as? ProjectTypeDeclaration ?: return null
+        val members = ProjectRecordMemberResolver(callContext())
+        val methods = members.resolve(declaration, name) as? ProjectRecordMemberResolution.Method ?: return null
+        val call = ProjectMethodCallBinder(members).bind(methods, ProjectMethodReceiver.VALUE, InternalCallKind.FUNCTION, arguments)
+        if (call.status != ProjectMethodCall.Status.RESOLVED) return null
+        val selected = call.selected ?: return null
+        val method = selected.method
+        if (method == null || method.returnsSelf) return ProjectMemberType(null, null, ProjectQualifiedName.wrap(selected.type.name))
+        return method.returnType?.let { ProjectMemberType(ProjectTypeReference.from(it), null) }
+    }
+
     /** The canonical occurrence behind an ID issued by this snapshot, or null. */
     @JvmSynthetic
     internal fun occurrenceOf(id: ProjectDeclarationId): IndexedDeclaration? =
@@ -368,6 +388,9 @@ class ProjectSnapshot private constructor(
     }
 }
 
-/** The written type of a record field or object attribute, and the package it is looked up from (null for a schema type). */
+/**
+ * The written type of a record field, an object attribute or a method's result, and the package it is looked up from
+ * (null for a schema type); or, for a method returning its own type, that type's name.
+ */
 @OptIn(ZpaExperimentalApi::class)
-internal class ProjectMemberType(val typeRef: ProjectTypeReference, val owner: ProjectQualifiedName?)
+internal class ProjectMemberType(val typeRef: ProjectTypeReference?, val owner: ProjectQualifiedName?, val typeName: ProjectQualifiedName? = null)
