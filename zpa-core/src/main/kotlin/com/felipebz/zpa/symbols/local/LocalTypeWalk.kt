@@ -296,6 +296,26 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
+    /**
+     * Evidence of a type written inside SQL: a predefined type name, else a schema type only. SQL sees neither a local
+     * nor a package type (ORA-00902), and a local declaration does not hide a schema type there.
+     */
+    fun schemaType(use: LocalTypeUse): LocalTypeEvidence {
+        val typeRef = use.typeRef as? NamedTypeRef ?: return LocalTypeEvidence.unknown("not a named type in SQL")
+        val name = typeRef.name
+        if (name.segments.size == 1 && DatatypeFamilies.ofTypeName(name.last.originalSpelling) != null) {
+            return LocalTypeEvidence(ProjectArgumentType.builtIn(name.last.originalSpelling), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+        }
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        val written = ProjectQualifiedName.wrap(name)
+        val resolution = snapshot.resolveNamedType(written, null)
+        if (resolution.status == ProjectNamedTypeResolution.Status.RESOLVED && resolution.declaration.get() !is ProjectStandaloneTypeView) {
+            return LocalTypeEvidence.unknown("SQL does not see the package type ${resolution.declaration.get().qualifiedName}")
+        }
+        val described = snapshot.describeExternalType(written, null, metadata, compilationSchema(use.lookupRegion))
+        return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
     /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
     fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown(NO_WRITTEN_TYPE)
 

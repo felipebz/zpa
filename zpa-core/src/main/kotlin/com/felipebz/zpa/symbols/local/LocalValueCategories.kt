@@ -8,8 +8,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.semantics.*
@@ -377,36 +376,90 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val uses = model.declarations.mapNotNull { it.type } +
             model.declarations.mapNotNull { (it.details as? LocalSubprogram)?.returnType } +
             model.declarations.flatMap { declaration -> (declaration.details as? LocalSubprogram)?.parameters.orEmpty().mapNotNull { it.type } } +
-            model.declarations.flatMap { declaration -> (declaration.details as? LocalRecordType)?.fields.orEmpty().mapNotNull { it.type } }
+            model.declarations.flatMap { declaration -> (declaration.details as? LocalRecordType)?.fields.orEmpty().mapNotNull { it.type } } +
+            // Index-by key types and REF CURSOR RETURN types: PL/SQL declarations, looked up as a variable's type.
+            model.declarations.mapNotNull { (it.details as? LocalCollectionType)?.indexType } +
+            model.declarations.mapNotNull { (it.details as? LocalRefCursorType)?.returnType }
         uses.associateBy { it.range.startLine to it.range.startColumn }
     }
 
-    /** The category of the type a `DATATYPE` node writes: a declaration's, a parameter's or a function's RETURN type. */
-    fun typeCategory(datatype: AstNode): ValueCategory {
-        if (datatype.type !== PlSqlGrammar.DATATYPE) return unavailable()
-        val use = typeUses[datatype.token.line to datatype.token.column] ?: return unavailable()
-        val evidence = walk.written(use)
-        val written = use.typeRef as? NamedTypeRef
-        val refCursor = written != null && written.name.segments.size == 1 && written.name.last.lookupName == "SYS_REFCURSOR" &&
-            (evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
-        return if (refCursor) ValueCategory.CursorVariable else of(use.lookupRegion, evidence)
+    /**
+     * The category of the type a `DATATYPE` node writes: a declaration's, a parameter's or a function's RETURN type, an
+     * index-by key or a REF CURSOR RETURN type, or a type written in an expression (`TREAT`, `IS OF`, `CAST`) or a SQL
+     * column definition, looked up as [typeName] says.
+     */
+    fun typeCategory(datatype: AstNode): ValueCategory = when (val written = written(datatype)) {
+        null -> unavailable()
+        else -> if (isRefCursorName(written)) ValueCategory.CursorVariable else of(written.use.lookupRegion, written.evidence)
     }
 
     /**
      * What the named type a `DATATYPE` writes denotes, from the same walk as [typeCategory]: the first declaration it
      * reaches, local or of the project, or why there is none. Text a `$IF` or a substitution touches leaves it undecided.
+     *
+     * Where Oracle looks the name up depends on the position. A declaration's type, an index-by key, a REF CURSOR RETURN
+     * type, and `TREAT`/`IS OF` in PL/SQL follow PL/SQL scope. `TREAT`, `IS OF`, `CAST` and column types inside SQL see
+     * schema types only: neither a local nor a package type (ORA-00902), and a local declaration does not hide a schema
+     * type there. `CAST` in PL/SQL takes the same types (PLS-00382 for a local or package subtype). An
+     * external parameter's type is an external (C) datatype of a call specification, never looked up.
      */
     fun typeName(datatype: AstNode): LocalTypeName {
-        if (datatype.type !== PlSqlGrammar.DATATYPE) return LocalTypeName.Unavailable
-        val use = typeUses[datatype.token.line to datatype.token.column] ?: return LocalTypeName.Unavailable
-        if (use.typeRef !is NamedTypeRef) return LocalTypeName.Unavailable
-        val evidence = walk.written(use)
+        val written = written(datatype) ?: return LocalTypeName.Unavailable
+        val name = (written.use.typeRef as? NamedTypeRef)?.name ?: return LocalTypeName.Unavailable
+        if (written.external || isRefCursorName(written)) return LocalTypeName.BuiltIn(name.last.originalSpelling)
+        val evidence = written.evidence
         evidence.followed.firstOrNull()?.let { return LocalTypeName.Local(it, walk.projectDeclarationOf(it)) }
         return when (evidence.terminal) {
-            LocalTypeEvidence.Terminal.BUILT_IN -> LocalTypeName.BuiltIn((use.typeRef as NamedTypeRef).name.last.originalSpelling)
+            LocalTypeEvidence.Terminal.BUILT_IN -> LocalTypeName.BuiltIn(name.last.originalSpelling)
             LocalTypeEvidence.Terminal.PROJECT -> projectTypeName(evidence.description?.source)
             else -> LocalTypeName.Undecided(evidence.incomplete?.let(::reasons) ?: EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
         }
+    }
+
+    /** A written type, the use it records and the walk's evidence of it. */
+    private class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
+
+    /** `SYS_REFCURSOR` that no local declaration takes: the predefined weak cursor type. */
+    private fun isRefCursorName(written: WrittenType): Boolean {
+        val name = (written.use.typeRef as? NamedTypeRef)?.name ?: return false
+        return name.segments.size == 1 && name.last.lookupName == "SYS_REFCURSOR" && written.evidence.followed.isEmpty() &&
+            (written.evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || written.evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
+    }
+
+    private fun written(datatype: AstNode): WrittenType? {
+        if (datatype.type !== PlSqlGrammar.DATATYPE) return null
+        typeUses[datatype.token.line to datatype.token.column]?.let { return WrittenType(it, walk.written(it)) }
+        val position = datatype.parentOrNull?.type ?: return null
+        if (position !in EXPRESSION_TYPES) return null
+        val region = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, datatype))
+        val use = LocalSyntax.typeUse(model.fileId, datatype, region)
+        // Text this file may hold differently leaves the position undecided, whatever scope the name is looked up in.
+        regionIncomplete(region)?.let { return WrittenType(use, LocalTypeEvidence.unknown("undecided text", incomplete = it)) }
+        return when {
+            position === PlSqlGrammar.EXTERNAL_PARAMETER -> WrittenType(use, LocalTypeEvidence.unknown("an external datatype"), external = true)
+            // CAST takes a predefined or a schema type, in PL/SQL as in SQL.
+            inSql(datatype) || position === SingleRowSqlFunctionsGrammar.CAST_EXPRESSION -> WrittenType(use, walk.schemaType(use))
+            else -> WrittenType(use, walk.written(use))
+        }
+    }
+
+    /** The reasons of the regions [region] is looked up through, as an incomplete outcome; null when all are complete. */
+    private fun regionIncomplete(region: LocalRegionId): LocalResolution.Incomplete? {
+        val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
+        LocalResolver.chain(model, region).forEach { reasons += it.completeness.reasons }
+        return if (reasons.isEmpty()) null else LocalResolution.Incomplete(reasons, emptySet(), LocalResolution.ProvenAbsent)
+    }
+
+    /** Inside SQL, outside an `INTO` clause: a SQL statement, a table definition, or an `XMLTABLE`. */
+    private fun inSql(node: AstNode): Boolean {
+        if (node.parent.type === DdlGrammar.TABLE_COLUMN_DEFINITION || node.parent.type === SingleRowSqlFunctionsGrammar.XML_TABLE_COLUMN) return true
+        var current = node.parentOrNull
+        while (current != null) {
+            if (current.type === DmlGrammar.INTO_CLAUSE) return false
+            if (current.type in SQL_STATEMENTS) return true
+            current = current.parentOrNull
+        }
+        return false
     }
 
     /** The first declaration the project's description reached: its first subtype step, else the type it ends at. */
@@ -435,6 +488,16 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     private fun unavailable() = ValueCategory.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
 
     private companion object {
+        /** Positions whose written type is not a declaration of the model: expressions, SQL columns, external parameters. */
+        val EXPRESSION_TYPES = setOf(
+            SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION, ConditionsGrammar.IS_OF_CONDITION, SingleRowSqlFunctionsGrammar.CAST_EXPRESSION,
+            SingleRowSqlFunctionsGrammar.XML_TABLE_COLUMN, DdlGrammar.TABLE_COLUMN_DEFINITION, PlSqlGrammar.EXTERNAL_PARAMETER
+        )
+        val SQL_STATEMENTS = setOf(
+            DmlGrammar.SELECT_EXPRESSION, DmlGrammar.INSERT_EXPRESSION, DmlGrammar.UPDATE_EXPRESSION, DmlGrammar.DELETE_EXPRESSION,
+            DmlGrammar.MERGE_EXPRESSION
+        )
+
         /** The gaps of a lookup in an object type whose specification or supertype is in another file. */
         val TYPE_GAPS: Set<LocalLookupGap> = EnumSet.of(LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE)
 
