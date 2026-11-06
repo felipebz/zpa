@@ -39,6 +39,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
         val reference = facts.references[index]
         if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
+        if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return unavailable()
         return of(reference.region, nameEvidence(reference, facts.resolutions[index].map(::fieldStep), reference.segments.size))
     }
 
@@ -74,8 +75,8 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return null
         val index = referencesByStart[callee.token.line to callee.token.column] ?: return null
         val reference = facts.references[index]
-        if (reference.sql != null || reference.lastSegmentContext != LocalReferenceContext.CALL_EXPRESSION) return null
-        if (writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
+        if (!inPlSqlOrValues(reference) || writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
+        if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return null
         val region = reference.region
         val evidence = IdentityHashMap<AstNode, LocalTypeEvidence>()
         var current = head(reference, facts.resolutions[index].map(::fieldStep), lists, region)
@@ -91,6 +92,20 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         evidence[receiver] = current
         return Walked(region, evidence)
     }
+
+    /**
+     * A receiver read in PL/SQL, or in the `VALUES` of a single-table `INSERT`, which has no table columns in scope.
+     * Receivers in other SQL are not modeled.
+     */
+    private fun inPlSqlOrValues(reference: LocalReference): Boolean =
+        reference.sql == null && (reference.lastSegmentContext == LocalReferenceContext.CALL_EXPRESSION || reference.lastSegmentContext == LocalReferenceContext.SQL_CALL)
+
+    /**
+     * `name(…)` in SQL that a SQL built-in function of that name takes, whatever local value has the name (the built-in
+     * is called): there is no value to categorize.
+     */
+    private fun sqlFunctionMayTake(reference: LocalReference, outcome: LocalResolution): Boolean =
+        reference.segments.isEmpty() && covered(outcome) is LocalResolution.SqlBuiltinOrLocal && SqlBuiltinFunctions.mayTake(reference.name)
 
     /** A call statement's last item calls a procedure: neither it nor the statement has a value. */
     private fun procedureCall(receiver: AstNode, evidence: MutableMap<AstNode, LocalTypeEvidence>): LocalTypeEvidence {
@@ -137,6 +152,11 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
                 val selected = analysis.local.selected ?: return LocalTypeEvidence.unknown("local call ${analysis.local.status}")
                 return elements(walk.result(selected), lists.drop(1), region)
             }
+        }
+        // An object type's constructor, user-defined or the default one: nothing local takes the name.
+        if (LocalReferenceOutcomes.isAbsent(steps.first())) {
+            walk.constructorResult(QualifiedName(listOf(reference.name) + reference.segments.map { it.name }), region)
+                ?.let { return elements(it, lists.drop(1), region) }
         }
         val value = nameEvidence(reference, steps, reference.segments.size)
         if (value.terminal != LocalTypeEvidence.Terminal.UNKNOWN || value.incomplete != null || reference.segments.isEmpty()) return elements(value, lists, region)
@@ -194,30 +214,41 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         if (relevant.drop(1).any(LocalReferenceOutcomes::isSpecificationMember) && relevant.none { covered(it) is LocalResolution.Incomplete }) {
             return walk.projectChain(target, region)
         }
-        val stop = relevant.indexOfFirst { needsProjectMember(it) }
-        if (stop >= 1 && stop == relevant.lastIndex) {
-            relevant.subList(0, stop).map(::covered).filterIsInstance<LocalResolution.Incomplete>().firstOrNull()
-                ?.let { return LocalTypeEvidence.unknown("undecided", incomplete = it) }
-            val base = covered(relevant[stop - 1])
-            val evidence = when {
-                base is LocalResolution.ImplicitSelf || isSelfParameter(base) -> walk.enclosingType(region)
-                covered(relevant[stop]) is LocalResolution.Incomplete -> null
-                else -> walk.outcome(base)
-            }
-            if (evidence != null) return walk.members(evidence, segments.drop(stop - 1).map { it.name }, region)
-        }
+        projectMemberSteps(relevant, segments, region)?.let { return it }
         val last = covered(relevant.last())
         if (last is LocalResolution.Incomplete) return LocalTypeEvidence.unknown("undecided", incomplete = last)
         if (relevant.size != count + 1) return LocalTypeEvidence.unknown("stopped at $last")
-        return when (last) {
-            // In SQL a column of the same name would take it.
-            is LocalResolution.SqlColumnOrLocal ->
-                if (reference.sql?.excludesColumn(reference.name) == true) walk.value(last.declaration)
-                else LocalTypeEvidence.unknown("a column may take it", incomplete = LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SQL_COLUMN_UNKNOWN), last))
-            // `name(…)` in SQL: the local value, whose elements the call reads.
-            is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let(walk::value) ?: LocalTypeEvidence.unknown("several declarations")
-            else -> walk.outcome(last)
-        }
+        return lastStep(reference, last)
+    }
+
+    /**
+     * The member steps the local steps leave to the project: they stop at a member of a value whose type the file does
+     * not declare, or at a member of `SELF` in the body of an object type whose specification is in another file. The
+     * steps before must be decided. Null when the steps do not stop so.
+     */
+    private fun projectMemberSteps(relevant: List<LocalResolution>, segments: List<LocalSegment>, region: LocalRegionId): LocalTypeEvidence? {
+        val stop = relevant.indexOfFirst { needsProjectMember(it) }
+        if (stop < 1 || stop != relevant.lastIndex) return null
+        relevant.subList(0, stop).map(::covered).filterIsInstance<LocalResolution.Incomplete>().firstOrNull()
+            ?.let { return LocalTypeEvidence.unknown("undecided", incomplete = it) }
+        val base = covered(relevant[stop - 1])
+        val evidence = when {
+            base is LocalResolution.ImplicitSelf || isSelfParameter(base) -> walk.enclosingType(region)
+            covered(relevant[stop]) is LocalResolution.Incomplete -> null
+            else -> walk.outcome(base)
+        } ?: return null
+        return walk.members(evidence, segments.drop(stop - 1).map { it.name }, region)
+    }
+
+    /** The value the decided last step of a name gives; a name in SQL a column may take stays undecided. */
+    private fun lastStep(reference: LocalReference, last: LocalResolution): LocalTypeEvidence = when (last) {
+        // In SQL a column of the same name would take it.
+        is LocalResolution.SqlColumnOrLocal ->
+            if (reference.sql?.excludesColumn(reference.name) == true) walk.value(last.declaration)
+            else LocalTypeEvidence.unknown("a column may take it", incomplete = LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SQL_COLUMN_UNKNOWN), last))
+        // `name(…)` in SQL: the local value, whose elements the call reads.
+        is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let(walk::value) ?: LocalTypeEvidence.unknown("several declarations")
+        else -> walk.outcome(last)
     }
 
     /**
@@ -359,6 +390,31 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val refCursor = written != null && written.name.segments.size == 1 && written.name.last.lookupName == "SYS_REFCURSOR" &&
             (evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
         return if (refCursor) ValueCategory.CursorVariable else of(use.lookupRegion, evidence)
+    }
+
+    /**
+     * What the named type a `DATATYPE` writes denotes, from the same walk as [typeCategory]: the first declaration it
+     * reaches, local or of the project, or why there is none. Text a `$IF` or a substitution touches leaves it undecided.
+     */
+    fun typeName(datatype: AstNode): LocalTypeName {
+        if (datatype.type !== PlSqlGrammar.DATATYPE) return LocalTypeName.Unavailable
+        val use = typeUses[datatype.token.line to datatype.token.column] ?: return LocalTypeName.Unavailable
+        if (use.typeRef !is NamedTypeRef) return LocalTypeName.Unavailable
+        val evidence = walk.written(use)
+        evidence.followed.firstOrNull()?.let { return LocalTypeName.Local(it, walk.projectDeclarationOf(it)) }
+        return when (evidence.terminal) {
+            LocalTypeEvidence.Terminal.BUILT_IN -> LocalTypeName.BuiltIn((use.typeRef as NamedTypeRef).name.last.originalSpelling)
+            LocalTypeEvidence.Terminal.PROJECT -> projectTypeName(evidence.description?.source)
+            else -> LocalTypeName.Undecided(evidence.incomplete?.let(::reasons) ?: EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+        }
+    }
+
+    /** The first declaration the project's description reached: its first subtype step, else the type it ends at. */
+    private fun projectTypeName(source: ProjectTypeDescription?): LocalTypeName {
+        source ?: return LocalTypeName.Undecided(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        (source.steps.firstOrNull() as? ProjectTypeDeclarationView)?.let { return LocalTypeName.Project(it) }
+        source.declaration.orElse(null)?.let { return LocalTypeName.Project(it) }
+        return source.resolution.orElse(null)?.let { LocalTypeName.Unresolved(it) } ?: LocalTypeName.Undecided(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
     }
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome

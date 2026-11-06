@@ -160,4 +160,82 @@ class ValueCategoryReceiverTest {
         val rows = assigned(prepared(sources + ("u.sql" to conditional)), conditional)
         assertThat(rows).hasSize(13).allMatch { it.substringAfter('=').startsWith("Unknown[") && "CONDITIONAL_COMPILATION" in it }
     }
+
+    /** `line:receiver=category` for every receiver of [file]. */
+    private fun receivers(file: String, sources: Map<String, String>): List<String> {
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.OBJECT_REFERENCE).forEach {
+                    rows += "${it.token.line}:${it.tokens.joinToString("") { t -> t.originalValue }}=${this.context.valueCategory(it)}"
+                }
+            }
+        }
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, prepared(sources)).scanFile(Source(file, sources.getValue(file)), listOf(check), FileId(file))
+        return rows
+    }
+
+    @Test
+    fun receiversInTheValuesOfAnInsert() {
+        val body = "create package body q as\n" +
+            "  type lr is record (n number);\n" +
+            "  type lt is table of lr index by pls_integer;\n" +
+            "  procedure r is\n" +
+            "    t lt;\n" +
+            "    upper lt;\n" +
+            "    x number;\n" +
+            "  begin\n" +
+            "    insert into line_tab (x) values (t(1).n);\n" +
+            "    insert into line_tab (x) values (upper(1).n);\n" +
+            "    select t(1).n into x from dual;\n" +
+            "  end;\n" +
+            "end;\n/\n"
+        assertThat(receivers("u.sql", mapOf("qs.sql" to callerSpec, "u.sql" to body))).containsExactly(
+            // No table column is in scope in the VALUES of a single-table INSERT: the local collection.
+            "9:t(1).n=Scalar(NUMERIC)",
+            // A SQL built-in of the name is called there, whatever the local collection.
+            "10:upper(1).n=Unavailable(NOT_A_COVERED_NAME)",
+            // Receivers in other SQL are not modeled.
+            "11:t(1).n=Unavailable(NOT_A_COVERED_NAME)"
+        )
+    }
+
+    private val constructed = "create type t_other as object (a number);\n/\n" +
+        "create type t_made as object (a number, constructor function t_made(n number, m number) return self as result);\n/\n" +
+        "create type t_method as object (k number, member function t_other(n number) return number, member function run return number);\n/\n" +
+        "create type t_attribute as object (t_other number, member function run return number);\n/\n"
+
+    @Test
+    fun theResultOfAConstructor() {
+        val user = "create procedure u is x number; begin x := t_other(3).a; x := t_made(1, 2).a; end;\n/\n"
+        assertThat(receivers("u.sql", mapOf("c.sql" to constructed, "u.sql" to user))).containsExactly(
+            // The default constructor, and a user-defined one, build a value of the type.
+            "1:t_other(3).a=Scalar(NUMERIC)", "1:t_made(1,2).a=Scalar(NUMERIC)"
+        )
+    }
+
+    @Test
+    fun aMemberOrAFunctionOfTheNameHidesTheConstructor() {
+        val bodies = "create type body t_method as\n" +
+            "  member function t_other(n number) return number is begin return n + 100; end;\n" +
+            "  member function run return number is x number; begin x := t_other(5).a; return 1; end;\n" +
+            "end;\n/\n" +
+            "create type body t_attribute as\n" +
+            "  member function run return number is x number; begin x := t_other(1).a; return 1; end;\n" +
+            "end;\n/\n" +
+            "create package body q as\n" +
+            "  type lr is record (n number);\n" +
+            "  function t_other(n number) return lr is v lr; begin return v; end;\n" +
+            "  procedure r is x number; begin x := t_other(7).n; end;\n" +
+            "end;\n/\n"
+        assertThat(receivers("b.sql", mapOf("c.sql" to constructed, "qs.sql" to callerSpec, "b.sql" to bodies))).containsExactly(
+            // Oracle binds the method SELF.T_OTHER: not the constructor. The method is defined in this body, so with the
+            // specification in another file the name stays undecided.
+            "3:t_other(5).a=Unknown[DECLARATION_OUTSIDE_FILE]",
+            // Oracle binds the attribute SELF.T_OTHER, a number (PLS-00224 on the call).
+            "7:t_other(1).a=Unknown[UNSUPPORTED_REFERENCE]",
+            // Oracle binds the package body's function.
+            "13:t_other(7).n=Scalar(NUMERIC)"
+        )
+    }
 }

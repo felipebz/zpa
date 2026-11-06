@@ -274,6 +274,28 @@ internal class LocalTypeWalk(
         return snapshot.describeExternalType(element, owner, metadata, compilationSchema(region))
     }
 
+    /** The project's fact for the local [declaration], the one with the same range in this file; null when none. */
+    fun projectDeclarationOf(declaration: LocalDeclarationId): ProjectDeclarationView? {
+        if (!prepared) return null
+        val range = model.declaration(declaration).range
+        return snapshot!!.declarationsFor(model.fileId.value).declarations.singleOrNull {
+            val r = it.sourceRange
+            r.startLine == range.startLine && r.startColumn == range.startColumn && r.endLine == range.endLine && r.endColumn == range.endColumn
+        }
+    }
+
+    /**
+     * Evidence of the result of a call of [name] that nothing local takes, when the project describes [name] as an object
+     * type: its constructor, user-defined or the default one, builds a value of that type. Null otherwise.
+     */
+    fun constructorResult(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? {
+        val snapshot = snapshot?.takeIf { prepared } ?: return null
+        val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), packageOwner(region), metadata, compilationSchema(region))
+        val type = described.source.declaration.orElse(null) as? ProjectStandaloneTypeView ?: return null
+        if (described.source.status != ProjectTypeDescription.Status.DECLARED_TYPE || type.shape.orElse(null) != PublicTypeShape.OBJECT) return null
+        return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
     /** Evidence of a written type at its own lookup site, such as a formal parameter's. */
     fun written(use: LocalTypeUse?): LocalTypeEvidence = use?.let { Walk().type(it) } ?: LocalTypeEvidence.unknown(NO_WRITTEN_TYPE)
 
