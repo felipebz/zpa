@@ -81,8 +81,8 @@ class IndexedDeclaration internal constructor(
  *
  * Unqualified standalone project declarations belong to one logical project namespace; explicitly qualified
  * declarations remain distinct. Each occurrence also has an effective schema (its unit's written owner, else the
- * schema configured for its file), through which a name qualified by a schema reaches it when nothing has that exact
- * name ([throughSchema]).
+ * schema configured for its file), through which a name qualified by a schema reaches it, written with that owner or
+ * not ([throughSchema]).
  */
 class ProjectSymbolIndex private constructor(
     /** Every derived map, built once by the root index and shared by its schema views. */
@@ -260,7 +260,7 @@ class ProjectSymbolIndex private constructor(
     /**
      * The schema and the rest of [name] when it is read through a schema: `x.y` (or `x.y.z`) whose first name is a known
      * schema that no project unit or package owner is named (a unit of that name, through a synonym Oracle cannot be
-     * ruled out to read, would capture `x`). Null otherwise. Every exact lookup falls back to this when it finds nothing.
+     * ruled out to read, would capture `x`). Null otherwise. Every lookup by name reads such a name through its schema.
      */
     internal fun throughSchema(name: QualifiedName): Pair<OracleIdentifier, QualifiedName>? {
         if (name.segments.size < 2) return null
@@ -314,12 +314,27 @@ class ProjectSymbolIndex private constructor(
     internal fun unitSchema(unitName: QualifiedName, fileId: FileId): OracleIdentifier? =
         if (unitName.segments.size == 2) unitName.segments.first() else schemasByFile[fileId]
 
-    private fun schemaFallback(name: QualifiedName): List<IndexedDeclaration> =
-        throughSchema(name)?.let { (schema, rest) -> findInSchema(schema, rest) }.orEmpty()
+    /**
+     * The matches of [name] that [accept] keeps: read through its schema when [name] is (`s.x` reaches every `x` of
+     * `s`, whether written `s.x` or compiled there by its file, so a specification and a body that differ only in
+     * writing the owner are found together), else [exact], the matches of the written name. Ordered by
+     * [declarationComparator] when [sorted], as the written-name maps are; else in index order.
+     */
+    private fun bySchemaOrExact(
+        name: QualifiedName,
+        exact: List<IndexedDeclaration>?,
+        sorted: Boolean,
+        accept: (ProjectDeclaration) -> Boolean
+    ): List<IndexedDeclaration> {
+        val through = throughSchema(name)?.let { (schema, rest) -> findInSchema(schema, rest).filter { accept(it.declaration) } }
+        if (through.isNullOrEmpty()) return exact.orEmpty()
+        return if (sorted) through.sortedWith(compareBy(declarationComparator) { it.declaration }) else through
+    }
 
     fun findPackages(name: QualifiedName): List<PackageDeclaration> =
         inPreferredSchema(name) { it is PackageDeclaration }?.map { it.declaration as PackageDeclaration }
-            ?: packagesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<PackageDeclaration>()
+            ?: bySchemaOrExact(name, null, true) { it is PackageDeclaration }.map { it.declaration as PackageDeclaration }
+                .ifEmpty { packagesByName[name].orEmpty() }
 
     fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectTypeDeclaration> =
         findTypeOccurrences(owner, name).map { it.declaration as ProjectTypeDeclaration }
@@ -327,8 +342,9 @@ class ProjectSymbolIndex private constructor(
     /** Canonical occurrences behind [findTypes], in the same order. */
     internal fun findTypeOccurrences(owner: QualifiedName?, name: OracleIdentifier): List<IndexedDeclaration> =
         inPreferredSchema(owner?.append(name) ?: QualifiedName(name)) { it is ProjectTypeDeclaration }
-            ?: typeOccurrencesByOwnerAndName[owner to name]
-            ?: owner?.let { schemaFallback(it.append(name)).filter { occurrence -> occurrence.declaration is ProjectTypeDeclaration } }.orEmpty()
+            ?: bySchemaOrExact(owner?.append(name) ?: QualifiedName(name), typeOccurrencesByOwnerAndName[owner to name], true) {
+                it is ProjectTypeDeclaration
+            }
 
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
         findSubprogramOccurrences(owner, name).map { it.declaration as PackageSubprogramDeclaration }
@@ -336,19 +352,19 @@ class ProjectSymbolIndex private constructor(
     /** Canonical occurrences behind [findSubprograms], in the same order. */
     internal fun findSubprogramOccurrences(owner: QualifiedName, name: OracleIdentifier): List<IndexedDeclaration> =
         inPreferredSchema(owner.append(name)) { it is PackageSubprogramDeclaration }
-            ?: subprogramOccurrencesByOwnerAndName[owner to name]
-            ?: schemaFallback(owner.append(name)).filter { it.declaration is PackageSubprogramDeclaration }
+            ?: bySchemaOrExact(owner.append(name), subprogramOccurrencesByOwnerAndName[owner to name], true) { it is PackageSubprogramDeclaration }
 
     fun findSequences(name: QualifiedName): List<SequenceDeclaration> =
         inPreferredSchema(name) { it is SequenceDeclaration }?.map { it.declaration as SequenceDeclaration }
-            ?: sequencesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<SequenceDeclaration>()
+            ?: bySchemaOrExact(name, null, true) { it is SequenceDeclaration }.map { it.declaration as SequenceDeclaration }
+                .ifEmpty { sequencesByName[name].orEmpty() }
 
     fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> =
         findOccurrences(name).map { it.declaration }
 
     /** Exact-name matches as canonical occurrences, in index order, without resolution. */
     fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
-        inPreferredSchema(name) { true } ?: occurrencesByQualifiedName[name] ?: schemaFallback(name)
+        inPreferredSchema(name) { true } ?: bySchemaOrExact(name, occurrencesByQualifiedName[name], false) { true }
 
     /** Positive evidence for the package interpretation, including non-package objects of that name. */
     internal fun hasPackageEvidence(name: QualifiedName): Boolean =
