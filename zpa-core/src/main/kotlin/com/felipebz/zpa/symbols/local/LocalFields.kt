@@ -34,7 +34,9 @@ internal class LocalFields(
     /** The values the walk reaches, for the value a segment is a member of. */
     private val categories: LocalValueCategories? = null
 ) {
-    private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
+    /** The prepared project, complete: what `SELF.name` reads; null when not prepared or a source failed. */
+    private val completeIndex = (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result
+        ?.takeIf { it.failures.isEmpty() }?.index
     private val memberResolver = projectAnalysisContext?.let(::ProjectRecordMemberResolver)
     private val model = facts.model
 
@@ -142,10 +144,11 @@ internal class LocalFields(
      */
     private fun selfMember(typeRegion: LocalRegion, reference: LocalReference): FieldBinding {
         val typeName = LocalTypeScope.unitOf(model, typeRegion.id)?.unitName ?: return OUTSIDE_FILE
-        val types = typeResolver ?: return OUTSIDE_FILE
+        val index = completeIndex ?: return OUTSIDE_FILE
         val members = memberResolver ?: return OUTSIDE_FILE
-        val type = ((types.resolve(NamedTypeRef(typeName, reference.range)) as? ProjectTypeResolution.Resolved)?.declaration
-            as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return OUTSIDE_FILE
+        // The body's own specification: the one of the same name in the same schema, whichever half writes the owner.
+        val type = (index.counterparts(typeName, model.fileId).map { it.declaration }.filterIsInstance<StandaloneTypeDeclaration>()
+            .singleOrNull())?.takeIf { it.shape == ProjectTypeShape.OBJECT } ?: return OUTSIDE_FILE
         return when (val resolution = members.resolve(type, reference.name)) {
             is ProjectRecordMemberResolution.NotFound -> NOT_A_FIELD
             else -> member(resolution)

@@ -90,11 +90,13 @@ internal class LocalTypeWalk(
 
     /**
      * The schema the file-level unit holding [region] compiles in, from the run's external context: its written schema,
-     * else its file's configured schema path, else the configured default. Null for code outside a named unit (an anonymous block of a script), and when
-     * neither establishes it: the project then keeps the uncertainty.
+     * else its file's configured schema path, else the configured default. Code outside a named unit (an anonymous
+     * block of a script) runs in the session's schema, which the configuration gives for its file. Null when nothing
+     * establishes it: the project then keeps the uncertainty.
      */
     fun compilationSchema(region: LocalRegionId): ProjectIdentifier? {
-        val top = LocalResolver.chain(model, region).firstOrNull { it.parent == model.root.id } ?: return null
+        val fileSchema = { external.fileSchema(model.fileId.value).orElse(null) }
+        val top = LocalResolver.chain(model, region).firstOrNull { it.parent == model.root.id } ?: return fileSchema()
         val name = model.declarationsOf(model.root.id).firstNotNullOfOrNull { declaration ->
             when (val details = declaration.details) {
                 is LocalUnit -> details.unitName.takeIf { details.region == top.id }
@@ -102,7 +104,7 @@ internal class LocalTypeWalk(
                 is LocalTrigger -> details.unitName.takeIf { details.body == top.id }
                 else -> null
             }
-        } ?: return null
+        } ?: return fileSchema()
         return external.compilationSchema(ProjectQualifiedName.wrap(name), model.fileId.value).orElse(null)
     }
     private val prepared = snapshot != null && snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
