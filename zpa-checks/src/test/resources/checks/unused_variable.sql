@@ -186,3 +186,34 @@ begin
   dbms_output.put_line(a);
 end;
 /
+
+-- Conditional compilation that never writes "v_total": the variable is unused whichever branch Oracle compiles.
+create or replace procedure log_total is
+  v_total number; -- Noncompliant {{Remove this unused "V_TOTAL" local variable.}}
+begin
+  $if $$debug $then dbms_output.put_line('x'); $end
+  null;
+end;
+/
+
+-- Used only in the dropped branch: Oracle may compile it, so it is not reported.
+create or replace procedure log_count is
+  v_count number;
+begin
+  $if $$debug $then null; $else v_count := 1; $end
+  null;
+end;
+/
+
+-- Where the dropped branch is compiled, "outer" labels the procedure and "outer.v" uses the inner "v": not reported.
+create or replace procedure p_qual is
+  v number := 1;
+begin
+  $if $$lbl $then null; $else <<outer>> $end
+  declare
+    v number := 2;
+  begin
+    dbms_output.put_line(outer.v);
+  end;
+end;
+/

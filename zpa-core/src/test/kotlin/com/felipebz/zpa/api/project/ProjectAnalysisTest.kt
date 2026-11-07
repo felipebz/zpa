@@ -595,9 +595,14 @@ class ProjectAnalysisTest {
             "CREATE SEQUENCE record_pkg.g_value;\n"
         val plain = "DECLARE n NUMBER; BEGIN n := record_pkg.g_value.nextval; END;"
         // The package value shares its name with the sequence: the package takes the qualifier. With a `${'$'}IF` in the
-        // block the names before NEXTVAL are undecided, so neither answer is proven.
-        val conditional = "DECLARE n NUMBER; ${'$'}IF ${'$'}${'$'}flag ${'$'}THEN m NUMBER; ${'$'}END BEGIN n := record_pkg.g_value.nextval; END;"
-        for ((text, expected) in listOf(plain to SequenceReferenceResolution.RESOLVED_NON_SEQUENCE, conditional to SequenceReferenceResolution.UNKNOWN)) {
+        // block that writes `record_pkg` the names before NEXTVAL are undecided, so neither answer is proven; one that
+        // never writes it changes nothing.
+        val conditional = "DECLARE n NUMBER; ${'$'}IF ${'$'}${'$'}flag ${'$'}THEN m NUMBER; ${'$'}ELSE record_pkg NUMBER; ${'$'}END BEGIN n := record_pkg.g_value.nextval; END;"
+        val unrelated = conditional.replace("${'$'}ELSE record_pkg NUMBER; ", "")
+        for ((text, expected) in listOf(
+            plain to SequenceReferenceResolution.RESOLVED_NON_SEQUENCE, conditional to SequenceReferenceResolution.UNKNOWN,
+            unrelated to SequenceReferenceResolution.RESOLVED_NON_SEQUENCE
+        )) {
             val packageFile = FileId("record-package.sql")
             val targetFile = FileId("record-target.sql")
             val probe = SequenceResolutionProbe()

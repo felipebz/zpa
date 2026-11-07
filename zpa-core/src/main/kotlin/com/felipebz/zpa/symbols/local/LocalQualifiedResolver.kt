@@ -58,7 +58,7 @@ internal object LocalQualifiedResolver {
                 steps += step.outcome
                 break
             }
-            step.regions.forEach { reasons += it.completeness.lookupReasons }
+            step.regions.forEach { reasons += it.completeness.lookupReasonsFor(member.name) }
             reasons += step.reasons
             gaps += step.gaps
             val outcome = memberOutcome(model, step.outcome)
@@ -182,6 +182,9 @@ internal object LocalQualifiedResolver {
             ?: return unsupported(LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING)
         val outcome = when (val details = declaration.details) {
             is LocalRecordType -> {
+                // Hidden text in the field list may add or drop a field before this one, whatever it names: the
+                // field's position is then undecided.
+                reasons += model.hiddenAt(declaration.range)
                 val ordinal = details.fields.indexOfFirst { it.name == member.name }
                 if (ordinal < 0) LocalResolution.Undeclared else LocalResolution.Field(declaration.id, ordinal)
             }

@@ -114,11 +114,13 @@ class LocalMethodCallTest {
         val missing = "create type f2 under missing_t (member procedure m(x number), member procedure run);\n/\n" +
             "create type body f2 as\n  member procedure m(x number) is begin null; end;\n  member procedure run is begin self.m(1); end;\nend;\n/\n"
         assertThat(resolutions(missing, 5)).containsExactly("self.m INCOMPLETE")
-        // Conditional compilation in the type body.
+        // Conditional compilation in the type body that writes `m` may declare another overload.
         val conditional = "create type g1 as object (a number, member procedure m(x number), member procedure run);\n/\n" +
             "create type body g1 as\n  member procedure m(x number) is begin null; end;\n" +
-            "  member procedure run is begin m(1); end;\n  \$IF \$\$x \$THEN \$END\nend;\n/\n"
+            "  member procedure run is begin m(1); end;\n  \$IF \$\$x \$THEN \$ELSE member procedure m(x date) is begin null; end; \$END\nend;\n/\n"
         assertThat(resolutions(conditional, 5)).containsExactly("m INCOMPLETE")
+        // Text that never writes `m` declares no overload of it.
+        assertThat(resolutions(conditional.replace("\$ELSE member procedure m(x date) is begin null; end; ", ""), 5)).containsExactly("m RESOLVED PROCEDURE 4")
     }
 
     @Test

@@ -97,9 +97,13 @@ class LocalTypeNameTest {
 
     @Test
     fun conditionalCompilationLeavesTheNameUndecided() {
-        val conditional = user.replace("  type lr is record (x number);\n", "  \$if \$\$flag \$then type t_rec is record (y number); \$end\n  type lr is record (x number);\n")
+        // A dropped branch that ends a block it does not open may restructure the unit: every name stays undecided.
+        val conditional = user.replace("  type lr is record (x number);\n", "  \$if \$\$flag \$then type t_rec is record (y number); \$else end; \$end\n  type lr is record (x number);\n")
         val sources = mapOf("p.sql" to packageSpec, "t.sql" to types, "u.sql" to conditional)
         assertThat(names("u.sql", sources)).allMatch { it.endsWith("Undecided[CONDITIONAL_COMPILATION]") }
+        // Text that only declares `t_rec` keeps undecided the names that write it, and no other.
+        val narrow = mapOf("p.sql" to packageSpec, "t.sql" to types, "u.sql" to conditional.replace("\$else end; ", ""))
+        assertThat(names("u.sql", narrow).filter { "CONDITIONAL_COMPILATION" in it }).allMatch { it.contains("t_rec") }
     }
 
     private val schemaTypes = "create type t_base as object (a number) not final;\n/\n" +
@@ -107,9 +111,14 @@ class LocalTypeNameTest {
         "create type t_nt as table of number;\n/\n" +
         "create package pk_t as\n  type t_ptab is table of number;\n  type t_prec is record (n number);\n  subtype t_ps is varchar2(10);\nend;\n/\n"
 
-    /** The `DATATYPE` nodes outside declarations: what expressions, SQL columns and external parameters write. */
-    private fun expressions(text: String, conditional: Boolean = false): List<String> {
-        val body = if (conditional) text.replace(" is\n", " is\n  \$if \$\$flag \$then y number; \$end\n") else text
+    /**
+     * The `DATATYPE` nodes outside declarations: what expressions, SQL columns and external parameters write. With
+     * [conditional], an undecided `$IF` among the first unit's declarations: one whose dropped branch ends a block it
+     * does not open (it may restructure the unit), or with [wide] false one that only declares `y`.
+     */
+    private fun expressions(text: String, conditional: Boolean = false, wide: Boolean = true): List<String> {
+        val selection = if (wide) "\$if \$\$flag \$then y number; \$else end; \$end" else "\$if \$\$flag \$then y number; \$end"
+        val body = if (conditional) text.replace(" is\n", " is\n  $selection\n") else text
         return written("u.sql", mapOf("s.sql" to schemaTypes, "u.sql" to body), withCategory = true) {
             it.parent.type != PlSqlGrammar.VARIABLE_DECLARATION && it.parent.type != PlSqlGrammar.CUSTOM_SUBTYPE &&
                 it.parent.type != PlSqlGrammar.NESTED_TABLE_DEFINITION &&
@@ -184,6 +193,8 @@ class LocalTypeNameTest {
             "9:int=BuiltIn(int)|Unknown[UNSUPPORTED_REFERENCE]"
         )
         assertThat(expressions(text, conditional = true).filter { it.startsWith("2:") || it.startsWith("3:") }).allMatch { it.contains("CONDITIONAL_COMPILATION") }
+        // A `${'$'}IF` that writes neither `pk_t` nor the types leaves these lookups decided.
+        assertThat(expressions(text, conditional = true, wide = false).filter { it.startsWith("2:") || it.startsWith("3:") }).noneMatch { it.contains("CONDITIONAL_COMPILATION") }
     }
 
     @Test

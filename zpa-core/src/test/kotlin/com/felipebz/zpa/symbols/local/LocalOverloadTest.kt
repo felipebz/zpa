@@ -165,9 +165,11 @@ class LocalOverloadTest {
 
     @Test
     fun anIncompleteSetIsNeverDecided() {
-        // Conditional compilation in the deciding region may declare another overload.
-        val conditional = "declare\n  procedure p(x number) is begin null; end;\n  \$IF \$\$x \$THEN v number; \$END\nbegin\n  p(1);\nend;\n/\n"
+        // Conditional compilation in the deciding region that writes `p` may declare another overload.
+        val conditional = "declare\n  procedure p(x number) is begin null; end;\n  \$IF \$\$x \$THEN v number; \$ELSE procedure p(x date) is begin null; end; \$END\nbegin\n  p(1);\nend;\n/\n"
         assertThat(resolutions(conditional)).containsExactly("5: p INCOMPLETE")
+        // Text that never writes `p` declares no overload of it.
+        assertThat(resolutions(conditional.replace("\$ELSE procedure p(x date) is begin null; end; ", ""))).containsExactly("5: p RESOLVED PROCEDURE 2")
         // A package body whose specification is not in the file: the specification may declare another overload.
         val lone = "create package body b is\n  procedure p(x number) is begin null; end;\n  procedure t is begin p(1); end;\nend;\n/\n"
         assertThat(resolutions(lone)).containsExactly("3: p INCOMPLETE")

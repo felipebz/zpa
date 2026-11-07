@@ -190,9 +190,13 @@ class LocalObjectTypeResolverTest {
             base + source.replace("return 1; end;", "/*S*/ return 1; end;") + "create procedure other is begin /*S*/ null; end;\n/\n",
             "self", listOf("ImplicitSelf(FUNCTION g@7)", "OverloadSet(FUNCTION m@1, FUNCTION m@6)"), fromStep = 1
         )
-        // Hidden text among the type body's own members may declare another overload: the method step relies on it.
-        assertThat(steps(base + source.replace("  member function g", "  \$IF \$\$x \$THEN \$END\n  member function g"), "self"))
+        // Hidden text among the type body's own members that writes `m` may declare another overload: the method step
+        // relies on it. Text that never writes `m` does not.
+        val overload = "  \$IF \$\$x \$THEN \$ELSE member function m(n number) return number is begin return n; end; \$END\n  member function g"
+        assertThat(steps(base + source.replace("  member function g", overload), "self"))
             .isEqualTo("ImplicitSelf(FUNCTION g@8) / Incomplete[CONDITIONAL_COMPILATION](OverloadSet(FUNCTION m@1, FUNCTION m@6))")
+        assertThat(steps(base + source.replace("  member function g", "  \$IF \$\$x \$THEN \$END\n  member function g"), "self"))
+            .isEqualTo("ImplicitSelf(FUNCTION g@8) / OverloadSet(FUNCTION m@1, FUNCTION m@6)")
     }
 
     @Test

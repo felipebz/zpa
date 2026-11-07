@@ -148,8 +148,9 @@ class LocalTypeWalkTest {
         // Both conclusive and in agreement.
         assertThat(both("create package pk as\n  type r_t is record (a number);\n  g r_t;\nend;\n/\n"))
             .containsOnly("COMPOSITE COMPOSITE COMPOSITE [VARIABLE g > RECORD_TYPE r_t]")
-        // The local walk gives unknown (conditional compilation in the specification): the project fact is used.
-        assertThat(both("create package pk as\n  \$IF \$\$x \$THEN h number; \$END\n  g date;\nend;\n/\n")).containsExactly(
+        // The local walk gives unknown (conditional compilation in the specification that writes `date`): the project
+        // fact is used.
+        assertThat(both("create package pk as\n  \$IF \$\$x \$THEN h number; \$ELSE subtype date is number; \$END\n  g date;\nend;\n/\n")).containsExactly(
             "PROJECT DESCRIBED DATETIME [VARIABLE g]", "UNKNOWN UNKNOWN [VARIABLE g] Incomplete(CONDITIONAL_COMPILATION, provisional=ProvenAbsent)"
         )
         // Both conclusive and different (a project prepared from another version of the specification): unknown.

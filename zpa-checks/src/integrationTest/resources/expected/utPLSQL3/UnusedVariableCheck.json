@@ -1,5 +1,6 @@
 {
   "source/core/types/ut_logical_suite.tpb" : [ 40, 41 ],
+  "source/expectations/data_values/ut_data_value_refcursor.tpb" : [ 32 ],
   "source/expectations/matchers/ut_be_empty.tpb" : [ 31 ],
   "source/expectations/matchers/ut_contain.tpb" : [ 68 ],
   "source/expectations/matchers/ut_equal.tpb" : [ 39, 325 ],

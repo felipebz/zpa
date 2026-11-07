@@ -186,8 +186,11 @@ class UsageEvidenceTest {
 
     @Test
     fun aPairTheAnalysisCannotFullySeeIsUnknown() {
-        val text = "declare\n  y number;\nbegin\n  \$if \$\$a \$then null; \$end\n  declare\n    y number;\n  begin\n    null;\n  end;\nend;\n/\n"
+        // The outer block's conditional text writes `y`: it may change the pair.
+        val text = "declare\n  y number;\nbegin\n  \$if \$\$a \$then y := 1; \$end\n  declare\n    y number;\n  begin\n    null;\n  end;\nend;\n/\n"
         assertThat(hiding(text)).containsExactly("Y: HidesNothing", "Y: Unknown[CONDITIONAL_COMPILATION]")
+        // Text that never writes `y` cannot declare it nor hide it.
+        assertThat(hiding(text.replace("y := 1;", "null;"))).containsExactly("Y: HidesNothing", "Y: Hides(2:2)")
     }
 
     @Test
@@ -444,9 +447,10 @@ class UsageEvidenceTest {
 
     @Test
     fun aNameInARegionTheAnalysisCannotSee() {
+        // The conditional declaration writes `sysdate`, not `v`.
         val text = "declare\n  v date;\n  \$if \$\$x \$then sysdate date; \$end\nbegin\n  v := sysdate;\nend;\n/\n"
         assertThat(nameBindings(text)).containsExactly(
-            "5:V=Unknown[CONDITIONAL_COMPILATION]", "5:SYSDATE=Unknown[CONDITIONAL_COMPILATION]"
+            "5:V=Local(VARIABLE@2:2)", "5:SYSDATE=Unknown[CONDITIONAL_COMPILATION]"
         )
     }
 

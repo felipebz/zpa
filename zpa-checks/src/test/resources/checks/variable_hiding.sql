@@ -122,13 +122,26 @@ begin
 end;
 /
 
--- Conditional compilation touches the outer block: the outer declaration may not exist for Oracle.
+-- Conditional compilation in the outer block writes "y": the pair may not exist for Oracle.
+declare
+  y number;
+begin
+  $if $$a $then y := 1; $end
+  declare
+    y number;
+  begin
+    null;
+  end;
+end;
+/
+
+-- Conditional compilation that never writes "y" cannot change the pair.
 declare
   y number;
 begin
   $if $$a $then null; $end
   declare
-    y number;
+    y number; -- Noncompliant {{This variable "Y" hides the declaration on line 140.}} [[secondary=140]]
   begin
     null;
   end;

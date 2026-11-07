@@ -240,7 +240,14 @@ internal class LocalFields(
     private fun attribute(id: LocalDeclarationId): FieldBinding? {
         val declaration = model.declaration(id)
         if (declaration.kind != LocalDeclarationKind.ATTRIBUTE) return null
-        val ordinal = model.region(declaration.region).declarations.filter { model.declaration(it).kind == LocalDeclarationKind.ATTRIBUTE }.indexOf(id)
+        val attributes = model.region(declaration.region).declarations.filter { model.declaration(it).kind == LocalDeclarationKind.ATTRIBUTE }
+        // Hidden text in the attribute list may add or drop an attribute before this one, whatever it names: the
+        // attribute's position is then undecided.
+        val first = model.declaration(attributes.first()).range
+        val last = model.declaration(attributes.last()).range
+        val hidden = model.hiddenAt(SourceRange(first.fileId, first.startLine, first.startColumn, last.endLine, last.endColumn))
+        if (hidden.isNotEmpty()) return FieldBinding.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() })
+        val ordinal = attributes.indexOf(id)
         return FieldBinding.Field(FieldDeclaration(FieldDeclarationKind.ATTRIBUTE, ordinal, declaration.nameRange.startLine, declaration.nameRange.startColumn))
     }
 

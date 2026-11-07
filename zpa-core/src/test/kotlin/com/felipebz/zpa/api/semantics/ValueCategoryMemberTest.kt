@@ -136,9 +136,13 @@ class ValueCategoryMemberTest {
 
     @Test
     fun conditionalCompilationKeepsTheChainUndecided() {
-        val conditional = callerBody.replace("    x number;\n", "    x number;\n    \$if \$\$flag \$then y number; \$end\n")
+        // A dropped branch that ends a block it does not open may restructure the body: every chain stays undecided.
+        val conditional = callerBody.replace("    x number;\n", "    x number;\n    \$if \$\$flag \$then y number; \$else end; \$end\n")
         val withIf = sources + ("u.sql" to conditional)
         assertThat(assigned("u.sql", prepared(withIf), withIf)).allMatch { it.substringAfter('=').startsWith("Unknown[") && "CONDITIONAL_COMPILATION" in it }
+        // Conditional text that writes none of the chains' names leaves them decided.
+        val unrelated = sources + ("u.sql" to conditional.replace("\$else end; ", ""))
+        assertThat(assigned("u.sql", prepared(unrelated), unrelated)).noneMatch { "CONDITIONAL_COMPILATION" in it }
     }
 
     @Test

@@ -91,7 +91,8 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
     /** The pragma must be in the exception's declarative part: a gap in that region may hide it. */
     private fun errorCode(declaration: LocalDeclaration): ExceptionErrorCode {
         val codes = codes.orEmpty()
-        val hidden = model.region(declaration.region).completeness.reasons
+        // Conditional text that never writes the exception's name holds no pragma for it.
+        val hidden = model.region(declaration.region).completeness.reasonsFor(declaration.name)
         return when {
             hidden.isNotEmpty() -> ExceptionErrorCode.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() })
             declaration.id in codes -> ExceptionErrorCode.Associated(codes[declaration.id])

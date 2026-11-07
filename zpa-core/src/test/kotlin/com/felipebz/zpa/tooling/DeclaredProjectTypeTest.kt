@@ -67,8 +67,8 @@ class DeclaredProjectTypeTest {
         assertThat(type(4, 2)).isEqualTo("pk.r")
         assertThat(type(4, 11)).isEqualTo("t")
         assertThat(type(1, 16)).isEqualTo("pk.r")
-        // With a ${'$'}IF in the declarations, the text may compile otherwise: the declared types are undecided.
-        val conditional = source.replace("  v pk.r;\n", "  v pk.r;\n  ${'$'}IF ${'$'}${'$'}extra ${'$'}THEN\n  w pk.r;\n  ${'$'}END\n")
+        // With a ${'$'}IF in the declarations that writes `v`, the text may compile otherwise: the declared types are undecided.
+        val conditional = source.replace("  v pk.r;\n", "  v pk.r;\n  ${'$'}IF ${'$'}${'$'}extra ${'$'}THEN\n  w pk.r; ${'$'}ELSE v number;\n  ${'$'}END\n")
         val (other, otherRoot) = analyze(conditional)
         assertThat(other.localSemanticFacts!!.steps(7, 2)!!.first()).isInstanceOf(LocalResolution.Incomplete::class.java)
         assertThat(other.inspect(name(otherRoot, 7, 2)).declaredProjectType).isNull()

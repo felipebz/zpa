@@ -29,12 +29,16 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
     private val certain = HashSet<LocalDeclarationId>()
     private val possible = HashMap<LocalDeclarationId, EnumSet<UsageUncertainty>>()
     private val unsupported = HashSet<Pair<LocalRegionId, String>>()
+    /** Member names of qualified references whose qualifier conditional compilation leaves undecided, by enclosing region. */
+    private val conditionalMembers = HashSet<Pair<LocalRegionId, String>>()
     private val declarationsByName = model.declarations.associateBy { it.nameRange.startLine to it.nameRange.startColumn }
-    private val incompleteness: Map<LocalRegionId, Set<LocalIncompleteness>> by lazy(::subtreeIncompleteness)
+    private val incompleteness: Map<LocalRegionId, Subtree> by lazy(::subtreeIncompleteness)
 
     init {
         for ((index, reference) in facts.references.withIndex()) {
-            for (step in facts.resolutions[index]) record(reference, step)
+            val steps = facts.resolutions[index]
+            for (step in steps) record(reference, step)
+            recordUndecidedQualifier(reference, steps)
         }
     }
 
@@ -45,8 +49,13 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
         possible[declaration.id]?.let(reasons::addAll)
         if (model.region(declaration.region).kind == LocalRegionKind.PACKAGE_SPEC) reasons += UsageUncertainty.VISIBLE_OUTSIDE_FILE
-        incompleteness[declaration.region]?.forEach { reasons += it.usageUncertainty() }
+        // Conditional text that never writes the name, besides the declaration itself, holds no use of it.
+        val own = LocalConditionalPiece.position(declaration.nameRange.startLine, declaration.nameRange.startColumn)
+        incompleteness[declaration.region]?.let { subtree ->
+            LocalRegionCompleteness.narrowed(subtree.reasons, subtree.pieces, declaration.name, own).forEach { reasons += it.usageUncertainty() }
+        }
         if ((declaration.region to declaration.name.lookupName) in unsupported) reasons += UsageUncertainty.UNSUPPORTED_REFERENCE
+        if ((declaration.region to declaration.name.lookupName) in conditionalMembers) reasons += UsageUncertainty.CONDITIONAL_COMPILATION
         return if (reasons.isEmpty()) UsageEvidence.Unused else UsageEvidence.Unknown(reasons)
     }
 
@@ -80,6 +89,26 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         }
     }
 
+    /**
+     * A qualified [reference] whose qualifier (a step before its last segment) conditional compilation leaves
+     * undecided: what the qualifier binds may differ, so each later segment may name any declaration of its name
+     * visible from the reference (a label, unit, cursor or block name in the text may qualify another region).
+     */
+    private fun recordUndecidedQualifier(reference: LocalReference, steps: List<LocalResolution>) {
+        val members = reference.segments.takeWhile { !it.isAttribute }
+        val undecided = steps.take(members.size).indexOfFirst {
+            it is LocalResolution.Incomplete && LocalIncompleteness.CONDITIONAL_COMPILATION in it.regionReasons
+        }
+        if (undecided < 0) return
+        for (member in members.drop(undecided)) {
+            var region: LocalRegion? = model.region(reference.region)
+            while (region != null) {
+                conditionalMembers += region.id to member.name.lookupName
+                region = model.parent(region.id)
+            }
+        }
+    }
+
     /** The declarations an outcome names. */
     private fun named(outcome: LocalResolution): List<LocalDeclarationId> = when (outcome) {
         is LocalResolution.Bound -> listOf(outcome.declaration)
@@ -94,15 +123,24 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         else -> emptyList()
     }
 
+    /** The incompleteness of a region and every region inside it, with the conditional pieces behind it. */
+    private class Subtree {
+        val reasons: EnumSet<LocalIncompleteness> = EnumSet.noneOf(LocalIncompleteness::class.java)
+        val pieces = ArrayList<LocalConditionalPiece>()
+    }
+
     /** Each region with the incompleteness of every region inside it, itself included. */
-    private fun subtreeIncompleteness(): Map<LocalRegionId, Set<LocalIncompleteness>> {
-        val result = HashMap<LocalRegionId, EnumSet<LocalIncompleteness>>()
+    private fun subtreeIncompleteness(): Map<LocalRegionId, Subtree> {
+        val result = HashMap<LocalRegionId, Subtree>()
         for (region in model.regions) {
             val reasons = region.completeness.reasons
             if (reasons.isEmpty()) continue
+            val pieces = region.completeness.conditionalPieces()
             var current: LocalRegion? = region
             while (current != null) {
-                result.getOrPut(current.id) { EnumSet.noneOf(LocalIncompleteness::class.java) } += reasons
+                val subtree = result.getOrPut(current.id, ::Subtree)
+                subtree.reasons += reasons
+                subtree.pieces += pieces
                 current = model.parent(current.id)
             }
         }

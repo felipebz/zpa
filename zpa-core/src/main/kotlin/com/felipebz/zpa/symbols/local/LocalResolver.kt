@@ -99,8 +99,11 @@ internal object LocalResolver {
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
         if (outcome is LocalResolution.Unsupported) return outcome
         val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
-        // Hidden text changes what the lookup finds only in a declarative part it passes through, or at the use itself.
-        relied.forEach { reasons += it.completeness.lookupReasons }
+        // Hidden text changes what the lookup finds only in a declarative part it passes through, or at the use itself;
+        // conditional text only when it writes the name, or may change the block structure.
+        relied.forEach { reasons += it.completeness.lookupReasonsFor(reference.name) }
+        // A label written in undecided text, in a region around the use, may label the block or loop the use is in.
+        chain.forEach { reasons += it.completeness.labelReasonsFor(reference.name) }
         reasons += model.hiddenAt(reference.range)
         return if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
     }

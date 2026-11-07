@@ -13,7 +13,10 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -55,9 +58,12 @@ class MethodMatcherEffectiveTypeTest {
 
     @Test
     fun conditionalTextLeavesTheArgumentUnknown() {
-        val use = "DECLARE\n  value p.t;\n  \$IF \$\$flag \$THEN other NUMBER; \$END\nBEGIN\n  func(value.id);\nEND;\n"
+        // The conditional text writes `value`: it may declare another.
+        val use = "DECLARE\n  value p.t;\n  \$IF \$\$flag \$THEN other NUMBER; \$ELSE value NUMBER; \$END\nBEGIN\n  func(value.id);\nEND;\n"
         assertThat(matches("value.id", PlSqlType.NUMERIC, use)).isFalse
         assertThat(matches("value.id", PlSqlType.UNKNOWN, use)).isTrue
+        // Text that never writes `value` leaves the argument typed.
+        assertThat(matches("value.id", PlSqlType.NUMERIC, use.replace("\$ELSE value NUMBER; ", ""))).isTrue
     }
 
     private fun matches(argument: String, type: PlSqlType, use: String = "DECLARE\n  value p.t;\nBEGIN\n  func($argument);\nEND;\n"): Boolean {

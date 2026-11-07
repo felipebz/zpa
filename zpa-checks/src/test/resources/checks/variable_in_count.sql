@@ -52,9 +52,22 @@ declare
   foo number;
   $if $$extra $then
   bar number;
+  $else
+  foo date;
   $end
 begin
-  -- conditional compilation in the block: nothing is proven
+  -- conditional compilation in the block that writes "foo": nothing is proven
   select count(foo) into foo from dual;
+end;
+/
+
+declare
+  foo number;
+  $if $$extra $then
+  bar number;
+  $end
+begin
+  -- conditional compilation that never writes "foo" changes nothing about it
+  select count(foo) into foo from dual; -- Noncompliant {{Looks like there is a "foo" variable in this context. Review if this COUNT is correct.}}
 end;
 /

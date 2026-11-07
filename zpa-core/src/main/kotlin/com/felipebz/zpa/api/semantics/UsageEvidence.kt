@@ -61,7 +61,10 @@ enum class UsageUncertainty {
      */
     DECLARATION_OUTSIDE_FILE,
 
-    /** Conditional-compilation text touches a region the name is visible in. */
+    /**
+     * Conditional-compilation text in a region the name is visible in mentions the name, or may change the block
+     * structure.
+     */
     CONDITIONAL_COMPILATION,
 
     /** A SQL*Plus substitution (`&name`) touches a region the name is visible in. */

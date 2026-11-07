@@ -180,13 +180,15 @@ class FieldBindingTest {
     fun aMemberOfAProjectTypedValueUnderConditionalTextIsUndecided() {
         val spec = "create or replace package pk_c is\n  type t_row is record (code varchar2(10));\nend pk_c;\n/\n"
         val text = "create or replace procedure use_c(p_rec pk_c.t_row) is\n" +
-            "  \$if \$\$flag \$then n number; \$end\n" +
+            "  \$if \$\$flag \$then n number; \$else p_rec number; \$end\n" +
             "begin\n" +
             "  p_rec.code := 'x';\n" +
             "end;\n/\n"
         assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to text).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Unknown[CONDITIONAL_COMPILATION]")
-        // The same without the `${'$'}IF`: the field the specification declares.
-        val plain = text.replace("  \$if \$\$flag \$then n number; \$end\n", "  n number;\n")
+        // The same with a `${'$'}IF` that never writes `p_rec`, or without it: the field the specification declares.
+        val unrelated = text.replace("\$else p_rec number; ", "")
+        assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to unrelated).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Field(RECORD_FIELD#0@s.sql:2:24)")
+        val plain = text.replace("  \$if \$\$flag \$then n number; \$else p_rec number; \$end\n", "  n number;\n")
         assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to plain).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Field(RECORD_FIELD#0@s.sql:2:24)")
     }
 
@@ -265,9 +267,12 @@ class FieldBindingTest {
         assertThat(includeExpr(optsBody())).isEqualTo(field)
         // Among the statements of another subprogram: it declares nothing `a` sees.
         assertThat(includeExpr(optsBody(inB = selection))).isEqualTo(field)
-        // In the declarations of the same subprogram, or of the package body: it may declare `a_opts` or `t_opts`.
-        assertThat(includeExpr(optsBody(declarations = "    \$if \$\$flag \$then \$end\n"))).contains("CONDITIONAL_COMPILATION")
-        assertThat(includeExpr(optsBody(bodyLevel = "  \$if \$\$flag \$then \$end\n"))).contains("CONDITIONAL_COMPILATION")
+        // In the declarations of the same subprogram, or of the package body, text that writes `a_opts` or `t_opts`
+        // may declare it; text that writes neither declares nothing the lookups find.
+        assertThat(includeExpr(optsBody(declarations = "    \$if \$\$flag \$then \$else a_opts number; \$end\n"))).contains("CONDITIONAL_COMPILATION")
+        assertThat(includeExpr(optsBody(bodyLevel = "  \$if \$\$flag \$then \$else subtype t_opts is number; \$end\n"))).contains("CONDITIONAL_COMPILATION")
+        assertThat(includeExpr(optsBody(declarations = "    \$if \$\$flag \$then \$end\n"))).isEqualTo(field)
+        assertThat(includeExpr(optsBody(bodyLevel = "  \$if \$\$flag \$then \$end\n"))).isEqualTo(field)
         // The use itself in an undecided selection.
         assertThat(includeExpr(optsBody(use = "\$if \$\$flag \$then s := a_opts.include_expr; \$end"))).contains("CONDITIONAL_COMPILATION")
         // A dropped branch that ends `b` and declares in the package body (Oracle compiles it): it may hide `t_opts`.

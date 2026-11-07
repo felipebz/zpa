@@ -7,14 +7,15 @@ package com.felipebz.zpa.symbols.local
 
 /**
  * [template] with the `/*A*/` mark (a statement position) removed and an undecided `$IF` written in the declarative part
- * of the block holding that statement, right before its `BEGIN`: text there may declare any name the region holds,
- * which a statement cannot. Other `/*S*/` marks are removed.
+ * of the block holding that statement, right before its `BEGIN`. Its dropped branch ends a block it does not open, so it
+ * may change the block structure and declare any name the region holds, which a statement cannot. Other `/*S*/` marks
+ * are removed.
  */
 internal fun withConditionalDeclarations(template: String): String {
     val mark = template.indexOf("/*A*/")
     require(mark >= 0) { "no /*A*/ mark" }
     val begin = enclosingBegin(template.substring(0, mark)) ?: error("no open BEGIN before the /*A*/ mark")
-    return (template.substring(0, begin) + "\$IF \$\$x \$THEN \$END " + template.substring(begin)).replace("/*A*/", "").replace("/*S*/", "")
+    return (template.substring(0, begin) + "\$IF \$\$x \$THEN \$ELSE end; \$END " + template.substring(begin)).replace("/*A*/", "").replace("/*S*/", "")
 }
 
 /** The offset of the `BEGIN` of the innermost block still open at the end of [text]. */

@@ -156,9 +156,13 @@ class ValueCategoryReceiverTest {
 
     @Test
     fun conditionalCompilationKeepsReceiversUndecided() {
-        val conditional = callerBody.replace("    x number;\n", "    x number; \$if \$\$flag \$then y number; \$end\n")
+        // A dropped branch that ends a block it does not open may restructure the body: every receiver stays undecided.
+        val conditional = callerBody.replace("    x number;\n", "    x number; \$if \$\$flag \$then y number; \$else end; \$end\n")
         val rows = assigned(prepared(sources + ("u.sql" to conditional)), conditional)
         assertThat(rows).hasSize(13).allMatch { it.substringAfter('=').startsWith("Unknown[") && "CONDITIONAL_COMPILATION" in it }
+        // Conditional text that writes none of their names leaves them decided.
+        val unrelated = conditional.replace("\$else end; ", "")
+        assertThat(assigned(prepared(sources + ("u.sql" to unrelated)), unrelated)).hasSize(13).noneMatch { "CONDITIONAL_COMPILATION" in it }
     }
 
     /** `line:receiver=category` for every receiver of [file]. */

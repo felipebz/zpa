@@ -14,6 +14,7 @@ import com.felipebz.zpa.api.semantics.HiddenDeclaration
 import com.felipebz.zpa.api.semantics.HidingEvidence
 import com.felipebz.zpa.api.semantics.UsageUnavailability
 import com.felipebz.zpa.api.semantics.UsageUncertainty
+import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
 import java.util.*
 
@@ -33,12 +34,12 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
         val declaration = declarationOf(declarationNode) ?: return HidingEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
         val search = search(declaration)
         search.specification?.let { hidden ->
-            val own = reasons(model.region(declaration.region))
+            val own = reasons(model.region(declaration.region), declaration.name)
             return if (own.isEmpty()) HidingEvidence.Hides(hidden) else HidingEvidence.Unknown(own)
         }
         search.outermost?.let { hidden ->
             // Either declaration may not exist for Oracle when text it relies on is not visible to the analysis.
-            val pair = reasons(model.region(declaration.region)) + reasons(model.region(hidden.region))
+            val pair = reasons(model.region(declaration.region), declaration.name) + reasons(model.region(hidden.region), declaration.name)
             if (pair.isNotEmpty()) return HidingEvidence.Unknown(pair)
             return HidingEvidence.Hides(HiddenDeclaration(hidden.nameRange.startLine, hidden.nameRange.startColumn, null, node(declarationNode, hidden.nameRange)))
         }
@@ -63,7 +64,7 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
         var region: LocalRegion? = model.parent(declaration.region)
         while (region != null && region.kind != LocalRegionKind.FILE) {
             val scope = LocalResolver.scopeOf(model, region)
-            scope.regions.forEach { unseen += reasons(it) }
+            scope.regions.forEach { unseen += reasons(it, declaration.name) }
             outermost = scope.named(declaration.name).lastOrNull { candidate ->
                 candidate.kind in HIDDEN && (candidate.region in scope.earlierRegions || endsBefore(candidate.range, declaration.nameRange))
             } ?: outermost
@@ -79,7 +80,9 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
         return Search(outermost, specification, unseen)
     }
 
-    private fun reasons(region: LocalRegion): Set<UsageUncertainty> = region.completeness.reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
+    /** What the analysis cannot see in [region] that may declare, use or hide [name]. */
+    private fun reasons(region: LocalRegion, name: OracleIdentifier): Set<UsageUncertainty> =
+        region.completeness.reasonsFor(name).mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
 
     /** The name nodes of the file, by the start of their token: collected once, when a first hidden declaration is found. */
     private var namesByStart: Map<Pair<Int, Int>, AstNode>? = null

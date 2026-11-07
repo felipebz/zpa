@@ -28,6 +28,10 @@ import java.util.*
  * - **Spans**: the kept branches of conditional-compilation selections (tokens that may not exist for Oracle), as
  *   disjoint, sorted token-index ranges.
  * - **Recovery**: the token index where each file-level `RECOVERY` node starts.
+ *
+ * Each conditional-compilation point and each span is also an undecided piece ([LocalConditionalPiece]) with the names
+ * it mentions, read once here: a region's completeness keeps the pieces behind its conditional-compilation reason, so
+ * that a lookup or an evidence counts it only for the names the text writes.
  */
 internal class LocalCompletenessEvidence private constructor(
     private val tokens: List<Token>,
@@ -41,7 +45,11 @@ internal class LocalCompletenessEvidence private constructor(
      * Sorted token indexes of the conditional-compilation points whose dropped text is block-balanced: it cannot end the
      * block or subprogram it is written in, so among statements it declares nothing a lookup elsewhere passes through.
      */
-    private val balanced: IntArray = IntArray(0)
+    private val balanced: IntArray = IntArray(0),
+    /** The piece of each conditional-compilation point, by its token index. */
+    private val pointPieces: Map<Int, LocalConditionalPiece> = emptyMap(),
+    /** The piece of each span, in [spans] order. */
+    private val spanPieces: List<LocalConditionalPiece> = emptyList()
 ) {
     /** Index of the last token before `EOF`, or -1. */
     private val lastToken = tokens.indexOfLast { it.type !== GenericTokenType.EOF }
@@ -67,14 +75,17 @@ internal class LocalCompletenessEvidence private constructor(
             val range = bounds[index]
             val reasons = wholeRegion(region, range, index in beforeRecovery)
             val lookup = EnumSet.copyOf(reasons)
+            val pieces = ArrayList<LocalConditionalPiece>()
+            val lookupPieces = ArrayList<LocalConditionalPiece>()
             if (region.kind == LocalRegionKind.FILE) {
-                fileText(range, units, reasons)
+                fileText(range, units, reasons, pieces)
                 lookup += reasons
+                lookupPieces += pieces
             } else {
-                regionText(region, range, reasons)
-                lookupText(region, range, bounds, kinds, lookup)
+                regionText(region, range, reasons, pieces)
+                lookupText(region, range, bounds, kinds, lookup, lookupPieces)
             }
-            LocalRegionCompleteness.of(reasons, lookup)
+            LocalRegionCompleteness.of(reasons, lookup, pieces, lookupPieces)
         }
     }
 
@@ -97,20 +108,33 @@ internal class LocalCompletenessEvidence private constructor(
     }
 
     /** The hidden text of the file region: what lies outside every unit. */
-    private fun fileText(range: IntRange, units: List<Pair<IntRange, LocalRegionKind>>, reasons: MutableSet<LocalIncompleteness>) {
+    private fun fileText(
+        range: IntRange, units: List<Pair<IntRange, LocalRegionKind>>, reasons: MutableSet<LocalIncompleteness>, pieces: MutableList<LocalConditionalPiece>
+    ) {
         for ((reason, indexes) in points) {
-            if (indexes.any { b -> units.none { (unit, kind) -> holds(unit, kind, b) } }) reasons += reason
+            val outside = indexes.filter { b -> units.none { (unit, kind) -> holds(unit, kind, b) } }
+            if (outside.isNotEmpty()) reasons += reason
+            if (reason == LocalIncompleteness.CONDITIONAL_COMPILATION) outside.forEach { pieces += pointPiece(it) }
         }
-        if (spans.any { it.first <= range.last && range.first <= it.last && units.none { (unit, _) -> unit.first <= it.first && it.last <= unit.last } }) {
-            reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+        spans.forEachIndexed { i, span ->
+            if (span.first <= range.last && range.first <= span.last && units.none { (unit, _) -> unit.first <= span.first && span.last <= unit.last }) {
+                reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+                pieces += spanPiece(i)
+            }
         }
     }
 
     /** All hidden text in the tokens of [region], nested regions included. */
-    private fun regionText(region: RegionDraft, range: IntRange, reasons: MutableSet<LocalIncompleteness>) {
+    private fun regionText(region: RegionDraft, range: IntRange, reasons: MutableSet<LocalIncompleteness>, pieces: MutableList<LocalConditionalPiece>) {
         val own = ownTokens(region, range)
         for ((reason, indexes) in points) if (anyWithin(indexes, own)) reasons += reason
-        if (spans.any { it.first <= range.last && range.first <= it.last }) reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+        points[LocalIncompleteness.CONDITIONAL_COMPILATION]?.forEach { if (it in own) pieces += pointPiece(it) }
+        spans.forEachIndexed { i, span ->
+            if (span.first <= range.last && range.first <= span.last) {
+                reasons += LocalIncompleteness.CONDITIONAL_COMPILATION
+                pieces += spanPiece(i)
+            }
+        }
     }
 
     /**
@@ -120,11 +144,14 @@ internal class LocalCompletenessEvidence private constructor(
      * the nested regions, which declare nothing the region holds.
      */
     private fun lookupText(
-        region: RegionDraft, range: IntRange, bounds: List<IntRange>, kinds: Map<LocalRegionId, LocalRegionKind>, lookup: MutableSet<LocalIncompleteness>
+        region: RegionDraft, range: IntRange, bounds: List<IntRange>, kinds: Map<LocalRegionId, LocalRegionKind>, lookup: MutableSet<LocalIncompleteness>,
+        pieces: MutableList<LocalConditionalPiece>
     ) {
         val own = ownTokens(region, range)
         for ((reason, indexes) in points) {
-            if (indexes.any { it in own && !(reason == LocalIncompleteness.CONDITIONAL_COMPILATION && isBalanced(it)) }) lookup += reason
+            val counted = indexes.filter { it in own && !(reason == LocalIncompleteness.CONDITIONAL_COMPILATION && isBalanced(it)) }
+            if (counted.isNotEmpty()) lookup += reason
+            if (reason == LocalIncompleteness.CONDITIONAL_COMPILATION) counted.forEach { pieces += pointPiece(it) }
         }
         val statements = region.statementsStart?.let { (line, column) -> tokenAt(line, column) }?.takeIf { it in range }
         val declarative = when {
@@ -134,13 +161,24 @@ internal class LocalCompletenessEvidence private constructor(
         }
         val children = region.children.map { child -> bounds[child.ordinal] to kinds.getValue(child) }
         for ((reason, indexes) in points) {
-            if (indexes.any { b -> b in declarative && children.none { (child, kind) -> holds(child, kind, b) } }) lookup += reason
+            val counted = indexes.filter { b -> b in declarative && children.none { (child, kind) -> holds(child, kind, b) } }
+            if (counted.isNotEmpty()) lookup += reason
+            if (reason == LocalIncompleteness.CONDITIONAL_COMPILATION) counted.forEach { pieces += pointPiece(it) }
         }
         val spanEnd = statements?.minus(1) ?: range.last
-        if (spans.any { it.first <= spanEnd && range.first <= it.last && children.none { (child, _) -> child.first <= it.first && it.last <= child.last } }) {
-            lookup += LocalIncompleteness.CONDITIONAL_COMPILATION
+        spans.forEachIndexed { i, span ->
+            if (span.first <= spanEnd && range.first <= span.last && children.none { (child, _) -> child.first <= span.first && span.last <= child.last }) {
+                lookup += LocalIncompleteness.CONDITIONAL_COMPILATION
+                pieces += spanPiece(i)
+            }
         }
     }
+
+    /** The piece of the conditional-compilation point at token [index]; wide when it was not read. */
+    private fun pointPiece(index: Int) = pointPieces[index] ?: LocalConditionalPiece.WIDE
+
+    /** The piece of span [index]; wide when it was not read. */
+    private fun spanPiece(index: Int) = spanPieces.getOrNull(index) ?: LocalConditionalPiece.WIDE
 
     /** The tokens whose preceding hidden text is in [region]: a block's own first token included (a hidden `DECLARE`). */
     private fun ownTokens(region: RegionDraft, range: IntRange) = if (opensAtFirst(region.kind)) range else range.first + 1..range.last
@@ -246,10 +284,14 @@ internal class LocalCompletenessEvidence private constructor(
             val runs = ArrayList<Pair<Int, Boolean>>() // (token index, opens a level)
             val unbalanced = HashSet<Int>()
             val balancedPoints = HashSet<Int>()
+            val pointWords = HashMap<Int, MutableList<ConditionalWord>>()
             for ((index, boundary) in boundaries(tokens)) {
                 point(LocalIncompleteness.CONDITIONAL_COMPILATION, index)
-                runs += index to boundary.startsWith("\$IF", ignoreCase = true)
-                if (DroppedBranchText.isBlockBalanced(boundary)) balancedPoints += index else unbalanced += index
+                val text = boundary.originalValue
+                runs += index to text.startsWith("\$IF", ignoreCase = true)
+                val words = ConditionalText.words(text, boundary.line, boundary.column)
+                pointWords.getOrPut(index) { ArrayList() } += words
+                if (ConditionalText.isBlockBalanced(words)) balancedPoints += index else unbalanced += index
             }
 
             // Other discarded text, including before the first token and after the last one.
@@ -273,7 +315,11 @@ internal class LocalCompletenessEvidence private constructor(
                 }
             }
 
-            val spans = keptBranches(runs, dollarFallback, points[LocalIncompleteness.CONDITIONAL_COMPILATION].orEmpty())
+            val (spans, delimited) = keptBranches(runs, dollarFallback, points[LocalIncompleteness.CONDITIONAL_COMPILATION].orEmpty())
+            // The names each piece mentions, read once: a point's boundaries together, a kept branch's tokens.
+            val pointPieces = pointWords.mapValues { (index, words) -> ConditionalText.piece(words, wide = index in unbalanced) }
+            val spanPieces = if (!delimited) spans.map { LocalConditionalPiece.WIDE }
+            else spans.map { ConditionalText.piece(ConditionalText.words(tokens.subList(it.first, it.last + 1))) }
 
             // Recovery: file-level nodes only; one below the file level taints everything.
             val recoveryStarts = if (recovery.isEmpty()) IntArray(0) else {
@@ -288,13 +334,13 @@ internal class LocalCompletenessEvidence private constructor(
 
             return LocalCompletenessEvidence(
                 tokens, points.mapValues { it.value.distinct().sorted().toIntArray() }, spans, recoveryStarts, global,
-                (balancedPoints - unbalanced).sorted().toIntArray()
+                (balancedPoints - unbalanced).sorted().toIntArray(), pointPieces, spanPieces
             )
         }
 
-        /** The undecided conditional-compilation boundaries, as (index of the token they precede, their text). */
-        private fun boundaries(tokens: List<Token>): List<Pair<Int, String>> = tokens.withIndex().flatMap { (index, token) ->
-            token.trivia.filter { it.token.type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY }.map { index to it.token.originalValue }
+        /** The undecided conditional-compilation boundaries, as (index of the token they precede, their trivia token). */
+        private fun boundaries(tokens: List<Token>): List<Pair<Int, Token>> = tokens.withIndex().flatMap { (index, token) ->
+            token.trivia.filter { it.token.type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY }.map { index to it.token }
         }
 
         /** Whether the tokens before `EOF` start at strictly increasing (line, column) positions. */
@@ -341,9 +387,10 @@ internal class LocalCompletenessEvidence private constructor(
          * The kept-branch spans: boundary runs pair in token order (a run starting with `$IF` opens a level, any other
          * closes one); each top-level construct spans from the token carrying its opening run to the token before the
          * one carrying its closing run. When the runs do not pair, or a `$` was left in a gap, one span from the first
-         * to the last conditional point stands for the whole file.
+         * to the last conditional point stands for the whole file. The second value says whether the spans are the
+         * kept branches themselves (false for that one span).
          */
-        private fun keptBranches(runs: List<Pair<Int, Boolean>>, dollarFallback: Boolean, conditionalPoints: List<Int>): List<IntRange> {
+        private fun keptBranches(runs: List<Pair<Int, Boolean>>, dollarFallback: Boolean, conditionalPoints: List<Int>): Pair<List<IntRange>, Boolean> {
             val spans = ArrayList<IntRange>()
             var depth = 0
             var start = -1
@@ -360,11 +407,11 @@ internal class LocalCompletenessEvidence private constructor(
                 }
             }
             if (depth != 0) paired = false
-            if (paired && !dollarFallback) return spans
-            if (conditionalPoints.isEmpty()) return emptyList()
+            if (paired && !dollarFallback) return spans to true
+            if (conditionalPoints.isEmpty()) return emptyList<IntRange>() to false
             val first = conditionalPoints.min()
             val last = conditionalPoints.max()
-            return if (first <= last) listOf(first..last) else emptyList()
+            return (if (first <= last) listOf(first..last) else emptyList()) to false
         }
     }
 }
