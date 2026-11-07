@@ -13,6 +13,7 @@ import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.local.LocalFileAnalysis
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
 class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(type, name, token) {
@@ -73,8 +74,11 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
     /** Exact AST-free project fact for an immediate PACKAGE BODY subprogram, when available. */
     internal var projectSubprogramDeclaration: PackageSubprogramDeclaration? = null
 
-    /** On the root of a tree: the local resolution of the whole tree, left by the pre-pass; null when it failed. */
-    internal var localSemanticFacts: LocalSemanticFacts? = null
+    /** On the root of a tree: the local analysis of the whole tree, left by the pre-pass; null when it failed. */
+    internal var localAnalysis: LocalFileAnalysis? = null
+
+    /** On the root of a tree: the local resolution of the whole tree; null when the pre-pass failed. */
+    internal val localSemanticFacts: LocalSemanticFacts? get() = localAnalysis?.facts
 
     /**
      * Deprecated: part of the legacy symbol model, removed in the next major version. For a name use

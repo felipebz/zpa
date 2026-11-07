@@ -7,11 +7,16 @@
 
 package com.felipebz.zpa.symbols
 
+import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
+import com.felipebz.zpa.api.semantics.RecordOrigin
+import com.felipebz.zpa.api.semantics.ScalarFamily
+import com.felipebz.zpa.api.semantics.ValueCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.PackageTypeDeclaration
+import com.felipebz.zpa.project.ProjectTypeDeclaration
+import com.felipebz.zpa.project.ProjectTypeShape
 
 /** The source from which an effective broad type category was proven. */
 internal enum class EffectiveTypeSource {
@@ -30,7 +35,7 @@ internal sealed interface EffectiveTypeCategory {
     data object Unknown : EffectiveTypeCategory
 }
 
-/** Interprets existing semantic decorations without performing another resolution pass. */
+/** Interprets the legacy decorations and the local value categories without performing another resolution pass. */
 @OptIn(ZpaExperimentalApi::class)
 internal object EffectiveSemanticTypeQuery {
     fun typeCategory(node: SemanticAstNode): EffectiveTypeCategory {
@@ -38,23 +43,7 @@ internal object EffectiveSemanticTypeQuery {
             return EffectiveTypeCategory.Known(it, EffectiveTypeSource.LEGACY)
         }
 
-        node.projectRecordMemberPathResolution?.let { path ->
-            return when (path) {
-                is ProjectRecordMemberPathResolution.Completed ->
-                    path.segments.lastOrNull()?.fieldTypeResolution?.let(::typeCategory)
-                        ?: EffectiveTypeCategory.Unknown
-                is ProjectRecordMemberPathResolution.Stopped ->
-                    EffectiveTypeCategory.Unknown
-            }
-        }
-
-        node.projectRecordFieldTypeResolution?.let {
-            return typeCategory(it)
-        }
-
-        node.projectTypeResolution?.let {
-            return typeCategory(it)
-        }
+        projectCategory(node)?.let { return it }
 
         node.symbol?.projectTypeDeclaration?.let {
             return typeCategory(it)
@@ -63,22 +52,21 @@ internal object EffectiveSemanticTypeQuery {
         return EffectiveTypeCategory.Unknown
     }
 
-    private fun typeCategory(resolution: ProjectRecordFieldTypeResolution): EffectiveTypeCategory =
-        typeCategory(resolution.resolution)
-
-    private fun typeCategory(resolution: TypeRefSemanticResolution): EffectiveTypeCategory = when (resolution) {
-        is TypeRefSemanticResolution.BuiltIn ->
-            EffectiveTypeCategory.Known(legacyType(resolution.type), EffectiveTypeSource.BUILT_IN_TYPE_REF)
-        is TypeRefSemanticResolution.Project -> typeCategory(resolution.resolution)
-        is TypeRefSemanticResolution.Unsupported -> EffectiveTypeCategory.Unknown
-    }
-
-    private fun typeCategory(resolution: ProjectTypeResolution): EffectiveTypeCategory = when (resolution) {
-        is ProjectTypeResolution.Resolved -> typeCategory(resolution.declaration)
-        is ProjectTypeResolution.Ambiguous,
-        is ProjectTypeResolution.IncompleteIndex,
-        is ProjectTypeResolution.NotFoundInProject,
-        is ProjectTypeResolution.NotPrepared -> EffectiveTypeCategory.Unknown
+    /**
+     * The category of the value [node] gives when it is a field or attribute of a value whose type the project declares
+     * (as the local type walk reaches them): a predefined type's family, or a package record type. Null otherwise, and for
+     * any other category (an object, a collection), which the legacy fallback answers.
+     */
+    private fun projectCategory(node: SemanticAstNode): EffectiveTypeCategory? {
+        var root: AstNode = node
+        while (true) root = root.parentOrNull ?: break
+        val categories = (root as? SemanticAstNode)?.localAnalysis?.categories ?: return null
+        return when (val category = categories.projectMemberCategory(node) ?: return null) {
+            is ValueCategory.Scalar -> category.family?.let { EffectiveTypeCategory.Known(legacyType(it), EffectiveTypeSource.BUILT_IN_TYPE_REF) }
+            is ValueCategory.Record ->
+                EffectiveTypeCategory.Known(PlSqlType.RECORD, EffectiveTypeSource.PROJECT_DECLARATION).takeIf { category.origin == RecordOrigin.RECORD_TYPE }
+            else -> null
+        }
     }
 
     private fun typeCategory(declaration: ProjectTypeDeclaration): EffectiveTypeCategory = when (declaration) {
@@ -91,12 +79,12 @@ internal object EffectiveSemanticTypeQuery {
     }
 
     /** The legacy type category the typed parameters of [com.felipebz.zpa.api.matchers.MethodMatcher] compare with. */
-    private fun legacyType(category: ProjectBuiltInTypeCategory): PlSqlType = when (category) {
-        ProjectBuiltInTypeCategory.NUMERIC -> PlSqlType.NUMERIC
-        ProjectBuiltInTypeCategory.CHARACTER -> PlSqlType.CHARACTER
-        ProjectBuiltInTypeCategory.LOB -> PlSqlType.LOB
-        ProjectBuiltInTypeCategory.BOOLEAN -> PlSqlType.BOOLEAN
-        ProjectBuiltInTypeCategory.DATE -> PlSqlType.DATE
-        ProjectBuiltInTypeCategory.JSON -> PlSqlType.JSON
+    private fun legacyType(family: ScalarFamily): PlSqlType = when (family) {
+        ScalarFamily.NUMERIC -> PlSqlType.NUMERIC
+        ScalarFamily.CHARACTER, ScalarFamily.RAW, ScalarFamily.ROWID -> PlSqlType.CHARACTER
+        ScalarFamily.CLOB, ScalarFamily.BLOB -> PlSqlType.LOB
+        ScalarFamily.BOOLEAN -> PlSqlType.BOOLEAN
+        ScalarFamily.DATETIME, ScalarFamily.INTERVAL -> PlSqlType.DATE
+        ScalarFamily.JSON -> PlSqlType.JSON
     }
 }

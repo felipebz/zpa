@@ -14,48 +14,26 @@ import javax.swing.tree.TreePath
 internal class SemanticTreeBuilder {
     fun build(inspection: SemanticNodeInspection): DefaultMutableTreeNode {
         val root = DefaultMutableTreeNode(nodeHeading(inspection))
-        val pathResolution = inspection.projectRecordMemberPathResolution
-        val memberResolution = inspection.projectRecordMemberResolution
-        val fieldTypeResolution = inspection.projectRecordFieldTypeResolution
-        val typeResolution = inspection.projectTypeResolution
+        val typeName = inspection.typeName
+        val fields = inspection.fields
         val declaredType = inspection.declaredProjectType
-        val hasProjectMetadata = hasProjectMetadata(inspection)
+        val hasLocalAnswer = hasLocalAnswer(inspection)
         val resolution = DefaultMutableTreeNode("Resolution")
-        resolution.add(DefaultMutableTreeNode("source: ${resolutionSource(inspection, hasProjectMetadata)}"))
+        resolution.add(DefaultMutableTreeNode("source: ${resolutionSource(inspection, hasLocalAnswer)}"))
 
         when {
-            pathResolution != null -> {
-                resolution.add(DefaultMutableTreeNode("base: ${inspection.node.sourceValue ?: "<unknown>"}"))
-                resolution.add(DefaultMutableTreeNode(
-                    "path: ${pathState(pathResolution.state)}"
-                ))
+            typeName != null -> {
+                resolution.add(DefaultMutableTreeNode("type: ${typeName.reference}"))
+                resolution.add(DefaultMutableTreeNode("declaration: ${typeNameState(typeName)}"))
+                inspection.typeCategory?.let { resolution.add(DefaultMutableTreeNode("category: $it")) }
             }
-            memberResolution != null -> {
-                val member = memberResolution
-                resolution.add(DefaultMutableTreeNode(
-                    "member: ${member.field?.name ?: memberState(member.state)}"
-                ))
-                resolution.add(DefaultMutableTreeNode(
-                    "base type: ${member.containingDeclaration.qualifiedName}"
-                ))
-                fieldTypeResolution?.let { fieldType ->
-                    resolution.add(DefaultMutableTreeNode("member type: ${fieldType.typeRef.name}"))
-                    resolution.add(DefaultMutableTreeNode(
-                        "type resolution: ${fieldTypeState(fieldType)}"
-                    ))
-                }
+            fields.isNotEmpty() -> {
+                fields.forEach { resolution.add(DefaultMutableTreeNode("${it.name}: ${fieldState(it)}")) }
+                inspection.valueCategory?.let { resolution.add(DefaultMutableTreeNode("category: $it")) }
             }
-            typeResolution != null -> {
-                val type = typeResolution
-                resolution.add(DefaultMutableTreeNode("type: ${type.reference}"))
-                resolution.add(DefaultMutableTreeNode(
-                    "project declaration: ${projectTypeState(type.state)}"
-                ))
-            }
+            inspection.valueCategory != null -> resolution.add(DefaultMutableTreeNode("category: ${inspection.valueCategory}"))
             declaredType != null -> {
-                resolution.add(DefaultMutableTreeNode(
-                    "declared type: ${declaredType.qualifiedName}"
-                ))
+                resolution.add(DefaultMutableTreeNode("declared type: ${declaredType.qualifiedName}"))
                 resolution.add(DefaultMutableTreeNode("project declaration: Resolved"))
             }
             inspection.legacy != null -> resolution.add(DefaultMutableTreeNode("legacy result available"))
@@ -64,27 +42,16 @@ internal class SemanticTreeBuilder {
         root.add(resolution)
 
         when {
-            pathResolution != null -> root.add(getRecordMemberPathSummary(pathResolution))
-            memberResolution?.field != null -> {
-                val member = memberResolution
-                val field = member.field!!
-                root.add(getRecordDeclarationSummary(member.containingDeclaration, field))
-                fieldTypeResolution?.let {
-                    root.add(getRecordFieldTypeSummary(it))
-                }
-            }
-            typeResolution?.declaration != null ->
-                root.add(getDeclarationTreeNode("Declaration", typeResolution.declaration!!))
+            typeName?.declaration != null -> root.add(getDeclarationTreeNode("Declaration", typeName.declaration!!))
             declaredType != null -> root.add(getDeclarationTreeNode("Declaration", declaredType))
-            !hasProjectMetadata && inspection.legacy != null ->
-                root.add(getLegacySemanticTreeNode(inspection.legacy!!))
+            !hasLocalAnswer && inspection.legacy != null -> root.add(getLegacySemanticTreeNode(inspection.legacy!!))
         }
 
         if (!hasSemanticInformation(inspection)) {
             root.add(DefaultMutableTreeNode("No semantic information for this node"))
         }
 
-        val details = getDetailsTreeNode(inspection, hasProjectMetadata)
+        val details = getDetailsTreeNode(inspection, hasLocalAnswer)
         if (details.childCount > 0) root.add(details)
         root.add(getProjectContextTreeNode(inspection))
         return root
@@ -97,117 +64,40 @@ internal class SemanticTreeBuilder {
         for (index in 0 until root.childCount) {
             val child = root.getChildAt(index) as DefaultMutableTreeNode
             val label = child.userObject.toString()
-            if (label == "Resolution" || label == LEGACY_SEMANTICS ||
-                label.startsWith("Declaration:") || label.startsWith("Type resolution") ||
-                label.startsWith("RECORD path:")
-            ) {
+            if (label == "Resolution" || label == LEGACY_SEMANTICS || label.startsWith("Declaration:")) {
                 tree.expandPath(TreePath(child.path))
-                if (label.startsWith("RECORD path:")) {
-                    for (segmentIndex in 0 until child.childCount) {
-                        val segment = child.getChildAt(segmentIndex) as DefaultMutableTreeNode
-                        if (segment.userObject.toString().startsWith("[")) {
-                            tree.expandPath(TreePath(segment.path))
-                        }
-                    }
-                }
             }
         }
     }
 
     private fun nodeHeading(inspection: SemanticNodeInspection): String {
-        val pathResolution = inspection.projectRecordMemberPathResolution
-        val memberResolution = inspection.projectRecordMemberResolution
-        val typeResolution = inspection.projectTypeResolution
-        val value = when {
-            pathResolution != null -> {
-                val path = pathResolution
-                joinNodeParts(inspection.node.sourceValue, path.segments.map { it.field.name })
-            }
-            memberResolution?.field != null -> joinNodeParts(
-                inspection.node.sourceValue,
-                listOf(memberResolution.field!!.name)
-            )
-            typeResolution != null -> typeResolution.reference
-            else -> inspection.node.sourceValue
-        }
-        return if (value.isNullOrBlank()) {
-            "Node: ${inspection.node.grammarType}"
-        } else {
-            "${inspection.node.grammarType}: $value"
-        }
+        val value = inspection.typeName?.reference ?: memberText(inspection) ?: inspection.node.sourceValue
+        return if (value.isNullOrBlank()) "Node: ${inspection.node.grammarType}" else "${inspection.node.grammarType}: $value"
     }
 
-    private fun joinNodeParts(base: String?, parts: List<String>): String? {
-        if (base.isNullOrBlank()) return parts.takeIf { it.isNotEmpty() }?.joinToString(".")
-        return if (parts.isEmpty()) base else "$base.${parts.joinToString(".")}"
+    /** The names of a member node: its first name and the names after it, or only these when they start the node. */
+    private fun memberText(inspection: SemanticNodeInspection): String? {
+        val fields = inspection.fields.takeIf { it.isNotEmpty() } ?: return null
+        val names = fields.joinToString(".") { it.name }
+        val start = inspection.node.sourceRange ?: return names
+        val first = fields.first().sourceRange
+        return if (first.startLine == start.startLine && first.startColumn == start.startColumn) names else "${inspection.node.sourceValue}.$names"
     }
 
-    private fun hasProjectMetadata(inspection: SemanticNodeInspection): Boolean =
-        inspection.projectTypeResolution != null ||
-            inspection.declaredProjectType != null ||
-            inspection.projectRecordMemberResolution != null ||
-            inspection.projectRecordFieldTypeResolution != null ||
-            inspection.projectRecordMemberPathResolution != null
+    private fun hasLocalAnswer(inspection: SemanticNodeInspection): Boolean =
+        inspection.typeName != null || inspection.typeCategory != null || inspection.valueCategory != null ||
+            inspection.declaredProjectType != null || inspection.fields.isNotEmpty()
 
     private fun hasSemanticInformation(inspection: SemanticNodeInspection): Boolean =
-        inspection.legacy != null || hasProjectMetadata(inspection)
+        inspection.legacy != null || hasLocalAnswer(inspection)
 
-    private fun resolutionSource(inspection: SemanticNodeInspection, hasProjectMetadata: Boolean): String = when {
-        hasProjectMetadata -> "Project semantics"
+    private fun resolutionSource(inspection: SemanticNodeInspection, hasLocalAnswer: Boolean): String = when {
+        hasLocalAnswer -> "Local semantics"
         inspection.legacy != null -> LEGACY_SEMANTICS
         else -> "No semantic resolution"
     }
 
-    private fun getRecordDeclarationSummary(
-        declaration: ProjectDeclarationSummary,
-        field: ProjectRecordFieldSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode(
-            "Declaration: ${declaration.shape ?: declaration.kind}: ${declaration.qualifiedName}"
-        )
-        node.add(DefaultMutableTreeNode("field: ${field.name}"))
-        node.add(DefaultMutableTreeNode("ordinal: ${field.ordinal}"))
-        return node
-    }
-
-    private fun getRecordFieldTypeSummary(
-        resolution: ProjectRecordFieldTypeResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("Type resolution")
-        node.add(DefaultMutableTreeNode(
-            "${resolution.typeRef.name}: ${fieldTypeState(resolution)}"
-        ))
-        resolution.resolution?.let { projectResolution ->
-            projectResolution.declaration?.let {
-                node.add(DefaultMutableTreeNode("project declaration: ${it.qualifiedName}"))
-            }
-        }
-        return node
-    }
-
-    private fun getRecordMemberPathSummary(
-        resolution: ProjectRecordMemberPathResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("RECORD path: ${pathState(resolution.state)}")
-        for (segment in resolution.segments) {
-            val segmentNode = DefaultMutableTreeNode("[${segment.ordinal}] ${segment.field.name}")
-            segmentNode.add(DefaultMutableTreeNode("type: ${segment.fieldTypeResolution.typeRef.name}"))
-            segmentNode.add(DefaultMutableTreeNode(
-                "${fieldTypeSummaryLabel(segment.fieldTypeResolution)}: ${fieldTypeState(segment.fieldTypeResolution)}"
-            ))
-            node.add(segmentNode)
-        }
-        if (resolution.state == ProjectRecordMemberPathResolutionState.STOPPED) {
-            node.add(DefaultMutableTreeNode("Stopped before: ${resolution.nextMember}"))
-            node.add(DefaultMutableTreeNode("Reason: ${stopReason(resolution.stopReason)}"))
-        }
-        return node
-    }
-
-    private fun getDetailsTreeNode(
-        inspection: SemanticNodeInspection,
-        hasProjectMetadata: Boolean
-    ): DefaultMutableTreeNode {
+    private fun getDetailsTreeNode(inspection: SemanticNodeInspection, hasLocalAnswer: Boolean): DefaultMutableTreeNode {
         val details = DefaultMutableTreeNode("Details")
         val node = DefaultMutableTreeNode("Node metadata")
         inspection.node.sourceValue?.let { node.add(DefaultMutableTreeNode("source value: $it")) }
@@ -215,24 +105,12 @@ internal class SemanticTreeBuilder {
         if (node.childCount > 0) details.add(node)
 
         val legacy = inspection.legacy
-        if (hasProjectMetadata && legacy != null) {
+        if (hasLocalAnswer && legacy != null) {
             details.add(getLegacySemanticTreeNode(legacy, "Legacy semantics (raw)"))
         }
-        inspection.projectTypeResolution?.let {
-            details.add(getProjectTypeResolutionTreeNode("Project type resolution", it))
-        }
-        inspection.declaredProjectType?.let {
-            details.add(getDeclarationTreeNode("Declared project type", it))
-        }
-        inspection.projectRecordMemberResolution?.let {
-            details.add(getRecordMemberResolutionTreeNode("Direct RECORD member", it))
-        }
-        inspection.projectRecordFieldTypeResolution?.let {
-            details.add(getRecordFieldTypeResolutionTreeNode(it))
-        }
-        inspection.projectRecordMemberPathResolution?.let {
-            details.add(getRecordMemberPathResolutionTreeNode(it))
-        }
+        inspection.typeName?.let { details.add(getTypeNameTreeNode(it)) }
+        inspection.declaredProjectType?.let { details.add(getDeclarationTreeNode("Declared project type", it)) }
+        inspection.fields.forEach { details.add(getFieldTreeNode(it)) }
         return details
     }
 
@@ -274,31 +152,24 @@ internal class SemanticTreeBuilder {
         return node
     }
 
-    private fun getProjectTypeResolutionTreeNode(
-        label: String,
-        resolution: ProjectTypeResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("$label: ${projectTypeState(resolution.state)}")
-        node.add(DefaultMutableTreeNode("raw state: ${resolution.state}"))
-        node.add(DefaultMutableTreeNode("reference: ${resolution.reference}"))
-        resolution.declaration?.let { node.add(getDeclarationTreeNode("declaration", it)) }
-        if (resolution.candidates.isNotEmpty()) {
-            val candidates = DefaultMutableTreeNode("candidates")
-            resolution.candidates.forEach { candidates.add(getDeclarationTreeNode("candidate", it)) }
-            node.add(candidates)
-        }
-        if (resolution.knownCandidates.isNotEmpty()) {
-            val candidates = DefaultMutableTreeNode("known candidates")
-            resolution.knownCandidates.forEach { candidates.add(getDeclarationTreeNode("candidate", it)) }
-            node.add(candidates)
-        }
-        if (resolution.preparationFailures.isNotEmpty()) {
-            val failures = DefaultMutableTreeNode("preparation failures")
-            resolution.preparationFailures.forEach {
-                failures.add(DefaultMutableTreeNode("${it.fileId}: ${it.exceptionType}"))
-            }
-            node.add(failures)
-        }
+    private fun getTypeNameTreeNode(typeName: TypeNameSummary): DefaultMutableTreeNode {
+        val node = DefaultMutableTreeNode("Type name: ${typeNameState(typeName)}")
+        node.add(DefaultMutableTreeNode("raw state: ${typeName.state}"))
+        node.add(DefaultMutableTreeNode("reference: ${typeName.reference}"))
+        typeName.declaration?.let { node.add(getDeclarationTreeNode("declaration", it)) }
+        typeName.localDeclaration?.let { node.add(DefaultMutableTreeNode("local declaration: ${formatRange(it)}")) }
+        if (typeName.reasons.isNotEmpty()) node.add(DefaultMutableTreeNode("reasons: ${typeName.reasons.joinToString(", ")}"))
+        return node
+    }
+
+    private fun getFieldTreeNode(field: FieldBindingSummary): DefaultMutableTreeNode {
+        val node = DefaultMutableTreeNode("Field ${field.name}: ${fieldState(field)}")
+        node.add(DefaultMutableTreeNode("raw state: ${field.state}"))
+        node.add(DefaultMutableTreeNode("range: ${formatRange(field.sourceRange)}"))
+        field.kind?.let { node.add(DefaultMutableTreeNode("kind: $it")) }
+        field.ordinal?.let { node.add(DefaultMutableTreeNode("ordinal: $it")) }
+        field.declaration?.let { node.add(DefaultMutableTreeNode("declaration: ${formatRange(it)}")) }
+        if (field.reasons.isNotEmpty()) node.add(DefaultMutableTreeNode("reasons: ${field.reasons.joinToString(", ")}"))
         return node
     }
 
@@ -312,139 +183,24 @@ internal class SemanticTreeBuilder {
         return node
     }
 
-    private fun getRecordMemberResolutionTreeNode(
-        label: String,
-        resolution: ProjectRecordMemberResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("$label: ${memberState(resolution.state)}")
-        node.add(DefaultMutableTreeNode("raw state: ${resolution.state}"))
-        node.add(getDeclarationTreeNode("containing declaration", resolution.containingDeclaration))
-        resolution.field?.let { node.add(getRecordFieldTreeNode("field", it)) }
-        if (resolution.candidates.isNotEmpty()) {
-            val candidates = DefaultMutableTreeNode("candidates")
-            resolution.candidates.forEach { candidates.add(getRecordFieldTreeNode("field", it)) }
-            node.add(candidates)
-        }
-        return node
-    }
-
-    private fun getRecordFieldTypeResolutionTreeNode(
-        resolution: ProjectRecordFieldTypeResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode(
-            "Direct RECORD field type: ${fieldTypeState(resolution)}"
-        )
-        node.add(DefaultMutableTreeNode("raw state: ${resolution.state}"))
-        node.add(getRecordFieldTreeNode("field", resolution.field))
-        node.add(getTypeRefTreeNode("type reference", resolution.typeRef))
-        resolution.semanticType?.let {
-            node.add(DefaultMutableTreeNode("semantic type: $it"))
-        }
-        resolution.resolution?.let {
-            node.add(getProjectTypeResolutionTreeNode("project type resolution", it))
-        }
-        return node
-    }
-
-    private fun getRecordMemberPathResolutionTreeNode(
-        resolution: ProjectRecordMemberPathResolutionSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("RECORD member path: ${pathState(resolution.state)}")
-        node.add(DefaultMutableTreeNode("raw state: ${resolution.state}"))
-        for (segment in resolution.segments) {
-            val segmentNode = DefaultMutableTreeNode("[${segment.ordinal}] ${segment.field.name}")
-            segmentNode.add(getRecordFieldTreeNode("field", segment.field))
-            val fieldType = DefaultMutableTreeNode(
-                "field type: ${fieldTypeState(segment.fieldTypeResolution)}"
-            )
-            fieldType.add(DefaultMutableTreeNode("raw state: ${segment.fieldTypeResolution.state}"))
-            fieldType.add(getTypeRefTreeNode("type reference", segment.fieldTypeResolution.typeRef))
-            segment.fieldTypeResolution.semanticType?.let {
-                fieldType.add(DefaultMutableTreeNode("semantic type: $it"))
-            }
-            segment.fieldTypeResolution.resolution?.let {
-                fieldType.add(getProjectTypeResolutionTreeNode("project type resolution", it))
-            }
-            segmentNode.add(fieldType)
-            node.add(segmentNode)
-        }
-        if (resolution.state == ProjectRecordMemberPathResolutionState.STOPPED) {
-            node.add(DefaultMutableTreeNode("next member: ${resolution.nextMember}"))
-            node.add(DefaultMutableTreeNode("next member ordinal: ${resolution.nextMemberOrdinal}"))
-            node.add(DefaultMutableTreeNode("stop reason: ${resolution.stopReason}"))
-        }
-        return node
-    }
-
-    private fun getRecordFieldTreeNode(label: String, field: ProjectRecordFieldSummary): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("$label: ${field.name}")
-        node.add(DefaultMutableTreeNode("field ordinal: ${field.ordinal}"))
-        node.add(getTypeRefTreeNode("field type", field.typeRef))
-        node.add(DefaultMutableTreeNode("range: ${formatRange(field.sourceRange)}"))
-        return node
-    }
-
-    private fun getTypeRefTreeNode(
-        label: String,
-        typeRef: SemanticTypeRefSummary
-    ): DefaultMutableTreeNode {
-        val node = DefaultMutableTreeNode("$label: ${typeRef.kind} ${typeRef.name}")
-        typeRef.anchor?.let { node.add(DefaultMutableTreeNode("anchor: $it")) }
-        node.add(DefaultMutableTreeNode("range: ${formatRange(typeRef.sourceRange)}"))
-        return node
-    }
-
     private fun formatRange(range: SemanticSourceRange): String =
         "${range.fileId}:${range.startLine}:${range.startColumn}-${range.endLine}:${range.endColumn}"
 
-    private fun projectTypeState(state: ProjectTypeResolutionState): String = when (state) {
-        ProjectTypeResolutionState.RESOLVED -> "Resolved"
-        ProjectTypeResolutionState.AMBIGUOUS -> "Ambiguous"
-        ProjectTypeResolutionState.NOT_FOUND_IN_PROJECT -> "No project declaration"
-        ProjectTypeResolutionState.INCOMPLETE_INDEX -> "Incomplete project index"
-        ProjectTypeResolutionState.NOT_PREPARED -> "Project index not prepared"
+    private fun typeNameState(typeName: TypeNameSummary): String = when (typeName.state) {
+        TypeNameState.LOCAL -> "Local declaration"
+        TypeNameState.PROJECT -> "Resolved ${typeName.declaration?.qualifiedName.orEmpty()}".trimEnd()
+        TypeNameState.BUILT_IN -> "Predefined type"
+        TypeNameState.AMBIGUOUS -> "Ambiguous"
+        TypeNameState.NOT_FOUND_IN_PROJECT -> "No project declaration"
+        TypeNameState.INCOMPLETE_INDEX -> "Incomplete project index"
+        TypeNameState.NOT_PREPARED -> "Project index not prepared"
+        TypeNameState.UNDECIDED -> "Undecided"
     }
 
-    private fun fieldTypeState(resolution: ProjectRecordFieldTypeResolutionSummary): String = when {
-        resolution.state == ProjectRecordFieldTypeResolutionState.BUILT_IN ->
-            "Built-in ${resolution.semanticType ?: "type"}"
-        resolution.state == ProjectRecordFieldTypeResolutionState.UNSUPPORTED -> "Unsupported reference form"
-        resolution.resolution == null -> "No project resolution"
-        else -> projectTypeState(resolution.resolution!!.state)
-    }
-
-    private fun fieldTypeSummaryLabel(resolution: ProjectRecordFieldTypeResolutionSummary): String =
-        if (resolution.state == ProjectRecordFieldTypeResolutionState.BUILT_IN) {
-            "semantic type"
-        } else {
-            "project declaration"
-        }
-
-    private fun memberState(state: ProjectRecordMemberResolutionState): String = when (state) {
-        ProjectRecordMemberResolutionState.RESOLVED -> "Resolved"
-        ProjectRecordMemberResolutionState.NOT_FOUND -> "No matching project field"
-        ProjectRecordMemberResolutionState.AMBIGUOUS -> "Ambiguous"
-        ProjectRecordMemberResolutionState.INCOMPLETE -> "Attribute list incomplete"
-        ProjectRecordMemberResolutionState.METHOD -> "Method"
-        ProjectRecordMemberResolutionState.COLLECTION_METHOD -> "Collection method"
-        ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE -> "Unsupported type"
-    }
-
-    private fun pathState(state: ProjectRecordMemberPathResolutionState): String = when (state) {
-        ProjectRecordMemberPathResolutionState.COMPLETED -> "Completed"
-        ProjectRecordMemberPathResolutionState.STOPPED -> "Stopped"
-    }
-
-    private fun stopReason(reason: String?): String = when (reason) {
-        "MEMBER_NOT_FOUND" -> "Member not found"
-        "MEMBER_AMBIGUOUS" -> "Ambiguous member"
-        "MEMBER_INCOMPLETE" -> "Attribute list incomplete"
-        "MEMBER_IS_METHOD" -> "Method"
-        "MEMBER_IS_COLLECTION_METHOD" -> "Collection method"
-        "UNSUPPORTED_TYPE" -> "Unsupported type"
-        "FIELD_TYPE_UNRESOLVED" -> "Field type unresolved"
-        null -> "Unknown"
-        else -> reason.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
+    private fun fieldState(field: FieldBindingSummary): String = when (field.state) {
+        FieldBindingState.FIELD -> "${if (field.kind == "ATTRIBUTE") "attribute" else "field"} #${field.ordinal}"
+        FieldBindingState.UNKNOWN -> "Undecided"
+        FieldBindingState.NOT_A_FIELD -> "Not a field"
     }
 }
 

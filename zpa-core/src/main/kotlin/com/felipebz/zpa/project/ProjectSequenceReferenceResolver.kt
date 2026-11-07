@@ -10,8 +10,12 @@ import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectTypeDescription
+import com.felipebz.zpa.api.project.ProjectValueResolution
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import com.felipebz.zpa.symbols.local.LocalFileAnalysis
+import com.felipebz.zpa.symbols.local.LocalTypeEvidence
 
 internal enum class ProjectSequenceReferenceResolution {
     RESOLVED_SEQUENCE,
@@ -27,10 +31,11 @@ internal class ProjectSequenceReferenceResolver(
     fun resolve(node: AstNode): ProjectSequenceReferenceResolution {
         val candidate = sequenceCandidate(node) ?: return ProjectSequenceReferenceResolution.UNKNOWN
         // Without the local resolution, nothing proves the name is not a local one.
-        val facts = (rootOf(node) as? SemanticAstNode)?.localSemanticFacts ?: return ProjectSequenceReferenceResolution.UNKNOWN
-        if (hasAuthoritativeNonSequenceResolution(node, facts)) {
+        val analysis = (rootOf(node) as? SemanticAstNode)?.localAnalysis ?: return ProjectSequenceReferenceResolution.UNKNOWN
+        if (hasAuthoritativeNonSequenceResolution(node, analysis)) {
             return ProjectSequenceReferenceResolution.RESOLVED_NON_SEQUENCE
         }
+        if (candidate.prefix.size == 2 && prefixUndecided(node, analysis)) return ProjectSequenceReferenceResolution.UNKNOWN
         if (hasLocalQualifierConflict(node, candidate.prefix)) {
             return ProjectSequenceReferenceResolution.UNKNOWN
         }
@@ -76,15 +81,32 @@ internal class ProjectSequenceReferenceResolver(
 
     /**
      * The name is not a sequence: the whole dotted name is a local qualified name, or its first segment names a local
-     * declaration (a local name hides a schema object), or the project resolved it as a member.
+     * declaration (a local name hides a schema object), or the names before `NEXTVAL`/`CURRVAL` give a package value
+     * (of another file, or a member of one) whose type the project knows, or that shares its name with the sequence.
      */
-    private fun hasAuthoritativeNonSequenceResolution(node: AstNode, facts: LocalSemanticFacts): Boolean {
-        val semantic = node as? SemanticAstNode ?: return false
+    @OptIn(ZpaExperimentalApi::class)
+    private fun hasAuthoritativeNonSequenceResolution(node: AstNode, analysis: LocalFileAnalysis): Boolean {
+        val facts = analysis.facts
         val first = node.firstChild.token
-        return facts.qualifiedDeclaration(node.token.line, node.token.column) != null ||
-            facts.nameDeclaration(first.line, first.column) != null ||
-            semantic.projectRecordMemberResolution != null ||
-            semantic.projectRecordMemberPathResolution != null
+        if (facts.qualifiedDeclaration(node.token.line, node.token.column) != null || facts.nameDeclaration(first.line, first.column) != null) return true
+        val (_, value) = analysis.categories?.memberBase(node.lastChild) ?: return false
+        val source = value.description?.source?.takeIf { value.terminal == LocalTypeEvidence.Terminal.PROJECT } ?: return false
+        return when (source.status) {
+            ProjectTypeDescription.Status.DECLARED_TYPE, ProjectTypeDescription.Status.BUILT_IN -> true
+            // A package value shares the name with another declaration (the sequence itself): the package, a schema
+            // object of the current schema, takes the qualifier first.
+            ProjectTypeDescription.Status.UNRESOLVED_VALUE -> source.valueResolution.map { it.status == ProjectValueResolution.Status.AMBIGUOUS }.orElse(false)
+            else -> false
+        }
+    }
+
+    /**
+     * Text this file may hold differently (a `$IF`, a substitution) leaves `a.b` before the suffix undecided: it may be
+     * a member of a value, whose reading the walk does not decide.
+     */
+    private fun prefixUndecided(node: AstNode, analysis: LocalFileAnalysis): Boolean {
+        val (_, value) = analysis.categories?.memberBase(node.lastChild) ?: return false
+        return value.terminal == LocalTypeEvidence.Terminal.UNKNOWN && value.incomplete?.regionReasons?.isNotEmpty() == true
     }
 
     private fun rootOf(node: AstNode): AstNode {

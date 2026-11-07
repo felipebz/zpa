@@ -8,317 +8,84 @@
 
 package com.felipebz.zpa.api.matchers
 
+import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.RuleTest
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.PlSqlType
-import com.felipebz.zpa.api.symbols.datatype.CharacterDatatype
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
-import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
-import com.felipebz.zpa.symbols.EffectiveTypeCategory
-import com.felipebz.zpa.symbols.EffectiveTypeSource
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
-class MethodMatcherEffectiveTypeTest : RuleTest() {
-    @BeforeEach
-    fun init() {
-        setRootRule(PlSqlGrammar.EXPRESSION)
+/** The typed parameters of a [MethodMatcher] compared with the category of an argument the project types. */
+class MethodMatcherEffectiveTypeTest {
+    private val spec = "CREATE PACKAGE p AS\n" +
+        "  TYPE c IS RECORD (id NUMBER, name VARCHAR2(10));\n" +
+        "  TYPE t IS RECORD (id NUMBER, name VARCHAR2(10), child c);\n" +
+        "END p;\n"
+
+    @Test
+    fun aVariableOfAProjectRecordTypeIsARecord() {
+        assertThat(matches("value", PlSqlType.RECORD)).isTrue
+        assertThat(matches("value", PlSqlType.NUMERIC)).isFalse
     }
 
     @Test
-    fun usesAProjectBuiltInFieldCategory() {
-        val call = callWithFieldType("value.id", "NUMBER", PlSqlType.NUMERIC)
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isTrue
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.CHARACTER).matches(call)).isFalse
+    fun aFieldOfAProjectRecordHasTheCategoryOfItsType() {
+        assertThat(matches("value.id", PlSqlType.NUMERIC)).isTrue
+        assertThat(matches("value.id", PlSqlType.CHARACTER)).isFalse
+        assertThat(matches("value.name", PlSqlType.CHARACTER)).isTrue
+        assertThat(matches("value.child", PlSqlType.RECORD)).isTrue
     }
 
     @Test
-    fun usesProjectRecordCategoryFromTheSemanticPipeline() {
-        val packageFile = FileId("package.sql")
-        val useFile = FileId("use.sql")
-        val sources = listOf(
-            packageFile to "CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;",
-            useFile to "DECLARE value p.t; BEGIN func(value); END;"
-        )
+    fun aMemberChainHasTheCategoryOfItsLastField() {
+        assertThat(matches("value.child.name", PlSqlType.CHARACTER)).isTrue
+        assertThat(matches("value.child.name", PlSqlType.RECORD)).isFalse
+    }
+
+    @Test
+    fun aNameTheRecordDoesNotHaveIsUnknown() {
+        assertThat(matches("value.missing", PlSqlType.NUMERIC)).isFalse
+        assertThat(matches("value.missing", PlSqlType.UNKNOWN)).isTrue
+    }
+
+    @Test
+    fun conditionalTextLeavesTheArgumentUnknown() {
+        val use = "DECLARE\n  value p.t;\n  \$IF \$\$flag \$THEN other NUMBER; \$END\nBEGIN\n  func(value.id);\nEND;\n"
+        assertThat(matches("value.id", PlSqlType.NUMERIC, use)).isFalse
+        assertThat(matches("value.id", PlSqlType.UNKNOWN, use)).isTrue
+    }
+
+    private fun matches(argument: String, type: PlSqlType, use: String = "DECLARE\n  value p.t;\nBEGIN\n  func($argument);\nEND;\n"): Boolean {
+        val sources = listOf(FileId("package.sql") to spec, FileId("use.sql") to use)
         val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(
             sources.map { (fileId, source) -> ProjectSource(fileId) { source } },
             concurrent = false
         ))
-        val check = MatcherCheck(MethodMatcher.create().name("func").addParameter(PlSqlType.RECORD))
+        val check = MatcherCheck(MethodMatcher.create().name("func").addParameter(type))
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)
-
-        scanner.scanFile(FixtureFile(packageFile, sources[0].second))
-        scanner.scanFile(FixtureFile(useFile, sources[1].second), listOf(check), useFile)
-
-        assertThat(check.projectTypeDeclaration).isNotNull
-        assertThat(check.matched).isTrue
-        assertThat(check.legacyArgumentType).isEqualTo(PlSqlType.UNKNOWN)
+        scanner.scanFile(FixtureFile(sources[0].first, sources[0].second))
+        scanner.scanFile(FixtureFile(sources[1].first, sources[1].second), listOf(check), sources[1].first)
+        return check.matched!!
     }
-
-    @Test
-    fun usesProjectBuiltInFieldCategoryFromTheSemanticPipeline() {
-        val packageFile = FileId("package.sql")
-        val useFile = FileId("use.sql")
-        val sources = listOf(
-            packageFile to "CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;",
-            useFile to "DECLARE value p.t; BEGIN func(value.id); END;"
-        )
-        val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(
-            sources.map { (fileId, source) -> ProjectSource(fileId) { source } },
-            concurrent = false
-        ))
-        val check = ProjectFieldMatcherCheck(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC))
-        val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)
-
-        scanner.scanFile(FixtureFile(packageFile, sources[0].second))
-        scanner.scanFile(FixtureFile(useFile, sources[1].second), listOf(check), useFile)
-
-        assertThat(check.matched).isTrue
-        assertThat(check.legacyArgumentType).isEqualTo(PlSqlType.UNKNOWN)
-        assertThat(check.projectField?.name).isEqualTo(identifier("id"))
-        assertThat(check.effectiveCategory).isEqualTo(
-            EffectiveTypeCategory.Known(PlSqlType.NUMERIC, EffectiveTypeSource.BUILT_IN_TYPE_REF)
-        )
-    }
-
-    @Test
-    fun usesAProjectCharacterFieldCategory() {
-        val call = callWithFieldType("value.name", "VARCHAR2", PlSqlType.CHARACTER)
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.CHARACTER).matches(call)).isTrue
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isFalse
-    }
-
-    @Test
-    fun usesAProjectRecordFieldCategory() {
-        val reference = named("p.child")
-        val call = call("value.child") { argument ->
-            argument.projectRecordFieldTypeResolution = fieldTypeResolution(
-                field("child", reference),
-                TypeRefSemanticResolution.Project(
-                    reference,
-                    ProjectTypeResolution.Resolved(reference, record("child"))
-                )
-            )
-        }
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.RECORD).matches(call)).isTrue
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isFalse
-    }
-
-    @Test
-    fun usesACompletedProjectPathTerminalCategory() {
-        val childReference = named("p.child")
-        val child = field("child", childReference)
-        val idReference = named("NUMBER")
-        val id = field("id", idReference)
-        val call = call("value.child.id") { argument ->
-            argument.projectRecordMemberPathResolution = ProjectRecordMemberPathResolution.Completed(listOf(
-                ProjectRecordMemberPathSegment(child, fieldTypeResolution(
-                    child,
-                    TypeRefSemanticResolution.Project(
-                        childReference,
-                        ProjectTypeResolution.Resolved(childReference, record("child"))
-                    )
-                )),
-                ProjectRecordMemberPathSegment(id, fieldTypeResolution(
-                    id,
-                    TypeRefSemanticResolution.BuiltIn(idReference, ProjectBuiltInTypeCategory.NUMERIC)
-                ))
-            ))
-        }
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isTrue
-    }
-
-    @Test
-    fun legacyCategoryTakesPrecedenceOverConflictingProjectCategory() {
-        val call = callWithFieldType("value.id", "NUMBER", PlSqlType.NUMERIC) { argument ->
-            argument.plSqlDatatype = CharacterDatatype()
-        }
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.CHARACTER).matches(call)).isTrue
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isFalse
-    }
-
-    @Test
-    fun unknownEffectiveCategoryRetainsTheExistingMatcherPolicy() {
-        val call = call("value.id")
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isFalse
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN).matches(call)).isTrue
-    }
-
-    @Test
-    fun projectUncertaintyRetainsTheExistingUnknownPolicy() {
-        val reference = named("external_type")
-        val anchoredReference = AnchoredTypeRef(
-            QualifiedName(identifier("some_table")),
-            TypeAnchor.TYPE,
-            range()
-        )
-        val resolutions = listOf<TypeRefSemanticResolution>(
-            TypeRefSemanticResolution.Project(
-                reference,
-                ProjectTypeResolution.Ambiguous(reference, listOf(record("first"), record("second")))
-            ),
-            TypeRefSemanticResolution.Project(
-                reference,
-                ProjectTypeResolution.IncompleteIndex(
-                    reference,
-                    listOf(record("known")),
-                    listOf(ProjectIndexPreparationFailure(FileId("broken.sql"), "test.failure"))
-                )
-            ),
-            TypeRefSemanticResolution.Project(reference, ProjectTypeResolution.NotFoundInProject(reference)),
-            TypeRefSemanticResolution.Unsupported(anchoredReference)
-        )
-
-        resolutions.forEach { resolution ->
-            val call = call("value.id") { argument ->
-                argument.projectRecordFieldTypeResolution = fieldTypeResolution(
-                    field("id", resolution.reference),
-                    resolution
-                )
-            }
-
-            assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call))
-                .describedAs("$resolution")
-                .isFalse
-            assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN).matches(call))
-                .describedAs("$resolution")
-                .isTrue
-        }
-    }
-
-    @Test
-    fun stoppedProjectPathRetainsTheExistingUnknownPolicy() {
-        val childReference = named("p.child")
-        val child = field("child", childReference)
-        val call = call("value.child.missing") { argument ->
-            argument.projectRecordMemberPathResolution = ProjectRecordMemberPathResolution.Stopped(
-                listOf(ProjectRecordMemberPathSegment(
-                    child,
-                    fieldTypeResolution(
-                        child,
-                        TypeRefSemanticResolution.Project(
-                            childReference,
-                            ProjectTypeResolution.NotFoundInProject(childReference)
-                        )
-                    )
-                )),
-                identifier("missing"),
-                1,
-                ProjectRecordMemberPathResolution.StopReason.FIELD_TYPE_UNRESOLVED
-            )
-        }
-
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.NUMERIC).matches(call)).isFalse
-        assertThat(MethodMatcher.create().name("func").addParameter(PlSqlType.UNKNOWN).matches(call)).isTrue
-    }
-
-    private fun call(expression: String, decorate: (SemanticAstNode) -> Unit = {}) =
-        p.parse("func($expression)").firstChild.also { call ->
-            decorate(MethodMatcher.semantic(MethodMatcher.create().getArguments(call).single().firstChild))
-        }
-
-    private fun callWithFieldType(
-        expression: String,
-        typeName: String,
-        type: PlSqlType,
-        decorate: (SemanticAstNode) -> Unit = {}
-    ) = call(expression) { argument ->
-        val typeRef = named(typeName)
-        argument.projectRecordFieldTypeResolution = fieldTypeResolution(
-            field("value", typeRef),
-            TypeRefSemanticResolution.BuiltIn(typeRef, ProjectBuiltInTypeCategory.valueOf(type.name))
-        )
-        decorate(argument)
-    }
-
-    private fun fieldTypeResolution(
-        field: ProjectRecordField,
-        resolution: TypeRefSemanticResolution
-    ) = ProjectRecordFieldTypeResolution(field, resolution)
-
-    private fun record(name: String) = PackageTypeDeclaration(
-        QualifiedName(identifier("p")),
-        identifier(name),
-        ProjectTypeShape.RECORD,
-        emptyList(),
-        FileId("$name.sql"),
-        range()
-    )
-
-    private fun field(name: String, typeRef: TypeRef) = ProjectRecordField(
-        identifier(name),
-        0,
-        typeRef,
-        range()
-    )
-
-    private fun named(name: String) = NamedTypeRef(
-        QualifiedName(name.split('.').map(::identifier)),
-        range()
-    )
-
-    private fun identifier(name: String) = OracleIdentifier.fromSource(name)
-
-    private fun range() = SourceRange(FileId("test.sql"), 1, 0, 1, 1)
 
     private class MatcherCheck(private val matcher: MethodMatcher) : PlSqlCheck() {
-        var matched = false
-        var legacyArgumentType: PlSqlType? = null
-        var projectTypeDeclaration: ProjectTypeDeclaration? = null
+        var matched: Boolean? = null
 
         init {
             subscribeTo(PlSqlGrammar.METHOD_CALL)
         }
 
-        override fun visitNode(node: com.felipebz.flr.api.AstNode) {
-            val argument = matcher.getArguments(node).single().firstChild
-            val semanticArgument = MethodMatcher.semantic(argument)
-            legacyArgumentType = semanticArgument.plSqlType
-            projectTypeDeclaration = semanticArgument.symbol?.projectTypeDeclaration
+        override fun visitNode(node: AstNode) {
             matched = matcher.matches(node)
         }
     }
 
-    private class ProjectFieldMatcherCheck(private val matcher: MethodMatcher) : PlSqlCheck() {
-        var matched = false
-        var legacyArgumentType: PlSqlType? = null
-        var projectField: ProjectRecordField? = null
-        var effectiveCategory: EffectiveTypeCategory? = null
-
-        init {
-            subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION)
-        }
-
-        override fun visitNode(node: com.felipebz.flr.api.AstNode) {
-            val member = node as? SemanticAstNode ?: return
-            val parts = node.getChildren(PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME)
-            if (parts.map { it.tokenOriginalValue } != listOf("value", "id")) return
-            val methodCall = node.getFirstAncestorOrNull(PlSqlGrammar.METHOD_CALL) ?: return
-            legacyArgumentType = member.plSqlType
-            projectField = member.projectRecordFieldTypeResolution?.field
-            effectiveCategory = EffectiveSemanticTypeQuery.typeCategory(member)
-            matched = matcher.matches(methodCall)
-        }
-    }
-
-    private class FixtureFile(
-        private val fileId: FileId,
-        private val source: String
-    ) : PlSqlFile {
+    private class FixtureFile(private val fileId: FileId, private val source: String) : PlSqlFile {
         override fun contents() = source
         override fun fileName() = fileId.value
         override fun path(): Path = Path.of(fileId.value)

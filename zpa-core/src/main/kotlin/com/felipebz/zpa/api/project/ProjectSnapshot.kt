@@ -305,12 +305,22 @@ class ProjectSnapshot private constructor(
      */
     @JvmSynthetic
     internal fun memberType(type: ProjectDeclarationId, name: OracleIdentifier): ProjectMemberType? {
+        val resolved = memberResolution(type, name) as? ProjectRecordMemberResolution.Resolved ?: return null
+        val owner = (resolved.declaration as? PackageTypeDeclaration)?.owner?.let(ProjectQualifiedName::wrap)
+        return ProjectMemberType(ProjectTypeReference.from(resolved.field.typeRef), owner)
+    }
+
+    /**
+     * What the member [name] of a value of the type [type] declares is, as [ProjectRecordMemberResolver] finds it: one
+     * field or attribute (with the type declaring it), a method set, a collection method, or why there is none. Null
+     * without a prepared project, or when [type] is no type of this snapshot.
+     */
+    @JvmSynthetic
+    internal fun memberResolution(type: ProjectDeclarationId, name: OracleIdentifier): ProjectRecordMemberResolution? {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) return null
         val declaration = occurrenceOf(type)?.declaration as? ProjectTypeDeclaration ?: return null
         // Built per call: the snapshot retains only durable facts.
-        val resolved = ProjectRecordMemberResolver(callContext()).resolve(declaration, name) as? ProjectRecordMemberResolution.Resolved ?: return null
-        val owner = (resolved.declaration as? PackageTypeDeclaration)?.owner?.let(ProjectQualifiedName::wrap)
-        return ProjectMemberType(ProjectTypeReference.from(resolved.field.typeRef), owner)
+        return ProjectRecordMemberResolver(callContext()).resolve(declaration, name)
     }
 
     /**

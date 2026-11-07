@@ -30,7 +30,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
         context.localSemanticFacts = null
         context.valueCategories = null
         context.fields = null
-        (node as? SemanticAstNode)?.localSemanticFacts = null
+        (node as? SemanticAstNode)?.localAnalysis = null
         context.localSemanticFacts = guarded("computing") {
             val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents())
             val references = LocalReferenceCollector.collect(node, model)
@@ -44,14 +44,15 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             LocalSemanticFacts(model, references, resolutions, calls, held, coverage?.specificationValues().orEmpty(),
                 coverage?.sqlSpecificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId)).also {
                 val walk = LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes)
-                context.valueCategories = LocalValueCategories(it, walk)
+                val categories = LocalValueCategories(it, walk)
+                context.valueCategories = categories
                 val prepared = analysis.snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
                 context.fields = LocalFields(
-                    it, analysis.snapshot.projectIndex.takeIf { prepared }, coverage, analysis.projectAnalysisContext.takeIf { prepared }, walk
+                    it, analysis.snapshot.projectIndex.takeIf { prepared }, coverage, analysis.projectAnalysisContext.takeIf { prepared }, walk, categories
                 )
             }
         }
-        (node as? SemanticAstNode)?.localSemanticFacts = context.localSemanticFacts
+        (node as? SemanticAstNode)?.localAnalysis = context.localSemanticFacts?.let { LocalFileAnalysis(it, context.valueCategories) }
     }
 
     private inline fun <T> guarded(step: String, block: () -> T): T? =

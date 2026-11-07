@@ -590,6 +590,23 @@ class ProjectAnalysisTest {
     }
 
     @Test
+    fun aMemberOfAPackageVariableOfAnotherFileIsNotASequence() {
+        val pkg = "CREATE PACKAGE record_pkg AS TYPE record_type IS RECORD (nextval NUMBER); g_value record_type; END record_pkg;\n/\n" +
+            "CREATE SEQUENCE record_pkg.g_value;\n"
+        val plain = "DECLARE n NUMBER; BEGIN n := record_pkg.g_value.nextval; END;"
+        // The package value shares its name with the sequence: the package takes the qualifier. With a `${'$'}IF` in the
+        // block the names before NEXTVAL are undecided, so neither answer is proven.
+        val conditional = "DECLARE n NUMBER; ${'$'}IF ${'$'}${'$'}flag ${'$'}THEN m NUMBER; ${'$'}END BEGIN n := record_pkg.g_value.nextval; END;"
+        for ((text, expected) in listOf(plain to SequenceReferenceResolution.RESOLVED_NON_SEQUENCE, conditional to SequenceReferenceResolution.UNKNOWN)) {
+            val packageFile = FileId("record-package.sql")
+            val targetFile = FileId("record-target.sql")
+            val probe = SequenceResolutionProbe()
+            scan(targetFile, text, ProjectAnalysisContext.prepared(prepare(packageFile to pkg, targetFile to text)), probe)
+            assertThat(probe.results).describedAs(text).containsExactly(expected)
+        }
+    }
+
+    @Test
     fun suppressesSequenceResolutionWhenProjectIsNotPreparedOrIncomplete() {
         val file = FileId("target.sql")
         val source = "SELECT order_seq.NEXTVAL FROM dual;"

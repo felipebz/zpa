@@ -7,57 +7,58 @@ package com.felipebz.flr.internal.toolkit
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.tooling.ProjectRecordFieldTypeResolutionState
-import com.felipebz.zpa.tooling.ProjectRecordMemberPathResolutionState
-import com.felipebz.zpa.tooling.ProjectRecordMemberResolutionState
-import com.felipebz.zpa.tooling.ProjectTypeResolutionState
+import com.felipebz.zpa.tooling.FieldBindingState
+import com.felipebz.zpa.tooling.TypeNameState
 import com.felipebz.zpa.toolkit.ZpaConfigurationModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class SemanticInspectionTest {
     @Test
-    fun selectedDatatypeExposesResolvedProjectTypeDeclarationAndRange() {
+    fun selectedDatatypeExposesTheProjectTypeItNamesAndItsCategory() {
         val model = model(typeSource())
         val datatype = model.findNode(PlSqlGrammar.DATATYPE) {
             it.tokenText().replace(" ", "").contains("types_pkg.customer_rec")
         }
 
         val inspection = model.inspect(datatype)!!
-        val resolution = inspection.projectTypeResolution!!
-        val declaration = resolution.declaration!!
+        val typeName = inspection.typeName!!
+        val declaration = typeName.declaration!!
 
-        assertThat(resolution.state).isEqualTo(ProjectTypeResolutionState.RESOLVED)
-        assertThat(resolution.reference).isEqualTo("types_pkg.customer_rec")
+        assertThat(typeName.state).isEqualTo(TypeNameState.PROJECT)
+        assertThat(typeName.reference).isEqualTo("types_pkg.customer_rec")
         assertThat(declaration.qualifiedName).isEqualTo("types_pkg.customer_rec")
         assertThat(declaration.kind).isEqualTo("PACKAGE_TYPE")
         assertThat(declaration.fileId).isEqualTo("zpa-toolkit://current-buffer")
         assertThat(declaration.sourceRange.startLine).isEqualTo(8)
         assertThat(declaration.sourceRange.endLine).isEqualTo(10)
+        assertThat(inspection.typeCategory).isEqualTo("Record(RECORD_TYPE)")
     }
 
     @Test
-    fun selectedDirectRecordMemberExposesFieldAndFieldTypeResolution() {
+    fun aTypeNameOfTheSameUnitIsLocalWithTheProjectDeclarationItIs() {
         val model = model(typeSource())
-        val member = model.findMember(listOf("value", "customer"))
+        val datatype = model.findNode(PlSqlGrammar.DATATYPE) { it.tokenText() == "address_rec" }
 
-        val inspection = model.inspect(member)!!
-        val resolution = inspection.projectRecordMemberResolution!!
-        val field = resolution.field!!
-        val fieldType = inspection.projectRecordFieldTypeResolution!!
-        val fieldTypeResolution = fieldType.resolution!!
+        val typeName = model.inspect(datatype)!!.typeName!!
 
-        assertThat(resolution.state).isEqualTo(ProjectRecordMemberResolutionState.RESOLVED)
+        assertThat(typeName.state).isEqualTo(TypeNameState.LOCAL)
+        assertThat(typeName.declaration!!.qualifiedName).isEqualTo("types_pkg.address_rec")
+        assertThat(typeName.localDeclaration!!.startLine).isEqualTo(5)
+    }
+
+    @Test
+    fun selectedMemberExposesItsFieldAndTheValueCategory() {
+        val model = model(typeSource())
+        val inspection = model.inspect(model.findMember(listOf("value", "customer")))!!
+        val field = inspection.fields.single()
+
         assertThat(field.name).isEqualTo("customer")
+        assertThat(field.state).isEqualTo(FieldBindingState.FIELD)
+        assertThat(field.kind).isEqualTo("RECORD_FIELD")
         assertThat(field.ordinal).isEqualTo(0)
-        assertThat(field.typeRef.name).isEqualTo("address_rec")
-        assertThat(field.sourceRange.startLine).isEqualTo(9)
-        assertThat(fieldType.state)
-            .isEqualTo(ProjectRecordFieldTypeResolutionState.PROJECT)
-        assertThat(fieldTypeResolution.state)
-            .isEqualTo(ProjectTypeResolutionState.RESOLVED)
-        assertThat(fieldTypeResolution.declaration!!.qualifiedName)
-            .isEqualTo("types_pkg.address_rec")
+        assertThat(field.declaration!!.startLine).isEqualTo(9)
+        assertThat(inspection.valueCategory).isEqualTo("Record(RECORD_TYPE)")
     }
 
     @Test
@@ -75,47 +76,27 @@ class SemanticInspectionTest {
     }
 
     @Test
-    fun selectedRecordPathExposesOrderedSegmentsAndTerminalTypeState() {
+    fun aMemberChainListsTheFieldOfEachName() {
         val model = model(typeSource())
-        val path = model.findMember(listOf("value", "customer", "address", "city"))
+        val inspection = model.inspect(model.findMember(listOf("value", "customer", "address", "city")))!!
 
-        val inspection = model.inspect(path)!!
-        val resolution = inspection.projectRecordMemberPathResolution!!
-
-        assertThat(resolution.state).isEqualTo(ProjectRecordMemberPathResolutionState.COMPLETED)
-        assertThat(resolution.segments.map { it.ordinal }).containsExactly(0, 1, 2)
-        assertThat(resolution.segments.map { it.field.name }).containsExactly("customer", "address", "city")
-        assertThat(resolution.segments.map { it.fieldTypeResolution.state })
-            .containsExactly(
-                ProjectRecordFieldTypeResolutionState.PROJECT,
-                ProjectRecordFieldTypeResolutionState.PROJECT,
-                ProjectRecordFieldTypeResolutionState.BUILT_IN
-            )
-        assertThat(resolution.segments.last().fieldTypeResolution.resolution).isNull()
-        assertThat(resolution.segments.last().fieldTypeResolution.semanticType)
-            .isEqualTo("CHARACTER")
+        assertThat(inspection.fields.map { it.name }).containsExactly("customer", "address", "city")
+        assertThat(inspection.fields.map { it.state }).containsOnly(FieldBindingState.FIELD)
+        assertThat(inspection.fields.map { it.declaration!!.startLine }).containsExactly(9, 6, 3)
+        assertThat(inspection.valueCategory).isEqualTo("Scalar(CHARACTER)")
     }
 
     @Test
-    fun stoppedRecordPathExposesResolvedPrefixNextMemberAndReason() {
+    fun aNameTheProjectRecordDoesNotHaveIsUndecided() {
         val model = model(typeSource())
-        val path = model.findMember(listOf("value", "customer", "address", "missing"))
+        val inspection = model.inspect(model.findMember(listOf("value", "customer", "address", "missing")))!!
 
-        val inspection = model.inspect(path)!!
-        val resolution = inspection.projectRecordMemberPathResolution!!
-
-        assertThat(resolution.state).isEqualTo(ProjectRecordMemberPathResolutionState.STOPPED)
-        assertThat(resolution.segments.map { it.field.name }).containsExactly("customer", "address")
-        assertThat(resolution.segments.map { it.ordinal }).containsExactly(0, 1)
-        assertThat(resolution.nextMember).isEqualTo("missing")
-        assertThat(resolution.nextMemberOrdinal).isEqualTo(2)
-        assertThat(resolution.stopReason).isEqualTo("MEMBER_NOT_FOUND")
-        assertThat(resolution.segments.last().fieldTypeResolution.resolution!!.state)
-            .isEqualTo(ProjectTypeResolutionState.RESOLVED)
+        assertThat(inspection.fields.map { it.state })
+            .containsExactly(FieldBindingState.FIELD, FieldBindingState.FIELD, FieldBindingState.UNKNOWN)
     }
 
     @Test
-    fun ambiguousProjectTypeCandidatesArePresentedDeterministically() {
+    fun anAmbiguousTypeNameHasNoDeclaration() {
         val source = """
             DECLARE value p.t; BEGIN NULL; END;
             CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;
@@ -126,61 +107,28 @@ class SemanticInspectionTest {
             it.tokenText().replace(" ", "").contains("p.t")
         }
 
-        val resolution = model.inspect(datatype)!!.projectTypeResolution!!
+        val typeName = model.inspect(datatype)!!.typeName!!
 
-        assertThat(resolution.state).isEqualTo(ProjectTypeResolutionState.AMBIGUOUS)
-        assertThat(resolution.candidates.map { it.fileId }).containsExactly(
-            "zpa-toolkit://current-buffer",
-            "zpa-toolkit://current-buffer"
-        )
-        assertThat(resolution.candidates.map { it.sourceRange.startLine }).containsExactly(2, 3)
+        assertThat(typeName.state).isEqualTo(TypeNameState.AMBIGUOUS)
+        assertThat(typeName.declaration).isNull()
     }
 
     @Test
-    fun ambiguousProjectRecordMembersArePresentedDeterministically() {
+    fun aFieldNamedTwiceIsUndecided() {
         val source = """
             CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER, id NUMBER); END p;
             DECLARE value p.t; BEGIN value.id := NULL; END;
         """.trimIndent()
         val model = model(source)
-        val member = model.findMember(listOf("value", "id"))
 
-        val resolution = model.inspect(member)!!.projectRecordMemberResolution!!
+        val field = model.inspect(model.findMember(listOf("value", "id")))!!.fields.single()
 
-        assertThat(resolution.state).isEqualTo(ProjectRecordMemberResolutionState.AMBIGUOUS)
-        assertThat(resolution.candidates.map { it.name }).containsExactly("id", "id")
-        assertThat(resolution.candidates.map { it.ordinal }).containsExactly(0, 1)
+        assertThat(field.state).isEqualTo(FieldBindingState.UNKNOWN)
+        assertThat(field.reasons).containsExactly("DECLARATION_OUTSIDE_FILE")
     }
 
     @Test
-    fun anchoredAndRefRecordFieldTypesArePresentedAsUnsupported() {
-        val source = """
-            CREATE PACKAGE p AS
-              TYPE t IS RECORD (
-                anchored some_table.id%TYPE,
-                reference REF some_object_type
-              );
-            END p;
-            DECLARE value p.t;
-            BEGIN value.anchored := NULL; value.reference := NULL; END;
-        """.trimIndent()
-        val model = model(source)
-
-        val anchored = model.inspect(model.findMember(listOf("value", "anchored")))!!
-        val ref = model.inspect(model.findMember(listOf("value", "reference")))!!
-        val anchoredType = anchored.projectRecordFieldTypeResolution!!
-        val refType = ref.projectRecordFieldTypeResolution!!
-
-        assertThat(anchoredType.state)
-            .isEqualTo(ProjectRecordFieldTypeResolutionState.UNSUPPORTED)
-        assertThat(anchoredType.typeRef.kind).isEqualTo("Anchored")
-        assertThat(refType.state)
-            .isEqualTo(ProjectRecordFieldTypeResolutionState.UNSUPPORTED)
-        assertThat(refType.typeRef.kind).isEqualTo("Ref")
-    }
-
-    @Test
-    fun legacyOnlyLocalRecordStillExposesLegacySummaryWithoutProjectMetadata() {
+    fun legacyOnlyLocalRecordStillExposesLegacySummaryWithoutLocalAnswers() {
         val source = """
             DECLARE
               TYPE local_rec IS RECORD (id NUMBER);
@@ -196,15 +144,12 @@ class SemanticInspectionTest {
         }
 
         val inspection = model.inspect(declaration)!!
-        val legacy = inspection.legacy!!
-        val symbol = legacy.symbol!!
+        val symbol = inspection.legacy!!.symbol!!
 
-        assertThat(legacy).isNotNull
         assertThat(symbol.name).isEqualToIgnoringCase("value")
         assertThat(symbol.kind).isEqualTo("VARIABLE")
-        assertThat(inspection.projectTypeResolution).isNull()
-        assertThat(inspection.projectRecordMemberResolution).isNull()
-        assertThat(inspection.projectRecordMemberPathResolution).isNull()
+        assertThat(inspection.typeName).isNull()
+        assertThat(inspection.fields).isEmpty()
     }
 
     private fun model(source: String): SourceCodeModel = SourceCodeModel(ZpaConfigurationModel()).apply {

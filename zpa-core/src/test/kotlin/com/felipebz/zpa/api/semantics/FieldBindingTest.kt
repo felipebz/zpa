@@ -171,9 +171,23 @@ class FieldBindingTest {
 
     @Test
     fun aValueOfAnUndecidedTypeIsUndecided() {
-        // `t_ext` is in no file of the project.
+        // `t_ext` is in no file of the project: its members are declared outside it.
         val text = "create or replace procedure use_ext(p_rec t_ext) is\n  n number;\nbegin\n  n := p_rec.code;\nend;\n/\n"
-        assertThat(fields("u.sql", "u.sql" to text)).containsExactly("4:13:CODE=Unknown[UNSUPPORTED_REFERENCE]")
+        assertThat(fields("u.sql", "u.sql" to text)).containsExactly("4:13:CODE=Unknown[DECLARATION_OUTSIDE_FILE]")
+    }
+
+    @Test
+    fun aMemberOfAProjectTypedValueUnderConditionalTextIsUndecided() {
+        val spec = "create or replace package pk_c is\n  type t_row is record (code varchar2(10));\nend pk_c;\n/\n"
+        val text = "create or replace procedure use_c(p_rec pk_c.t_row) is\n" +
+            "  \$if \$\$flag \$then n number; \$end\n" +
+            "begin\n" +
+            "  p_rec.code := 'x';\n" +
+            "end;\n/\n"
+        assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to text).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Unknown[CONDITIONAL_COMPILATION]")
+        // The same without the `${'$'}IF`: the field the specification declares.
+        val plain = text.replace("  \$if \$\$flag \$then n number; \$end\n", "  n number;\n")
+        assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to plain).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Field(RECORD_FIELD#0@s.sql:2:24)")
     }
 
     private val splitSpec = "create or replace package pk_z is\n" +
@@ -578,9 +592,9 @@ class FieldBindingTest {
         assertThat(at(17, "ITEMS")).isEqualTo(items)
         assertThat(at(17, "ONE")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
         assertThat(at(17, "X")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
-        // A collection method stays as it was.
+        // A method of the local collection type ITEMS has: not a field.
         assertThat(at(16, "ITEMS")).isEqualTo(items)
-        assertThat(at(16, "COUNT")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
+        assertThat(at(16, "COUNT")).isEqualTo("Unavailable(NOT_A_COVERED_NAME)")
     }
 
     private val wSpec = "create or replace package pk_w is\n  type t_s is record (y number);\n  procedure run;\nend;\n/\n"
@@ -607,7 +621,7 @@ class FieldBindingTest {
             // Another package: no declaration of the file takes it.
             "7:8:PK_OTHER:T=NothingLocal"
         )
-        assertThat(rows).contains("9:8:X=Field(RECORD_FIELD#0@2:22)", "10:8:X=Field(RECORD_FIELD#0@2:22)", "11:8:X=Unknown[UNSUPPORTED_REFERENCE]")
+        assertThat(rows).contains("9:8:X=Field(RECORD_FIELD#0@2:22)", "10:8:X=Field(RECORD_FIELD#0@2:22)", "11:8:X=Unknown[DECLARATION_OUTSIDE_FILE]")
     }
     @Test
     fun aFieldAfterAnElementInStaticSql() {

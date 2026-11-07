@@ -12,15 +12,14 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.*
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.project.*
-import com.felipebz.zpa.symbols.ProjectReceiverMemberVisitor
 import java.util.*
 
 /**
  * Which field a segment written after a value names, from the resolutions zpa already holds: the local member steps
- * of a qualified name (a record type of this file), then the project member resolutions decorated on the tree (a
- * type of another file, a member after an element or a call result, a package variable of another file).
+ * of a qualified name (a record type of this file), then the member of the value the local type walk reaches before
+ * the segment when the project declares that value's type (a type of another file, a member after an element or a call
+ * result, a package variable of another file).
  */
 internal class LocalFields(
     private val facts: LocalSemanticFacts,
@@ -31,7 +30,9 @@ internal class LocalFields(
     /** The project's analysis context, for what `SELF.name` answers; null when the project is not prepared. */
     projectAnalysisContext: ProjectAnalysisContext? = null,
     /** The walk of local declared types, for a member after an element of a local collection. */
-    private val typeWalk: LocalTypeWalk? = null
+    private val typeWalk: LocalTypeWalk? = null,
+    /** The values the walk reaches, for the value a segment is a member of. */
+    private val categories: LocalValueCategories? = null
 ) {
     private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
     private val memberResolver = projectAnalysisContext?.let(::ProjectRecordMemberResolver)
@@ -315,44 +316,32 @@ internal class LocalFields(
         return FieldBinding.Field(FieldDeclaration(FieldDeclarationKind.ATTRIBUTE, ordinal, declaration.nameRange.startLine, declaration.nameRange.startColumn))
     }
 
-    /** The project member resolution decorated for [segment], when there is one. */
+    /**
+     * The member [segment] names of the value the local type walk reaches before it, when the project declares that
+     * value's type: a field or attribute, not a field for a method or a collection method, and outside the file for a
+     * name the type does not have once (or a type whose members are not known), and undecided when text this file may hold differently leaves the value so. Null
+     * when the walk reaches no such value: a local record type (the local steps decide), an anchor, a value it does not
+     * model. A member of a value of a local collection type is not a field.
+     */
     private fun project(segment: AstNode): FieldBinding? {
-        val parent = segment.parentOrNull ?: return null
-        if (segment.type == PlSqlGrammar.VARIABLE_NAME && ProjectReceiverMemberVisitor.isReceiverItem(segment)) {
-            return (segment as SemanticAstNode).projectRecordMemberResolution?.let(::member)
-        }
-        if (parent.type != PlSqlGrammar.MEMBER_EXPRESSION) return null
-        val names = parent.children.filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME }
-        val position = names.indexOfFirst { it === segment }
-        val semantic = parent as SemanticAstNode
-        // A member of an expression receiver: the path covers every name of the item, the first included.
-        if (ProjectReceiverMemberVisitor.isReceiverItem(parent)) return semantic.projectRecordMemberPathResolution?.let { path(it, position) }
-        if (position < 1) return null
-        semantic.projectFieldMembers?.let { members ->
-            if (position < members.firstMember) return null
-            return members.member?.takeIf { position == members.firstMember }?.let(::member)
-                ?: members.path?.let { path(it, position - members.firstMember) }
-        }
-        if (names.size == 2) semantic.projectRecordMemberResolution?.let { return member(it) }
-        return semantic.projectRecordMemberPathResolution?.let { path(it, position - 1) }
+        val walk = typeWalk ?: return null
+        val (_, base) = categories?.memberBase(segment) ?: return null
+        // The value is undecided by text this file may hold differently (a `$IF`, a substitution): so is its member.
+        base.incomplete?.takeIf { base.terminal == LocalTypeEvidence.Terminal.UNKNOWN && it.regionReasons.isNotEmpty() }?.let { return FieldBinding.Unknown(reasons(it)) }
+        // A value of a local collection type: its members are methods, or names it does not have (as the local steps say).
+        val local = base.followed.lastOrNull()?.takeIf { base.terminal == LocalTypeEvidence.Terminal.COMPOSITE }?.let(model::declaration)
+        if (local?.details is LocalCollectionType) return NOT_A_FIELD
+        val name = LocalSyntax.identifier(segment.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: segment)
+        walk.projectMember(base, name)?.let { return member(it) }
+        // A value of a type the project names but does not declare (not found, a predefined type): no field of the file.
+        val description = base.description ?: return null
+        return OUTSIDE_FILE.takeIf { base.terminal == LocalTypeEvidence.Terminal.PROJECT && !description.anchor.isPresent }
     }
 
     private fun member(resolution: ProjectRecordMemberResolution): FieldBinding = when (resolution) {
         is ProjectRecordMemberResolution.Resolved -> projectField(resolution.declaration, resolution.field)
         is ProjectRecordMemberResolution.Method, is ProjectRecordMemberResolution.CollectionMethod -> NOT_A_FIELD
         else -> OUTSIDE_FILE
-    }
-
-    /** The answer for the member at [index] of [path] (0 for the first member it resolves). */
-    private fun path(path: ProjectRecordMemberPathResolution, index: Int): FieldBinding {
-        path.segments.getOrNull(index)?.let { return projectField(it.owner, it.field) }
-        val stopped = path as? ProjectRecordMemberPathResolution.Stopped ?: return OUTSIDE_FILE
-        if (index != stopped.nextMemberOrdinal) return OUTSIDE_FILE
-        return when (stopped.reason) {
-            ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_METHOD,
-            ProjectRecordMemberPathResolution.StopReason.MEMBER_IS_COLLECTION_METHOD -> NOT_A_FIELD
-            else -> OUTSIDE_FILE
-        }
     }
 
     private fun projectField(owner: ProjectTypeDeclaration?, field: ProjectRecordField): FieldBinding {
@@ -418,7 +407,7 @@ internal class LocalFields(
     /** A segment with no local reference: undecided when written after an expression receiver, else not a field. */
     private fun afterReceiver(segment: AstNode): FieldBinding {
         val item = if (segment.parent.type == PlSqlGrammar.MEMBER_EXPRESSION) segment.parent else segment
-        return if (ProjectReceiverMemberVisitor.isReceiverItem(item) || ProjectReceiverMemberVisitor.isReceiverItem(segment)) UNSUPPORTED else NOT_A_FIELD
+        return if (LocalSyntax.isReceiverItem(item) || LocalSyntax.isReceiverItem(segment)) UNSUPPORTED else NOT_A_FIELD
     }
 
     private fun unwrap(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome

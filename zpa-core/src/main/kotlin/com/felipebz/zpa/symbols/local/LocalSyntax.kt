@@ -22,6 +22,14 @@ import com.felipebz.zpa.project.extraction.TypeReferences
 
 /** Source facts shared by the local extraction code: identifiers and ranges of AST nodes, never the nodes. */
 internal object LocalSyntax {
+    /** An item after the first child of an `OBJECT_REFERENCE`, or the callee of one: a member of an expression receiver. */
+    fun isReceiverItem(node: AstNode): Boolean {
+        var current = node
+        while (current.parentOrNull?.type == PlSqlGrammar.METHOD_CALL && current.parent.firstChild === current) current = current.parent
+        val parent = current.parentOrNull ?: return false
+        return parent.type == PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild !== current
+    }
+
     /** The iteration control of a FOR loop [iterator] with one implicitly typed index and one control, if recognized. */
     fun loopControl(iterator: AstNode, fileId: FileId): LocalLoopControl? {
         val controls = iterator.getChildren(PlSqlGrammar.QUAL_ITERATION_CTL)

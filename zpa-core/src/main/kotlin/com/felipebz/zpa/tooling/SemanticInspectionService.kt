@@ -7,9 +7,15 @@ package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectDeclarationView
+import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
+import com.felipebz.zpa.api.project.ProjectShapedTypeView
+import com.felipebz.zpa.api.semantics.FieldBinding
 import com.felipebz.zpa.api.semantics.HighlightingPair
+import com.felipebz.zpa.api.semantics.ValueCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
@@ -20,6 +26,8 @@ import com.felipebz.zpa.squid.SemanticScanCapabilities
 import com.felipebz.zpa.squid.createProjectAnalysis
 import com.felipebz.zpa.symbols.local.LocalHighlighting
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import com.felipebz.zpa.symbols.local.LocalSyntax
+import com.felipebz.zpa.symbols.local.LocalTypeName
 import java.nio.file.Path
 
 /**
@@ -54,6 +62,7 @@ public class SemanticInspectionService {
         ).also {
             val facts = context.localSemanticFacts
             it.localSemanticFacts = facts
+            it.context = context.takeIf { facts != null }
             it.highlightingPairs = facts?.let { local -> LocalHighlighting.pairs(local, LocalHighlighting.indexOf(projectAnalysisContext), sourceCode) }.orEmpty()
         }
     }
@@ -78,6 +87,9 @@ public class SemanticInspectionResult internal constructor(
     /** The local semantic resolution the pipeline's pre-pass left; internal, for diagnostics and tests. */
     internal var localSemanticFacts: LocalSemanticFacts? = null
 
+    /** The analyzed file's context, whose local answers (value categories, type names, fields) the inspection reads. */
+    internal var context: PlSqlVisitorContext? = null
+
     /** The file's highlighting pairs, the ones the scanner gives for the same file and project; empty when not analyzed. */
     @ZpaExperimentalApi
     public var highlightingPairs: List<HighlightingPair> = emptyList()
@@ -91,11 +103,11 @@ public class SemanticInspectionResult internal constructor(
 
     /** Everything the Project System captured for this file, built on first access. */
     public val projectOverview: ProjectOverviewNode by lazy {
-        ProjectOverviewBuilder(fileId, root, localSemanticFacts, projectAnalysisContext).build()
+        ProjectOverviewBuilder(fileId, root, localSemanticFacts, projectAnalysisContext, context).build()
     }
 
     public fun inspect(node: AstNode): SemanticNodeInspection =
-        SemanticInspectionMapper.inspect(fileId, node, projectAnalysis, localSemanticFacts)
+        SemanticInspectionMapper.inspect(fileId, node, projectAnalysis, localSemanticFacts, context)
 }
 
 /** Immutable summary of the project preparation used by one semantic inspection. */
@@ -143,29 +155,40 @@ public data class SemanticNodeInspection(
     public val node: SemanticNodeSummary,
     public val projectAnalysis: ProjectAnalysisSummary,
     public val legacy: LegacySemanticSummary?,
-    public val projectTypeResolution: ProjectTypeResolutionSummary?,
+    /** For a `DATATYPE` writing a type name: the first declaration the name reaches, or why there is none. */
+    public val typeName: TypeNameSummary?,
+    /** For a `DATATYPE`: the category of the type it writes; null when there is none to give. */
+    public val typeCategory: String?,
+    /** For a value name, a member expression or a receiver: the category of the value; null when there is none to give. */
+    public val valueCategory: String?,
     /** The declared project type of the local declaration the node names or declares; null when there is none. */
     public val declaredProjectType: ProjectDeclarationSummary?,
-    public val projectRecordMemberResolution: ProjectRecordMemberResolutionSummary?,
-    public val projectRecordFieldTypeResolution: ProjectRecordFieldTypeResolutionSummary?,
-    public val projectRecordMemberPathResolution: ProjectRecordMemberPathResolutionSummary?
+    /** The field each name of the node written after a value names: the node itself, or each member name it holds. */
+    public val fields: List<FieldBindingSummary>
 )
 
-public enum class ProjectTypeResolutionState {
-    RESOLVED,
+public enum class TypeNameState {
+    /** A declaration of this file. */
+    LOCAL,
+    /** A declaration of another file of the project. */
+    PROJECT,
+    BUILT_IN,
     AMBIGUOUS,
     NOT_FOUND_IN_PROJECT,
     INCOMPLETE_INDEX,
-    NOT_PREPARED
+    NOT_PREPARED,
+    /** Text this file may hold differently (a `$IF`, a substitution), or a lookup the file cannot decide. */
+    UNDECIDED
 }
 
-public data class ProjectTypeResolutionSummary(
-    public val state: ProjectTypeResolutionState,
+public data class TypeNameSummary(
+    public val state: TypeNameState,
     public val reference: String,
+    /** The project declaration: the one reached, or the one of the project a local declaration is. */
     public val declaration: ProjectDeclarationSummary?,
-    public val candidates: List<ProjectDeclarationSummary>,
-    public val knownCandidates: List<ProjectDeclarationSummary>,
-    public val preparationFailures: List<ProjectPreparationFailureSummary>
+    /** For a [TypeNameState.LOCAL] name, the range of the declaration's name. */
+    public val localDeclaration: SemanticSourceRange?,
+    public val reasons: List<String>
 )
 
 public data class ProjectDeclarationSummary(
@@ -177,72 +200,27 @@ public data class ProjectDeclarationSummary(
     public val shape: String?
 )
 
-public data class SemanticTypeRefSummary(
-    public val kind: String,
+public enum class FieldBindingState {
+    /** A field of a record type or an attribute of an object type. */
+    FIELD,
+    /** Undecided: see the reasons. */
+    UNKNOWN,
+    /** Not a field (a method, a column, a name of no value), or not one the analysis covers. */
+    NOT_A_FIELD
+}
+
+public data class FieldBindingSummary(
     public val name: String,
-    public val anchor: String?,
-    public val sourceRange: SemanticSourceRange
+    public val sourceRange: SemanticSourceRange,
+    public val state: FieldBindingState,
+    /** For a [FieldBindingState.FIELD]: `RECORD_FIELD` or `ATTRIBUTE`, its zero-based ordinal and where it is declared. */
+    public val kind: String?,
+    public val ordinal: Int?,
+    public val declaration: SemanticSourceRange?,
+    public val reasons: List<String>
 )
 
-public data class ProjectRecordFieldSummary(
-    public val name: String,
-    public val ordinal: Int,
-    public val typeRef: SemanticTypeRefSummary,
-    public val sourceRange: SemanticSourceRange
-)
-
-public enum class ProjectRecordMemberResolutionState {
-    RESOLVED,
-    NOT_FOUND,
-    AMBIGUOUS,
-    INCOMPLETE,
-    /** A method set of an object type; the overloads are not listed. */
-    METHOD,
-    /** A built-in method of a collection type (COUNT, EXTEND, …). */
-    COLLECTION_METHOD,
-    UNSUPPORTED_TYPE
-}
-
-public data class ProjectRecordMemberResolutionSummary(
-    public val state: ProjectRecordMemberResolutionState,
-    public val containingDeclaration: ProjectDeclarationSummary,
-    public val field: ProjectRecordFieldSummary?,
-    public val candidates: List<ProjectRecordFieldSummary>
-)
-
-public enum class ProjectRecordFieldTypeResolutionState {
-    BUILT_IN,
-    PROJECT,
-    UNSUPPORTED
-}
-
-public data class ProjectRecordFieldTypeResolutionSummary(
-    public val state: ProjectRecordFieldTypeResolutionState,
-    public val field: ProjectRecordFieldSummary,
-    public val typeRef: SemanticTypeRefSummary,
-    public val resolution: ProjectTypeResolutionSummary?,
-    public val semanticType: String? = null
-)
-
-public data class ProjectRecordMemberPathSegmentSummary(
-    public val ordinal: Int,
-    public val field: ProjectRecordFieldSummary,
-    public val fieldTypeResolution: ProjectRecordFieldTypeResolutionSummary
-)
-
-public enum class ProjectRecordMemberPathResolutionState {
-    COMPLETED,
-    STOPPED
-}
-
-public data class ProjectRecordMemberPathResolutionSummary(
-    public val state: ProjectRecordMemberPathResolutionState,
-    public val segments: List<ProjectRecordMemberPathSegmentSummary>,
-    public val nextMember: String?,
-    public val nextMemberOrdinal: Int?,
-    public val stopReason: String?
-)
-
+@OptIn(ZpaExperimentalApi::class)
 private object SemanticInspectionMapper {
     /**
      * The declared type of the local declaration [node] names (certain, or the single provisional candidate) or
@@ -262,19 +240,45 @@ private object SemanticInspectionMapper {
         fileId: FileId,
         node: AstNode,
         projectAnalysis: ProjectAnalysisSummary,
-        facts: LocalSemanticFacts?
+        facts: LocalSemanticFacts?,
+        context: PlSqlVisitorContext?
     ): SemanticNodeInspection {
         val semanticNode = node as? SemanticAstNode
+        val categories = context?.valueCategories
+        val datatype = node.type === PlSqlGrammar.DATATYPE
         return SemanticNodeInspection(
             node = nodeSummary(fileId, node),
             projectAnalysis = projectAnalysis,
             legacy = semanticNode?.let(::legacySummary),
-            projectTypeResolution = semanticNode?.projectTypeResolution?.let(::projectTypeResolution),
+            typeName = categories?.takeIf { datatype }?.let { typeName(node, it.typeName(node), facts) },
+            typeCategory = categories?.takeIf { datatype }?.typeCategory(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
+            valueCategory = categories?.takeIf { !datatype }?.category(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
             declaredProjectType = facts?.let { declaredProjectType(it, node) }?.let(::declaration),
-            projectRecordMemberResolution = semanticNode?.projectRecordMemberResolution?.let(::recordMemberResolution),
-            projectRecordFieldTypeResolution = semanticNode?.projectRecordFieldTypeResolution?.let(::fieldTypeResolution),
-            projectRecordMemberPathResolution = semanticNode?.projectRecordMemberPathResolution?.let(::memberPathResolution)
+            fields = context?.let { fields(fileId, node, it) }.orEmpty()
         )
+    }
+
+    private fun typeName(node: AstNode, name: LocalTypeName, facts: LocalSemanticFacts?): TypeNameSummary? {
+        val reference = node.tokens.joinToString("") { it.originalValue }
+        return when (name) {
+            is LocalTypeName.Local -> TypeNameSummary(
+                TypeNameState.LOCAL, reference, name.project?.let(::declaration),
+                facts?.model?.declaration(name.declaration)?.nameRange?.let(::sourceRange), emptyList()
+            )
+            is LocalTypeName.Project -> TypeNameSummary(TypeNameState.PROJECT, reference, declaration(name.declaration), null, emptyList())
+            is LocalTypeName.BuiltIn -> TypeNameSummary(TypeNameState.BUILT_IN, reference, null, null, emptyList())
+            is LocalTypeName.Unresolved -> TypeNameSummary(
+                when (name.resolution.status) {
+                    ProjectNamedTypeResolution.Status.AMBIGUOUS -> TypeNameState.AMBIGUOUS
+                    ProjectNamedTypeResolution.Status.INCOMPLETE_INDEX -> TypeNameState.INCOMPLETE_INDEX
+                    ProjectNamedTypeResolution.Status.NOT_PREPARED -> TypeNameState.NOT_PREPARED
+                    else -> TypeNameState.NOT_FOUND_IN_PROJECT
+                },
+                reference, null, null, emptyList()
+            )
+            is LocalTypeName.Undecided -> TypeNameSummary(TypeNameState.UNDECIDED, reference, null, null, name.reasons.map { it.name }.sorted())
+            LocalTypeName.Unavailable -> null
+        }
     }
 
     private fun nodeSummary(fileId: FileId, node: AstNode): SemanticNodeSummary {
@@ -312,51 +316,6 @@ private object SemanticInspectionMapper {
         )
     }
 
-    private fun projectTypeResolution(resolution: ProjectTypeResolution): ProjectTypeResolutionSummary {
-        return when (resolution) {
-            is ProjectTypeResolution.Resolved -> ProjectTypeResolutionSummary(
-                ProjectTypeResolutionState.RESOLVED,
-                resolution.reference.name.toString(),
-                declaration(resolution.declaration),
-                emptyList(),
-                emptyList(),
-                emptyList()
-            )
-            is ProjectTypeResolution.Ambiguous -> ProjectTypeResolutionSummary(
-                ProjectTypeResolutionState.AMBIGUOUS,
-                resolution.reference.name.toString(),
-                null,
-                resolution.candidates.map(::declaration),
-                emptyList(),
-                emptyList()
-            )
-            is ProjectTypeResolution.NotFoundInProject -> ProjectTypeResolutionSummary(
-                ProjectTypeResolutionState.NOT_FOUND_IN_PROJECT,
-                resolution.reference.name.toString(),
-                null,
-                emptyList(),
-                emptyList(),
-                emptyList()
-            )
-            is ProjectTypeResolution.IncompleteIndex -> ProjectTypeResolutionSummary(
-                ProjectTypeResolutionState.INCOMPLETE_INDEX,
-                resolution.reference.name.toString(),
-                null,
-                emptyList(),
-                resolution.knownCandidates.map(::declaration),
-                resolution.failures.map(::preparationFailure)
-            )
-            is ProjectTypeResolution.NotPrepared -> ProjectTypeResolutionSummary(
-                ProjectTypeResolutionState.NOT_PREPARED,
-                resolution.reference.name.toString(),
-                null,
-                emptyList(),
-                emptyList(),
-                emptyList()
-            )
-        }
-    }
-
     private fun declaration(projectDeclaration: ProjectTypeDeclaration): ProjectDeclarationSummary =
         ProjectDeclarationSummary(
             kind = projectDeclaration.kind.name,
@@ -371,121 +330,48 @@ private object SemanticInspectionMapper {
             }
         )
 
-    private fun recordMemberResolution(
-        resolution: ProjectRecordMemberResolution
-    ): ProjectRecordMemberResolutionSummary = when (resolution) {
-        is ProjectRecordMemberResolution.Resolved -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.RESOLVED,
-            declaration(resolution.declaration),
-            field(resolution.field),
-            emptyList()
+    private fun declaration(view: ProjectDeclarationView): ProjectDeclarationSummary =
+        ProjectDeclarationSummary(
+            kind = view.kind.name,
+            role = view.role.name,
+            qualifiedName = view.qualifiedName.toString(),
+            fileId = view.fileId,
+            sourceRange = view.sourceRange.let { SemanticSourceRange(it.fileId, it.startLine, it.startColumn, it.endLine, it.endColumn) },
+            shape = (view as? ProjectShapedTypeView)?.shape?.orElse(null)?.name
         )
-        is ProjectRecordMemberResolution.NotFound -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.NOT_FOUND,
-            declaration(resolution.declaration),
-            null,
-            emptyList()
-        )
-        is ProjectRecordMemberResolution.Ambiguous -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.AMBIGUOUS,
-            declaration(resolution.declaration),
-            null,
-            resolution.candidates.map(::field)
-        )
-        is ProjectRecordMemberResolution.Incomplete -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.INCOMPLETE,
-            declaration(resolution.declaration),
-            null,
-            emptyList()
-        )
-        is ProjectRecordMemberResolution.Method -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.METHOD,
-            declaration(resolution.declaration),
-            null,
-            emptyList()
-        )
-        is ProjectRecordMemberResolution.CollectionMethod -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.COLLECTION_METHOD,
-            declaration(resolution.declaration),
-            null,
-            emptyList()
-        )
-        is ProjectRecordMemberResolution.UnsupportedType -> ProjectRecordMemberResolutionSummary(
-            ProjectRecordMemberResolutionState.UNSUPPORTED_TYPE,
-            declaration(resolution.declaration),
-            null,
-            emptyList()
-        )
+
+    /**
+     * The fields the names of [node] written after a value name: [node] itself when it is such a name, else each name
+     * of a member expression after its first (every name of a member item of an expression receiver). Empty when none
+     * names a field or is undecided.
+     */
+    @OptIn(ZpaExperimentalApi::class)
+    private fun fields(fileId: FileId, node: AstNode, context: PlSqlVisitorContext): List<FieldBindingSummary> {
+        val names = when (node.type) {
+            PlSqlGrammar.IDENTIFIER_NAME, PlSqlGrammar.VARIABLE_NAME -> listOf(node)
+            PlSqlGrammar.MEMBER_EXPRESSION -> node.children.filter { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME }
+                .let { if (LocalSyntax.isReceiverItem(node)) it else it.drop(1) }
+            else -> emptyList()
+        }
+        val fields = names.map { name -> field(fileId, name, context.fieldBinding(name)) }
+        return if (fields.all { it.state == FieldBindingState.NOT_A_FIELD }) emptyList() else fields
     }
 
     @OptIn(ZpaExperimentalApi::class)
-    private fun fieldTypeResolution(
-        resolution: ProjectRecordFieldTypeResolution
-    ): ProjectRecordFieldTypeResolutionSummary {
-        val semanticResolution = resolution.resolution
-        return ProjectRecordFieldTypeResolutionSummary(
-            state = when (semanticResolution) {
-                is TypeRefSemanticResolution.BuiltIn -> ProjectRecordFieldTypeResolutionState.BUILT_IN
-                is TypeRefSemanticResolution.Project -> ProjectRecordFieldTypeResolutionState.PROJECT
-                is TypeRefSemanticResolution.Unsupported -> ProjectRecordFieldTypeResolutionState.UNSUPPORTED
-            },
-            field = field(resolution.field),
-            typeRef = typeRef(semanticResolution.reference),
-            resolution = (semanticResolution as? TypeRefSemanticResolution.Project)
-                ?.resolution?.let(::projectTypeResolution),
-            semanticType = (semanticResolution as? TypeRefSemanticResolution.BuiltIn)
-                ?.type?.name
-        )
-    }
-
-    private fun memberPathResolution(
-        resolution: ProjectRecordMemberPathResolution
-    ): ProjectRecordMemberPathResolutionSummary {
-        val segments = resolution.segments.mapIndexed { index, segment ->
-            ProjectRecordMemberPathSegmentSummary(
-                index,
-                field(segment.field),
-                fieldTypeResolution(segment.fieldTypeResolution)
-            )
-        }
-        return when (resolution) {
-            is ProjectRecordMemberPathResolution.Completed -> ProjectRecordMemberPathResolutionSummary(
-                ProjectRecordMemberPathResolutionState.COMPLETED,
-                segments,
-                null,
-                null,
-                null
-            )
-            is ProjectRecordMemberPathResolution.Stopped -> ProjectRecordMemberPathResolutionSummary(
-                ProjectRecordMemberPathResolutionState.STOPPED,
-                segments,
-                resolution.nextMember.toString(),
-                resolution.nextMemberOrdinal,
-                resolution.reason.name
-            )
+    private fun field(fileId: FileId, name: AstNode, binding: FieldBinding): FieldBindingSummary {
+        val range = SemanticSourceRange(fileId.value, name.token.line, name.token.column, name.lastToken.endLine, name.lastToken.endColumn)
+        val text = name.tokens.joinToString("") { it.originalValue }
+        return when (binding) {
+            is FieldBinding.Field -> binding.declaration.let {
+                FieldBindingSummary(
+                    text, range, FieldBindingState.FIELD, it.kind.name, it.ordinal,
+                    SemanticSourceRange(it.fileId ?: fileId.value, it.line, it.column, it.line, it.column), emptyList()
+                )
+            }
+            is FieldBinding.Unknown -> FieldBindingSummary(text, range, FieldBindingState.UNKNOWN, null, null, null, binding.reasons.map { it.name }.sorted())
+            is FieldBinding.Unavailable -> FieldBindingSummary(text, range, FieldBindingState.NOT_A_FIELD, null, null, null, listOf(binding.reason.name))
         }
     }
-
-    private fun field(projectField: ProjectRecordField): ProjectRecordFieldSummary =
-        ProjectRecordFieldSummary(
-            name = projectField.name.toString(),
-            ordinal = projectField.ordinal,
-            typeRef = typeRef(projectField.typeRef),
-            sourceRange = sourceRange(projectField.sourceRange)
-        )
-
-    private fun typeRef(reference: TypeRef): SemanticTypeRefSummary =
-        SemanticTypeRefSummary(
-            kind = when (reference) {
-                is NamedTypeRef -> "Named"
-                is AnchoredTypeRef -> "Anchored"
-                is RefTypeRef -> "Ref"
-            },
-            // A remote anchor prints its database link with the name: `t.c@link`.
-            name = reference.name.toString() + ((reference as? AnchoredTypeRef)?.link?.let { "@$it" } ?: ""),
-            anchor = (reference as? AnchoredTypeRef)?.anchor?.name,
-            sourceRange = sourceRange(reference.sourceRange)
-        )
 
     private fun sourceRange(range: SourceRange): SemanticSourceRange =
         SemanticSourceRange(

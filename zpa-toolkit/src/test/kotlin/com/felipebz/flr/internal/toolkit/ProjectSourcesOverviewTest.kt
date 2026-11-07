@@ -36,10 +36,10 @@ class ProjectSourcesOverviewTest {
         assertThat(overview.labels()).anyMatch { it.startsWith("Preparation: PREPARED_WITH_DECLARATIONS · 2/2 files") }
         assertThat(overview.single("Project files (1)").childLabels()).containsExactly("$spec · 2 declarations")
         assertThat(overview.labels()).noneMatch { it.startsWith("Packages (") }
-        assertThat(overview.singleStartingWith("Type references").childLabels())
-            .contains("p.rec_t → Resolved p.rec_t (PACKAGE_TYPE)")
-        assertThat(overview.singleStartingWith("RECORD members").childLabels())
-            .anyMatch { it.endsWith("→ field n #0 of p.rec_t") }
+        assertThat(overview.singleStartingWith("Type names").childLabels())
+            .contains("p.rec_t → p.rec_t (PACKAGE_TYPE)")
+        assertThat(overview.singleStartingWith("Fields of members").childLabels())
+            .anyMatch { it.startsWith("n → RECORD_FIELD#0@") && it.endsWith("p.pks:1:42") }
     }
 
     @Test
@@ -57,8 +57,8 @@ class ProjectSourcesOverviewTest {
 
     private fun assertIndexedOnce(overview: ProjectOverviewNode) {
         assertThat(overview.labels()).anyMatch { it.startsWith("Preparation: PREPARED_WITH_DECLARATIONS · 2/2 files") }
-        assertThat(overview.singleStartingWith("Type references").childLabels())
-            .contains("p.rec_t → Resolved p.rec_t (PACKAGE_TYPE)")
+        assertThat(overview.singleStartingWith("Type names").childLabels())
+            .contains("p.rec_t → p.rec_t (PACKAGE_TYPE)")
     }
 
     @Test

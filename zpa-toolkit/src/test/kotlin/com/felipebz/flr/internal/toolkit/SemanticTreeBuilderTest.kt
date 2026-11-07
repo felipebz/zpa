@@ -19,31 +19,24 @@ class SemanticTreeBuilderTest {
     private val builder = SemanticTreeBuilder()
 
     @Test
-    fun directProjectRecordMemberIsPresentedAsOneConciseExplanation() {
+    fun aMemberOfAProjectRecordIsPresentedAsOneConciseExplanation() {
         val model = model(simpleRecordSource())
         val inspection = model.inspect(model.findMember(listOf("value", "id")))!!
         val tree = builder.build(inspection)
 
         assertThat(tree.userObject).isEqualTo("MEMBER_EXPRESSION: value.id")
-        assertThat(tree.topLevelLabels()).contains(
-            "Resolution",
-            "Declaration: RECORD: p.t",
-            "Type resolution"
-        )
-        assertThat(tree.topLevelLabels()).noneMatch { it.startsWith("Direct RECORD") }
+        assertThat(tree.topLevelLabels()).contains("Resolution", "Details")
         assertThat(tree.labels()).contains(
-            "source: Project semantics",
-            "base type: p.t",
-            "member: id",
-            "member type: NUMBER",
-            "NUMBER: Built-in NUMERIC",
+            "source: Local semantics",
+            "id: field #0",
+            "category: Scalar(NUMERIC)",
+            "Field id: field #0",
             "Project context: 1 file · 2 declarations"
         )
-        assertThat(tree.labels().count { it.startsWith("Direct RECORD") }).isEqualTo(2)
     }
 
     @Test
-    fun legacyResolutionIsNamedWithoutProjectMetadata() {
+    fun legacyResolutionIsNamedWithoutLocalAnswers() {
         val model = model(
             """
             DECLARE
@@ -69,74 +62,45 @@ class SemanticTreeBuilderTest {
     }
 
     @Test
-    fun completedRecordPathIsShownAsAnOrderedTrace() {
-        val model = model(projectRecordSource())
-        val inspection = model.inspect(model.findMember(listOf("value", "customer", "address", "city")))!!
-        val tree = builder.build(inspection)
-
-        assertThat(tree.userObject).isEqualTo("MEMBER_EXPRESSION: value.customer.address.city")
-        assertThat(tree.labels()).contains(
-            "RECORD path: Completed",
-            "[0] customer",
-            "[1] address",
-            "[2] city",
-            "type: VARCHAR2",
-            "semantic type: Built-in CHARACTER"
-        )
-    }
-
-    @Test
-    fun stoppedRecordPathShowsPrefixAndHumanReadableReason() {
+    fun aMemberChainShowsTheFieldOfEachName() {
         val model = model(projectRecordSource())
         val inspection = model.inspect(model.findMember(listOf("value", "customer", "address", "missing")))!!
         val tree = builder.build(inspection)
 
-        assertThat(tree.labels()).contains(
-            "RECORD path: Stopped",
-            "[0] customer",
-            "[1] address",
-            "Stopped before: missing",
-            "Reason: Member not found"
-        )
-        assertThat(tree.labels()).doesNotContain("Reason: MEMBER_NOT_FOUND")
+        assertThat(tree.labels()).contains("customer: field #0", "address: field #0", "missing: Undecided")
     }
 
     @Test
-    fun ambiguousResolutionKeepsReadableStateAndDetailedCandidates() {
-        val model = model(
-            """
-            DECLARE value p.t; BEGIN NULL; END;
-            CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;
-            CREATE PACKAGE p AS TYPE t IS RECORD (id NUMBER); END p;
-            """.trimIndent()
-        )
-        val datatype = model.findNode(PlSqlGrammar.DATATYPE) {
-            it.tokenText().replace(" ", "").contains("p.t")
-        }
+    fun aTypeNameShowsItsDeclarationAndCategory() {
+        val model = model(simpleRecordSource())
+        val datatype = model.findNode(PlSqlGrammar.DATATYPE) { it.tokenText().replace(" ", "") == "p.t" }
         val tree = builder.build(model.inspect(datatype)!!)
 
-        assertThat(tree.labels()).contains(
-            "project declaration: Ambiguous",
-            "Project type resolution: Ambiguous",
-            "raw state: AMBIGUOUS",
-            "candidates"
+        assertThat(tree.userObject).isEqualTo("DATATYPE: p.t")
+        assertThat(tree.topLevelLabels()).contains("Declaration: p.t")
+        assertThat(tree.labels()).contains("declaration: Resolved p.t", "category: Record(RECORD_TYPE)", "Type name: Resolved p.t", "raw state: PROJECT")
+    }
+
+    @Test
+    fun anUndecidedTypeNameShowsItsReasons() {
+        val inspection = SemanticNodeInspection(
+            node = SemanticNodeSummary("DATATYPE", "p", null),
+            projectAnalysis = ProjectAnalysisSummary("PREPARED_WITH_DECLARATIONS", 1, 1, 1, emptyList()),
+            legacy = null,
+            typeName = TypeNameSummary(TypeNameState.UNDECIDED, "p.t", null, null, listOf("CONDITIONAL_COMPILATION")),
+            typeCategory = "Unknown[CONDITIONAL_COMPILATION]",
+            valueCategory = null,
+            declaredProjectType = null,
+            fields = emptyList()
         )
+        val tree = builder.build(inspection)
+
+        assertThat(tree.labels()).contains("declaration: Undecided", "Type name: Undecided", "reasons: CONDITIONAL_COMPILATION")
     }
 
     @Test
     fun incompleteProjectContextIsPromotedButItsDetailsRemainAvailable() {
-        val failure = com.felipebz.zpa.tooling.ProjectPreparationFailureSummary(
-            "broken.sql",
-            "IllegalStateException"
-        )
-        val resolution = ProjectTypeResolutionSummary(
-            ProjectTypeResolutionState.INCOMPLETE_INDEX,
-            "p.t",
-            null,
-            emptyList(),
-            emptyList(),
-            listOf(failure)
-        )
+        val failure = ProjectPreparationFailureSummary("broken.sql", "IllegalStateException")
         val inspection = SemanticNodeInspection(
             node = SemanticNodeSummary("DATATYPE", "p", null),
             projectAnalysis = ProjectAnalysisSummary(
@@ -147,11 +111,11 @@ class SemanticTreeBuilderTest {
                 failures = listOf(failure)
             ),
             legacy = null,
-            projectTypeResolution = resolution,
+            typeName = TypeNameSummary(TypeNameState.INCOMPLETE_INDEX, "p.t", null, null, emptyList()),
+            typeCategory = null,
+            valueCategory = null,
             declaredProjectType = null,
-            projectRecordMemberResolution = null,
-            projectRecordFieldTypeResolution = null,
-            projectRecordMemberPathResolution = null
+            fields = emptyList()
         )
         val tree = builder.build(inspection)
 
@@ -159,7 +123,7 @@ class SemanticTreeBuilderTest {
             "Project context: incomplete · 1 preparation failure",
             "raw state: PREPARED_WITH_FAILURES",
             "preparation failures",
-            "Project type resolution: Incomplete project index",
+            "Type name: Incomplete project index",
             "raw state: INCOMPLETE_INDEX"
         )
     }
@@ -170,11 +134,11 @@ class SemanticTreeBuilderTest {
             node = SemanticNodeSummary("IDENTIFIER_NAME", "value", null),
             projectAnalysis = ProjectAnalysisSummary("PREPARED_EMPTY", 0, 0, 0, emptyList()),
             legacy = null,
-            projectTypeResolution = null,
+            typeName = null,
+            typeCategory = null,
+            valueCategory = null,
             declaredProjectType = null,
-            projectRecordMemberResolution = null,
-            projectRecordFieldTypeResolution = null,
-            projectRecordMemberPathResolution = null
+            fields = emptyList()
         )
 
         val tree = builder.build(inspection)
@@ -197,9 +161,6 @@ class SemanticTreeBuilderTest {
 
         assertThat(tree.isExpanded(TreePath(root.path))).isTrue()
         assertThat(tree.isExpanded(TreePath(root.child("Resolution").path))).isTrue()
-        val path = root.child("RECORD path: Completed")
-        assertThat(tree.isExpanded(TreePath(path.path))).isTrue()
-        assertThat(tree.isExpanded(TreePath(path.child("[0] customer").path))).isTrue()
         assertThat(tree.isExpanded(TreePath(root.child("Details").path))).isFalse()
     }
 

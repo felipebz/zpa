@@ -14,6 +14,7 @@ import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.NamedTypeRef
 import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.ProjectRecordMemberResolution
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
@@ -29,17 +30,78 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         .filter { facts.references[it].lastSegmentContext in CONTEXTS }
         .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
 
-    fun category(name: AstNode): ValueCategory {
+    fun category(name: AstNode): ValueCategory = valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+
+    /**
+     * [category] of a member expression or a member item of a receiver whose last name is one field or attribute of a
+     * value whose type the project declares; null for any other node.
+     */
+    fun projectMemberCategory(name: AstNode): ValueCategory? {
+        val last = when (name.type) {
+            PlSqlGrammar.MEMBER_EXPRESSION -> name.children.lastOrNull { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME }
+            PlSqlGrammar.VARIABLE_NAME -> name.takeIf { receiverOf(it) != null }
+            else -> null
+        } ?: return null
+        val (_, base) = memberBase(last) ?: return null
+        val member = LocalSyntax.identifier(last.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: last)
+        if (walk.projectMember(base, member) !is ProjectRecordMemberResolution.Resolved) return null
+        return valueOf(name)?.let { (region, evidence) -> of(region, evidence) }
+    }
+
+    /** The region a value name is read from and the walk's evidence of its value; null for a name this does not cover. */
+    private fun valueOf(name: AstNode): Pair<LocalRegionId, LocalTypeEvidence>? {
         receiverOf(name)?.let { receiver ->
-            val walked = receivers.getOrPut(receiver) { walkReceiver(receiver) } ?: return unavailable()
-            return walked.evidence[name]?.let { of(walked.region, it) } ?: unavailable()
+            val walked = walked(receiver) ?: return null
+            return walked.evidence[name]?.let { walked.region to it }
         }
-        val written = writtenSegments(name) ?: return unavailable()
-        val index = referencesByStart[name.token.line to name.token.column] ?: return unavailable()
+        val written = writtenSegments(name) ?: return null
+        val index = referencesByStart[name.token.line to name.token.column] ?: return null
         val reference = facts.references[index]
-        if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
-        if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return unavailable()
-        return of(reference.region, nameEvidence(reference, facts.resolutions[index].map(::fieldStep), reference.segments.size))
+        if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return null
+        if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return null
+        return reference.region to nameEvidence(reference, facts.resolutions[index].map(::fieldStep), reference.segments.size)
+    }
+
+    private fun walked(receiver: AstNode): Walked? = receivers.getOrPut(receiver) { walkReceiver(receiver, inSql = false) }
+
+    /**
+     * A receiver walked in SQL too, for the member a name of it names: `name(…)` in SQL is a call or an element, which
+     * no column takes, so the members after it are those of that value.
+     */
+    private fun walkedInSql(receiver: AstNode): Walked? = sqlReceivers.getOrPut(receiver) { walkReceiver(receiver, inSql = true) }
+
+    /** The receivers walked with those in SQL, by their `OBJECT_REFERENCE`. */
+    private val sqlReceivers = IdentityHashMap<AstNode, Walked?>()
+
+    /** The segments after the first of every qualified name, by the start of their name: the reference and the segment's position (1 for the second). */
+    private val segmentsByStart: Map<Pair<Int, Int>, Pair<Int, Int>> by lazy(LazyThreadSafetyMode.NONE) {
+        facts.references.indices.filter { facts.references[it].segments.isNotEmpty() }.flatMap { index ->
+            facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
+        }.toMap()
+    }
+
+    /**
+     * The region and the walk's evidence of the value whose member the name [segment] is: in a qualified name, the value
+     * of the names before it; in a member item of an expression receiver (`f(1).a.b`, `v(i).m().c`), the value of what
+     * precedes it in the receiver. Null when [segment] is no such name, or the receiver is one this does not walk.
+     */
+    fun memberBase(segment: AstNode): Pair<LocalRegionId, LocalTypeEvidence>? {
+        segmentsByStart[segment.token.line to segment.token.column]?.let { (index, position) ->
+            val reference = facts.references[index]
+            if (reference.segments.take(position).any { it.isAttribute }) return null
+            return reference.region to ownerEvidence(reference, facts.resolutions[index].map(::fieldStep), position - 1)
+        }
+        var item = segment
+        while (item.parentOrNull?.type.let { it === PlSqlGrammar.MEMBER_EXPRESSION || it === PlSqlGrammar.METHOD_CALL }) item = item.parent
+        val receiver = item.parentOrNull?.takeIf { it.type === PlSqlGrammar.OBJECT_REFERENCE && it.firstChild !== item } ?: return null
+        val walked = walkedInSql(receiver) ?: return null
+        val before = receiver.children.subList(0, receiver.children.indexOf(item)).lastOrNull { it.type !== PlSqlPunctuator.DOT } ?: return null
+        val evidence = walked.evidence[before] ?: return null
+        val callee = if (item.type === PlSqlGrammar.METHOD_CALL) callParts(item).first else item
+        val written = if (callee.type === PlSqlGrammar.VARIABLE_NAME) listOf(callee)
+        else callee.children.filter { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME }
+        val position = written.indexOfFirst { it === segment || it === segment.parentOrNull }.takeIf { it >= 0 } ?: return null
+        return walked.region to walk.members(evidence, names(callee).take(position), walked.region)
     }
 
     private val calls by lazy { facts.calls.associateBy { it.reference.range.startLine to it.reference.range.startColumn } }
@@ -65,20 +127,21 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
 
     /**
      * Walks a receiver: the value its first child gives (an element of a collection, one step per argument list, or
-     * the result of a call bound to one function or method), then each member item after it. Receivers in SQL, and
-     * first children of another form, are not modeled.
+     * the result of a call bound to one function or method), then each member item after it. Receivers in SQL outside
+     * the `VALUES` of a single-table `INSERT` are walked only when [inSql]; first children of another form never are.
      */
-    private fun walkReceiver(receiver: AstNode): Walked? {
+    private fun walkReceiver(receiver: AstNode, inSql: Boolean): Walked? {
         val head = receiver.firstChild.takeIf { it.type === PlSqlGrammar.METHOD_CALL } ?: return null
         val (callee, lists) = callParts(head)
         if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return null
         val index = referencesByStart[callee.token.line to callee.token.column] ?: return null
         val reference = facts.references[index]
-        if (!inPlSqlOrValues(reference) || writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
+        if (!(if (inSql) isCall(reference) else inPlSqlOrValues(reference)) || writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
         if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return null
         val region = reference.region
         val evidence = IdentityHashMap<AstNode, LocalTypeEvidence>()
         var current = head(reference, facts.resolutions[index].map(::fieldStep), lists, region)
+        evidence[head] = current
         for (item in receiver.children.drop(1)) {
             when (item.type) {
                 PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION -> current = walk.members(current, names(item), region)
@@ -96,8 +159,10 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
      * A receiver read in PL/SQL, or in the `VALUES` of a single-table `INSERT`, which has no table columns in scope.
      * Receivers in other SQL are not modeled.
      */
-    private fun inPlSqlOrValues(reference: LocalReference): Boolean =
-        reference.sql == null && (reference.lastSegmentContext == LocalReferenceContext.CALL_EXPRESSION || reference.lastSegmentContext == LocalReferenceContext.SQL_CALL)
+    private fun inPlSqlOrValues(reference: LocalReference): Boolean = reference.sql == null && isCall(reference)
+
+    private fun isCall(reference: LocalReference): Boolean =
+        reference.lastSegmentContext == LocalReferenceContext.CALL_EXPRESSION || reference.lastSegmentContext == LocalReferenceContext.SQL_CALL
 
     /**
      * `name(…)` in SQL that a SQL built-in function of that name takes, whatever local value has the name (the built-in
@@ -160,7 +225,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val value = nameEvidence(reference, steps, reference.segments.size)
         if (value.terminal != LocalTypeEvidence.Terminal.UNKNOWN || value.incomplete != null || reference.segments.isEmpty()) return elements(value, lists, region)
         // `v.m(…)`: a method of the value's object type.
-        val receiver = nameEvidence(reference, steps, reference.segments.size - 1)
+        val receiver = ownerEvidence(reference, steps, reference.segments.size - 1)
         val result = walk.methodResult(receiver, reference.segments.last().name, callArguments(lists.first()), region)
         return elements(result, lists.drop(1), region)
     }
@@ -193,6 +258,16 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
                 walk.element(current, region)
             }
         }
+
+    /**
+     * Evidence of the value whose member the segment after the first [count] ones is: [nameEvidence], except that `SELF`
+     * alone gives the type the body implements, its specification and supertypes included, as the project describes it.
+     */
+    private fun ownerEvidence(reference: LocalReference, steps: List<LocalResolution>, count: Int): LocalTypeEvidence {
+        val first = covered(steps.first())
+        if (count == 0 && (first is LocalResolution.ImplicitSelf || isSelfParameter(first))) walk.enclosingType(reference.region)?.let { return it }
+        return nameEvidence(reference, steps, count)
+    }
 
     /**
      * Evidence of the value the first [count] segments after the first name of [reference] give: a local value or field,

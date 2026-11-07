@@ -10,11 +10,7 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.squid.AstScanner
-import com.felipebz.zpa.squid.PlSqlConfiguration
-import com.felipebz.zpa.tooling.ProjectRecordMemberResolutionState
-import com.felipebz.zpa.tooling.SemanticInspectionService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -75,17 +71,6 @@ class CollectionMethodMemberTest {
         scanner.scanFile(Source("types.sql", types), emptyList(), FileId("types.sql"))
         scanner.scanFile(Source("use.sql", use), listOf(check), FileId("use.sql"))
         assertThat(rows).containsExactly("5 1 count MEMBER_IS_COLLECTION_METHOD", "6 1 count MEMBER_IS_COLLECTION_METHOD")
-    }
-
-    @Test
-    fun theToolingReportsTheCollectionMethodState() {
-        val pk = "CREATE PACKAGE pk AS TYPE aa IS TABLE OF NUMBER INDEX BY PLS_INTEGER; END pk;\n/\n"
-        val use = "CREATE PROCEDURE use_it IS\n  a pk.aa;\n  n NUMBER;\nBEGIN\n  n := a.count;\nEND;\n/\n"
-        val context = prepare("pk.sql" to pk, "use.sql" to use)
-        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(use)
-        val result = SemanticInspectionService().analyze(root, FileId("use.sql"), context)
-        val states = root.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).mapNotNull { result.inspect(it).projectRecordMemberResolution?.state }
-        assertThat(states).containsExactly(ProjectRecordMemberResolutionState.COLLECTION_METHOD)
     }
 
     private class Source(private val id: String, private val text: String) : PlSqlFile {

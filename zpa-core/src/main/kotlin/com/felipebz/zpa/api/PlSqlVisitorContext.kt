@@ -186,8 +186,11 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * it is answered as `SELF.items` would be there, with the same declaration and no more certainty. A parameter or a
      * local of that name takes it first, a static method has no instance, and in SQL a column may take it first.
      *
-     * Members after an element, a call result or a package variable of another file are resolved when the file is
-     * left: ask from `leaveFile`, or later, for those.
+     * After a value whose type is declared in another file (a package variable of another file, an element, a call
+     * result, a parameter of a project type), the member is the one the project declares for that type, as the local
+     * type walk of [valueCategory] reaches the value: a value of a type the project does not hold gives
+     * [FieldBinding.Unknown] with [UsageUncertainty.DECLARATION_OUTSIDE_FILE], and text this file may hold differently
+     * (a `${'$'}IF`, a substitution) leaves the member undecided.
      */
     @ZpaExperimentalApi
     fun fieldBinding(segment: AstNode): FieldBinding =
@@ -205,11 +208,12 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     /**
      * The category of the declared type of the value [name] denotes: a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as
      * `pkg.v`, `r.f` or `block.v`, read as a value in PL/SQL or SQL, or called (`v(i)` names the collection `v`). In
-     * PL/SQL, also an `OBJECT_REFERENCE`, a member written after an element or a call result (`v(i).f`, `f(1).g.h`,
-     * `o.m().a`), and each of its member items after the first child: the value of the chain up to that item. The
-     * element is typed by its collection's element type, one step per argument list; a call must bind one function or
-     * method. A call that binds no single candidate is unknown: Oracle rejects it, or the candidates differ only by
-     * argument types, which this analysis does not compare.
+     * PL/SQL, and in the `VALUES` of a single-table `INSERT`, also an `OBJECT_REFERENCE`, a member written after an
+     * element or a call result (`v(i).f`, `f(1).g.h`, `o.m().a`), and each of its member items after the first child:
+     * the value of the chain up to that item. The element is typed by its collection's element type, one step per
+     * argument list; a call must bind one function or method, and a call nothing else takes that names an object type
+     * is its constructor, whose result is that type. A call that binds no single candidate is unknown: Oracle rejects
+     * it, or the candidates differ only by argument types, which this analysis does not compare.
      * Subtypes and `%TYPE` anchors are followed; a declaration in another file is described by the prepared project.
      * [ValueCategory.Unknown] is never a proof of any category.
      */

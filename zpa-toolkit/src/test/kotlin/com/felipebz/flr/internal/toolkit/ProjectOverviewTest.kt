@@ -42,12 +42,12 @@ class ProjectOverviewTest {
     }
 
     @Test
-    fun recordMemberResolutionsPointAtTheirAstNode() {
-        // Inside the package's own body the spec types resolve lexically, so the Project System records nothing there.
-        val entries = overview.singleStartingWith("Resolutions in this file (").children
-            .filter { it.label.startsWith("RECORD member paths") || it.label.startsWith("RECORD members") }
-            .flatMap { it.children }
-        assertThat(entries).anyMatch { it.astNode != null && it.sourceRange?.startLine == 26 }
+    fun fieldsOfMembersPointAtTheirAstNode() {
+        val entries = overview.singleStartingWith("Fields of members").children
+        // `w.customer.street`, each name linked to its node; the recovered wrapped unit leaves the file's answers undecided.
+        assertThat(entries.filter { it.sourceRange?.startLine == 26 }.map { it.label })
+            .containsExactly("customer → undecided [PARSE_RECOVERY]", "street → undecided [PARSE_RECOVERY]")
+        assertThat(entries).allMatch { it.astNode != null }
     }
 
     private fun ProjectOverviewNode.all(): Sequence<ProjectOverviewNode> = sequence {

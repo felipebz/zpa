@@ -7,13 +7,16 @@ package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
-import com.felipebz.zpa.api.project.ProjectCallTarget
-import com.felipebz.zpa.api.project.ProjectDeclarationKind
+import com.felipebz.zpa.api.semantics.FieldBinding
 import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.PackageDeclaration
+import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
+import com.felipebz.zpa.symbols.local.LocalTypeName
 
 /** One labelled entry of the project overview; [astNode] is set only for resolutions attached to AST nodes. */
 public class ProjectOverviewNode(
@@ -33,7 +36,9 @@ internal class ProjectOverviewBuilder(
     private val fileId: FileId,
     private val root: AstNode,
     private val facts: LocalSemanticFacts?,
-    context: ProjectAnalysisContext
+    context: ProjectAnalysisContext,
+    /** The analyzed file's context, for the local answers on its nodes; null when the file was not analyzed. */
+    private val fileContext: PlSqlVisitorContext? = null
 ) {
     private val snapshot = ProjectSnapshot.create(context)
     private val declarations = snapshot.declarations
@@ -294,71 +299,60 @@ internal class ProjectOverviewBuilder(
     }
 
     private fun resolutions(): ProjectOverviewNode {
-        val typeReferences = mutableListOf<ProjectOverviewNode>()
-        val members = mutableListOf<ProjectOverviewNode>()
-        val paths = mutableListOf<ProjectOverviewNode>()
+        val typeNames = mutableListOf<ProjectOverviewNode>()
+        val fields = mutableListOf<ProjectOverviewNode>()
         val bodySubprograms = mutableListOf<ProjectOverviewNode>()
+        val categories = fileContext?.valueCategories
         val pending = ArrayDeque<AstNode>().apply { add(root) }
         while (pending.isNotEmpty()) {
             val astNode = pending.removeLast()
             for (index in astNode.children.indices.reversed()) {
                 pending.addLast(astNode.children[index])
             }
-            val semantic = astNode as? SemanticAstNode ?: continue
-            semantic.projectTypeResolution?.let {
-                typeReferences += astEntry("${it.reference.name} → ${typeResolutionText(it)}", astNode)
+            if (astNode.type === PlSqlGrammar.DATATYPE && categories != null) {
+                typeNameText(categories.typeName(astNode))?.let { typeNames += astEntry("${astNode.tokens.joinToString("") { t -> t.originalValue }} → $it", astNode) }
             }
-            val path = semantic.projectRecordMemberPathResolution
-            val member = semantic.projectRecordMemberResolution
-            if (member != null && path == null) {
-                members += astEntry("${nodeText(astNode)} → ${memberResolutionText(member)}", astNode)
-            }
-            if (path != null) {
-                val text = when (path) {
-                    is ProjectRecordMemberPathResolution.Completed -> "Completed (${path.segments.size} segments)"
-                    is ProjectRecordMemberPathResolution.Stopped -> "Stopped before ${path.nextMember}: ${path.reason.name}"
+            if (isMemberName(astNode)) {
+                when (val binding = fileContext!!.fieldBinding(astNode)) {
+                    is FieldBinding.Field -> fields += astEntry("${nodeText(astNode)} → ${binding.declaration}", astNode)
+                    is FieldBinding.Unknown -> fields += astEntry("${nodeText(astNode)} → undecided ${binding.reasons.sorted()}", astNode)
+                    is FieldBinding.Unavailable -> Unit
                 }
-                paths += astEntry("${nodeText(astNode)} → $text", astNode)
             }
-            semantic.projectSubprogramDeclaration?.let {
+            (astNode as? SemanticAstNode)?.projectSubprogramDeclaration?.let {
                 bodySubprograms += astEntry("${it.kind} ${it.owner}.${it.name} (${it.role})", astNode)
             }
         }
         val typedSymbols = typedDeclarations()
         val subgroups = listOfNotNull(
-            section("Type references", typeReferences),
-            section("RECORD members", members),
-            section("RECORD member paths", paths),
+            section("Type names", typeNames),
+            section("Fields of members", fields),
             section("Variables typed by project types", typedSymbols),
             section("Package body subprograms linked to facts", bodySubprograms)
         )
-        val total = typeReferences.size + members.size + paths.size + typedSymbols.size + bodySubprograms.size
+        val total = typeNames.size + fields.size + typedSymbols.size + bodySubprograms.size
         return node(
             "Resolutions in this file ($total)",
             children = if (total == 0) listOf(node("(none)")) else subgroups
         )
     }
 
-    private fun typeResolutionText(resolution: ProjectTypeResolution): String = when (resolution) {
-        is ProjectTypeResolution.Resolved ->
-            "Resolved ${resolution.declaration.qualifiedName} (${resolution.declaration.kind})"
-        is ProjectTypeResolution.Ambiguous -> "Ambiguous (${resolution.candidates.size} candidates)"
-        is ProjectTypeResolution.NotFoundInProject -> "No project declaration"
-        is ProjectTypeResolution.IncompleteIndex -> "Incomplete index (${resolution.knownCandidates.size} known)"
-        is ProjectTypeResolution.NotPrepared -> "Project index not prepared"
-    }
+    /** A name a field binding is asked for: a `VARIABLE_NAME`, or an `IDENTIFIER_NAME` that is not one's only child. */
+    private fun isMemberName(node: AstNode): Boolean = fileContext != null &&
+        (node.type === PlSqlGrammar.VARIABLE_NAME || node.type === PlSqlGrammar.IDENTIFIER_NAME && node.parentOrNull?.type !== PlSqlGrammar.VARIABLE_NAME)
 
-    private fun memberResolutionText(resolution: ProjectRecordMemberResolution): String = when (resolution) {
-        is ProjectRecordMemberResolution.Resolved ->
-            "field ${resolution.field.name} #${resolution.field.ordinal} of ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.NotFound -> "No matching field in ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.Ambiguous ->
-            "Ambiguous (${resolution.candidates.size} fields) in ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.Incomplete -> "Attribute list incomplete in ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.Method ->
-            "Method (${resolution.overloads.size} overloads${if (resolution.complete) "" else ", incomplete"}) of ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.CollectionMethod -> "Collection method ${resolution.name} of ${resolution.declaration.qualifiedName}"
-        is ProjectRecordMemberResolution.UnsupportedType -> "Unsupported type ${resolution.declaration.qualifiedName}"
+    private fun typeNameText(name: LocalTypeName): String? = when (name) {
+        is LocalTypeName.Local -> "local declaration" + (name.project?.let { " ${it.qualifiedName} (${it.kind})" } ?: "")
+        is LocalTypeName.Project -> "${name.declaration.qualifiedName} (${name.declaration.kind})"
+        is LocalTypeName.BuiltIn -> "predefined type"
+        is LocalTypeName.Unresolved -> when (name.resolution.status) {
+            ProjectNamedTypeResolution.Status.AMBIGUOUS -> "Ambiguous (${name.resolution.candidates.size} candidates)"
+            ProjectNamedTypeResolution.Status.INCOMPLETE_INDEX -> "Incomplete index"
+            ProjectNamedTypeResolution.Status.NOT_PREPARED -> "Project index not prepared"
+            else -> "No project declaration"
+        }
+        is LocalTypeName.Undecided -> "undecided ${name.reasons.sorted()}"
+        LocalTypeName.Unavailable -> null
     }
 
     /** The local declarations with a declared project type, linked to the node of their name. */

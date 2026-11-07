@@ -217,6 +217,18 @@ internal class LocalTypeWalk(
         return described(snapshot, member, region)
     }
 
+    /**
+     * What the member [name] of the value [evidence] gives is, when the project describes the value's type as a declared
+     * type (not an anchor): a field or attribute with the type declaring it, a method set, a collection method, or why
+     * there is none. Null for any other value: a local type, an anchor, an undecided value, no prepared project.
+     */
+    fun projectMember(evidence: LocalTypeEvidence, name: OracleIdentifier): ProjectRecordMemberResolution? {
+        val snapshot = snapshot?.takeIf { prepared } ?: return null
+        val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT && !it.anchor.isPresent } ?: return null
+        val type = description.source.declaration.orElse(null)?.takeIf { description.source.status == ProjectTypeDescription.Status.DECLARED_TYPE } ?: return null
+        return snapshot.memberResolution(type.id, name)
+    }
+
     private fun described(snapshot: ProjectSnapshot, member: ProjectMemberType, region: LocalRegionId): LocalTypeEvidence {
         val schema = compilationSchema(region)
         val typeRef = member.typeRef
