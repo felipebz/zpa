@@ -32,25 +32,27 @@ class SelectAllColumnsCheck : AbstractBaseCheck() {
             return
         }
 
-        if (topParent.typeIs(PlSqlGrammar.CURSOR_DECLARATION) && isFetchedAsRow(topParent)) {
-            return
-        }
-
         var candidate = node.firstChild
 
         if (candidate.typeIs(PlSqlGrammar.OBJECT_REFERENCE)) {
             candidate = candidate.lastChild
         }
 
-        if (candidate.typeIs(PlSqlPunctuator.MULTIPLICATION)) {
-            val intoClause = node.parent.getFirstChildOrNull(DmlGrammar.INTO_CLAUSE)
-
-            if (intoClause != null && intoMayBeRow(intoClause)) {
-                return
-            }
-
-            addIssue(node, getLocalizedMessage())
+        if (!candidate.typeIs(PlSqlPunctuator.MULTIPLICATION)) {
+            return
         }
+
+        if (topParent.typeIs(PlSqlGrammar.CURSOR_DECLARATION) && isFetchedAsRow(topParent)) {
+            return
+        }
+
+        val intoClause = node.parent.getFirstChildOrNull(DmlGrammar.INTO_CLAUSE)
+
+        if (intoClause != null && intoMayBeRow(intoClause)) {
+            return
+        }
+
+        addIssue(node, getLocalizedMessage())
     }
 
     private fun isFetchedAsRow(cursor: AstNode): Boolean {
