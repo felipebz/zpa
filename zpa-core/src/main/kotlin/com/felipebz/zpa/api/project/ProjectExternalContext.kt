@@ -17,7 +17,9 @@ import java.util.*
 class ProjectExternalContext private constructor(
     /** The supplied metadata; [ProjectExternalMetadata.none] when no metadata was supplied. */
     val metadata: ProjectExternalMetadata,
-    defaultCompilationSchema: ProjectIdentifier?
+    defaultCompilationSchema: ProjectIdentifier?,
+    /** The schemas files compile in, by path; [ProjectSchemaPaths.none] when none were configured. */
+    val schemaPaths: ProjectSchemaPaths = ProjectSchemaPaths.none()
 ) {
     /** The schema configured for units whose name carries no schema; empty when none was configured. */
     val defaultCompilationSchema: Optional<ProjectIdentifier> = Optional.ofNullable(defaultCompilationSchema)
@@ -34,8 +36,21 @@ class ProjectExternalContext private constructor(
         else -> Optional.empty()
     }
 
+    /**
+     * The schema in which the unit named [unitName], written in the file [fileId], compiles: an explicit schema prefix,
+     * else the schema of the first [schemaPaths] pattern matching the file, else [defaultCompilationSchema]. Empty when
+     * none establishes it.
+     */
+    fun compilationSchema(unitName: ProjectQualifiedName, fileId: String): Optional<ProjectIdentifier> =
+        if (unitName.segments.size == 1) fileSchema(fileId) else compilationSchema(unitName)
+
+    /** The schema units of [fileId] written without one compile in: its path's schema, else the default; may be empty. */
+    fun fileSchema(fileId: String): Optional<ProjectIdentifier> =
+        schemaPaths.schemaOf(fileId).or { defaultCompilationSchema }
+
     override fun toString(): String =
-        "ProjectExternalContext($metadata, default schema ${defaultCompilationSchema.map { it.toString() }.orElse("none")})"
+        "ProjectExternalContext($metadata, default schema ${defaultCompilationSchema.map { it.toString() }.orElse("none")}" +
+            (if (schemaPaths.entries.isEmpty()) ")" else ", schema paths $schemaPaths)")
 
     companion object {
         private val NONE = ProjectExternalContext(ProjectExternalMetadata.none(), null)
@@ -48,5 +63,10 @@ class ProjectExternalContext private constructor(
         @JvmStatic
         fun of(metadata: ProjectExternalMetadata, defaultCompilationSchema: ProjectIdentifier?): ProjectExternalContext =
             ProjectExternalContext(metadata, defaultCompilationSchema)
+
+        /** As [of], with the schemas files compile in by path. */
+        @JvmStatic
+        fun of(metadata: ProjectExternalMetadata, defaultCompilationSchema: ProjectIdentifier?, schemaPaths: ProjectSchemaPaths): ProjectExternalContext =
+            ProjectExternalContext(metadata, defaultCompilationSchema, schemaPaths)
     }
 }

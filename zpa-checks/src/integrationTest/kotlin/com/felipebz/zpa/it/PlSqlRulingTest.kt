@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.it
 
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
@@ -10,6 +12,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.checks.PlSqlVisitor
+import com.felipebz.zpa.api.project.ProjectExternalContext
+import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.api.project.ProjectSchemaPaths
 import com.felipebz.zpa.checks.CheckList
 import com.felipebz.zpa.checks.ParsingErrorCheck
 import com.felipebz.zpa.metadata.FormsMetadata
@@ -52,7 +57,11 @@ class PlSqlRulingTest {
 
     @Test
     fun utPLSQL3() {
-        analyze("utPLSQL3")
+        // The schemas utPLSQL installs each part in.
+        analyze(
+            "utPLSQL3",
+            schemaPaths = "source/**=UT3_DEVELOP,test/ut3_tester_helper/**=UT3_TESTER_HELPER,test/ut3_tester/**=UT3_TESTER,test/ut3_user/**=UT3_USER"
+        )
     }
 
     @Test
@@ -164,7 +173,7 @@ class PlSqlRulingTest {
         analyze(project)
     }
 
-    private fun analyze(project: String, sources: String = project) {
+    private fun analyze(project: String, sources: String = project, schemaPaths: String = "") {
         val extensions = "sql,typ,pkg,pkb,pks,tab,tps,tpb,pcd,fun,tgg"
 
         val baseDir = File("src/integrationTest/resources/sources/$sources").absoluteFile
@@ -181,12 +190,15 @@ class PlSqlRulingTest {
 
         // As in production: the project is prepared from the files the analysis scans, lexed as the scanner lexes them,
         // each indexed under the id the scan uses for it.
-        val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(PlSqlConfiguration(StandardCharsets.UTF_8, false)))
+        val schemas = ProjectSchemaPaths.parse(baseDirPath, schemaPaths).takeIf { it.entries.isNotEmpty() }
+            ?.let { ProjectExternalContext.of(ProjectExternalMetadata.none(), null, it) }
+        val preparation = ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(PlSqlConfiguration(StandardCharsets.UTF_8, false)), schemas ?: ProjectExternalContext.none())
             .prepare(inputFiles.map { file -> ProjectSource(FileId(file.path().toString())) { file.contents() } }, concurrent = true)
         preparation.failures.forEach { println("Project preparation failure in $project: $it") }
 
         val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
-        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8, ProjectAnalysisContext.prepared(preparation))
+        val prepared = ProjectAnalysisContext.prepared(preparation)
+        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8, schemas?.let(prepared::withExternalContext) ?: prepared)
 
         val issues = inputFiles
             .map { scanner.scanFile(it, emptyList(), FileId(it.path().toString())) }

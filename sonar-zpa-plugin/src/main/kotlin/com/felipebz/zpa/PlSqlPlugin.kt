@@ -62,6 +62,15 @@ class PlSqlPlugin : Plugin {
                 .subCategory(GENERAL)
                 .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
                 .build(),
+            PropertyDefinition.builder(SCHEMA_PATHS_KEY)
+                .name("Schema paths")
+                .description("The schema each source file compiles in, by path: comma-separated pattern=SCHEMA pairs, e.g. " +
+                    "'source/**=APP,test/**=APP_TEST'. Patterns are globs relative to the project base directory; the first " +
+                    "that matches a file wins. Units created without an owner get that schema, and names qualified by it reach them.")
+                .category(DEFAULT_CATEGORY)
+                .subCategory(GENERAL)
+                .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
+                .build(),
             PropertyDefinition.builder(DATABASE_VERSION_KEY)
                 .name("Target database version")
                 .description("Database version the code is compiled for (DBMS_DB_VERSION), e.g. '19' or '12.2'.")
@@ -116,6 +125,7 @@ class PlSqlPlugin : Plugin {
         internal const val CONCURRENT_EXECUTION_KEY = "sonar.zpa.concurrentExecution"
         internal const val CCFLAGS_KEY = "sonar.zpa.ccflags"
         internal const val DATABASE_VERSION_KEY = "sonar.zpa.databaseVersion"
+        internal const val SCHEMA_PATHS_KEY = "sonar.zpa.schemaPaths"
     }
 
 }

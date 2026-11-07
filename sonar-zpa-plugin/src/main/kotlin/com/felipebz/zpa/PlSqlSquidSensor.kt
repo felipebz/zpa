@@ -9,6 +9,7 @@ import com.felipebz.zpa.api.ZpaRulesDefinition
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalContext
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.api.project.ProjectSchemaPaths
 import com.felipebz.zpa.checks.CheckList
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.oracle.JdbcOracleMetadataAcquirer
@@ -77,6 +78,18 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         return settings
     }
 
+    /** `sonar.zpa.schemaPaths`, relative to the project base directory; an invalid value fails the analysis. */
+    private fun schemaPaths(baseDirectory: java.nio.file.Path): ProjectSchemaPaths {
+        val text = configuration.get(PlSqlPlugin.SCHEMA_PATHS_KEY).orElse("")
+        val paths = try {
+            ProjectSchemaPaths.parse(baseDirectory, text)
+        } catch (e: IllegalArgumentException) {
+            throw MessageException.of("Invalid value of ${PlSqlPlugin.SCHEMA_PATHS_KEY}: ${e.message}")
+        }
+        if (paths.entries.isNotEmpty()) logger.info("ZPA schema paths: $paths")
+        return paths
+    }
+
     override fun describe(descriptor: SensorDescriptor) {
         descriptor.name("ZPA").onlyOnLanguage(PlSql.Companion.KEY)
     }
@@ -94,14 +107,18 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         // scanner, before preparation and scanning; failures (MessageException, sanitized) fail the analysis.
         val oracleSettings = OracleMetadataSettings.from(configuration, environment, fs.baseDir().toPath())
         val compilationSchema = OracleMetadataSettings.compilationSchema(configuration)
+        val schemaPaths = schemaPaths(fs.baseDir().toPath())
         val externalMetadata = oracleSettings?.let { settings ->
             oracleMetadataAcquirer.acquire(settings).also { logger.info("ZPA Oracle metadata: ${it.summary}") }.metadata
         }
 
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
+        // The schemas each file compiles in: given to the index's declarations and to the lookups of the local analysis.
+        val externalContext = if (externalMetadata == null && compilationSchema == null && schemaPaths.entries.isEmpty()) null
+        else ProjectExternalContext.of(externalMetadata ?: ProjectExternalMetadata.none(), compilationSchema, schemaPaths)
         val preparedContext = ProjectAnalysisContext.prepared(
-            ProjectIndexPreparation(
-                ProjectDeclarationExtractor(lexerConfiguration)
+            ProjectIndexPreparation.withSchemas(
+                ProjectDeclarationExtractor(lexerConfiguration), externalContext ?: ProjectExternalContext.none()
             ).prepare(
                 inputFiles.map { inputFile ->
                     ProjectSource(
@@ -113,13 +130,7 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
             )
         )
         // Only the detached, immutable metadata reaches the scanner workers; the prepared index is shared as is.
-        val projectAnalysisContext = if (externalMetadata == null && compilationSchema == null) {
-            preparedContext
-        } else {
-            preparedContext.withExternalContext(
-                ProjectExternalContext.of(externalMetadata ?: ProjectExternalMetadata.none(), compilationSchema)
-            )
-        }
+        val projectAnalysisContext = externalContext?.let(preparedContext::withExternalContext) ?: preparedContext
         val scanner = PlSqlAstScanner(
             context,
             checks,

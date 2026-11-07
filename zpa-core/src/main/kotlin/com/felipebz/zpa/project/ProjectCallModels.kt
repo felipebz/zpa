@@ -306,7 +306,7 @@ private fun validateCallDiscovery(
     val owner = target.memberPackageName
     require(specifications.all {
         val declaration = it.declaration
-        declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION && declaration.name == owner
+        declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION && owner != null && names(owner, declaration.name)
     })
     require(specifications.isEmpty() || packageEvidence)
     require(owner != null || !packageEvidence)
@@ -319,11 +319,11 @@ private fun validateCallDiscovery(
         val declaration = candidate.declaration
         if (declaration is PackageSubprogramDeclaration) {
             require(!standaloneSeen && specifications.isNotEmpty())
-            require(declaration.owner == owner && declaration.name == target.name.last)
+            require(owner != null && names(owner, declaration.owner) && declaration.name == target.name.last)
             require(previousMember == null || occurrenceBefore(previousMember, candidate))
             previousMember = candidate
         } else {
-            require(target.permitsStandalone && declaration.qualifiedName() == target.name)
+            require(target.permitsStandalone && names(target.name, declaration.qualifiedName()))
             standaloneSeen = true
             require(previousStandalone == null || occurrenceBefore(previousStandalone, candidate))
             previousStandalone = candidate
@@ -335,6 +335,10 @@ private fun validateCallDiscovery(
         previousSpecification = specification
     }
 }
+
+/** Whether the written name reaches the declared one: the same name, or the declared one read through its schema. */
+private fun names(written: QualifiedName, declared: QualifiedName): Boolean =
+    written == declared || written.segments.size == declared.segments.size + 1 && written.segments.drop(1) == declared.segments
 
 private fun occurrenceBefore(first: IndexedDeclaration, second: IndexedDeclaration): Boolean =
     first.fileId.value < second.fileId.value || (first.fileId == second.fileId && first.ordinal < second.ordinal)

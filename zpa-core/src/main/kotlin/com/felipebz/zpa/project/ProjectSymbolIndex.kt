@@ -13,6 +13,18 @@ class ProjectSymbolIndexBuilder {
     private val declarationsByFile = ConcurrentHashMap<FileId, List<ProjectDeclaration>>()
     private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
     private val alteredTypesByFile = ConcurrentHashMap<FileId, AlteredTypes>()
+    private val schemasByFile = ConcurrentHashMap<FileId, OracleIdentifier>()
+    private val configuredSchemas = HashSet<OracleIdentifier>()
+
+    /** The schema the units of [fileId] written without an owner compile in. */
+    internal fun schema(fileId: FileId, schema: OracleIdentifier) {
+        schemasByFile[fileId] = schema
+    }
+
+    /** Schemas the configuration names: known even when no declaration of the project is in them. */
+    internal fun configuredSchemas(schemas: Collection<OracleIdentifier>) {
+        configuredSchemas += schemas
+    }
 
     fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) = add(fileId, declarations, emptySet())
 
@@ -46,7 +58,8 @@ class ProjectSymbolIndexBuilder {
         }
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
         return ProjectSymbolIndex(
-            occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values)
+            occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values),
+            HashMap(schemasByFile), HashSet(configuredSchemas)
         )
     }
 }
@@ -66,14 +79,18 @@ class IndexedDeclaration internal constructor(
 /**
  * Immutable project-wide declaration registry. It does not perform semantic resolution.
  *
- * Unqualified standalone project declarations belong to one logical project namespace. Source
- * paths do not define schemas; explicitly qualified declarations remain distinct.
+ * Unqualified standalone project declarations belong to one logical project namespace; explicitly qualified
+ * declarations remain distinct. Each occurrence also has an effective schema (its unit's written owner, else the
+ * schema configured for its file), through which a name qualified by a schema reaches it when nothing has that exact
+ * name ([throughSchema]).
  */
 class ProjectSymbolIndex internal constructor(
     fileIds: List<FileId>,
     fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
     omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
-    alteredTypes: AlteredTypes = AlteredTypes.NONE
+    alteredTypes: AlteredTypes = AlteredTypes.NONE,
+    schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
+    configuredSchemas: Set<OracleIdentifier> = emptySet()
 ) {
     val fileIds: List<FileId> = immutableList(fileIds)
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -115,6 +132,18 @@ class ProjectSymbolIndex internal constructor(
         .groupBy { (it.declaration as PackageSubprogramDeclaration).let { fact -> fact.owner to fact.name } }
         .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
+    /** (effective schema, name without the written owner): the unit's written owner, else its file's schema. */
+    private fun schemaKey(occurrence: IndexedDeclaration): Pair<OracleIdentifier, QualifiedName>? {
+        val declaration = occurrence.declaration
+        val unit = unitName(declaration) ?: return null
+        val name = declaration.qualifiedName()
+        return when (unit.segments.size) {
+            2 -> unit.segments.first() to QualifiedName(name.segments.drop(1))
+            1 -> schemasByFile[occurrence.fileId]?.let { it to name }
+            else -> null
+        }
+    }
+
     // Derived lookup evidence, not a second declaration registry. Body-only members count too.
     private val packageOwners: Set<QualifiedName> = Collections.unmodifiableSet(
         this.declarations.mapNotNullTo(HashSet()) { declaration ->
@@ -135,34 +164,82 @@ class ProjectSymbolIndex internal constructor(
         .groupBy { it.name }
         .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
-    fun findPackages(name: QualifiedName): List<PackageDeclaration> = packagesByName[name].orEmpty()
+    private val schemasByFile: Map<FileId, OracleIdentifier> = schemasByFile.toMap()
+
+    /** Each occurrence by (effective schema, name without its written owner); only occurrences with a schema. */
+    private val occurrencesBySchema: Map<Pair<OracleIdentifier, QualifiedName>, List<IndexedDeclaration>> = this.occurrences
+        .mapNotNull { occurrence -> schemaKey(occurrence)?.let { it to occurrence } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { (_, values) -> immutableList(values) }
+
+    /** Package owners of members, by (effective schema, owner without its written owner). */
+    private val ownersBySchema: Set<Pair<OracleIdentifier, QualifiedName>> = occurrencesBySchema.keys
+        .filter { it.second.segments.size == 2 }.mapTo(HashSet()) { it.first to QualifiedName(it.second.segments.first()) }
+
+    /** The schemas some occurrence is in, and those the configuration names. */
+    private val knownSchemas: Set<OracleIdentifier> = occurrencesBySchema.keys.mapTo(HashSet()) { it.first }.apply { addAll(configuredSchemas) }
+
+    /** The names, without owner, of every unit (package, type, standalone subprogram, sequence) and package owner. */
+    private val unitNames: Set<OracleIdentifier> = HashSet<OracleIdentifier>().apply {
+        occurrences.forEach { unitName(it.declaration)?.let { name -> add(name.last) } }
+        packageOwners.forEach { add(it.last) }
+    }
+
+    /** Whether [schema] is the effective schema of some declaration, or one the configuration names. */
+    internal fun isKnownSchema(schema: OracleIdentifier): Boolean = schema in knownSchemas
+
+    /** The occurrences whose effective schema is [schema] and whose name, without its written owner, is [name]. */
+    internal fun findInSchema(schema: OracleIdentifier, name: QualifiedName): List<IndexedDeclaration> =
+        occurrencesBySchema[schema to name].orEmpty()
+
+    /**
+     * The schema and the rest of [name] when it is read through a schema: `x.y` (or `x.y.z`) whose first name is a known
+     * schema that no project unit or package owner is named (a unit of that name, through a synonym Oracle cannot be
+     * ruled out to read, would capture `x`). Null otherwise. Every exact lookup falls back to this when it finds nothing.
+     */
+    internal fun throughSchema(name: QualifiedName): Pair<OracleIdentifier, QualifiedName>? {
+        if (name.segments.size < 2) return null
+        val schema = name.segments.first()
+        if (schema !in knownSchemas || schema in unitNames) return null
+        return schema to QualifiedName(name.segments.drop(1))
+    }
+
+    private fun schemaFallback(name: QualifiedName): List<IndexedDeclaration> =
+        throughSchema(name)?.let { (schema, rest) -> findInSchema(schema, rest) }.orEmpty()
+
+    fun findPackages(name: QualifiedName): List<PackageDeclaration> =
+        packagesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<PackageDeclaration>()
 
     fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectTypeDeclaration> =
         findTypeOccurrences(owner, name).map { it.declaration as ProjectTypeDeclaration }
 
     /** Canonical occurrences behind [findTypes], in the same order. */
     internal fun findTypeOccurrences(owner: QualifiedName?, name: OracleIdentifier): List<IndexedDeclaration> =
-        typeOccurrencesByOwnerAndName[owner to name].orEmpty()
+        typeOccurrencesByOwnerAndName[owner to name]
+            ?: owner?.let { schemaFallback(it.append(name)).filter { occurrence -> occurrence.declaration is ProjectTypeDeclaration } }.orEmpty()
 
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
         findSubprogramOccurrences(owner, name).map { it.declaration as PackageSubprogramDeclaration }
 
     /** Canonical occurrences behind [findSubprograms], in the same order. */
     internal fun findSubprogramOccurrences(owner: QualifiedName, name: OracleIdentifier): List<IndexedDeclaration> =
-        subprogramOccurrencesByOwnerAndName[owner to name].orEmpty()
+        subprogramOccurrencesByOwnerAndName[owner to name]
+            ?: schemaFallback(owner.append(name)).filter { it.declaration is PackageSubprogramDeclaration }
 
-    fun findSequences(name: QualifiedName): List<SequenceDeclaration> = sequencesByName[name].orEmpty()
+    fun findSequences(name: QualifiedName): List<SequenceDeclaration> =
+        sequencesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<SequenceDeclaration>()
 
     fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> =
         findOccurrences(name).map { it.declaration }
 
     /** Exact-name matches as canonical occurrences, in index order, without resolution. */
     fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
-        occurrencesByQualifiedName[name].orEmpty()
+        occurrencesByQualifiedName[name] ?: schemaFallback(name)
 
     /** Positive evidence for the package interpretation, including non-package objects of that name. */
     internal fun hasPackageEvidence(name: QualifiedName): Boolean =
-        name in packageOwners || occurrencesByQualifiedName.containsKey(name) || name in omittedStandaloneCallables
+        name in packageOwners || occurrencesByQualifiedName.containsKey(name) || name in omittedStandaloneCallables ||
+            throughSchema(name)?.let { it in ownersBySchema || occurrencesBySchema.containsKey(it) } == true
 
     /** A standalone procedure/function heading of exactly this name was identified but not retained as a fact. */
     internal fun hasOmittedStandaloneCallable(name: QualifiedName): Boolean = name in omittedStandaloneCallables
@@ -177,6 +254,21 @@ class ProjectSymbolIndex internal constructor(
         )
 
         internal fun empty() = ProjectSymbolIndex(emptyList(), emptyMap())
+
+        /** The name of the unit a declaration is, or belongs to (the package of a member); null for none. */
+        private fun unitName(declaration: ProjectDeclaration): QualifiedName? = when (declaration) {
+            is PackageDeclaration -> declaration.name
+            is StandaloneTypeDeclaration -> declaration.name
+            is SequenceDeclaration -> declaration.name
+            is StandaloneProcedureDeclaration -> declaration.name
+            is StandaloneFunctionDeclaration -> declaration.name
+            is PackageTypeDeclaration -> declaration.owner
+            is PackageSubtypeDeclaration -> declaration.owner
+            is PackageSubprogramDeclaration -> declaration.owner
+            is PackageValueDeclaration -> declaration.owner
+            is PackageExceptionDeclaration -> declaration.owner
+            is PackageCursorDeclaration -> declaration.owner
+        }
 
         private fun typeKey(declaration: ProjectTypeDeclaration): Pair<QualifiedName?, OracleIdentifier> =
             declaration.qualifiedName.segments.dropLast(1).takeIf { it.isNotEmpty() }?.let(::QualifiedName) to

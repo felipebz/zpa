@@ -5,6 +5,9 @@
 
 package com.felipebz.zpa.project
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectExternalContext
+
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Stream
 
@@ -24,18 +27,30 @@ fun interface ProjectSourceReader {
 }
 
 /** Builds the AST-free project declaration index before file-local analysis. */
-class ProjectIndexPreparation(
-    private val extractor: ProjectDeclarationSourceExtractor = ProjectDeclarationExtractor()
+@OptIn(ZpaExperimentalApi::class)
+class ProjectIndexPreparation private constructor(
+    private val extractor: ProjectDeclarationSourceExtractor,
+    /**
+     * The schemas: each file's from [ProjectExternalContext.fileSchema], given to the declarations written without an
+     * owner. With none configured, no file has one.
+     */
+    private val schemas: ProjectExternalContext
 ) {
+    constructor(extractor: ProjectDeclarationSourceExtractor = ProjectDeclarationExtractor()) : this(extractor, ProjectExternalContext.none())
+
     fun prepare(sources: Collection<ProjectSource>, concurrent: Boolean = true): ProjectIndexPreparationResult {
         require(sources.map { it.fileId }.distinct().size == sources.size) {
             "Project sources must have unique file identities"
         }
 
         val builder = ProjectSymbolIndexBuilder()
+        builder.configuredSchemas(
+            (schemas.schemaPaths.entries.map { it.schema } + listOfNotNull(schemas.defaultCompilationSchema.orElse(null))).map { it.identifier }
+        )
         val failures = ConcurrentLinkedQueue<ProjectIndexPreparationFailure>()
         val stream: Stream<ProjectSource> = if (concurrent) sources.parallelStream() else sources.stream()
         stream.forEach { source ->
+            schemas.fileSchema(source.fileId.value).ifPresent { builder.schema(source.fileId, it.identifier) }
             try {
                 // A custom extractor supplies facts only, so it contributes no standalone coverage evidence.
                 val extraction = (extractor as? ProjectDeclarationExtractor)?.extractFile(source.fileId, source.contents())
@@ -54,7 +69,16 @@ class ProjectIndexPreparation(
             failures = failures.toList().sortedBy { it.fileId.value }
         )
     }
+
+    companion object {
+        /** A preparation whose declarations get the schemas files compile in ([schemas] supplies the paths and default). */
+        @ZpaExperimentalApi
+        @JvmStatic
+        fun withSchemas(extractor: ProjectDeclarationSourceExtractor, schemas: ProjectExternalContext): ProjectIndexPreparation =
+            ProjectIndexPreparation(extractor, schemas)
+    }
 }
+
 
 /** Failure summary retained without the exception or any parser state. */
 data class ProjectIndexPreparationFailure(
