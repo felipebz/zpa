@@ -63,6 +63,16 @@ class ProjectSnapshotSchemaPreferenceTest {
     }
 
     @Test
+    fun anUnqualifiedCallReachesUnitsWrittenWithTheUnitsSchema() {
+        val owned = snapshot(
+            "x/pk.sql" to "create package app_b.pk_own as\n  procedure run;\nend;\n/\n",
+            "x/proc.sql" to "create procedure app_b.proc_own is begin null; end;\n/\n"
+        ).preferring(ProjectIdentifier.fromSource("app_b"))
+        assertThat(call(owned, "pk_own", "run").status).isEqualTo(ProjectCallResolution.Status.RESOLVED)
+        assertThat(call(owned, "proc_own").status).isEqualTo(ProjectCallResolution.Status.RESOLVED)
+    }
+
+    @Test
     fun aNullSchemaIsThisSnapshot() {
         assertThat(project.preferring(null)).isSameAs(project)
         assertThat(appB.preferring(null)).isSameAs(appB)

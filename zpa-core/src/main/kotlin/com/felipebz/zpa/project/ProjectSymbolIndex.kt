@@ -353,7 +353,9 @@ class ProjectSymbolIndex private constructor(
     /** Positive evidence for the package interpretation, including non-package objects of that name. */
     internal fun hasPackageEvidence(name: QualifiedName): Boolean =
         name in packageOwners || occurrencesByQualifiedName.containsKey(name) || name in omittedStandaloneCallables ||
-            throughSchema(name)?.let { it in ownersBySchema || occurrencesBySchema.containsKey(it) } == true
+            throughSchema(name)?.let { it in ownersBySchema || occurrencesBySchema.containsKey(it) } == true ||
+            // From a unit of the preferred schema, an unqualified name reaches the units of that schema written with it.
+            preferredSchema?.let { (it to name) in ownersBySchema || occurrencesBySchema.containsKey(it to name) } == true
 
     /** A standalone procedure/function heading of exactly this name was identified but not retained as a fact. */
     internal fun hasOmittedStandaloneCallable(name: QualifiedName): Boolean = name in omittedStandaloneCallables

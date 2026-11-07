@@ -339,10 +339,16 @@ private fun validateCallDiscovery(
     }
 }
 
-/** Whether the written name reaches the declared one: the same name, or the declared one read through its [schema]. */
+/**
+ * Whether the written name reaches the declared one in its effective [schema]: the same name; the declared one read
+ * through its schema (`s.x` for an unowned `x` of `s`); or, from a unit of that schema, the declared one without its
+ * written owner (`x` for `s.x`).
+ */
 private fun names(written: QualifiedName, declared: QualifiedName, schema: OracleIdentifier?): Boolean =
-    written == declared || schema != null && written.segments.size == declared.segments.size + 1 &&
-        written.segments.first() == schema && written.segments.drop(1) == declared.segments
+    written == declared || schema != null && (
+        written.segments.size == declared.segments.size + 1 && written.segments.first() == schema && written.segments.drop(1) == declared.segments ||
+            declared.segments.size == written.segments.size + 1 && declared.segments.first() == schema && declared.segments.drop(1) == written.segments
+        )
 
 private fun occurrenceBefore(first: IndexedDeclaration, second: IndexedDeclaration): Boolean =
     first.fileId.value < second.fileId.value || (first.fileId == second.fileId && first.ordinal < second.ordinal)
