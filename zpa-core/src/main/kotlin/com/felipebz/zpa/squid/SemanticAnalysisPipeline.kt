@@ -25,23 +25,32 @@ internal class SemanticAnalysisPipeline(
 ) {
 
     @Suppress("DEPRECATION")
-    data class Visitors(
+    class Visitors(
         val symbolVisitor: SymbolVisitor,
-        val all: List<PlSqlVisitor>
-    )
+        /**
+         * The file's local resolution. It computes everything when the file is entered and keeps no state between
+         * files, so it may walk the file on its own, before and apart from the other visitors ([afterLocal]).
+         */
+        val local: PlSqlVisitor,
+        /** The visitors that read the local resolution, in order. */
+        val afterLocal: List<PlSqlVisitor>
+    ) {
+        /** Every semantic visitor, the local resolution first, for a walk with all of them. */
+        val all: List<PlSqlVisitor> get() = listOf(local) + afterLocal
+    }
 
     @Suppress("DEPRECATION")
     fun create(fileId: FileId): Visitors {
         val symbolVisitor = SymbolVisitor(DefaultTypeSolver(), isGlobalContext = true)
         // The local resolution first: the project visitor reads it.
-        val visitors = mutableListOf<PlSqlVisitor>(LocalSemanticPrepass(fileId), symbolVisitor)
+        val visitors = mutableListOf<PlSqlVisitor>(symbolVisitor)
 
         if (projectAnalysisContext.state !is ProjectAnalysisContext.State.NotPrepared) {
             val projectIndex = (projectAnalysisContext.state as ProjectAnalysisContext.State.Prepared).result.index
             visitors.add(ProjectSubprogramDeclarationResolutionVisitor(projectIndex, fileId))
         }
 
-        return Visitors(symbolVisitor, visitors)
+        return Visitors(symbolVisitor, LocalSemanticPrepass(fileId), visitors)
     }
 
     companion object {

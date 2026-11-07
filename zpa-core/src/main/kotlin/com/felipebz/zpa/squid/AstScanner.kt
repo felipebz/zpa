@@ -64,6 +64,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
      *
      * The rule checks are shared by every file of this scanner and keep their issues and per-file state on the
      * instance, so a walk that runs any of them holds a lock shared by every scanner: such walks run one at a time.
+     * Parsing and the file's local resolution run before that walk and take no lock.
      * A walk that runs no rule check (none was given, or none applies to the file's type) takes no lock, and walks of
      * other files may run at the same time on other threads. [extraVisitors] then must not share mutable state between
      * calls: create them for each call.
@@ -85,7 +86,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         val symbolVisitor = semanticVisitors.symbolVisitor
 
         val checksToRun = mutableListOf<PlSqlVisitor>()
-        checksToRun.addAll(semanticVisitors.all)
+        checksToRun.addAll(semanticVisitors.afterLocal)
 
         val ruleChecks = if (inputFile.type() == PlSqlFile.Type.MAIN) {
             checks.filter { check -> formsMetadata != null || check !is FormsMetadataAwareCheck }
@@ -102,6 +103,10 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         checksToRun.add(functionComplexityVisitor)
         checksToRun.addAll(extraVisitors)
 
+        // The file's local resolution keeps no state between files: it runs before the lock, so that files are
+        // resolved in parallel and only the shared rule checks run one at a time.
+        PlSqlAstWalker(listOf(semanticVisitors.local)).walk(newVisitorContext, semanticScanCapabilities)
+
         val walk = {
             val newWalker = PlSqlAstWalker(checksToRun)
             newWalker.walk(newVisitorContext, semanticScanCapabilities)
@@ -114,7 +119,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         val issues = if (ruleChecks.isEmpty()) walk() else lock.withLock(walk)
 
         return AstScannerResult(
-            executedChecks = checksToRun,
+            executedChecks = listOf(semanticVisitors.local) + checksToRun,
             linesWithNoSonar = metricsVisitor.linesWithNoSonar,
             symbols = symbolVisitor.symbols,
             numberOfStatements = metricsVisitor.numberOfStatements,
