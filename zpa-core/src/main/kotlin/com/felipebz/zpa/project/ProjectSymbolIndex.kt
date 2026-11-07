@@ -236,6 +236,17 @@ class ProjectSymbolIndex private constructor(
     private val unitNames get() = tables.unitNames
     private fun schemaKey(occurrence: IndexedDeclaration) = tables.schemaKey(occurrence)
 
+    /**
+     * The object types the `UNDER` clause of [type] may name: its supertype's name looked up from [type]'s effective
+     * schema, where Oracle reads an unqualified name first ([preferring]). Every reader walking a type's supertypes
+     * goes through this lookup.
+     */
+    internal fun supertypeOccurrences(type: StandaloneTypeDeclaration): List<IndexedDeclaration> {
+        val reference = type.supertype as? NamedTypeRef ?: return emptyList()
+        return ProjectTypeNameLookup.typeOccurrences(preferring(tables.schemaOf(type)), reference.name, null)
+            .filter { (it.declaration as? StandaloneTypeDeclaration)?.shape == ProjectTypeShape.OBJECT }
+    }
+
     /** Whether [other] reads the same maps as this index: true for a schema view and its root. */
     internal fun sharesTablesWith(other: ProjectSymbolIndex): Boolean = tables === other.tables
 

@@ -7,7 +7,6 @@ package com.felipebz.zpa.project
 
 /** Resolves only the identity of a RECORD field, or of an OBJECT attribute or method set, on an already identified project type. */
 class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAnalysisContext? = null) {
-    private val typeResolver = projectAnalysisContext?.let(::ProjectTypeResolver)
 
     fun resolve(
         declaration: ProjectTypeDeclaration,
@@ -63,8 +62,8 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
                 if (nearer.none { it.method.overrides(method) }) methods += ProjectMethodCandidate(current, method)
             }
             if (!current.attributesComplete || !current.methodsComplete || isAltered(current)) complete = false
-            val supertype = current.supertype ?: break
-            current = supertypeOf(supertype) ?: return methodsOr(type, methods, false) { ProjectRecordMemberResolution.Incomplete(type) }
+            if (current.supertype == null) break
+            current = supertypeOf(current) ?: return methodsOr(type, methods, false) { ProjectRecordMemberResolution.Incomplete(type) }
         }
         return methodsOr(type, methods, complete) {
             if (complete) ProjectRecordMemberResolution.NotFound(type) else ProjectRecordMemberResolution.Incomplete(type)
@@ -94,7 +93,7 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
         while (current != null) {
             if (current in chain || !current.attributesComplete || isAttributesAltered(current)) return null
             chain += current
-            current = current.supertype?.let { supertypeOf(it) ?: return null }
+            current = current.takeIf { it.supertype != null }?.let { supertypeOf(it) ?: return null }
         }
         return chain.asReversed().flatMap { it.attributes }
     }
@@ -105,10 +104,11 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
     private fun isAttributesAltered(type: StandaloneTypeDeclaration): Boolean =
         (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes?.attributesOf(type.name) ?: false
 
-    private fun supertypeOf(reference: TypeRef): StandaloneTypeDeclaration? {
-        val named = reference as? NamedTypeRef ?: return null
-        val resolution = typeResolver?.resolve(named) as? ProjectTypeResolution.Resolved ?: return null
-        return (resolution.declaration as? StandaloneTypeDeclaration)?.takeIf { it.shape == ProjectTypeShape.OBJECT }
+    /** The one object type [type] is `UNDER`, looked up from [type]'s schema; null when not exactly one or the index is incomplete. */
+    private fun supertypeOf(type: StandaloneTypeDeclaration): StandaloneTypeDeclaration? {
+        val prepared = projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared ?: return null
+        if (prepared.result.failures.isNotEmpty()) return null
+        return prepared.result.index.supertypeOccurrences(type).singleOrNull()?.declaration as? StandaloneTypeDeclaration
     }
 
     private fun isDropped(type: StandaloneTypeDeclaration, name: OracleIdentifier): Boolean {

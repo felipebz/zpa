@@ -117,6 +117,36 @@ class SchemaPairingTest {
         assertThat(app.preferring(OracleIdentifier.fromSource("other"))).isSameAs(other)
     }
 
+    /** `name=fieldBinding` for each name [names] written in [file]. */
+    private fun bindings(paths: String, file: String, names: Set<String>, vararg sources: Pair<String, String>): List<String> {
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).filter { it.tokenOriginalValue in names }.forEach {
+                    rows += "${it.tokenOriginalValue}=${this.context.fieldBinding(it)}"
+                }
+            }
+        }
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, ProjectAnalysisContext.prepared(prepare(paths, *sources)))
+            .scanFile(Source(file, sources.toMap().getValue(file)), listOf(check), FileId(file))
+        return rows
+    }
+
+    @Test
+    fun aFieldOfASupertypeIsReadFromTheSubtypesSchema() {
+        val sources = arrayOf(
+            "a/base.sql" to "create type base_t as object (id number) not final;\n/\n",
+            "b/base.sql" to "create type base_t as object (code number) not final;\n/\n",
+            "b/child.sql" to "create type child_t under base_t (own number, member procedure m);\n/\n",
+            "b/child_body.sql" to "create type body child_t as\n  member procedure m is\n  begin\n    code := 2;\n    id := 3;\n  end;\nend;\n/\n"
+        )
+        val mapped = bindings("a/**=APP_A,b/**=APP_B", "b/child_body.sql", setOf("code", "id"), *sources)
+        assertThat(mapped).containsExactly("code=Field(ATTRIBUTE#0@b/base.sql:1:30)", "id=Unavailable(NOT_A_COVERED_NAME)")
+        // Without configuration two base_t match the written name: unknown, as before.
+        val plain = bindings("", "b/child_body.sql", setOf("code", "id"), *sources)
+        assertThat(plain).allMatch { it.contains("=Unknown") }
+    }
+
     /** `line:written=typeName` for each variable type of [file]. */
     private fun typeNames(paths: String, file: String, vararg sources: Pair<String, String>): List<String> {
         val rows = ArrayList<String>()

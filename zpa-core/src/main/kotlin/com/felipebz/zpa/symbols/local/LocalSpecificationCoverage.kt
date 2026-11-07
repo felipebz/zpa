@@ -194,20 +194,14 @@ internal class LocalSpecificationCoverage private constructor(
     /** The project's object type [typeName] and its supertypes, nearest first, when every list is complete and unaltered. */
     private fun projectChain(typeName: QualifiedName, fileId: FileId): List<StandaloneTypeDeclaration>? {
         val types = ArrayList<StandaloneTypeDeclaration>()
-        var name: QualifiedName? = typeName
-        // The schema of the type naming the next supertype, from which Oracle reads its unqualified name first.
-        var namingSchema: OracleIdentifier? = null
-        while (name != null) {
-            // The body's own specification pairs with it by schema; a supertype is looked up from its subtype's schema.
-            val found = if (types.isEmpty()) index.counterparts(name, fileId).filter { it.declaration is StandaloneTypeDeclaration }
-            else index.preferring(namingSchema).findOccurrences(name)
-            val occurrence = found.singleOrNull() ?: return null
-            val type = occurrence.declaration as? StandaloneTypeDeclaration ?: return null
-            namingSchema = index.effectiveSchema(occurrence)
+        // The body's own specification pairs with it by schema; each supertype is looked up from its subtype's schema.
+        var found: List<IndexedDeclaration>? = index.counterparts(typeName, fileId).filter { it.declaration is StandaloneTypeDeclaration }
+        while (found != null) {
+            val type = found.singleOrNull()?.declaration as? StandaloneTypeDeclaration ?: return null
             if (type in types || type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete || !type.methodsComplete) return null
             if (index.alteredTypes.attributesOf(type.name) || index.alteredTypes.methodsOf(type.name)) return null
             types += type
-            name = type.supertype?.name
+            found = if (type.supertype == null) null else index.supertypeOccurrences(type)
         }
         return types
     }

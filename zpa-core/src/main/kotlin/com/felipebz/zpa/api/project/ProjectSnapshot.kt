@@ -30,15 +30,28 @@ class ProjectSnapshot private constructor(
     private val fileIdList = fileIds
 
     /**
-     * This snapshot as seen from a unit compiling in [schema]: an unqualified name prefers the declarations of that
-     * schema ([ProjectSymbolIndex.preferring]). It issues the same declaration IDs. This snapshot for a null [schema].
+     * This snapshot as seen from a unit compiling in [schema]: every lookup of the returned snapshot reads an
+     * unqualified name in that schema first, as Oracle and the analysis do. Among the declarations a lookup matches,
+     * those whose effective schema (written owner, else the file's mapped schema, else the default compilation schema)
+     * is [schema] are the only candidates when there are some; otherwise every match stays one, as a synonym may lead
+     * there. Pass the schema of the unit the name is written in: `ProjectExternalContext.compilationSchema(unitName,
+     * fileId)`. The returned snapshot issues the same declaration IDs; a null [schema] returns this snapshot.
      */
-    @JvmSynthetic
-    internal fun preferring(schema: ProjectIdentifier?): ProjectSnapshot {
-        val index = preparationResult.index.preferring(schema?.identifier)
+    fun preferring(schema: ProjectIdentifier?): ProjectSnapshot {
+        if (schema == null) return this
+        val index = preparationResult.index.preferring(schema.identifier)
         if (index === preparationResult.index) return this
         return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failureList, fileIdList, scope)
     }
+
+    /**
+     * The names of the standalone procedures and functions whose heading was identified in a project file but produced
+     * no declaration (for example a heading the extractor could not read completely). They are never call candidates,
+     * but they show that the name exists: a client tracking which files use a name must treat their appearance or
+     * disappearance as a change of that name. Empty for an unprepared snapshot.
+     */
+    val omittedStandaloneCallables: Set<ProjectQualifiedName>
+        get() = Collections.unmodifiableSet(preparationResult.index.omittedStandaloneCallables.mapTo(LinkedHashSet()) { ProjectQualifiedName.wrap(it) })
 
     val attemptedFileCount: Int get() = preparationResult.attemptedFileCount
 
