@@ -96,6 +96,27 @@ class SchemaPairingTest {
         assertThat(found("")).isZero
     }
 
+    @Test
+    fun schemaViewsShareTheRootsMapsAndKeepTheirAnswers() {
+        val root = prepare(maps, tApp, tOther).index
+        val app = root.preferring(OracleIdentifier.fromSource("app"))
+        val other = root.preferring(OracleIdentifier.fromSource("other"))
+        // Built once per schema, over the root's maps, not copies of them.
+        assertThat(root.preferring(OracleIdentifier.fromSource("app"))).isSameAs(app)
+        assertThat(app.sharesTablesWith(root)).isTrue
+        assertThat(other.sharesTablesWith(root)).isTrue
+        assertThat(app.preferring(null)).isSameAs(root)
+        assertThat(app.occurrences).isSameAs(root.occurrences)
+        val t = OracleIdentifier.fromSource("t")
+        fun attributes(index: ProjectSymbolIndex) = index.findTypeOccurrences(null, t)
+            .map { (it.declaration as StandaloneTypeDeclaration).attributes.single().name.toString() }
+        assertThat(attributes(app)).containsExactly("a")
+        assertThat(attributes(other)).containsExactly("b")
+        assertThat(attributes(root)).containsExactly("a", "b")
+        // A view of a view is the root's view.
+        assertThat(app.preferring(OracleIdentifier.fromSource("other"))).isSameAs(other)
+    }
+
     /** `line:written=typeName` for each variable type of [file]. */
     private fun typeNames(paths: String, file: String, vararg sources: Pair<String, String>): List<String> {
         val rows = ArrayList<String>()

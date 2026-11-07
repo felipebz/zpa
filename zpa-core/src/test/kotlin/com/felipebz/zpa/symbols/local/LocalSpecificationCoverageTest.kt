@@ -53,9 +53,12 @@ class LocalSpecificationCoverageTest {
         "    g := 1;\n    open c;\n    other_pkg.run(1);\n    b_only := 2;\n    p(1);\n  end;\nend;\n/\n"
 
     /** The body file analyzed in a project of [files] (the body included), or with no project when [prepared] is false. */
-    private fun facts(bodyText: String, vararg files: Pair<String, String>, prepared: Boolean = true): LocalSemanticFacts {
+    private fun facts(bodyText: String, vararg files: Pair<String, String>, prepared: Boolean = true, schemaPaths: String = ""): LocalSemanticFacts {
+        val schemas = com.felipebz.zpa.api.project.ProjectExternalContext.of(
+            com.felipebz.zpa.api.project.ProjectExternalMetadata.none(), null, com.felipebz.zpa.api.project.ProjectSchemaPaths.parse(null, schemaPaths)
+        )
         val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
-            ProjectIndexPreparation().prepare((files.toList() + ("body.sql" to bodyText)).map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
+            ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), schemas).prepare((files.toList() + ("body.sql" to bodyText)).map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
         )
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).parse(bodyText)
         val capture = Capture()
@@ -174,6 +177,22 @@ class LocalSpecificationCoverageTest {
         assertThat(outcome(facts, "own", 10)).isEqualTo("SpecificationCovered(SpecificationMember)")
         // A local declaration shadows the members.
         assertThat(outcome(facts, "v", 6)).startsWith("Bound")
+    }
+
+    @Test
+    fun aSupertypeIsLookedUpFromTheSchemaOfTheTypeNamingIt() {
+        val appBase = "app/base.sql" to "create type t_base as object (a number) not final;\n/\n"
+        val otherBase = "other/base.sql" to "create type t_base as object (b number) not final;\n/\n"
+        val sub = "app/sub.sql" to "create type t_sub under t_base (own number, member procedure m);\n/\n"
+        val body = "create type body t_sub as\n  member procedure m is\n    v number;\n  begin\n    v := a + b;\n  end;\nend;\n/\n"
+        val mapped = facts(body, appBase, otherBase, sub, schemaPaths = "app/**=APP,other/**=OTHER,body.sql=APP")
+        // t_sub, in APP, names APP's t_base: its attribute is a member, OTHER's is not.
+        assertThat(outcome(mapped, "a", 5)).isEqualTo("SpecificationCovered(SpecificationMember)")
+        assertThat(outcome(mapped, "b", 5)).isEqualTo("SpecificationCovered(ProvenAbsent)")
+        // Without configuration two t_base match the written name: the chain is not known, as before.
+        val plain = facts(body, appBase, otherBase, sub)
+        assertThat(outcome(plain, "a", 5)).startsWith("Incomplete")
+        assertThat(outcome(plain, "b", 5)).startsWith("Incomplete")
     }
 
     @Test

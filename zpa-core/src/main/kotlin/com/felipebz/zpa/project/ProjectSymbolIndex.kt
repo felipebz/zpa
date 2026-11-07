@@ -84,124 +84,160 @@ class IndexedDeclaration internal constructor(
  * schema configured for its file), through which a name qualified by a schema reaches it when nothing has that exact
  * name ([throughSchema]).
  */
-class ProjectSymbolIndex internal constructor(
-    fileIds: List<FileId>,
-    fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
-    omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
-    alteredTypes: AlteredTypes = AlteredTypes.NONE,
-    schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
-    configuredSchemas: Set<OracleIdentifier> = emptySet(),
+class ProjectSymbolIndex private constructor(
+    /** Every derived map, built once by the root index and shared by its schema views. */
+    private val tables: Tables,
     /** The schema of the unit looking names up, whose declarations an unqualified name prefers; null for none. */
-    private val preferredSchema: OracleIdentifier? = null
+    private val preferredSchema: OracleIdentifier?,
+    /** The index this one is a view of; null for the root itself. */
+    private val rootIndex: ProjectSymbolIndex?
 ) {
-    private val constructorArguments = Arguments(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas)
+    internal constructor(
+        fileIds: List<FileId>,
+        fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
+        omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
+        alteredTypes: AlteredTypes = AlteredTypes.NONE,
+        schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
+        configuredSchemas: Set<OracleIdentifier> = emptySet()
+    ) : this(Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas), null, null)
 
-    private class Arguments(
-        val fileIds: List<FileId>,
-        val fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
-        val omitted: Set<QualifiedName>,
-        val alteredTypes: AlteredTypes,
-        val schemasByFile: Map<FileId, OracleIdentifier>,
-        val configuredSchemas: Set<OracleIdentifier>
-    )
+    /** The frozen declarations and every map derived from them; independent of the preferred schema. */
+    private class Tables(
+        fileIds: List<FileId>,
+        fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
+        omittedStandaloneCallables: Set<QualifiedName>,
+        alteredTypes: AlteredTypes,
+        schemasByFile: Map<FileId, OracleIdentifier>,
+        configuredSchemas: Set<OracleIdentifier>
+    ) {
+        val fileIds: List<FileId> = immutableList(fileIds)
+        val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
 
-    val fileIds: List<FileId> = immutableList(fileIds)
-    private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
+        // Name-only standalone coverage: identified standalone callable headings that produced no fact. Never candidates.
+        val omittedStandaloneCallables: Set<QualifiedName> =
+            Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 
-    // Name-only standalone coverage: identified standalone callable headings that produced no fact. Never candidates.
-    internal val omittedStandaloneCallables: Set<QualifiedName> =
-        Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
+        val alteredTypes: AlteredTypes = alteredTypes
 
-    internal val alteredTypes: AlteredTypes = alteredTypes
+        /** All canonical occurrences in deterministic file, then per-file order. */
+        val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
+        val declarations: List<ProjectDeclaration> = immutableList(occurrences.map { it.declaration })
 
-    /** All canonical occurrences in deterministic file, then per-file order. */
-    val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
-    val declarations: List<ProjectDeclaration> = immutableList(occurrences.map { it.declaration })
+        /** Returns the frozen declarations belonging to exactly one source file. */
+        internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> =
+            immutableList(occurrencesFor(fileId).map { it.declaration })
 
-    /** Returns the frozen declarations belonging to exactly one source file. */
-    internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> =
-        immutableList(occurrencesFor(fileId).map { it.declaration })
+        /** Returns the frozen occurrences belonging to exactly one source file. */
+        fun occurrencesFor(fileId: FileId): List<IndexedDeclaration> = occurrencesByFile[fileId].orEmpty()
 
-    /** Returns the frozen occurrences belonging to exactly one source file. */
-    fun occurrencesFor(fileId: FileId): List<IndexedDeclaration> = occurrencesByFile[fileId].orEmpty()
+        // Built once from the frozen canonical list: every kind, duplicates and canonical order preserved.
+        val occurrencesByQualifiedName: Map<QualifiedName, List<IndexedDeclaration>> = this.occurrences
+            .groupBy { it.declaration.qualifiedName() }
+            .mapValues { (_, values) -> immutableList(values) }
 
-    // Built once from the frozen canonical list: every kind, duplicates and canonical order preserved.
-    private val occurrencesByQualifiedName: Map<QualifiedName, List<IndexedDeclaration>> = this.occurrences
-        .groupBy { it.declaration.qualifiedName() }
-        .mapValues { (_, values) -> immutableList(values) }
+        val packagesByName = this.declarations
+            .filterIsInstance<PackageDeclaration>()
+            .groupBy { it.name }
+            .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
-    private val packagesByName = this.declarations
-        .filterIsInstance<PackageDeclaration>()
-        .groupBy { it.name }
-        .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
+        val typeOccurrencesByOwnerAndName = this.occurrences
+            .filter { it.declaration is ProjectTypeDeclaration }
+            .groupBy { typeKey(it.declaration as ProjectTypeDeclaration) }
+            .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
-    private val typeOccurrencesByOwnerAndName = this.occurrences
-        .filter { it.declaration is ProjectTypeDeclaration }
-        .groupBy { typeKey(it.declaration as ProjectTypeDeclaration) }
-        .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
+        val subprogramOccurrencesByOwnerAndName = this.occurrences
+            .filter { it.declaration is PackageSubprogramDeclaration }
+            .groupBy { (it.declaration as PackageSubprogramDeclaration).let { fact -> fact.owner to fact.name } }
+            .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
 
-    private val subprogramOccurrencesByOwnerAndName = this.occurrences
-        .filter { it.declaration is PackageSubprogramDeclaration }
-        .groupBy { (it.declaration as PackageSubprogramDeclaration).let { fact -> fact.owner to fact.name } }
-        .mapValues { (_, values) -> immutableList(values.sortedWith(compareBy(declarationComparator) { it.declaration })) }
-
-    /** (effective schema, name without the written owner): the unit's written owner, else its file's schema. */
-    private fun schemaKey(occurrence: IndexedDeclaration): Pair<OracleIdentifier, QualifiedName>? {
-        val declaration = occurrence.declaration
-        val schema = schemaOf(declaration) ?: return null
-        val name = declaration.qualifiedName()
-        return schema to if (unitName(declaration)?.segments?.size == 2) QualifiedName(name.segments.drop(1)) else name
-    }
-
-    private fun schemaOf(declaration: ProjectDeclaration): OracleIdentifier? {
-        val unit = unitName(declaration) ?: return null
-        return when (unit.segments.size) {
-            2 -> unit.segments.first()
-            1 -> schemasByFile[declaration.fileId]
-            else -> null
+        /** (effective schema, name without the written owner): the unit's written owner, else its file's schema. */
+        fun schemaKey(occurrence: IndexedDeclaration): Pair<OracleIdentifier, QualifiedName>? {
+            val declaration = occurrence.declaration
+            val schema = schemaOf(declaration) ?: return null
+            val name = declaration.qualifiedName()
+            return schema to if (unitName(declaration)?.segments?.size == 2) QualifiedName(name.segments.drop(1)) else name
         }
-    }
 
-    // Derived lookup evidence, not a second declaration registry. Body-only members count too.
-    private val packageOwners: Set<QualifiedName> = Collections.unmodifiableSet(
-        this.declarations.mapNotNullTo(HashSet()) { declaration ->
-            when (declaration) {
-                is PackageSubprogramDeclaration -> declaration.owner
-                is PackageValueDeclaration -> declaration.owner
-                is PackageTypeDeclaration -> declaration.owner
-                is PackageSubtypeDeclaration -> declaration.owner
-                is PackageExceptionDeclaration -> declaration.owner
-                is PackageCursorDeclaration -> declaration.owner
+        fun schemaOf(declaration: ProjectDeclaration): OracleIdentifier? {
+            val unit = unitName(declaration) ?: return null
+            return when (unit.segments.size) {
+                2 -> unit.segments.first()
+                1 -> schemasByFile[declaration.fileId]
                 else -> null
             }
         }
-    )
 
-    private val sequencesByName = this.declarations
-        .filterIsInstance<SequenceDeclaration>()
-        .groupBy { it.name }
-        .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
+        // Derived lookup evidence, not a second declaration registry. Body-only members count too.
+        val packageOwners: Set<QualifiedName> = Collections.unmodifiableSet(
+            this.declarations.mapNotNullTo(HashSet()) { declaration ->
+                when (declaration) {
+                    is PackageSubprogramDeclaration -> declaration.owner
+                    is PackageValueDeclaration -> declaration.owner
+                    is PackageTypeDeclaration -> declaration.owner
+                    is PackageSubtypeDeclaration -> declaration.owner
+                    is PackageExceptionDeclaration -> declaration.owner
+                    is PackageCursorDeclaration -> declaration.owner
+                    else -> null
+                }
+            }
+        )
 
-    private val schemasByFile: Map<FileId, OracleIdentifier> = schemasByFile.toMap()
+        val sequencesByName = this.declarations
+            .filterIsInstance<SequenceDeclaration>()
+            .groupBy { it.name }
+            .mapValues { (_, values) -> immutableList(values.sortedWith(declarationComparator)) }
 
-    /** Each occurrence by (effective schema, name without its written owner); only occurrences with a schema. */
-    private val occurrencesBySchema: Map<Pair<OracleIdentifier, QualifiedName>, List<IndexedDeclaration>> = this.occurrences
-        .mapNotNull { occurrence -> schemaKey(occurrence)?.let { it to occurrence } }
-        .groupBy({ it.first }, { it.second })
-        .mapValues { (_, values) -> immutableList(values) }
+        val schemasByFile: Map<FileId, OracleIdentifier> = schemasByFile.toMap()
 
-    /** Package owners of members, by (effective schema, owner without its written owner). */
-    private val ownersBySchema: Set<Pair<OracleIdentifier, QualifiedName>> = occurrencesBySchema.keys
-        .filter { it.second.segments.size == 2 }.mapTo(HashSet()) { it.first to QualifiedName(it.second.segments.first()) }
+        /** Each occurrence by (effective schema, name without its written owner); only occurrences with a schema. */
+        val occurrencesBySchema: Map<Pair<OracleIdentifier, QualifiedName>, List<IndexedDeclaration>> = this.occurrences
+            .mapNotNull { occurrence -> schemaKey(occurrence)?.let { it to occurrence } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, values) -> immutableList(values) }
 
-    /** The schemas some occurrence is in, and those the configuration names. */
-    private val knownSchemas: Set<OracleIdentifier> = occurrencesBySchema.keys.mapTo(HashSet()) { it.first }.apply { addAll(configuredSchemas) }
+        /** Package owners of members, by (effective schema, owner without its written owner). */
+        val ownersBySchema: Set<Pair<OracleIdentifier, QualifiedName>> = occurrencesBySchema.keys
+            .filter { it.second.segments.size == 2 }.mapTo(HashSet()) { it.first to QualifiedName(it.second.segments.first()) }
 
-    /** The names, without owner, of every unit (package, type, standalone subprogram, sequence) and package owner. */
-    private val unitNames: Set<OracleIdentifier> = HashSet<OracleIdentifier>().apply {
-        occurrences.forEach { unitName(it.declaration)?.let { name -> add(name.last) } }
-        packageOwners.forEach { add(it.last) }
+        /** The schemas some occurrence is in, and those the configuration names. */
+        val knownSchemas: Set<OracleIdentifier> = occurrencesBySchema.keys.mapTo(HashSet()) { it.first }.apply { addAll(configuredSchemas) }
+
+        /** The names, without owner, of every unit (package, type, standalone subprogram, sequence) and package owner. */
+        val unitNames: Set<OracleIdentifier> = HashSet<OracleIdentifier>().apply {
+            occurrences.forEach { unitName(it.declaration)?.let { name -> add(name.last) } }
+            packageOwners.forEach { add(it.last) }
+        }
     }
+
+    val fileIds: List<FileId> get() = tables.fileIds
+    internal val omittedStandaloneCallables: Set<QualifiedName> get() = tables.omittedStandaloneCallables
+    internal val alteredTypes: AlteredTypes get() = tables.alteredTypes
+
+    /** All canonical occurrences in deterministic file, then per-file order. */
+    val occurrences: List<IndexedDeclaration> get() = tables.occurrences
+    val declarations: List<ProjectDeclaration> get() = tables.declarations
+
+    /** Returns the frozen declarations belonging to exactly one source file. */
+    internal fun declarationsFor(fileId: FileId): List<ProjectDeclaration> = tables.declarationsFor(fileId)
+
+    /** Returns the frozen occurrences belonging to exactly one source file. */
+    fun occurrencesFor(fileId: FileId): List<IndexedDeclaration> = tables.occurrencesFor(fileId)
+
+    private val occurrencesByQualifiedName get() = tables.occurrencesByQualifiedName
+    private val packagesByName get() = tables.packagesByName
+    private val typeOccurrencesByOwnerAndName get() = tables.typeOccurrencesByOwnerAndName
+    private val subprogramOccurrencesByOwnerAndName get() = tables.subprogramOccurrencesByOwnerAndName
+    private val packageOwners get() = tables.packageOwners
+    private val sequencesByName get() = tables.sequencesByName
+    private val schemasByFile get() = tables.schemasByFile
+    private val occurrencesBySchema get() = tables.occurrencesBySchema
+    private val ownersBySchema get() = tables.ownersBySchema
+    private val knownSchemas get() = tables.knownSchemas
+    private val unitNames get() = tables.unitNames
+    private fun schemaKey(occurrence: IndexedDeclaration) = tables.schemaKey(occurrence)
+
+    /** Whether [other] reads the same maps as this index: true for a schema view and its root. */
+    internal fun sharesTablesWith(other: ProjectSymbolIndex): Boolean = tables === other.tables
 
     /** Whether [schema] is the effective schema of some declaration, or one the configuration names. */
     internal fun isKnownSchema(schema: OracleIdentifier): Boolean = schema in knownSchemas
@@ -235,18 +271,12 @@ class ProjectSymbolIndex internal constructor(
      */
     internal fun preferring(schema: OracleIdentifier?): ProjectSymbolIndex {
         if (schema == preferredSchema) return this
-        if (schema == null) return root
         val root = root
-        return synchronized(root.scoped) {
-            root.scoped.getOrPut(schema) {
-                val a = root.constructorArguments
-                ProjectSymbolIndex(a.fileIds, a.fileOccurrences, a.omitted, a.alteredTypes, a.schemasByFile, a.configuredSchemas, schema)
-                    .also { scopedIndex -> scopedIndex.rootIndex = root }
-            }
-        }
+        if (schema == null) return root
+        // A view holds its schema and the root; every map is the root's.
+        return synchronized(root.scoped) { root.scoped.getOrPut(schema) { ProjectSymbolIndex(tables, schema, root) } }
     }
 
-    private var rootIndex: ProjectSymbolIndex? = null
     private val root: ProjectSymbolIndex get() = rootIndex ?: this
 
     /**
