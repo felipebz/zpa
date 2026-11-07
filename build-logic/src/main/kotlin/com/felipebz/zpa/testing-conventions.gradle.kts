@@ -32,6 +32,11 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
 }
 
+// zpa's own test runs, the ruling included, fail on a file the local pass cannot analyze instead of logging it.
+tasks.withType<Test>().configureEach {
+    systemProperty("com.felipebz.zpa.internal.failOnLocalPassError", "true")
+}
+
 tasks.jacocoTestReport {
     dependsOn(tasks.test) // tests are required to run before generating the report
 }

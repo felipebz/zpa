@@ -22,7 +22,7 @@ import com.felipebz.zpa.utils.log.Loggers
  * and its external metadata.
  *
  * It never fails the analysis: an exception, or a stack overflow from a deeply nested file, is logged once for the
- * file and leaves the facts absent.
+ * file and leaves the facts absent. Under zpa's own tests it fails the scan instead ([LocalPassFailures]).
  */
 internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
 
@@ -62,10 +62,8 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             failed(step, e)
         }
 
-    private fun failed(step: String, e: Throwable): Nothing? {
-        LOG.warn("Local semantic resolution failed while $step ${context.plSqlFile()?.fileName() ?: fileId.value}: $e")
-        return null
-    }
+    private fun failed(step: String, e: Throwable): Nothing? =
+        LocalPassFailures.report(LOG, "Local semantic resolution failed while $step ${context.plSqlFile()?.fileName() ?: fileId.value}", e)
 
     private companion object {
         val LOG = Loggers.getLogger(LocalSemanticPrepass::class.java)

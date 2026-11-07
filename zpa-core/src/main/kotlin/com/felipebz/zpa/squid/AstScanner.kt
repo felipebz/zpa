@@ -27,6 +27,7 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectSymbolIndex
 import com.felipebz.zpa.symbols.local.LocalHighlighting
+import com.felipebz.zpa.symbols.local.LocalPassFailures
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import com.felipebz.zpa.utils.getAnnotation
 import com.felipebz.zpa.utils.log.Loggers
@@ -137,7 +138,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
         try {
             LocalHighlighting.pairs(facts, highlightingIndex, inputFile.contents())
         } catch (e: Exception) {
-            LOG.warn("Highlighting pairs failed for $inputFile: $e")
+            LocalPassFailures.report(LOG, "Highlighting pairs failed for $inputFile", e)
             emptyList()
         }
 

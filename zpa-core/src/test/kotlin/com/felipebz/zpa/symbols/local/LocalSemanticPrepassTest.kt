@@ -71,7 +71,7 @@ class LocalSemanticPrepassTest {
     fun aFailureLeavesTheFactsAbsentAndTheLegacyOutputUnchanged() {
         val source = "declare\n  v number;\nbegin\n  v := 1;\nend;\n/\n"
         val healthy = run(source)
-        val failed = run(source) { IllegalStateException("injected failure") }
+        val failed = withLocalPassFailuresLogged { run(source) { IllegalStateException("injected failure") } }
         assertThat(healthy.facts).isNotNull
         assertThat(failed.facts).isNull()
         assertThat(failed.symbols).isEqualTo(healthy.symbols).isPositive
@@ -81,7 +81,7 @@ class LocalSemanticPrepassTest {
     fun aStackOverflowLeavesTheFactsAbsentAndTheLegacyOutputUnchanged() {
         val source = "declare\n  v number;\nbegin\n  v := 1;\nend;\n/\n"
         val healthy = run(source)
-        val overflowed = run(source) { StackOverflowError("injected") }
+        val overflowed = withLocalPassFailuresLogged { run(source) { StackOverflowError("injected") } }
         assertThat(overflowed.facts).isNull()
         assertThat(overflowed.symbols).isEqualTo(healthy.symbols).isPositive
     }
