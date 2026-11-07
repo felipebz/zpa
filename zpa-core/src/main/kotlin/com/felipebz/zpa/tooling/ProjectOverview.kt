@@ -358,9 +358,10 @@ internal class ProjectOverviewBuilder(
     /** The local declarations with a declared project type, linked to the node of their name. */
     private fun typedDeclarations(): List<ProjectOverviewNode> {
         val facts = facts ?: return emptyList()
+        val categories = fileContext?.valueCategories ?: return emptyList()
         val names = root.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).associateBy { it.token.line to it.token.column }
         return facts.model.declarations.mapNotNull { declaration ->
-            val type = facts.declaredType(declaration) ?: return@mapNotNull null
+            val type = categories.declaredProjectType(declaration) ?: return@mapNotNull null
             val astNode = names[declaration.nameRange.startLine to declaration.nameRange.startColumn] ?: return@mapNotNull null
             astEntry(
                 "${declaration.kind.name.lowercase()} ${declaration.name.originalSpelling}: ${type.qualifiedName} (${type.kind})",

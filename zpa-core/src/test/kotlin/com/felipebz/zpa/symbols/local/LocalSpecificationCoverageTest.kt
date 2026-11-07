@@ -172,8 +172,6 @@ class LocalSpecificationCoverageTest {
         assertThat(outcome(facts, "own", 9)).startsWith("Incomplete")
         // An attribute name in a type position is captured by the attribute (PLS-00488).
         assertThat(outcome(facts, "own", 10)).isEqualTo("SpecificationCovered(SpecificationMember)")
-        assertThat(facts.localTypeGate(facts.references.first { it.name.originalSpelling == "own" && it.range.startLine == 10 }.range))
-            .isEqualTo(LocalTypeGate.Local)
         // A local declaration shadows the members.
         assertThat(outcome(facts, "v", 6)).startsWith("Bound")
     }

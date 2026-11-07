@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -140,14 +141,16 @@ class ObjectTypeMethodTest {
     }
 
     @Test
-    fun methodMembersThroughSelfAValueAndAnExplicitSelf() {
+    fun aMethodThroughSelfAValueOrAnExplicitSelfIsNotAField() {
         val spec = "CREATE TYPE t AS OBJECT (a NUMBER, MEMBER FUNCTION f RETURN NUMBER, MEMBER PROCEDURE p(SELF IN OUT t));\n/\n"
         val body = "CREATE TYPE BODY t AS\n" +
             "  MEMBER FUNCTION f RETURN NUMBER IS v t; BEGIN RETURN self.f + v.f; END;\n" +
             "  MEMBER PROCEDURE p(SELF IN OUT t) IS n NUMBER; BEGIN n := self.f; END;\n" +
             "END;\n/\n"
         assertThat(scan("spec.sql" to spec, "body.sql" to body))
-            .containsExactly("2 self.f Method [t.f/0 MEMBER]", "2 v.f Method [t.f/0 MEMBER]", "3 self.f Method [t.f/0 MEMBER]")
+            .containsExactly(
+                "2 self.f f=Unavailable(NOT_A_COVERED_NAME)", "2 v.f f=Unavailable(NOT_A_COVERED_NAME)", "3 self.f f=Unavailable(NOT_A_COVERED_NAME)"
+            )
     }
 
     @Test
@@ -170,10 +173,12 @@ class ObjectTypeMethodTest {
         val context = prepare(*sources)
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
-            init { subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION) }
-            override fun visitNode(node: AstNode) {
-                val resolution = (node as SemanticAstNode).projectRecordMemberResolution ?: return
-                rows += "${node.token.line} ${node.tokens.joinToString("") { it.originalValue }} ${describe(resolution)}"
+            override fun leaveFile(node: AstNode) {
+                for (member in node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION)) {
+                    val names = member.children.filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME }.drop(1)
+                    val text = member.tokens.joinToString("") { it.originalValue }
+                    rows += "${member.token.line} $text " + names.joinToString(" ") { "${it.tokenOriginalValue}=${this.context.fieldBinding(it)}" }
+                }
             }
         }
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)

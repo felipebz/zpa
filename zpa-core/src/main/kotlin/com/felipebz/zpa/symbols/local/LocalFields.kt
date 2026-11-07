@@ -319,9 +319,10 @@ internal class LocalFields(
     /**
      * The member [segment] names of the value the local type walk reaches before it, when the project declares that
      * value's type: a field or attribute, not a field for a method or a collection method, and outside the file for a
-     * name the type does not have once (or a type whose members are not known), and undecided when text this file may hold differently leaves the value so. Null
-     * when the walk reaches no such value: a local record type (the local steps decide), an anchor, a value it does not
-     * model. A member of a value of a local collection type is not a field.
+     * name the type does not have once (or a type whose members are not known). Text this file may hold differently
+     * leaves the value, and so the member, undecided. Null when the walk reaches no such value: a local record type
+     * (the local steps decide), an anchor, a value it does not model. A member of a value of a local collection type
+     * is not a field.
      */
     private fun project(segment: AstNode): FieldBinding? {
         val walk = typeWalk ?: return null

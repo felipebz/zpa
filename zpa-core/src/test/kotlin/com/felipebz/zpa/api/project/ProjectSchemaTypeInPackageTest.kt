@@ -12,9 +12,12 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.symbols.local.LocalTypeName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -65,10 +68,11 @@ class ProjectSchemaTypeInPackageTest {
             listOf("types.sql" to types, "pk.sql" to pk).map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
         val analysis = ArrayList<String>()
         val check = object : PlSqlCheck() {
-            init { subscribeTo(PlSqlGrammar.DATATYPE) }
-            override fun visitNode(node: AstNode) {
-                val resolution = (node as SemanticAstNode).projectTypeResolution as? ProjectTypeResolution.Resolved ?: return
-                analysis += "${node.tokenOriginalValue}@${resolution.declaration.fileId.value}"
+            override fun leaveFile(node: AstNode) {
+                for (datatype in node.getDescendants(PlSqlGrammar.DATATYPE)) {
+                    val name = this.context.valueCategories?.typeName(datatype) as? LocalTypeName.Project ?: continue
+                    analysis += "${datatype.tokenOriginalValue}@${name.declaration.fileId}"
+                }
             }
         }
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)

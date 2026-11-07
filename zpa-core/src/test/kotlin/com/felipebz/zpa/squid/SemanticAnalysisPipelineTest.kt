@@ -11,14 +11,15 @@ import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.project.ProjectIndexPreparation
 import com.felipebz.zpa.project.ProjectSource
-import com.felipebz.zpa.symbols.*
+import com.felipebz.zpa.symbols.ProjectSubprogramDeclarationResolutionVisitor
+import com.felipebz.zpa.symbols.SymbolVisitor
 import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class SemanticAnalysisPipelineTest {
     @Test
-    fun projectVisitorsFollowLegacySymbolVisitorInProductionOrder() {
+    fun theProjectVisitorFollowsLegacySymbolVisitorInProductionOrder() {
         val context = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation().prepare(
                 listOf(ProjectSource(FileId("current.sql")) { "CREATE PACKAGE p AS END p;" }),
@@ -31,18 +32,12 @@ class SemanticAnalysisPipelineTest {
         assertThat(visitors.map { it::class }).containsExactly(
             LocalSemanticPrepass::class,
             SymbolVisitor::class,
-            ProjectSubprogramDeclarationResolutionVisitor::class,
-            ProjectTypeResolutionVisitor::class,
-            ProjectRecordMemberResolutionVisitor::class,
-            ProjectRecordFieldTypeResolutionVisitor::class,
-            ProjectRecordMemberPathResolutionVisitor::class,
-            ProjectMethodCallVisitor::class,
-            ProjectReceiverMemberVisitor::class
+            ProjectSubprogramDeclarationResolutionVisitor::class
         )
     }
 
     @Test
-    fun projectVisitorsAreOmittedWhenTheContextIsNotPrepared() {
+    fun theProjectVisitorIsOmittedWhenTheContextIsNotPrepared() {
         val visitors = SemanticAnalysisPipeline(ProjectAnalysisContext.NOT_PREPARED)
             .create(FileId("current.sql")).all
 

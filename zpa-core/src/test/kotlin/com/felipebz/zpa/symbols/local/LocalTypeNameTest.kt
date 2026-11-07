@@ -187,4 +187,37 @@ class LocalTypeNameTest {
         val local = "create procedure u is\n  type sys_refcursor is ref cursor;\n  c sys_refcursor;\nbegin\n  null;\nend;\n/\n"
         assertThat(names("u.sql", mapOf("u.sql" to local))).containsExactly("3:sys_refcursor=Local(D1)")
     }
+
+    @Test
+    fun typeNamesInAPackageBodyWhoseSpecificationIsInAnotherFile() {
+        val spec = "create package pk_s as\n  type t_rec is record (n number);\n  type t_obj is record (n number);\nend;\n/\n"
+        val schema = "create type t_obj as object (a number);\n/\ncreate type t_other as object (a number);\n/\n"
+        val body = "create package body pk_s as\n" +
+            "  procedure run is\n" +
+            "    a t_rec;\n" +
+            "    b t_obj;\n" +
+            "    c t_other;\n" +
+            "  begin\n    null;\n  end;\n" +
+            "  procedure run2 is\n" +
+            "    type t_other is record (x number);\n" +
+            "    d t_other;\n" +
+            "  begin\n    null;\n  end;\n" +
+            "end;\n/\n"
+        assertThat(names("b.sql", mapOf("s.sql" to spec, "t.sql" to schema, "b.sql" to body))).containsExactly(
+            // Unqualified, looked up from the package: its specification's type.
+            "3:t_rec=Project(PACKAGE_TYPE pk_s.t_rec)",
+            // A package type of the name wins over the schema type.
+            "4:t_obj=Project(PACKAGE_TYPE pk_s.t_obj)",
+            "5:t_other=Project(STANDALONE_TYPE t_other)",
+            // A local type of the name hides the schema type after its declaration.
+            "11:t_other=Local(D6)"
+        )
+    }
+
+    @Test
+    fun theOwnNameInATypeBodyIsTheType() {
+        val spec = "create type t_self as object (n number, member procedure p);\n/\n"
+        val body = "create type body t_self as\n  member procedure p is\n    v t_self;\n  begin\n    null;\n  end;\nend;\n/\n"
+        assertThat(names("b.sql", mapOf("s.sql" to spec, "b.sql" to body))).containsExactly("3:t_self=Project(STANDALONE_TYPE t_self)")
+    }
 }

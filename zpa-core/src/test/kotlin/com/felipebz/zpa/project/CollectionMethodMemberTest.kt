@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -55,22 +56,28 @@ class CollectionMethodMemberTest {
     }
 
     @Test
-    fun aPathStopsAtACollectionMethodWhetherItIsLastOrNot() {
+    fun aCollectionMethodIsNotAFieldWhetherItIsLastOrNot() {
         val types = "CREATE TYPE nt AS TABLE OF NUMBER;\n/\nCREATE TYPE holder AS OBJECT (items nt);\n/\n"
         val use = "CREATE PROCEDURE use_it IS\n  h holder;\n  n NUMBER;\nBEGIN\n  n := h.items.count;\n  n := h.items.count.x;\nEND;\n/\n"
         val context = prepare("types.sql" to types, "use.sql" to use)
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
-            init { subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION) }
-            override fun visitNode(node: AstNode) {
-                val path = (node as SemanticAstNode).projectRecordMemberPathResolution as? ProjectRecordMemberPathResolution.Stopped ?: return
-                rows += "${node.token.line} ${path.segments.size} ${path.nextMember.originalSpelling} ${path.reason}"
+            override fun leaveFile(node: AstNode) {
+                for (member in node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION)) {
+                    val names = member.children.filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME }.drop(1)
+                    val text = member.tokens.joinToString("") { it.originalValue }
+                    rows += "${member.token.line} $text " + names.joinToString(" ") { "${it.tokenOriginalValue}=${this.context.fieldBinding(it)}" }
+                }
             }
         }
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)
         scanner.scanFile(Source("types.sql", types), emptyList(), FileId("types.sql"))
         scanner.scanFile(Source("use.sql", use), listOf(check), FileId("use.sql"))
-        assertThat(rows).containsExactly("5 1 count MEMBER_IS_COLLECTION_METHOD", "6 1 count MEMBER_IS_COLLECTION_METHOD")
+        // COUNT is a collection method, not a field, whether a name follows it or not.
+        assertThat(rows.map { it.substringAfter(" items=") }).containsExactly(
+            "Field(ATTRIBUTE#0@types.sql:3:30) count=Unavailable(NOT_A_COVERED_NAME)",
+            "Field(ATTRIBUTE#0@types.sql:3:30) count=Unavailable(NOT_A_COVERED_NAME) x=Unknown[UNSUPPORTED_REFERENCE]"
+        )
     }
 
     private class Source(private val id: String, private val text: String) : PlSqlFile {

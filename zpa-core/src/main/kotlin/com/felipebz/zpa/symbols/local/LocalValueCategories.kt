@@ -136,8 +136,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return null
         val index = referencesByStart[callee.token.line to callee.token.column] ?: return null
         val reference = facts.references[index]
-        if (!(if (inSql) isCall(reference) else inPlSqlOrValues(reference)) || writtenSegments(callee) != reference.segments.size || reference.segments.any { it.isAttribute }) return null
-        if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return null
+        if (!walksHead(reference, callee, index, inSql)) return null
         val region = reference.region
         val evidence = IdentityHashMap<AstNode, LocalTypeEvidence>()
         var current = head(reference, facts.resolutions[index].map(::fieldStep), lists, region)
@@ -154,6 +153,11 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         evidence[receiver] = current
         return Walked(region, evidence)
     }
+
+    /** Whether the name [callee] of the first child of a receiver, the reference at [index], is one the walk types. */
+    private fun walksHead(reference: LocalReference, callee: AstNode, index: Int, inSql: Boolean): Boolean =
+        (if (inSql) isCall(reference) else inPlSqlOrValues(reference)) && writtenSegments(callee) == reference.segments.size &&
+            reference.segments.none { it.isAttribute } && !sqlFunctionMayTake(reference, facts.resolutions[index].last())
 
     /**
      * A receiver read in PL/SQL, or in the `VALUES` of a single-table `INSERT`, which has no table columns in scope.
@@ -489,6 +493,18 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             LocalTypeEvidence.Terminal.PROJECT -> projectTypeName(evidence.description?.source)
             else -> LocalTypeName.Undecided(evidence.incomplete?.let(::reasons) ?: EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
         }
+    }
+
+    /**
+     * The project type [declaration] is directly declared with: the first project declaration its own written type (or
+     * function result) names, as [typeName] answers it. Null for a local, predefined, anchored or undecided type.
+     */
+    fun declaredProjectType(declaration: LocalDeclaration): ProjectTypeDeclarationView? {
+        val use = declaration.type ?: (declaration.details as? LocalSubprogram)?.returnType ?: return null
+        if (use.typeRef !is NamedTypeRef) return null
+        val evidence = walk.written(use)
+        if (evidence.followed.isNotEmpty() || evidence.terminal != LocalTypeEvidence.Terminal.PROJECT) return null
+        return (projectTypeName(evidence.description?.source) as? LocalTypeName.Project)?.declaration
     }
 
     /** A written type, the use it records and the walk's evidence of it. */

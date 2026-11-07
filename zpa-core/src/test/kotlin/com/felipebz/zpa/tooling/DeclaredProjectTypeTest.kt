@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.tooling
 
 import com.felipebz.flr.api.AstNode
@@ -24,18 +26,14 @@ class DeclaredProjectTypeTest {
     private val source = """
         |CREATE FUNCTION f(o t) RETURN pk.r IS
         |  v pk.r;
-        |  ${'$'}IF ${'$'}${'$'}extra ${'$'}THEN
-        |  w pk.r;
-        |  ${'$'}END
         |BEGIN
         |  v.fld := o.a;
-        |  w.fld := 1;
         |  RETURN v;
         |END;
         |/
         |""".trimMargin()
 
-    private fun analyze(): Pair<SemanticInspectionResult, AstNode> {
+    private fun analyze(source: String = this.source): Pair<SemanticInspectionResult, AstNode> {
         val sources = listOf("types.sql" to types, "use.sql" to source)
         val context = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation(ProjectDeclarationExtractor(PlSqlConfiguration(StandardCharsets.UTF_8)))
@@ -57,8 +55,7 @@ class DeclaredProjectTypeTest {
             .containsExactlyInAnyOrder(
                 "1:16 function f: pk.r (PACKAGE_TYPE)",
                 "1:18 parameter o: t (STANDALONE_TYPE)",
-                "2:2 variable v: pk.r (PACKAGE_TYPE)",
-                "4:2 variable w: pk.r (PACKAGE_TYPE)"
+                "2:2 variable v: pk.r (PACKAGE_TYPE)"
             )
     }
 
@@ -67,20 +64,23 @@ class DeclaredProjectTypeTest {
         val (result, root) = analyze()
         fun type(line: Int, column: Int) = result.inspect(name(root, line, column)).declaredProjectType?.qualifiedName
         // A variable typed by a package record, a parameter typed by a schema object type, the function's result.
-        assertThat(type(7, 2)).isEqualTo("pk.r")
-        assertThat(type(7, 11)).isEqualTo("t")
+        assertThat(type(4, 2)).isEqualTo("pk.r")
+        assertThat(type(4, 11)).isEqualTo("t")
         assertThat(type(1, 16)).isEqualTo("pk.r")
-        // In the block made incomplete by the conditional declarations, w's only candidate is the declaration in the ${'$'}IF.
-        assertThat(result.localSemanticFacts!!.firstOutcome(8, 2)).isInstanceOf(LocalResolution.Incomplete::class.java)
-        assertThat(type(8, 2)).isEqualTo("pk.r")
+        // With a ${'$'}IF in the declarations, the text may compile otherwise: the declared types are undecided.
+        val conditional = source.replace("  v pk.r;\n", "  v pk.r;\n  ${'$'}IF ${'$'}${'$'}extra ${'$'}THEN\n  w pk.r;\n  ${'$'}END\n")
+        val (other, otherRoot) = analyze(conditional)
+        assertThat(other.localSemanticFacts!!.steps(7, 2)!!.first()).isInstanceOf(LocalResolution.Incomplete::class.java)
+        assertThat(other.inspect(name(otherRoot, 7, 2)).declaredProjectType).isNull()
     }
 
     @Test
     fun bothAgreeWithTheLocalFacts() {
         val (result, _) = analyze()
         val facts = result.localSemanticFacts!!
-        val recorded = facts.model.declarations.mapNotNull { d -> facts.declaredType(d)?.let { "${d.nameRange.startLine}:${d.nameRange.startColumn} ${it.qualifiedName}" } }
-        assertThat(recorded).containsExactlyInAnyOrder("1:16 pk.r", "1:18 t", "2:2 pk.r", "4:2 pk.r")
+        val categories = result.context!!.valueCategories!!
+        val recorded = facts.model.declarations.mapNotNull { d -> categories.declaredProjectType(d)?.let { "${d.nameRange.startLine}:${d.nameRange.startColumn} ${it.qualifiedName}" } }
+        assertThat(recorded).containsExactlyInAnyOrder("1:16 pk.r", "1:18 t", "2:2 pk.r")
     }
 
     @Test

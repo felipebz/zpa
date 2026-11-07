@@ -13,6 +13,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectDeclarationView
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
 import com.felipebz.zpa.api.project.ProjectShapedTypeView
+import com.felipebz.zpa.api.project.ProjectTypeDeclarationView
 import com.felipebz.zpa.api.semantics.FieldBinding
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.semantics.ValueCategory
@@ -24,10 +25,7 @@ import com.felipebz.zpa.squid.PlSqlAstWalker
 import com.felipebz.zpa.squid.SemanticAnalysisPipeline
 import com.felipebz.zpa.squid.SemanticScanCapabilities
 import com.felipebz.zpa.squid.createProjectAnalysis
-import com.felipebz.zpa.symbols.local.LocalHighlighting
-import com.felipebz.zpa.symbols.local.LocalSemanticFacts
-import com.felipebz.zpa.symbols.local.LocalSyntax
-import com.felipebz.zpa.symbols.local.LocalTypeName
+import com.felipebz.zpa.symbols.local.*
 import java.nio.file.Path
 
 /**
@@ -227,13 +225,13 @@ private object SemanticInspectionMapper {
      * declares. Only the name itself answers: a node of exactly one token. A larger node starting with the name (a
      * statement, a member expression) has a type of its own, so it gets null.
      */
-    fun declaredProjectType(facts: LocalSemanticFacts, node: AstNode): ProjectTypeDeclaration? {
+    fun declaredProjectType(facts: LocalSemanticFacts, categories: LocalValueCategories, node: AstNode): ProjectTypeDeclarationView? {
         val token = node.tokenOrNull ?: return null
         if (node.lastTokenOrNull !== token) return null
         val declaration = facts.nameDeclaration(token.line, token.column)
             ?: facts.model.declarations.firstOrNull { it.nameRange.startLine == token.line && it.nameRange.startColumn == token.column }
             ?: return null
-        return facts.declaredType(declaration)
+        return categories.declaredProjectType(declaration)
     }
 
     fun inspect(
@@ -253,7 +251,7 @@ private object SemanticInspectionMapper {
             typeName = categories?.takeIf { datatype }?.let { typeName(node, it.typeName(node), facts) },
             typeCategory = categories?.takeIf { datatype }?.typeCategory(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
             valueCategory = categories?.takeIf { !datatype }?.category(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
-            declaredProjectType = facts?.let { declaredProjectType(it, node) }?.let(::declaration),
+            declaredProjectType = facts?.let { f -> categories?.let { declaredProjectType(f, it, node) } }?.let(::declaration),
             fields = context?.let { fields(fileId, node, it) }.orEmpty()
         )
     }

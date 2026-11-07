@@ -190,6 +190,14 @@ class FieldBindingTest {
         assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to plain).filter { ":CODE=" in it }).containsExactly("4:8:CODE=Field(RECORD_FIELD#0@s.sql:2:24)")
     }
 
+    @Test
+    fun aQuotedFieldNameIsItsOwnIdentifier() {
+        val spec = "create or replace package pk_q is\n  type t_row is record (\"Name\" varchar2(10), name number);\nend pk_q;\n/\n"
+        val text = "create or replace procedure use_q(p_rec pk_q.t_row) is\nbegin\n  p_rec.\"Name\" := 'x';\n  p_rec.name := 1;\nend;\n/\n"
+        assertThat(fields("u.sql", "s.sql" to spec, "u.sql" to text).filter { it.startsWith("3:") || it.startsWith("4:") })
+            .containsExactly("3:8:\"Name\"=Field(RECORD_FIELD#0@s.sql:2:24)", "4:8:NAME=Field(RECORD_FIELD#1@s.sql:2:45)")
+    }
+
     private val splitSpec = "create or replace package pk_z is\n" +
         "  type t_nums is table of number;\n" +
         "  type t_row is record (items t_nums, code varchar2(10), n number);\n" +

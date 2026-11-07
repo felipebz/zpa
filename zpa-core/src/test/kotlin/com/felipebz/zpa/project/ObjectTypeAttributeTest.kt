@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -153,7 +154,7 @@ class ObjectTypeAttributeTest {
     }
 
     @Test
-    fun membersOfObjectTypedValuesResolveThroughBothVisitors() {
+    fun membersOfObjectTypedValuesAreTheirAttributes() {
         val types = "CREATE TYPE addr_t AS OBJECT (city VARCHAR2(30));\n/\n" +
             "CREATE TYPE person_t AS OBJECT (name VARCHAR2(30), home addr_t);\n/\n" +
             "CREATE PACKAGE p AS TYPE pos_r IS RECORD (x NUMBER); END p;\n/\n" +
@@ -162,9 +163,9 @@ class ObjectTypeAttributeTest {
             "  n := v.name;\n  n := v.home.city;\n  n := s.pos.x;\nEND;\n/\n"
         val members = scan(listOf("types.sql" to types, "use.sql" to use), "use.sql")
         assertThat(members).containsExactly(
-            "6 v.name member=Resolved",
-            "7 v.home.city path=Completed",
-            "8 s.pos.x path=Completed"
+            "6 v.name name=Field(ATTRIBUTE#0@types.sql:3:32)",
+            "7 v.home.city home=Field(ATTRIBUTE#1@types.sql:3:51) city=Field(ATTRIBUTE#0@types.sql:1:30)",
+            "8 s.pos.x pos=Field(ATTRIBUTE#0@types.sql:7:31) x=Field(RECORD_FIELD#0@types.sql:5:42)"
         )
     }
 
@@ -172,7 +173,7 @@ class ObjectTypeAttributeTest {
     fun aCursorAttributeIsNotAMember() {
         val pk = "CREATE PACKAGE pk AS TYPE rc IS REF CURSOR; END pk;\n/\n"
         val use = "CREATE PROCEDURE use_it IS\n  c pk.rc;\nBEGIN\n  IF c%NOTFOUND THEN NULL; END IF;\nEND;\n/\n"
-        assertThat(scan(listOf("pk.sql" to pk, "use.sql" to use), "use.sql")).isEmpty()
+        assertThat(scan(listOf("pk.sql" to pk, "use.sql" to use), "use.sql")).contains("4 c%NOTFOUND NOTFOUND=Unavailable(NOT_A_COVERED_NAME)")
     }
 
     @Test
@@ -195,12 +196,12 @@ class ObjectTypeAttributeTest {
         val context = prepare(*sources.toTypedArray())
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
-            init { subscribeTo(PlSqlGrammar.MEMBER_EXPRESSION) }
-            override fun visitNode(node: AstNode) {
-                val semantic = node as SemanticAstNode
-                val text = node.tokens.joinToString("") { it.originalValue }
-                semantic.projectRecordMemberResolution?.let { rows += "${node.token.line} $text member=${it.javaClass.simpleName}" }
-                semantic.projectRecordMemberPathResolution?.let { rows += "${node.token.line} $text path=${it.javaClass.simpleName}" }
+            override fun leaveFile(node: AstNode) {
+                for (member in node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION)) {
+                    val names = member.children.filter { it.type == PlSqlGrammar.VARIABLE_NAME || it.type == PlSqlGrammar.IDENTIFIER_NAME }.drop(1)
+                    val text = member.tokens.joinToString("") { it.originalValue }
+                    rows += "${member.token.line} $text " + names.joinToString(" ") { "${it.tokenOriginalValue}=${this.context.fieldBinding(it)}" }
+                }
             }
         }
         val scanner = AstScanner(emptyList(), null, true, StandardCharsets.UTF_8, context)

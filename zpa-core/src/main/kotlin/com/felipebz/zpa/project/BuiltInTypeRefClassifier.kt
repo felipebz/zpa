@@ -11,49 +11,6 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectBuiltInTypeCategory
 
 /**
- * AST-free semantic facts for a retained project TypeRef.
- *
- * A project resolution is retained even when the project does not contain the type. That
- * distinction is important: NotFoundInProject does not mean that the reference is invalid or
- * that it is not a built-in/external database type.
- */
-internal sealed interface TypeRefSemanticResolution {
-    val reference: TypeRef
-
-    data class BuiltIn(
-        override val reference: NamedTypeRef,
-        val type: ProjectBuiltInTypeCategory
-    ) : TypeRefSemanticResolution
-
-    data class Project(
-        override val reference: NamedTypeRef,
-        val resolution: ProjectTypeResolution
-    ) : TypeRefSemanticResolution
-
-    data class Unsupported(
-        override val reference: TypeRef
-    ) : TypeRefSemanticResolution
-}
-
-/** Classifies TypeRef values without constructing legacy PlSqlDatatype objects. */
-internal class TypeRefSemanticResolver(
-    private val projectTypeResolver: ProjectTypeResolver
-) {
-    fun resolve(
-        reference: TypeRef,
-        lookupContext: ProjectTypeLookupContext = ProjectTypeLookupContext()
-    ): TypeRefSemanticResolution = when (reference) {
-        is NamedTypeRef -> BuiltInTypeRefClassifier.classify(reference.name)?.let {
-            TypeRefSemanticResolution.BuiltIn(reference, it)
-        } ?: TypeRefSemanticResolution.Project(
-            reference,
-            projectTypeResolver.resolve(reference, lookupContext)
-        )
-        else -> TypeRefSemanticResolution.Unsupported(reference)
-    }
-}
-
-/**
  * Built-in classification that can be applied to the information retained in a NamedTypeRef.
  *
  * The parser grammar remains the authoritative source for the accepted spellings and for

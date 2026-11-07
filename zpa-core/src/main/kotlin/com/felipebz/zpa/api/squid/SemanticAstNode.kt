@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.symbols.Symbol
 import com.felipebz.zpa.api.symbols.datatype.PlSqlDatatype
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.PackageSubprogramDeclaration
 import com.felipebz.zpa.symbols.local.LocalFileAnalysis
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 
@@ -49,27 +49,6 @@ class SemanticAstNode(type: AstNodeType, name: String, token: Token?) : AstNode(
     @Suppress("DEPRECATION")
     var plSqlDatatype: PlSqlDatatype = UnknownDatatype
         get() = this.symbol?.datatype ?: field
-
-    /**
-     * Project-level named-type information is kept separately from the legacy datatype.
-     * The property is internal until project semantics become part of the public API.
-     */
-    internal var projectTypeResolution: ProjectTypeResolution? = null
-
-    /** Project RECORD member information, kept separate from legacy symbol/datatype state. */
-    internal var projectRecordMemberResolution: ProjectRecordMemberResolution? = null
-
-    /** Project type information for a resolved RECORD field, kept separate from datatype state. */
-    internal var projectRecordFieldTypeResolution: ProjectRecordFieldTypeResolution? = null
-
-    /** Project RECORD member path information, separate from legacy AST semantics. */
-    internal var projectRecordMemberPathResolution: ProjectRecordMemberPathResolution? = null
-
-    /** Members resolved for the field query alone ([ProjectFieldMembers]); no other answer depends on them. */
-    internal var projectFieldMembers: ProjectFieldMembers? = null
-
-    /** The project binding of an object method or constructor call, kept separate from legacy symbol state. */
-    internal var projectMethodCall: ProjectMethodCall? = null
 
     /** Exact AST-free project fact for an immediate PACKAGE BODY subprogram, when available. */
     internal var projectSubprogramDeclaration: PackageSubprogramDeclaration? = null
