@@ -197,8 +197,7 @@ class PlSqlRulingTest {
         preparation.failures.forEach { println("Project preparation failure in $project: $it") }
 
         val checks = CheckList.checks.map { it.getDeclaredConstructor().newInstance() as PlSqlVisitor }
-        val prepared = ProjectAnalysisContext.prepared(preparation)
-        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8, schemas?.let(prepared::withExternalContext) ?: prepared)
+        val scanner = AstScanner(checks, metadata, false, StandardCharsets.UTF_8, ProjectAnalysisContext.prepared(preparation))
 
         val issues = inputFiles
             .map { scanner.scanFile(it, emptyList(), FileId(it.path().toString())) }

@@ -94,7 +94,9 @@ internal class ProjectCallCandidates(
     uncertainties: Set<ProjectCallUncertainty>,
     packageSpecifications: Collection<IndexedDeclaration>,
     failures: Collection<ProjectIndexPreparationFailure>,
-    val packageEvidence: Boolean
+    val packageEvidence: Boolean,
+    /** The effective schema of an occurrence, through which a written name may reach it ([ProjectSymbolIndex.effectiveSchema]). */
+    schemaOf: (IndexedDeclaration) -> OracleIdentifier? = { null }
 ) {
     enum class Status {
         FOUND, NOT_FOUND_IN_PROJECT, UNKNOWN_PACKAGE, AMBIGUOUS_TARGET,
@@ -111,7 +113,7 @@ internal class ProjectCallCandidates(
             require(this.candidates.isEmpty() && this.uncertainties.isEmpty() && this.packageSpecifications.isEmpty())
             require(this.failures.isEmpty() && !packageEvidence)
         } else {
-            validateCallDiscovery(target, this.candidates, this.packageSpecifications, packageEvidence)
+            validateCallDiscovery(target, this.candidates, this.packageSpecifications, packageEvidence, schemaOf)
         }
         require(this.failures.isNotEmpty() == (status == Status.INCOMPLETE_INDEX))
     }
@@ -301,12 +303,13 @@ private fun validateCallDiscovery(
     target: ProjectCallTarget,
     candidates: List<IndexedDeclaration>,
     specifications: List<IndexedDeclaration>,
-    packageEvidence: Boolean
+    packageEvidence: Boolean,
+    schemaOf: (IndexedDeclaration) -> OracleIdentifier?
 ) {
     val owner = target.memberPackageName
     require(specifications.all {
         val declaration = it.declaration
-        declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION && owner != null && names(owner, declaration.name)
+        declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION && owner != null && names(owner, declaration.name, schemaOf(it))
     })
     require(specifications.isEmpty() || packageEvidence)
     require(owner != null || !packageEvidence)
@@ -319,11 +322,11 @@ private fun validateCallDiscovery(
         val declaration = candidate.declaration
         if (declaration is PackageSubprogramDeclaration) {
             require(!standaloneSeen && specifications.isNotEmpty())
-            require(owner != null && names(owner, declaration.owner) && declaration.name == target.name.last)
+            require(owner != null && names(owner, declaration.owner, schemaOf(candidate)) && declaration.name == target.name.last)
             require(previousMember == null || occurrenceBefore(previousMember, candidate))
             previousMember = candidate
         } else {
-            require(target.permitsStandalone && names(target.name, declaration.qualifiedName()))
+            require(target.permitsStandalone && names(target.name, declaration.qualifiedName(), schemaOf(candidate)))
             standaloneSeen = true
             require(previousStandalone == null || occurrenceBefore(previousStandalone, candidate))
             previousStandalone = candidate
@@ -336,9 +339,10 @@ private fun validateCallDiscovery(
     }
 }
 
-/** Whether the written name reaches the declared one: the same name, or the declared one read through its schema. */
-private fun names(written: QualifiedName, declared: QualifiedName): Boolean =
-    written == declared || written.segments.size == declared.segments.size + 1 && written.segments.drop(1) == declared.segments
+/** Whether the written name reaches the declared one: the same name, or the declared one read through its [schema]. */
+private fun names(written: QualifiedName, declared: QualifiedName, schema: OracleIdentifier?): Boolean =
+    written == declared || schema != null && written.segments.size == declared.segments.size + 1 &&
+        written.segments.first() == schema && written.segments.drop(1) == declared.segments
 
 private fun occurrenceBefore(first: IndexedDeclaration, second: IndexedDeclaration): Boolean =
     first.fileId.value < second.fileId.value || (first.fileId == second.fileId && first.ordinal < second.ordinal)

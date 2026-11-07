@@ -24,6 +24,7 @@ internal enum class ProjectSequenceReferenceResolution {
 }
 
 /** Resolves only positive project sequence identity; all incomplete cases remain unknown. */
+@OptIn(com.felipebz.zpa.api.annotations.ZpaExperimentalApi::class)
 internal class ProjectSequenceReferenceResolver(
     private val context: ProjectAnalysisContext
 ) {
@@ -46,7 +47,9 @@ internal class ProjectSequenceReferenceResolver(
             return ProjectSequenceReferenceResolution.UNKNOWN
         }
 
-        return when (prepared.result.index.findSequences(candidate.name).size) {
+        // From the unit's schema: a sequence of that schema is the one, when there is one.
+        val index = prepared.result.index.preferring(analysis.categories?.compilationSchema(node)?.identifier)
+        return when (index.findSequences(candidate.name).size) {
             1 -> ProjectSequenceReferenceResolution.RESOLVED_SEQUENCE
             else -> ProjectSequenceReferenceResolution.UNKNOWN
         }

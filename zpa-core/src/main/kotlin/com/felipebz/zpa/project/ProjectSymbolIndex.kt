@@ -90,8 +90,21 @@ class ProjectSymbolIndex internal constructor(
     omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
     alteredTypes: AlteredTypes = AlteredTypes.NONE,
     schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
-    configuredSchemas: Set<OracleIdentifier> = emptySet()
+    configuredSchemas: Set<OracleIdentifier> = emptySet(),
+    /** The schema of the unit looking names up, whose declarations an unqualified name prefers; null for none. */
+    private val preferredSchema: OracleIdentifier? = null
 ) {
+    private val constructorArguments = Arguments(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas)
+
+    private class Arguments(
+        val fileIds: List<FileId>,
+        val fileOccurrences: Map<FileId, List<IndexedDeclaration>>,
+        val omitted: Set<QualifiedName>,
+        val alteredTypes: AlteredTypes,
+        val schemasByFile: Map<FileId, OracleIdentifier>,
+        val configuredSchemas: Set<OracleIdentifier>
+    )
+
     val fileIds: List<FileId> = immutableList(fileIds)
     private val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
 
@@ -135,11 +148,16 @@ class ProjectSymbolIndex internal constructor(
     /** (effective schema, name without the written owner): the unit's written owner, else its file's schema. */
     private fun schemaKey(occurrence: IndexedDeclaration): Pair<OracleIdentifier, QualifiedName>? {
         val declaration = occurrence.declaration
-        val unit = unitName(declaration) ?: return null
+        val schema = schemaOf(declaration) ?: return null
         val name = declaration.qualifiedName()
+        return schema to if (unitName(declaration)?.segments?.size == 2) QualifiedName(name.segments.drop(1)) else name
+    }
+
+    private fun schemaOf(declaration: ProjectDeclaration): OracleIdentifier? {
+        val unit = unitName(declaration) ?: return null
         return when (unit.segments.size) {
-            2 -> unit.segments.first() to QualifiedName(name.segments.drop(1))
-            1 -> schemasByFile[occurrence.fileId]?.let { it to name }
+            2 -> unit.segments.first()
+            1 -> schemasByFile[declaration.fileId]
             else -> null
         }
     }
@@ -204,18 +222,71 @@ class ProjectSymbolIndex internal constructor(
         return schema to QualifiedName(name.segments.drop(1))
     }
 
+    /** The effective schema of [occurrence]: its unit's written owner, else its file's schema; null for none. */
+    internal fun effectiveSchema(occurrence: IndexedDeclaration): OracleIdentifier? = schemaKey(occurrence)?.first
+
+    /** The views of [preferring], by schema; read and written under its lock. */
+    private val scoped = HashMap<OracleIdentifier, ProjectSymbolIndex>()
+
+    /**
+     * This index as seen from a unit of [schema]: among the matches of a lookup, those in [schema] are the only
+     * candidates when there are some (Oracle reads an unqualified name in the unit's own schema first); otherwise every
+     * match stays one, as a synonym may lead there. The same index for a null [schema]. Built once per schema.
+     */
+    internal fun preferring(schema: OracleIdentifier?): ProjectSymbolIndex {
+        if (schema == preferredSchema) return this
+        if (schema == null) return root
+        val root = root
+        return synchronized(root.scoped) {
+            root.scoped.getOrPut(schema) {
+                val a = root.constructorArguments
+                ProjectSymbolIndex(a.fileIds, a.fileOccurrences, a.omitted, a.alteredTypes, a.schemasByFile, a.configuredSchemas, schema)
+                    .also { scopedIndex -> scopedIndex.rootIndex = root }
+            }
+        }
+    }
+
+    private var rootIndex: ProjectSymbolIndex? = null
+    private val root: ProjectSymbolIndex get() = rootIndex ?: this
+
+    /**
+     * The occurrences named [name] (without owner) in the preferred schema that [accept] keeps, when there are some:
+     * an unqualified name reads them first, whether written with that owner or compiled there by its file. Null
+     * otherwise, or when no schema is preferred.
+     */
+    private fun inPreferredSchema(name: QualifiedName, accept: (ProjectDeclaration) -> Boolean): List<IndexedDeclaration>? {
+        val schema = preferredSchema ?: return null
+        return findInSchema(schema, name).filter { accept(it.declaration) }.ifEmpty { null }
+    }
+
+    /**
+     * The occurrences that pair with the unit [unitName] written in [fileId] as its body or specification: the same
+     * effective schema (its written owner, else the file's) and the same name without owner. With no schema, the same
+     * written name, as without a schema model.
+     */
+    internal fun counterparts(unitName: QualifiedName, fileId: FileId): List<IndexedDeclaration> {
+        val schema = if (unitName.segments.size == 2) unitName.segments.first() else schemasByFile[fileId]
+        return if (schema == null) occurrencesByQualifiedName[unitName].orEmpty() else findInSchema(schema, QualifiedName(unitName.last))
+    }
+
+    /** The effective schema of the unit [unitName] written in [fileId]: its written owner, else the file's schema. */
+    internal fun unitSchema(unitName: QualifiedName, fileId: FileId): OracleIdentifier? =
+        if (unitName.segments.size == 2) unitName.segments.first() else schemasByFile[fileId]
+
     private fun schemaFallback(name: QualifiedName): List<IndexedDeclaration> =
         throughSchema(name)?.let { (schema, rest) -> findInSchema(schema, rest) }.orEmpty()
 
     fun findPackages(name: QualifiedName): List<PackageDeclaration> =
-        packagesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<PackageDeclaration>()
+        inPreferredSchema(name) { it is PackageDeclaration }?.map { it.declaration as PackageDeclaration }
+            ?: packagesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<PackageDeclaration>()
 
     fun findTypes(owner: QualifiedName?, name: OracleIdentifier): List<ProjectTypeDeclaration> =
         findTypeOccurrences(owner, name).map { it.declaration as ProjectTypeDeclaration }
 
     /** Canonical occurrences behind [findTypes], in the same order. */
     internal fun findTypeOccurrences(owner: QualifiedName?, name: OracleIdentifier): List<IndexedDeclaration> =
-        typeOccurrencesByOwnerAndName[owner to name]
+        inPreferredSchema(owner?.append(name) ?: QualifiedName(name)) { it is ProjectTypeDeclaration }
+            ?: typeOccurrencesByOwnerAndName[owner to name]
             ?: owner?.let { schemaFallback(it.append(name)).filter { occurrence -> occurrence.declaration is ProjectTypeDeclaration } }.orEmpty()
 
     fun findSubprograms(owner: QualifiedName, name: OracleIdentifier): List<PackageSubprogramDeclaration> =
@@ -223,18 +294,20 @@ class ProjectSymbolIndex internal constructor(
 
     /** Canonical occurrences behind [findSubprograms], in the same order. */
     internal fun findSubprogramOccurrences(owner: QualifiedName, name: OracleIdentifier): List<IndexedDeclaration> =
-        subprogramOccurrencesByOwnerAndName[owner to name]
+        inPreferredSchema(owner.append(name)) { it is PackageSubprogramDeclaration }
+            ?: subprogramOccurrencesByOwnerAndName[owner to name]
             ?: schemaFallback(owner.append(name)).filter { it.declaration is PackageSubprogramDeclaration }
 
     fun findSequences(name: QualifiedName): List<SequenceDeclaration> =
-        sequencesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<SequenceDeclaration>()
+        inPreferredSchema(name) { it is SequenceDeclaration }?.map { it.declaration as SequenceDeclaration }
+            ?: sequencesByName[name] ?: schemaFallback(name).map { it.declaration }.filterIsInstance<SequenceDeclaration>()
 
     fun findDeclarations(name: QualifiedName): List<ProjectDeclaration> =
         findOccurrences(name).map { it.declaration }
 
     /** Exact-name matches as canonical occurrences, in index order, without resolution. */
     fun findOccurrences(name: QualifiedName): List<IndexedDeclaration> =
-        occurrencesByQualifiedName[name] ?: schemaFallback(name)
+        inPreferredSchema(name) { true } ?: occurrencesByQualifiedName[name] ?: schemaFallback(name)
 
     /** Positive evidence for the package interpretation, including non-package objects of that name. */
     internal fun hasPackageEvidence(name: QualifiedName): Boolean =

@@ -52,7 +52,7 @@ class SchemaQualifiedLookupTest {
                     } }
             }
         }
-        val prepared = ProjectAnalysisContext.prepared(preparation).withExternalContext(context)
+        val prepared = ProjectAnalysisContext.prepared(preparation)
         AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, prepared)
             .scanFile(Source(file, sources.toMap().getValue(file)), listOf(check), FileId(file))
         return rows

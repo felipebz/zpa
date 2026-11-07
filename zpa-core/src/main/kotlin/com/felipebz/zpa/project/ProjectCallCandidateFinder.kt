@@ -42,7 +42,7 @@ internal class ProjectCallCandidateFinder(private val context: ProjectAnalysisCo
         val uncertainties = callUncertainties(target, specifications, memberInPlay, standaloneInPlay, standaloneOmitted)
         return ProjectCallCandidates(
             callDiscoveryStatus(candidates, uncertainties, specifications, prepared.result.failures, memberInPlay, standaloneInPlay),
-            target, candidates, uncertainties, specifications, prepared.result.failures, packageEvidence
+            target, candidates, uncertainties, specifications, prepared.result.failures, packageEvidence, index::effectiveSchema
         )
     }
 }

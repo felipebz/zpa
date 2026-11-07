@@ -179,7 +179,7 @@ internal class LocalSpecificationCoverage private constructor(
         val chain = LocalResolver.chain(model, reference.region)
         val typeRegion = chain.firstOrNull { it.kind == LocalRegionKind.TYPE_BODY || it.kind == LocalRegionKind.OBJECT_TYPE } ?: return null
         val unitName = LocalTypeScope.unitOf(model, typeRegion.id)?.unitName ?: return null
-        val types = projectChain(unitName) ?: return null
+        val types = projectChain(unitName, model.fileId) ?: return null
         val name = reference.name
         fun StandaloneTypeDeclaration.attribute() = attributes.any { it.name == name }
         fun StandaloneTypeDeclaration.methods() = methods.filter { it.name == name && it.methodKind != ProjectMethodKind.CONSTRUCTOR }
@@ -192,11 +192,14 @@ internal class LocalSpecificationCoverage private constructor(
     }
 
     /** The project's object type [typeName] and its supertypes, nearest first, when every list is complete and unaltered. */
-    private fun projectChain(typeName: QualifiedName): List<StandaloneTypeDeclaration>? {
+    private fun projectChain(typeName: QualifiedName, fileId: FileId): List<StandaloneTypeDeclaration>? {
         val types = ArrayList<StandaloneTypeDeclaration>()
         var name: QualifiedName? = typeName
         while (name != null) {
-            val type = index.findOccurrences(name).map { it.declaration }.singleOrNull() as? StandaloneTypeDeclaration ?: return null
+            // The body's own specification pairs with it by schema; a supertype is looked up by its written name.
+            val found = if (types.isEmpty()) index.counterparts(name, fileId).filter { it.declaration is StandaloneTypeDeclaration }
+            else index.findOccurrences(name)
+            val type = found.map { it.declaration }.singleOrNull() as? StandaloneTypeDeclaration ?: return null
             if (type in types || type.shape != ProjectTypeShape.OBJECT || !type.attributesComplete || !type.methodsComplete) return null
             if (index.alteredTypes.attributesOf(type.name) || index.alteredTypes.methodsOf(type.name)) return null
             types += type
@@ -385,7 +388,7 @@ internal class LocalSpecificationCoverage private constructor(
     /** The one specification occurrence the project holds for the body's package, or null. */
     private fun specification(body: LocalRegion): IndexedDeclaration? = specifications.getOrPut(body.id) {
         val name = LocalTypeScope.unitOf(model, body.id)?.unitName
-        Optional.ofNullable(name?.let { index.findOccurrences(it) }?.singleOrNull {
+        Optional.ofNullable(name?.let { index.counterparts(it, model.fileId) }?.singleOrNull {
             val declaration = it.declaration
             declaration is PackageDeclaration && declaration.role == DeclarationRole.SPECIFICATION
         })

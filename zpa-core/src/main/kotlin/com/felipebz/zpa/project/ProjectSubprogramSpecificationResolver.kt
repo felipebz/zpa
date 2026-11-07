@@ -48,12 +48,27 @@ internal class ProjectSubprogramSpecificationResolver(
  * Canonical specification occurrences matching [body], in index order. The resolver and the
  * public same-snapshot correlation share this single selection.
  */
-internal fun ProjectSymbolIndex.findSpecificationOccurrences(body: PackageSubprogramDeclaration): List<IndexedDeclaration> =
-    findSubprogramOccurrences(body.owner, body.name)
-        .filter { (it.declaration as PackageSubprogramDeclaration).matchesSpecification(body) }
+internal fun ProjectSymbolIndex.findSpecificationOccurrences(body: PackageSubprogramDeclaration): List<IndexedDeclaration> {
+    // A body pairs with the specification of its package in the same schema (its written owner, else its file's).
+    val schema = unitSchema(body.owner, body.fileId)
+    val candidates = if (schema == null) findSubprogramOccurrences(body.owner, body.name)
+    else findInSchema(schema, QualifiedName(listOf(body.owner.last, body.name)))
+    return candidates.filter { (it.declaration as? PackageSubprogramDeclaration)?.matchesSpecification(body) == true }
+}
 
-private fun PackageSubprogramDeclaration.matchesSpecification(body: PackageSubprogramDeclaration): Boolean =
-    role == DeclarationRole.SPECIFICATION && headerIdentity() == body.headerIdentity()
+/**
+ * Whether this specification heading matches [body]'s header. The package names are not compared: the pairing of the
+ * packages, by schema and name without owner, is the lookup's ([findSpecificationOccurrences]), and a written owner
+ * on one side only is the same package.
+ */
+private fun PackageSubprogramDeclaration.matchesSpecification(body: PackageSubprogramDeclaration): Boolean {
+    if (role != DeclarationRole.SPECIFICATION || owner.last != body.owner.last) return false
+    val spec = headerIdentity()
+    val other = body.headerIdentity()
+    return spec.overload.kind == other.overload.kind && spec.overload.name.last == other.overload.name.last &&
+        spec.overload.parameters == other.overload.parameters && spec.parameters == other.parameters &&
+        spec.returnTypeKey == other.returnTypeKey
+}
 
 internal sealed interface ProjectSubprogramSpecificationResolution {
     val body: PackageSubprogramDeclaration

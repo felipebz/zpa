@@ -505,6 +505,10 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return (projectTypeName(evidence.description?.source) as? LocalTypeName.Project)?.declaration
     }
 
+    /** The schema the unit holding [node] compiles in (see [LocalTypeWalk.compilationSchema]); null when unknown. */
+    fun compilationSchema(node: AstNode): ProjectIdentifier? =
+        walk.compilationSchema(LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, node)))
+
     /** A written type, the use it records and the walk's evidence of it. */
     private class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
 

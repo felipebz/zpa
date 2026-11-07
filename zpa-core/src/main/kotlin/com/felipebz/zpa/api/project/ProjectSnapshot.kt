@@ -22,10 +22,23 @@ class ProjectSnapshot private constructor(
     val preparationState: ProjectPreparationState,
     // Both metadata lists are privately owned by the preparation adapter; wrap without copying.
     failures: List<ProjectPreparationFailure>,
-    fileIds: List<String>
-) {
+    fileIds: List<String>,
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
-    private val scope = ProjectSnapshotScope.issue()
+    private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue()
+) {
+    private val failureList = failures
+    private val fileIdList = fileIds
+
+    /**
+     * This snapshot as seen from a unit compiling in [schema]: an unqualified name prefers the declarations of that
+     * schema ([ProjectSymbolIndex.preferring]). It issues the same declaration IDs. This snapshot for a null [schema].
+     */
+    @JvmSynthetic
+    internal fun preferring(schema: ProjectIdentifier?): ProjectSnapshot {
+        val index = preparationResult.index.preferring(schema?.identifier)
+        if (index === preparationResult.index) return this
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failureList, fileIdList, scope)
+    }
 
     val attemptedFileCount: Int get() = preparationResult.attemptedFileCount
 
@@ -152,7 +165,10 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(this, name, null, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema), name, null, packageOwner, null, metadata, currentSchema)
+
+    // Every external description is made from the unit compiling in [currentSchema]: its unqualified names prefer the
+    // declarations of that schema ([preferring]).
 
     /** As the name overload, for a retained [reference] (see [describeType] for the reference overload). */
     fun describeExternalType(
@@ -161,7 +177,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(this, reference.name, reference, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema), reference.name, reference, packageOwner, null, metadata, currentSchema)
 
     /**
      * As the name overload, for a caller-written [anchor], with the same lexical precondition as the written
@@ -173,7 +189,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(this, anchor.name, null, packageOwner, anchor, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
 
     /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
@@ -259,7 +275,7 @@ class ProjectSnapshot private constructor(
         argumentTypes: List<ProjectArgumentType>,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
-    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(this, structural, argumentTypes, metadata, currentSchema)
+    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(preferring(currentSchema), structural, argumentTypes, metadata, currentSchema)
 
     // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
     private fun callContext(): ProjectAnalysisContext =

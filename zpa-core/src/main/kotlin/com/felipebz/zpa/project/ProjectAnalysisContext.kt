@@ -7,6 +7,7 @@ package com.felipebz.zpa.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalContext
+import com.felipebz.zpa.api.project.ProjectExternalMetadata
 import com.felipebz.zpa.api.project.ProjectSnapshot
 
 /**
@@ -23,6 +24,14 @@ class ProjectAnalysisContext private constructor(
      * prepared again.
      */
     fun withExternalContext(context: ProjectExternalContext): ProjectAnalysisContext = ProjectAnalysisContext(state, context)
+
+    /**
+     * The same prepared project with [metadata] for the scan, keeping the schemas (path mapping and default compilation
+     * schema) of this context, which a prepared context takes from the preparation that built its index.
+     */
+    fun withMetadata(metadata: ProjectExternalMetadata): ProjectAnalysisContext = ProjectAnalysisContext(
+        state, ProjectExternalContext.of(metadata, externalContext.defaultCompilationSchema.orElse(null), externalContext.schemaPaths)
+    )
 
     /**
      * A new immutable snapshot backed by this context's prepared index: nothing is read or prepared again. For use
@@ -57,7 +66,8 @@ class ProjectAnalysisContext private constructor(
     companion object {
         val NOT_PREPARED = ProjectAnalysisContext(State.NotPrepared)
 
+        /** The context of [result], with the schemas its index was built with ([ProjectIndexPreparationResult.schemas]). */
         fun prepared(result: ProjectIndexPreparationResult): ProjectAnalysisContext =
-            ProjectAnalysisContext(State.Prepared(result))
+            ProjectAnalysisContext(State.Prepared(result), result.schemas)
     }
 }

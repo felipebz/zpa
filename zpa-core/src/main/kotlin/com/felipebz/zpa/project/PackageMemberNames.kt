@@ -151,7 +151,8 @@ object PackageMemberNames {
     /** The retained declarations of [name] in the specification [unit], in index order (unretained names excluded). */
     fun members(index: ProjectSymbolIndex, unit: IndexedDeclaration, name: OracleIdentifier): List<ProjectDeclaration> {
         val spec = unit.declaration as PackageDeclaration
-        return index.findOccurrences(spec.name.append(name))
+        // Every match, wherever the lookup was made from: the members are those inside this specification.
+        return index.preferring(null).findOccurrences(spec.name.append(name))
             .map { it.declaration }
             .filter { it !is PackageDeclaration && it.fileId == spec.fileId && contains(spec.sourceRange, it.sourceRange) }
     }

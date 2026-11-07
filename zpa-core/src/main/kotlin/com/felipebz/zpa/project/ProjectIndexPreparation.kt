@@ -64,9 +64,10 @@ class ProjectIndexPreparation private constructor(
             }
         }
         return ProjectIndexPreparationResult(
-            index = builder.build(),
-            attemptedFileCount = sources.size,
-            failures = failures.toList().sortedBy { it.fileId.value }
+            builder.build(),
+            sources.size,
+            failures.toList().sortedBy { it.fileId.value },
+            schemas
         )
     }
 
@@ -87,11 +88,29 @@ data class ProjectIndexPreparationFailure(
 )
 
 /** Immutable result of preparing the project declaration index. */
+@OptIn(ZpaExperimentalApi::class)
 class ProjectIndexPreparationResult(
     val index: ProjectSymbolIndex,
     val attemptedFileCount: Int,
     failures: Collection<ProjectIndexPreparationFailure>
 ) {
+    /**
+     * The schemas the index was built with ([ProjectIndexPreparation.withSchemas]): the scan of a context prepared from
+     * this result uses them by default, so the index and the lookups cannot disagree.
+     */
+    @ZpaExperimentalApi
+    var schemas: ProjectExternalContext = ProjectExternalContext.none()
+        private set
+
+    internal constructor(
+        index: ProjectSymbolIndex, attemptedFileCount: Int, failures: Collection<ProjectIndexPreparationFailure>, schemas: ProjectExternalContext
+    ) : this(index, attemptedFileCount, failures) {
+        this.schemas = schemas
+    }
+
+    /** The same result over [index], a view of this one's index. */
+    internal fun withIndex(index: ProjectSymbolIndex) = ProjectIndexPreparationResult(index, attemptedFileCount, failures, schemas)
+
     val failures: List<ProjectIndexPreparationFailure> = immutableList(failures)
     val successfulFileCount: Int = attemptedFileCount - this.failures.size
 
