@@ -108,19 +108,35 @@ internal enum class LocalIncompleteness {
  */
 internal class LocalRegionCompleteness private constructor(
     /** Empty when complete; otherwise the reasons, in [LocalIncompleteness] order. */
-    val reasons: Set<LocalIncompleteness>
+    val reasons: Set<LocalIncompleteness>,
+    /**
+     * The reasons that can change what a name lookup through the region finds, a subset of [reasons]: hidden text in
+     * the region's own declarative part (not in its statements, nor in a nested region, which declare nothing the
+     * region holds), and the reasons that apply to the whole region (recovery, partial extraction, unverified source).
+     */
+    val lookupReasons: Set<LocalIncompleteness>
 ) {
     val isComplete: Boolean get() = reasons.isEmpty()
 
     override fun toString() = if (isComplete) "COMPLETE" else "INCOMPLETE$reasons"
 
     companion object {
-        val COMPLETE = LocalRegionCompleteness(emptySet())
+        val COMPLETE = LocalRegionCompleteness(emptySet(), emptySet())
 
-        fun of(reasons: Set<LocalIncompleteness>): LocalRegionCompleteness =
-            if (reasons.isEmpty()) COMPLETE else LocalRegionCompleteness(Collections.unmodifiableSet(EnumSet.copyOf(reasons)))
+        fun of(reasons: Set<LocalIncompleteness>, lookupReasons: Set<LocalIncompleteness> = reasons): LocalRegionCompleteness =
+            if (reasons.isEmpty()) COMPLETE
+            else LocalRegionCompleteness(Collections.unmodifiableSet(EnumSet.copyOf(reasons)), Collections.unmodifiableSet(enumSet(lookupReasons)))
+
+        private fun enumSet(reasons: Set<LocalIncompleteness>): Set<LocalIncompleteness> =
+            if (reasons.isEmpty()) EnumSet.noneOf(LocalIncompleteness::class.java) else EnumSet.copyOf(reasons)
     }
 }
+
+/**
+ * Text Oracle may compile differently than the file shows: the gap between two tokens holding a conditional-compilation
+ * boundary, a substitution or other discarded text, or the tokens of a kept conditional-compilation branch.
+ */
+internal class LocalHiddenText(val reason: LocalIncompleteness, val range: SourceRange)
 
 internal class LocalRegion(
     val id: LocalRegionId,
@@ -176,8 +192,26 @@ internal class LocalSemanticModel(
     /** Indexed by [LocalRegionId.ordinal]; the root is first. */
     val regions: List<LocalRegion>,
     /** Indexed by [LocalDeclarationId.ordinal]. */
-    val declarations: List<LocalDeclaration>
+    val declarations: List<LocalDeclaration>,
+    /** The file's hidden text, in source order. */
+    val hiddenText: List<LocalHiddenText> = emptyList()
 ) {
+    /**
+     * The reasons of the hidden text a use written at [range] sits under or touches: a kept conditional-compilation
+     * branch holding it, or hidden text inside it or right next to it.
+     */
+    fun hiddenAt(range: SourceRange): Set<LocalIncompleteness> {
+        if (hiddenText.isEmpty()) return emptySet()
+        val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
+        for (text in hiddenText) {
+            if (!before(text.range.endLine, text.range.endColumn, range.startLine, range.startColumn) &&
+                !before(range.endLine, range.endColumn, text.range.startLine, text.range.startColumn)) reasons += text.reason
+        }
+        return reasons
+    }
+
+    private fun before(line: Int, column: Int, otherLine: Int, otherColumn: Int) = line < otherLine || line == otherLine && column < otherColumn
+
     val root: LocalRegion get() = regions[0]
 
     fun region(id: LocalRegionId): LocalRegion = regions[id.ordinal]

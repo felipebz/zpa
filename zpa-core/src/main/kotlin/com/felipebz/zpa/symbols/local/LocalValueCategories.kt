@@ -11,11 +11,9 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.semantics.*
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ProjectRecordMemberResolution
-import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
 
@@ -525,7 +523,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val region = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, datatype))
         val use = LocalSyntax.typeUse(model.fileId, datatype, region)
         // Text this file may hold differently leaves the position undecided, whatever scope the name is looked up in.
-        regionIncomplete(region)?.let { return WrittenType(use, LocalTypeEvidence.unknown("undecided text", incomplete = it)) }
+        regionIncomplete(region, use.range)?.let { return WrittenType(use, LocalTypeEvidence.unknown("undecided text", incomplete = it)) }
         return when {
             position === PlSqlGrammar.EXTERNAL_PARAMETER -> WrittenType(use, LocalTypeEvidence.unknown("an external datatype"), external = true)
             // CAST takes a predefined or a schema type, in PL/SQL as in SQL.
@@ -534,10 +532,14 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         }
     }
 
-    /** The reasons of the regions [region] is looked up through, as an incomplete outcome; null when all are complete. */
-    private fun regionIncomplete(region: LocalRegionId): LocalResolution.Incomplete? {
+    /**
+     * The reasons hidden text gives a name written at [range] and looked up through [region]: in a declarative part of
+     * the regions it passes through, or at the use itself; as an incomplete outcome, null when there is none.
+     */
+    private fun regionIncomplete(region: LocalRegionId, range: SourceRange): LocalResolution.Incomplete? {
         val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
-        LocalResolver.chain(model, region).forEach { reasons += it.completeness.reasons }
+        LocalResolver.chain(model, region).forEach { reasons += it.completeness.lookupReasons }
+        reasons += model.hiddenAt(range)
         return if (reasons.isEmpty()) null else LocalResolution.Incomplete(reasons, emptySet(), LocalResolution.ProvenAbsent)
     }
 

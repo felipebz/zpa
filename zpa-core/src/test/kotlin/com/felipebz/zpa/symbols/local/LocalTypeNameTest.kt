@@ -56,10 +56,16 @@ class LocalTypeNameTest {
         written(file, sources) { it.parent.type == PlSqlGrammar.VARIABLE_DECLARATION }
 
     /** `line:type=name|category` for each `DATATYPE` of [file] that [select] keeps. */
-    private fun written(file: String, sources: Map<String, String>, withCategory: Boolean = false, select: (AstNode) -> Boolean): List<String> {
-        val context = ProjectAnalysisContext.prepared(
-            ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
-        )
+    private fun written(
+        file: String,
+        sources: Map<String, String>,
+        withCategory: Boolean = false,
+        unreadable: List<String> = emptyList(),
+        select: (AstNode) -> Boolean
+    ): List<String> {
+        val inputs = sources.map { (id, text) -> ProjectSource(FileId(id)) { text } } +
+            unreadable.map { id -> ProjectSource(FileId(id)) { throw java.io.IOException("unreadable") } }
+        val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(inputs, concurrent = false))
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
@@ -219,5 +225,18 @@ class LocalTypeNameTest {
         val spec = "create type t_self as object (n number, member procedure p);\n/\n"
         val body = "create type body t_self as\n  member procedure p is\n    v t_self;\n  begin\n    null;\n  end;\nend;\n/\n"
         assertThat(names("b.sql", mapOf("s.sql" to spec, "b.sql" to body))).containsExactly("3:t_self=Project(STANDALONE_TYPE t_self)")
+    }
+
+    @Test
+    fun anIncompleteIndexNeverResolvesAProjectName() {
+        // A file that could not be read may declare the same names, so even a name the index holds once is not resolved.
+        val rows = written("u.sql", mapOf("p.sql" to packageSpec, "u.sql" to user), unreadable = listOf("broken.sql")) {
+            it.parent.type == PlSqlGrammar.VARIABLE_DECLARATION
+        }
+        assertThat(rows).contains(
+            "2:p.t_rec=Unresolved(INCOMPLETE_INDEX)",
+            "6:t_none=Unresolved(INCOMPLETE_INDEX)",
+            "9:pls_integer=BuiltIn(pls_integer)"
+        )
     }
 }

@@ -59,7 +59,8 @@ internal object LocalSemanticModelBuilder {
             val linker = LocalDeclarationLinker(regions, declarations)
             linker.linkForwardDeclarations()
             linker.linkUnits()
-            return freeze(fileId, regions, declarations, LocalCompletenessEvidence.of(root, source).attribute(regions))
+            val evidence = LocalCompletenessEvidence.of(root, source)
+            return freeze(fileId, regions, declarations, evidence.attribute(regions), evidence.hiddenText(fileId))
         }
 
         private fun open(parent: RegionDraft?, kind: LocalRegionKind, syntax: String, range: SourceRange): RegionDraft {
@@ -153,9 +154,18 @@ internal object LocalSemanticModelBuilder {
             val first = content.firstOrNull() ?: return null
             val range = SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn)
             val region = open(enclosing, kind, node.type.toString(), range)
+            markStatements(region, node)
             labels.forEach { it.details = (it.details as LocalLabel).copy(labeled = region.id) }
             content.forEach { visit(it, region) }
             return region
+        }
+
+        /** Records where the statements of the region [node] forms start: text from there on declares nothing it holds. */
+        private fun markStatements(region: RegionDraft, node: AstNode) {
+            val statements = node.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION, PlSqlGrammar.STATEMENTS) ?: return
+            if (!statements.hasToken()) return
+            region.statementsStart = statements.token.line to statements.token.column
+            region.statementsOpenWithBegin = statements.type === PlSqlGrammar.STATEMENTS_SECTION
         }
 
         private fun declareLabel(label: AstNode, region: RegionDraft, labeled: LocalRegionId?): DeclarationDraft {
@@ -221,6 +231,7 @@ internal object LocalSemanticModelBuilder {
             }
             val declaration = declare(enclosing, kind, unitName.last, range(node), range(nameNode))
             val body = if (form == LocalSubprogramForm.BODY) open(enclosing, LocalRegionKind.SUBPROGRAM, node.type.toString(), range(node)) else null
+            body?.let { markStatements(it, node) }
 
             val parameters = ArrayList<LocalParameter>()
             if (constructor) explicitConstructorSelf(node, enclosing, body)?.let { parameters += it }
@@ -275,6 +286,7 @@ internal object LocalSemanticModelBuilder {
             val wrapped = node.hasDirectChildren(PlSqlTokenType.WRAPPED_SOURCE)
             val declaration = declare(enclosing, kind, nameNode.lastChild.let(LocalSyntax::identifier), range(node), range(nameNode))
             val region = if (wrapped) null else open(enclosing, regionKind, node.type.toString(), range(node))
+            region?.let { markStatements(it, node) }
             if (region != null) node.children.filter { it !== nameNode }.forEach { visit(it, region) }
             declaration.details = LocalUnit(LocalSyntax.unitName(nameNode), if (wrapped) LocalUnitForm.WRAPPED else LocalUnitForm.SOURCE, region?.id, null, null)
         }

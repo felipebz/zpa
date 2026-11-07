@@ -53,6 +53,10 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
         if (function.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION) == null) {
             return false
         }
+        // A selection the settings do not decide: Oracle may compile a branch this check does not read.
+        if (function.tokens.any { token -> token.trivia.any { it.token.type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY } }) {
+            return false
+        }
 
         val parameters = function.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)
         if (parameters != null && !isSafeParameters(parameters)) {

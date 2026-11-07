@@ -129,7 +129,7 @@ internal class LocalSpecificationCoverage private constructor(
         if (LocalTypeScope.unitOf(model, body.id)?.counterpart != null) return null
         val inner = chain.subList(0, bodyIndex)
         if (inner.any { region -> LocalResolver.scopeOf(model, region).named(reference.name).any { LocalTypeScope.capturesIn(it, reference.context) } }) return null
-        if (chain.subList(0, bodyIndex + 1).any { it.completeness.reasons.isNotEmpty() }) return null
+        if (chain.subList(0, bodyIndex + 1).any { it.completeness.lookupReasons.isNotEmpty() } || model.hiddenAt(reference.range).isNotEmpty()) return null
         val specification = specification(body) ?: return null
         if (PackageMemberNames.at(index, specification, reference.name, null).status != MemberNameStatus.DECLARED_BEFORE) return null
         return sharedName(specification, body, reference, member = false)?.takeIf { it !is LocalResolution.Unsupported }

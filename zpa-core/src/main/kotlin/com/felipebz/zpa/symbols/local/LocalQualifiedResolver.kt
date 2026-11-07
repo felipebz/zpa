@@ -58,7 +58,7 @@ internal object LocalQualifiedResolver {
                 steps += step.outcome
                 break
             }
-            step.regions.forEach { reasons += it.completeness.reasons }
+            step.regions.forEach { reasons += it.completeness.lookupReasons }
             reasons += step.reasons
             gaps += step.gaps
             val outcome = memberOutcome(model, step.outcome)

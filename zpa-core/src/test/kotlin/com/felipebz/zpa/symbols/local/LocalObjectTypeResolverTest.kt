@@ -134,7 +134,7 @@ class LocalObjectTypeResolverTest {
     fun aTypeBodyWithoutItsSpecificationReliesOnIt() {
         val body = "create type body lone_body as\n  member function f return number is begin /*A*/ return a; end;\nend;\n/\n" + other
         assertThat(steps(body.replace("/*A*/", "").replace("/*S*/", ""), "a")).isEqualTo("Incomplete[SPECIFICATION_NOT_IN_FILE](ProvenAbsent)")
-        assertThat(steps(body.replace("/*A*/", "\$IF \$\$x \$THEN NULL; \$END").replace("/*S*/", ""), "a"))
+        assertThat(steps(withConditionalDeclarations(body), "a"))
             .isEqualTo("Incomplete[CONDITIONAL_COMPILATION, SPECIFICATION_NOT_IN_FILE](ProvenAbsent)")
         assertThat(steps(body.replace("/*A*/", "").replace("/*S*/", "\$IF \$\$x \$THEN NULL; \$END"), "a"))
             .isEqualTo("Incomplete[SPECIFICATION_NOT_IN_FILE](ProvenAbsent)")
@@ -187,9 +187,12 @@ class LocalObjectTypeResolverTest {
         // Control: with the supertype in the file its overloads are seen and nothing is missing.
         val base = "create type absent_base as object (a number, member function m return number) not final;\n/\n"
         support.assertSteps(
-            base + source.replace("return 1; end;", "begin /*A*/ return 1; end;".removePrefix("begin ")) + "create procedure other is begin /*S*/ null; end;\n/\n",
+            base + source.replace("return 1; end;", "/*S*/ return 1; end;") + "create procedure other is begin /*S*/ null; end;\n/\n",
             "self", listOf("ImplicitSelf(FUNCTION g@7)", "OverloadSet(FUNCTION m@1, FUNCTION m@6)"), fromStep = 1
         )
+        // Hidden text among the type body's own members may declare another overload: the method step relies on it.
+        assertThat(steps(base + source.replace("  member function g", "  \$IF \$\$x \$THEN \$END\n  member function g"), "self"))
+            .isEqualTo("ImplicitSelf(FUNCTION g@8) / Incomplete[CONDITIONAL_COMPILATION](OverloadSet(FUNCTION m@1, FUNCTION m@6))")
     }
 
     @Test

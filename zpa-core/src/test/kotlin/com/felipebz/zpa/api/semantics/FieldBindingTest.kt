@@ -198,6 +198,83 @@ class FieldBindingTest {
             .containsExactly("3:8:\"Name\"=Field(RECORD_FIELD#0@s.sql:2:24)", "4:8:NAME=Field(RECORD_FIELD#1@s.sql:2:45)")
     }
 
+    private val linesSpec = "create or replace package pk_o is\n" +
+        "  type t_inner is record (order_id number);\n" +
+        "  type t_line is record (order_id number, qty number, inner t_inner);\n" +
+        "  type t_lines is table of t_line index by pls_integer;\n" +
+        "  procedure run(p_lines t_lines);\n" +
+        "end pk_o;\n/\n"
+
+    private val linesBody = "create or replace package body pk_o is\n" +
+        "  procedure run(p_lines t_lines) is\n" +
+        "    v_lines t_lines;\n" +
+        "    n number;\n" +
+        "  begin\n" +
+        "    insert into orders (order_id, qty) values (v_lines(1).order_id, v_lines(1).qty);\n" +
+        "    update orders set qty = p_lines(1).qty where order_id = p_lines(1).order_id;\n" +
+        "    select count(*) into n from orders where order_id = p_lines(1).order_id;\n" +
+        "    delete from orders where order_id = p_lines(1).order_id;\n" +
+        "    merge into orders o using src s on (o.order_id = p_lines(1).order_id) when matched then update set o.qty = p_lines(1).qty;\n" +
+        "    select count(*) into n from orders where order_id = v_lines(1).inner.order_id;\n" +
+        "    n := v_lines(1).qty;\n" +
+        "  end;\n" +
+        "end pk_o;\n/\n"
+
+    @Test
+    fun aMemberAfterAnElementInSqlIsTheFieldWhereverTheRecordTypeIsDeclared() {
+        val offset = linesSpec.count { it == '\n' }
+        val oneFile = fields("pk_o.sql", "pk_o.sql" to linesSpec + linesBody)
+            .map { it.substringBefore(':').toInt().minus(offset).toString() + ":" + it.substringAfter(':') }
+        val ownFile = fields("b.sql", "s.sql" to linesSpec, "b.sql" to linesBody).map { it.replace("@s.sql:", "@") }
+        val orderId = "Field(RECORD_FIELD#0@3:25)"
+        val qty = "Field(RECORD_FIELD#1@3:42)"
+        assertThat(oneFile).isEqualTo(ownFile)
+        assertThat(oneFile.filter { ":ORDER_ID=" in it || ":QTY=" in it || ":INNER=" in it }).containsExactly(
+            // The VALUES of a single-table INSERT.
+            "6:58:ORDER_ID=$orderId", "6:79:QTY=$qty",
+            // The SET and the WHERE of an UPDATE, the WHERE of a SELECT and of a DELETE. A column of the name would not
+            // take `p_lines(1)`: Oracle binds the collection, a column cannot be indexed.
+            "7:39:QTY=$qty", "7:71:ORDER_ID=$orderId",
+            "8:67:ORDER_ID=$orderId",
+            "9:51:ORDER_ID=$orderId",
+            // A MERGE: its ON condition and the SET of its update; `o.order_id` and `o.qty` are columns.
+            "10:42:ORDER_ID=Unavailable(NOT_A_COVERED_NAME)", "10:64:ORDER_ID=$orderId",
+            "10:105:QTY=Unavailable(NOT_A_COVERED_NAME)", "10:122:QTY=$qty",
+            // A field between the element and the member.
+            "11:67:INNER=Field(RECORD_FIELD#2@3:54)", "11:73:ORDER_ID=Field(RECORD_FIELD#0@2:26)",
+            "12:20:QTY=$qty"
+        )
+    }
+
+    private val optsType = "create or replace type t_opts as object (include_expr varchar2(100));\n/\n"
+
+    private val optsSpec = "create or replace package pk_c is\n  procedure a(a_opts t_opts);\n  procedure b;\nend;\n/\n"
+
+    private fun optsBody(declarations: String = "", bodyLevel: String = "", use: String = "s := a_opts.include_expr;", inB: String = "null;") =
+        "create or replace package body pk_c is\n" + bodyLevel +
+            "  procedure a(a_opts t_opts) is\n    s varchar2(100);\n" + declarations + "  begin\n    " + use + "\n  end;\n" +
+            "  procedure b is\n  begin\n    " + inB + "\n  end;\nend;\n/\n"
+
+    private fun includeExpr(body: String) =
+        fields("b.sql", "t.sql" to optsType, "s.sql" to optsSpec, "b.sql" to body).single { ":INCLUDE_EXPR=" in it }.substringAfter('=')
+
+    @Test
+    fun conditionalTextLeavesAMemberUndecidedOnlyWhereItCanChangeItsLookups() {
+        val field = "Field(ATTRIBUTE#0@t.sql:1:41)"
+        val selection = "\$if dbms_db_version.version >= 12 \$then null; \$else null; \$end"
+        assertThat(includeExpr(optsBody())).isEqualTo(field)
+        // Among the statements of another subprogram: it declares nothing `a` sees.
+        assertThat(includeExpr(optsBody(inB = selection))).isEqualTo(field)
+        // In the declarations of the same subprogram, or of the package body: it may declare `a_opts` or `t_opts`.
+        assertThat(includeExpr(optsBody(declarations = "    \$if \$\$flag \$then \$end\n"))).contains("CONDITIONAL_COMPILATION")
+        assertThat(includeExpr(optsBody(bodyLevel = "  \$if \$\$flag \$then \$end\n"))).contains("CONDITIONAL_COMPILATION")
+        // The use itself in an undecided selection.
+        assertThat(includeExpr(optsBody(use = "\$if \$\$flag \$then s := a_opts.include_expr; \$end"))).contains("CONDITIONAL_COMPILATION")
+        // A dropped branch that ends `b` and declares in the package body (Oracle compiles it): it may hide `t_opts`.
+        val closing = "\$if \$\$flag \$then null; \$else null; end; type t_opts is record (x number); procedure c is begin null; \$end"
+        assertThat(includeExpr(optsBody(inB = closing))).contains("CONDITIONAL_COMPILATION")
+    }
+
     private val splitSpec = "create or replace package pk_z is\n" +
         "  type t_nums is table of number;\n" +
         "  type t_row is record (items t_nums, code varchar2(10), n number);\n" +
@@ -377,7 +454,7 @@ class FieldBindingTest {
     /** The same type body with a `$IF` in one method. */
     private val crateBodyIf = crateBody.replace(
         "    select count(*) into n from dual where dummy = tag;\n",
-        "    select count(*) into n from dual where dummy = tag;\n    \$if dbms_db_version.ver_le_10 \$then n := 0; \$end\n    n := base_n;\n    n := self.base_n;\n"
+        "    select count(*) into n from dual where dummy = tag;\n    \$if dbms_db_version.ver_le_10 \$then\n    n := base_n;\n    n := self.base_n;\n    \$end\n"
     )
 
     @Test
@@ -419,8 +496,8 @@ class FieldBindingTest {
         val bare = firstNames("crate_body.sql", *sources).single { it.startsWith("34:") && it.contains(":BASE_N=") }.substringAfter('=')
         val qualified = fields("crate_body.sql", *sources).single { it.startsWith("35:") && it.contains(":BASE_N=") }.substringAfter('=')
         assertThat(bare).isEqualTo(qualified).startsWith("Unknown")
-        // Elsewhere in the body too: the type body is the unit the $IF leaves undecided.
-        assertThat(firstNames("crate_body.sql", *sources).single { it.startsWith("9:") }).startsWith("9:4:ITEMS=Unknown")
+        // Elsewhere in the body the ${'$'}IF, among another method's statements, changes nothing.
+        assertThat(firstNames("crate_body.sql", *sources).single { it.startsWith("9:") }).isEqualTo("9:4:ITEMS=Field(ATTRIBUTE#0@crate.sql:2:2)")
     }
 
     @Test

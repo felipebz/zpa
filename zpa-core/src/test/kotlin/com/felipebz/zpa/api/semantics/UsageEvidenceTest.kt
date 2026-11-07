@@ -459,7 +459,10 @@ class UsageEvidenceTest {
     fun aDroppedBranchInOneSubprogramMayDeclareASubprogramOfThePackageBody() {
         // Oracle accepts the body with `$ELSE null; end; function order_total return number is begin return 1;`: under
         // those settings p1 ends early and the package body declares `order_total`, visible in p2. So it stays unknown.
-        assertThat(nameBindings(ccInP1)).anyMatch { it.startsWith("10:ORDER_TOTAL=Unknown[") && it.contains("CONDITIONAL_COMPILATION") }
+        val closing = ccInP1.replace("\$ELSE null; \$END", "\$ELSE null; end; function order_total return number is begin return 1; \$END")
+        assertThat(nameBindings(closing)).anyMatch { it.startsWith("10:ORDER_TOTAL=Unknown[") && it.contains("CONDITIONAL_COMPILATION") }
+        // A dropped branch that ends no block it does not open declares nothing p2 sees.
+        assertThat(nameBindings(ccInP1)).anyMatch { it.startsWith("10:ORDER_TOTAL=") && "CONDITIONAL_COMPILATION" !in it }
     }
 
     @Test
@@ -641,8 +644,10 @@ class UsageEvidenceTest {
         // The same file with the directives and the dropped branch removed, lines kept.
         val replaced = versionTest.replace("    \$IF dbms_db_version.ver_le_10 \$THEN\n      null;\n    \$ELSE\n      g_total := 0;\n    \$END\n", "\n\n\n      g_total := 0;\n\n")
         assertThat(nameBindingsWith(versionIn19, versionTest)).isEqualTo(nameBindings(replaced, prepared = true))
-        // Without settings, as before.
-        assertThat(nameBindingsWith(ConditionalCompilationSettings.NONE, versionTest)).allMatch { it.endsWith("=Unknown[CONDITIONAL_COMPILATION]") }
+        // Without settings the kept branch is `null;`; the uses in p2 are decided: p1's statements declare nothing.
+        assertThat(nameBindingsWith(ConditionalCompilationSettings.NONE, versionTest)).containsExactly(
+            "18:G_TOTAL=Local(VARIABLE@7:2)", "18:G_TOTAL=Local(VARIABLE@7:2)"
+        )
     }
 
     @Test
@@ -656,9 +661,10 @@ class UsageEvidenceTest {
     }
 
     @Test
-    fun aConditionTheSettingsCannotDecideStaysUnknown() {
+    fun aConditionTheSettingsCannotDecideAmongAnotherSubprogramsStatementsChangesNothing() {
         val text = versionTest.replace("dbms_db_version.ver_le_10", "pack_cfg.c_on")
-        assertThat(nameBindingsWith(versionIn19, text)).allMatch { it.endsWith("=Unknown[CONDITIONAL_COMPILATION]") }
+        // An undecided selection among p1's statements, whose dropped branch ends no block, changes nothing in p2.
+        assertThat(nameBindingsWith(versionIn19, text)).containsExactly("18:G_TOTAL=Local(VARIABLE@7:2)", "18:G_TOTAL=Local(VARIABLE@7:2)")
     }
 
     @Test

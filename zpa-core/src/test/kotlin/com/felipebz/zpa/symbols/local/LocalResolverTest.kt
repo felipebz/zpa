@@ -74,13 +74,14 @@ class LocalResolverTest {
 
     /**
      * [template] marks with `/*A*/` a statement position in a region the outcome relies on, and with `/*S*/` one in a
-     * region it does not rely on.
+     * region it does not rely on. A `$IF` in the declarative part of the first region leaves the outcome undecided; one
+     * among the statements of the second does not.
      */
     private fun assertRule(template: String, name: String, expected: String, occurrence: Int = 0, context: LocalReferenceContext? = null) {
         val plain = template.replace(A, "").replace(S, "")
         assertThat(outcome(plain, name, occurrence, context)).describedAs(plain).isEqualTo(expected)
         if (A in template) {
-            val touched = template.replace(A, IF).replace(S, "")
+            val touched = withConditionalDeclarations(template)
             assertThat(outcome(touched, name, occurrence, context)).describedAs(touched).isEqualTo("Incomplete[CONDITIONAL_COMPILATION]($expected)")
         }
         if (S in template) {
@@ -286,7 +287,10 @@ class LocalResolverTest {
     @Test
     fun aForIndexIsVisibleInItsOwnBounds() {
         // `for i in 1..i` compiles with no other `i`.
-        assertRule("create procedure index_in_bounds is\nbegin\n  for i in 1..i loop\n    /*A*/ null;\n  end loop;\nend;\n/\n", "i", "Bound(LOOP_INDEX i@3)")
+        // Hidden text in the loop's statements declares nothing; in its header it may.
+        assertRule("create procedure index_in_bounds is\nbegin\n  for i in 1..i loop\n    /*S*/ null;\n  end loop;\nend;\n/\n", "i", "Bound(LOOP_INDEX i@3)")
+        assertThat(outcome("create procedure index_in_bounds is\nbegin\n  for i in 1..i \$IF \$\$x \$THEN \$END loop\n    null;\n  end loop;\nend;\n/\n", "i"))
+            .isEqualTo("Incomplete[CONDITIONAL_COMPILATION](Bound(LOOP_INDEX i@3))")
         // The index is not visible after the loop.
         assertThat(outcome("create procedure index_after_loop is\nbegin\n  for j in 1..2 loop null; end loop;\n  say(j);\nend;\n/\n", "j"))
             .isEqualTo("ProvenAbsent")
@@ -371,7 +375,7 @@ class LocalResolverTest {
         val source = "create procedure partly_later is\n  procedure f(a number) is begin null; end;\n  procedure g is begin /*A*/ f(1); end;\n" +
             "  procedure f(a date) is begin null; end;\nbegin\n  g;\nend;\n/\n"
         // Unsupported is never wrapped, so the outcome is the same with hidden text in the deciding region.
-        for (variant in listOf(source.replace(A, ""), source.replace(A, IF))) {
+        for (variant in listOf(source.replace(A, ""), withConditionalDeclarations(source))) {
             assertThat(outcome(variant, "f", context = CALL_STATEMENT)).describedAs(variant).isEqualTo("Unsupported(OVERLOADS_PARTLY_LATER)")
         }
     }

@@ -25,6 +25,12 @@ internal class RegionDraft(
     val declarations = ArrayList<LocalDeclarationId>()
     val children = ArrayList<LocalRegionId>()
     val gaps = ArrayList<LocalCoverageGap>()
+
+    /** The first token of the region's statements (`BEGIN …` or a loop's body), as (line, column); null when it has none. */
+    var statementsStart: Pair<Int, Int>? = null
+
+    /** Whether the statements start with `BEGIN`: hidden text right before it is then in the declarative part. */
+    var statementsOpenWithBegin = false
 }
 
 /** Construction-only: the mutable draft of one declaration. Must not escape a build call. */
@@ -49,7 +55,8 @@ internal fun freeze(
     fileId: FileId,
     regions: List<RegionDraft>,
     declarations: List<DeclarationDraft>,
-    completeness: List<LocalRegionCompleteness>
+    completeness: List<LocalRegionCompleteness>,
+    hiddenText: List<LocalHiddenText>
 ): LocalSemanticModel {
     val frozenRegions = regions.map { draft ->
         val extraction = if (draft.gaps.isNotEmpty()) LocalExtraction.PARTIAL else LocalExtraction.ALL_ITEMS_EXTRACTED
@@ -65,7 +72,7 @@ internal fun freeze(
             it.isConstant, it.isNotNull, it.hasDefault, it.details
         )
     }
-    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations))
+    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations), frozenList(hiddenText))
 }
 
 /** An immutable copy; compact (no wrapper, a shared instance when empty), which matters for many small region lists. */

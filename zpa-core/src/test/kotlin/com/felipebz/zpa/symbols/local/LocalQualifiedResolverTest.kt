@@ -30,7 +30,7 @@ class LocalQualifiedResolverTest {
         val plain = template.replace(A, "").replace(S, "")
         assertThat(steps(plain, name, occurrence, context)).describedAs(plain).isEqualTo(expected.joinToString(" / "))
         if (A in template) {
-            val touched = template.replace(A, IF).replace(S, "")
+            val touched = withConditionalDeclarations(template)
             val wrapped = expected.mapIndexed { index, step ->
                 if (index < fromStep || step.startsWith("Unsupported")) step else "Incomplete[CONDITIONAL_COMPILATION]($step)"
             }

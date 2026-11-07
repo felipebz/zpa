@@ -99,7 +99,9 @@ internal object LocalResolver {
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
         if (outcome is LocalResolution.Unsupported) return outcome
         val reasons = EnumSet.noneOf(LocalIncompleteness::class.java)
-        relied.forEach { reasons += it.completeness.reasons }
+        // Hidden text changes what the lookup finds only in a declarative part it passes through, or at the use itself.
+        relied.forEach { reasons += it.completeness.lookupReasons }
+        reasons += model.hiddenAt(reference.range)
         return if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
     }
 

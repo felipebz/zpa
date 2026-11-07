@@ -494,6 +494,21 @@ class FunctionShouldBeDeterministicCheckTest : BaseCheckTest() {
                     /
                     """.trimIndent()
                 ),
+                // The same with no name to look up: the branch the settings may pick is still one the check does not read.
+                ProjectTestSource(
+                    "literals.sql",
+                    """
+                    CREATE FUNCTION conditional_label(p_value VARCHAR2) RETURN VARCHAR2 IS
+                    BEGIN
+                      ${'$'}IF ${'$'}${'$'}debug ${'$'}THEN
+                      RETURN '--DEBUG--';
+                      ${'$'}ELSE
+                      RETURN p_value;
+                      ${'$'}END
+                    END;
+                    /
+                    """.trimIndent()
+                ),
                 ProjectTestSource(
                     "plain.sql",
                     """
