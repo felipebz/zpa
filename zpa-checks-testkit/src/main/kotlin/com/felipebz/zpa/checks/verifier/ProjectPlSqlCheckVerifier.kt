@@ -17,9 +17,9 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 /**
- * Verifies a check against a complete, in-memory project while preserving per-file findings: all [sources] are
- * prepared before any of them is scanned. Expectations are written as for [PlSqlCheckVerifier]; the details a fixture
- * writes (message, columns, cost, secondary locations) are checked.
+ * Verifies a check against a complete, in-memory project while preserving per-file findings: all the sources given to
+ * [verify] are prepared before any of them is scanned. Expectations are written as for [PlSqlCheckVerifier]; the
+ * details a fixture writes (message, columns, cost, secondary locations) are checked.
  */
 class ProjectPlSqlCheckVerifier private constructor() {
 

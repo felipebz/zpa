@@ -44,7 +44,7 @@ internal class CallSpecificationScanner(private val stream: TokenStream, private
      * One `EXTERNAL_PARAMETER`, following the grammar's ordered alternatives:
      * `CONTEXT` | `SELF (TDO | property)` | `(RETURN | name) [property] [BY REFERENCE] [datatype]`.
      * Returns the index after the parameter; the caller requires a real `,` or `)` there.
-     * The optional datatype must pass [strictDatatype]; anything else rejects the unit.
+     * The optional datatype must pass [DatatypeShape.strictDatatype]; anything else rejects the unit.
      */
     private fun externalParameterEnd(start: Int, limit: Int): Int? {
         if (start >= limit) return null

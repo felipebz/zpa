@@ -146,9 +146,7 @@ internal interface ToolkitView {
     fun scrollAstTo(astNode: AstNode?)
 
     /**
-     * Highlight the given AST node in the source code editor.
-     *
-     * @param astNode The AST node to highlight
+     * Highlight the source code from [startToken] to [endToken] in the source code editor.
      */
     fun highlightSourceCode(startToken: Token, endToken: Token)
 

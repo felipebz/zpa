@@ -24,8 +24,8 @@ internal class PackageValueRecognizer(
     /**
      * `name [CONSTANT] datatype [NULL | NOT NULL] [(DEFAULT | :=) expression] ;` for the declaration
      * starting at [start] and ending at the real `;` at [semicolon]. The datatype slice stops at the
-     * first depth-0 `NOT`, `NULL`, `DEFAULT` or `:=` and is fully validated by [strictDatatype] before
-     * [typeReference] runs. The initializer is only shape-checked ([initializerShapeOk]) and never kept.
+     * first depth-0 `NOT`, `NULL`, `DEFAULT` or `:=` and is fully validated by [DatatypeShape.strictDatatype] before
+     * [TypeReferences.typeReference] runs. The initializer is only shape-checked ([InitializerShape.initializerShapeOk]) and never kept.
      * `PRAGMA` declarations, exceptions (`name EXCEPTION;`) and anything with an unsupported datatype
      * yield null.
      */

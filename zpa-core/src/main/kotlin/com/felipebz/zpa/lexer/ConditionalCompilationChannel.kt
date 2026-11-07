@@ -224,7 +224,7 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
             return if (char(e) < 0) e else e + 2
         }
 
-        /** One step of a scan: the next directive at [position], skipping whitespace and lexical elements. */
+        /** One step of a scan ([step]): the next directive at a position, skipping whitespace and lexical elements. */
         private class Step(val directive: Directive?, val end: Int, val significant: Boolean)
 
         private fun step(position: Int): Step? {

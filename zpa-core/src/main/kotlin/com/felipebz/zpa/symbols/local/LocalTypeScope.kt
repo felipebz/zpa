@@ -80,7 +80,7 @@ internal object LocalTypeScope {
         }.map { it.id }
     }
 
-    /** The method of a type body whose region is on [chain], with that region. */
+    /** The method of a type body whose region is on the chain given to [method], with that region. */
     class Method(val declaration: LocalDeclaration, val region: LocalRegionId) {
         val isStatic: Boolean get() = isStatic(declaration)
     }

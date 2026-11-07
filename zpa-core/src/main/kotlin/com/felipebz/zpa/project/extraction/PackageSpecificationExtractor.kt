@@ -9,7 +9,7 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.*
 
-/** Sentinel returned by [packageHeaderEnd] for a wrapped unit. */
+/** Sentinel returned by [PackageSpecificationExtractor.packageHeaderEnd] for a wrapped unit. */
 private const val WRAPPED_UNIT = -2
 
 /**

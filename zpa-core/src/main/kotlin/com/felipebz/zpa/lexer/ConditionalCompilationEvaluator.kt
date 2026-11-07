@@ -9,14 +9,14 @@ import com.felipebz.zpa.squid.CcValue
 import com.felipebz.zpa.squid.ConditionalCompilationSettings
 import java.util.*
 
-/** Result of evaluating a `$IF`/`$ELSIF` condition. [UNKNOWN] means it could not be evaluated. */
+/** Result of evaluating a `$IF`/`$ELSIF` condition. [ConditionResult.UNKNOWN] means it could not be evaluated. */
 internal enum class ConditionResult { TRUE, FALSE, NULL, UNKNOWN }
 
 /**
  * Evaluates the static boolean expression of a selection directive (the text between `$IF`/`$ELSIF` and `$THEN`)
  * against [ConditionalCompilationSettings], following *PL/SQL Language Reference*, "Static Expressions": BOOLEAN and
  * PLS_INTEGER values, three-valued logic, `$$name` inquiry directives and `DBMS_DB_VERSION` constants. Anything it does
- * not model (package constants, functions, strings, `/`, `MOD`, a parse failure, a type mismatch) is [UNKNOWN],
+ * not model (package constants, functions, strings, `/`, `MOD`, a parse failure, a type mismatch) is [ConditionResult.UNKNOWN],
  * which propagates without ever being dropped: `FALSE AND unknown` is `FALSE` and `TRUE OR unknown` is `TRUE` only
  * because those hold whatever the unknown operand is.
  */
