@@ -35,8 +35,8 @@ data class AstScannerResult internal constructor(
     val executableLines: Set<Int>,
     val issues: List<ZpaIssue>,
     /**
-     * The file's highlighting pairs from its local name resolution; empty when the file was not analyzed (a parse
-     * failure, or a local resolution that failed).
+     * The file's highlighting pairs from its local name resolution; empty when the scanner was not asked for them, or
+     * when the file was not analyzed (a parse failure, or a local resolution that failed).
      */
     @property:ZpaExperimentalApi
     val highlightingPairs: List<HighlightingPair> = emptyList()

@@ -276,6 +276,22 @@ class ProjectSymbolIndex private constructor(
     private val scoped = HashMap<OracleIdentifier, ProjectSymbolIndex>()
 
     /**
+     * The type references the occurrences of [fileId] retain, by source range, as (occurrence, position among the
+     * occurrence's retained references): built by [build] from the file's occurrences the first time a file is asked
+     * for, and kept for every later lookup and every schema view.
+     */
+    internal fun retainedTypeRefs(
+        fileId: FileId,
+        build: (List<IndexedDeclaration>) -> Map<SourceRange, List<Pair<IndexedDeclaration, Int>>>
+    ): Map<SourceRange, List<Pair<IndexedDeclaration, Int>>> {
+        // Only a thread asking for the same file waits while it is grouped.
+        return root.retainedByFile.computeIfAbsent(fileId) { build(occurrencesFor(it)) }
+    }
+
+    /** [retainedTypeRefs] of the files asked for so far. */
+    private val retainedByFile = ConcurrentHashMap<FileId, Map<SourceRange, List<Pair<IndexedDeclaration, Int>>>>()
+
+    /**
      * This index as seen from a unit of [schema]: among the matches of a lookup, those in [schema] are the only
      * candidates when there are some (Oracle reads an unqualified name in the unit's own schema first); otherwise every
      * match stays one, as a synonym may lead there. The same index for a null [schema]. Built once per schema.

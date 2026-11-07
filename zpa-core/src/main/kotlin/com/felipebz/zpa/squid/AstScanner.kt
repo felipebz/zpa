@@ -43,7 +43,8 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
                  isErrorRecoveryEnabled: Boolean,
                  charset: Charset = StandardCharsets.UTF_8,
                  private val projectAnalysisContext: ProjectAnalysisContext = ProjectAnalysisContext.NOT_PREPARED,
-                 conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE) {
+                 conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE,
+                 private val highlightingPairs: Boolean = false) {
 
     private val configuration = PlSqlConfiguration(charset, isErrorRecoveryEnabled, conditionalCompilation)
     private val parser: Parser<Grammar> = PlSqlParser.create(configuration)
@@ -129,7 +130,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
             numberOfFunctions = functionComplexityVisitor.numberOfFunctions,
             executableLines = metricsVisitor.getExecutableLines(),
             issues = issues,
-            highlightingPairs = newVisitorContext.localSemanticFacts?.let { highlightingPairs(it, inputFile) }.orEmpty()
+            highlightingPairs = newVisitorContext.localSemanticFacts?.takeIf { highlightingPairs }?.let { highlightingPairs(it, inputFile) }.orEmpty()
         )
     }
 

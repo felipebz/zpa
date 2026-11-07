@@ -37,11 +37,20 @@ class LocalHighlightingTest {
         val text = sources.getValue(name)
         val lines = text.split("\n")
         fun spell(range: HighlightingRange) = "${lines[range.startLine - 1].substring(range.startColumn, range.endColumn)}@${range.startLine}:${range.startColumn}"
-        val result = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project).scanFile(File(name, text), emptyList(), FileId(name))
+        val result = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project, highlightingPairs = true).scanFile(File(name, text), emptyList(), FileId(name))
         return result.highlightingPairs.map { pair -> "${spell(pair.declaration)} <- ${pair.references.joinToString { spell(it) }}" }
     }
 
     private fun pairs(source: String, prepared: Boolean = true) = pairs(mapOf("a.sql" to source), prepared = prepared)
+
+    @Test
+    fun aScannerComputesThePairsOnlyWhenAskedFor() {
+        val text = "declare\n  v_total number;\nbegin\n  v_total := v_total + 1;\nend;\n/\n"
+        fun scan(asked: Boolean) = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, highlightingPairs = asked)
+            .scanFile(File("a.sql", text), emptyList(), FileId("a.sql")).highlightingPairs
+        assertThat(scan(asked = false)).isEmpty()
+        assertThat(scan(asked = true)).hasSize(1).first().satisfies({ assertThat(it.references).hasSize(2) })
+    }
 
     @Test
     fun aCertainBindingIsAReference() {

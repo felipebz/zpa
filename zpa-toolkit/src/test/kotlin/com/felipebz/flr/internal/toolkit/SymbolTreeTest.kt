@@ -92,7 +92,7 @@ class SymbolTreeTest {
             override fun path(): Path = Path.of("highlighting.sql")
             override fun type() = PlSqlFile.Type.MAIN
         }
-        val scanner = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project()).scanFile(file, emptyList(), fileId).highlightingPairs
+        val scanner = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, project(), highlightingPairs = true).scanFile(file, emptyList(), fileId).highlightingPairs
         assertThat(toolkit).isNotEmpty().isEqualTo(scanner)
     }
 }

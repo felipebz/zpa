@@ -977,7 +977,7 @@ class ProjectSnapshotRetentionTest {
     }
 
     private val safeContainerTypes = setOf(
-        "java.util.ArrayList", "java.util.LinkedHashMap", "java.util.HashMap",
+        "java.util.ArrayList", "java.util.LinkedHashMap", "java.util.HashMap", "java.util.concurrent.ConcurrentHashMap",
         "java.util.HashSet", "java.util.LinkedHashSet", "java.util.Arrays\$ArrayList",
         "java.util.Collections\$EmptyList", "java.util.Collections\$EmptySet",
         "java.util.Collections\$EmptyMap", "java.util.Collections\$SingletonList",

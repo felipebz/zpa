@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ReferenceHolders.forEachRetained
 import com.felipebz.zpa.project.*
 
 /**
@@ -29,24 +30,45 @@ internal object ReferenceHolders {
     /** The holder of [reference], only when exactly one retained reference of the file equals it in every attribute. */
     @JvmSynthetic
     fun find(index: ProjectSymbolIndex, reference: ProjectTypeReference): ReferenceHolder? {
-        val fileId = reference.sourceRange.fileId
-        if (fileId.isBlank()) return null
-        var match: IndexedDeclaration? = null
-        var position = -1
+        val range = reference.sourceRange
+        if (range.fileId.isBlank()) return null
+        val key = SourceRange(FileId(range.fileId), range.startLine, range.startColumn, range.endLine, range.endColumn)
+        // Only a retained reference of the same range can match: the file's references are grouped by range once.
+        val sameRange = index.retainedTypeRefs(key.fileId, ::byRange)[key] ?: return null
+        var match: Pair<IndexedDeclaration, Int>? = null
         var count = 0
-        for (occurrence in index.occurrencesFor(FileId(fileId))) {
+        for (candidate in sameRange) {
+            if (matches(retainedAt(candidate.first.declaration, candidate.second).first, reference)) {
+                count++
+                match = candidate
+            }
+        }
+        val (found, position) = match?.takeIf { count == 1 } ?: return null
+        return holder(index, found, capturing(found.declaration, retainedAt(found.declaration, position).second))
+    }
+
+    /** The type reference [fact] retains at [position] (as [forEachRetained] orders them), with what may capture it. */
+    private fun retainedAt(fact: ProjectDeclaration, position: Int): Pair<TypeRef, Capture> {
+        var at = 0
+        var found: Pair<TypeRef, Capture>? = null
+        forEachRetained(fact) { typeRef, capture ->
+            if (at == position) found = typeRef to capture
+            at++
+        }
+        return checkNotNull(found) { "No retained reference at $position" }
+    }
+
+    /** Every type reference [occurrences] retain, as (occurrence, position), by source range, in occurrence order. */
+    private fun byRange(occurrences: List<IndexedDeclaration>): Map<SourceRange, List<Pair<IndexedDeclaration, Int>>> {
+        val result = HashMap<SourceRange, MutableList<Pair<IndexedDeclaration, Int>>>()
+        for (occurrence in occurrences) {
             var at = 0
             forEachRetained(occurrence.declaration) { typeRef, _ ->
-                if (matches(typeRef, reference)) {
-                    count++
-                    match = occurrence
-                    position = at
-                }
+                result.getOrPut(typeRef.sourceRange) { ArrayList(1) } += occurrence to at
                 at++
             }
         }
-        val found = match?.takeIf { count == 1 } ?: return null
-        return holder(index, found, retained(found.declaration)[position].capturing)
+        return result
     }
 
     /** The holder of the declared type (or base) of an already identified value or subtype occurrence. */

@@ -64,7 +64,7 @@ class PlSqlSquidSensorHighlightingTest {
             override fun path(): Path = Path.of(relativePath)
             override fun type() = PlSqlFile.Type.MAIN
         }
-        val pairs = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8).scanFile(file).highlightingPairs
+        val pairs = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, highlightingPairs = true).scanFile(file).highlightingPairs
         assertThat(pairs).isNotEmpty()
         for (pair in pairs) {
             val saved = context.referencesForSymbolAt(key, pair.declaration.startLine, pair.declaration.startColumn)!!

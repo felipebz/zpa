@@ -43,7 +43,8 @@ class PlSqlAstScanner(private val context: SensorContext,
                       conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE) {
 
     private val astScanner: AstScanner = AstScanner(
-        checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding(), projectAnalysisContext, conditionalCompilation
+        checks, formsMetadata, isErrorRecoveryEnabled, context.fileSystem().encoding(), projectAnalysisContext, conditionalCompilation,
+        highlightingPairs = true
     )
 
     private lateinit var plsqlChecks: PlSqlChecks
