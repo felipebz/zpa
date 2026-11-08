@@ -18,10 +18,7 @@ import com.felipebz.zpa.oracle.OracleMetadataSettings
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.rules.SonarQubeActiveRulesAdapter
 import com.felipebz.zpa.rules.SonarQubeRuleMetadataLoader
-import com.felipebz.zpa.squid.ConditionalCompilationSettings
-import com.felipebz.zpa.squid.PlSqlAstScanner
-import com.felipebz.zpa.squid.PlSqlConfiguration
-import com.felipebz.zpa.squid.ProgressReport
+import com.felipebz.zpa.squid.*
 import com.felipebz.zpa.symbols.ObjectLocator
 import com.felipebz.zpa.utils.log.Logger
 import com.felipebz.zpa.utils.log.Loggers
@@ -61,22 +58,43 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
     /** Database access, used only when Oracle metadata is configured. Replaced by tests only. */
     internal var oracleMetadataAcquirer: OracleMetadataAcquirer = JdbcOracleMetadataAcquirer()
 
-    private fun conditionalCompilationSettings(): ConditionalCompilationSettings {
-        fun read(key: String) = configuration.get(key).orElse(null)
+    private class CompilationProperties(val flags: Map<String, CcValue>?, val version: DatabaseVersion?)
+
+    private fun compilationProperties(): CompilationProperties {
+        fun read(key: String) = configuration.get(key).orElse(null)?.takeIf { it.isNotBlank() }
         val flags = try {
-            read(PlSqlPlugin.CCFLAGS_KEY)?.takeIf { it.isNotBlank() }?.let { ConditionalCompilationSettings.parseFlags(it) }.orEmpty()
+            read(PlSqlPlugin.CCFLAGS_KEY)?.let { ConditionalCompilationSettings.parseFlags(it) }
         } catch (e: IllegalArgumentException) {
             throw MessageException.of("Invalid value of ${PlSqlPlugin.CCFLAGS_KEY}: ${e.message}")
         }
         val version = try {
-            read(PlSqlPlugin.DATABASE_VERSION_KEY)?.takeIf { it.isNotBlank() }?.let { ConditionalCompilationSettings.parseVersion(it) }
+            read(PlSqlPlugin.DATABASE_VERSION_KEY)?.let { ConditionalCompilationSettings.parseVersion(it) }
         } catch (e: IllegalArgumentException) {
             throw MessageException.of("Invalid value of ${PlSqlPlugin.DATABASE_VERSION_KEY}: ${e.message}")
         }
-        val settings = ConditionalCompilationSettings(flags, version)
-        if (settings.isActive) logger.info("ZPA conditional compilation: $settings")
+        return CompilationProperties(flags, version)
+    }
+
+    private fun conditionalCompilationSettings(properties: CompilationProperties, database: DatabaseVersion?): ConditionalCompilationSettings {
+        if (properties.version != null && database != null && properties.version != database) {
+            logger.warn("ZPA conditional compilation: ${PlSqlPlugin.DATABASE_VERSION_KEY} is ${show(properties.version)}, but the " +
+                "database's DBMS_DB_VERSION is ${show(database)}; using ${show(properties.version)}")
+        }
+        val version = properties.version ?: database
+        val configured = properties.flags != null || properties.version != null
+        val settings = ConditionalCompilationSettings(properties.flags.orEmpty(), version, unsetFlagsAreNull = configured)
+        if (settings.isActive) {
+            val source = when {
+                version == null -> ""
+                properties.version != null -> " (database version from ${PlSqlPlugin.DATABASE_VERSION_KEY})"
+                else -> " (database version from the database)"
+            }
+            logger.info("ZPA conditional compilation: $settings$source")
+        }
         return settings
     }
+
+    private fun show(version: DatabaseVersion) = "${version.version}.${version.release}"
 
     /** `sonar.zpa.schemaPaths`, relative to the project base directory; an invalid value fails the analysis. */
     private fun schemaPaths(baseDirectory: java.nio.file.Path): ProjectSchemaPaths {
@@ -98,19 +116,24 @@ class PlSqlSquidSensor @JvmOverloads constructor(activeRules: ActiveRules, setti
         val fs = context.fileSystem()
         val inputFiles = fs.inputFiles(fs.predicates().hasLanguage(PlSql.Companion.KEY)).toList()
 
-        // Read before any work, so that an invalid value fails the analysis up front. Lexing for the project index and
-        // for the AST must select the same conditional compilation branches, so both get the same settings.
-        val conditionalCompilation = conditionalCompilationSettings()
-        val lexerConfiguration = PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled, conditionalCompilation)
+        // Read before any work, so that an invalid value fails the analysis up front.
+        val compilationProperties = compilationProperties()
 
         // Configured explicitly or not at all: without sonar.zpa.oracle.url nothing connects. Acquired once, in the
         // scanner, before preparation and scanning; failures (MessageException, sanitized) fail the analysis.
         val oracleSettings = OracleMetadataSettings.from(configuration, environment, fs.baseDir().toPath())
         val compilationSchema = OracleMetadataSettings.compilationSchema(configuration)
         val schemaPaths = schemaPaths(fs.baseDir().toPath())
-        val externalMetadata = oracleSettings?.let { settings ->
-            oracleMetadataAcquirer.acquire(settings).also { logger.info("ZPA Oracle metadata: ${it.summary}") }.metadata
+        val acquired = oracleSettings?.let { settings ->
+            oracleMetadataAcquirer.acquire(settings).also {
+                logger.info("ZPA Oracle metadata: ${it.summary}")
+                it.databaseVersionFailure?.let { reason -> logger.info("ZPA Oracle metadata: DBMS_DB_VERSION could not be read: $reason") }
+            }
         }
+        val externalMetadata = acquired?.metadata
+
+        val conditionalCompilation = conditionalCompilationSettings(compilationProperties, acquired?.databaseVersion)
+        val lexerConfiguration = PlSqlConfiguration(fs.encoding(), isErrorRecoveryEnabled, conditionalCompilation)
 
         val progressReport = ProgressReport("Report about progress of code analyzer", TimeUnit.SECONDS.toMillis(10))
         // The schemas each file compiles in: the prepared result carries them, so the scan's lookups use the same ones.

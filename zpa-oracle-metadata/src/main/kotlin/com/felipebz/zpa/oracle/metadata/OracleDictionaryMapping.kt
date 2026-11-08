@@ -10,6 +10,7 @@ import com.felipebz.zpa.api.project.ProjectExternalColumn
 import com.felipebz.zpa.api.project.ProjectExternalDatatype
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
 import com.felipebz.zpa.api.project.ProjectExternalRelation
+import com.felipebz.zpa.squid.DatabaseVersion
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -87,7 +88,8 @@ internal object OracleDictionaryMapping {
         session: SessionInfo,
         relations: List<RelationRow>,
         columns: List<ColumnRow>,
-        acquiredAt: Instant
+        acquiredAt: Instant,
+        version: Result<DatabaseVersion> = Result.failure(IllegalStateException("not read"))
     ): OracleMetadataResult {
         val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
@@ -120,7 +122,7 @@ internal object OracleDictionaryMapping {
         val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
         return OracleMetadataResult(
             builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
-            complete, notVisible, seen.size, columnCount
+            complete, notVisible, seen.size, columnCount, version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName }
         )
     }
 }

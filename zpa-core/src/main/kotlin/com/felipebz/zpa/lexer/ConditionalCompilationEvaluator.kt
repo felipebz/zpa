@@ -323,7 +323,7 @@ internal object ConditionalCompilationEvaluator {
             CcValue.False -> Value.Bool(false)
             CcValue.Null -> Value.Null
             is CcValue.Integer -> Value.Int(flag.value.toLong())
-            null -> if (name in PREDEFINED) Value.Unknown else Value.Null
+            null -> if (name in PREDEFINED || !settings.unsetFlagsAreNull) Value.Unknown else Value.Null
         }
 
         /** A literal keyword, a `DBMS_DB_VERSION` constant, or another (dotted) name, optionally called. */

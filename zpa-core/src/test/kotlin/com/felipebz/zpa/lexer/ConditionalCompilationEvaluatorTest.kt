@@ -141,4 +141,16 @@ class ConditionalCompilationEvaluatorTest {
         assertThat(eval("\$\$f AND my_debug.debug")).isEqualTo(FALSE)
         assertThat(eval("\$\$t OR my_debug.debug")).isEqualTo(TRUE)
     }
+
+    @Test
+    fun withOnlyTheDatabaseVersionAnUnsetFlagIsUnknown() {
+        val databaseOnly = ConditionalCompilationSettings(databaseVersion = ConditionalCompilationSettings.parseVersion("19.0"), unsetFlagsAreNull = false)
+        assertThat(eval("\$\$debug", databaseOnly)).isEqualTo(UNKNOWN)
+        assertThat(eval("DBMS_DB_VERSION.VER_LE_11", databaseOnly)).isEqualTo(FALSE)
+        assertThat(eval("\$\$debug AND DBMS_DB_VERSION.VER_LE_11", databaseOnly)).isEqualTo(FALSE)
+        assertThat(eval("\$\$debug OR DBMS_DB_VERSION.VER_LE_11", databaseOnly)).isEqualTo(UNKNOWN)
+        // Configured: an unset flag is NULL.
+        assertThat(eval("\$\$debug", version("19.0"))).isEqualTo(NULL)
+        assertThat(eval("\$\$debug OR DBMS_DB_VERSION.VER_LE_11", version("19.0"))).isEqualTo(NULL)
+    }
 }

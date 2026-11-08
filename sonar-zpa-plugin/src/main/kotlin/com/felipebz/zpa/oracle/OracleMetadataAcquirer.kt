@@ -9,6 +9,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
 import com.felipebz.zpa.oracle.metadata.OracleMetadataAcquisition
 import com.felipebz.zpa.oracle.metadata.OracleMetadataException
+import com.felipebz.zpa.squid.DatabaseVersion
 import com.felipebz.zpa.utils.log.Loggers
 import org.sonar.api.utils.MessageException
 import java.io.PrintWriter
@@ -21,9 +22,17 @@ import java.util.*
 import java.util.logging.Logger
 import javax.sql.DataSource
 
-/** Detached metadata of one acquisition, with a log-safe description of its provenance. */
+/**
+ * Detached metadata of one acquisition, with a log-safe description of its provenance, and the database's
+ * `DBMS_DB_VERSION` when it could be read (else a log-safe reason in [databaseVersionFailure]).
+ */
 @OptIn(ZpaExperimentalApi::class)
-internal class AcquiredOracleMetadata(val metadata: ProjectExternalMetadata, val summary: String)
+internal class AcquiredOracleMetadata(
+    val metadata: ProjectExternalMetadata,
+    val summary: String,
+    val databaseVersion: DatabaseVersion? = null,
+    val databaseVersionFailure: String? = null
+)
 
 /** Acquires Oracle metadata once per analysis. Failures are [MessageException]s with sanitized messages. */
 internal fun interface OracleMetadataAcquirer {
@@ -110,7 +119,9 @@ internal class JdbcOracleMetadataAcquirer : OracleMetadataAcquirer {
         val summary = "${result.relationCount} relations, ${result.columnCount} columns from ${result.database}/${result.container} " +
             "as ${result.sessionUser}; complete schemas ${result.completeSchemas}" +
             (if (result.notVisible.isEmpty()) "" else "; not visible ${result.notVisible}")
-        return AcquiredOracleMetadata(result.metadata, summary)
+        return AcquiredOracleMetadata(
+            result.metadata, summary, result.databaseVersion, result.databaseVersionFailure?.let { redact(it, settings) }
+        )
     }
 
     /** Non-pooled, non-transactional: every call opens a new connection, in auto-commit mode as the driver opens it. */

@@ -73,7 +73,8 @@ class PlSqlPlugin : Plugin {
                 .build(),
             PropertyDefinition.builder(DATABASE_VERSION_KEY)
                 .name("Target database version")
-                .description("Database version the code is compiled for (DBMS_DB_VERSION), e.g. '19' or '12.2'.")
+                .description("Database version the code is compiled for (DBMS_DB_VERSION), e.g. '19' or '12.2'. " +
+                    "When Oracle metadata is configured (sonar.zpa.oracle.url) and this property is unset, the database's version is used.")
                 .category(DEFAULT_CATEGORY)
                 .subCategory(GENERAL)
                 .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)

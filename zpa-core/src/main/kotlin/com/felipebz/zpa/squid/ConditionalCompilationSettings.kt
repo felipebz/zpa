@@ -21,8 +21,16 @@ data class DatabaseVersion(val version: Int, val release: Int)
 /**
  * How the analyzed code is compiled: the `PLSQL_CCFLAGS` values and the target database version. With neither
  * ([isActive] false) conditional compilation conditions are not evaluated at all. Immutable.
+ *
+ * [unsetFlagsAreNull] says whether the flags are known to be exactly [flags]: then a `$$name` that is not one of them
+ * is `NULL`, as Oracle compiles it. When false (only the database version is known, not how the code is compiled), such
+ * a name is unknown, and a condition that depends on it stays undecided.
  */
-class ConditionalCompilationSettings(flags: Map<String, CcValue> = emptyMap(), val databaseVersion: DatabaseVersion? = null) {
+class ConditionalCompilationSettings(
+    flags: Map<String, CcValue> = emptyMap(),
+    val databaseVersion: DatabaseVersion? = null,
+    val unsetFlagsAreNull: Boolean = true
+) {
 
     /** Flag values by upper-cased name. */
     val flags: Map<String, CcValue> =
@@ -31,11 +39,13 @@ class ConditionalCompilationSettings(flags: Map<String, CcValue> = emptyMap(), v
     val isActive: Boolean get() = flags.isNotEmpty() || databaseVersion != null
 
     override fun equals(other: Any?) =
-        other is ConditionalCompilationSettings && flags == other.flags && databaseVersion == other.databaseVersion
+        other is ConditionalCompilationSettings && flags == other.flags && databaseVersion == other.databaseVersion &&
+            unsetFlagsAreNull == other.unsetFlagsAreNull
 
-    override fun hashCode() = 31 * flags.hashCode() + databaseVersion.hashCode()
+    override fun hashCode() = (31 * flags.hashCode() + databaseVersion.hashCode()) * 31 + unsetFlagsAreNull.hashCode()
 
-    override fun toString() = "ConditionalCompilationSettings(flags=$flags, databaseVersion=$databaseVersion)"
+    override fun toString() =
+        "ConditionalCompilationSettings(flags=$flags, databaseVersion=$databaseVersion" + (if (unsetFlagsAreNull) ")" else ", unset flags unknown)")
 
     companion object {
         @JvmField

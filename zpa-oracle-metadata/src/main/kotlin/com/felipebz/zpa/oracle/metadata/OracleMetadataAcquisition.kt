@@ -6,10 +6,8 @@
 package com.felipebz.zpa.oracle.metadata
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.SQLException
+import com.felipebz.zpa.squid.DatabaseVersion
+import java.sql.*
 import java.time.Instant
 import javax.sql.DataSource
 
@@ -69,6 +67,7 @@ object OracleMetadataAcquisition {
             }
             val acquiredAt = Instant.now()
             val session = session(connection, dialect.sessionSql, timeout)
+            val version = databaseVersion(connection, timeout)
             val relations = ArrayList<RelationRow>()
             val columns = ArrayList<ColumnRow>()
             for (schema in request.schemas) {
@@ -81,7 +80,7 @@ object OracleMetadataAcquisition {
                 query(connection, dialect.targetedRelationsSql(chunk.size), pairs + pairs, timeout) { relations += relationRow(it) }
                 query(connection, dialect.targetedColumnsSql(chunk.size), pairs, timeout) { columns += columnRow(it) }
             }
-            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt)
+            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version)
         } catch (e: Throwable) {
             failure = e
             throw e
@@ -109,6 +108,18 @@ object OracleMetadataAcquisition {
         if (error != null) {
             if (failure != null) failure.addSuppressed(error) else throw error
         }
+    }
+
+    private fun databaseVersion(connection: Connection, timeout: Int): Result<DatabaseVersion> = try {
+        connection.prepareCall("BEGIN ? := DBMS_DB_VERSION.VERSION; ? := DBMS_DB_VERSION.RELEASE; END;").use {
+            it.queryTimeout = timeout
+            it.registerOutParameter(1, Types.INTEGER)
+            it.registerOutParameter(2, Types.INTEGER)
+            it.execute()
+            Result.success(DatabaseVersion(it.getInt(1), it.getInt(2)))
+        }
+    } catch (e: SQLException) {
+        Result.failure(e)
     }
 
     private fun session(connection: Connection, sql: String, timeout: Int): SessionInfo {

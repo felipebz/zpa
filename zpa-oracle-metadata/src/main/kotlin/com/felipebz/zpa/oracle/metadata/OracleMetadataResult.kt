@@ -7,6 +7,7 @@ package com.felipebz.zpa.oracle.metadata
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.squid.DatabaseVersion
 import java.time.Instant
 import java.util.*
 
@@ -34,7 +35,11 @@ class OracleMetadataResult internal constructor(
     /** Relations added to [metadata]. */
     val relationCount: Int,
     /** Columns added to [metadata]. */
-    val columnCount: Int
+    val columnCount: Int,
+    /** `DBMS_DB_VERSION.VERSION` and `RELEASE`, as the database's package declares them; null when they could not be read. */
+    val databaseVersion: DatabaseVersion? = null,
+    /** Why [databaseVersion] could not be read (the driver's message, not sanitized); null when it was read. */
+    val databaseVersionFailure: String? = null
 ) {
     /** Requested schemas declared complete (so absent relations are reported as absent). Runtime-unmodifiable. */
     val completeSchemas: Set<String> = Collections.unmodifiableSet(LinkedHashSet(completeSchemas))

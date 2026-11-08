@@ -8,7 +8,9 @@ package com.felipebz.zpa
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.oracle.*
+import com.felipebz.zpa.squid.DatabaseVersion
 import com.felipebz.zpa.symbols.ObjectLocator
+import com.felipebz.zpa.utils.log.Loggers
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -23,6 +25,7 @@ import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.batch.sensor.internal.SensorContextTester
 import org.sonar.api.config.internal.MapSettings
 import org.sonar.api.issue.NoSonarFilter
+import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.measures.FileLinesContext
 import org.sonar.api.measures.FileLinesContextFactory
 import org.sonar.api.rule.RuleKey
@@ -36,6 +39,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.jar.JarOutputStream
 import java.util.logging.Logger
+import com.felipebz.zpa.utils.log.Logger as ZpaLogger
 
 /** A driver whose connections fail with a message carrying the URL and the password, as some drivers do. */
 class FailingConnectTestDriver : TestDriverBase() {
@@ -83,23 +87,56 @@ class PlSqlSquidSensorOracleTest {
     ).build()
 
     /** Counts acquisitions; the settings it received are kept for inspection. */
-    private inner class StubAcquirer(private val result: ProjectExternalMetadata = metadata) : OracleMetadataAcquirer {
+    private inner class StubAcquirer(
+        private val result: ProjectExternalMetadata = metadata,
+        private val version: DatabaseVersion? = null,
+        private val versionFailure: String? = null
+    ) : OracleMetadataAcquirer {
         val calls = AtomicInteger()
         var settings: OracleMetadataSettings? = null
         override fun acquire(settings: OracleMetadataSettings): AcquiredOracleMetadata {
             calls.incrementAndGet()
             this.settings = settings
-            return AcquiredOracleMetadata(result, "stub")
+            return AcquiredOracleMetadata(result, "stub", version, versionFailure)
         }
     }
 
     private val forbidden = OracleMetadataAcquirer { throw AssertionError("no database access expected") }
 
+    private enum class Level { INFO, WARN }
+
+    /** The sensor's log lines, by level. */
+    private class RecordingLoggers : Loggers() {
+        private val lines = Collections.synchronizedList(ArrayList<Pair<Level, String>>())
+        fun logs(level: Level): List<String> = synchronized(lines) { lines.filter { it.first == level }.map { it.second } }
+        override fun getLogger(name: String): ZpaLogger = object : ZpaLogger {
+            override fun trace(msg: String) = Unit
+            override fun trace(msg: String, vararg args: Any?) = Unit
+            override fun debug(msg: String) = Unit
+            override fun debug(msg: String, vararg args: Any?) = Unit
+            override fun info(msg: String) { lines += Level.INFO to msg }
+            override fun info(msg: String, vararg args: Any?) { lines += Level.INFO to msg }
+            override fun warn(msg: String) { lines += Level.WARN to msg }
+            override fun warn(msg: String, vararg args: Any?) { lines += Level.WARN to msg }
+            override fun error(msg: String) = Unit
+            override fun error(msg: String, vararg args: Any?) = Unit
+        }
+    }
+
+    private val logTester = RecordingLoggers()
+    private val previousLoggers = Loggers.factory
+
     @BeforeEach
-    fun reset() = ExternalTypeProbeCheck.reset()
+    fun reset() {
+        ExternalTypeProbeCheck.reset()
+        Loggers.factory = logTester
+    }
 
     @AfterEach
-    fun cleanup() = ExternalTypeProbeCheck.reset()
+    fun cleanup() {
+        ExternalTypeProbeCheck.reset()
+        Loggers.factory = previousLoggers
+    }
 
     private fun sensor(properties: Map<String, String>, acquirer: OracleMetadataAcquirer, concurrent: Boolean = true): PlSqlSquidSensor {
         val activeRules = ActiveRulesBuilder()
@@ -319,5 +356,59 @@ class PlSqlSquidSensorOracleTest {
         val connect = failure(oracle + (OracleMetadataSettings.URL_KEY to connectUrl), JdbcOracleMetadataAcquirer())
         assertThat(connect).contains("acquisition failed (error 12514)").doesNotContain(connectUrl).doesNotContain(secret)
         assertThat(ExternalTypeProbeCheck.contexts).isEmpty()
+    }
+
+    /**
+     * A procedure per condition, which parses only in the branch Oracle would compile: `ok_<name>` counts as a function
+     * when the condition is decided and selects its `$ELSE` (a broken `$THEN`), and not at all when undecided.
+     */
+    private val conditions = mapOf(
+        "le11" to "DBMS_DB_VERSION.VER_LE_11",
+        "le19" to "NOT DBMS_DB_VERSION.VER_LE_19",
+        "flag" to "\$\$legacy",
+        "both" to "\$\$legacy AND DBMS_DB_VERSION.VER_LE_11"
+    )
+
+    private fun decided(properties: Map<String, String>, acquirer: OracleMetadataAcquirer): List<String> {
+        val files = conditions.map { (name, condition) ->
+            "$name.sql" to "CREATE PROCEDURE ok_$name IS BEGIN \$IF $condition \$THEN broken( \$ELSE NULL; \$END END;\n"
+        }
+        val context = context(*files.toTypedArray())
+        sensor(properties, acquirer).execute(context)
+        return conditions.keys.filter { context.measure("key:$it.sql", CoreMetrics.FUNCTIONS)?.value() == 1 }
+    }
+
+    @Test
+    fun theDatabaseVersionDecidesItsConditionsAndLeavesUnsetFlagsUnknown() {
+        assertThat(decided(oracle, StubAcquirer(version = DatabaseVersion(19, 0)))).containsExactly("le11", "le19", "both")
+        assertThat(logTester.logs(Level.INFO)).anyMatch { it.contains("database version from the database") }
+    }
+
+    @Test
+    fun thePropertyWinsOverTheDatabaseVersion() {
+        val decided = decided(oracle + (PlSqlPlugin.DATABASE_VERSION_KEY to "11.2"), StubAcquirer(version = DatabaseVersion(19, 0)))
+        // Version 11.2 from the property: VER_LE_11 is TRUE and selects the broken branch; the configured flag is NULL.
+        assertThat(decided).containsExactly("le19", "flag", "both")
+        assertThat(logTester.logs(Level.WARN)).anyMatch { it.contains("11.2") && it.contains("19.0") }
+        assertThat(logTester.logs(Level.INFO)).anyMatch { it.contains("database version from ${PlSqlPlugin.DATABASE_VERSION_KEY}") }
+    }
+
+    @Test
+    fun configuredFlagsTakeTheVersionFromTheDatabaseAndAnUnsetFlagIsNull() {
+        val decided = decided(oracle + (PlSqlPlugin.CCFLAGS_KEY to "other:true"), StubAcquirer(version = DatabaseVersion(19, 0)))
+        assertThat(decided).containsExactly("le11", "le19", "flag", "both")
+        assertThat(logTester.logs(Level.WARN)).isEmpty()
+    }
+
+    @Test
+    fun aVersionThatCannotBeReadDoesNotFailTheAnalysis() {
+        assertThat(decided(oracle, StubAcquirer(versionFailure = "ORA-06550: no access"))).isEmpty()
+        assertThat(logTester.logs(Level.INFO)).anyMatch { it.contains("DBMS_DB_VERSION could not be read: ORA-06550") }
+    }
+
+    @Test
+    fun withoutOracleMetadataTheVersionStaysUnknown() {
+        assertThat(decided(emptyMap(), forbidden)).isEmpty()
+        assertThat(decided(mapOf(PlSqlPlugin.DATABASE_VERSION_KEY to "19"), forbidden)).containsExactly("le11", "le19", "flag", "both")
     }
 }
