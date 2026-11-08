@@ -190,6 +190,17 @@ internal class LocalCompletenessEvidence private constructor(
         if (lastToken < 0) null else search { compareValues(it.line, line).takeIf { c -> c != 0 } ?: compareValues(it.column, column) }
 
     /**
+     * The positions where undecided conditional text, dropped or kept, writes each name, by lookup name. Empty when
+     * token positions are not verified: every region is then incomplete anyway.
+     */
+    fun conditionalMentions(): Map<String, LongArray> {
+        if (!ordered) return emptyMap()
+        val positions = HashMap<String, MutableList<Long>>()
+        for (piece in pointPieces.values + spanPieces) piece.mentionsByName().forEach { (name, at) -> positions.getOrPut(name) { ArrayList() }.addAll(at.asList()) }
+        return positions.mapValues { it.value.toLongArray() }
+    }
+
+    /**
      * The hidden text of the file as source ranges: the gap before each token a point is recorded at, and each kept
      * branch. Empty when the token positions cannot be trusted.
      */

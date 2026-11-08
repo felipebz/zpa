@@ -43,6 +43,31 @@ internal object LocalResolver {
     val SELF: OracleIdentifier = OracleIdentifier.fromSource("SELF")
 
     fun resolve(model: LocalSemanticModel, reference: LocalReference): LocalResolution {
+        val outcome = lookup(model, reference)
+        if (outcome is LocalResolution.Unsupported || !sqlConditional(model, reference)) return outcome
+        val cc = LocalIncompleteness.CONDITIONAL_COMPILATION
+        return when {
+            outcome !is LocalResolution.Incomplete -> LocalResolution.Incomplete(EnumSet.of(cc), emptySet(), outcome)
+            cc in outcome.regionReasons -> outcome
+            else -> LocalResolution.Incomplete(outcome.regionReasons + cc, outcome.lookupReasons, outcome.provisional)
+        }
+    }
+
+    /**
+     * Whether undecided conditional text in the reference's SQL statement writes its first name somewhere other than
+     * the reference itself: a relation, `WITH` or column alias of that name may be there or not, and what the name and
+     * the names it qualifies bind changes with it.
+     */
+    private fun sqlConditional(model: LocalSemanticModel, reference: LocalReference): Boolean {
+        val sql = reference.sql ?: return false
+        val mentions = model.conditionalMentions(reference.name)
+        if (mentions.isEmpty()) return false
+        val own = (reference.nameRange ?: reference.range).let { LocalConditionalPiece.position(it.startLine, it.startColumn) }
+        val others = mentions.filter { it != own }.toLongArray()
+        return others.isNotEmpty() && sql.encloses(others)
+    }
+
+    private fun lookup(model: LocalSemanticModel, reference: LocalReference): LocalResolution {
         if (reference.inParameterDefault) return LocalResolution.Unsupported(LocalUnsupportedConstruct.PARAMETER_DEFAULT)
         // A relation of the SQL statement qualifies a column or object path, whatever the local regions declare.
         if (reference.context == Ctx.QUALIFIER && reference.sql?.qualifies(reference.name, reference.segments) == true) {

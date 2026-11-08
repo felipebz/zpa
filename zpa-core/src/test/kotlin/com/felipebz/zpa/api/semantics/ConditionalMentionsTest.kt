@@ -307,4 +307,46 @@ class ConditionalMentionsTest {
             "  select total into y from (select 1 \$IF \$\$al \$THEN total \$END from dual);\nend;\n/\n"
         assertThat(usages(column, PlSqlGrammar.VARIABLE_DECLARATION).first()).isNotEqualTo("TOTAL: Unused")
     }
+
+    private fun aliased(conditional: String) = "create or replace procedure p_alias is\n  type t_r is record (x number);\n  a t_r;\n  y number;\n" +
+        "begin\n  select a.x into y from t1 $conditional where rownum = 1;\nend;\n/\n"
+
+    @Test
+    fun anAliasWrittenInConditionalTextLeavesTheQualifiedNameUndecided() {
+        val both = listOf("6:9:A=$undecided", "6:11:X=$undecided")
+        assertThat(chains(aliased("\$IF \$\$al \$THEN a \$END"))).isEqualTo(both)
+        assertThat(chains(aliased("\$IF \$\$al \$THEN \$ELSE a \$END"))).isEqualTo(both)
+        // Another alias, or text that writes no alias: as without the conditional text.
+        val plain = chains(aliased(""))
+        assertThat(plain).noneMatch { it.contains("CONDITIONAL") }
+        assertThat(chains(aliased("\$IF \$\$al \$THEN b \$END"))).isEqualTo(plain)
+        assertThat(chains(aliased("\$IF \$\$al \$THEN \$ELSE b \$END"))).isEqualTo(plain)
+        assertThat(chains(aliased("where 1 = 1 \$IF \$\$x \$THEN and c = 1 \$END and").replace("where rownum", "rownum")))
+            .isEqualTo(plain)
+    }
+
+    @Test
+    fun aWithNameWrittenInConditionalTextLeavesTheQualifiedNameUndecided() {
+        fun with(clause: String) = "create or replace procedure p_with is\n  type t_r is record (x number);\n  w t_r;\n  y number;\n" +
+            "begin\n  $clause select w.x into y from t1;\nend;\n/\n"
+        for (clause in listOf("\$IF \$\$w \$THEN with w as (select 1 x from dual) \$END", "\$IF \$\$w \$THEN \$ELSE with w as (select 1 x from dual) \$END")) {
+            val rows = chains(with(clause))
+            assertThat(rows.map { it.substringAfter(":").substringAfter(":") }).containsExactly("W=$undecided", "X=$undecided")
+        }
+    }
+
+    @Test
+    fun droppedTextAtTheEndOfAStatementOrInlineViewIsPartOfIt() {
+        fun body(statement: String) = "create or replace procedure p_end is\n  type t_r is record (x number);\n  a t_r;\n  y number;\n" +
+            "begin\n  $statement\nend;\n/\n"
+        fun a(statement: String) = chains(body(statement)).map { it.substringAfter(":").substringAfter(":") }.dropWhile { !it.startsWith("A=") }
+        val both = listOf("A=$undecided", "X=$undecided")
+        assertThat(a("select a.x into y from t1 \$IF \$\$al \$THEN \$ELSE a \$END;")).isEqualTo(both)
+        assertThat(a("select a.x into y from t1 \$IF \$\$al \$THEN b \$ELSE a \$END;")).isEqualTo(both)
+        assertThat(a("select v.x into y from (select a.x from t1 \$IF \$\$al \$THEN \$ELSE a \$END) v;")).isEqualTo(both)
+        // After the statement's end: as without the conditional text.
+        val after = chains(body("select a.x into y from t1; \$IF \$\$al \$THEN \$ELSE y := a.x; \$END"))
+        assertThat(after.first()).isEqualTo(chains(body("select a.x into y from t1;")).first())
+        assertThat(after.first()).contains("A=Local(VARIABLE")
+    }
 }

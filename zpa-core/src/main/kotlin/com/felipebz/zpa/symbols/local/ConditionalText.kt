@@ -229,6 +229,9 @@ internal class LocalConditionalPiece(
     fun affects(name: OracleIdentifier, except: Long = NO_POSITION): Boolean =
         wide || mentions[name.lookupName]?.any { it != except } == true
 
+    /** The positions of every name the piece writes, by lookup name. */
+    fun mentionsByName(): Map<String, LongArray> = mentions
+
     /** The positions where the piece writes [name]; empty when it does not. */
     fun mentions(name: OracleIdentifier): LongArray = mentions[name.lookupName] ?: EMPTY
 

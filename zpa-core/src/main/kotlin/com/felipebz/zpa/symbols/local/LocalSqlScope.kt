@@ -9,6 +9,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.OracleIdentifier
 import java.util.*
 
@@ -27,8 +28,26 @@ internal class LocalSqlScope(
      * Every relation is the `DUAL` table (`DUAL` or `SYS.DUAL`, not a `WITH` query), whose only column is `DUMMY`. An
      * unqualified `DUAL` is taken as `SYS.DUAL`: a table named `DUAL` in the owner's schema would hide it.
      */
-    val dualOnly: Boolean = false
+    val dualOnly: Boolean = false,
+    /** The statement or query's source extent, as [LocalConditionalPiece.position] values: start inclusive, end exclusive. */
+    val start: Long = 0,
+    val end: Long = 0
 ) {
+    /**
+     * Whether undecided conditional text at one of [positions] lies in this scope or an enclosing one: there it may
+     * write an alias, a `WITH` name or a column alias that the statement reads, or drop one.
+     */
+    fun encloses(positions: LongArray): Boolean {
+        var scope: LocalSqlScope? = this
+        while (scope != null) {
+            val from = scope.start
+            val to = scope.end
+            if (positions.any { it in from until to }) return true
+            scope = scope.parent
+        }
+        return false
+    }
+
     /** Whether no relation this scope or an enclosing one sees can have a column named [name]. */
     fun excludesColumn(name: OracleIdentifier): Boolean {
         var scope: LocalSqlScope? = this
@@ -117,7 +136,25 @@ internal class LocalSqlScope(
                 }
                 node.children.forEach(::walk)
             }
-            return LocalSqlScope(relations, tables, parent, relations.isNotEmpty() && dualOnly && !dualIsWithQuery(node))
+            // A query block's extent is its query's, `WITH` clause and `ORDER BY` included, from the conditional text
+            // right before it (a dropped `WITH` clause sits there).
+            val extent = if (node.type === DmlGrammar.QUERY_BLOCK) node.getFirstAncestorOrNull(DmlGrammar.SELECT_EXPRESSION) ?: node else node
+            val first = extent.token.trivia.firstOrNull { it.token.type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY }?.token ?: extent.token
+            return LocalSqlScope(
+                relations, tables, parent, relations.isNotEmpty() && dualOnly && !dualIsWithQuery(node),
+                LocalConditionalPiece.position(first.line, first.column),
+                end(extent)
+            )
+        }
+
+        /**
+         * The end of [extent]: up to the `;` or `)` that closes it, so that conditional text right before that token
+         * (dropped text is trivia of the token after it) is still part of the statement or query; else its last token's end.
+         */
+        private fun end(extent: AstNode): Long {
+            val next = extent.nextAstNodeOrNUll?.tokenOrNull
+            return if (next != null && (next.value == ";" || next.value == ")")) LocalConditionalPiece.position(next.line, next.column)
+            else LocalConditionalPiece.position(extent.lastToken.endLine, extent.lastToken.endColumn)
         }
 
         private fun isDual(reference: AstNode): Boolean {

@@ -241,8 +241,13 @@ internal class LocalSemanticModel(
     /** Indexed by [LocalDeclarationId.ordinal]. */
     val declarations: List<LocalDeclaration>,
     /** The file's hidden text, in source order. */
-    val hiddenText: List<LocalHiddenText> = emptyList()
+    val hiddenText: List<LocalHiddenText> = emptyList(),
+    /** Where undecided conditional text, dropped or kept, writes each name, by lookup name. */
+    private val conditionalMentions: Map<String, LongArray> = emptyMap()
 ) {
+    /** The positions ([LocalConditionalPiece.position]) where undecided conditional text writes [name]. */
+    fun conditionalMentions(name: OracleIdentifier): LongArray = conditionalMentions[name.lookupName] ?: NO_MENTIONS
+
     /**
      * The reasons of the hidden text a use written at [range] sits under or touches: a kept conditional-compilation
      * branch holding it, or hidden text inside it or right next to it.
@@ -276,3 +281,5 @@ internal class LocalSemanticModel(
 
     override fun toString() = "LocalSemanticModel($fileId, ${regions.size} regions, ${declarations.size} declarations)"
 }
+
+private val NO_MENTIONS = LongArray(0)

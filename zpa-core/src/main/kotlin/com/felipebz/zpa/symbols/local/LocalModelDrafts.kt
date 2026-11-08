@@ -56,7 +56,8 @@ internal fun freeze(
     regions: List<RegionDraft>,
     declarations: List<DeclarationDraft>,
     completeness: List<LocalRegionCompleteness>,
-    hiddenText: List<LocalHiddenText>
+    hiddenText: List<LocalHiddenText>,
+    conditionalMentions: Map<String, LongArray> = emptyMap()
 ): LocalSemanticModel {
     val frozenRegions = regions.map { draft ->
         val extraction = if (draft.gaps.isNotEmpty()) LocalExtraction.PARTIAL else LocalExtraction.ALL_ITEMS_EXTRACTED
@@ -72,7 +73,7 @@ internal fun freeze(
             it.isConstant, it.isNotNull, it.hasDefault, it.details
         )
     }
-    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations), frozenList(hiddenText))
+    return LocalSemanticModel(fileId, frozenList(frozenRegions), frozenList(frozenDeclarations), frozenList(hiddenText), conditionalMentions)
 }
 
 /** An immutable copy; compact (no wrapper, a shared instance when empty), which matters for many small region lists. */

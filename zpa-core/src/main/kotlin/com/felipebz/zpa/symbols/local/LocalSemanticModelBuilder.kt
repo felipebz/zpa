@@ -60,7 +60,7 @@ internal object LocalSemanticModelBuilder {
             linker.linkForwardDeclarations()
             linker.linkUnits()
             val evidence = LocalCompletenessEvidence.of(root, source)
-            return freeze(fileId, regions, declarations, evidence.attribute(regions), evidence.hiddenText(fileId))
+            return freeze(fileId, regions, declarations, evidence.attribute(regions), evidence.hiddenText(fileId), evidence.conditionalMentions())
         }
 
         private fun open(parent: RegionDraft?, kind: LocalRegionKind, syntax: String, range: SourceRange): RegionDraft {
