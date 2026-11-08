@@ -118,11 +118,11 @@ internal object ConditionalText {
     }
 
     /** The undecided piece the words [words] form: wide when they may change the block structure. */
-    fun piece(words: List<ConditionalWord>, wide: Boolean = !isBlockBalanced(words)): LocalConditionalPiece {
+    fun piece(words: List<ConditionalWord>, wide: Boolean = !isBlockBalanced(words), kept: LocalConditionalPiece.Span? = null): LocalConditionalPiece {
         val mentions = HashMap<String, MutableList<Long>>()
         for (word in words) mentions.getOrPut(word.lookupName) { ArrayList(1) } += LocalConditionalPiece.position(word.line, word.column)
         val labels = words.filter { it.label }.mapTo(HashSet()) { it.lookupName }
-        return LocalConditionalPiece(wide, mentions.mapValues { (_, positions) -> positions.toLongArray() }, labels)
+        return LocalConditionalPiece(wide, mentions.mapValues { (_, positions) -> positions.toLongArray() }, labels, kept)
     }
 
     /**
@@ -216,17 +216,29 @@ internal class LocalConditionalPiece(
     val wide: Boolean,
     private val mentions: Map<String, LongArray>,
     /** The names the piece writes as labels (`<<name>>`), which statements declare. */
-    private val labels: Set<String> = emptySet()
+    private val labels: Set<String> = emptySet(),
+    /** For the tokens of a kept branch, where they are; null for dropped text. */
+    val kept: Span? = null
 ) {
+    class Span(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int) {
+        fun contains(line: Int, column: Int): Boolean =
+            (startLine < line || startLine == line && startColumn <= column) && (line < endLine || line == endLine && column < endColumn)
+    }
+
     /** Whether the piece counts for [name]: wide, or mentioning it at a position other than [except]. */
     fun affects(name: OracleIdentifier, except: Long = NO_POSITION): Boolean =
         wide || mentions[name.lookupName]?.any { it != except } == true
+
+    /** The positions where the piece writes [name]; empty when it does not. */
+    fun mentions(name: OracleIdentifier): LongArray = mentions[name.lookupName] ?: EMPTY
 
     /** Whether the piece writes [name] as a label. */
     fun labels(name: OracleIdentifier): Boolean = name.lookupName in labels
 
     companion object {
         const val NO_POSITION = -1L
+
+        private val EMPTY = LongArray(0)
 
         /** The position of a word written at [line], [column], as [affects] compares it. */
         fun position(line: Int, column: Int): Long = (line.toLong() shl 32) or column.toLong()

@@ -319,7 +319,12 @@ internal class LocalCompletenessEvidence private constructor(
             // The names each piece mentions, read once: a point's boundaries together, a kept branch's tokens.
             val pointPieces = pointWords.mapValues { (index, words) -> ConditionalText.piece(words, wide = index in unbalanced) }
             val spanPieces = if (!delimited) spans.map { LocalConditionalPiece.WIDE }
-            else spans.map { ConditionalText.piece(ConditionalText.words(tokens.subList(it.first, it.last + 1))) }
+            else spans.map {
+                val first = tokens[it.first]
+                val last = tokens[it.last]
+                val words = ConditionalText.words(tokens.subList(it.first, it.last + 1))
+                ConditionalText.piece(words, kept = LocalConditionalPiece.Span(first.line, first.column, last.endLine, last.endColumn))
+            }
 
             // Recovery: file-level nodes only; one below the file level taints everything.
             val recoveryStarts = if (recovery.isEmpty()) IntArray(0) else {

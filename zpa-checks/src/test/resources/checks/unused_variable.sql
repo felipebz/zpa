@@ -217,3 +217,46 @@ begin
   end;
 end;
 /
+
+-- A kept branch whose sibling procedure declares and uses the same names: "l_unused" in "one" is unused.
+create or replace package body pk_kept is
+  $if $$v21 $then
+  procedure one is
+    l_msg varchar2(10);
+    l_unused varchar2(10); -- Noncompliant {{Remove this unused "L_UNUSED" local variable.}}
+  begin
+    l_msg := 'a';
+  end;
+  procedure two is
+    l_msg varchar2(10);
+    l_unused varchar2(10);
+  begin
+    l_msg := 'b';
+    l_unused := 'c';
+  end;
+  $end
+  procedure three is begin null; end;
+end;
+/
+
+-- A kept declaration in a nested block shadows "v": where it is not compiled, "v := 1" uses the outer one.
+create or replace procedure p_shadow is
+  v number;
+begin
+  declare
+    $if $$a $then v number; $end
+  begin
+    v := 1;
+  end;
+end;
+/
+
+-- A kept alias: where it is not compiled, "a.x" reads the record, so "a" is not reported.
+create or replace procedure p_alias is
+  type t_r is record (x number);
+  a t_r;
+  y number;
+begin
+  select a.x into y from t1 $if $$al $then a $end where rownum = 1;
+end;
+/

@@ -245,4 +245,66 @@ class ConditionalMentionsTest {
         assertThat(c(text)).isEqualTo(undecided)
         assertThat(c(text.replace("  \$IF \$\$ext \$THEN b number, \$END\n", "\n"))).startsWith("Field(ATTRIBUTE#1")
     }
+
+    private val keptProcedures = "create or replace package body pk_kept is\n  \$if \$\$v21 \$then\n" +
+        "  procedure one is\n    l_msg varchar2(10);\n    l_unused varchar2(10);\n  begin\n    l_msg := 'a';\n  end;\n" +
+        "  procedure two is\n    l_msg varchar2(10);\n    l_unused varchar2(10);\n  begin\n    l_msg := 'b';\n    l_unused := 'c';\n  end;\n" +
+        "  \$end\n  procedure three is begin null; end;\nend;\n/\n"
+
+    @Test
+    fun aKeptBranchHidesAUseOnlyByADeclarationThatShadows() {
+        // The same names declared and used in a sibling procedure of the same kept branch shadow nothing. The uses
+        // written in the kept branch are possible uses (the branch may not be compiled), not proven ones.
+        val cc = "Unknown[CONDITIONAL_COMPILATION]"
+        assertThat(usages(keptProcedures, PlSqlGrammar.VARIABLE_DECLARATION))
+            .containsExactly("L_MSG: $cc", "L_UNUSED: Unused", "L_MSG: $cc", "L_UNUSED: $cc")
+    }
+
+    @Test
+    fun aKeptDeclarationThatShadowsMayHideAUse() {
+        // Nested: where `${'$'}${'$'}a` is not set, `v := 1` uses the outer `v`.
+        val nested = "create or replace procedure p_shadow is\n  v number;\nbegin\n  declare\n    \$IF \$\$a \$THEN v number; \$END\n" +
+            "  begin\n    v := 1;\n  end;\nend;\n/\n"
+        assertThat(usages(nested, PlSqlGrammar.VARIABLE_DECLARATION).first()).isEqualTo("V: Unknown[CONDITIONAL_COMPILATION]")
+        // The same region: a duplicate in a kept branch.
+        val duplicate = "create or replace procedure p_dup is\n  v number;\n  \$IF \$\$a \$THEN v number; \$END\nbegin\n  v := 1;\nend;\n/\n"
+        assertThat(usages(duplicate, PlSqlGrammar.VARIABLE_DECLARATION).first()).isNotEqualTo("V: Unused")
+    }
+
+    @Test
+    fun droppedTextAndLabelsStillCount() {
+        val dropped = "create or replace procedure p_drop is\n  \$IF \$\$a \$THEN v_kept number; \$ELSE v_kept number := 1; x number := v_kept; \$END\n" +
+            "begin\n  null;\nend;\n/\n"
+        assertThat(usages(dropped, PlSqlGrammar.VARIABLE_DECLARATION)).containsExactly("V_KEPT: Unknown[CONDITIONAL_COMPILATION]")
+        val label = "create or replace procedure p_label is\n  d_name number;\nbegin\n  \$IF \$\$a \$THEN <<d_name>> \$END\n  null;\nend;\n/\n"
+        assertThat(usages(label, PlSqlGrammar.VARIABLE_DECLARATION)).containsExactly("D_NAME: Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    @Test
+    fun parametersAndCursorsAlike() {
+        val sibling = "create or replace package body pk_kept is\n  \$if \$\$v21 \$then\n" +
+            "  procedure one(p_code varchar2) is\n    cursor c_rows is select 1 a from dual;\n  begin\n    null;\n  end;\n" +
+            "  procedure two(p_code varchar2) is\n    cursor c_rows is select 1 a from dual;\n  begin\n    open c_rows;\n    dbms_output.put_line(p_code);\n  end;\n" +
+            "  \$end\nend;\n/\n"
+        assertThat(usages(sibling, PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_DECLARATION))
+            .containsExactly("P_CODE: Unused", "C_ROWS: Unused", "P_CODE: Unknown[CONDITIONAL_COMPILATION]", "C_ROWS: Unknown[CONDITIONAL_COMPILATION]")
+        // Redeclared inside the procedure by the kept branch: where it is not compiled, the uses may bind the outer ones.
+        val shadowing = "create or replace procedure p_one(p_code varchar2) is\n  cursor c_rows is select 1 a from dual;\nbegin\n" +
+            "  declare\n    \$IF \$\$a \$THEN p_code varchar2(1); cursor c_rows is select 2 b from dual; \$END\n" +
+            "  begin\n    open c_rows;\n    dbms_output.put_line(p_code);\n  end;\nend;\n/\n"
+        assertThat(usages(shadowing, PlSqlGrammar.PARAMETER_DECLARATION, PlSqlGrammar.CURSOR_DECLARATION).take(2))
+            .containsExactly("P_CODE: Unknown[CONDITIONAL_COMPILATION]", "C_ROWS: Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    @Test
+    fun aKeptAliasMayChangeWhatAReferenceOutsideTheBranchBinds() {
+        // Where `${'$'}${'$'}al` is set, `a` is the alias of `t1` and `a.x` reads its column; where it is not, the record.
+        val alias = "create or replace procedure p_alias is\n  type t_r is record (x number);\n  a t_r;\n  y number;\nbegin\n" +
+            "  select a.x into y from t1 \$IF \$\$al \$THEN a \$END where rownum = 1;\nend;\n/\n"
+        assertThat(usages(alias, PlSqlGrammar.VARIABLE_DECLARATION).first()).isEqualTo("A: Unknown[CONDITIONAL_COMPILATION]")
+        // A kept column alias that the outer query reads, with a local of the same name.
+        val column = "create or replace procedure p_col is\n  total number;\n  y number;\nbegin\n" +
+            "  select total into y from (select 1 \$IF \$\$al \$THEN total \$END from dual);\nend;\n/\n"
+        assertThat(usages(column, PlSqlGrammar.VARIABLE_DECLARATION).first()).isNotEqualTo("TOTAL: Unused")
+    }
 }

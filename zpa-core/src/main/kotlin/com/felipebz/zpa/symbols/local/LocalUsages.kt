@@ -52,7 +52,11 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         // Conditional text that never writes the name, besides the declaration itself, holds no use of it.
         val own = LocalConditionalPiece.position(declaration.nameRange.startLine, declaration.nameRange.startColumn)
         incompleteness[declaration.region]?.let { subtree ->
-            LocalRegionCompleteness.narrowed(subtree.reasons, subtree.pieces, declaration.name, own).forEach { reasons += it.usageUncertainty() }
+            var subtreeReasons: Set<LocalIncompleteness> = subtree.reasons
+            if (LocalIncompleteness.CONDITIONAL_COMPILATION in subtreeReasons && subtree.pieces.isNotEmpty() && subtree.pieces.none { hidesUse(it, declaration, own) }) {
+                subtreeReasons = subtreeReasons - LocalIncompleteness.CONDITIONAL_COMPILATION
+            }
+            subtreeReasons.forEach { reasons += it.usageUncertainty() }
         }
         if ((declaration.region to declaration.name.lookupName) in unsupported) reasons += UsageUncertainty.UNSUPPORTED_REFERENCE
         if ((declaration.region to declaration.name.lookupName) in conditionalMembers) reasons += UsageUncertainty.CONDITIONAL_COMPILATION
@@ -121,6 +125,51 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations
         is LocalResolution.SpecificationCovered -> named(outcome.outcome)
         else -> emptyList()
+    }
+
+    /**
+     * Whether conditional [piece] may hide a use of [declaration], whose own name is at [own]. Dropped text may hold
+     * a use: it counts when it writes the name. The tokens of a kept branch are in the tree, so the uses they write are
+     * already recorded; they hide one only when they declare the name where it shadows [declaration] (in its region or
+     * one nested in it), when they write it as a label, or when they may change the block structure.
+     */
+    private fun hidesUse(piece: LocalConditionalPiece, declaration: LocalDeclaration, own: Long): Boolean {
+        val span = piece.kept ?: return piece.affects(declaration.name, own)
+        if (piece.wide || piece.labels(declaration.name)) return true
+        val sameName = declarationsByLookupName[declaration.name.lookupName].orEmpty()
+        if (sameName.any { other ->
+                other.id != declaration.id && span.contains(other.nameRange.startLine, other.nameRange.startColumn) && within(other.region, declaration.region)
+            }) return true
+        // Any other place the kept tokens write the name (a SQL alias, for one) may change what a reference outside the
+        // branch binds. Only a recorded reference, whose use is already in the evidence, and a declaration that cannot
+        // shadow this one are known to hide nothing.
+        val harmless = sameName.filter { !within(it.region, declaration.region) }
+            .mapTo(HashSet()) { LocalConditionalPiece.position(it.nameRange.startLine, it.nameRange.startColumn) }
+        return piece.mentions(declaration.name).any { it != own && it !in recordedNames && it !in harmless }
+    }
+
+    /** The position of every name a reference writes: its first name and each segment. */
+    private val recordedNames: Set<Long> by lazy(LazyThreadSafetyMode.NONE) {
+        val positions = HashSet<Long>()
+        for (reference in facts.references) {
+            positions += LocalConditionalPiece.position(reference.range.startLine, reference.range.startColumn)
+            reference.segments.forEach { positions += LocalConditionalPiece.position(it.range.startLine, it.range.startColumn) }
+        }
+        positions
+    }
+
+    private val declarationsByLookupName: Map<String, List<LocalDeclaration>> by lazy(LazyThreadSafetyMode.NONE) {
+        model.declarations.groupBy { it.name.lookupName }
+    }
+
+    /** Whether [region] is [outer] or nested in it. */
+    private fun within(region: LocalRegionId, outer: LocalRegionId): Boolean {
+        var current: LocalRegion? = model.region(region)
+        while (current != null) {
+            if (current.id == outer) return true
+            current = model.parent(current.id)
+        }
+        return false
     }
 
     /** The incompleteness of a region and every region inside it, with the conditional pieces behind it. */
