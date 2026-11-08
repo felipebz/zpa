@@ -135,12 +135,12 @@ internal class ToolkitViewImpl(@Transient val presenter: ToolkitPresenter) : JFr
         sourceCodeEditorPane.font = monospacedFont(sourceCodeEditorPane.font)
         (sourceCodeEditorPane.caret as DefaultCaret).updatePolicy = DefaultCaret.UPDATE_WHEN_ON_EDT
         sourceCodeEditorPane.document.addDocumentListener(object : DocumentListener {
-            override fun removeUpdate(e: DocumentEvent) {
-                presenter.onSourceCodeKeyTyped()
-                clearSourceCodeHighlight()
-            }
+            override fun removeUpdate(e: DocumentEvent) = onSourceCodeEdited()
 
-            override fun insertUpdate(e: DocumentEvent) {
+            override fun insertUpdate(e: DocumentEvent) = onSourceCodeEdited()
+
+            /** Text inserted or removed: the highlighted ranges no longer match the source. */
+            private fun onSourceCodeEdited() {
                 presenter.onSourceCodeKeyTyped()
                 clearSourceCodeHighlight()
             }

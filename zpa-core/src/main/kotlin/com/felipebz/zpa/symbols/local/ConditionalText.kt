@@ -119,9 +119,8 @@ internal object ConditionalText {
 
     /** The undecided piece the words [words] form: wide when they may change the block structure. */
     fun piece(words: List<ConditionalWord>, wide: Boolean = !isBlockBalanced(words), kept: LocalConditionalPiece.Span? = null): LocalConditionalPiece {
-        val mentions = HashMap<String, MutableList<Long>>()
-        for (word in words) mentions.getOrPut(word.lookupName) { ArrayList(1) } += LocalConditionalPiece.position(word.line, word.column)
-        val labels = words.filter { it.label }.mapTo(HashSet()) { it.lookupName }
+        val mentions = words.groupBy({ it.lookupName }) { LocalConditionalPiece.position(it.line, it.column) }
+        val labels = words.filter { it.label }.map { it.lookupName }.toSet()
         return LocalConditionalPiece(wide, mentions.mapValues { (_, positions) -> positions.toLongArray() }, labels, kept)
     }
 

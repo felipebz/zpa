@@ -44,14 +44,14 @@ internal object LocalMemberCollector {
         private val fileId: FileId,
         private val out: MutableList<LocalMember>
     ) {
-        private val start = children[head].token!!
-        private var end = children[head].lastToken!!
+        private val start = children[head].token
+        private var end = children[head].lastToken
 
         fun walk() {
             for (index in head + 1 until children.size) {
                 val child = children[index]
                 if (children[index - 1].type === PlSqlPunctuator.DOT) part(child)
-                if (child.type !== PlSqlPunctuator.DOT && child.hasToken()) end = child.lastToken!!
+                if (child.type !== PlSqlPunctuator.DOT && child.hasToken()) end = child.lastToken
             }
         }
 
@@ -64,7 +64,7 @@ internal object LocalMemberCollector {
                     part(children[0])
                     for (index in 1 until children.size) {
                         if (children[index - 1].type === PlSqlPunctuator.DOT) member(children[index])
-                        if (children[index].type !== PlSqlPunctuator.DOT) end = children[index].lastToken ?: end
+                        if (children[index].type !== PlSqlPunctuator.DOT) end = children[index].lastToken
                     }
                 }
                 else -> member(node)
@@ -81,7 +81,7 @@ internal object LocalMemberCollector {
                 SourceRange(fileId, token.line, token.column, token.endLine, token.endColumn),
                 SourceRange(fileId, first.line, first.column, end.endLine, end.endColumn)
             )
-            end = node.lastToken!!
+            end = node.lastToken
         }
     }
 }

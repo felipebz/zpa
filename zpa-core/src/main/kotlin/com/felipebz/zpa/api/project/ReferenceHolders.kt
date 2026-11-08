@@ -133,21 +133,21 @@ internal object ReferenceHolders {
             }
             is StandaloneTypeDeclaration -> fact.elementType?.let { action(it, Capture.NONE) }
             is PackageProcedureDeclaration -> fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
-            is PackageFunctionDeclaration -> {
-                fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
-                action(fact.returnType, Capture.PARAMETERS)
-            }
+            is PackageFunctionDeclaration -> forEachInFunction(fact.parameters, fact.returnType, action)
             is StandaloneProcedureDeclaration -> fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
-            is StandaloneFunctionDeclaration -> {
-                fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
-                action(fact.returnType, Capture.PARAMETERS)
-            }
+            is StandaloneFunctionDeclaration -> forEachInFunction(fact.parameters, fact.returnType, action)
             is PackageCursorDeclaration -> {
                 fact.parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
                 fact.returnType?.let { action(it, Capture.PARAMETERS) }
             }
             else -> Unit
         }
+    }
+
+    /** A function's parameter types, then its return type; the parameters may capture each of them. */
+    private inline fun forEachInFunction(parameters: List<ProjectParameter>, returnType: TypeRef, action: (TypeRef, Capture) -> Unit) {
+        parameters.forEachByIndex { action(it.typeRef, Capture.PARAMETERS) }
+        action(returnType, Capture.PARAMETERS)
     }
 
     private fun retained(fact: ProjectDeclaration): List<Retained> {

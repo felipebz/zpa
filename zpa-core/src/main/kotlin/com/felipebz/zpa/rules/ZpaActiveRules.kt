@@ -5,6 +5,6 @@
 
 package com.felipebz.zpa.rules
 
-interface ZpaActiveRules {
+fun interface ZpaActiveRules {
     fun findByRepository(repository: String): Collection<ZpaActiveRule>
 }

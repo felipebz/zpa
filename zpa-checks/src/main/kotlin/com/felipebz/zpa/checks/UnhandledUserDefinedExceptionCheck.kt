@@ -96,7 +96,7 @@ class UnhandledUserDefinedExceptionCheck : AbstractBaseCheck() {
         val line = exception.line ?: return false
         val column = exception.column ?: return false
         val first = unit.token
-        val last = unit.lastToken ?: return false
+        val last = unit.lastToken
         return (line > first.line || line == first.line && column >= first.column) &&
             (line < last.line || line == last.line && column <= last.column)
     }
