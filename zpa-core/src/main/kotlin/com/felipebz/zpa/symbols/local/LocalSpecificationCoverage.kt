@@ -305,7 +305,7 @@ internal class LocalSpecificationCoverage private constructor(
         val spec = specification.declaration as PackageDeclaration
         val names = spec.memberNames ?: return null
         val coverage = spec.callableCoverage
-        if (!names.complete || coverage.unknown || name.lookupName in coverage.omittedNames || names.unretained.any { it.name == name }) return null
+        if (!names.completeFor(name) || coverage.unknown || name.lookupName in coverage.omittedNames || names.unretained.any { it.name == name }) return null
         val headings = PackageMemberNames.members(index, specification, name)
             .sortedWith(compareBy({ it.sourceRange.startLine }, { it.sourceRange.startColumn }))
         if (headings.isEmpty() || headings.any { it !is PackageSubprogramDeclaration || !names.isUnconditional(it.sourceRange) }) return null

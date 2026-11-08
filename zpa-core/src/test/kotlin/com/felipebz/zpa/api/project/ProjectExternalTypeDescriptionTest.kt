@@ -256,7 +256,8 @@ class ProjectExternalTypeDescriptionTest {
     @Test
     fun nameCoverageGapsLeaveTheCaptureOpen() {
         listOf(
-            spec("  \$IF \$\$x \$THEN \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"),
+            // Conditional text that writes the name; text that does not write it leaves the coverage complete for it.
+            spec("  \$IF \$\$x \$THEN \$ELSE employees r_t; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"),
             spec("  (a) NUMBER;\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"),
             spec("  g NUMBER := &x;\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;")
         ).forEach {

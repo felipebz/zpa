@@ -123,12 +123,15 @@ class LocalSpecificationCoverageTest {
         val stays = "Incomplete[SPECIFICATION_NOT_IN_FILE](ProvenAbsent)"
         // Two specification occurrences of the package.
         assertThat(absent(facts(body, "spec.sql" to specification, "spec2.sql" to specification, "other.sql" to other))).isEqualTo(stays)
-        // Conditional compilation in the specification: a member inside it is unknown, and so is every absence.
+        // Conditional compilation in the specification: a member inside it is unknown, and so is an absence of a name
+        // the conditional text writes; a name it does not write is decided.
         val conditional = "create package cp as\n  \$IF \$\$x \$THEN g number; \$END\n  type t_rec is record (a number);\n" +
             "  cursor c is select 1 a from dual;\n  procedure p(x number);\nend;\n/\n"
         val withIf = facts(body, "spec.sql" to conditional, "other.sql" to other)
         assertThat(outcome(withIf, "g", 6)).startsWith("Incomplete[SPECIFICATION_NOT_IN_FILE]")
-        assertThat(absent(withIf)).isEqualTo(stays)
+        assertThat(absent(withIf)).isEqualTo("SpecificationCovered(ProvenAbsent)")
+        val writesIt = facts(body, "spec.sql" to conditional.replace("g number; \$END", "g number; \$ELSE other_pkg number; \$END"), "other.sql" to other)
+        assertThat(absent(writesIt)).isEqualTo(stays)
         // A specification whose name coverage has a gap (a substitution).
         val substituted = "create package cp as\n  g number;\n  &extra_members\n  type t_rec is record (a number);\n" +
             "  cursor c is select 1 a from dual;\n  procedure p(x number);\nend;\n/\n"

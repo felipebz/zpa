@@ -179,7 +179,8 @@ class PackageMemberNamesTest {
         val ccIndex = prepare("spec.sql" to "CREATE PACKAGE p AS CURSOR employees RETURN r_t; \$IF \$\$x \$THEN dept EXCEPTION; \$END END p;").index
         assertThat(PackageMemberNames.at(ccIndex, spec(ccIndex, "p"), id("employees"), null).status).isEqualTo(DECLARED_BEFORE)
         assertThat(PackageMemberNames.at(ccIndex, spec(ccIndex, "p"), id("dept"), null).status).isEqualTo(UNKNOWN)
-        assertThat(PackageMemberNames.at(ccIndex, spec(ccIndex, "p"), id("jobs"), null).status).isEqualTo(UNKNOWN)
+        // A name the conditional text does not write is answered as with complete coverage.
+        assertThat(PackageMemberNames.at(ccIndex, spec(ccIndex, "p"), id("jobs"), null).status).isEqualTo(NOT_DECLARED)
         assertThat(coverage("CREATE PACKAGE p AS g NUMBER := &x; END p;").gaps).contains(MemberNameGap.SUBSTITUTION)
     }
 
@@ -206,10 +207,16 @@ class PackageMemberNamesTest {
         // The lexer drops `$ELSE … $END`: Oracle captures with FALSE, nothing is known here.
         assertThat(status(ccSpec("  \$IF \$\$f \$THEN v NUMBER; \$ELSE CURSOR employees RETURN r_t; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"), "employees", "rows_t"))
             .isEqualTo(UNKNOWN)
+        // Branches that write other names declare no member of this one, before or after the reference.
         assertThat(status(ccSpec("  \$IF \$\$f \$THEN v NUMBER; \$ELSE w NUMBER; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"), "employees", "rows_t"))
-            .isEqualTo(UNKNOWN)
-        // Any later member rejects the reference, so a later conditional region also leaves the name open.
+            .isEqualTo(NOT_DECLARED)
         assertThat(status(ccSpec("  TYPE rows_t IS TABLE OF employees%ROWTYPE;\n  \$IF \$\$f \$THEN v NUMBER; \$END"), "employees", "rows_t"))
+            .isEqualTo(NOT_DECLARED)
+        // Any later member rejects the reference, so a later conditional region that writes the name leaves it open.
+        assertThat(status(ccSpec("  TYPE rows_t IS TABLE OF employees%ROWTYPE;\n  \$IF \$\$f \$THEN v NUMBER; \$ELSE employees NUMBER; \$END"), "employees", "rows_t"))
+            .isEqualTo(UNKNOWN)
+        // Conditional text that may change the block structure counts for every name.
+        assertThat(status(ccSpec("  \$IF \$\$f \$THEN v NUMBER; \$ELSE end; \$END\n  TYPE rows_t IS TABLE OF employees%ROWTYPE;"), "employees", "rows_t"))
             .isEqualTo(UNKNOWN)
         assertThat(status(ccSpec("  TYPE rows_t IS TABLE OF employees%ROWTYPE;"), "employees", "rows_t")).isEqualTo(NOT_DECLARED)
     }

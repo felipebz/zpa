@@ -60,7 +60,7 @@ internal class PackageSpecificationExtractor(
                 discarded.kinds.forEach { nameGaps += discardedNameGap(it) }
                 val conditionalRange = discarded.conditionalTokens?.let { stream.range(it.first, it.last) }
                 val coverage = PackageCallableCoverage(omitted, gaps)
-                val nameCoverage = PackageMemberNameCoverage(names, nameGaps, conditionalRange)
+                val nameCoverage = PackageMemberNameCoverage(names, nameGaps, conditionalRange, discarded.conditionalMentions)
                 val declarations = mutableListOf<ProjectDeclaration>()
                 declarations += PackageDeclaration(owner, DeclarationRole.SPECIFICATION, stream.fileId, stream.range(create, semicolon), coverage, nameCoverage)
                 declarations += members

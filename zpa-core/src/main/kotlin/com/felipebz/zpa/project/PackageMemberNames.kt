@@ -64,8 +64,16 @@ class PackageMemberNameCoverage(
      * Range of the tokens between the first and the last conditional-compilation directive the lexer discarded. The
      * lexer keeps the tokens of `$THEN` branches, so a member overlapping this range may be absent for Oracle.
      */
-    val conditionalRange: SourceRange? = null
+    val conditionalRange: SourceRange? = null,
+    conditionalMentions: Set<String>? = null
 ) {
+    /**
+     * The lookup names the undecided conditional-compilation text of the region writes (its dropped text, conditions
+     * included), as local semantics reads mentions; null when that text may change the block structure, or when there
+     * is none to read.
+     */
+    val conditionalMentions: Set<String>? = conditionalMentions?.let { Collections.unmodifiableSet(HashSet(it)) }
+
     val unretained: List<PackageMemberName> = Collections.unmodifiableList(ArrayList(unretained))
 
     val gaps: Set<MemberNameGap> =
@@ -73,6 +81,14 @@ class PackageMemberNameCoverage(
 
     /** True when every declaration of the region has a fact or an identified name. */
     val complete: Boolean get() = gaps.isEmpty()
+
+    /**
+     * True when the region's names are known for [name]: the coverage is complete, or its only gap is undecided
+     * conditional text that does not write [name] and cannot change the block structure. A compilation that takes
+     * another branch declares only names that text writes.
+     */
+    fun completeFor(name: OracleIdentifier): Boolean = complete ||
+        gaps == CONDITIONAL_ONLY && conditionalMentions?.contains(name.lookupName) == false
 
     /** True when the declaration [range] is present in every compilation of the specification. */
     fun isUnconditional(range: SourceRange): Boolean {
@@ -87,9 +103,13 @@ class PackageMemberNameCoverage(
 
     override fun equals(other: Any?): Boolean =
         other is PackageMemberNameCoverage && unretained == other.unretained && gaps == other.gaps &&
-            conditionalRange == other.conditionalRange
+            conditionalRange == other.conditionalRange && conditionalMentions == other.conditionalMentions
 
-    override fun hashCode(): Int = Objects.hash(unretained, gaps, conditionalRange)
+    override fun hashCode(): Int = Objects.hash(unretained, gaps, conditionalRange, conditionalMentions)
+
+    private companion object {
+        val CONDITIONAL_ONLY: Set<MemberNameGap> = EnumSet.of(MemberNameGap.CONDITIONAL_COMPILATION)
+    }
 
     override fun toString(): String = "PackageMemberNameCoverage(unretained=$unretained, gaps=$gaps, conditionalRange=$conditionalRange)"
 }
@@ -107,7 +127,10 @@ enum class MemberNameStatus {
     /** Some unconditional member with the name is declared after the reference or contains it: Oracle rejects it. */
     REJECTED,
 
-    /** No member has the name, and the specification's name coverage is complete. */
+    /**
+     * No member has the name, and the specification's name coverage is complete for it (conditional text that does not
+     * write the name leaves it complete, see [PackageMemberNameCoverage.completeFor]).
+     */
     NOT_DECLARED,
 
     /** Presence or order of the name is not proven: gaps, conditional members, or coverage not recorded. */
@@ -142,7 +165,7 @@ object PackageMemberNames {
             reference != null && certain.any { !completedBefore(it, reference) } -> MemberNameStatus.REJECTED
             certain.isNotEmpty() && (reference == null || conditional.all { completedBefore(it, reference) }) ->
                 MemberNameStatus.DECLARED_BEFORE
-            members.isEmpty() && coverage?.complete == true -> MemberNameStatus.NOT_DECLARED
+            members.isEmpty() && coverage?.completeFor(name) == true -> MemberNameStatus.NOT_DECLARED
             else -> MemberNameStatus.UNKNOWN
         }
         return MemberNameEvidence(status, members)

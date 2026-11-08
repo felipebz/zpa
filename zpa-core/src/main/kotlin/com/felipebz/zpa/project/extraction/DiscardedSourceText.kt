@@ -10,6 +10,7 @@ import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.CallableCoverageGap
+import com.felipebz.zpa.symbols.local.ConditionalText
 
 /**
  * Finds source text the lexer discarded (no token, no trivia) between consecutive tokens, by mapping token starts
@@ -58,8 +59,10 @@ internal class DiscardedSourceText(private val source: String) {
         var firstConditional = -1
         var lastConditional = -1
         var boundaries = 0
-        visitGaps(tokens, from, to) { kind, before, boundsBranch, _ ->
+        var dollarFallback = false
+        visitGaps(tokens, from, to) { kind, before, boundsBranch, fromTrivia ->
             kinds += kind
+            if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && !fromTrivia) dollarFallback = true
             if (kind == CallableCoverageGap.CONDITIONAL_COMPILATION && boundsBranch) {
                 if (firstConditional < 0) firstConditional = before
                 lastConditional = before
@@ -73,8 +76,34 @@ internal class DiscardedSourceText(private val source: String) {
             1 -> (from + 1) until to
             else -> firstConditional until lastConditional
         }
-        return Scan(kinds, conditionalTokens?.takeUnless { it.isEmpty() })
+        val conditional = conditionalTokens?.takeUnless { it.isEmpty() }
+        val mentions = if (CallableCoverageGap.CONDITIONAL_COMPILATION !in kinds || dollarFallback) null
+        else conditionalMentions(tokens, from, to, conditional)
+        return Scan(kinds, conditional, mentions)
     }
+
+    /**
+     * The lookup names the conditional-compilation text between `tokens[from]` and `tokens[to]` writes, read as local
+     * semantics reads it ([ConditionalText]); null when any of that text, or the kept tokens between the directives,
+     * may change the block structure.
+     */
+    private fun conditionalMentions(tokens: List<Token>, from: Int, to: Int, kept: IntRange?): Set<String>? {
+        if (kept != null && !ConditionalText.isBlockBalanced(ConditionalText.words(tokens.subList(kept.first, kept.last + 1)))) return null
+        val mentions = HashSet<String>()
+        for (piece in conditionalPieces(tokens, from, to)) {
+            val words = ConditionalText.words(piece.originalValue, piece.line, piece.column)
+            if (!ConditionalText.isBlockBalanced(words)) return null
+            words.mapTo(mentions) { it.lookupName }
+        }
+        return mentions
+    }
+
+    /** The conditional-compilation trivia of `tokens[from + 1..to]` that keeps no text of Oracle's compilation. */
+    private fun conditionalPieces(tokens: List<Token>, from: Int, to: Int): Sequence<Token> =
+        (from + 1..to).asSequence()
+            .flatMap { tokens[it].trivia.asSequence() }
+            .flatMap { it.tokens.asSequence() }
+            .filter { it.type === PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY || it.type === PlSqlTokenType.CONDITIONAL_DIRECTIVE }
 
     /**
      * Every discarded gap of the file whose tokens are [tokens], in order, with the index of the token right after it:
@@ -128,8 +157,12 @@ internal class DiscardedSourceText(private val source: String) {
     /** A discarded gap of [kind] lying right before `tokens[before]`. */
     class Segment(val kind: CallableCoverageGap, val before: Int)
 
-    /** [kinds] of discarded text; [conditionalTokens] are the indexes of tokens inside the conditional span, if any. */
-    class Scan(val kinds: Set<CallableCoverageGap>, val conditionalTokens: IntRange?)
+    /**
+     * [kinds] of discarded text; [conditionalTokens] are the indexes of tokens inside the conditional span, if any;
+     * [conditionalMentions] the names the conditional-compilation text writes, null when it has none or may change the
+     * block structure.
+     */
+    class Scan(val kinds: Set<CallableCoverageGap>, val conditionalTokens: IntRange?, val conditionalMentions: Set<String>? = null)
 
     /**
      * Calls [visit] with each discarded kind, the index of the token right after it, whether it bounds a kept

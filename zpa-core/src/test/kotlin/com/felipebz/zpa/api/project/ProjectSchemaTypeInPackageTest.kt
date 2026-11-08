@@ -43,7 +43,10 @@ class ProjectSchemaTypeInPackageTest {
         val own = prepare("types.sql" to types, "pk.sql" to "CREATE PACKAGE pk AS TYPE point IS RECORD (z NUMBER); END pk;\n/\n")
         assertThat(resolve(own, "point").declaration.get().kind).isEqualTo(ProjectDeclarationKind.PACKAGE_TYPE)
         val conditional = prepare("types.sql" to types, "pk.sql" to "CREATE PACKAGE pk AS \$IF \$\$f \$THEN TYPE other IS RECORD (z NUMBER); \$END END pk;\n/\n")
-        assertThat(resolve(conditional, "point").status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
+        // Conditional text that does not write the name proves it absent; text that writes it does not.
+        assertThat(resolve(conditional, "point").status).isEqualTo(ProjectNamedTypeResolution.Status.RESOLVED)
+        val mentioned = prepare("types.sql" to types, "pk.sql" to "CREATE PACKAGE pk AS \$IF \$\$f \$THEN TYPE other IS RECORD (z NUMBER); \$ELSE TYPE point IS RECORD (z NUMBER); \$END END pk;\n/\n")
+        assertThat(resolve(mentioned, "point").status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
         val noSpec = prepare("types.sql" to types)
         assertThat(resolve(noSpec, "point").status).isEqualTo(ProjectNamedTypeResolution.Status.NOT_FOUND_IN_PROJECT)
         val twice = prepare("types.sql" to types, "again.sql" to "CREATE TYPE point AS OBJECT (x NUMBER);\n/\n", "pk.sql" to pk)
