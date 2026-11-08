@@ -6,11 +6,13 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.api.project.ProjectSnapshots
+import com.felipebz.zpa.api.project.ProjectSourceInput
+import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** Calls from local code bound to the overload Oracle prefers, with literal and declared actuals; Oracle 26ai bindings. */
+/** Calls from local code bound to the overload Oracle prefers, with literal and declared actuals; Oracle bindings. */
 @OptIn(ZpaExperimentalApi::class)
 class LocalCallPreferenceTest {
     private val spec = "create or replace package app_owner.pk_pick as\n" +

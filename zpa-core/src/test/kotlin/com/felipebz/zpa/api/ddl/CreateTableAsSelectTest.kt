@@ -72,7 +72,7 @@ class CreateTableAsSelectTest : RuleTest() {
 
     @Test
     fun rejectsRelationalPropertiesWithoutExplicitColumnDefinitions() {
-        // Oracle 26ai 23.26.3 rejects these with ORA-03079: missing required column definition list.
+        // Oracle rejects these with ORA-03079: missing required column definition list.
         // Even nonexistent aliases hit this syntax boundary, not name resolution (ORA-00904).
         listOf(
             "(primary key (x))",

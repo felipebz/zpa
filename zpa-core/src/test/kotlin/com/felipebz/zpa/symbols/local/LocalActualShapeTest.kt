@@ -13,7 +13,7 @@ import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** Actuals typed from their shape: cursor variables, members of a value, COUNT of a collection; Oracle 26ai bindings. */
+/** Actuals typed from their shape: cursor variables, members of a value, COUNT of a collection; Oracle bindings. */
 @OptIn(ZpaExperimentalApi::class)
 class LocalActualShapeTest {
     private val project = "create or replace type shape_obj_t as object (label varchar2(30), size_n number, tags tag_list_t);\n/\n" +

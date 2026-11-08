@@ -137,7 +137,7 @@ internal object ProjectCallNarrower {
      * Whether the formal type [reference] of a heading in the specification of the package [owner] names a schema
      * object (a type created with CREATE TYPE, or a synonym of one): an unquoted one-segment name that no member of the
      * package declares (complete coverage) and that names no predefined scalar type of STANDARD or DBMS_STANDARD.
-     * SYS_REFCURSOR and the collection ORA_NAME_LIST_T are predefined but not scalar. Verified on Oracle 26ai: such a
+     * SYS_REFCURSOR and the collection ORA_NAME_LIST_T are predefined but not scalar. Verified on Oracle: such a
      * formal (an object type, a nested table, a varray, a private synonym of a type, ANYDATA, JSON_ELEMENT_T,
      * SYS_REFCURSOR) rejects every scalar actual with PLS-00306, so it classifies as composite.
      */
@@ -155,7 +155,7 @@ internal object ProjectCallNarrower {
     internal inline fun <R> compare(actual: Evidence, formal: Evidence, result: (Outcome, UnknownReason?) -> R): R {
         val reason = actual.reason ?: formal.reason
         if (reason != null) return result(Outcome.UNKNOWN, reason)
-        // The interval family does not tell DAY TO SECOND from YEAR TO MONTH; their exact types do (Oracle 26ai: each
+        // The interval family does not tell DAY TO SECOND from YEAR TO MONTH; their exact types do (Oracle: each
         // rejects the other with PLS-00306).
         if (actual.family == ProjectDatatypeFamily.INTERVAL && formal.family == ProjectDatatypeFamily.INTERVAL && actual.rank != null && formal.rank != null) {
             return result(if (actual.rank == formal.rank) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
@@ -175,7 +175,7 @@ internal object ProjectCallNarrower {
     }
 
     /**
-     * A package member named like a predefined type shadows it inside the package (verified on Oracle 26ai: a package
+     * A package member named like a predefined type shadows it inside the package (verified on Oracle: a package
      * `SUBTYPE date IS NUMBER` makes a formal `x date` a NUMBER). The predefined meaning is kept only when the
      * package has exactly one specification occurrence whose complete name coverage shows no member with that name.
      * Schema-level types do not shadow predefined names (a schema type STRING leaves a formal `x string` VARCHAR2).

@@ -8,7 +8,7 @@ package com.felipebz.zpa.project
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** `CHARACTER SET` datatype clauses accepted by Oracle 26ai, in every declaration position the extractor retains. */
+/** `CHARACTER SET` datatype clauses accepted by Oracle, in every declaration position the extractor retains. */
 class DeclaredTypeCharacterSetExtractionTest {
     private val extractor = ProjectDeclarationExtractor()
 

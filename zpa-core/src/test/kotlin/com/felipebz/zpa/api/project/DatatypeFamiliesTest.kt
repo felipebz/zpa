@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Datatype families and the actual-to-formal compatibility relation. Every expected cell restates a measurement on
- * Oracle 26ai: a single procedure with one formal of the formal type, called with a literal or variable of the actual
+ * Oracle: a single procedure with one formal of the formal type, called with a literal or variable of the actual
  * type, compiles (COMPATIBLE) or fails with PLS-00306 (INCOMPATIBLE) for every member pair and for IN, OUT and IN OUT;
  * a runtime conversion error still counts as compiling.
  */

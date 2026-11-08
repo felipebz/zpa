@@ -115,7 +115,7 @@ class PackageMemberNameCoverage(
 }
 
 /**
- * What a package specification says about a member name at a reference. Oracle 26ai rejects every reference whose
+ * What a package specification says about a member name at a reference. Oracle rejects every reference whose
  * first segment matches a member declared later in the same specification, or whose own declaration contains it, so
  * only [DECLARED_BEFORE] is a capture; both exclude a schema-level reading of the name. Members inside a
  * conditional-compilation span count only when the outcome is the same with or without them.

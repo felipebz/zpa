@@ -8,7 +8,7 @@ package com.felipebz.zpa.api.project
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
 /**
- * Datatype families whose members behave identically when passed to PL/SQL parameters (verified on Oracle 26ai by
+ * Datatype families whose members behave identically when passed to PL/SQL parameters (verified on Oracle by
  * compiling every member pair against a single procedure). Finer than [ProjectBuiltInTypeCategory], which mixes CLOB
  * with BLOB, DATE with INTERVAL and VARCHAR2 with RAW, ROWID and LONG. A family is evidence for eliminating
  * impossible overloads only; it is not a complete datatype and implies no overload preference.

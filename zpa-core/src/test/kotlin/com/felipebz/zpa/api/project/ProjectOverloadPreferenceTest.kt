@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Predefined subtypes, schema-object formals and Oracle's preference among compatible overloads, through the public
- * narrowing. Every expected binding is what Oracle 26ai bound (or raised) for the same overloads and actuals.
+ * narrowing. Every expected binding is what Oracle bound (or raised) for the same overloads and actuals.
  */
 @OptIn(ZpaExperimentalApi::class)
 class ProjectOverloadPreferenceTest {
@@ -121,7 +121,7 @@ class ProjectOverloadPreferenceTest {
 
     @Test
     fun theModeOfTheFormalsDoesNotChangeThePreference() {
-        // Oracle 26ai, with a variable as the actual: the same overload as for IN formals.
+        // Oracle, with a variable as the actual: the same overload as for IN formals.
         assertThat(call(arrayOf("p_val out pls_integer", "p_val out binary_double"), "NUMBER").selected).isEqualTo("p_val binary_double")
         assertThat(call(arrayOf("p_val out number", "p_val out pls_integer"), "NUMBER").selected).isEqualTo("p_val number")
         assertThat(call(arrayOf("p_val in out number", "p_val in out pls_integer"), "PLS_INTEGER").selected).isEqualTo("p_val pls_integer")
@@ -136,7 +136,7 @@ class ProjectOverloadPreferenceTest {
 
     @Test
     fun aCandidateWithAnOmittedDefaultRanksByTheFormalItsActualBinds() {
-        // Oracle 26ai: the omitted default does not count; the bound formal decides.
+        // Oracle: the omitted default does not count; the bound formal decides.
         assertThat(narrow(functions("p_a pls_integer", "p_a number, p_b varchar2 := null"), positional(), builtIn("PLS_INTEGER")).selected)
             .isEqualTo("p_a pls_integer")
         assertThat(narrow(functions("p_a number", "p_a pls_integer, p_b varchar2 := null"), positional(), builtIn("PLS_INTEGER")).selected)
@@ -150,7 +150,7 @@ class ProjectOverloadPreferenceTest {
 
     @Test
     fun rawRanksWithTheCharacterTypes() {
-        // Oracle 26ai: RAW is a subtype of VARCHAR2 in STANDARD.
+        // Oracle: RAW is a subtype of VARCHAR2 in STANDARD.
         assertThat(narrow(functions("p_val raw", "p_val number"), positional(), builtIn("VARCHAR2")).selected).isEqualTo("p_val raw")
         assertThat(narrow(functions("p_val varchar2", "p_val blob"), positional(), builtIn("RAW")).selected).isEqualTo("p_val varchar2")
         assertThat(narrow(functions("p_val raw", "p_val clob"), positional(), builtIn("CHAR")).selected).isEqualTo("p_val raw")

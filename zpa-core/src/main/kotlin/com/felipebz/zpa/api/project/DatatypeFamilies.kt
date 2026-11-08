@@ -93,7 +93,7 @@ internal object DatatypeFamilies {
     }
 
     /**
-     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary of Oracle 26ai),
+     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary),
      * with the leading word of each multi-word name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
      * of a polymorphic table function.
      */

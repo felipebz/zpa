@@ -281,7 +281,7 @@ class ProjectSnapshot private constructor(
      *
      * When several candidates remain and each is proven to receive the call, the one Oracle prefers is selected
      * ([ProjectTypedCallResolution.ranked]) if the exact types of every actual and of every remaining formal decide it,
-     * as measured on Oracle 26ai: a candidate whose formals are each of the same type group as their actuals (numbers;
+     * as measured on Oracle: a candidate whose formals are each of the same type group as their actuals (numbers;
      * character types and RAW; each other built-in type alone) is preferred to one with a formal of another group, and
      * among those, a candidate wins when on every actual where the formals differ its formal comes first in the actual's
      * preference (for a PLS_INTEGER or an integer literal: PLS_INTEGER, NUMBER, BINARY_FLOAT, BINARY_DOUBLE; for a
