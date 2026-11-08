@@ -565,27 +565,29 @@ source overloads_by_type_family
 oracle AGREES | f(number) printed
 target met
 ref f CALL_STATEMENT 0 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
-# Oracle picks NUMBER by its preference among compatible overloads; narrowing keeps VARCHAR2 too.
-call f CALL_STATEMENT 0 = AMBIGUOUS
-call f CALL_STATEMENT 1 = AMBIGUOUS
-call f CALL_STATEMENT 5 = AMBIGUOUS
+# Oracle picks NUMBER by its preference among compatible overloads: an integer literal, a NUMBER literal and a
+# PLS_INTEGER subtype each prefer it to VARCHAR2.
+call f CALL_STATEMENT 0 = RESOLVED PROCEDURE f@6:12
+call f CALL_STATEMENT 1 = RESOLVED PROCEDURE f@6:12
+call f CALL_STATEMENT 5 = RESOLVED PROCEDURE f@6:12
 
 case overloads_by_type_family: case_a f(sysdate),f(d),f(date lit),f(d 1): f(date) = F
 source overloads_by_type_family
 oracle LEGACY_WRONG_BINDING | f(date) = F
-target out-of-scope: overload ranking: Oracle prefers one of several compatible overloads; narrowing never ranks
+target out-of-scope: sysdate and d + 1 give no evidence
 ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
-# sysdate and d + 1 give no evidence; d and the DATE literal eliminate NUMBER only.
+# sysdate and d + 1 give no evidence; d and the DATE literal eliminate NUMBER, and a DATE prefers DATE to VARCHAR2.
 call f CALL_STATEMENT 2 = AMBIGUOUS
-call f CALL_STATEMENT 4 = AMBIGUOUS
-call f CALL_STATEMENT 6 = AMBIGUOUS
+call f CALL_STATEMENT 4 = RESOLVED PROCEDURE f@7:12
+call f CALL_STATEMENT 6 = RESOLVED PROCEDURE f@7:12
 
 case overloads_by_type_family: case_a f( a ),f(to_char(1)): f(varchar2) = F
 source overloads_by_type_family
 oracle LEGACY_WRONG_BINDING | f(varchar2) = F
-target out-of-scope: overload ranking: Oracle prefers one of several compatible overloads; narrowing never ranks
+target out-of-scope: to_char(1) gives no evidence
 ref f CALL_STATEMENT 3 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
-call f CALL_STATEMENT 3 = AMBIGUOUS
+# A character literal prefers VARCHAR2 to NUMBER and DATE.
+call f CALL_STATEMENT 3 = RESOLVED PROCEDURE f@8:12
 
 case overloads_by_type_family: case_b f(null): PLS-00307
 source overloads_by_type_family

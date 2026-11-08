@@ -56,7 +56,7 @@ internal class LocalTypeEvidence(
         fun literal(literal: LocalLiteral?): LocalTypeEvidence = when {
             literal == null -> unknown("literal not classified")
             literal.typeName == null -> LocalTypeEvidence(ProjectArgumentType.nullLiteral(), Terminal.LITERAL, emptyList(), null)
-            else -> LocalTypeEvidence(ProjectArgumentType.builtIn(literal.typeName), Terminal.LITERAL, emptyList(), null)
+            else -> LocalTypeEvidence(ProjectArgumentType.builtIn(literal.typeName, literal.rank), Terminal.LITERAL, emptyList(), null)
         }
     }
 }
@@ -310,6 +310,10 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
+    /** A predefined type written as [typeRef], with its exact type read from the whole written type. */
+    private fun builtIn(typeRef: NamedTypeRef): ProjectArgumentType =
+        ProjectArgumentType.builtIn(typeRef.name.last.originalSpelling, OverloadRank.of(typeRef.name, typeRef.headerTypeIdentity))
+
     /**
      * Evidence of a type written inside SQL: a predefined type name, else a schema type only. SQL sees neither a local
      * nor a package type (ORA-00902), and a local declaration does not hide a schema type there.
@@ -318,7 +322,7 @@ internal class LocalTypeWalk(
         val typeRef = use.typeRef as? NamedTypeRef ?: return LocalTypeEvidence.unknown("not a named type in SQL")
         val name = typeRef.name
         if (name.segments.size == 1 && DatatypeFamilies.ofTypeName(name.last.originalSpelling) != null) {
-            return LocalTypeEvidence(ProjectArgumentType.builtIn(name.last.originalSpelling), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+            return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
         }
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
         val written = ProjectQualifiedName.wrap(name)
@@ -482,7 +486,7 @@ internal class LocalTypeWalk(
                 val spelling = name.last.originalSpelling
                 // A schema type never shadows a predefined name; any other one-segment name is a schema type.
                 if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null) {
-                    return LocalTypeEvidence(ProjectArgumentType.builtIn(spelling), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
+                    return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
                 }
                 val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)

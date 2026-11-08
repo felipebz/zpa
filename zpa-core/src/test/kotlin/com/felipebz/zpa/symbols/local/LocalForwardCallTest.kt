@@ -131,7 +131,7 @@ class LocalForwardCallTest {
             )
         )
         assertThat(call.actuals.map { it.actual.literal?.name }).containsExactly(
-            "NUMBER", "BINARY_DOUBLE", "BINARY_FLOAT", "CHAR", "CHAR", "NCHAR", "NULL", "BOOLEAN", "DATE", "TIMESTAMP", "INTERVAL_DAY_TO_SECOND", null, null
+            "INTEGER", "BINARY_DOUBLE", "BINARY_FLOAT", "CHAR", "CHAR", "NCHAR", "NULL", "BOOLEAN", "DATE", "TIMESTAMP", "INTERVAL_DAY_TO_SECOND", null, null
         )
         assertThat(call.actuals.map { it.evidence.argumentType.toString() }).containsExactly(
             "BUILT_IN NUMERIC", "BUILT_IN NUMERIC", "BUILT_IN NUMERIC", "BUILT_IN CHARACTER", "BUILT_IN CHARACTER",
@@ -237,8 +237,8 @@ class LocalForwardCallTest {
         assertThat(processar(source, processarPackage)).containsExactly(
             "9: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
             "10: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
-            // Two overloads: which one is called is call binding, not evidence.
-            "11: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",
+            // Two overloads: Oracle prefers g(number), which returns DATE, for the literal 1.
+            "11: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",
             // h(1) with a parameterless h: Oracle rejects it (PLS-00306), so no evidence.
             "12: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"
         )
@@ -289,9 +289,9 @@ class LocalForwardCallTest {
             "  for r in (select 1 a from dual) loop pkg.processar(r); end loop;\n  for r in c loop pkg.processar(r); end loop;\nend;\n/\n"
         assertThat(analyze(source, prepared).calls.map(::render)).containsExactly(
             "4: PROJECT pkg.processar(BUILT_IN NUMERIC) -> RESOLVED number",
-            // Narrowing never ranks: a numeric actual stays compatible with VARCHAR2 and with NUMBER.
-            "5: PROJECT pv.p(BUILT_IN NUMERIC) -> AMBIGUOUS",
-            "6: PROJECT np.p(BUILT_IN NUMERIC) -> AMBIGUOUS",
+            // Both overloads receive a PLS_INTEGER; Oracle prefers the PLS_INTEGER one.
+            "5: PROJECT pv.p(BUILT_IN NUMERIC) -> RESOLVED pls_integer",
+            "6: PROJECT np.p(BUILT_IN NUMERIC) -> RESOLVED pls_integer",
             // A cursor FOR loop's index is a row (Oracle: PLS-00306).
             "7: PROJECT pkg.processar(COMPOSITE COMPOSITE) -> NO_COMPATIBLE_CANDIDATE",
             "8: PROJECT pkg.processar(COMPOSITE COMPOSITE) -> NO_COMPATIBLE_CANDIDATE"

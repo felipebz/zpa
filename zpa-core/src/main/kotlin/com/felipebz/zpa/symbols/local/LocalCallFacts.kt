@@ -5,6 +5,8 @@
 
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.api.project.DatatypeFamilies
+import com.felipebz.zpa.api.project.OverloadRank
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
@@ -13,9 +15,21 @@ import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.OracleIdentifier
 
 /** The datatype of a literal actual, as Oracle types it for overload purposes; [typeName] is null for `NULL`. */
-internal enum class LocalLiteral(val typeName: String?) {
+internal enum class LocalLiteral(
+    val typeName: String?,
+    /** The exact type Oracle's choice among compatible overloads sees; null when it is not known. */
+    val rank: OverloadRank? = typeName?.let { DatatypeFamilies.rankOfTypeName(it) }
+) {
     NULL(null),
+
+    /** With a decimal point or an exponent. */
     NUMBER("NUMBER"),
+
+    /** Digits only, within the PLS_INTEGER range: Oracle prefers a PLS_INTEGER formal for it. */
+    INTEGER("NUMBER", OverloadRank.PLS_INTEGER),
+
+    /** Digits only, beyond the PLS_INTEGER range: its preferred formal was not measured at every size. */
+    LARGE_INTEGER("NUMBER", null),
     BINARY_DOUBLE("BINARY_DOUBLE"),
     BINARY_FLOAT("BINARY_FLOAT"),
 
@@ -24,7 +38,8 @@ internal enum class LocalLiteral(val typeName: String?) {
     NCHAR("NCHAR"),
     BOOLEAN("BOOLEAN"),
     DATE("DATE"),
-    TIMESTAMP("TIMESTAMP"),
+    /** With or without a time zone, which the literal's text tells and this does not read. */
+    TIMESTAMP("TIMESTAMP", null),
     INTERVAL_YEAR_TO_MONTH("INTERVAL YEAR TO MONTH"),
     INTERVAL_DAY_TO_SECOND("INTERVAL DAY TO SECOND")
 }
@@ -120,7 +135,11 @@ internal object LocalCallCollector {
             PlSqlGrammar.NUMERIC_LITERAL -> when (text.last()) {
                 'd', 'D' -> LocalLiteral.BINARY_DOUBLE
                 'f', 'F' -> LocalLiteral.BINARY_FLOAT
-                else -> LocalLiteral.NUMBER
+                else -> when {
+                    !text.all { it.isDigit() } -> LocalLiteral.NUMBER
+                    (text.trimStart('0').ifEmpty { "0" }.toIntOrNull() ?: -1) >= 0 -> LocalLiteral.INTEGER
+                    else -> LocalLiteral.LARGE_INTEGER
+                }
             }
             PlSqlGrammar.FLOATING_POINT_LITERAL ->
                 if (text.startsWith("BINARY_FLOAT", ignoreCase = true)) LocalLiteral.BINARY_FLOAT else LocalLiteral.BINARY_DOUBLE

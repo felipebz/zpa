@@ -36,7 +36,9 @@ class ProjectArgumentType private constructor(
     @get:JvmSynthetic internal val unclassified: Boolean,
     /** Built-in name whose predefined meaning a package member could shadow, with the package that resolved it. */
     @get:JvmSynthetic internal val shadowName: OracleIdentifier?,
-    @get:JvmSynthetic internal val shadowScope: QualifiedName?
+    @get:JvmSynthetic internal val shadowScope: QualifiedName?,
+    /** The exact type, as Oracle's choice among compatible overloads tells types apart; null when not known exactly. */
+    @get:JvmSynthetic internal val rank: OverloadRank? = null
 ) {
     enum class Kind {
         /** No usable evidence. */
@@ -88,7 +90,21 @@ class ProjectArgumentType private constructor(
         fun builtIn(typeName: String): ProjectArgumentType {
             require(typeName.isNotBlank()) { "The type name must not be blank" }
             val family = DatatypeFamilies.ofTypeName(typeName)
+            return ProjectArgumentType(Kind.BUILT_IN, family, family == null, null, null, family?.let { DatatypeFamilies.rankOfTypeName(typeName) })
+        }
+
+        /** As [builtIn], for a value whose exact type within the family is not known (a timestamp literal, which may have a zone). */
+        @JvmSynthetic
+        internal fun builtInInexact(typeName: String): ProjectArgumentType {
+            val family = DatatypeFamilies.ofTypeName(typeName)
             return ProjectArgumentType(Kind.BUILT_IN, family, family == null, null, null)
+        }
+
+        /** As [builtIn], with [rank] the exact type the caller read from the written type (a TIMESTAMP variant, a precision). */
+        @JvmSynthetic
+        internal fun builtIn(typeName: String, rank: OverloadRank?): ProjectArgumentType {
+            val family = DatatypeFamilies.ofTypeName(typeName)
+            return ProjectArgumentType(Kind.BUILT_IN, family, family == null, null, null, rank?.takeIf { family != null })
         }
 
         /**
@@ -124,7 +140,8 @@ class ProjectArgumentType private constructor(
                 return ProjectArgumentType(Kind.DESCRIBED, null, false, null, null)
             }
             val scope = stepScope ?: owner
-            return ProjectArgumentType(Kind.DESCRIBED, family, false, scope?.let { builtIn.name.segments.single() }, scope)
+            val rank = OverloadRank.of(builtIn.name, description.source.terminalReference.map { it.writtenIdentity }.orElse(null))
+            return ProjectArgumentType(Kind.DESCRIBED, family, false, scope?.let { builtIn.name.segments.single() }, scope, rank)
         }
     }
 }

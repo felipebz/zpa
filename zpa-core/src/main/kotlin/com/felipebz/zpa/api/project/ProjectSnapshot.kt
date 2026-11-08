@@ -276,9 +276,18 @@ class ProjectSnapshot private constructor(
      * one element per written actual (`structural.arguments.arguments`, same order). Each applicable candidate's own
      * bindings are compared with its formals, described with [describeExternalType] under [metadata] (which may be
      * [ProjectExternalMetadata.none]) and [currentSchema]; a candidate is removed only when a binding is proven
-     * incompatible on Oracle. The structural result, its candidates and bindings are reused, never recomputed; nothing
-     * is ranked or chosen by order, and default expressions are not evaluated. Without evidence the structural
-     * RESOLVED/AMBIGUOUS outcome is kept.
+     * incompatible on Oracle. The structural result, its candidates and bindings are reused, never recomputed; default
+     * expressions are not evaluated. Without evidence the structural RESOLVED/AMBIGUOUS outcome is kept.
+     *
+     * When several candidates remain and each is proven to receive the call, the one Oracle prefers is selected
+     * ([ProjectTypedCallResolution.ranked]) if the exact types of every actual and of every remaining formal decide it,
+     * as measured on Oracle 26ai: a candidate whose formals are each of the same type group as their actuals (numbers;
+     * character types and RAW; each other built-in type alone) is preferred to one with a formal of another group, and
+     * among those, a candidate wins when on every actual where the formals differ its formal comes first in the actual's
+     * preference (for a PLS_INTEGER or an integer literal: PLS_INTEGER, NUMBER, BINARY_FLOAT, BINARY_DOUBLE; for a
+     * NUMBER: NUMBER, BINARY_FLOAT, BINARY_DOUBLE, PLS_INTEGER; for a BINARY_DOUBLE: BINARY_DOUBLE, BINARY_FLOAT,
+     * NUMBER, PLS_INTEGER; for a BINARY_FLOAT: BINARY_FLOAT, BINARY_DOUBLE, NUMBER, PLS_INTEGER). A predefined subtype
+     * counts as its base type. Anything else stays undecided; nothing is chosen by order.
      *
      * @throws IllegalArgumentException if a candidate was issued by another snapshot, if the list size differs from the
      * number of written actuals, or if it contains null

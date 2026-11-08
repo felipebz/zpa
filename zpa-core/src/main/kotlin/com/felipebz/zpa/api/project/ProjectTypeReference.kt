@@ -19,7 +19,9 @@ class ProjectTypeReference private constructor(
     val name: ProjectQualifiedName,
     val sourceRange: ProjectSourceRange,
     anchor: Anchor?,
-    link: ProjectQualifiedName?
+    link: ProjectQualifiedName?,
+    /** The normalized tokens of a named type written as more than a plain name (`TIMESTAMP(6) WITH TIME ZONE`). */
+    @get:JvmSynthetic internal val writtenIdentity: String? = null
 ) {
     /** Present only for [Kind.ANCHORED] references. */
     val anchor: Optional<Anchor> = Optional.ofNullable(anchor)
@@ -49,7 +51,7 @@ class ProjectTypeReference private constructor(
             val range = ref.sourceRange.toPublic()
             val name = ProjectQualifiedName.wrap(ref.name)
             return when (ref) {
-                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null, null)
+                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null, null, ref.headerTypeIdentity)
                 is RefTypeRef -> ProjectTypeReference(Kind.REF, name, range, null, null)
                 is AnchoredTypeRef -> ProjectTypeReference(
                     Kind.ANCHORED, name, range,

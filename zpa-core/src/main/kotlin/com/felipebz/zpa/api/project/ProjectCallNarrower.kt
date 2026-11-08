@@ -17,8 +17,8 @@ import com.felipebz.zpa.project.*
  */
 @OptIn(ZpaExperimentalApi::class)
 internal object ProjectCallNarrower {
-    /** The family of one side of a binding, or why it is unknown. */
-    internal class Evidence(val family: ProjectDatatypeFamily?, val reason: UnknownReason?)
+    /** The family of one side of a binding, or why it is unknown, and its exact type when known. */
+    internal class Evidence(val family: ProjectDatatypeFamily?, val reason: UnknownReason?, val rank: OverloadRank? = null)
 
     @JvmSynthetic
     fun narrow(
@@ -38,20 +38,44 @@ internal object ProjectCallNarrower {
         }
         val shadowed = shadowCheck(snapshot)
         val actuals = types.map { actual(it, shadowed) }
+        val formalRanks = ArrayList<List<OverloadRank?>>()
         val evaluations = structural.candidates
             .filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
             .map { candidate ->
-                val owner = (candidate.declaration as? ProjectPackageSubprogramView)?.packageOwner
+                val declaration = candidate.declaration
+                val owner = (declaration as? ProjectPackageSubprogramView)?.packageOwner
+                val inSpecification = declaration.role == ProjectDeclarationRole.SPECIFICATION
+                val ranks = arrayOfNulls<OverloadRank>(actuals.size)
                 val bindings = candidate.bindings.map { binding ->
                     val actual = actuals[binding.argumentOrdinal - 1]
-                    val formal = formal(snapshot, binding.parameter, owner, metadata, currentSchema, shadowed)
+                    val formal = formal(snapshot, binding.parameter, owner, inSpecification, metadata, currentSchema, shadowed)
+                    ranks[binding.argumentOrdinal - 1] = formal.rank
                     compare(actual, formal) { outcome, reason ->
                         ProjectBindingCompatibility.of(binding, outcome, actual.family, formal.family, reason)
                     }
                 }
+                formalRanks += ranks.toList()
                 ProjectCandidateCompatibility.of(candidate, bindings)
             }
-        return ProjectTypedCallResolution.of(structural, evaluations)
+        return ProjectTypedCallResolution.of(structural, evaluations, preferred(actuals, evaluations, formalRanks))
+    }
+
+    /**
+     * Among several retained candidates, the one Oracle binds ([OverloadRank.select]), or null. Every retained candidate
+     * must be proven to receive the call: each binding compatible, or depending only on PLSQL_IMPLICIT_CONVERSION_BOOL
+     * (measured with the setting on and off: such a binding never makes its candidate the preferred one).
+     */
+    internal fun preferred(actuals: List<Evidence>, evaluations: List<ProjectCandidateCompatibility>, formalRanks: List<List<OverloadRank?>>): ProjectCallCandidate? {
+        val retained = evaluations.indices.filter { evaluations[it].outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
+        if (retained.size < 2) return null
+        val proven = retained.all { index ->
+            evaluations[index].bindings.all {
+                it.outcome == Outcome.COMPATIBLE || it.unknownReason.orElse(null) == UnknownReason.ENVIRONMENT_DEPENDENT
+            }
+        }
+        if (!proven) return null
+        val selected = OverloadRank.select(actuals.map { it.rank }, retained.map { formalRanks[it] }) ?: return null
+        return evaluations[retained[selected]].candidate
     }
 
     /** Whether a package member may shadow a predefined type name, answered once per scope and name. */
@@ -69,7 +93,7 @@ internal object ProjectCallNarrower {
             val name = type.shadowName
             when {
                 family != null && scope != null && name != null && shadowed(scope, name) -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
-                family != null -> Evidence(family, null)
+                family != null -> Evidence(family, null, type.rank)
                 type.unclassified -> Evidence(null, UnknownReason.UNCLASSIFIED_TYPE)
                 else -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
             }
@@ -80,6 +104,7 @@ internal object ProjectCallNarrower {
         snapshot: ProjectSnapshot,
         parameter: ProjectParameterView,
         owner: ProjectQualifiedName?,
+        inSpecification: Boolean,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?,
         shadowed: (QualifiedName, OracleIdentifier) -> Boolean
@@ -89,6 +114,7 @@ internal object ProjectCallNarrower {
         val description = snapshot.describeExternalType(reference, owner, metadata, currentSchema)
         val family = DatatypeFamilies.ofDescription(description, null, reference)
         if (family == null) {
+            if (owner != null && inSpecification && namesSchemaObject(reference, owner, shadowed)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null)
             return Evidence(null, if (DatatypeFamilies.isConclusive(description)) UnknownReason.UNCLASSIFIED_TYPE else UnknownReason.FORMAL_INCONCLUSIVE)
         }
         val builtIn = DatatypeFamilies.builtInName(description, null)
@@ -96,8 +122,40 @@ internal object ProjectCallNarrower {
         if (builtIn != null && scope != null && shadowed(scope, builtIn.name.segments.single())) {
             return Evidence(null, UnknownReason.FORMAL_INCONCLUSIVE)
         }
-        return Evidence(family, null)
+        val rank = builtIn?.let { OverloadRank.of(it.name, description.source.terminalReference.map { ref -> ref.writtenIdentity }.orElse(null)) }
+        return Evidence(family, null, rank)
     }
+
+    /**
+     * Whether the formal type [reference] of a heading in the specification of the package [owner] names a schema
+     * object (a type created with CREATE TYPE, or a synonym of one): an unquoted one-segment name that no member of the
+     * package declares (complete coverage) and that names no predefined scalar type of STANDARD or DBMS_STANDARD.
+     * SYS_REFCURSOR and the collection ORA_NAME_LIST_T are predefined but not scalar. Verified on Oracle 26ai: such a
+     * formal (an object type, a nested table, a varray, a private synonym of a type, ANYDATA, JSON_ELEMENT_T,
+     * SYS_REFCURSOR) rejects every scalar actual with PLS-00306, so it classifies as composite.
+     */
+    private fun namesSchemaObject(reference: ProjectTypeReference, owner: ProjectQualifiedName, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): Boolean {
+        if (reference.kind != ProjectTypeReference.Kind.NAMED || reference.writtenIdentity != null) return false
+        val name = reference.name.name.segments.singleOrNull()?.takeUnless { it.quoted } ?: return false
+        if (name.lookupName in PREDEFINED_SCALAR_NAMES) return false
+        return !shadowed(owner.name, name)
+    }
+
+    /**
+     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary of Oracle 26ai),
+     * with the leading word of each multi-word name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
+     * of a polymorphic table function.
+     */
+    private val PREDEFINED_SCALAR_NAMES = setOf(
+        "BOOLEAN", "BOOL", "DATE", "NUMBER", "FLOAT", "REAL", "DOUBLE", "INTEGER", "INT", "SMALLINT", "DECIMAL", "NUMERIC", "DEC",
+        "BINARY_INTEGER", "NATURAL", "NATURALN", "POSITIVE", "POSITIVEN", "SIGNTYPE", "PLS_INTEGER", "SIMPLE_INTEGER",
+        "BINARY_FLOAT", "BINARY_DOUBLE", "SIMPLE_FLOAT", "SIMPLE_DOUBLE", "BINARY",
+        "VARCHAR2", "VARCHAR", "STRING", "LONG", "RAW", "ROWID", "UROWID", "CHAR", "CHARACTER", "NATIONAL", "NCHAR", "NVARCHAR2",
+        "MLSLABEL", "BLOB", "CLOB", "NCLOB", "BFILE", "JSON", "VECTOR",
+        "TIME", "TIMESTAMP", "INTERVAL", "TIME_UNCONSTRAINED", "TIME_TZ_UNCONSTRAINED", "TIMESTAMP_UNCONSTRAINED",
+        "TIMESTAMP_TZ_UNCONSTRAINED", "TIMESTAMP_LTZ_UNCONSTRAINED", "YMINTERVAL_UNCONSTRAINED", "DSINTERVAL_UNCONSTRAINED",
+        "DBMS_ID", "DBMS_QUOTED_ID", "DBMS_ID_30", "DBMS_QUOTED_ID_30", "DBMS_ID_128", "DBMS_QUOTED_ID_128", "TABLE"
+    )
 
     /**
      * One binding's outcome from its two sides: unknown when either side is, else the families' compatibility. Only
@@ -106,6 +164,11 @@ internal object ProjectCallNarrower {
     internal inline fun <R> compare(actual: Evidence, formal: Evidence, result: (Outcome, UnknownReason?) -> R): R {
         val reason = actual.reason ?: formal.reason
         if (reason != null) return result(Outcome.UNKNOWN, reason)
+        // The interval family does not tell DAY TO SECOND from YEAR TO MONTH; their exact types do (Oracle 26ai: each
+        // rejects the other with PLS-00306).
+        if (actual.family == ProjectDatatypeFamily.INTERVAL && formal.family == ProjectDatatypeFamily.INTERVAL && actual.rank != null && formal.rank != null) {
+            return result(if (actual.rank == formal.rank) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
+        }
         return when (DatatypeFamilies.compatibility(actual.family, formal.family)) {
             DatatypeCompatibility.COMPATIBLE -> result(Outcome.COMPATIBLE, null)
             DatatypeCompatibility.INCOMPATIBLE -> result(Outcome.INCOMPATIBLE, null)

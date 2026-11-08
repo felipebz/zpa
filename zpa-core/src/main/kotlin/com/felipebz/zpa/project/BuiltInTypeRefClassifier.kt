@@ -31,14 +31,16 @@ internal object BuiltInTypeRefClassifier {
             "BINARY_DOUBLE", "BINARY_FLOAT", "BINARY_INTEGER", "DEC", "DECIMAL",
             "DOUBLE", "FLOAT", "INT", "INTEGER", "NATURAL", "NATURALN", "NUMBER",
             "NUMERIC", "PLS_INTEGER", "POSITIVE", "POSITIVEN", "REAL", "SIGNTYPE",
-            "SMALLINT" -> ProjectBuiltInTypeCategory.NUMERIC
+            "SMALLINT", "SIMPLE_INTEGER", "SIMPLE_FLOAT", "SIMPLE_DOUBLE" -> ProjectBuiltInTypeCategory.NUMERIC
 
             "CHAR", "CHARACTER", "LONG", "NCHAR", "NVARCHAR2", "RAW", "ROWID",
-            "STRING", "UROWID", "VARCHAR", "VARCHAR2" -> ProjectBuiltInTypeCategory.CHARACTER
+            "STRING", "UROWID", "VARCHAR", "VARCHAR2",
+            "DBMS_ID", "DBMS_QUOTED_ID", "DBMS_ID_30", "DBMS_QUOTED_ID_30", "DBMS_ID_128", "DBMS_QUOTED_ID_128" -> ProjectBuiltInTypeCategory.CHARACTER
 
             "BFILE", "BLOB", "CLOB", "NCLOB" -> ProjectBuiltInTypeCategory.LOB
-            "BOOLEAN" -> ProjectBuiltInTypeCategory.BOOLEAN
-            "DATE", "INTERVAL", "TIMESTAMP" -> ProjectBuiltInTypeCategory.DATE
+            "BOOLEAN", "BOOL" -> ProjectBuiltInTypeCategory.BOOLEAN
+            "DATE", "INTERVAL", "TIMESTAMP", "TIMESTAMP_UNCONSTRAINED", "TIMESTAMP_TZ_UNCONSTRAINED", "TIMESTAMP_LTZ_UNCONSTRAINED",
+            "DSINTERVAL_UNCONSTRAINED", "YMINTERVAL_UNCONSTRAINED" -> ProjectBuiltInTypeCategory.DATE
             "JSON" -> ProjectBuiltInTypeCategory.JSON
             else -> null
         }

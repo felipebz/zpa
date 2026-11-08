@@ -9,13 +9,15 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import java.util.*
 
 /**
- * A structural call resolution narrowed by datatype evidence ([ProjectSnapshot.narrowCall]). Narrowing only removes
- * candidates whose bindings are proven incompatible; compatible candidates are never ranked and source order never
- * chooses.
+ * A structural call resolution narrowed by datatype evidence ([ProjectSnapshot.narrowCall]). Narrowing removes
+ * candidates whose bindings are proven incompatible; among candidates all proven compatible, it picks the one Oracle
+ * prefers only when the exact types of the actuals and formals decide it. Source order never chooses.
  *
  * - [Status.RESOLVED]: the structural discovery was certain (structural RESOLVED or AMBIGUOUS) and every other
- *   applicable candidate is proven incompatible. The survivor may still have unknown bindings: RESOLVED does not assert
- *   that Oracle compiles or executes the call, only that no other known candidate can receive it.
+ *   applicable candidate is proven incompatible, or ([ranked]) every retained candidate is proven to receive the call
+ *   and Oracle's preference among them, read from the exact types of the actuals and formals, picks one. The survivor
+ *   may still have unknown bindings when it is the only one: RESOLVED does not assert that Oracle compiles or executes
+ *   the call, only that no other known candidate can receive it, or would be chosen over it.
  * - [Status.AMBIGUOUS]: several applicable candidates survive.
  * - [Status.NO_COMPATIBLE_CANDIDATE]: every applicable candidate of a certain discovery has an incompatible binding
  *   for the supplied evidence. This is not a claim that Oracle rejects the source.
@@ -28,7 +30,13 @@ class ProjectTypedCallResolution private constructor(
     /** The structural resolution passed to [ProjectSnapshot.narrowCall], the very same object. */
     val structural: ProjectCallResolution,
     evaluations: List<ProjectCandidateCompatibility>,
-    private val selectedCandidate: ProjectCallCandidate?
+    private val selectedCandidate: ProjectCallCandidate?,
+    /**
+     * True when [Status.RESOLVED] was chosen among several retained candidates: the others are proven able to receive the
+     * call too, and Oracle prefers [selected] to each of them (the preference measured on Oracle, see
+     * [ProjectSnapshot.narrowCall]).
+     */
+    val ranked: Boolean = false
 ) {
     enum class Status { RESOLVED, AMBIGUOUS, NO_COMPATIBLE_CANDIDATE, NOT_NARROWED }
 
@@ -47,7 +55,9 @@ class ProjectTypedCallResolution private constructor(
         require((status == Status.NOT_NARROWED) == !certain) { "NOT_NARROWED exactly when the structural status is not RESOLVED or AMBIGUOUS" }
         val retained = this.evaluations.filter { it.outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
         when (status) {
-            Status.RESOLVED -> require(retained.size == 1 && retained.single().candidate === selectedCandidate) { "Invalid RESOLVED narrowing" }
+            Status.RESOLVED -> require(
+            retained.any { it.candidate === selectedCandidate } && (retained.size == 1) != ranked
+        ) { "Invalid RESOLVED narrowing" }
             Status.AMBIGUOUS -> require(retained.size > 1 && selectedCandidate == null) { "Invalid AMBIGUOUS narrowing" }
             Status.NO_COMPATIBLE_CANDIDATE -> require(this.evaluations.isNotEmpty() && retained.isEmpty() && selectedCandidate == null) {
                 "Invalid NO_COMPATIBLE_CANDIDATE narrowing"
@@ -60,16 +70,22 @@ class ProjectTypedCallResolution private constructor(
 
     internal companion object {
         @JvmSynthetic
-        fun of(structural: ProjectCallResolution, evaluations: List<ProjectCandidateCompatibility>): ProjectTypedCallResolution {
+        fun of(
+            structural: ProjectCallResolution,
+            evaluations: List<ProjectCandidateCompatibility>,
+            preferred: ProjectCallCandidate? = null
+        ): ProjectTypedCallResolution {
             val certain = structural.status == ProjectCallResolution.Status.RESOLVED || structural.status == ProjectCallResolution.Status.AMBIGUOUS
             val retained = evaluations.filter { it.outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
+            val ranked = certain && retained.size > 1 && preferred != null
             val status = when {
                 !certain -> Status.NOT_NARROWED
-                retained.size == 1 -> Status.RESOLVED
+                retained.size == 1 || ranked -> Status.RESOLVED
                 retained.size > 1 -> Status.AMBIGUOUS
                 else -> Status.NO_COMPATIBLE_CANDIDATE
             }
-            return ProjectTypedCallResolution(status, structural, evaluations, retained.singleOrNull()?.candidate?.takeIf { status == Status.RESOLVED })
+            val selected = if (ranked) preferred else retained.singleOrNull()?.candidate?.takeIf { status == Status.RESOLVED }
+            return ProjectTypedCallResolution(status, structural, evaluations, selected, ranked)
         }
     }
 }

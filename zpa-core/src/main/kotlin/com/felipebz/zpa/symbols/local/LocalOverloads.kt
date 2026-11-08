@@ -8,6 +8,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.OverloadRank
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.Outcome
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.UnknownReason
 import com.felipebz.zpa.api.project.ProjectCallNarrower
@@ -28,7 +29,9 @@ internal class LocalBindingCompatibility(
     val actualFamily: ProjectDatatypeFamily?,
     val formalFamily: ProjectDatatypeFamily?,
     /** Why the outcome is unknown; null otherwise. */
-    val reason: UnknownReason?
+    val reason: UnknownReason?,
+    /** The formal's exact type, for Oracle's preference among compatible candidates; null when not known. */
+    val formalRank: OverloadRank? = null
 ) {
     override fun toString() = "$argumentOrdinal>$parameterOrdinal $outcome" + (reason?.let { " $it" } ?: "")
 }
@@ -54,8 +57,8 @@ internal class LocalCallCandidate(
 
 /**
  * A call to a local overload set: every entity bound and narrowed as the project binds and narrows its candidates.
- * Narrowing only removes candidates with a binding proven incompatible; source order never chooses and compatible
- * candidates are never ranked.
+ * Narrowing removes candidates with a binding proven incompatible, and picks among candidates all proven compatible the
+ * one Oracle prefers when the exact types decide it ([OverloadRank.select]), outside methods; source order never chooses.
  */
 internal class LocalCallResolution(
     val status: Status,
@@ -65,7 +68,10 @@ internal class LocalCallResolution(
     val selected: LocalDeclarationId?
 ) {
     enum class Status {
-        /** Exactly one candidate is retained. It may still have unknown bindings. */
+        /**
+         * Exactly one candidate is retained (it may still have unknown bindings), or several are, each proven to receive
+         * the call, and Oracle's preference picks [selected].
+         */
         RESOLVED,
 
         /**
@@ -132,6 +138,9 @@ internal class LocalOverloads(
         val actualEvidence = actuals.map { ProjectCallNarrower.actual(it.argumentType, shadowed) }
         val candidates = entities.map { candidate(model.declaration(it), kind, arguments, actualEvidence) }
         val retained = candidates.filter { it.retained }
+        // Oracle's preference among candidates all proven to receive the call; methods keep their own outcomes.
+        val preferred = if (caller == null) preferred(retained, actualEvidence) else null
+        if (preferred != null) return LocalCallResolution(LocalCallResolution.Status.RESOLVED, candidates, preferred)
         val status = when {
             retained.size == 1 && caller == LocalMethodCaller.MEMBER && LocalTypeScope.isStatic(model.declaration(retained.single().declaration)) ->
                 LocalCallResolution.Status.STATIC_ON_INSTANCE
@@ -143,6 +152,17 @@ internal class LocalOverloads(
             else -> LocalCallResolution.Status.NO_COMPATIBLE_CANDIDATE
         }
         return LocalCallResolution(status, candidates, retained.singleOrNull()?.declaration?.takeIf { status == LocalCallResolution.Status.RESOLVED })
+    }
+
+    /** As the project's narrowing prefers ([ProjectCallNarrower.preferred]), over the retained local candidates. */
+    private fun preferred(retained: List<LocalCallCandidate>, actuals: List<ProjectCallNarrower.Evidence>): LocalDeclarationId? {
+        if (retained.size < 2) return null
+        val proven = retained.all { candidate ->
+            candidate.bindings.all { it.outcome == Outcome.COMPATIBLE || it.reason == UnknownReason.ENVIRONMENT_DEPENDENT }
+        }
+        if (!proven) return null
+        val formals = retained.map { candidate -> candidate.bindings.sortedBy { it.argumentOrdinal }.map { it.formalRank } }
+        return OverloadRank.select(actuals.map { it.rank }, formals)?.let { retained[it].declaration }
     }
 
     private fun candidate(
@@ -163,7 +183,7 @@ internal class LocalOverloads(
             val parameter = parameters[bound.formalIndices[index]]
             val formal = formal(walk.written(parameter.type))
             ProjectCallNarrower.compare(actual, formal) { outcome, reason ->
-                LocalBindingCompatibility(index + 1, parameter.ordinal, outcome, actual.family, formal.family, reason)
+                LocalBindingCompatibility(index + 1, parameter.ordinal, outcome, actual.family, formal.family, reason, formal.rank)
             }
         }
         return LocalCallCandidate(

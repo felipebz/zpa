@@ -99,10 +99,10 @@ class LocalOverloadTest {
     }
 
     @Test
-    fun narrowingNeverRanksWithinAFamily() {
+    fun anIntegerLiteralBindsThePlsIntegerOverload() {
         // Oracle runs the PLS_INTEGER overload for a literal 1.
         val source = "declare\n  procedure p(x number) is begin null; end;\n  procedure p(x pls_integer) is begin null; end;\nbegin\n  p(1);\nend;\n/\n"
-        assertThat(resolutions(source)).containsExactly("5: p AMBIGUOUS")
+        assertThat(resolutions(source)).containsExactly("5: p RESOLVED PROCEDURE 3")
     }
 
     @Test

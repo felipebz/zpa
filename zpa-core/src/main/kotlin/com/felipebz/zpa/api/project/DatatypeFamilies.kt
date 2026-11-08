@@ -37,17 +37,21 @@ internal object DatatypeFamilies {
             ProjectDatatypeFamily.NUMERIC, "NUMBER", "INTEGER", "INT", "SMALLINT", "DEC", "DECIMAL", "NUMERIC", "FLOAT", "REAL",
             // DOUBLE is the retained leading word of DOUBLE PRECISION.
             "DOUBLE", "PLS_INTEGER", "BINARY_INTEGER", "NATURAL", "NATURALN", "POSITIVE", "POSITIVEN", "SIGNTYPE",
-            "SIMPLE_INTEGER", "BINARY_FLOAT", "BINARY_DOUBLE"
+            "SIMPLE_INTEGER", "BINARY_FLOAT", "BINARY_DOUBLE", "SIMPLE_FLOAT", "SIMPLE_DOUBLE"
         )
-        put(ProjectDatatypeFamily.CHARACTER, "VARCHAR2", "VARCHAR", "CHAR", "CHARACTER", "STRING", "NCHAR", "NVARCHAR2")
+        put(
+            ProjectDatatypeFamily.CHARACTER, "VARCHAR2", "VARCHAR", "CHAR", "CHARACTER", "STRING", "NCHAR", "NVARCHAR2",
+            // The subtypes of DBMS_STANDARD, visible as predefined names as those of STANDARD are.
+            "DBMS_ID", "DBMS_QUOTED_ID", "DBMS_ID_30", "DBMS_QUOTED_ID_30", "DBMS_ID_128", "DBMS_QUOTED_ID_128"
+        )
         put(ProjectDatatypeFamily.CLOB, "CLOB", "NCLOB")
         put(ProjectDatatypeFamily.BLOB, "BLOB")
         put(ProjectDatatypeFamily.RAW, "RAW")
         // TIMESTAMP covers WITH [LOCAL] TIME ZONE: every variant behaves as DATE.
-        put(ProjectDatatypeFamily.DATETIME, "DATE", "TIMESTAMP")
+        put(ProjectDatatypeFamily.DATETIME, "DATE", "TIMESTAMP", "TIMESTAMP_UNCONSTRAINED", "TIMESTAMP_TZ_UNCONSTRAINED", "TIMESTAMP_LTZ_UNCONSTRAINED")
         // INTERVAL is the retained leading word of both DAY TO SECOND and YEAR TO MONTH.
-        put(ProjectDatatypeFamily.INTERVAL, "INTERVAL")
-        put(ProjectDatatypeFamily.BOOLEAN, "BOOLEAN")
+        put(ProjectDatatypeFamily.INTERVAL, "INTERVAL", "DSINTERVAL_UNCONSTRAINED", "YMINTERVAL_UNCONSTRAINED")
+        put(ProjectDatatypeFamily.BOOLEAN, "BOOLEAN", "BOOL")
         put(ProjectDatatypeFamily.JSON, "JSON")
         put(ProjectDatatypeFamily.ROWID, "ROWID", "UROWID")
         // Deliberately absent: LONG (LONG and LONG RAW share the leading word), BFILE, REF CURSOR, owned types.
@@ -86,6 +90,14 @@ internal object DatatypeFamilies {
         val word = words.single()
         if (!word.all { it.isLetterOrDigit() || it == '_' || it == '$' || it == '#' }) return null
         return ofName(QualifiedName(OracleIdentifier.fromSource(word)))
+    }
+
+    /** The overload rank of a built-in type spelled as text, read as [ofTypeName] reads it; null when not known. */
+    fun rankOfTypeName(text: String): OverloadRank? {
+        if (text.contains('"') || text.contains('.')) return null
+        val stripped = stripGroups(text) ?: return null
+        val words = stripped.trim().split(WHITESPACE).filter { it.isNotEmpty() }.map { it.uppercase(Locale.ROOT) }
+        return OverloadRank.ofText(words)
     }
 
     /** Family of a dictionary datatype: owner-less, known spellings only (see [ofTypeName]). */

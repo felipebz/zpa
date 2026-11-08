@@ -127,8 +127,8 @@ class ValueCategoryReceiverTest {
             "28:l.r.n=Scalar(NUMERIC)",
             // One element step per argument list.
             "29:tt(1)(2).n=Scalar(NUMERIC)",
-            // Oracle picks lo(number) for the literal, but zpa does not choose overloads by argument type.
-            "30:lo(1).n=Unknown[UNSUPPORTED_REFERENCE]",
+            // Oracle picks lo(number) for the literal, preferring it to lo(varchar2).
+            "30:lo(1).n=Scalar(NUMERIC)",
             "31:p.f(1).i=Record(RECORD_TYPE)",
             // Two declarations no call can tell apart: Oracle rejects the call (PLS-00307).
             "32:la(1).n=Unknown[UNSUPPORTED_REFERENCE]"
@@ -151,7 +151,8 @@ class ValueCategoryReceiverTest {
         val rows = assigned(ProjectAnalysisContext.NOT_PREPARED, withSpec).map { row ->
             "${row.substringBefore(':').toInt() - shift}:${row.substringAfter(':')}"
         }
-        assertThat(rows.filter { "=Unknown" !in it }).containsExactly("20:t(1).n=Scalar(NUMERIC)", "25:lf(1).n=Scalar(NUMERIC)", "29:tt(1)(2).n=Scalar(NUMERIC)")
+        assertThat(rows.filter { "=Unknown" !in it })
+            .containsExactly("20:t(1).n=Scalar(NUMERIC)", "25:lf(1).n=Scalar(NUMERIC)", "29:tt(1)(2).n=Scalar(NUMERIC)", "30:lo(1).n=Scalar(NUMERIC)")
     }
 
     @Test

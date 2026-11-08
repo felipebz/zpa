@@ -69,11 +69,13 @@ class ProjectTypedCallResolutionTest {
     private val ts08 = spec("PROCEDURE pick(n NUMBER);", "PROCEDURE pick(s VARCHAR2);")
 
     @Test
-    fun characterActualAgainstNumberAndVarchar2StaysAmbiguous() {
+    fun characterActualAgainstNumberAndVarchar2BindsVarchar2() {
+        // Both receive it; Oracle prefers VARCHAR2 for a character value.
         val c = call(ts08, "pick", listOf(positional()), listOf(ProjectArgumentType.builtIn("CHAR")))
         assertThat(c.structural.status).isEqualTo(Structural.AMBIGUOUS)
-        assertThat(c.typed.status).isEqualTo(Status.AMBIGUOUS)
-        assertThat(c.typed.selected).isEmpty
+        assertThat(c.typed.status).isEqualTo(Status.RESOLVED)
+        assertThat(c.typed.ranked).isTrue
+        assertThat(selected(c.typed)).isEqualTo("(s VARCHAR2)")
         assertThat(c.typed.evaluations.flatMap { it.bindings }.map { it.outcome }).containsExactly(Outcome.COMPATIBLE, Outcome.COMPATIBLE)
         assertThat(c.typed.evaluations.map { it.bindings.single().formalFamily.get() }).containsExactly(Family.NUMERIC, Family.CHARACTER)
         val unknown = call(ts08, "pick", listOf(positional()), listOf(ProjectArgumentType.unknown()))
@@ -192,7 +194,8 @@ class ProjectTypedCallResolutionTest {
     fun booleanPairsDependOnTheEnvironment() {
         val source = spec("PROCEDURE pick(x BOOLEAN);", "PROCEDURE pick(x VARCHAR2);")
         val b = call(source, "pick", listOf(positional()), listOf(ProjectArgumentType.builtIn("BOOLEAN")))
-        assertThat(b.typed.status).isEqualTo(Status.AMBIGUOUS)
+        // With the setting on or off, Oracle binds BOOLEAN.
+        assertThat(selected(b.typed)).isEqualTo("(x BOOLEAN)")
         assertThat(b.typed.evaluations[1].bindings.single().unknownReason).contains(UnknownReason.ENVIRONMENT_DEPENDENT)
         assertThat(selected(call(source, "pick", listOf(positional()), listOf(ProjectArgumentType.builtIn("DATE"))).typed)).isEqualTo("(x VARCHAR2)")
     }
