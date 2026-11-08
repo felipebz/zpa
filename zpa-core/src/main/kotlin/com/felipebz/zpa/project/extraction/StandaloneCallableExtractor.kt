@@ -222,10 +222,8 @@ internal class StandaloneCallableExtractor(
     private fun strictImplementationEnd(start: Int, limit: Int): Int? {
         if (start >= limit) return null
         val end = when {
-            stream.isKeyword(start, "LANGUAGE") && stream.isKeyword(start + 1, "JAVA") ->
-                if (stream.isKeyword(start + 2, "NAME") && stream.tokenTypeAt(start + 3) === PlSqlTokenType.STRING_LITERAL) start + 4 else return null
-            stream.isKeyword(start, "LANGUAGE") || stream.isKeyword(start, "EXTERNAL") -> callSpecifications.cSpecificationEnd(start, limit) ?: return null
-            stream.isKeyword(start, "MLE") -> callSpecifications.mleSpecificationEnd(start + 1, limit) ?: return null
+            stream.isKeyword(start, "LANGUAGE") || stream.isKeyword(start, "EXTERNAL") || stream.isKeyword(start, "MLE") ->
+                callSpecifications.specificationEnd(start, limit) ?: return null
             // A quoted identifier spelled like a call-specification keyword is not one.
             stream.tokens[start].type == GenericTokenType.IDENTIFIER && stream.valueAt(start) in CALL_SPECIFICATION_WORDS -> return null
             else -> bodyBoundaries.implementationEnd(start, limit) ?: return null

@@ -13,6 +13,20 @@ private val EXTERNAL_PARAMETER_PROPERTIES = listOf("LENGTH", "DURATION", "MAXLEN
 /** Boundary recognition of `LANGUAGE C`, `EXTERNAL` and `MLE` call specifications; it never produces facts. */
 internal class CallSpecificationScanner(private val stream: TokenStream, private val datatypeShape: DatatypeShape) {
     /**
+     * The `;` ending the call specification starting at [start] (the token after `IS`/`AS`): `LANGUAGE JAVA NAME 'str'`,
+     * a `LANGUAGE C`/`EXTERNAL` one or an `MLE` one; null when it is none of them.
+     */
+    fun specificationEnd(start: Int, limit: Int): Int? = when {
+        stream.isKeyword(start, "LANGUAGE") && stream.isKeyword(start + 1, "JAVA") ->
+            if (stream.isKeyword(start + 2, "NAME") && stream.tokenTypeAt(start + 3) === PlSqlTokenType.STRING_LITERAL) {
+                (start + 4).takeIf { it < limit && stream.isPunctuator(it, PlSqlPunctuator.SEMICOLON) }
+            } else null
+        stream.isKeyword(start, "LANGUAGE") || stream.isKeyword(start, "EXTERNAL") -> cSpecificationEnd(start, limit)
+        stream.isKeyword(start, "MLE") -> mleSpecificationEnd(start + 1, limit)
+        else -> null
+    }
+
+    /**
      * `(LANGUAGE C | EXTERNAL) [NAME id] LIBRARY id [NAME id] [AGENT IN (id {, id})]
      * [WITH CONTEXT] [PARAMETERS (param {, param})]`, returning the index of the `;`.
      * `C` is lexed as an identifier; a quoted `"C"` is not accepted. External parameters are

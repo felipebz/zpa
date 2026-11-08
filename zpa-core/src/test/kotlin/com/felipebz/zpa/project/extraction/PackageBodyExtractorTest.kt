@@ -23,7 +23,7 @@ class PackageBodyExtractorTest {
         private val shape = DatatypeShape(stream)
         val extractor = PackageBodyExtractor(
             stream, BodyBoundaryScanner(stream),
-            PackageMemberParser(stream, references, CollectionElementSyntax(stream, shape, references), shape),
+            PackageMemberParser(stream, references, CollectionElementSyntax(stream, shape, references), shape, CallSpecificationScanner(stream, shape)),
             references, UnitBounds(stream)
         )
     }

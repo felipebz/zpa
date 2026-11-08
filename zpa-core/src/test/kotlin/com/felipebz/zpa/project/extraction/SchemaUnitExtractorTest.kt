@@ -22,7 +22,7 @@ class SchemaUnitExtractorTest {
         val references = TypeReferences(stream)
         val shape = DatatypeShape(stream)
         val collections = CollectionElementSyntax(stream, shape, references)
-        val methods = ObjectMethodSyntax(stream, references, PackageMemberParser(stream, references, collections, shape))
+        val methods = ObjectMethodSyntax(stream, references, PackageMemberParser(stream, references, collections, shape, CallSpecificationScanner(stream, shape)))
         return SchemaUnitExtractor(stream, references, UnitBounds(stream), collections, methods) to stream
     }
 

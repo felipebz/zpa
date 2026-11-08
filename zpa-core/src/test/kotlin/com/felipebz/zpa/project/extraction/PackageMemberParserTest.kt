@@ -22,7 +22,7 @@ class PackageMemberParserTest {
     private fun parser(text: String): Parser {
         val tokens = PlSqlLexer.create(PlSqlConfiguration(StandardCharsets.UTF_8, true)).lex(text)
         val stream = TokenStream(fileId, tokens)
-        return Parser(stream, TypeReferences(stream).let { PackageMemberParser(stream, it, CollectionElementSyntax(stream, DatatypeShape(stream), it), DatatypeShape(stream)) })
+        return Parser(stream, TypeReferences(stream).let { PackageMemberParser(stream, it, CollectionElementSyntax(stream, DatatypeShape(stream), it), DatatypeShape(stream), CallSpecificationScanner(stream, DatatypeShape(stream))) })
     }
 
     @Test

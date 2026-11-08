@@ -28,7 +28,8 @@ internal class PackageMemberParser(
     private val stream: TokenStream,
     private val typeReferences: TypeReferences,
     private val collectionElements: CollectionElementSyntax,
-    private val datatypeShape: DatatypeShape
+    private val datatypeShape: DatatypeShape,
+    private val callSpecifications: CallSpecificationScanner
 ) {
     fun parsePackageType(index: Int, owner: QualifiedName): ParsedDeclaration? {
         val name = stream.identifierAt(index + 1) ?: return null
@@ -124,7 +125,10 @@ internal class PackageMemberParser(
                 end
             )
             val deterministic = stream.firstKeywordAtTopLevel(returnIndex + 1, setOf("DETERMINISTIC"), end) != null
-            val returnTypeEnd = modifier ?: end
+            // A call specification (`IS`/`AS` then `LANGUAGE`, `EXTERNAL` or `MLE`) ends the heading; it must be a whole one.
+            val callSpecification = stream.firstKeywordAtTopLevel(returnIndex + 1, setOf("AS", "IS"), end)
+            if (callSpecification != null && callSpecifications.specificationEnd(callSpecification + 1, end + 1) != end) return null
+            val returnTypeEnd = listOfNotNull(modifier, callSpecification).minOrNull() ?: end
             val returnType = typeReferences.declaredType(returnIndex + 1, returnTypeEnd) ?: return null
             return ParsedDeclaration(
                 PackageFunctionDeclaration(

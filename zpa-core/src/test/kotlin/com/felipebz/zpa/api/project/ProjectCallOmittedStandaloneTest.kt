@@ -75,7 +75,7 @@ class ProjectCallOmittedStandaloneTest {
                 "CREATE OR REPLACE FUNCTION \"Quoted\" wrapped\nabc\n/\n" +
                 "CREATE FUNCTION a.b.c(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;\n/\n" +
                 "CREATE FUNCTION kept(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END;\n/\n" +
-                "CREATE PACKAGE p AS FUNCTION f(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END p;\n"
+                "CREATE PACKAGE p AS FUNCTION f(t NUMBER, u IN OUT) RETURN NUMBER; END p;\n"
         )
         assertThat(extraction.omittedStandaloneCallables.map { it.toString() }).containsExactlyInAnyOrder("app.fn", "\"Quoted\"")
         assertThat(extraction.declarations.map { it.qualifiedName().toString() }).containsExactly("kept", "p")

@@ -140,18 +140,18 @@ class ProjectCallCandidatesTest {
 
     @Test
     fun coverageGapsArePartialEvenWithoutCandidates() {
-        val callSpec = "FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';"
-        val retained = discover(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $callSpec END p;"), member("p", "run"))
+        val brokenHeading = "FUNCTION run(t NUMBER, u IN OUT) RETURN NUMBER;"
+        val retained = discover(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $brokenHeading END p;"), member("p", "run"))
         assertThat(retained.status).isEqualTo(PARTIAL_DECLARATIONS)
         assertThat(retained.uncertainties).containsExactly(ProjectCallUncertainty.PARTIAL_DECLARATIONS)
         assertThat(retained.candidates).hasSize(1)
 
-        val dropped = discover(project("p.sql" to "CREATE PACKAGE p AS $callSpec END p;"), member("p", "run"))
+        val dropped = discover(project("p.sql" to "CREATE PACKAGE p AS $brokenHeading END p;"), member("p", "run"))
         assertThat(dropped.status).isEqualTo(PARTIAL_DECLARATIONS)
         assertThat(dropped.candidates).isEmpty()
 
         // The gap is name-scoped.
-        assertThat(discover(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE other; $callSpec END p;"), member("p", "other")).status)
+        assertThat(discover(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE other; $brokenHeading END p;"), member("p", "other")).status)
             .isEqualTo(FOUND)
 
         val conditional = project("p.sql" to "CREATE PACKAGE p AS PROCEDURE a; \$IF \$\$flag \$THEN PROCEDURE b; \$END END p;")
@@ -189,7 +189,7 @@ class ProjectCallCandidatesTest {
     @Test
     fun readerFailurePreservesCandidatesAndEveryUncertainty() {
         val p = project(
-            "p.sql" to "CREATE PACKAGE x AS PROCEDURE run; FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END x;",
+            "p.sql" to "CREATE PACKAGE x AS PROCEDURE run; FUNCTION run(t NUMBER, u IN OUT) RETURN NUMBER; END x;",
             "s.sql" to "CREATE PROCEDURE x.run IS BEGIN NULL; END;",
             failed = true
         )

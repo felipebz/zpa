@@ -141,7 +141,7 @@ class OracleIdentifierIdentityTest {
     fun coverageNamesAreNormalizedAcrossQuoting() {
         val facts = ProjectDeclarationExtractor().extract(
             FileId("c.sql"),
-            "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); FUNCTION \"RUN\"(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int'; END p;"
+            "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); FUNCTION \"RUN\"(t NUMBER, u IN OUT) RETURN NUMBER; END p;"
         )
         val coverage = facts.filterIsInstance<PackageDeclaration>().single().callableCoverage
         assertThat(coverage.omittedNames).containsExactly("RUN")

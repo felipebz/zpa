@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test
 class ProjectCallCoverageTest {
     @Test
     fun droppedOnlyHeaderAndDuplicateEmptySpecificationsTakePrecedenceOverEmptiness() {
-        val callSpec = context(packageSource("FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';"))
-        val result = ProjectCallBinder(callSpec).resolve(member(), ProjectCallKind.FUNCTION, arguments(null, null))
+        val brokenHeading = context(packageSource("FUNCTION run(t NUMBER, u IN OUT) RETURN NUMBER;"))
+        val result = ProjectCallBinder(brokenHeading).resolve(member(), ProjectCallKind.FUNCTION, arguments(null, null))
         assertThat(result.status).isEqualTo(ProjectCallResolution.Status.PARTIAL_DECLARATIONS)
         assertThat(result.candidates).isEmpty()
         assertThat(result.packageSpecifications).hasSize(1)
@@ -54,7 +54,7 @@ class ProjectCallCoverageTest {
         val context = context(packageSource("""
             PROCEDURE run(a NUMBER DEFAULT 1);
             PROCEDURE run(a VARCHAR2 DEFAULT 'z');
-            FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';
+            FUNCTION run(t NUMBER, u IN OUT) RETURN NUMBER;
         """.trimIndent()))
         val result = ProjectCallBinder(context).resolve(member(), ProjectCallKind.PROCEDURE, ProjectCallArguments.none())
         assertThat(result.status).isEqualTo(ProjectCallResolution.Status.PARTIAL_DECLARATIONS)

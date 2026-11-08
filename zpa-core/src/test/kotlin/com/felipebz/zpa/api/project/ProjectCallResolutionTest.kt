@@ -230,13 +230,13 @@ class ProjectCallResolutionTest {
 
     @Test
     fun targetUncertaintyNeverResolves() {
-        val callSpec = "FUNCTION run(t NUMBER) RETURN NUMBER AS LANGUAGE JAVA NAME 'A.f(int) return int';"
-        val retained = resolve(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $callSpec END p;"), member("p", "run"), PROCEDURE, args(null))
+        val brokenHeading = "FUNCTION run(t NUMBER, u IN OUT) RETURN NUMBER;"
+        val retained = resolve(project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $brokenHeading END p;"), member("p", "run"), PROCEDURE, args(null))
         assertThat(retained.status).isEqualTo(Status.PARTIAL_DECLARATIONS)
         assertThat(retained.candidates.single().applicability).isEqualTo(APPLICABLE)
         assertThat(retained.selected).isEmpty
 
-        val dropped = resolve(project("p.sql" to "CREATE PACKAGE p AS $callSpec END p;"), member("p", "run"), FUNCTION, args(null))
+        val dropped = resolve(project("p.sql" to "CREATE PACKAGE p AS $brokenHeading END p;"), member("p", "run"), FUNCTION, args(null))
         assertThat(dropped.status).isEqualTo(Status.PARTIAL_DECLARATIONS)
         assertThat(dropped.candidates).isEmpty()
 
@@ -255,7 +255,7 @@ class ProjectCallResolutionTest {
             .isEqualTo(Status.RESOLVED)
 
         val failed = resolve(
-            project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $callSpec END p;", failed = true),
+            project("p.sql" to "CREATE PACKAGE p AS PROCEDURE run(a NUMBER); $brokenHeading END p;", failed = true),
             member("p", "run"), PROCEDURE, args(null)
         )
         assertThat(failed.status).isEqualTo(Status.INCOMPLETE_INDEX)
