@@ -162,7 +162,7 @@ class LocalForwardCallTest {
             "56: PROJECT pkg.processar(DESCRIBED DATETIME) -> RESOLVED date",    // v pkg_other.amt_t
             "63: PROJECT pkg.processar(BUILT_IN NUMERIC) -> RESOLVED number",
             "68: PROJECT pkg.processar(BUILT_IN NUMERIC) -> RESOLVED number",    // literal 1
-            "69: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",                   // sysdate: Oracle DATE; a name proven absent has no evidence
+            "69: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // sysdate: STANDARD's DATE
             "70: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // DATE literal
             "78: PROJECT pkg.processar(DESCRIBED NUMERIC) -> RESOLVED number",   // local subtype of pkg_other.amt_n
             "90: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // o.v, the labeled outer v

@@ -98,7 +98,7 @@ class LocalSharedSpecificationNameTest {
     fun aCallToASetOfSpecificationAndBodyOverloads() {
         assertThat(decided(loA, loABody, 5)).containsExactly(
             // The specification's p(number) first, as its heading comes first with the specification in the file.
-            "5:25 p OverloadSet(PROCEDURE p@4:12, PROCEDURE p@3:12) -> LOCAL_CAPTURE AMBIGUOUS",
+            "5:25 p OverloadSet(PROCEDURE p@4:12, PROCEDURE p@3:12) -> LOCAL_CAPTURE RESOLVED PROCEDURE p@3:12",
             "5:27 sysdate ProvenAbsent",
             "5:37 p OverloadSet(PROCEDURE p@4:12, PROCEDURE p@3:12) -> LOCAL_CAPTURE RESOLVED PROCEDURE p@4:12",
             "5:43 p OverloadSet(PROCEDURE p@4:12, PROCEDURE p@3:12) -> LOCAL_CAPTURE RESOLVED PROCEDURE p@3:12",

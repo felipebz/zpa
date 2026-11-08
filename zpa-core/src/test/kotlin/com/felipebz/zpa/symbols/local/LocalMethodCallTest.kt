@@ -55,8 +55,8 @@ class LocalMethodCallTest {
         // Oracle: m(1) and m(x => 1) run m(number), self.m(sysdate) m(date); a written SELF is PLS-00306.
         assertThat(resolutions(tm1, 15)).containsExactly(
             "m RESOLVED PROCEDURE 13",
-            // No evidence for sysdate.
-            "self.m AMBIGUOUS",
+            // sysdate is a DATE.
+            "self.m RESOLVED PROCEDURE 14",
             "m RESOLVED PROCEDURE 13",
             "self.m RESOLVED PROCEDURE 14",
             "self.m NO_APPLICABLE_CANDIDATE"

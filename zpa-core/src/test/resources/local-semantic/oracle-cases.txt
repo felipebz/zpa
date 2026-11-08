@@ -574,10 +574,11 @@ call f CALL_STATEMENT 5 = RESOLVED PROCEDURE f@6:12
 case overloads_by_type_family: case_a f(sysdate),f(d),f(date lit),f(d 1): f(date) = F
 source overloads_by_type_family
 oracle LEGACY_WRONG_BINDING | f(date) = F
-target out-of-scope: sysdate and d + 1 give no evidence
+target out-of-scope: d + 1 gives no evidence
 ref f CALL_STATEMENT 2 = OverloadSet(PROCEDURE f@6:12, PROCEDURE f@7:12, PROCEDURE f@8:12)
-# sysdate and d + 1 give no evidence; d and the DATE literal eliminate NUMBER, and a DATE prefers DATE to VARCHAR2.
-call f CALL_STATEMENT 2 = AMBIGUOUS
+# d + 1 gives no evidence; sysdate (STANDARD's DATE), d and the DATE literal eliminate NUMBER, and a DATE prefers DATE
+# to VARCHAR2.
+call f CALL_STATEMENT 2 = RESOLVED PROCEDURE f@7:12
 call f CALL_STATEMENT 4 = RESOLVED PROCEDURE f@7:12
 call f CALL_STATEMENT 6 = RESOLVED PROCEDURE f@7:12
 

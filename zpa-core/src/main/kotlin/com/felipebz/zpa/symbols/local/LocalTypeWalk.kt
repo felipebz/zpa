@@ -183,7 +183,7 @@ internal class LocalTypeWalk(
 
     /**
      * [members], one step after another, from the value [evidence] gives, the last of them possibly the collection
-     * method COUNT of a collection value: Oracle 26ai types it as PLS_INTEGER (it binds a PLS_INTEGER formal over NUMBER
+     * method COUNT of a collection value: Oracle types it as PLS_INTEGER (it binds a PLS_INTEGER formal over NUMBER
      * and VARCHAR2, for nested tables, varrays and associative arrays alike). A collection has no attribute, so COUNT
      * after one is always the method.
      */
@@ -202,6 +202,17 @@ internal class LocalTypeWalk(
         LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.takeIf { !it.anchor.isPresent && it.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?.source?.declaration?.orElse(null)?.let { (it as? ProjectShapedTypeView)?.shape?.orElse(null) == PublicTypeShape.COLLECTION } == true
         else -> false
+    }
+
+    /**
+     * A value of the type [name] names, when the project describes it as a type created with CREATE TYPE; null for
+     * anything else (a package type, an unresolved name, no prepared project).
+     */
+    fun schemaTypeValue(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? {
+        val snapshot = snapshot?.takeIf { prepared } ?: return null
+        val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(region))
+        if (DatatypeFamilies.compositeKind(described) != CompositeKind.SCHEMA_OBJECT) return null
+        return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
     /** [members], one step after another, from the value [evidence] gives. */
@@ -508,7 +519,7 @@ internal class LocalTypeWalk(
             val name = typeRef.name
             if (typeRef is NamedTypeRef && name.segments.size == 1) {
                 val spelling = name.last.originalSpelling
-                // SYS_REFCURSOR is STANDARD's ref cursor type (Oracle 26ai: a SYS_REFCURSOR formal takes it, a schema
+                // SYS_REFCURSOR is STANDARD's ref cursor type (Oracle: a SYS_REFCURSOR formal takes it, a schema
                 // object type rejects it).
                 val kind = DatatypeFamilies.undeclaredTypeKind(name.last)
                 if (kind == CompositeKind.REF_CURSOR) {

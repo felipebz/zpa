@@ -57,8 +57,8 @@ class LocalOverloadTest {
             "create package body lo_a is\n  d date;\n  procedure p(x date) is begin null; end;\n  procedure p(x number) is begin null; end;\n" +
             "  procedure run is begin p(sysdate); p(1); p(d); end;\nend;\n/\n"
         assertThat(resolutions(source)).containsExactly(
-            // sysdate gives no evidence: both stay.
-            "10: p AMBIGUOUS",
+            // sysdate is a DATE.
+            "10: p RESOLVED PROCEDURE 8",
             "10: p RESOLVED PROCEDURE 9",
             "10: p RESOLVED PROCEDURE 8"
         )
@@ -71,8 +71,8 @@ class LocalOverloadTest {
         val source = "declare\n  d date;\n  procedure p(x date) is begin null; end;\nbegin\n  declare\n    procedure p(x number) is begin null; end;\n" +
             "  begin\n    p(sysdate);\n    p(d);\n  end;\nend;\n/\n"
         assertThat(resolutions(source)).containsExactly(
-            // The only candidate, with an unknown binding: RESOLVED never claims Oracle accepts the call.
-            "8: p RESOLVED PROCEDURE 6",
+            // sysdate is a DATE, which the only candidate rejects.
+            "8: p NO_COMPATIBLE_CANDIDATE",
             "9: p NO_COMPATIBLE_CANDIDATE"
         )
     }
@@ -149,14 +149,15 @@ class LocalOverloadTest {
             // pair the compatibility matrix decides, so q(boolean) stays.
             "10: q RESOLVED PROCEDURE 8",
             "10: q RESOLVED PROCEDURE 7",
-            // Unknown evidence and NULL keep every candidate.
-            "10: p AMBIGUOUS",
+            // sysdate is STANDARD's DATE; NULL keeps every candidate.
+            "10: p RESOLVED PROCEDURE 6",
             "10: p AMBIGUOUS",
             // A predefined-type-named local subtype as the actual; the formals keep their own declaration site.
             "15: p RESOLVED PROCEDURE 6"
         )
-        val unknown = local(source, 10, 4).candidates.flatMap { it.bindings }
-        assertThat(unknown.map { it.reason?.name }).containsOnly("ACTUAL_UNKNOWN")
+        // sysdate rejects p(number) and reaches p(date); NULL proves nothing.
+        assertThat(local(source, 10, 4).candidates.flatMap { it.bindings }.map { it.outcome.name }).containsExactly("INCOMPATIBLE", "COMPATIBLE")
+        assertThat(local(source, 10, 5).candidates.flatMap { it.bindings }.map { it.reason?.name }).containsOnly("NULL_LITERAL")
         // A predefined-type-named local subtype as the formal: p(x date) is a NUMBER, which a DATE literal cannot reach.
         val shadowing = "declare\n  subtype date is number;\n  procedure p(x date) is begin null; end;\n  procedure p(x varchar2) is begin null; end;\n" +
             "begin\n  p(date '2020-01-01');\nend;\n/\n"

@@ -177,7 +177,7 @@ internal class LocalForwardCalls(
         val member = LocalReferenceOutcomes.isSpecificationMember(first)
         val target = (if (member) memberTarget(reference) else null) ?: target(reference)
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
-        val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it)) }.orEmpty()
+        val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region)) }.orEmpty()
         val outcome = when {
             // A member of an object type's specification has no package target: a method set this analysis does not bind.
             member && memberTarget(reference) == null -> LocalCallOutcome.UNSUPPORTED
@@ -209,7 +209,13 @@ internal class LocalForwardCalls(
      * collection the resolver reached is a PLS_INTEGER, as there. Null for any other shape.
      */
     private fun memberPath(reference: LocalReference, steps: List<LocalResolution>, actual: LocalActual): LocalTypeEvidence? {
-        if (actual.isCall || reference.segments.isEmpty() || reference.segments.any { it.isAttribute } || steps.size < 2) return null
+        if (reference.segments.isEmpty() || reference.segments.any { it.isAttribute } || steps.size < 2) return null
+        if (actual.isCall) {
+            // `v.m(i)` with one index: an element of the member, when the member is a collection; a method is not typed.
+            if (callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size != 1) return null
+            val path = memberPath(reference, steps, LocalActual(null, null, actual.nameLine, actual.nameColumn)) ?: return null
+            return walk.element(path, reference.region)
+        }
         // COUNT of a local collection, which the resolver already found to be a collection method.
         if (steps.size == reference.segments.size + 1 && steps.last() is LocalResolution.CollectionMethod && reference.segments.last().name.lookupName == "COUNT") {
             return LocalTypeEvidence(ProjectArgumentType.builtIn("PLS_INTEGER"), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
@@ -223,7 +229,8 @@ internal class LocalForwardCalls(
      * Evidence of one actual: a literal as Oracle types it; a name, an element or a call's result through the resolver,
      * the type walk and, for a project callee, the call's own resolution.
      */
-    private fun evidence(actual: LocalActual): LocalTypeEvidence {
+    private fun evidence(actual: LocalActual, region: LocalRegionId): LocalTypeEvidence {
+        actual.form?.let { return form(it, region) }
         if (!actual.isName) return LocalTypeEvidence.literal(actual.literal).takeIf { actual.literal != null }
             ?: LocalTypeEvidence.unknown("expression not modeled")
         val reference = namesByPosition[actual.nameLine to actual.nameColumn]?.singleOrNull()
@@ -236,6 +243,7 @@ internal class LocalForwardCalls(
             return memberTarget(reference)?.let { walk.projectValue(it, reference.region) } ?: LocalTypeEvidence.unknown("no package")
         }
         if (LocalReferenceOutcomes.isAbsent(first)) {
+            builtInValue(reference, actual)?.let { return it }
             callOf(reference)?.let { return walk.projectResult(it.typed, reference.region) }
             // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
             return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
@@ -254,6 +262,66 @@ internal class LocalForwardCalls(
         // A decision made with the project's specification coverage is still the body's: its declaration is local.
         val last = steps.last().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it }
         if (!actual.isCall) return walk.outcome(last)
-        return walk.call(last, callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0)
+        val arguments = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0
+        val element = walk.call(last, arguments)
+        // `v(i)` of a value of a project collection type: its element.
+        if (element.terminal == LocalTypeEvidence.Terminal.UNKNOWN && last is LocalResolution.Bound && arguments == 1) {
+            return walk.element(walk.outcome(last), reference.region)
+        }
+        return element
+    }
+
+    /** Evidence of an actual written as a condition, a concatenation, a `TREAT`, or members after an element. */
+    private fun form(form: LocalActualForm, region: LocalRegionId): LocalTypeEvidence = when (form) {
+        LocalActualForm.Predicate -> builtIn("BOOLEAN")
+        is LocalActualForm.Concatenation -> concatenation(form.operands.map { evidence(it, region) })
+        is LocalActualForm.Treat -> treat(form.type, region)
+        is LocalActualForm.Members -> walk.memberPath(evidence(form.base, region), form.members, region)
+    }
+
+    /**
+     * `a || b`, as Oracle types it: VARCHAR2 when every operand is a character value, a number, a date or a time,
+     * or NULL; CLOB when some operand is a CLOB and the others are character values or NULL. Anything else (an operand
+     * of no type, a BLOB, a RAW, an interval) is not typed.
+     */
+    private fun concatenation(operands: List<LocalTypeEvidence>): LocalTypeEvidence {
+        val families = operands.map { if (it.argumentType.kind == ProjectArgumentType.Kind.NULL_LITERAL) null else it.argumentType.family.orElse(null) ?: return LocalTypeEvidence.unknown("an operand of no type") }
+        val known = families.filterNotNull()
+        return when {
+            known.all { it in VARCHAR2_OPERANDS } -> builtIn("VARCHAR2")
+            ProjectDatatypeFamily.CLOB in known && known.all { it == ProjectDatatypeFamily.CLOB || it == ProjectDatatypeFamily.CHARACTER } -> builtIn("CLOB")
+            else -> LocalTypeEvidence.unknown("a concatenation of ${known.distinct()}")
+        }
+    }
+
+    /**
+     * `TREAT(x AS t)` is a value of `t`, whatever `x` is (NULL when `x` is not one). Typed only for a qualified name the
+     * project describes as a type created with CREATE TYPE: a local or package declaration never takes such a name.
+     */
+    private fun treat(type: QualifiedName, region: LocalRegionId): LocalTypeEvidence {
+        if (type.segments.size < 2) return LocalTypeEvidence.unknown("a TREAT type that a local declaration may take")
+        return walk.schemaTypeValue(type, region) ?: LocalTypeEvidence.unknown("a TREAT type the project does not describe")
+    }
+
+    /**
+     * A built-in function written without parentheses in PL/SQL, when no local or package declaration takes the name. A
+     * schema-level function of the same name never does (Oracle: STANDARD's is called; SYSDATE and USER cannot even
+     * be created unquoted).
+     */
+    private fun builtInValue(reference: LocalReference, actual: LocalActual): LocalTypeEvidence? {
+        // In SQL a column may take the name: only PL/SQL is measured.
+        if (reference.segments.isNotEmpty() || actual.isCall || reference.name.quoted || reference.context != Ctx.VALUE) return null
+        return BUILT_IN_VALUES[reference.name.lookupName]?.let(::builtIn)
+    }
+
+    private fun builtIn(typeName: String) = LocalTypeEvidence(ProjectArgumentType.builtIn(typeName), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+
+    private companion object {
+        /** What Oracle types each as, shown by the overload it binds. */
+        val BUILT_IN_VALUES = mapOf(
+            "SYSDATE" to "DATE", "CURRENT_DATE" to "DATE", "SYSTIMESTAMP" to "TIMESTAMP WITH TIME ZONE",
+            "SQLCODE" to "PLS_INTEGER", "SQLERRM" to "VARCHAR2", "USER" to "VARCHAR2"
+        )
+        val VARCHAR2_OPERANDS = setOf(ProjectDatatypeFamily.CHARACTER, ProjectDatatypeFamily.NUMERIC, ProjectDatatypeFamily.DATETIME)
     }
 }
