@@ -14,8 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * Datatype families and the actual-to-formal compatibility relation. Every expected cell restates a measurement on
- * Oracle: a single procedure with one formal of the formal type, called with a literal or variable of the actual
+ * Datatype families and the actual-to-formal compatibility relation. Every expected cell is Oracle's behavior: a single procedure with one formal of the formal type, called with a literal or variable of the actual
  * type, compiles (COMPATIBLE) or fails with PLS-00306 (INCOMPATIBLE) for every member pair and for IN, OUT and IN OUT;
  * a runtime conversion error still counts as compiling.
  */
@@ -40,7 +39,7 @@ class DatatypeFamiliesTest {
         ROWID to listOf("ROWID", "UROWID")
     )
 
-    /** Measured INCOMPATIBLE and UNKNOWN formal families per actual family; every other formal family is COMPATIBLE. */
+    /** INCOMPATIBLE and UNKNOWN formal families per actual family; every other formal family is COMPATIBLE. */
     private val incompatible = mapOf(
         NUMERIC to setOf(CLOB, BLOB, RAW, DATETIME, INTERVAL, JSON, ROWID, COMPOSITE),
         CHARACTER to setOf(BLOB, JSON, COMPOSITE),
@@ -54,7 +53,7 @@ class DatatypeFamiliesTest {
         ROWID to setOf(NUMERIC, CLOB, BLOB, RAW, DATETIME, INTERVAL, BOOLEAN, JSON, COMPOSITE),
         COMPOSITE to setOf(NUMERIC, CHARACTER, CLOB, BLOB, RAW, DATETIME, INTERVAL, BOOLEAN, JSON, ROWID)
     )
-    /** Depends on PLSQL_IMPLICIT_CONVERSION_BOOL (measured both ways). */
+    /** Depends on PLSQL_IMPLICIT_CONVERSION_BOOL (compatible with the setting on, incompatible with it off). */
     private val environment = mapOf(NUMERIC to setOf(BOOLEAN), CHARACTER to setOf(BOOLEAN), BOOLEAN to setOf(NUMERIC, CHARACTER))
     private val unknown = mapOf(INTERVAL to setOf(INTERVAL), COMPOSITE to setOf(COMPOSITE))
 

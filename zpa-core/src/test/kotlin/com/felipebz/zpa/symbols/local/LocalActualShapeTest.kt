@@ -13,7 +13,7 @@ import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** Actuals typed from their shape: cursor variables, members of a value, COUNT of a collection; Oracle bindings. */
+/** Actuals typed from their shape: cursor variables, members of a value, COUNT of a collection, bound as Oracle binds them. */
 @OptIn(ZpaExperimentalApi::class)
 class LocalActualShapeTest {
     private val project = "create or replace type shape_obj_t as object (label varchar2(30), size_n number, tags tag_list_t);\n/\n" +
@@ -33,7 +33,7 @@ class LocalActualShapeTest {
 
     @Test
     fun aCursorVariableBindsSysRefcursor() {
-        // Oracle: a SYS_REFCURSOR, a weak and a strong ref cursor variable each bind SYS_REFCURSOR; ANYDATA and
+        // A SYS_REFCURSOR, a weak and a strong ref cursor variable each bind SYS_REFCURSOR; ANYDATA and
         // JSON_ELEMENT_T reject them.
         assertThat(selected("  v_cur sys_refcursor;", "v_cur")).isEqualTo("sys_refcursor")
         assertThat(selected("  type cur_t is ref cursor;\n  v_cur cur_t;", "v_cur")).isEqualTo("sys_refcursor")
@@ -61,7 +61,7 @@ class LocalActualShapeTest {
 
     @Test
     fun countOfACollectionIsAPlsInteger() {
-        // Oracle: COUNT binds PLS_INTEGER over NUMBER and VARCHAR2, for a project and a local collection.
+        // COUNT binds PLS_INTEGER over NUMBER and VARCHAR2, for a project and a local collection.
         assertThat(selected("  v_tags tag_list_t;", "v_tags.count")).isEqualTo("pls_integer")
         assertThat(selected("  v_shape shape_obj_t;", "v_shape.tags.count")).isEqualTo("pls_integer")
         assertThat(selected("  type num_list_t is table of number;\n  v_nums num_list_t;", "v_nums.count")).isEqualTo("pls_integer")

@@ -33,8 +33,7 @@ class ProjectTypedCallResolution private constructor(
     private val selectedCandidate: ProjectCallCandidate?,
     /**
      * True when [Status.RESOLVED] was chosen among several retained candidates: the others are proven able to receive the
-     * call too, and Oracle prefers [selected] to each of them (the preference measured on Oracle, see
-     * [ProjectSnapshot.narrowCall]).
+     * call too, and Oracle prefers [selected] to each of them (see [ProjectSnapshot.narrowCall]).
      */
     val ranked: Boolean = false
 ) {

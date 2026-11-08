@@ -16,7 +16,7 @@ import java.util.concurrent.Executors
 import com.felipebz.zpa.api.project.ProjectCallResolution.Status as Structural
 import com.felipebz.zpa.api.project.ProjectDatatypeFamily as Family
 
-/** Datatype narrowing over structural call resolutions, through public APIs; outcomes follow Oracle probes. */
+/** Datatype narrowing over structural call resolutions, through public APIs; outcomes follow Oracle's behavior. */
 @OptIn(ZpaExperimentalApi::class)
 class ProjectTypedCallResolutionTest {
     private val hr = ProjectIdentifier.fromSource("HR")
@@ -260,7 +260,7 @@ class ProjectTypedCallResolutionTest {
 
     @Test
     fun predefinedNamesShadowedByPackageMembersAreNotClassified() {
-        // Oracle: inside the package, `number` is the subtype (a DATE) and receives a DATE actual.
+        // Inside the package, `number` is the subtype (a DATE) and receives a DATE actual.
         val shadowed = call(spec("SUBTYPE number IS DATE;", "PROCEDURE pick(x number);", "PROCEDURE pick(x VARCHAR2);"), "pick", listOf(positional()), listOf(ProjectArgumentType.builtIn("DATE")))
         assertThat(shadowed.typed.status).isEqualTo(Status.AMBIGUOUS)
         assertThat(shadowed.typed.evaluations.first().bindings.single().unknownReason).contains(UnknownReason.FORMAL_INCONCLUSIVE)
@@ -273,7 +273,7 @@ class ProjectTypedCallResolutionTest {
 
     @Test
     fun describedPackageValuesHonourShadowingInTheirPackage() {
-        // Oracle: inside p, NUMBER is the DATE subtype; q.pick(p.g) and q.pick(p.h) both select pick(x DATE).
+        // Inside p, NUMBER is the DATE subtype; q.pick(p.g) and q.pick(p.h) both select pick(x DATE).
         val s = prepare(
             "p.sql" to "CREATE PACKAGE p AS SUBTYPE number IS DATE; g number; h NUMBER; END p;",
             "u.sql" to "CREATE PACKAGE u AS SUBTYPE money_t IS NUMBER; n NUMBER; m money_t; k n%TYPE; END u;",

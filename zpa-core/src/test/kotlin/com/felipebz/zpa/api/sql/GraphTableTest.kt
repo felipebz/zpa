@@ -223,7 +223,7 @@ class GraphTableTest : RuleTest() {
 
     @Test
     fun graphTableIsAMergeIntoTarget() {
-        // Undocumented, but Oracle parses and executes both branches against the vertex table.
+        // Undocumented, but Oracle 26ai parses and executes both branches against the vertex table.
         setRootRule(DmlGrammar.MERGE_EXPRESSION)
         assertThat(p).matches(
             "merge into graph_table (g match (a) columns (a.id, a.name)) gt using src s on (gt.id = s.id) " +
@@ -245,7 +245,7 @@ class GraphTableTest : RuleTest() {
                 "when matched then update set gt.name = s.name")
         assertThat(p).notMatches(
             "merge into graph_table (g) gt using src s on (1 = 1) when matched then update set gt.name = s.name")
-        // Oracle rejects both with ORA-38107.
+        // Oracle 26ai rejects both with ORA-38107.
         assertThat(p).notMatches(
             "merge into graph_table (g match (a) columns (a.id)) as gt using src s on (gt.id = s.id) " +
                 "when matched then update set gt.name = s.name")

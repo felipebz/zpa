@@ -280,7 +280,7 @@ internal class LocalForwardCalls(
     }
 
     /**
-     * `a || b`, as Oracle types it: VARCHAR2 when every operand is a character value, a number, a date or a time,
+     * The type of `a || b`: VARCHAR2 when every operand is a character value, a number, a date or a time,
      * or NULL; CLOB when some operand is a CLOB and the others are character values or NULL. Anything else (an operand
      * of no type, a BLOB, a RAW, an interval) is not typed.
      */
@@ -305,11 +305,11 @@ internal class LocalForwardCalls(
 
     /**
      * A built-in function written without parentheses in PL/SQL, when no local or package declaration takes the name. A
-     * schema-level function of the same name never does (Oracle: STANDARD's is called; SYSDATE and USER cannot even
-     * be created unquoted).
+     * schema-level function of the same name never does: STANDARD's is called (and SYSDATE and USER cannot even be
+     * created unquoted).
      */
     private fun builtInValue(reference: LocalReference, actual: LocalActual): LocalTypeEvidence? {
-        // In SQL a column may take the name: only PL/SQL is measured.
+        // In SQL a column may take the name.
         if (reference.segments.isNotEmpty() || actual.isCall || reference.name.quoted || reference.context != Ctx.VALUE) return null
         return BUILT_IN_VALUES[reference.name.lookupName]?.let(::builtIn)
     }
@@ -317,7 +317,7 @@ internal class LocalForwardCalls(
     private fun builtIn(typeName: String) = LocalTypeEvidence(ProjectArgumentType.builtIn(typeName), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
 
     private companion object {
-        /** What Oracle types each as, shown by the overload it binds. */
+        /** The type of each built-in. */
         val BUILT_IN_VALUES = mapOf(
             "SYSDATE" to "DATE", "CURRENT_DATE" to "DATE", "SYSTIMESTAMP" to "TIMESTAMP WITH TIME ZONE",
             "SQLCODE" to "PLS_INTEGER", "SQLERRM" to "VARCHAR2", "USER" to "VARCHAR2"

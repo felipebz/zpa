@@ -826,7 +826,7 @@ class CreateTableTest : RuleTest() {
 
     @Test
     fun matchesTableAnnotationsAroundPartitioningAndTablespace() {
-        // Orders and repetition executed by Oracle.
+        // Orders and repetition executed by Oracle 26ai.
         assertThat(p).matches("create table t (c number) annotations(Display 'T') tablespace users")
         assertThat(p).matches("create table t (c number) annotations(Display 'T') partition by hash (c) partitions 2")
         assertThat(p).matches(

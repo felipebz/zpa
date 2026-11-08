@@ -118,11 +118,11 @@ internal enum class OverloadRank(val group: Group) {
          * [actuals] is the rank of each written actual; each candidate lists the formal rank each actual binds to, by
          * argument index. Every candidate passed must be proven able to receive the call.
          *
-         * Measured on Oracle: a candidate whose every bound formal is of the same group as its actual is preferred to
+         * Oracle prefers a candidate whose every bound formal is of the same group as its actual is preferred to
          * any candidate with a formal of another group; among those, one wins when, on every actual where their formals
          * differ, its formal comes strictly first in the actual's preference. Otherwise (a candidate of another group
          * only, a formal or an actual without an exact type, two candidates each better on a different actual, formals
-         * Oracle cannot tell apart) the call stays undecided: Oracle raises PLS-00307 there, or it was not measured.
+         * Oracle cannot tell apart) the call stays undecided: Oracle raises PLS-00307 there, or its choice is not known.
          */
         fun select(actuals: List<OverloadRank?>, candidates: List<List<OverloadRank?>>): Int? {
             if (candidates.size < 2 || actuals.any { it == null }) return null
@@ -146,8 +146,8 @@ internal enum class OverloadRank(val group: Group) {
 }
 
 /**
- * What a composite value or formal is, where Oracle's compatibility between composites depends on it:
- * a ref cursor variable (weak or strong) is accepted by a SYS_REFCURSOR formal and rejected by a formal of a schema
+ * What a composite value or formal is, where Oracle's compatibility between composites depends on it: a ref cursor
+ * variable (weak or strong) is accepted by a SYS_REFCURSOR formal and rejected by a formal of a schema
  * object type, and a schema object value is rejected by a SYS_REFCURSOR formal. Two schema object types are never told
  * apart this way: a synonym or a subtype may relate two names.
  */

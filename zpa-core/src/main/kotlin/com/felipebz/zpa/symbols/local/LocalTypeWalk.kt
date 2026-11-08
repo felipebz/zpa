@@ -183,8 +183,8 @@ internal class LocalTypeWalk(
 
     /**
      * [members], one step after another, from the value [evidence] gives, the last of them possibly the collection
-     * method COUNT of a collection value: Oracle types it as PLS_INTEGER (it binds a PLS_INTEGER formal over NUMBER
-     * and VARCHAR2, for nested tables, varrays and associative arrays alike). A collection has no attribute, so COUNT
+     * method COUNT of a collection value, a PLS_INTEGER (it binds a PLS_INTEGER formal over NUMBER and VARCHAR2, for
+     * nested tables, varrays and associative arrays alike). A collection has no attribute, so COUNT
      * after one is always the method.
      */
     fun memberPath(evidence: LocalTypeEvidence, members: List<OracleIdentifier>, region: LocalRegionId): LocalTypeEvidence {
@@ -519,8 +519,8 @@ internal class LocalTypeWalk(
             val name = typeRef.name
             if (typeRef is NamedTypeRef && name.segments.size == 1) {
                 val spelling = name.last.originalSpelling
-                // SYS_REFCURSOR is STANDARD's ref cursor type (Oracle: a SYS_REFCURSOR formal takes it, a schema
-                // object type rejects it).
+                // SYS_REFCURSOR is STANDARD's ref cursor type: a SYS_REFCURSOR formal takes it, a schema object
+                // type rejects it.
                 val kind = DatatypeFamilies.undeclaredTypeKind(name.last)
                 if (kind == CompositeKind.REF_CURSOR) {
                     return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)

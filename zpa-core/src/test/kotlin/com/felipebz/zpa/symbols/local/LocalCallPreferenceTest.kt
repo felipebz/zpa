@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** Calls from local code bound to the overload Oracle prefers, with literal and declared actuals; Oracle bindings. */
+/** Calls from local code bound to the overload Oracle prefers, with literal and declared actuals. */
 @OptIn(ZpaExperimentalApi::class)
 class LocalCallPreferenceTest {
     private val spec = "create or replace package app_owner.pk_pick as\n" +
@@ -35,7 +35,7 @@ class LocalCallPreferenceTest {
 
     @Test
     fun aSchemaQualifiedCallReachesItsPackageAndBindsTheClosestOverload() {
-        // Oracle: an integer literal binds PLS_INTEGER, a decimal one NUMBER, a character literal VARCHAR2.
+        // An integer literal binds PLS_INTEGER, a decimal one NUMBER, a character literal VARCHAR2.
         assertThat(selected("", "1")).isEqualTo("pls_integer")
         assertThat(selected("", "1.5")).isEqualTo("number")
         assertThat(selected("", "'abc'")).isEqualTo("varchar2")

@@ -98,8 +98,7 @@ internal data class LocalSubprogram(
     /**
      * The mode of the implicit `SELF` parameter of a member method, which has no source text and is therefore not a
      * declaration: IN for member functions (MAP and ORDER included), IN OUT for member procedures (documented by
-     * Oracle; observed on Oracle: assigning an attribute fails with PLS-00363 in a member function and succeeds
-     * in a member procedure), and IN OUT for constructors, taken from the grammar's explicit form (`SELF IN OUT t`),
+     * Oracle: assigning an attribute fails with PLS-00363 in a member function and succeeds in a member procedure), and IN OUT for constructors, taken from the grammar's explicit form (`SELF IN OUT t`),
      * since the documentation does not state it; Oracle accepts attribute assignments in constructors, which does not
      * distinguish OUT from IN OUT. Null for static methods (no `SELF`: PLS-00201, and PLS-00588 for an unqualified
      * attribute), for non-members, and when `SELF` is written as a parameter.

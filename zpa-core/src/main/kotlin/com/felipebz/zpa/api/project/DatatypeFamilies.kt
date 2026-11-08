@@ -26,7 +26,7 @@ internal enum class DatatypeCompatibility {
 }
 
 /**
- * Exact built-in name classification and the measured actual-to-formal compatibility relation. Unknown or ambiguous
+ * Exact built-in name classification and Oracle's actual-to-formal compatibility relation. Unknown or ambiguous
  * names stay unclassified (null); nothing is inferred from spelling similarity, categories or expressions.
  */
 @OptIn(ZpaExperimentalApi::class)
@@ -93,8 +93,8 @@ internal object DatatypeFamilies {
     }
 
     /**
-     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary),
-     * with the leading word of each multi-word name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
+     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare, with the leading word of each multi-word
+     * name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
      * of a polymorphic table function.
      */
     private val predefinedScalarNames = setOf(
@@ -253,7 +253,7 @@ internal object DatatypeFamilies {
 
     /**
      * Rows: actual family; columns: formal family, both in [ProjectDatatypeFamily] order. `C` compiles, `X` is rejected
-     * (PLS-00306) for every measured member pair and parameter mode, `E` depends on PLSQL_IMPLICIT_CONVERSION_BOOL,
+     * (PLS-00306) for every member pair and parameter mode, `E` depends on PLSQL_IMPLICIT_CONVERSION_BOOL,
      * `U` is not decidable: interval day/second versus year/month is not retained, and composite identity is nominal
      * (a `%ROWTYPE` formal even accepts a same-shaped record).
      */

@@ -31,7 +31,7 @@ internal enum class LocalLiteral(
     /** Digits only, within the PLS_INTEGER range: Oracle prefers a PLS_INTEGER formal for it. */
     INTEGER("NUMBER", OverloadRank.PLS_INTEGER),
 
-    /** Digits only, beyond the PLS_INTEGER range: its preferred formal was not measured at every size. */
+    /** Digits only, beyond the PLS_INTEGER range: its preferred formal is not known. */
     LARGE_INTEGER("NUMBER", null),
     BINARY_DOUBLE("BINARY_DOUBLE"),
     BINARY_FLOAT("BINARY_FLOAT"),

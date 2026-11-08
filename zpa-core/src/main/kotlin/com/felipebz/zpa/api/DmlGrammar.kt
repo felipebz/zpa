@@ -1076,7 +1076,7 @@ enum class DmlGrammar : GrammarRuleKey {
                             b.sequence(
                                     b.firstOf(
                                             DML_SUBQUERY_TARGET,
-                                            // Undocumented, but Oracle parses and executes MERGE INTO GRAPH_TABLE
+                                            // Undocumented, but Oracle 26ai parses and executes MERGE INTO GRAPH_TABLE
                                             // (both branches change the vertex table); it rejects AS and PARTITION here.
                                             GraphTableGrammar.GRAPH_TABLE,
                                             b.sequence(TABLE_REFERENCE, b.optional(PARTITION_EXTENSION_CLAUSE))),

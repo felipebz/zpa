@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Actuals written as elements and their members, conditions, built-ins without parentheses, TREAT and concatenations,
- * each bound as Oracle bound it.
+ * each bound as Oracle binds it.
  */
 @OptIn(ZpaExperimentalApi::class)
 class LocalActualExpressionTest {
