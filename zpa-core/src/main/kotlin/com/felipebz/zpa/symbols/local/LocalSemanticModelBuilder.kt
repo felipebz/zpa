@@ -233,14 +233,7 @@ internal object LocalSemanticModelBuilder {
             val body = if (form == LocalSubprogramForm.BODY) open(enclosing, LocalRegionKind.SUBPROGRAM, node.type.toString(), range(node)) else null
             body?.let { markStatements(it, node) }
 
-            val parameters = ArrayList<LocalParameter>()
-            if (constructor) explicitConstructorSelf(node, enclosing, body)?.let { parameters += it }
-            val parameterNodes = if (constructor) {
-                node.getChildren(PlSqlGrammar.PARAMETER_DECLARATION)
-            } else {
-                node.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
-            }
-            for (parameter in parameterNodes) parameters += parameter(parameter, parameters.size + 1, enclosing, body)
+            val parameters = subprogramParameters(node, constructor, enclosing, body)
             val returnType = if (constructor) null else node.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, body ?: enclosing) }
             for (child in node.children) {
                 when (child.type) {
@@ -259,6 +252,19 @@ internal object LocalSemanticModelBuilder {
             declaration.details = LocalSubprogram(
                 unitName, form, frozenList(parameters), returnType, constructor, body?.id, null, null, methodKind, implicitSelf
             )
+        }
+
+        /** The parameters of a subprogram, declared in its [body] when it has one; a constructor's explicit `SELF` first. */
+        private fun subprogramParameters(node: AstNode, constructor: Boolean, enclosing: RegionDraft, body: RegionDraft?): List<LocalParameter> {
+            val parameters = ArrayList<LocalParameter>()
+            if (constructor) explicitConstructorSelf(node, enclosing, body)?.let { parameters += it }
+            val parameterNodes = if (constructor) {
+                node.getChildren(PlSqlGrammar.PARAMETER_DECLARATION)
+            } else {
+                node.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
+            }
+            for (parameter in parameterNodes) parameters += parameter(parameter, parameters.size + 1, enclosing, body)
+            return parameters
         }
 
         /** `CONSTRUCTOR FUNCTION t(SELF IN OUT t, …)`: the grammar writes this `SELF` outside PARAMETER_DECLARATION. */
@@ -331,28 +337,32 @@ internal object LocalSemanticModelBuilder {
             val nameNode = node.getFirstChild(PlSqlGrammar.UNIT_NAME)
             val declaration = declare(enclosing, LocalDeclarationKind.TRIGGER, nameNode.lastChild.let(LocalSyntax::identifier), range(node), range(nameNode))
             val alternative = node.children.firstOrNull { it.type in TRIGGER_ALTERNATIVES }
-            var body: RegionDraft? = null
-            if (alternative != null) {
-                val children = alternative.children
-                val bodyStart = children.indexOfFirst {
-                    it.type === PlSqlKeyword.DECLARE || it.type === PlSqlGrammar.STATEMENTS_SECTION || it.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK
-                }
-                children.take(if (bodyStart < 0) children.size else bodyStart).forEach { visit(it, enclosing) }
-                if (bodyStart >= 0) {
-                    val first = children[bodyStart]
-                    val region = open(enclosing, LocalRegionKind.TRIGGER, (if (first.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) first.type else node.type).toString(),
-                        SourceRange(fileId, first.token.line, first.token.column, alternative.lastToken.endLine, alternative.lastToken.endColumn))
-                    body = region
-                    for (child in children.drop(bodyStart)) {
-                        if (child.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) compoundTrigger(child, region) else visit(child, region)
-                    }
-                }
-            }
+            val body = alternative?.let { triggerBody(node, it, enclosing) }
             val correlation = when (alternative?.type) {
                 null, PlSqlGrammar.SYSTEM_TRIGGER -> null
                 else -> LocalSyntax.correlationNames(alternative.getFirstChildOrNull(PlSqlGrammar.REFERENCING_CLAUSE))
             }
             declaration.details = LocalTrigger(LocalSyntax.unitName(nameNode), body?.id, correlation)
+        }
+
+        /**
+         * The heading of the trigger [alternative] in [enclosing], and its PL/SQL body, if any, in a TRIGGER region of
+         * [enclosing], which is returned.
+         */
+        private fun triggerBody(node: AstNode, alternative: AstNode, enclosing: RegionDraft): RegionDraft? {
+            val children = alternative.children
+            val bodyStart = children.indexOfFirst {
+                it.type === PlSqlKeyword.DECLARE || it.type === PlSqlGrammar.STATEMENTS_SECTION || it.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK
+            }
+            children.take(if (bodyStart < 0) children.size else bodyStart).forEach { visit(it, enclosing) }
+            if (bodyStart < 0) return null
+            val first = children[bodyStart]
+            val region = open(enclosing, LocalRegionKind.TRIGGER, (if (first.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) first.type else node.type).toString(),
+                SourceRange(fileId, first.token.line, first.token.column, alternative.lastToken.endLine, alternative.lastToken.endColumn))
+            for (child in children.drop(bodyStart)) {
+                if (child.type === PlSqlGrammar.COMPOUND_TRIGGER_BLOCK) compoundTrigger(child, region) else visit(child, region)
+            }
+            return region
         }
 
         private fun compoundTrigger(block: AstNode, region: RegionDraft) {

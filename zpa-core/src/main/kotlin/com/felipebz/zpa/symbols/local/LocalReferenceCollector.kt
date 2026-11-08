@@ -114,23 +114,29 @@ internal object LocalReferenceCollector {
                 type === PlSqlGrammar.EXIT_STATEMENT || type === PlSqlGrammar.CONTINUE_STATEMENT ->
                     labelTarget(node, LocalReferenceContext.LOOP_TARGET, state)
             }
-            var next = state
-            when {
-                type === DmlGrammar.SELECT_EXPRESSION ->
-                    next = state.with(inSql = true, inValues = false, sql = if (skipsEnclosing(node)) state.sql?.parent else state.sql)
-                type in SQL_STATEMENTS -> next = state.with(inSql = true, inValues = false, sql = LocalSqlScope.of(node, state.sql))
-                type === DmlGrammar.QUERY_BLOCK -> next = state.with(sql = LocalSqlScope.of(node, state.sql))
-                type === DmlGrammar.INTO_CLAUSE -> next = state.with(inSql = false, sql = null)
-                type === PlSqlGrammar.CREATE_TRIGGER -> next = state.with(inTrigger = true)
-                type === PlSqlGrammar.EXCEPTION_HANDLER -> next = state.with(handler = LocalSyntax.range(fileId, node))
-                type === PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT && (node.parent.type === PlSqlGrammar.PARAMETER_DECLARATION ||
-                    node.parent.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) -> next = state.with(inDefault = true)
-            }
+            val next = childState(node, state)
             for ((index, child) in node.children.withIndex()) {
                 if (index == 0 && type === DmlGrammar.UPDATE_COLUMN) continue
                 // Single-row VALUES have no column scope (the names are PL/SQL), but are still evaluated by SQL.
                 val values = type === DmlGrammar.SINGLE_TABLE_INSERT && child.type !in NOT_VALUES
                 visit(child, if (values) next.with(inSql = false, inValues = true, sql = null) else next)
+            }
+        }
+
+        /** The state the children of [node] are visited in. */
+        private fun childState(node: AstNode, state: State): State {
+            val type = node.type
+            return when {
+                type === DmlGrammar.SELECT_EXPRESSION ->
+                    state.with(inSql = true, inValues = false, sql = if (skipsEnclosing(node)) state.sql?.parent else state.sql)
+                type in SQL_STATEMENTS -> state.with(inSql = true, inValues = false, sql = LocalSqlScope.of(node, state.sql))
+                type === DmlGrammar.QUERY_BLOCK -> state.with(sql = LocalSqlScope.of(node, state.sql))
+                type === DmlGrammar.INTO_CLAUSE -> state.with(inSql = false, sql = null)
+                type === PlSqlGrammar.CREATE_TRIGGER -> state.with(inTrigger = true)
+                type === PlSqlGrammar.EXCEPTION_HANDLER -> state.with(handler = LocalSyntax.range(fileId, node))
+                type === PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT && (node.parent.type === PlSqlGrammar.PARAMETER_DECLARATION ||
+                    node.parent.type === PlSqlGrammar.CURSOR_PARAMETER_DECLARATION) -> state.with(inDefault = true)
+                else -> state
             }
         }
 

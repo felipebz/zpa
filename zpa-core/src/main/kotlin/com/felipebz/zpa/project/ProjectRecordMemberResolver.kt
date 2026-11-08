@@ -55,18 +55,22 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
                     return if (isDropped(current, memberName)) ProjectRecordMemberResolution.Incomplete(type) else found
                 }
             }
-            val nearer = methods.toList()
-            for (method in current.methods) {
-                if (method.name != memberName || method.methodKind == ProjectMethodKind.CONSTRUCTOR) continue
-                // A nearer type's method of the same kind and parameters overrides it.
-                if (nearer.none { it.method.overrides(method) }) methods += ProjectMethodCandidate(current, method)
-            }
+            addMethodsNotOverridden(current, memberName, methods)
             if (!current.attributesComplete || !current.methodsComplete || isAltered(current)) complete = false
             if (current.supertype == null) break
             current = supertypeOf(current) ?: return methodsOr(type, methods, false) { ProjectRecordMemberResolution.Incomplete(type) }
         }
         return methodsOr(type, methods, complete) {
             if (complete) ProjectRecordMemberResolution.NotFound(type) else ProjectRecordMemberResolution.Incomplete(type)
+        }
+    }
+
+    private fun addMethodsNotOverridden(type: StandaloneTypeDeclaration, memberName: OracleIdentifier, methods: MutableList<ProjectMethodCandidate>) {
+        val nearer = methods.toList()
+        for (method in type.methods) {
+            if (method.name != memberName || method.methodKind == ProjectMethodKind.CONSTRUCTOR) continue
+            // A nearer type's method of the same kind and parameters overrides it.
+            if (nearer.none { it.method.overrides(method) }) methods += ProjectMethodCandidate(type, method)
         }
     }
 

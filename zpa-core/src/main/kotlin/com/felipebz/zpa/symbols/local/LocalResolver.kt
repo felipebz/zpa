@@ -93,12 +93,7 @@ internal object LocalResolver {
             val implicitSelf = method != null && region.id == method.region && reference.name == SELF &&
                 (method.declaration.details as LocalSubprogram).implicitSelf != null
             if (implicitSelf) {
-                outcome = when {
-                    // A local named SELF collides with the implicit parameter (PLS-00410).
-                    candidates.isNotEmpty() -> LocalResolution.Duplicate(candidates.map { it.id })
-                    reference.context == Ctx.VALUE || reference.context == Ctx.QUALIFIER -> LocalResolution.ImplicitSelf(method.declaration.id)
-                    else -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, null, reference.context)
-                }
+                outcome = implicitSelfOutcome(reference, candidates, method)
                 break
             }
             if (candidates.isNotEmpty()) {
@@ -108,17 +103,8 @@ internal object LocalResolver {
             }
         }
         if (outcome == null) {
-            val candidates = fileCandidates(model, reference, chain)
+            outcome = fileOutcome(model, reference, chain, method)
             if (reliesOnFileRegion(chain)) relied += model.root
-            outcome = if (candidates.isEmpty()) {
-                when {
-                    // Labels are never schema objects: a target nothing declares is an error, not an absence.
-                    reference.context in LABEL_TARGETS -> LocalResolution.Undeclared
-                    // A static method has no SELF (PLS-00201).
-                    method?.isStatic == true && reference.name == SELF -> LocalResolution.Undeclared
-                    else -> LocalResolution.ProvenAbsent
-                }
-            } else decide(model, reference, Scope(model, listOf(model.root), null), candidates, chain)
         }
         if (reference.context == Ctx.SQL_VALUE) outcome = sqlOutcome(outcome, gaps)
         // An unmodeled construct is reported as such, whatever the regions' verdicts.
@@ -131,6 +117,27 @@ internal object LocalResolver {
         chain.forEach { reasons += it.completeness.labelReasonsFor(reference.name) }
         reasons += model.hiddenAt(reference.range)
         return if (reasons.isEmpty() && gaps.isEmpty()) outcome else LocalResolution.Incomplete(reasons, gaps, outcome)
+    }
+
+    /** SELF in a method of a type body with an implicit SELF parameter, given the [candidates] its region declares. */
+    private fun implicitSelfOutcome(reference: LocalReference, candidates: List<LocalDeclaration>, method: LocalTypeScope.Method): LocalResolution = when {
+        // A local named SELF collides with the implicit parameter (PLS-00410).
+        candidates.isNotEmpty() -> LocalResolution.Duplicate(candidates.map { it.id })
+        reference.context == Ctx.VALUE || reference.context == Ctx.QUALIFIER -> LocalResolution.ImplicitSelf(method.declaration.id)
+        else -> LocalResolution.Unsupported(LocalUnsupportedConstruct.KIND_IN_CONTEXT, null, reference.context)
+    }
+
+    /** The file step, when no region of the [chain] declares the name: enclosing top-level labels and unit names. */
+    private fun fileOutcome(model: LocalSemanticModel, reference: LocalReference, chain: List<LocalRegion>, method: LocalTypeScope.Method?): LocalResolution {
+        val candidates = fileCandidates(model, reference, chain)
+        if (candidates.isNotEmpty()) return decide(model, reference, Scope(model, listOf(model.root), null), candidates, chain)
+        return when {
+            // Labels are never schema objects: a target nothing declares is an error, not an absence.
+            reference.context in LABEL_TARGETS -> LocalResolution.Undeclared
+            // A static method has no SELF (PLS-00201).
+            method?.isStatic == true && reference.name == SELF -> LocalResolution.Undeclared
+            else -> LocalResolution.ProvenAbsent
+        }
     }
 
     /**

@@ -605,23 +605,17 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
                 } else {
                     setOf(PlSqlPunctuator.MULTIPLICATION)
                 }
-                if (node.children.size >= 3 && node.children.size % 2 == 1 &&
-                    node.children.indices.filter { it % 2 == 1 }.all { node.children[it].type in operatorTypes } &&
-                    node.children.indices.filter { it % 2 == 0 }
-                        .map { node.children[it] }
-                        .all { expressionType(it) == Family.NUMERIC }
-                ) {
+                if (isChain(node, { it.type in operatorTypes }, { it == Family.NUMERIC })) {
                     return Family.NUMERIC
                 }
             }
             PlSqlGrammar.CONCATENATION_EXPRESSION -> {
                 if (node.children.size == 1) return expressionType(node.firstChild)
-                if (node.children.size >= 3 && node.children.size % 2 == 1 &&
-                    node.children.indices.filter { it % 2 == 1 }
-                        .all { node.children[it].type === PlSqlGrammar.CONCATENATION_OPERATOR } &&
-                    node.children.indices.filter { it % 2 == 0 }
-                        .map { node.children[it] }
-                        .all { expressionType(it) in setOf(Family.CHARACTER, Family.NULL) }
+                if (isChain(
+                        node,
+                        { it.type === PlSqlGrammar.CONCATENATION_OPERATOR },
+                        { it == Family.CHARACTER || it == Family.NULL }
+                    )
                 ) {
                     return Family.CHARACTER
                 }
@@ -643,11 +637,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             PlSqlGrammar.AND_EXPRESSION,
             PlSqlGrammar.OR_EXPRESSION -> {
                 if (node.children.size == 1) return expressionType(node.firstChild)
-                if (node.children.size >= 3 && node.children.size % 2 == 1 &&
-                    node.children.indices.filter { it % 2 == 0 }
-                        .map { node.children[it] }
-                        .all { expressionType(it) == Family.BOOLEAN }
-                ) {
+                if (isChain(node, { true }, { it == Family.BOOLEAN })) {
                     return Family.BOOLEAN
                 }
             }
@@ -667,6 +657,17 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
             else -> Unit
         }
         return null
+    }
+
+    private inline fun isChain(
+        node: AstNode,
+        isOperator: (AstNode) -> Boolean,
+        isOperandFamily: (Family?) -> Boolean
+    ): Boolean {
+        val children = node.children
+        return children.size >= 3 && children.size % 2 == 1 &&
+            children.indices.filter { it % 2 == 1 }.all { isOperator(children[it]) } &&
+            children.indices.filter { it % 2 == 0 }.all { isOperandFamily(expressionType(children[it])) }
     }
 
     private fun isTypeCompatible(expression: AstNode, targetType: Family?): Boolean {

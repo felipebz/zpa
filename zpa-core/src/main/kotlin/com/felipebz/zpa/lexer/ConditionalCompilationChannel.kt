@@ -110,8 +110,11 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
 
     private class Directive(val kind: Kind, val end: Int)
 
-    /** One branch of a selection: where its text starts, its condition text (null for `$ELSE`), and whether it is only `$ERROR`. */
-    private class Branch(val start: Int, val condition: String?, val errorOnly: Boolean)
+    /**
+     * One branch of a selection: where its text starts, its condition text (null for `$ELSE`), whether it is only
+     * `$ERROR`, and the `$ELSIF`, `$ELSE` or `$END` that ends it.
+     */
+    private class Branch(val start: Int, val condition: String?, val errorOnly: Boolean, val terminator: Directive)
 
     private class Scanner(private val code: CodeReader, private val settings: ConditionalCompilationSettings) {
         /** The end of the `$IF … $END` scanned by the last [selection] call; equal to its result when nothing is kept. */
@@ -281,30 +284,9 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
             var branchStart = first.second
             val branches = ArrayList<Branch>()
             while (true) {
-                var p = branchStart
-                var depth = 0
-                var items = 0
-                var firstIsError = false
-                val terminator: Directive
-                while (true) {
-                    val step = step(p) ?: return -1
-                    val directive = step.directive
-                    if (depth == 0 && directive != null && directive.kind in BRANCH_ENDS) {
-                        terminator = directive
-                        break
-                    }
-                    if (depth == 0 && step.significant) {
-                        items++
-                        if (items == 1) firstIsError = directive?.kind == Kind.ERROR
-                    }
-                    when (directive?.kind) {
-                        Kind.IF, Kind.ERROR -> depth++
-                        Kind.END -> depth--
-                        else -> Unit
-                    }
-                    p = step.end
-                }
-                branches += Branch(branchStart, branchCondition, items == 1 && firstIsError)
+                val scanned = branch(branchStart, branchCondition) ?: return -1
+                branches += scanned
+                val terminator = scanned.terminator
                 when (terminator.kind) {
                     Kind.END -> {
                         lastSelectionEnd = terminator.end
@@ -320,6 +302,31 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
                         branchStart = terminator.end
                     }
                 }
+            }
+        }
+
+        /** The branch whose text starts at [start], up to the directive that ends it at this level; null if there is none. */
+        private fun branch(start: Int, condition: String?): Branch? {
+            var p = start
+            var depth = 0
+            var items = 0
+            var firstIsError = false
+            while (true) {
+                val step = step(p) ?: return null
+                val directive = step.directive
+                if (depth == 0 && directive != null && directive.kind in BRANCH_ENDS) {
+                    return Branch(start, condition, items == 1 && firstIsError, directive)
+                }
+                if (depth == 0 && step.significant) {
+                    items++
+                    if (items == 1) firstIsError = directive?.kind == Kind.ERROR
+                }
+                when (directive?.kind) {
+                    Kind.IF, Kind.ERROR -> depth++
+                    Kind.END -> depth--
+                    else -> Unit
+                }
+                p = step.end
             }
         }
 

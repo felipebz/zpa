@@ -42,20 +42,7 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
         lastVisitedToken = null
 
         for (check in checks) {
-            if (check is PlSqlCheck) {
-                check.installProjectAnalysisForScan(capabilities.projectAnalysis)
-            }
-            check.context = context
-            check.startScan()
-            check.resetSyntaxViewSubscriptions()
-            check.init()
-
-            for (type in check.subscribedKinds()) {
-                rawVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
-            }
-            for (type in check.syntaxViewSubscribedKinds()) {
-                typedVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
-            }
+            prepareCheck(check, context, capabilities)
         }
 
         val tree = context.rootTree()
@@ -76,6 +63,24 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
                     throw AnalysisException("Error executing checks: ${e.message}", e)
                 }
             }
+        }
+    }
+
+    @OptIn(ZpaExperimentalApi::class)
+    private fun prepareCheck(check: PlSqlVisitor, context: PlSqlVisitorContext, capabilities: SemanticScanCapabilities) {
+        if (check is PlSqlCheck) {
+            check.installProjectAnalysisForScan(capabilities.projectAnalysis)
+        }
+        check.context = context
+        check.startScan()
+        check.resetSyntaxViewSubscriptions()
+        check.init()
+
+        for (type in check.subscribedKinds()) {
+            rawVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
+        }
+        for (type in check.syntaxViewSubscribedKinds()) {
+            typedVisitorsByNodeType.getOrPut(type) { mutableListOf() }.add(check)
         }
     }
 
@@ -113,14 +118,17 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
                 }
 
                 if (callbackVisitor.visitsComment) {
-                    for (trivia in ast.token.trivia) {
-                        // Only comments: conditional-compilation text is skipped-text trivia.
-                        if (!trivia.isComment) continue
-                        callbackVisitor.visitor.visitComment(trivia,
-                            PlSqlCommentAnalyzer.getContents(trivia.token.originalValue))
-                    }
+                    visitComments(callbackVisitor.visitor, ast.token)
                 }
             }
+        }
+    }
+
+    private fun visitComments(visitor: PlSqlVisitor, token: Token) {
+        for (trivia in token.trivia) {
+            // Only comments: conditional-compilation text is skipped-text trivia.
+            if (!trivia.isComment) continue
+            visitor.visitComment(trivia, PlSqlCommentAnalyzer.getContents(trivia.token.originalValue))
         }
     }
 

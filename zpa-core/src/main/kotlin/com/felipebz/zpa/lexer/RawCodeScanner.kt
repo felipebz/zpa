@@ -96,28 +96,33 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         val alternative = (char(quote) == 'q'.code || char(quote) == 'Q'.code) && char(quote + 1) == '\''.code
         if (alternative) quote++
         if (char(quote) != '\''.code) return -1
-        if (alternative) {
-            val opener = char(quote + 1)
-            if (opener <= 0 || Character.isWhitespace(opener)) return -1
-            val closer = when (opener.toChar()) {
-                '(' -> ')'.code
-                '[' -> ']'.code
-                '<' -> '>'.code
-                '{' -> '}'.code
-                else -> opener
-            }
-            var position = quote + 2
-            while (char(position) > 0) {
-                if (char(position) == closer && char(position + 1) == '\''.code) return position + 2
-                position++
-            }
-            return -1
-        }
+        return if (alternative) alternativeQuotedEnd(quote) else quotedEnd(quote)
+    }
+
+    private fun quotedEnd(quote: Int): Int {
         var position = quote + 1
         while (char(position) > 0) {
             if (char(position) == '\''.code) {
                 if (char(position + 1) == '\''.code) position++ else return position + 1
             }
+            position++
+        }
+        return -1
+    }
+
+    private fun alternativeQuotedEnd(quote: Int): Int {
+        val opener = char(quote + 1)
+        if (opener <= 0 || Character.isWhitespace(opener)) return -1
+        val closer = when (opener.toChar()) {
+            '(' -> ')'.code
+            '[' -> ']'.code
+            '<' -> '>'.code
+            '{' -> '}'.code
+            else -> opener
+        }
+        var position = quote + 2
+        while (char(position) > 0) {
+            if (char(position) == closer && char(position + 1) == '\''.code) return position + 2
             position++
         }
         return -1

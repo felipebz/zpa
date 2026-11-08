@@ -338,20 +338,27 @@ internal class LocalCompletenessEvidence private constructor(
             }
 
             // Recovery: file-level nodes only; one below the file level taints everything.
-            val recoveryStarts = if (recovery.isEmpty()) IntArray(0) else {
-                if (recovery.any { it.parent !== root }) global += LocalIncompleteness.PARSE_RECOVERY
-                val index = IdentityHashMap<Token, Int>()
-                tokens.forEachIndexed { i, token -> index[token] = i }
-                val starts = recovery.mapNotNull { if (it.hasToken()) index[it.token] else null }
-                // A recovery node whose start cannot be found would otherwise go unnoticed.
-                if (starts.size != recovery.size) global += LocalIncompleteness.PARSE_RECOVERY
-                starts.sorted().toIntArray()
-            }
+            val recoveryStarts = recoveryStarts(root, recovery, tokens, global)
 
             return LocalCompletenessEvidence(
                 tokens, points.mapValues { it.value.distinct().sorted().toIntArray() }, spans, recoveryStarts, global,
                 (balancedPoints - unbalanced).sorted().toIntArray(), pointPieces, spanPieces
             )
+        }
+
+        /**
+         * The sorted indexes of the tokens the `RECOVERY` nodes [recovery] start at; a node below the file level, or one
+         * whose start is not found, adds [LocalIncompleteness.PARSE_RECOVERY] to [global].
+         */
+        private fun recoveryStarts(root: AstNode, recovery: List<AstNode>, tokens: List<Token>, global: MutableSet<LocalIncompleteness>): IntArray {
+            if (recovery.isEmpty()) return IntArray(0)
+            if (recovery.any { it.parent !== root }) global += LocalIncompleteness.PARSE_RECOVERY
+            val index = IdentityHashMap<Token, Int>()
+            tokens.forEachIndexed { i, token -> index[token] = i }
+            val starts = recovery.mapNotNull { if (it.hasToken()) index[it.token] else null }
+            // A recovery node whose start cannot be found would otherwise go unnoticed.
+            if (starts.size != recovery.size) global += LocalIncompleteness.PARSE_RECOVERY
+            return starts.sorted().toIntArray()
         }
 
         /** The undecided conditional-compilation boundaries, as (index of the token they precede, their trivia token). */
@@ -407,27 +414,28 @@ internal class LocalCompletenessEvidence private constructor(
          * kept branches themselves (false for that one span).
          */
         private fun keptBranches(runs: List<Pair<Int, Boolean>>, dollarFallback: Boolean, conditionalPoints: List<Int>): Pair<List<IntRange>, Boolean> {
-            val spans = ArrayList<IntRange>()
-            var depth = 0
-            var start = -1
-            var paired = true
-            for ((index, opens) in runs) {
-                if (opens) {
-                    if (depth++ == 0) start = index
-                } else {
-                    if (--depth < 0) {
-                        paired = false
-                        break
-                    }
-                    if (depth == 0 && start <= index - 1) spans += start until index
-                }
-            }
-            if (depth != 0) paired = false
-            if (paired && !dollarFallback) return spans to true
+            val spans = pairedSpans(runs)
+            if (spans != null && !dollarFallback) return spans to true
             if (conditionalPoints.isEmpty()) return emptyList<IntRange>() to false
             val first = conditionalPoints.min()
             val last = conditionalPoints.max()
             return (if (first <= last) listOf(first..last) else emptyList()) to false
+        }
+
+        /** The spans of the top-level constructs the boundary [runs] pair into; null when they do not pair. */
+        private fun pairedSpans(runs: List<Pair<Int, Boolean>>): List<IntRange>? {
+            val spans = ArrayList<IntRange>()
+            var depth = 0
+            var start = -1
+            for ((index, opens) in runs) {
+                if (opens) {
+                    if (depth++ == 0) start = index
+                } else {
+                    if (--depth < 0) return null
+                    if (depth == 0 && start <= index - 1) spans += start until index
+                }
+            }
+            return if (depth == 0) spans else null
         }
     }
 }

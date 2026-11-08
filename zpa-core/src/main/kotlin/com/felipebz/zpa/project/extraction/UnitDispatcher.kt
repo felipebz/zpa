@@ -69,20 +69,24 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
             if (attributes.isEmpty()) continue
             val dropped = altered.getOrPut(name.first) { HashSet() }
             for (attribute in attributes) {
-                if (stream.valueAt(attribute - 1) != "DROP") continue
-                if (stream.valueAt(attribute + 1) == "(") {
-                    val close = stream.matching(attribute + 1).coerceAtMost(end)
-                    var index = attribute + 2
-                    while (index < close) {
-                        stream.identifierAt(index)?.let { dropped += it.first }
-                        index = (index + 1 until close).firstOrNull { stream.valueAt(it) == "," }?.plus(1) ?: close
-                    }
-                } else {
-                    stream.identifierAt(attribute + 1)?.let { dropped += it.first }
-                }
+                if (stream.valueAt(attribute - 1) == "DROP") addDroppedAttributes(attribute, end, dropped)
             }
         }
         return AlteredTypes(altered.keys, altered.filterValues { it.isNotEmpty() }, methods)
+    }
+
+    /** Adds to [dropped] the names after the `ATTRIBUTE` at [attribute] of a `DROP ATTRIBUTE` clause: one name or a `( ... )` list. */
+    private fun addDroppedAttributes(attribute: Int, end: Int, dropped: MutableSet<OracleIdentifier>) {
+        if (stream.valueAt(attribute + 1) == "(") {
+            val close = stream.matching(attribute + 1).coerceAtMost(end)
+            var index = attribute + 2
+            while (index < close) {
+                stream.identifierAt(index)?.let { dropped += it.first }
+                index = (index + 1 until close).firstOrNull { stream.valueAt(it) == "," }?.plus(1) ?: close
+            }
+        } else {
+            stream.identifierAt(attribute + 1)?.let { dropped += it.first }
+        }
     }
 
     /** `[NOT] OVERRIDING | FINAL | INSTANTIABLE ...` then MEMBER, STATIC, MAP, ORDER or CONSTRUCTOR. */

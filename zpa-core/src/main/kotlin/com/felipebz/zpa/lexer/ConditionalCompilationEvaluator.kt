@@ -346,20 +346,22 @@ internal object ConditionalCompilationEvaluator {
                 if (peek()?.type != T.DOT) break
                 pos++
             }
-            if (peek()?.type == T.LPAREN) {
-                // A function call: its arguments must still parse, but its value is not known.
-                pos++
-                if (peek()?.type != T.RPAREN) {
-                    while (true) {
-                        or() ?: return null
-                        if (peek()?.type == T.COMMA) pos++ else break
-                    }
-                }
-                if (peek()?.type != T.RPAREN) return null
-                pos++
-                return Value.Unknown
-            }
+            // A function call: its arguments must still parse, but its value is not known.
+            if (peek()?.type == T.LPAREN) return call()
             return dbVersion(segments) ?: Value.Unknown
+        }
+
+        private fun call(): Value? {
+            pos++
+            if (peek()?.type != T.RPAREN) {
+                while (true) {
+                    or() ?: return null
+                    if (peek()?.type == T.COMMA) pos++ else break
+                }
+            }
+            if (peek()?.type != T.RPAREN) return null
+            pos++
+            return Value.Unknown
         }
 
         private fun dbVersion(segments: List<String>): Value? {

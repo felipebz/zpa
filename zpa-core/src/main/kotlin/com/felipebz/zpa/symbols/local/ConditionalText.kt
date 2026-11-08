@@ -130,22 +130,26 @@ internal object ConditionalText {
      * again: `1..l_cnt` writes `l_cnt`.
      */
     private fun numberEnd(text: String, i: Int): Int {
-        var j = i
-        while (j < text.length && text[j].isDigit()) j++
-        if (j < text.length && text[j] == '.' && text.getOrNull(j + 1) != '.') {
-            j++
-            while (j < text.length && text[j].isDigit()) j++
-        }
-        if (j < text.length && (text[j] == 'e' || text[j] == 'E')) {
-            var k = j + 1
-            if (k < text.length && (text[k] == '+' || text[k] == '-')) k++
-            if (k < text.length && text[k].isDigit()) {
-                j = k
-                while (j < text.length && text[j].isDigit()) j++
-            }
-        }
+        var j = digitsEnd(text, i)
+        if (j < text.length && text[j] == '.' && text.getOrNull(j + 1) != '.') j = digitsEnd(text, j + 1)
+        j = exponentEnd(text, j)
         if (j < text.length && text[j] in "fFdD" && !(text.getOrNull(j + 1)?.let { it.isLetterOrDigit() || it in WORD_CHARACTERS } ?: false)) j++
         return j
+    }
+
+    /** The end of the digits starting at [i]; [i] when there are none. */
+    private fun digitsEnd(text: String, i: Int): Int {
+        var j = i
+        while (j < text.length && text[j].isDigit()) j++
+        return j
+    }
+
+    /** The end of the exponent (`e`, an optional sign, digits) starting at [i]; [i] when there is none. */
+    private fun exponentEnd(text: String, i: Int): Int {
+        if (i >= text.length || text[i] != 'e' && text[i] != 'E') return i
+        var k = i + 1
+        if (k < text.length && (text[k] == '+' || text[k] == '-')) k++
+        return if (k < text.length && text[k].isDigit()) digitsEnd(text, k) else i
     }
 
     /** The end of the string starting with the quote at [i] (`''` inside it is a quote). */

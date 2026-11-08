@@ -40,33 +40,40 @@ internal object StringLiteralSyntax {
         if (alternative) start++
         if (!original.startsWith("'", start) || !original.endsWith("'")) return null
         start++
+        return if (alternative) decodeAlternative(original, start) else decodeQuoted(original, start)
+    }
+
+    private fun decodeQuoted(original: String, start: Int): Decoded? {
         val value = StringBuilder()
         val offsets = ArrayList<Int>()
-        if (alternative) {
-            if (original.length < start + 3) return null
-            val open = original[start]
-            val close = when (open) {
-                '[' -> ']'
-                '(' -> ')'
-                '<' -> '>'
-                '{' -> '}'
-                else -> open
-            }
-            val end = original.length - 2
-            if (end <= start || original[end] != close) return null
-            for (index in start + 1 until end) {
-                value.append(original[index])
-                offsets += index
-            }
-        } else {
-            var index = start
-            val end = original.length - 1
-            if (end < start) return null
-            while (index < end) {
-                value.append(original[index])
-                offsets += index
-                index += if (original[index] == '\'' && index + 1 < end && original[index + 1] == '\'') 2 else 1
-            }
+        var index = start
+        val end = original.length - 1
+        if (end < start) return null
+        while (index < end) {
+            value.append(original[index])
+            offsets += index
+            index += if (original[index] == '\'' && index + 1 < end && original[index + 1] == '\'') 2 else 1
+        }
+        return Decoded(value.toString(), offsets.toIntArray())
+    }
+
+    private fun decodeAlternative(original: String, start: Int): Decoded? {
+        if (original.length < start + 3) return null
+        val open = original[start]
+        val close = when (open) {
+            '[' -> ']'
+            '(' -> ')'
+            '<' -> '>'
+            '{' -> '}'
+            else -> open
+        }
+        val end = original.length - 2
+        if (end <= start || original[end] != close) return null
+        val value = StringBuilder()
+        val offsets = ArrayList<Int>()
+        for (index in start + 1 until end) {
+            value.append(original[index])
+            offsets += index
         }
         return Decoded(value.toString(), offsets.toIntArray())
     }

@@ -34,6 +34,16 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
     // The root field, with its arguments and directives, up to the closing brace of its selection set.
     // Hash comments after that brace still belong to the definition.
     private fun end(scan: RawCodeScanner): Int {
+        val selectionSet = selectionSetStart(scan)
+        if (selectionSet < 0) return -1
+        val closed = skipBracketed(scan, selectionSet, '{'.code, '}'.code)
+        if (closed < 0) return -1
+        return trailingHashCommentsEnd(scan, closed)
+    }
+
+    // The position of the opening brace of the root field's selection set, after its name, arguments and directives,
+    // or -1.
+    private fun selectionSetStart(scan: RawCodeScanner): Int {
         var position = skipName(scan, 0)
         if (position < 0) return -1
         val dot = skipTrivia(scan, position)
@@ -44,33 +54,18 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
         while (true) {
             position = skipTrivia(scan, position)
             when (scan.char(position)) {
-                '{'.code -> break
-                '('.code -> position = skipArguments(scan, position)
+                '{'.code -> return position
+                '('.code -> position = skipBracketed(scan, position, '('.code, ')'.code)
                 '@'.code -> position = skipName(scan, position + 1)
                 else -> return -1
             }
             if (position < 0) return -1
         }
+    }
 
-        var depth = 0
-        while (true) {
-            val c = scan.char(position)
-            if (c <= 0) return -1
-            val next = skipLexicalItem(scan, position)
-            if (next < 0) return -1
-            if (next != position) {
-                position = next
-                continue
-            }
-            position++
-            if (c == '{'.code) {
-                depth++
-            } else if (c == '}'.code && --depth == 0) {
-                break
-            }
-        }
-
-        val closed = position
+    // The end of the last hash comment among the comments following [closed], or [closed] when there is none.
+    private fun trailingHashCommentsEnd(scan: RawCodeScanner, closed: Int): Int {
+        var position = closed
         var lastHashEnd = -1
         while (true) {
             while (scan.isWhitespace(position)) position++
@@ -105,7 +100,8 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
         return if (position == start) -1 else position
     }
 
-    private fun skipArguments(scan: RawCodeScanner, start: Int): Int {
+    // From an [open] bracket to after its matching [close], skipping strings and comments; -1 when unterminated.
+    private fun skipBracketed(scan: RawCodeScanner, start: Int, open: Int, close: Int): Int {
         var position = start
         var depth = 0
         while (true) {
@@ -118,7 +114,7 @@ class GraphQlDualitySourceChannel : Channel<LexerOutput> {
                 continue
             }
             position++
-            if (c == '('.code) depth++ else if (c == ')'.code && --depth == 0) return position
+            if (c == open) depth++ else if (c == close && --depth == 0) return position
         }
     }
 
