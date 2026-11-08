@@ -200,14 +200,17 @@ class LocalForwardCallTest {
             val text = File("src/test/resources/local-semantic/sources/$name.sql").readText()
             val snapshot = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("$name.sql", text)), false)
             return analyze(text, snapshot, "$name.sql").calls.filter { it.outcome == LocalCallOutcome.PROJECT && it.target.segments.size > 1 }
-                .map { "${it.target} -> ${it.typed!!.status}" }
+                .map { call -> "${call.target} -> ${call.typed!!.status}" + call.typed!!.selected.map { " " + formal(it) }.orElse("") }
         }
         // Package members called from a standalone procedure: the members Oracle ran.
-        assertThat(projectCalls("local_and_package_subprograms")).containsExactly("pk_s.sp -> RESOLVED", "pk_s.caller -> RESOLVED", "pk_s.caller2 -> RESOLVED")
-        assertThat(projectCalls("local_overloads_and_outer_subprograms")).containsExactly("pk_n.run -> RESOLVED")
-        assertThat(projectCalls("package_specification_and_body")).containsExactly("pk_ok.a -> RESOLVED", "pk_q.show -> RESOLVED")
-        // cfg.x(r): the package procedure x, not the parameter's field; rv.f needs the field's type.
-        assertThat(projectCalls("parameter_named_like_its_package")).containsExactly("ov.k -> AMBIGUOUS", "cfg.x -> RESOLVED")
+        assertThat(projectCalls("local_and_package_subprograms").map { it.substringBefore(" -> ") + " -> " + it.substringAfter(" -> ").substringBefore(' ') })
+            .containsExactly("pk_s.sp -> RESOLVED", "pk_s.caller -> RESOLVED", "pk_s.caller2 -> RESOLVED")
+        assertThat(projectCalls("local_overloads_and_outer_subprograms").map { it.substringBefore(" -> ") + " -> " + it.substringAfter(" -> ").substringBefore(' ') })
+            .containsExactly("pk_n.run -> RESOLVED")
+        assertThat(projectCalls("package_specification_and_body").map { it.substringBefore(" -> ") + " -> " + it.substringAfter(" -> ").substringBefore(' ') })
+            .containsExactly("pk_ok.a -> RESOLVED", "pk_q.show -> RESOLVED")
+        // ov.k(cfg.f): the parameter's record field, a NUMBER (Oracle ran NUMBER); cfg.x(r): the package procedure x.
+        assertThat(projectCalls("parameter_named_like_its_package")).containsExactly("ov.k -> RESOLVED number", "cfg.x -> RESOLVED tp.rec_t")
     }
 
     @Test

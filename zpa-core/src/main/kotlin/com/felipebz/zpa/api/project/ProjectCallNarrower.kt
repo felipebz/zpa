@@ -18,7 +18,12 @@ import com.felipebz.zpa.project.*
 @OptIn(ZpaExperimentalApi::class)
 internal object ProjectCallNarrower {
     /** The family of one side of a binding, or why it is unknown, and its exact type when known. */
-    internal class Evidence(val family: ProjectDatatypeFamily?, val reason: UnknownReason?, val rank: OverloadRank? = null)
+    internal class Evidence(
+        val family: ProjectDatatypeFamily?,
+        val reason: UnknownReason?,
+        val rank: OverloadRank? = null,
+        val compositeKind: CompositeKind? = null
+    )
 
     @JvmSynthetic
     fun narrow(
@@ -93,7 +98,7 @@ internal object ProjectCallNarrower {
             val name = type.shadowName
             when {
                 family != null && scope != null && name != null && shadowed(scope, name) -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
-                family != null -> Evidence(family, null, type.rank)
+                family != null -> Evidence(family, null, type.rank, type.compositeKind)
                 type.unclassified -> Evidence(null, UnknownReason.UNCLASSIFIED_TYPE)
                 else -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
             }
@@ -114,7 +119,9 @@ internal object ProjectCallNarrower {
         val description = snapshot.describeExternalType(reference, owner, metadata, currentSchema)
         val family = DatatypeFamilies.ofDescription(description, null, reference)
         if (family == null) {
-            if (owner != null && inSpecification && namesSchemaObject(reference, owner, shadowed)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null)
+            if (owner != null && inSpecification && namesSchemaObject(reference, owner, shadowed)) {
+                return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, DatatypeFamilies.undeclaredTypeKind(reference.name.name.last))
+            }
             return Evidence(null, if (DatatypeFamilies.isConclusive(description)) UnknownReason.UNCLASSIFIED_TYPE else UnknownReason.FORMAL_INCONCLUSIVE)
         }
         val builtIn = DatatypeFamilies.builtInName(description, null)
@@ -123,7 +130,7 @@ internal object ProjectCallNarrower {
             return Evidence(null, UnknownReason.FORMAL_INCONCLUSIVE)
         }
         val rank = builtIn?.let { OverloadRank.of(it.name, description.source.terminalReference.map { ref -> ref.writtenIdentity }.orElse(null)) }
-        return Evidence(family, null, rank)
+        return Evidence(family, null, rank, DatatypeFamilies.compositeKind(description))
     }
 
     /**
@@ -136,26 +143,10 @@ internal object ProjectCallNarrower {
      */
     private fun namesSchemaObject(reference: ProjectTypeReference, owner: ProjectQualifiedName, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): Boolean {
         if (reference.kind != ProjectTypeReference.Kind.NAMED || reference.writtenIdentity != null) return false
-        val name = reference.name.name.segments.singleOrNull()?.takeUnless { it.quoted } ?: return false
-        if (name.lookupName in PREDEFINED_SCALAR_NAMES) return false
+        val name = reference.name.name.segments.singleOrNull() ?: return false
+        if (!DatatypeFamilies.isNonScalarTypeName(name)) return false
         return !shadowed(owner.name, name)
     }
-
-    /**
-     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary of Oracle 26ai),
-     * with the leading word of each multi-word name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
-     * of a polymorphic table function.
-     */
-    private val PREDEFINED_SCALAR_NAMES = setOf(
-        "BOOLEAN", "BOOL", "DATE", "NUMBER", "FLOAT", "REAL", "DOUBLE", "INTEGER", "INT", "SMALLINT", "DECIMAL", "NUMERIC", "DEC",
-        "BINARY_INTEGER", "NATURAL", "NATURALN", "POSITIVE", "POSITIVEN", "SIGNTYPE", "PLS_INTEGER", "SIMPLE_INTEGER",
-        "BINARY_FLOAT", "BINARY_DOUBLE", "SIMPLE_FLOAT", "SIMPLE_DOUBLE", "BINARY",
-        "VARCHAR2", "VARCHAR", "STRING", "LONG", "RAW", "ROWID", "UROWID", "CHAR", "CHARACTER", "NATIONAL", "NCHAR", "NVARCHAR2",
-        "MLSLABEL", "BLOB", "CLOB", "NCLOB", "BFILE", "JSON", "VECTOR",
-        "TIME", "TIMESTAMP", "INTERVAL", "TIME_UNCONSTRAINED", "TIME_TZ_UNCONSTRAINED", "TIMESTAMP_UNCONSTRAINED",
-        "TIMESTAMP_TZ_UNCONSTRAINED", "TIMESTAMP_LTZ_UNCONSTRAINED", "YMINTERVAL_UNCONSTRAINED", "DSINTERVAL_UNCONSTRAINED",
-        "DBMS_ID", "DBMS_QUOTED_ID", "DBMS_ID_30", "DBMS_QUOTED_ID_30", "DBMS_ID_128", "DBMS_QUOTED_ID_128", "TABLE"
-    )
 
     /**
      * One binding's outcome from its two sides: unknown when either side is, else the families' compatibility. Only
@@ -168,6 +159,12 @@ internal object ProjectCallNarrower {
         // rejects the other with PLS-00306).
         if (actual.family == ProjectDatatypeFamily.INTERVAL && formal.family == ProjectDatatypeFamily.INTERVAL && actual.rank != null && formal.rank != null) {
             return result(if (actual.rank == formal.rank) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
+        }
+        // Composites: a ref cursor and a schema object type reject each other; a SYS_REFCURSOR formal takes any ref cursor.
+        if (actual.family == ProjectDatatypeFamily.COMPOSITE && formal.family == ProjectDatatypeFamily.COMPOSITE) {
+            val kinds = setOfNotNull(actual.compositeKind, formal.compositeKind)
+            if (actual.compositeKind != null && formal.compositeKind != null && kinds.size == 2) return result(Outcome.INCOMPATIBLE, null)
+            if (kinds == setOf(CompositeKind.REF_CURSOR) && actual.compositeKind != null && formal.compositeKind != null) return result(Outcome.COMPATIBLE, null)
         }
         return when (DatatypeFamilies.compatibility(actual.family, formal.family)) {
             DatatypeCompatibility.COMPATIBLE -> result(Outcome.COMPATIBLE, null)

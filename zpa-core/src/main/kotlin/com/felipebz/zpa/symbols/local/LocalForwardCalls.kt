@@ -204,6 +204,22 @@ internal class LocalForwardCalls(
     }
 
     /**
+     * A name `v.m1.m2…` written without parentheses whose first segment is a local value and whose members the
+     * resolver leaves to typing: the members are walked from the value's type ([LocalTypeWalk.memberPath]). COUNT of a
+     * collection the resolver reached is a PLS_INTEGER, as there. Null for any other shape.
+     */
+    private fun memberPath(reference: LocalReference, steps: List<LocalResolution>, actual: LocalActual): LocalTypeEvidence? {
+        if (actual.isCall || reference.segments.isEmpty() || reference.segments.any { it.isAttribute } || steps.size < 2) return null
+        // COUNT of a local collection, which the resolver already found to be a collection method.
+        if (steps.size == reference.segments.size + 1 && steps.last() is LocalResolution.CollectionMethod && reference.segments.last().name.lookupName == "COUNT") {
+            return LocalTypeEvidence(ProjectArgumentType.builtIn("PLS_INTEGER"), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+        }
+        if ((steps[1] as? LocalResolution.Unsupported)?.construct != LocalUnsupportedConstruct.MEMBER_NEEDS_TYPING) return null
+        val first = steps.first().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it } as? LocalResolution.Bound ?: return null
+        return walk.memberPath(walk.outcome(first), reference.segments.map { it.name }, reference.region)
+    }
+
+    /**
      * Evidence of one actual: a literal as Oracle types it; a name, an element or a call's result through the resolver,
      * the type walk and, for a project callee, the call's own resolution.
      */
@@ -225,6 +241,7 @@ internal class LocalForwardCalls(
             return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
             else walk.projectValue(target(reference), reference.region)
         }
+        memberPath(reference, steps, actual)?.let { return it }
         if (steps.size != reference.segments.size + 1) return LocalTypeEvidence.unknown("stopped at ${steps.last()}")
         // `pkg.member` through the package's own name, the member in the specification in another file.
         if (LocalReferenceOutcomes.isSpecificationMember(steps.last())) {

@@ -181,6 +181,29 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
+    /**
+     * [members], one step after another, from the value [evidence] gives, the last of them possibly the collection
+     * method COUNT of a collection value: Oracle 26ai types it as PLS_INTEGER (it binds a PLS_INTEGER formal over NUMBER
+     * and VARCHAR2, for nested tables, varrays and associative arrays alike). A collection has no attribute, so COUNT
+     * after one is always the method.
+     */
+    fun memberPath(evidence: LocalTypeEvidence, members: List<OracleIdentifier>, region: LocalRegionId): LocalTypeEvidence {
+        val last = members.lastOrNull() ?: return evidence
+        val base = members(evidence, members.dropLast(1), region)
+        if (last.lookupName == "COUNT" && isCollection(base)) {
+            return LocalTypeEvidence(ProjectArgumentType.builtIn("PLS_INTEGER"), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+        }
+        return members(base, listOf(last), region)
+    }
+
+    /** Whether [evidence] is a value of a local collection type or of a collection type the project describes. */
+    private fun isCollection(evidence: LocalTypeEvidence): Boolean = when (evidence.terminal) {
+        LocalTypeEvidence.Terminal.COMPOSITE -> evidence.followed.lastOrNull()?.let(model::declaration)?.kind == COLLECTION_TYPE
+        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.takeIf { !it.anchor.isPresent && it.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
+            ?.source?.declaration?.orElse(null)?.let { (it as? ProjectShapedTypeView)?.shape?.orElse(null) == PublicTypeShape.COLLECTION } == true
+        else -> false
+    }
+
     /** [members], one step after another, from the value [evidence] gives. */
     fun members(evidence: LocalTypeEvidence, members: List<OracleIdentifier>, region: LocalRegionId): LocalTypeEvidence =
         // An undecided value keeps its reasons: its members are no more decided.
@@ -350,8 +373,8 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
-    private fun composite(followed: List<LocalDeclarationId>) =
-        LocalTypeEvidence(ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed, null)
+    private fun composite(followed: List<LocalDeclarationId>, kind: CompositeKind? = null) =
+        LocalTypeEvidence(kind?.let { ProjectArgumentType.composite(it) } ?: ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed, null)
 
     /** A decision made with the project's specification coverage is still the body's: its declaration is local. */
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
@@ -471,7 +494,8 @@ internal class LocalTypeWalk(
                     followed += target.id
                     target.type?.let(::type) ?: unknown(NO_WRITTEN_TYPE)
                 }
-                RECORD_TYPE, COLLECTION_TYPE, REF_CURSOR_TYPE -> { followed += target.id; composite(followed.toList()) }
+                RECORD_TYPE, COLLECTION_TYPE -> { followed += target.id; composite(followed.toList()) }
+                REF_CURSOR_TYPE -> { followed += target.id; composite(followed.toList(), CompositeKind.REF_CURSOR) }
                 else -> unknown("${target.kind} ${target.name} is not a type")
             }
             typeRef is AnchoredTypeRef && typeRef.anchor == TypeAnchor.TYPE -> value(target)
@@ -484,12 +508,23 @@ internal class LocalTypeWalk(
             val name = typeRef.name
             if (typeRef is NamedTypeRef && name.segments.size == 1) {
                 val spelling = name.last.originalSpelling
+                // SYS_REFCURSOR is STANDARD's ref cursor type (Oracle 26ai: a SYS_REFCURSOR formal takes it, a schema
+                // object type rejects it).
+                val kind = DatatypeFamilies.undeclaredTypeKind(name.last)
+                if (kind == CompositeKind.REF_CURSOR) {
+                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
+                }
                 // A schema type never shadows a predefined name; any other one-segment name is a schema type.
-                if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null) {
+                if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null && kind == null) {
                     return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
                 }
-                val described = snapshot.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
-                return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+                val described = snapshot?.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
+                val argumentType = described?.let { ProjectArgumentType.described(it, null) }
+                // A schema object the project does not describe is still composite: it rejects every scalar formal.
+                if (kind == CompositeKind.SCHEMA_OBJECT && argumentType?.family?.isPresent != true) {
+                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+                }
+                return LocalTypeEvidence(argumentType!!, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
             }
             return project(name, (typeRef as? AnchoredTypeRef)?.anchor, use.lookupRegion)
         }

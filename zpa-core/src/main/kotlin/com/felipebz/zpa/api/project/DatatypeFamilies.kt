@@ -92,6 +92,46 @@ internal object DatatypeFamilies {
         return ofName(QualifiedName(OracleIdentifier.fromSource(word)))
     }
 
+    /**
+     * The names of the types and subtypes STANDARD and DBMS_STANDARD declare (read from the dictionary of Oracle 26ai),
+     * with the leading word of each multi-word name, without SYS_REFCURSOR and ORA_NAME_LIST_T; TABLE is the pseudo-type
+     * of a polymorphic table function.
+     */
+    private val predefinedScalarNames = setOf(
+        "BOOLEAN", "BOOL", "DATE", "NUMBER", "FLOAT", "REAL", "DOUBLE", "INTEGER", "INT", "SMALLINT", "DECIMAL", "NUMERIC", "DEC",
+        "BINARY_INTEGER", "NATURAL", "NATURALN", "POSITIVE", "POSITIVEN", "SIGNTYPE", "PLS_INTEGER", "SIMPLE_INTEGER",
+        "BINARY_FLOAT", "BINARY_DOUBLE", "SIMPLE_FLOAT", "SIMPLE_DOUBLE", "BINARY",
+        "VARCHAR2", "VARCHAR", "STRING", "LONG", "RAW", "ROWID", "UROWID", "CHAR", "CHARACTER", "NATIONAL", "NCHAR", "NVARCHAR2",
+        "MLSLABEL", "BLOB", "CLOB", "NCLOB", "BFILE", "JSON", "VECTOR",
+        "TIME", "TIMESTAMP", "INTERVAL", "TIME_UNCONSTRAINED", "TIME_TZ_UNCONSTRAINED", "TIMESTAMP_UNCONSTRAINED",
+        "TIMESTAMP_TZ_UNCONSTRAINED", "TIMESTAMP_LTZ_UNCONSTRAINED", "YMINTERVAL_UNCONSTRAINED", "DSINTERVAL_UNCONSTRAINED",
+        "DBMS_ID", "DBMS_QUOTED_ID", "DBMS_ID_30", "DBMS_QUOTED_ID_30", "DBMS_ID_128", "DBMS_QUOTED_ID_128", "TABLE"
+    )
+
+    /**
+     * The composite kind of a type written as the unquoted one-segment [name] that no local or package declaration
+     * declares: SYS_REFCURSOR is a ref cursor; any name that is not a predefined type names a schema object (a type
+     * created with CREATE TYPE, or a synonym of one), since schema-level types never shadow predefined names; a
+     * predefined name otherwise (a scalar, the collection ORA_NAME_LIST_T) is null.
+     */
+    fun undeclaredTypeKind(name: OracleIdentifier): CompositeKind? = when {
+        name.quoted -> null
+        name.lookupName == "SYS_REFCURSOR" -> CompositeKind.REF_CURSOR
+        name.lookupName == "ORA_NAME_LIST_T" || name.lookupName in predefinedScalarNames -> null
+        else -> CompositeKind.SCHEMA_OBJECT
+    }
+
+    /** Whether [name] is an undeclared type name that is not a scalar predefined type (see [undeclaredTypeKind]). */
+    fun isNonScalarTypeName(name: OracleIdentifier): Boolean =
+        !name.quoted && (name.lookupName == "ORA_NAME_LIST_T" || undeclaredTypeKind(name) != null)
+
+    /** A described composite that is a type created with CREATE TYPE (a schema object), or null. */
+    fun compositeKind(description: ProjectExternalTypeDescription): CompositeKind? =
+        if (description.status == ProjectExternalTypeDescription.Status.NOT_EXTERNAL &&
+            description.source.status == ProjectTypeDescription.Status.DECLARED_TYPE &&
+            description.source.declaration.orElse(null)?.kind == ProjectDeclarationKind.STANDALONE_TYPE
+        ) CompositeKind.SCHEMA_OBJECT else null
+
     /** The overload rank of a built-in type spelled as text, read as [ofTypeName] reads it; null when not known. */
     fun rankOfTypeName(text: String): OverloadRank? {
         if (text.contains('"') || text.contains('.')) return null

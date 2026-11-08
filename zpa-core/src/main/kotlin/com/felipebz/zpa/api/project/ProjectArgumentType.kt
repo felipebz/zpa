@@ -38,7 +38,9 @@ class ProjectArgumentType private constructor(
     @get:JvmSynthetic internal val shadowName: OracleIdentifier?,
     @get:JvmSynthetic internal val shadowScope: QualifiedName?,
     /** The exact type, as Oracle's choice among compatible overloads tells types apart; null when not known exactly. */
-    @get:JvmSynthetic internal val rank: OverloadRank? = null
+    @get:JvmSynthetic internal val rank: OverloadRank? = null,
+    /** For a composite, what it is where Oracle's compatibility between composites depends on it; null when not known. */
+    @get:JvmSynthetic internal val compositeKind: CompositeKind? = null
 ) {
     enum class Kind {
         /** No usable evidence. */
@@ -93,6 +95,10 @@ class ProjectArgumentType private constructor(
             return ProjectArgumentType(Kind.BUILT_IN, family, family == null, null, null, family?.let { DatatypeFamilies.rankOfTypeName(typeName) })
         }
 
+        /** A composite value of a known [kind]: a ref cursor variable, or a value of a schema object type. */
+        @JvmSynthetic
+        internal fun composite(kind: CompositeKind): ProjectArgumentType = ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, null, kind)
+
         /** As [builtIn], for a value whose exact type within the family is not known (a timestamp literal, which may have a zone). */
         @JvmSynthetic
         internal fun builtInInexact(typeName: String): ProjectArgumentType {
@@ -133,7 +139,7 @@ class ProjectArgumentType private constructor(
             val family = DatatypeFamilies.ofDescription(description, null, null)
             val conclusive = DatatypeFamilies.isConclusive(description)
             val builtIn = DatatypeFamilies.builtInName(description, null)?.takeIf { family != null }
-                ?: return ProjectArgumentType(Kind.DESCRIBED, family, family == null && conclusive, null, null)
+                ?: return ProjectArgumentType(Kind.DESCRIBED, family, family == null && conclusive, null, null, null, DatatypeFamilies.compositeKind(description))
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.
             val stepScope = DatatypeFamilies.builtInScope(description, null)
             if (stepScope == null && description.source.steps.isEmpty() && !ownerKnown) {

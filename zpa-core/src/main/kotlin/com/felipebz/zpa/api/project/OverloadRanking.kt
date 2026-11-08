@@ -144,3 +144,17 @@ internal enum class OverloadRank(val group: Group) {
         }
     }
 }
+
+/**
+ * What a composite value or formal is, where Oracle's compatibility between composites depends on it (Oracle 26ai):
+ * a ref cursor variable (weak or strong) is accepted by a SYS_REFCURSOR formal and rejected by a formal of a schema
+ * object type, and a schema object value is rejected by a SYS_REFCURSOR formal. Two schema object types are never told
+ * apart this way: a synonym or a subtype may relate two names.
+ */
+internal enum class CompositeKind {
+    /** A ref cursor value; as a formal, SYS_REFCURSOR. */
+    REF_CURSOR,
+
+    /** A type created with CREATE TYPE, or a synonym of one. */
+    SCHEMA_OBJECT
+}
