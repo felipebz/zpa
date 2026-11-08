@@ -6,7 +6,6 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.ProjectTypeDescriber.anchor
 import com.felipebz.zpa.project.*
 
 /** Why an anchor step stopped; recorded only for composition, never part of a public result. */
@@ -72,11 +71,11 @@ internal object ProjectTypeDescriber {
             val outcome = when {
                 writtenStep -> {
                     writtenStep = false
-                    anchor(snapshot, name, written!!.anchor, null, AnchorContext.Written(startOwner?.name), steps, written, trace)
+                    AnchorStep(snapshot, null, steps, written, trace).anchor(name, written!!.anchor, AnchorContext.Written(startOwner?.name))
                 }
                 reference?.kind == ProjectTypeReference.Kind.ANCHORED -> {
                     if (!holderKnown) holder = ReferenceHolders.find(snapshot.projectIndex, reference)
-                    anchor(snapshot, reference.name, reference.anchor.get(), reference, AnchorContext.Retained(holder), steps, written, trace)
+                    AnchorStep(snapshot, reference, steps, written, trace).anchor(reference.name, reference.anchor.get(), AnchorContext.Retained(holder))
                 }
                 else -> null
             }
@@ -128,61 +127,7 @@ internal object ProjectTypeDescriber {
         return null
     }
 
-    /**
-     * One `%TYPE`/`%ROWTYPE` step: a stop, or the one source value that the anchor names. [reference] is null only for
-     * the written request, which has no retained syntax; the guards that need a retained holder (sibling capture,
-     * body scope, declaration order) are the consumer's lexical gate for a written anchor and are skipped.
-     */
-    private fun anchor(
-        snapshot: ProjectSnapshot,
-        anchorName: ProjectQualifiedName,
-        kind: ProjectTypeReference.Anchor,
-        reference: ProjectTypeReference?,
-        context: AnchorContext,
-        steps: Map<ProjectDeclarationId, ProjectDeclarationView>,
-        written: ProjectWrittenAnchor?,
-        trace: AnchorTrace?
-    ): Anchor {
-        val step = AnchorStep(snapshot, reference, steps, written, trace)
-        val holder = (context as? AnchorContext.Retained)?.holder
-        trace?.holder = holder
-        trace?.written = context is AnchorContext.Written
-        trace?.cause = null
-        trace?.captors = emptyList()
-        // A remote anchor names another database: nothing in the project or the local metadata describes it.
-        if (reference?.link?.isPresent == true) return step.stop(ProjectTypeDescription.AnchorStop.REMOTE, AnchorStopCause.REMOTE)
-        // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
-        if (kind == ProjectTypeReference.Anchor.ROWTYPE) return step.stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
-        if (context is AnchorContext.Retained && holder == null) return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)
-        val index = snapshot.projectIndex
-        val segments = anchorName.name.segments
-        step.holderStop(holder, segments)?.let { return it }
-        val owner = when (context) {
-            is AnchorContext.Retained -> holder!!.owner
-            is AnchorContext.Written -> context.owner
-        }
-        step.packageScopeStop(owner, holder, segments)?.let { return it }
-        step.prefixValueStop(segments)?.let { return it }
-        val lookup = if (segments.size == 1) {
-            snapshot.resolvePackageValue(anchorName, ProjectQualifiedName.wrap(owner!!))
-        } else {
-            snapshot.resolvePackageValue(anchorName, null)
-        }
-        if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
-            return Anchor.Stop(ProjectTypeDescription.unresolvedValue(step.followed(), lookup, reference, written))
-        }
-        val value = lookup.value.get()
-        // The resolved value must be the only binding of its package: several specifications are not one scope.
-        if (index.findOccurrences(value.owner.name).count { val d = it.declaration; d is PackageDeclaration && d.role == DeclarationRole.SPECIFICATION } != 1) {
-            return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
-        }
-        val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return step.stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
-        step.declarationOrderStop(holder, owner, value, valueOccurrence)?.let { return it }
-        if (steps.containsKey(value.id)) return Anchor.Cycle(value)
-        return Anchor.Follow(value)
-    }
-
-    /** The stop checks of one [anchor] step, sharing the step's reference, walk and trace. */
+    /** One `%TYPE`/`%ROWTYPE` step of the walk, with its reference, the values followed so far and the trace. */
     private class AnchorStep(
         private val snapshot: ProjectSnapshot,
         private val reference: ProjectTypeReference?,
@@ -190,6 +135,50 @@ internal object ProjectTypeDescriber {
         private val written: ProjectWrittenAnchor?,
         private val trace: AnchorTrace?
     ) {
+        /**
+         * The anchor [anchorName] names: a stop, or the one source value it names. The step's reference is null only for
+         * the written request, which has no retained syntax; the guards that need a retained holder (sibling capture,
+         * body scope, declaration order) are the consumer's lexical gate for a written anchor and are skipped.
+         */
+        fun anchor(anchorName: ProjectQualifiedName, kind: ProjectTypeReference.Anchor, context: AnchorContext): Anchor {
+            val holder = (context as? AnchorContext.Retained)?.holder
+            trace?.holder = holder
+            trace?.written = context is AnchorContext.Written
+            trace?.cause = null
+            trace?.captors = emptyList()
+            // A remote anchor names another database: nothing in the project or the local metadata describes it.
+            if (reference?.link?.isPresent == true) return stop(ProjectTypeDescription.AnchorStop.REMOTE, AnchorStopCause.REMOTE)
+            // %ROWTYPE stops before any owner or scope guard, so a written one-segment %ROWTYPE without owner stays ROWTYPE.
+            if (kind == ProjectTypeReference.Anchor.ROWTYPE) return stop(ProjectTypeDescription.AnchorStop.ROWTYPE, AnchorStopCause.ROWTYPE)
+            if (context is AnchorContext.Retained && holder == null) return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.NO_HOLDER)
+            val index = snapshot.projectIndex
+            val segments = anchorName.name.segments
+            holderStop(holder, segments)?.let { return it }
+            val owner = when (context) {
+                is AnchorContext.Retained -> holder!!.owner
+                is AnchorContext.Written -> context.owner
+            }
+            packageScopeStop(owner, holder, segments)?.let { return it }
+            prefixValueStop(segments)?.let { return it }
+            val lookup = if (segments.size == 1) {
+                snapshot.resolvePackageValue(anchorName, ProjectQualifiedName.wrap(owner!!))
+            } else {
+                snapshot.resolvePackageValue(anchorName, null)
+            }
+            if (lookup.status != ProjectValueResolution.Status.RESOLVED) {
+                return Anchor.Stop(ProjectTypeDescription.unresolvedValue(followed(), lookup, reference, written))
+            }
+            val value = lookup.value.get()
+            // The resolved value must be the only binding of its package: several specifications are not one scope.
+            if (index.findOccurrences(value.owner.name).count { val d = it.declaration; d is PackageDeclaration && d.role == DeclarationRole.SPECIFICATION } != 1) {
+                return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
+            }
+            val valueOccurrence = snapshot.occurrenceOf(value.id) ?: return stop(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE, AnchorStopCause.PACKAGE_UNIT)
+            declarationOrderStop(holder, owner, value, valueOccurrence)?.let { return it }
+            if (steps.containsKey(value.id)) return Anchor.Cycle(value)
+            return Anchor.Follow(value)
+        }
+
         // The ordered copy is made only when a terminal description is built, never for a successful step.
         fun followed() = steps.values.toList()
 
