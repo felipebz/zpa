@@ -21,10 +21,14 @@ class LocalCallResultTest {
         "  member function pick(p_n number) return varchar2,\n  member function pick(p_s varchar2) return number) not final;\n/\n" +
         "create or replace type big_crate_t under crate_obj_t (depth number);\n/\n" +
         "create or replace type crate_list_t as table of crate_obj_t;\n/\n" +
+        "create or replace type label_list_t as table of varchar2(30);\n/\n" +
+        "create or replace function all_labels return label_list_t is begin return null; end;\n/\n" +
         "create or replace package pk_src as\n" +
         "  function same(p_x number) return varchar2;\n  function same(p_x varchar2) return varchar2;\n" +
         "  function mixed(p_x number) return varchar2;\n  function mixed(p_x varchar2) return number;\n" +
-        "  function cursor_of return sys_refcursor;\nend;\n/\n" +
+        "  function cursor_of return sys_refcursor;\n" +
+        "  function labels return label_list_t;\n  function crates return crate_list_t;\n" +
+        "  function lists(p_x number) return label_list_t;\n  function lists(p_x varchar2) return crate_list_t;\nend;\n/\n" +
         "create or replace package pk_take as\n" +
         "  procedure take(p_val number);\n  procedure take(p_val varchar2);\n  procedure take(p_val sys_refcursor);\n" +
         "  procedure take(p_val anydata);\nend;\n/\n"
@@ -67,5 +71,18 @@ class LocalCallResultTest {
         assertThat(selected("", "pk_src.same(null)")).isEqualTo("varchar2")
         // Candidates with different RETURN types: no type.
         assertThat(selected("", "pk_src.mixed(null)")).isEqualTo("AMBIGUOUS")
+    }
+
+    @Test
+    fun anElementOfAFunctionResultIsTheElementType() {
+        assertThat(selected("", "pk_src.labels()(1)")).isEqualTo("varchar2")
+        assertThat(selected("", "all_labels()(1)")).isEqualTo("varchar2")
+        assertThat(selected("", "pk_src.crates()(1).qty")).isEqualTo("number")
+        // Candidates returning different collection types: no type.
+        assertThat(selected("", "pk_src.lists(null)(1)")).isEqualTo("AMBIGUOUS")
+        // The first list is the call's own: labels takes no actual, so the call binds nothing.
+        assertThat(selected("", "pk_src.labels(1)(1)")).isEqualTo("AMBIGUOUS")
+        // Two actuals do not index a collection.
+        assertThat(selected("", "pk_src.labels()(1, 2)")).isEqualTo("AMBIGUOUS")
     }
 }

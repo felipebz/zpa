@@ -66,6 +66,18 @@ internal sealed interface LocalActualForm {
      * before the method, the method's name, and the labels of its actuals (null for a positional one).
      */
     class Method(val base: LocalActual, val members: List<OracleIdentifier>, val method: OracleIdentifier, val labels: List<OracleIdentifier?>) : LocalActualForm
+
+    /**
+     * An element of a call's result, `f(…)(i)`: [base] is the call, then one index per argument list after its own.
+     * Oracle reads the first list as the call's actuals, even for a function without parameters (PLS-00306 for `f(1)`).
+     */
+    class Element(val base: LocalActual, val indexes: Int) : LocalActualForm
+
+    /** `-x` or `+x`. */
+    class Signed(val operand: LocalActual) : LocalActualForm
+
+    /** `c%ISOPEN`, `c%FOUND`, `c%NOTFOUND` or `c%ROWCOUNT` of any cursor, `SQL` included: [rowCount] for the last. */
+    class CursorAttribute(val rowCount: Boolean) : LocalActualForm
 }
 
 /** One written actual of a call: its notation and its form. */
@@ -95,7 +107,10 @@ internal class LocalActual(
 internal class LocalCall(
     val line: Int,
     val column: Int,
-    /** In written order; null when the form is not modeled (several argument lists, `f(1)(2)`). */
+    /**
+     * The call's own actuals, in written order, also for `f(…)(i)`, whose later lists index its result; null when the
+     * form is not modeled (a later list with several actuals, `f(1)(2, 3)`).
+     */
     val actuals: List<LocalActual>?
 ) {
     override fun toString() = "call@$line:$column${actuals ?: "(not modeled)"}"
@@ -118,7 +133,7 @@ internal object LocalCallCollector {
         when {
             node.type === PlSqlGrammar.METHOD_CALL -> {
                 val lists = node.getChildren(PlSqlGrammar.ARGUMENTS)
-                val actuals = if (lists.size == 1) lists.single().getChildren(PlSqlGrammar.ARGUMENT).map(::actual) else null
+                val actuals = if (lists.size == 1 || indexes(lists)) lists.first().getChildren(PlSqlGrammar.ARGUMENT).map(::actual) else null
                 out += LocalCall(node.firstChild.token.line, node.firstChild.token.column, actuals)
             }
             node.type === PlSqlGrammar.CALL_STATEMENT && !node.hasDirectChildren(PlSqlGrammar.METHOD_CALL) ->
@@ -144,11 +159,17 @@ internal object LocalCallCollector {
         treatType(expression)?.let { return LocalActual(label, null, 0, 0, form = LocalActualForm.Treat(it)) }
         if (expression.type === PlSqlGrammar.OBJECT_REFERENCE) return LocalActual(label, null, 0, 0, form = members(expression))
         if (expression.type === PlSqlGrammar.METHOD_CALL) {
-            // `c(1)(2)`, `h()(1)`: an element of a result, an expression this model does not type.
-            if (expression.getChildren(PlSqlGrammar.ARGUMENTS).size != 1) return LocalActual(label, null, 0, 0)
+            val lists = expression.getChildren(PlSqlGrammar.ARGUMENTS)
             val called = name(expression.firstChild) ?: return LocalActual(label, null, 0, 0)
-            return LocalActual(label, null, called.token.line, called.token.column, isCall = true)
+            if (lists.size == 1) return LocalActual(label, null, called.token.line, called.token.column, isCall = true)
+            if (!indexes(lists)) return LocalActual(label, null, 0, 0)
+            val call = LocalActual(null, null, called.token.line, called.token.column, isCall = true)
+            return LocalActual(label, null, 0, 0, form = LocalActualForm.Element(call, lists.size - 1))
         }
+        if (expression.type === PlSqlGrammar.UNARY_EXPRESSION && expression.children.size == 2 &&
+            expression.firstChild.type.let { it === PlSqlPunctuator.MINUS || it === PlSqlPunctuator.PLUS }
+        ) return LocalActual(label, null, 0, 0, form = LocalActualForm.Signed(expression(null, expression.lastChild)))
+        cursorAttribute(expression)?.let { return LocalActual(label, null, 0, 0, form = it) }
         val name = name(expression) ?: return LocalActual(label, null, 0, 0)
         return LocalActual(label, null, name.token.line, name.token.column)
     }
@@ -162,7 +183,7 @@ internal object LocalCallCollector {
         if (children.size != 3 || children[1].type !== PlSqlPunctuator.DOT) return null
         val base = children[0]
         val baseActual = when {
-            base.type === PlSqlGrammar.METHOD_CALL -> expression(null, base).takeIf { it.isCall } ?: return null
+            base.type === PlSqlGrammar.METHOD_CALL -> expression(null, base).takeIf { it.isCall || it.form is LocalActualForm.Element } ?: return null
             treatType(base) != null -> expression(null, base)
             else -> return null
         }
@@ -178,6 +199,24 @@ internal object LocalCallCollector {
         }
         val names = nameSegments(after) ?: return null
         return LocalActualForm.Members(baseActual, names.map(LocalSyntax::identifier))
+    }
+
+    /** Whether every argument list after the first holds one positional actual: each indexes the result before it. */
+    private fun indexes(lists: List<AstNode>): Boolean = lists.size > 1 && lists.drop(1).all { list ->
+        list.getChildren(PlSqlGrammar.ARGUMENT).singleOrNull()?.hasDirectChildren(PlSqlPunctuator.ASSOCIATION) == false
+    }
+
+    /** `name%ISOPEN`, `name%FOUND`, `name%NOTFOUND` or `name%ROWCOUNT`, else null. */
+    private fun cursorAttribute(expression: AstNode): LocalActualForm.CursorAttribute? {
+        val children = expression.children
+        if (expression.type !== PlSqlGrammar.MEMBER_EXPRESSION || children.first().type !== PlSqlGrammar.VARIABLE_NAME ||
+            children.size < 3 || children[children.size - 2].type !== PlSqlPunctuator.MOD || expression.hasDirectChildren(PlSqlPunctuator.REMOTE)
+        ) return null
+        return when (children.last().tokenValue.uppercase()) {
+            "ISOPEN", "FOUND", "NOTFOUND" -> LocalActualForm.CursorAttribute(rowCount = false)
+            "ROWCOUNT" -> LocalActualForm.CursorAttribute(rowCount = true)
+            else -> null
+        }
     }
 
     /** The identifier nodes of a plain or qualified name, or null for anything else. */

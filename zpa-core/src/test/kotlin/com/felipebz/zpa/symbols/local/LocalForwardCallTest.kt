@@ -136,7 +136,7 @@ class LocalForwardCallTest {
         assertThat(call.actuals.map { it.evidence.argumentType.toString() }).containsExactly(
             "BUILT_IN NUMERIC", "BUILT_IN NUMERIC", "BUILT_IN NUMERIC", "BUILT_IN CHARACTER", "BUILT_IN CHARACTER",
             "BUILT_IN CHARACTER", "NULL_LITERAL", "BUILT_IN BOOLEAN", "BUILT_IN DATETIME", "BUILT_IN DATETIME", "BUILT_IN INTERVAL",
-            "UNKNOWN", "BUILT_IN DATETIME"
+            "BUILT_IN NUMERIC", "BUILT_IN DATETIME"
         )
         assertThat(call.actuals.last().actual.label!!.lookupName).isEqualTo("P")
         assertThat(call.typed!!.structural.arguments.arguments.map { it.isNamed }.last()).isTrue()

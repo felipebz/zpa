@@ -218,7 +218,7 @@ class LocalOverloadTest {
         .map { "${it.target} ${it.actuals.single().evidence.argumentType} ${it.typed?.status ?: it.local!!.status}" }
 
     @Test
-    fun anActualWithChainedArgumentListsIsNotModeled() {
+    fun anActualWithChainedArgumentListsIsAnElementOfTheResultBefore() {
         // Oracle runs the DATE overloads: an element of an element, an element of a function result.
         val source = "declare\n  type nt is table of date;\n  type nnt is table of nt;\n  c nnt;\n  n nt;\n" +
             "  function h return nt is begin return null; end;\n  function f(x number) return date is begin return null; end;\n" +
@@ -226,7 +226,7 @@ class LocalOverloadTest {
             "  pkg.processar(c(1)(2)); p(h()(1)); pkg.processar(pf.d()(1));\n" +
             "  pkg.processar(n(1)); p(h()); pkg.processar(f(1));\nend;\n/\n"
         assertThat(actuals(source, 11)).containsExactly(
-            "pkg.processar UNKNOWN AMBIGUOUS", "p UNKNOWN AMBIGUOUS", "pkg.processar UNKNOWN AMBIGUOUS"
+            "pkg.processar BUILT_IN DATETIME RESOLVED", "p BUILT_IN DATETIME RESOLVED", "pkg.processar DESCRIBED DATETIME RESOLVED"
         )
         // One argument list keeps its evidence.
         assertThat(actuals(source, 12)).containsExactly(

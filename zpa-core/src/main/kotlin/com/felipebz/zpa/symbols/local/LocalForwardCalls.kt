@@ -284,8 +284,9 @@ internal class LocalForwardCalls(
     }
 
     /**
-     * Evidence of an actual written as a condition, a concatenation, a `TREAT`, members after an element, or a method
-     * called on a constructor, an element or a `TREAT`.
+     * Evidence of an actual written as a condition, a concatenation, a `TREAT`, members after an element, a method
+     * called on a constructor, an element or a `TREAT`, an element of a call's result, a signed number or a cursor
+     * attribute.
      */
     private fun form(form: LocalActualForm, region: LocalRegionId): LocalTypeEvidence = when (form) {
         LocalActualForm.Predicate -> builtIn("BOOLEAN")
@@ -296,7 +297,20 @@ internal class LocalForwardCalls(
             val owner = walk.memberPath(evidence(form.base, region), form.members, region)
             walk.methodResult(owner, form.method, arguments(form.labels), region)
         }
+        // Typed only through the call's result: the RETURN type of the function it binds, as for any call actual.
+        is LocalActualForm.Element -> (1..form.indexes).fold(evidence(form.base, region)) { current, _ -> walk.element(current, region) }
+        is LocalActualForm.Signed -> signed(evidence(form.operand, region))
+        // Oracle rejects an attribute of anything but a cursor (PLS-00324), and no declaration takes an attribute's name.
+        is LocalActualForm.CursorAttribute -> builtIn(if (form.rowCount) "NUMBER" else "BOOLEAN")
     }
+
+    /**
+     * `-x` or `+x` has the type of a numeric `x`, its exact type included: Oracle prefers PLS_INTEGER for `-1` and for
+     * `-n` of a PLS_INTEGER, NUMBER for `-1.5`. Any other operand is not typed.
+     */
+    private fun signed(operand: LocalTypeEvidence): LocalTypeEvidence =
+        if (operand.argumentType.family.orElse(null) != ProjectDatatypeFamily.NUMERIC) LocalTypeEvidence.unknown("a signed operand that is not a number")
+        else LocalTypeEvidence(operand.argumentType, operand.terminal, emptyList(), null, operand.description)
 
     /** The notation of a call's actuals, positional or named by [labels]. */
     private fun arguments(labels: List<OracleIdentifier?>) = ProjectCallArguments.of(labels.map { label ->
