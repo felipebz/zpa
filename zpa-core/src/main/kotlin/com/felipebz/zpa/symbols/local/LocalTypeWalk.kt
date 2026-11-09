@@ -270,7 +270,34 @@ internal class LocalTypeWalk(
         val typeRef = member.typeRef
         val described = if (typeRef != null) snapshot.describeExternalType(typeRef, member.owner, metadata, schema)
         else snapshot.describeExternalType(member.typeName ?: return LocalTypeEvidence.unknown("no member type"), null, metadata, schema)
-        return LocalTypeEvidence(ProjectArgumentType.described(described, member.owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+        return describedResult(described, member.owner, typeRef, inSpecification = true)
+    }
+
+    /**
+     * A described type, or, when the project gives it no family, the composite an undeclared one-segment type name
+     * stands for: SYS_REFCURSOR is a ref cursor and any other name that is not predefined a schema object, unless the
+     * package [owner] declares the name. [inSpecification] is false for a package body's private declaration, whose
+     * own declarations are not covered.
+     */
+    private fun describedResult(
+        described: ProjectExternalTypeDescription,
+        owner: ProjectQualifiedName?,
+        typeRef: ProjectTypeReference?,
+        inSpecification: Boolean
+    ): LocalTypeEvidence {
+        val argumentType = ProjectArgumentType.described(described, owner)
+        val name = typeRef?.takeIf { argumentType.family.isEmpty && inSpecification && it.kind == ProjectTypeReference.Kind.NAMED && it.writtenIdentity == null }
+            ?.name?.name?.segments?.singleOrNull()
+        val kind = name?.let { DatatypeFamilies.undeclaredTypeKind(it) }
+        if (kind != null && (owner == null || !shadowed(owner.name, name))) {
+            return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+        }
+        return LocalTypeEvidence(argumentType, LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+    }
+
+    /** Whether a package member may take a predefined type name, answered once per package and name. */
+    private val shadowed: (QualifiedName, OracleIdentifier) -> Boolean by lazy(LazyThreadSafetyMode.NONE) {
+        snapshot?.let { ProjectCallNarrower.shadowCheck(it) } ?: { _, _ -> true }
     }
 
     /** The local record type [evidence] ends at, or null. */
@@ -374,14 +401,39 @@ internal class LocalTypeWalk(
     /** Evidence of the result of the local function [function], a call resolved to that entity. */
     fun result(function: LocalDeclarationId): LocalTypeEvidence = Walk().result(model.declaration(function), 0)
 
-    /** Evidence of a project call's result: the RETURN type of the function a RESOLVED call selected. */
+    /**
+     * Evidence of a project call's result: the RETURN type of the function a RESOLVED call selected, or the one every
+     * candidate of an AMBIGUOUS call shares.
+     */
     fun projectResult(typed: ProjectTypedCallResolution?, region: LocalRegionId): LocalTypeEvidence {
         if (typed == null) return LocalTypeEvidence.unknown("not forwarded")
-        if (typed.status != ProjectTypedCallResolution.Status.RESOLVED) return LocalTypeEvidence.unknown("the call is ${typed.status}")
-        val function = typed.selected.get().declaration as? ProjectFunctionView ?: return LocalTypeEvidence.unknown("not a function")
+        val function = when (typed.status) {
+            ProjectTypedCallResolution.Status.RESOLVED -> typed.selected.get().declaration as? ProjectFunctionView ?: return LocalTypeEvidence.unknown("not a function")
+            ProjectTypedCallResolution.Status.AMBIGUOUS -> sameReturn(typed) ?: return LocalTypeEvidence.unknown("the call is AMBIGUOUS")
+            else -> return LocalTypeEvidence.unknown("the call is ${typed.status}")
+        }
         val owner = (function as? ProjectPackageSubprogramView)?.packageOwner
         val described = snapshot!!.describeExternalType(function.returnType, owner, metadata, compilationSchema(region))
-        return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+        return describedResult(described, owner, function.returnType, function.role != ProjectDeclarationRole.BODY)
+    }
+
+    /**
+     * A function standing for every candidate an AMBIGUOUS call retains, when they are all functions of one package (or
+     * all standalone) declaring the same RETURN type: whichever Oracle binds, the result has that type. When Oracle cannot
+     * pick one either, it raises PLS-00307 at the call, so no compiled call gets another type.
+     */
+    private fun sameReturn(typed: ProjectTypedCallResolution): ProjectFunctionView? {
+        val functions = typed.evaluations.filter { it.outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
+            .map { it.candidate.declaration as? ProjectFunctionView ?: return null }
+        val first = functions.firstOrNull() ?: return null
+        val owner = (first as? ProjectPackageSubprogramView)?.packageOwner
+        return first.takeIf {
+            functions.all { f ->
+                (f as? ProjectPackageSubprogramView)?.packageOwner == owner && f.role == first.role &&
+                    f.returnType.kind == first.returnType.kind && f.returnType.anchor == first.returnType.anchor &&
+                    f.returnType.name == first.returnType.name && f.returnType.writtenIdentity == first.returnType.writtenIdentity
+            }
+        }
     }
 
     private fun composite(followed: List<LocalDeclarationId>, kind: CompositeKind? = null) =

@@ -9,6 +9,7 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.symbols.local.LocalReferenceContext as Ctx
 
@@ -211,10 +212,13 @@ internal class LocalForwardCalls(
     private fun memberPath(reference: LocalReference, steps: List<LocalResolution>, actual: LocalActual): LocalTypeEvidence? {
         if (reference.segments.isEmpty() || reference.segments.any { it.isAttribute } || steps.size < 2) return null
         if (actual.isCall) {
-            // `v.m(i)` with one index: an element of the member, when the member is a collection; a method is not typed.
-            if (callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size != 1) return null
+            // `v.m(…)`: an element of the member when it is a collection indexed once, else the result of the method.
+            val call = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals ?: return null
             val path = memberPath(reference, steps, LocalActual(null, null, actual.nameLine, actual.nameColumn)) ?: return null
-            return walk.element(path, reference.region)
+            if (path.terminal != LocalTypeEvidence.Terminal.UNKNOWN && call.size == 1) return walk.element(path, reference.region)
+            val first = steps.first().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it } as? LocalResolution.Bound ?: return null
+            val owner = walk.memberPath(walk.outcome(first), reference.segments.dropLast(1).map { it.name }, reference.region)
+            return walk.methodResult(owner, reference.segments.last().name, arguments(call.map { it.label }), reference.region)
         }
         // COUNT of a local collection, which the resolver already found to be a collection method.
         if (steps.size == reference.segments.size + 1 && steps.last() is LocalResolution.CollectionMethod && reference.segments.last().name.lookupName == "COUNT") {
@@ -242,13 +246,7 @@ internal class LocalForwardCalls(
             callOf(reference)?.let { return walk.projectResult(it.typed, reference.region) }
             return memberTarget(reference)?.let { walk.projectValue(it, reference.region) } ?: LocalTypeEvidence.unknown("no package")
         }
-        if (LocalReferenceOutcomes.isAbsent(first)) {
-            builtInValue(reference, actual)?.let { return it }
-            callOf(reference)?.let { return walk.projectResult(it.typed, reference.region) }
-            // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
-            return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
-            else walk.projectValue(target(reference), reference.region)
-        }
+        if (LocalReferenceOutcomes.isAbsent(first)) return absentName(reference, actual)
         memberPath(reference, steps, actual)?.let { return it }
         if (steps.size != reference.segments.size + 1) return LocalTypeEvidence.unknown("stopped at ${steps.last()}")
         // `pkg.member` through the package's own name, the member in the specification in another file.
@@ -271,13 +269,39 @@ internal class LocalForwardCalls(
         return element
     }
 
-    /** Evidence of an actual written as a condition, a concatenation, a `TREAT`, or members after an element. */
+    /** Evidence of a name or call whose first segment no local declaration takes. */
+    private fun absentName(reference: LocalReference, actual: LocalActual): LocalTypeEvidence {
+        builtInValue(reference, actual)?.let { return it }
+        callOf(reference)?.let { call ->
+            val result = walk.projectResult(call.typed, reference.region)
+            // An object type's constructor, user-defined or the default one: nothing local takes the name.
+            if (result.terminal == LocalTypeEvidence.Terminal.UNKNOWN && actual.isCall) walk.constructorResult(target(reference), reference.region)?.let { return it }
+            return result
+        }
+        // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
+        return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
+        else walk.projectValue(target(reference), reference.region)
+    }
+
+    /**
+     * Evidence of an actual written as a condition, a concatenation, a `TREAT`, members after an element, or a method
+     * called on a constructor, an element or a `TREAT`.
+     */
     private fun form(form: LocalActualForm, region: LocalRegionId): LocalTypeEvidence = when (form) {
         LocalActualForm.Predicate -> builtIn("BOOLEAN")
         is LocalActualForm.Concatenation -> concatenation(form.operands.map { evidence(it, region) })
         is LocalActualForm.Treat -> treat(form.type, region)
         is LocalActualForm.Members -> walk.memberPath(evidence(form.base, region), form.members, region)
+        is LocalActualForm.Method -> {
+            val owner = walk.memberPath(evidence(form.base, region), form.members, region)
+            walk.methodResult(owner, form.method, arguments(form.labels), region)
+        }
     }
+
+    /** The notation of a call's actuals, positional or named by [labels]. */
+    private fun arguments(labels: List<OracleIdentifier?>) = ProjectCallArguments.of(labels.map { label ->
+        label?.let { ProjectCallArgument.named(ProjectIdentifier.fromSource(it.originalSpelling)) } ?: ProjectCallArgument.positional()
+    }).internal
 
     /**
      * The type of `a || b`: VARCHAR2 when every operand is a character value, a number, a date or a time,

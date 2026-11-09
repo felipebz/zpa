@@ -60,6 +60,12 @@ internal sealed interface LocalActualForm {
 
     /** Members written after an element (`v(i).m`) or a `TREAT`, without parentheses after them. */
     class Members(val base: LocalActual, val members: List<OracleIdentifier>) : LocalActualForm
+
+    /**
+     * A method called on the value of a constructor, an element or a `TREAT` (`t(…).m(…)`, `v(i).a.m(…)`): the members
+     * before the method, the method's name, and the labels of its actuals (null for a positional one).
+     */
+    class Method(val base: LocalActual, val members: List<OracleIdentifier>, val method: OracleIdentifier, val labels: List<OracleIdentifier?>) : LocalActualForm
 }
 
 /** One written actual of a call: its notation and its form. */
@@ -148,10 +154,10 @@ internal object LocalCallCollector {
     }
 
     /**
-     * `v(i).m…` or `TREAT(x AS t).m…`: the base, a dot, then names only. Null for anything else (a method called after
-     * the dot, an attribute, a second element).
+     * `v(i).m…`, `t(…).m…` or `TREAT(x AS t).m…`: the base, a dot, then names, or names ending in one method call.
+     * Null for anything else (an attribute, a second element, a method with several argument lists).
      */
-    private fun members(reference: AstNode): LocalActualForm.Members? {
+    private fun members(reference: AstNode): LocalActualForm? {
         val children = reference.children
         if (children.size != 3 || children[1].type !== PlSqlPunctuator.DOT) return null
         val base = children[0]
@@ -160,11 +166,24 @@ internal object LocalCallCollector {
             treatType(base) != null -> expression(null, base)
             else -> return null
         }
-        val names = name(children[2])?.let { node ->
-            if (node.type === PlSqlGrammar.VARIABLE_NAME) listOf(node.firstChild)
-            else listOf(node.firstChild.firstChild) + node.children.drop(1).filter { it.type === PlSqlGrammar.IDENTIFIER_NAME }
-        } ?: return null
+        val after = children[2]
+        if (after.type === PlSqlGrammar.METHOD_CALL) {
+            val lists = after.getChildren(PlSqlGrammar.ARGUMENTS)
+            if (lists.size != 1) return null
+            val names = nameSegments(after.firstChild)?.map(LocalSyntax::identifier) ?: return null
+            val labels = lists.single().getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
+                if (argument.hasDirectChildren(PlSqlPunctuator.ASSOCIATION)) LocalSyntax.identifier(argument.firstChild) else null
+            }
+            return LocalActualForm.Method(baseActual, names.dropLast(1), names.last(), labels)
+        }
+        val names = nameSegments(after) ?: return null
         return LocalActualForm.Members(baseActual, names.map(LocalSyntax::identifier))
+    }
+
+    /** The identifier nodes of a plain or qualified name, or null for anything else. */
+    private fun nameSegments(expression: AstNode): List<AstNode>? = name(expression)?.let { node ->
+        if (node.type === PlSqlGrammar.VARIABLE_NAME) listOf(node.firstChild)
+        else listOf(node.firstChild.firstChild) + node.children.drop(1).filter { it.type === PlSqlGrammar.IDENTIFIER_NAME }
     }
 
     /** The type named in `TREAT(x AS t)`, when it is a plain or qualified name. */
