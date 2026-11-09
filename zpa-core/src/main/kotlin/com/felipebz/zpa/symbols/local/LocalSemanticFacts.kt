@@ -3,8 +3,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectArgumentType
 import com.felipebz.zpa.project.SourceRange
 
 /**
@@ -29,7 +33,9 @@ internal class LocalSemanticFacts(
     /** See [LocalSpecificationCoverage.sqlSpecificationMembers]. */
     val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap(),
     /** The names written as members of a value (after a call, an element access or a parenthesized expression). */
-    val members: List<LocalMember> = emptyList()
+    val members: List<LocalMember> = emptyList(),
+    /** See [LocalForwardCalls.itemActualTypes]. */
+    val itemActualTypes: Map<Pair<Int, Int>, List<ProjectArgumentType>> = emptyMap()
 ) {
     /** The usage evidence of the file's declarations, computed when first asked. */
     val usages: LocalUsages by lazy { LocalUsages(this) }

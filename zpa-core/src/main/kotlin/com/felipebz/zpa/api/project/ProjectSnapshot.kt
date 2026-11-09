@@ -364,16 +364,31 @@ class ProjectSnapshot private constructor(
     /**
      * The result of calling the method [name], with [arguments], on a value of the object type [type]: the RETURN type
      * of the one method the call binds ([ProjectMethodCallBinder]), or the type itself for a function returning `SELF`
-     * as result. Null when the call binds no single method (ambiguous, several applicable, none, a procedure, an
-     * incomplete set), or [name] names no method.
+     * as result. Several applicable methods are narrowed by [argumentTypes], one per actual in written order, as a
+     * package call is ([ProjectCallNarrower.selectByDatatypes]); null types leave them undecided. Null when the call
+     * binds no single method (ambiguous, several applicable, none, a procedure, an incomplete set), or [name] names no
+     * method.
      */
     @JvmSynthetic
-    internal fun methodResultType(type: ProjectDeclarationId, name: OracleIdentifier, arguments: com.felipebz.zpa.project.ProjectCallArguments): ProjectMemberType? {
+    internal fun methodResultType(
+        type: ProjectDeclarationId,
+        name: OracleIdentifier,
+        arguments: com.felipebz.zpa.project.ProjectCallArguments,
+        argumentTypes: List<ProjectArgumentType>?,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): ProjectMemberType? {
         if (preparationState == ProjectPreparationState.NOT_PREPARED) return null
         val declaration = occurrenceOf(type)?.declaration as? ProjectTypeDeclaration ?: return null
         val members = ProjectRecordMemberResolver(callContext())
         val methods = members.resolve(declaration, name) as? ProjectRecordMemberResolution.Method ?: return null
-        val call = ProjectMethodCallBinder(members).bind(methods, ProjectMethodReceiver.VALUE, InternalCallKind.FUNCTION, arguments)
+        val byDatatypes = argumentTypes?.takeIf { it.size == arguments.arguments.size }?.let { types ->
+            { candidates: List<ProjectMethodCallCandidate> ->
+                val formals = candidates.map { c -> c.formalIndices.map { ProjectTypeReference.from(c.parameters[it].typeRef) } }
+                ProjectCallNarrower.selectByDatatypes(preferring(currentSchema), types, formals, metadata, currentSchema)?.let(candidates::get)
+            }
+        }
+        val call = ProjectMethodCallBinder(members).bind(methods, ProjectMethodReceiver.VALUE, InternalCallKind.FUNCTION, arguments, byDatatypes)
         if (call.status != ProjectMethodCall.Status.RESOLVED) return null
         val selected = call.selected ?: return null
         val method = selected.method

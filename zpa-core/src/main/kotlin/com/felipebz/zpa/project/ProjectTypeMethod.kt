@@ -39,7 +39,7 @@ class ProjectTypeMethod(
     }
 
     /** Oracle overloads by parameter names and types; mode, defaults and the return type do not count. */
-    fun overloadKey(): List<Pair<OracleIdentifier, String>> = parameters.map { it.name to it.typeRef.structuralKey() }
+    fun overloadKey(): List<Pair<OracleIdentifier, String>> = parameters.map { it.name to it.typeRef.overloadTypeKey() }
 
     /**
      * Whether this method, of a subtype, replaces [inherited]: the same parameter names and types, and both functions or

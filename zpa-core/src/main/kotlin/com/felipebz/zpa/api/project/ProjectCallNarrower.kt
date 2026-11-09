@@ -51,9 +51,10 @@ internal object ProjectCallNarrower {
                 val owner = (declaration as? ProjectPackageSubprogramView)?.packageOwner
                 val inSpecification = declaration.role == ProjectDeclarationRole.SPECIFICATION
                 val ranks = arrayOfNulls<OverloadRank>(actuals.size)
+                val undeclared: ((OracleIdentifier) -> Boolean)? = if (owner != null && inSpecification) { name -> !shadowed(owner.name, name) } else null
                 val bindings = candidate.bindings.map { binding ->
                     val actual = actuals[binding.argumentOrdinal - 1]
-                    val formal = formal(snapshot, binding.parameter, owner, inSpecification, metadata, currentSchema, shadowed)
+                    val formal = formal(snapshot, binding.parameter.typeRef, owner, undeclared, metadata, currentSchema, shadowed)
                     ranks[binding.argumentOrdinal - 1] = formal.rank
                     compare(actual, formal) { outcome, reason ->
                         ProjectBindingCompatibility.of(binding, outcome, actual.family, formal.family, reason)
@@ -83,6 +84,32 @@ internal object ProjectCallNarrower {
         return evaluations[retained[selected]].candidate
     }
 
+    /**
+     * Among the [formals] of candidates that all fit a call structurally (for each, the formal type of each actual, in
+     * written order), the index of the one Oracle binds by the actuals' [argumentTypes], compared and preferred as in
+     * [narrow]: the only candidate no actual is proven incompatible with, or the one [preferred] picks. Null otherwise.
+     * The formals are those of an object type's methods, named at schema level: an undeclared one-segment name that is
+     * not a predefined scalar type names a schema object, and no package shadows a predefined name there.
+     */
+    internal fun selectByDatatypes(
+        snapshot: ProjectSnapshot,
+        argumentTypes: List<ProjectArgumentType>,
+        formals: List<List<ProjectTypeReference>>,
+        metadata: ProjectExternalMetadata,
+        currentSchema: ProjectIdentifier?
+    ): Int? {
+        val shadowed = shadowCheck(snapshot)
+        val actuals = argumentTypes.map { actual(it, shadowed) }
+        val evidence = formals.map { types -> types.map { formal(snapshot, it, null, { true }, metadata, currentSchema, shadowed) } }
+        val outcomes = evidence.map { types -> actuals.indices.map { compare(actuals[it], types[it]) { outcome, reason -> outcome to reason } } }
+        val retained = outcomes.indices.filter { candidate -> outcomes[candidate].none { it.first == Outcome.INCOMPATIBLE } }
+        if (retained.size == 1) return retained.single()
+        if (retained.size < 2) return null
+        val proven = retained.all { candidate -> outcomes[candidate].all { it.first == Outcome.COMPATIBLE || it.second == UnknownReason.ENVIRONMENT_DEPENDENT } }
+        if (!proven) return null
+        return OverloadRank.select(actuals.map { it.rank }, retained.map { candidate -> evidence[candidate].map { it.rank } })?.let(retained::get)
+    }
+
     /** Whether a package member may shadow a predefined type name, answered once per scope and name. */
     internal fun shadowCheck(snapshot: ProjectSnapshot): (QualifiedName, OracleIdentifier) -> Boolean {
         val cache = HashMap<Pair<QualifiedName, OracleIdentifier>, Boolean>()
@@ -105,21 +132,25 @@ internal object ProjectCallNarrower {
         }
     }
 
+    /**
+     * The evidence of a formal of type [reference], declared in the package [owner] (null at schema level).
+     * [undeclared], when given, tells whether a one-segment name is declared by no member of the declaring scope: such a
+     * name that the project does not describe names a schema object; null when the scope's declarations are not covered.
+     */
     private fun formal(
         snapshot: ProjectSnapshot,
-        parameter: ProjectParameterView,
+        reference: ProjectTypeReference,
         owner: ProjectQualifiedName?,
-        inSpecification: Boolean,
+        undeclared: ((OracleIdentifier) -> Boolean)?,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?,
         shadowed: (QualifiedName, OracleIdentifier) -> Boolean
     ): Evidence {
-        val reference = parameter.typeRef
         if (DatatypeFamilies.isRowtypeReference(reference)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null)
         val description = snapshot.describeExternalType(reference, owner, metadata, currentSchema)
         val family = DatatypeFamilies.ofDescription(description, null, reference)
         if (family == null) {
-            if (owner != null && inSpecification && namesSchemaObject(reference, owner, shadowed)) {
+            if (undeclared != null && namesSchemaObject(reference, undeclared)) {
                 return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, DatatypeFamilies.undeclaredTypeKind(reference.name.name.last))
             }
             return Evidence(null, if (DatatypeFamilies.isConclusive(description)) UnknownReason.UNCLASSIFIED_TYPE else UnknownReason.FORMAL_INCONCLUSIVE)
@@ -134,17 +165,17 @@ internal object ProjectCallNarrower {
     }
 
     /**
-     * Whether the formal type [reference] of a heading in the specification of the package [owner] names a schema
-     * object (a type created with CREATE TYPE, or a synonym of one): an unquoted one-segment name that no member of the
-     * package declares (complete coverage) and that names no predefined scalar type of STANDARD or DBMS_STANDARD.
+     * Whether the formal type [reference] names a schema object (a type created with CREATE TYPE, or a synonym of one):
+     * an unquoted one-segment name that the declaring scope does not declare ([undeclared]) and that names no predefined
+     * scalar type of STANDARD or DBMS_STANDARD.
      * SYS_REFCURSOR and the collection ORA_NAME_LIST_T are predefined but not scalar. Such a formal (an object type, a nested table, a varray, a private synonym of a type, ANYDATA, JSON_ELEMENT_T,
      * SYS_REFCURSOR) rejects every scalar actual with PLS-00306, so it classifies as composite.
      */
-    private fun namesSchemaObject(reference: ProjectTypeReference, owner: ProjectQualifiedName, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): Boolean {
+    private fun namesSchemaObject(reference: ProjectTypeReference, undeclared: (OracleIdentifier) -> Boolean): Boolean {
         if (reference.kind != ProjectTypeReference.Kind.NAMED || reference.writtenIdentity != null) return false
         val name = reference.name.name.segments.singleOrNull() ?: return false
         if (!DatatypeFamilies.isNonScalarTypeName(name)) return false
-        return !shadowed(owner.name, name)
+        return undeclared(name)
     }
 
     /**

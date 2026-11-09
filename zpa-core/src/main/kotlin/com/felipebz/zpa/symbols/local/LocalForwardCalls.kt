@@ -11,6 +11,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.symbols.local.LocalReferenceContext as Ctx
 
 /** One written actual with its datatype evidence. */
@@ -86,6 +87,17 @@ internal class LocalForwardCalls(
 
     /** Every call of the file, in reference order. */
     fun analyze(): List<LocalCallAnalysis> = references.mapNotNull(::callOf)
+
+    /**
+     * The types of the actuals of each call whose name no reference starts at, a method called after another call or
+     * an element (`f(…).m(…)`), by the position of that name; each actual's evidence is read from the innermost region
+     * holding the call.
+     */
+    fun itemActualTypes(): Map<Pair<Int, Int>, List<ProjectArgumentType>> =
+        callsByPosition.filter { (position, call) -> call.actuals != null && position !in namesByPosition }.mapValues { (position, call) ->
+            val region = LocalReferenceCollector.innermostRegion(model, SourceRange(model.fileId, position.first, position.second, position.first, position.second))
+            call.actuals!!.map { evidence(it, region).argumentType }
+        }
 
     /** The analysis of [reference] when it is a call, computed once: an actual may be the result of another call. */
     private fun callOf(reference: LocalReference): LocalCallAnalysis? {
@@ -218,7 +230,7 @@ internal class LocalForwardCalls(
             if (path.terminal != LocalTypeEvidence.Terminal.UNKNOWN && call.size == 1) return walk.element(path, reference.region)
             val first = steps.first().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it } as? LocalResolution.Bound ?: return null
             val owner = walk.memberPath(walk.outcome(first), reference.segments.dropLast(1).map { it.name }, reference.region)
-            return walk.methodResult(owner, reference.segments.last().name, arguments(call.map { it.label }), reference.region)
+            return walk.methodResult(owner, reference.segments.last().name, arguments(call.map { it.label }), call.map { evidence(it, reference.region).argumentType }, reference.region)
         }
         // COUNT of a local collection, which the resolver already found to be a collection method.
         if (steps.size == reference.segments.size + 1 && steps.last() is LocalResolution.CollectionMethod && reference.segments.last().name.lookupName == "COUNT") {
@@ -295,7 +307,7 @@ internal class LocalForwardCalls(
         is LocalActualForm.Members -> walk.memberPath(evidence(form.base, region), form.members, region)
         is LocalActualForm.Method -> {
             val owner = walk.memberPath(evidence(form.base, region), form.members, region)
-            walk.methodResult(owner, form.method, arguments(form.labels), region)
+            walk.methodResult(owner, form.method, arguments(form.actuals.map { it.label }), form.actuals.map { evidence(it, region).argumentType }, region)
         }
         // Typed only through the call's result: the RETURN type of the function it binds, as for any call actual.
         is LocalActualForm.Element -> (1..form.indexes).fold(evidence(form.base, region)) { current, _ -> walk.element(current, region) }

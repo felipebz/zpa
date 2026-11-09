@@ -63,9 +63,9 @@ internal sealed interface LocalActualForm {
 
     /**
      * A method called on the value of a constructor, an element or a `TREAT` (`t(…).m(…)`, `v(i).a.m(…)`): the members
-     * before the method, the method's name, and the labels of its actuals (null for a positional one).
+     * before the method, the method's name, and its actuals.
      */
-    class Method(val base: LocalActual, val members: List<OracleIdentifier>, val method: OracleIdentifier, val labels: List<OracleIdentifier?>) : LocalActualForm
+    class Method(val base: LocalActual, val members: List<OracleIdentifier>, val method: OracleIdentifier, val actuals: List<LocalActual>) : LocalActualForm
 
     /**
      * An element of a call's result, `f(…)(i)`: [base] is the call, then one index per argument list after its own.
@@ -192,10 +192,7 @@ internal object LocalCallCollector {
             val lists = after.getChildren(PlSqlGrammar.ARGUMENTS)
             if (lists.size != 1) return null
             val names = nameSegments(after.firstChild)?.map(LocalSyntax::identifier) ?: return null
-            val labels = lists.single().getChildren(PlSqlGrammar.ARGUMENT).map { argument ->
-                if (argument.hasDirectChildren(PlSqlPunctuator.ASSOCIATION)) LocalSyntax.identifier(argument.firstChild) else null
-            }
-            return LocalActualForm.Method(baseActual, names.dropLast(1), names.last(), labels)
+            return LocalActualForm.Method(baseActual, names.dropLast(1), names.last(), lists.single().getChildren(PlSqlGrammar.ARGUMENT).map(::actual))
         }
         val names = nameSegments(after) ?: return null
         return LocalActualForm.Members(baseActual, names.map(LocalSyntax::identifier))

@@ -59,7 +59,10 @@ internal class ProjectMethodCall(
          */
         AMBIGUOUS,
 
-        /** Several candidates apply and their formals differ in type: Oracle chooses by datatypes, which this binding does not compare. */
+        /**
+         * Several candidates apply and their formals differ in type: Oracle chooses by datatypes, and the actuals' types
+         * given to the binding do not tell which.
+         */
         SEVERAL_APPLICABLE,
 
         /** No candidate applies. Only with a complete set. */
@@ -91,16 +94,24 @@ internal class ProjectMethodCall(
 
 /**
  * Binds an object method call to one candidate with the structural rules of package calls (kind, arity, named notation,
- * defaults; no datatypes). For a member method `SELF` is the receiver, never an actual.
+ * defaults), then, when several candidates apply, with the actuals' datatypes when the caller gives a way to compare
+ * them. For a member method `SELF` is the receiver, never an actual.
  */
 internal class ProjectMethodCallBinder(private val memberResolver: ProjectRecordMemberResolver) {
 
-    /** A call of the method set [methods] through a value, `SELF` or the type name. */
+    /**
+     * A call of the method set [methods] through a value, `SELF` or the type name. When several candidates of a
+     * complete set apply, [byDatatypes] picks among them the one Oracle binds by the actuals' datatypes, or none.
+     * Through a value or `SELF`, Oracle chooses among member and static methods alike, then rejects a static one
+     * (PLS-00587); through the type name it considers static methods only, which this binding does not model, so that
+     * call is not narrowed.
+     */
     fun bind(
         methods: ProjectRecordMemberResolution.Method,
         receiver: ProjectMethodReceiver,
         kind: ProjectCallKind,
-        arguments: ProjectCallArguments
+        arguments: ProjectCallArguments,
+        byDatatypes: ((List<ProjectMethodCallCandidate>) -> ProjectMethodCallCandidate?)? = null
     ): ProjectMethodCall {
         require(receiver != ProjectMethodReceiver.CONSTRUCTOR)
         if (arguments.notation != ProjectCallArguments.Notation.VALID) {
@@ -112,7 +123,8 @@ internal class ProjectMethodCallBinder(private val memberResolver: ProjectRecord
         // Oracle chooses by datatype. The set lists the nearest type first.
         val applicable = if (fitting.distinctBy { System.identityHashCode(it.type) }.size > 1 && !indistinguishable(fitting)) fitting
         else fitting.filter { it.type === fitting.firstOrNull()?.type }
-        val single = applicable.singleOrNull()
+        val single = applicable.singleOrNull() ?: byDatatypes?.takeIf { applicable.size > 1 && methods.complete && receiver != ProjectMethodReceiver.TYPE_NAME && !indistinguishable(applicable) }
+            ?.let { choose -> withoutOverridden(applicable).let { it.singleOrNull() ?: choose(it) } }
         val status = when {
             single != null && single.method!!.methodKind == ProjectMethodKind.STATIC && receiver != ProjectMethodReceiver.TYPE_NAME ->
                 if (methods.complete) ProjectMethodCall.Status.STATIC_ON_INSTANCE else ProjectMethodCall.Status.UNDECIDED
@@ -176,6 +188,13 @@ internal class ProjectMethodCallBinder(private val memberResolver: ProjectRecord
         return ProjectMethodCallCandidate(type, method, parameters, bound.applicability, bound.formalIndices)
     }
 
+    /**
+     * [applicable] without a supertype's method that a nearer type's method of the same formal types overrides: a
+     * subtype cannot declare such a method without overriding it. The set lists the nearest type first.
+     */
+    private fun withoutOverridden(applicable: List<ProjectMethodCallCandidate>): List<ProjectMethodCallCandidate> =
+        applicable.distinctBy { candidate -> candidate.parameters.map { it.typeRef.overloadTypeKey() } }
+
     private fun several(applicable: List<ProjectMethodCallCandidate>): ProjectMethodCall.Status =
         if (indistinguishable(applicable)) ProjectMethodCall.Status.AMBIGUOUS else ProjectMethodCall.Status.SEVERAL_APPLICABLE
 
@@ -184,8 +203,8 @@ internal class ProjectMethodCallBinder(private val memberResolver: ProjectRecord
         val first = applicable.first()
         return applicable.all { candidate ->
             candidate.formalIndices.indices.all { actual ->
-                candidate.parameters[candidate.formalIndices[actual]].typeRef.structuralKey() ==
-                    first.parameters[first.formalIndices[actual]].typeRef.structuralKey()
+                candidate.parameters[candidate.formalIndices[actual]].typeRef.overloadTypeKey() ==
+                    first.parameters[first.formalIndices[actual]].typeRef.overloadTypeKey()
             }
         }
     }

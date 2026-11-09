@@ -5,6 +5,8 @@
 
 package com.felipebz.zpa.project
 
+import com.felipebz.zpa.api.project.OverloadRank
+
 enum class TypeAnchor {
     TYPE,
     ROWTYPE
@@ -79,6 +81,17 @@ data class RefTypeRef(
     override val sourceRange: SourceRange
 ) : TypeRef {
     override fun structuralKey() = "ref:${name.lookupKey()}"
+}
+
+/**
+ * Identity of a formal's type for overloading: the type name, with the variant a written TIMESTAMP or INTERVAL names
+ * (WITH TIME ZONE, WITH LOCAL TIME ZONE, DAY TO SECOND, YEAR TO MONTH). Oracle tells those variants apart: a subtype's
+ * `m(p timestamp with time zone)` overloads, and does not override, an inherited `m(p timestamp)`.
+ */
+internal fun TypeRef.overloadTypeKey(): String {
+    val variant = (this as? NamedTypeRef)?.takeIf { it.name.segments.singleOrNull()?.lookupName.let { n -> n == "TIMESTAMP" || n == "INTERVAL" } }
+        ?.let { OverloadRank.of(it.name, it.headerTypeIdentity) }
+    return structuralKey() + (variant?.let { ":$it" } ?: "")
 }
 
 /**

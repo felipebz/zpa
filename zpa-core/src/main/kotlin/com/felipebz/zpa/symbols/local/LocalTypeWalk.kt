@@ -327,14 +327,22 @@ internal class LocalTypeWalk(
 
     /**
      * Evidence of the result of calling the method [name] with [arguments] on the value [evidence] gives, a value of an
-     * object type the project describes ([ProjectSnapshot.methodResultType]). Anything else is unknown.
+     * object type the project describes ([ProjectSnapshot.methodResultType]), several applicable methods narrowed by
+     * [argumentTypes] (null when the actuals' types are not known). Anything else is unknown.
      */
-    fun methodResult(evidence: LocalTypeEvidence, name: OracleIdentifier, arguments: InternalCallArguments, region: LocalRegionId): LocalTypeEvidence {
+    fun methodResult(
+        evidence: LocalTypeEvidence,
+        name: OracleIdentifier,
+        arguments: InternalCallArguments,
+        argumentTypes: List<ProjectArgumentType>?,
+        region: LocalRegionId
+    ): LocalTypeEvidence {
         if (evidence.terminal == LocalTypeEvidence.Terminal.UNKNOWN) return evidence
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
         val type = evidence.description?.source?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT && it.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?.declaration?.orElse(null) ?: return LocalTypeEvidence.unknown("method $name of a value of no declared project type")
-        val result = snapshot.methodResultType(type.id, name, arguments) ?: return LocalTypeEvidence.unknown("$name binds no single function of ${type.qualifiedName}")
+        val result = snapshot.methodResultType(type.id, name, arguments, argumentTypes, metadata, compilationSchema(region))
+            ?: return LocalTypeEvidence.unknown("$name binds no single function of ${type.qualifiedName}")
         return described(snapshot, result, region)
     }
 

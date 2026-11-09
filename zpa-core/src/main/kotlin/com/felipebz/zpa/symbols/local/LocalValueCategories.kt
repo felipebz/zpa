@@ -228,7 +228,8 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         if (value.terminal != LocalTypeEvidence.Terminal.UNKNOWN || value.incomplete != null || reference.segments.isEmpty()) return elements(value, lists, region)
         // `v.m(…)`: a method of the value's object type.
         val receiver = ownerEvidence(reference, steps, reference.segments.size - 1)
-        val result = walk.methodResult(receiver, reference.segments.last().name, callArguments(lists.first()), region)
+        val types = analysis?.actuals?.map { it.evidence.argumentType }
+        val result = walk.methodResult(receiver, reference.segments.last().name, callArguments(lists.first()), types, region)
         return elements(result, lists.drop(1), region)
     }
 
@@ -241,7 +242,8 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val member = walk.members(owner, names.takeLast(1), region)
         evidence[callee] = member
         val result = if (member.terminal == LocalTypeEvidence.Terminal.UNKNOWN && member.incomplete == null && owner.terminal == LocalTypeEvidence.Terminal.PROJECT) {
-            elements(walk.methodResult(owner, names.last(), callArguments(lists.first()), region), lists.drop(1), region)
+            val types = facts.itemActualTypes[callee.token.line to callee.token.column]
+            elements(walk.methodResult(owner, names.last(), callArguments(lists.first()), types, region), lists.drop(1), region)
         } else {
             elements(member, lists, region)
         }

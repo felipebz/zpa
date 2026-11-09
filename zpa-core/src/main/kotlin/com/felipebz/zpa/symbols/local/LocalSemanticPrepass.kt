@@ -38,9 +38,10 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             val coverage = LocalSpecificationCoverage.of(model, analysis.snapshot)
             val outcomes = LocalReferenceOutcomes(model, coverage)
             val resolutions = references.map(outcomes::steps)
-            val calls = LocalForwardCalls(model, references, LocalCallCollector.collect(node), analysis.snapshot, analysis.externalContext, outcomes).analyze()
+            val forward = LocalForwardCalls(model, references, LocalCallCollector.collect(node), analysis.snapshot, analysis.externalContext, outcomes)
+            val calls = forward.analyze()
             LocalSemanticFacts(model, references, resolutions, calls, coverage?.specificationValues().orEmpty(),
-                coverage?.sqlSpecificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId)).also {
+                coverage?.sqlSpecificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId), forward.itemActualTypes()).also {
                 val walk = LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes)
                 val categories = LocalValueCategories(it, walk)
                 context.valueCategories = categories
