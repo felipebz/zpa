@@ -50,4 +50,15 @@ class InsertWithoutColumnsCheckTest : BaseCheckTest() {
         )
     }
 
+    @Test
+    fun aPackageCursorRowIsNotARelation() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource("cur_pkg.pks", "create package cur_pkg is\n  cursor c is select b, a from tab;\nend;\n/\n"),
+                ProjectTestSource("u.sql", "create procedure u is\n  r cur_pkg.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n")
+            ),
+            InsertWithoutColumnsCheck()
+        )
+    }
+
 }

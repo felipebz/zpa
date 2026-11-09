@@ -14,6 +14,9 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.ProjectExternalContext
+import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.api.project.ProjectSchemaPaths
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.*
@@ -338,21 +341,43 @@ class UsageEvidenceTest {
             /
             """.trimIndent() + "\n"
         assertThat(valueCategories(text)).containsExactly(
-            "21:r=Record(ROWTYPE)", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE)", "24:rc=Record(ROWTYPE)",
-            "25:rs=Record(ROWTYPE)", "26:ra=Record(ROWTYPE)",
-            "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE))", "28:vn=Collection(NESTED_TABLE of Scalar(NUMERIC))",
+            "21:r=Record(ROWTYPE, Named(t))", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE, Named(t))", "24:rc=Record(ROWTYPE, QueryColumns)",
+            "25:rs=Record(ROWTYPE, Named(t))", "26:ra=Record(ROWTYPE, Named(t))",
+            "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE, Named(t)))", "28:vn=Collection(NESTED_TABLE of Scalar(NUMERIC))",
             "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar(NUMERIC)",
             // A schema type, or a name, the file does not declare and no project describes.
             "31:o=Unknown[DECLARATION_OUTSIDE_FILE]", "32:unknown_name=Unknown[DECLARATION_OUTSIDE_FILE]",
-            "34:q=Record(ROWTYPE)"
+            "34:q=Record(ROWTYPE, Named(t))"
         )
         val spec = "create package pkg is\n  pr t%rowtype;\n  procedure p;\nend;\n/\n"
         val body = "create package body pkg is\n  procedure p is\n  begin\n    insert into t values pr;\n    insert into t values pkg.pr;\n  end;\nend;\n/\n"
-        assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly("4:pr=Record(ROWTYPE)", "5:pkg=Record(ROWTYPE)")
+        assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly("4:pr=Record(ROWTYPE, Named(t))", "5:pkg=Record(ROWTYPE, Named(t))")
         assertThat(valueCategories(body, "s.sql" to spec))
             .containsExactly("4:pr=Unknown[DECLARATION_OUTSIDE_FILE]", "5:pkg=Unknown[DECLARATION_OUTSIDE_FILE]")
         val cc = "create procedure p is\n  r t%rowtype;\n  \$if \$\$x \$then r number; \$end\nbegin\n  insert into t values r;\nend;\n/\n"
         assertThat(valueCategories(cc)).containsExactly("5:r=Unknown[CONDITIONAL_COMPILATION]")
+    }
+
+    @Test
+    fun theRowOfACursor() {
+        // With a RETURN type, c%ROWTYPE is still the query's row (fields b, a), and a loop over c has the RETURN type's.
+        val local = "create procedure p is\n  cursor c return tab%rowtype is select b, a from tab;\n  r c%rowtype;\nbegin\n" +
+            "  insert into tab values r;\n  for r2 in c loop\n    insert into tab values r2;\n  end loop;\nend;\n/\n"
+        assertThat(valueCategories(local)).containsExactly("5:r=Record(ROWTYPE, QueryColumns)", "7:r2=Record(ROWTYPE, Named(tab))")
+        // A package cursor's row is not a relation: no relation is known.
+        val spec = "create package cur_pkg is\n  cursor c is select b, a from tab;\nend;\n/\n"
+        val user = "create procedure u is\n  r cur_pkg.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
+        assertThat(valueCategories(user, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
+    }
+
+    @Test
+    fun aPackageCursorOfTheUnitsSchema() {
+        // Oracle reads pk3.c from a unit of the schema APP as app.pk3.c, a cursor.
+        val spec = "create package app.pk3 is\n  cursor c is select b, a from tab;\nend;\n/\n"
+        val mapped = "create procedure u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
+        assertThat(valueCategories(mapped, "s.sql" to spec, prepared = true, schemaPaths = "u.sql=APP")).containsExactly("4:r=Record(ROWTYPE)")
+        val owned = "create procedure app.u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
+        assertThat(valueCategories(owned, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
     }
 
     @Test
@@ -365,7 +390,7 @@ class UsageEvidenceTest {
             "    insert into t values l_list(1);\n    insert into t values l_other(1);\n  end;\nend;\n/\n"
         // The project keeps no collection kind. A schema-qualified type it cannot place stays unknown.
         assertThat(valueCategories(body, "s.sql" to spec, "type.sql" to type, prepared = true)).containsExactly(
-            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar(NUMERIC))", "8:v_rows=Collection(? of Record(ROWTYPE))",
+            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar(NUMERIC))", "8:v_rows=Collection(? of Record(ROWTYPE, Named(t)))",
             "9:l_list=Collection(? of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
         )
     }
@@ -425,9 +450,11 @@ class UsageEvidenceTest {
         assertThat(valueCategories(local)).containsExactly("5:rc=Record(RECORD_TYPE)")
     }
 
-    private fun valueCategories(text: String, vararg others: Pair<String, String>, prepared: Boolean = false): List<String> {
+    private fun valueCategories(text: String, vararg others: Pair<String, String>, prepared: Boolean = false, schemaPaths: String = ""): List<String> {
+        val schemas = ProjectExternalContext.of(ProjectExternalMetadata.none(), null, ProjectSchemaPaths.parse(null, schemaPaths))
         val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
-            ProjectIndexPreparation().prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
+            ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), schemas)
+                .prepare((others.toList() + ("u.sql" to text)).map { (id, t) -> ProjectSource(FileId(id)) { t } }, concurrent = false)
         )
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(text)
         val rows = ArrayList<String>()

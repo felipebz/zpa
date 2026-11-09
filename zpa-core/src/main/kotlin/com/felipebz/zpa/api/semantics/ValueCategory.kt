@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.semantics
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectQualifiedName
 
 /**
  * The category of the declared type of a named value, following subtypes and `%TYPE` anchors to where they end, as
@@ -13,13 +14,16 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
  */
 @ZpaExperimentalApi
 sealed interface ValueCategory {
-    /** A record: a `%ROWTYPE` of a table, view or cursor, or a variable of a `RECORD` type. */
-    class Record(val origin: RecordOrigin) : ValueCategory {
-        override fun equals(other: Any?) = other is Record && origin == other.origin
+    /**
+     * A record: a `%ROWTYPE` of a table, view or cursor, or a variable of a `RECORD` type. [relation] tells, for a
+     * [RecordOrigin.ROWTYPE] record, the relation whose columns its fields follow, when the analysis knows it.
+     */
+    class Record(val origin: RecordOrigin, val relation: RecordRelation? = null) : ValueCategory {
+        override fun equals(other: Any?) = other is Record && origin == other.origin && relation == other.relation
 
-        override fun hashCode() = origin.hashCode()
+        override fun hashCode() = origin.hashCode() * 31 + (relation?.hashCode() ?: 0)
 
-        override fun toString() = "Record($origin)"
+        override fun toString() = "Record($origin${relation?.let { ", $it" } ?: ""})"
     }
 
     /**
@@ -100,6 +104,29 @@ enum class ScalarFamily {
 
     /** ROWID and UROWID. */
     ROWID
+}
+
+/** The relation a `%ROWTYPE` record's fields follow, in order. */
+@ZpaExperimentalApi
+sealed interface RecordRelation {
+    /**
+     * The relation written before `%ROWTYPE`, or the one a query selects all the columns of (`SELECT *` or `SELECT x.*`
+     * from that relation alone): its columns, in its order. [name] is the name as written: a table, a view or a synonym,
+     * or a package cursor the analysis cannot rule out (a package the project does not have, or one it cannot place in
+     * the unit's schema).
+     */
+    class Named(val name: ProjectQualifiedName) : RecordRelation {
+        override fun equals(other: Any?) = other is Named && name == other.name
+
+        override fun hashCode() = name.hashCode()
+
+        override fun toString() = "Named($name)"
+    }
+
+    /** The row of a query with its own select list: no relation's columns, whatever relations it reads. */
+    object QueryColumns : RecordRelation {
+        override fun toString() = "QueryColumns"
+    }
 }
 
 /** Where a record's type comes from. */

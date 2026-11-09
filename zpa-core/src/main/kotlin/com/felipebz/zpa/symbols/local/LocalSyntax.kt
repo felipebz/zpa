@@ -42,11 +42,43 @@ internal object LocalSyntax {
         val query = expression.type === DmlGrammar.SELECT_EXPRESSION || expression.hasDirectChildren(DmlGrammar.SELECT_EXPRESSION) &&
             expression.children.all { it.type === DmlGrammar.SELECT_EXPRESSION || it.type === PlSqlPunctuator.LPARENTHESIS || it.type === PlSqlPunctuator.RPARENTHESIS }
         if (query) {
-            return LocalLoopControl(LocalLoopControl.Form.QUERY, null, null)
+            val select = if (expression.type === DmlGrammar.SELECT_EXPRESSION) expression else expression.getFirstChild(DmlGrammar.SELECT_EXPRESSION)
+            return LocalLoopControl(LocalLoopControl.Form.QUERY, null, null, queryRow(select))
         }
         val name = (if (expression.type === PlSqlGrammar.METHOD_CALL) expression.firstChild else expression)
             .takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
         return LocalLoopControl(LocalLoopControl.Form.NAME, identifier(name), range(fileId, name))
+    }
+
+    /**
+     * The row of the query [select]: [LocalQueryRow.OwnColumns] when its first query block selects no `*`;
+     * [LocalQueryRow.AllOf] for a single query block `SELECT *` or `SELECT x.*` from one plain relation name (`x` its
+     * alias or name); null otherwise.
+     */
+    fun queryRow(select: AstNode): LocalQueryRow? {
+        val block = select.getFirstChildOrNull(DmlGrammar.QUERY_BLOCK) ?: return null
+        val columns = block.getChildren(DmlGrammar.SELECT_COLUMN)
+        fun star(column: AstNode) = column.hasDirectChildren(PlSqlPunctuator.MULTIPLICATION) ||
+            column.firstChild.let { it.type === PlSqlGrammar.OBJECT_REFERENCE && it.lastChild.type === PlSqlPunctuator.MULTIPLICATION }
+        if (columns.isNotEmpty() && columns.none(::star)) return LocalQueryRow.OwnColumns
+        val column = columns.singleOrNull()?.takeIf(::star) ?: return null
+        if (select.getChildren(DmlGrammar.QUERY_BLOCK).size != 1 || select.children.any { it.type !== DmlGrammar.QUERY_BLOCK && it.type !== DmlGrammar.ORDER_BY_CLAUSE }) return null
+        val sources =
+            block.getFirstChildOrNull(DmlGrammar.FROM_CLAUSE)?.getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)
+                .orEmpty()
+        val source = sources.singleOrNull() ?: return null
+        val table =
+            source.firstChild.takeIf { it.type === DmlGrammar.TABLE_REFERENCE && source.children.all { c -> c === it || c.type === DmlGrammar.ALIAS } }
+                ?: return null
+        if (table.children.any { it.type !== PlSqlGrammar.IDENTIFIER_NAME && it.type !== PlSqlPunctuator.DOT }) return null
+        val name = QualifiedName(table.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map(::identifier))
+        if (!column.hasDirectChildren(PlSqlPunctuator.MULTIPLICATION)) {
+            val prefix = column.firstChild.firstChild.takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }
+                ?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
+            val alias = source.getFirstChildOrNull(DmlGrammar.ALIAS)?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
+            if (identifier(prefix) != (alias?.let(::identifier) ?: name.last)) return null
+        }
+        return LocalQueryRow.AllOf(name)
     }
 
     /** The written datatype [datatype], looked up from [lookupRegion]. */

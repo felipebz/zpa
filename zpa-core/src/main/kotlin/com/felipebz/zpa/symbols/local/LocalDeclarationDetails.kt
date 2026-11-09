@@ -125,7 +125,9 @@ internal class LocalLoopControl(
     val form: Form,
     /** For [Form.NAME], the name the control iterates over: a cursor, or a value iterated once. */
     val name: OracleIdentifier?,
-    val nameRange: SourceRange?
+    val nameRange: SourceRange?,
+    /** For [Form.QUERY], what its row is; null when not recognized. */
+    val row: LocalQueryRow? = null
 ) {
     enum class Form {
         /** `lo .. hi` without `BY`: the index is a PLS_INTEGER. */
@@ -161,8 +163,19 @@ internal class LocalCursor(
     /** No `IS SELECT …`: a forward cursor declaration. It is not linked to its definition. */
     val isForward: Boolean,
     /** The RETURN type, looked up in the region holding the cursor. */
-    val returnType: LocalTypeUse?
+    val returnType: LocalTypeUse?,
+    /** What the row of its query is; null without a query or when not recognized. */
+    val row: LocalQueryRow? = null
 ) : LocalDeclarationDetails
+
+/** The row of a query, as far as its text tells. */
+internal sealed interface LocalQueryRow {
+    /** `SELECT *` or `SELECT x.*` from [relation] alone: that relation's columns, in its order. */
+    class AllOf(val relation: QualifiedName) : LocalQueryRow
+
+    /** A select list with no `*`: the query's own columns. */
+    data object OwnColumns : LocalQueryRow
+}
 
 internal class LocalCursorParameter(
     /** One-based. */

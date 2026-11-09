@@ -12,6 +12,7 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.semantics.RecordOrigin
+import com.felipebz.zpa.api.semantics.RecordRelation
 import com.felipebz.zpa.api.semantics.ValueCategory
 
 @Rule(priority = Priority.CRITICAL, tags = [Tags.CONVENTION, Tags.BUG])
@@ -54,7 +55,7 @@ class InsertWithoutColumnsCheck : AbstractBaseCheck() {
     }
 
     private fun mayBeRow(category: ValueCategory) = when (category) {
-        is ValueCategory.Record -> category.origin == RecordOrigin.ROWTYPE
+        is ValueCategory.Record -> category.origin == RecordOrigin.ROWTYPE && category.relation != RecordRelation.QueryColumns
         ValueCategory.ObjectInstance, is ValueCategory.Unknown, is ValueCategory.Unavailable -> true
         is ValueCategory.Collection, is ValueCategory.Scalar, ValueCategory.CursorVariable -> false
     }

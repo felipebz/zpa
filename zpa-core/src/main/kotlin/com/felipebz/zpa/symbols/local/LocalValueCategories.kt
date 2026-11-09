@@ -392,7 +392,12 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return ValueCategory.ObjectInstance
         return when (last.kind) {
             LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
-            LocalDeclarationKind.CURSOR, LocalDeclarationKind.LOOP_INDEX -> ValueCategory.Record(RecordOrigin.ROWTYPE)
+            LocalDeclarationKind.CURSOR -> {
+                // A loop over a cursor with a RETURN type has the RETURN type's row.
+                val loop = evidence.followed.first().let(model::declaration).kind == LocalDeclarationKind.LOOP_INDEX
+                (last.details as? LocalCursor)?.returnType?.takeIf { loop }?.let { of(region, walk.written(it)) } ?: queryRow(last)
+            }
+            LocalDeclarationKind.LOOP_INDEX -> loopRow((last.details as? LocalLoopIndex)?.control)
             LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
             LocalDeclarationKind.COLLECTION_TYPE -> {
                 val kind = when ((last.details as? LocalCollectionType)?.form) {
@@ -412,17 +417,42 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
      * whose element is being classified, so that a cycle stops there.
      */
     private fun described(region: LocalRegionId, description: ProjectExternalTypeDescription, seen: Set<ProjectDeclarationId> = emptySet()): ValueCategory {
-        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return ValueCategory.Record(RecordOrigin.ROWTYPE)
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return rowtype(region, description)
         val source = description.source
         return when (source.status) {
             ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
             ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar(DatatypeFamilies.ofDescription(description, null, null)?.let(::scalarFamily))
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
-                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) ValueCategory.Record(RecordOrigin.ROWTYPE)
+                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) rowtype(region, description)
                 else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
             else -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         }
     }
+
+    /**
+     * A `%ROWTYPE` record the project describes, with the relation written before `%ROWTYPE` when the project shows no
+     * package cursor that name may denote. A package cursor's row is not known here: no relation.
+     */
+    private fun rowtype(region: LocalRegionId, description: ProjectExternalTypeDescription): ValueCategory.Record {
+        val name = description.anchorName.orElse(null)?.takeIf { description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE }
+        return ValueCategory.Record(RecordOrigin.ROWTYPE, name?.takeIf { walk.namesNoPackageCursor(it, region) }?.let(RecordRelation::Named))
+    }
+
+    /**
+     * `c%ROWTYPE` of the local cursor [cursor]: the row of its query, a RETURN type notwithstanding. Its fields are the
+     * query's select list (`select b, a` gives the fields `b, a`), which a fetch fills by position.
+     */
+    private fun queryRow(cursor: LocalDeclaration) = ValueCategory.Record(RecordOrigin.ROWTYPE, relation((cursor.details as? LocalCursor)?.row))
+
+    private fun relation(row: LocalQueryRow?): RecordRelation? = when (row) {
+        is LocalQueryRow.AllOf -> RecordRelation.Named(ProjectQualifiedName.wrap(row.relation))
+        LocalQueryRow.OwnColumns -> RecordRelation.QueryColumns
+        null -> null
+    }
+
+    /** The record of a query loop; the walk follows a cursor loop's index to its cursor. */
+    private fun loopRow(control: LocalLoopControl?) =
+        ValueCategory.Record(RecordOrigin.ROWTYPE, relation(control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row))
 
     private fun shaped(region: LocalRegionId, type: ProjectShapedTypeView?, seen: Set<ProjectDeclarationId>): ValueCategory = when (type?.shape?.orElse(null)) {
         ProjectTypeShape.RECORD -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)

@@ -457,6 +457,18 @@ internal class LocalTypeWalk(
         return QualifiedName(unit.unitName.segments + segments)
     }
 
+    /**
+     * Whether [name], written in [region], denotes no package cursor: a one-segment name outside a package never does;
+     * otherwise the project, read from the unit's schema as Oracle reads the name, must know no package value nor
+     * cursor of that name, with a complete index.
+     */
+    fun namesNoPackageCursor(name: ProjectQualifiedName, region: LocalRegionId): Boolean {
+        val owner = packageOwner(region)
+        if (name.segments.size == 1 && owner == null) return true
+        val resolution = snapshot?.preferring(compilationSchema(region))?.resolvePackageValue(name, owner) ?: return false
+        return resolution.status == ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT && resolution.candidates.none { it is ProjectPackageCursorView }
+    }
+
     /** The package whose specification or body holds [region], as an owner for the project's name lookups. */
     fun packageOwner(region: LocalRegionId): ProjectQualifiedName? =
         LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.PACKAGE_SPEC || it.kind == LocalRegionKind.PACKAGE_BODY }
