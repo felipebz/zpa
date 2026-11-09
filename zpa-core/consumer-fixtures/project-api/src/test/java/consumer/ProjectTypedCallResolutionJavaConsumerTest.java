@@ -68,14 +68,16 @@ class ProjectTypedCallResolutionJavaConsumerTest {
     }
 
     @Test
-    void characterEvidenceKeepsTheEqualArityOverloadsAmbiguous() {
+    void characterEvidenceSelectsTheVarchar2OverloadOraclePrefers() {
         ProjectSnapshot snapshot = ProjectSnapshots.prepare(List.of(ProjectSourceInput.ofText("p.sql",
             "CREATE PACKAGE p AS PROCEDURE pick(n NUMBER); PROCEDURE pick(s VARCHAR2); END p;")), false);
         ProjectCallResolution structural = pick(snapshot);
         ProjectTypedCallResolution typed = snapshot.narrowCall(structural, List.of(ProjectArgumentType.builtIn("CHAR")),
             ProjectExternalMetadata.none(), HR);
-        assertThat(label(typed.getStatus())).isEqualTo("ambiguous");
-        assertThat(typed.getSelected()).isEmpty();
+        // Both overloads receive a CHAR value; Oracle prefers the VARCHAR2 one.
+        assertThat(label(typed.getStatus())).isEqualTo("resolved");
+        assertThat(typed.getRanked()).isTrue();
+        assertThat(typed.getSelected().orElseThrow()).isSameAs(structural.getCandidates().get(1));
         assertThat(typed.getStructural()).isSameAs(structural);
         assertThat(typed.getEvaluations()).extracting(e -> label(e.getOutcome())).containsExactly("retained", "retained");
         assertThat(typed.getEvaluations()).extracting(e -> label(e.getBindings().get(0).getOutcome())).containsExactly("compatible", "compatible");
