@@ -446,6 +446,7 @@ enum class DdlGrammar : GrammarRuleKey {
     SEGMENT_ATTRIBUTES_CLAUSE,
     PHYSICAL_ATRIBUTES_CLAUSE,
     TABLE_COMPRESSION,
+    INMEMORY_TABLE_CLAUSE,
     KEY_COMPRESSION,
     LOB_STORAGE_CLAUSE,
     VARRAY_COL_PROPERTIES,
@@ -1657,13 +1658,17 @@ enum class DdlGrammar : GrammarRuleKey {
             val inmemoryTextColumn = b.sequence(
                     IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
                     b.optional(USING, CHARACTER_LITERAL))
-            val inmemoryProperty = b.firstOf(
-                    b.sequence(b.optional(NO), INMEMORY, TEXT,
-                            LPARENTHESIS, inmemoryTextColumn, b.zeroOrMore(COMMA, inmemoryTextColumn), RPARENTHESIS),
+            // The documented inmemory_table_clause, also used by CREATE and ALTER MATERIALIZED VIEW, whose
+            // diagrams have no TEXT clause.
+            b.rule(INMEMORY_TABLE_CLAUSE).define(b.firstOf(
                     b.sequence(INMEMORY, b.optional(memcompress), ONE_OR_MORE_IDENTIFIERS),
                     b.sequence(NO, INMEMORY, ONE_OR_MORE_IDENTIFIERS),
                     b.sequence(INMEMORY, b.zeroOrMore(inmemoryAttribute)),
-                    b.sequence(NO, INMEMORY))
+                    b.sequence(NO, INMEMORY)))
+            val inmemoryProperty = b.firstOf(
+                    b.sequence(b.optional(NO), INMEMORY, TEXT,
+                            LPARENTHESIS, inmemoryTextColumn, b.zeroOrMore(COMMA, inmemoryTextColumn), RPARENTHESIS),
+                    INMEMORY_TABLE_CLAUSE)
 
             // NO DROP and NO DELETE retention clauses, shared by CREATE of immutable/blockchain tables and ALTER.
             // Oracle 26 reports a missing retention count as a value-range error (ORA-05741), not a syntax
