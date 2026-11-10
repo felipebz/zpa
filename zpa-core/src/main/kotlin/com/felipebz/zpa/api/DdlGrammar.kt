@@ -2474,7 +2474,10 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(DOMAIN, domainName),
                     b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(visibility),
-                    b.optional(b.firstOf(b.sequence(DEFAULT, EXPRESSION), identityClause(true))),
+                    b.optional(b.firstOf(b.sequence(DEFAULT, b.optional(
+                        b.sequence(ON, NULL, b.optional(FOR, INSERT,
+                            b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
+                        identityClause(true))),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     b.optional(ANNOTATIONS_CLAUSE))

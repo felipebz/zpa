@@ -168,6 +168,19 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesAlterTableModifyDefaultOnNull() {
+        assertThat(p).matches("alter table t modify c default on null 1;")
+        assertThat(p).matches("alter table t modify (c default on null 1);")
+        assertThat(p).matches("alter table t modify c number default on null 1;")
+        assertThat(p).matches("alter table t modify c default on null for insert only 1;")
+        assertThat(p).matches("alter table t modify c default on null for insert and update 1;")
+        assertThat(p).matches("alter table t modify (c default on null 1, d default 2);")
+        assertThat(p).notMatches("alter table t modify c default on null;")
+        assertThat(p).notMatches("alter table t modify c default on 1;")
+        assertThat(p).notMatches("alter table t modify c default on null for update 1;")
+    }
+
+    @Test
     fun rejectsMalformedAlterTableModifyColumnProperties() {
         assertThat(p).notMatches("alter table t modify (c collate)")
         assertThat(p).notMatches("alter table t modify (c collate binary_ci binary_ai)")
