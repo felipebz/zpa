@@ -1833,21 +1833,21 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(CREATE_TABLE).define(
                     CREATE,
                     b.firstOf(
-                            b.sequence(b.optional(IMMUTABLE), BLOCKCHAIN, TABLE,
+                            b.sequence(b.optional(IMMUTABLE), BLOCKCHAIN, TABLE, b.optional(IF, NOT, EXISTS),
                                     createTableBody(blockchainTableClauses)),
-                            b.sequence(IMMUTABLE, TABLE,
+                            b.sequence(IMMUTABLE, TABLE, b.optional(IF, NOT, EXISTS),
                                     createTableBody(immutableTableClauses)),
-                            b.sequence(PRIVATE, TEMPORARY, TABLE,
+                            b.sequence(PRIVATE, TEMPORARY, TABLE, b.optional(IF, NOT, EXISTS),
                                     b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
-                            b.sequence(JSON, COLLECTION, TABLE, UNIT_NAME,
+                            b.sequence(JSON, COLLECTION, TABLE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.sequence(
                                             b.optional(WITH, ETAG),
                                             b.optional(JSON_COLLECTION_COLUMNS),
                                             CREATE_TABLE_RELATIONAL_TAIL,
                                             b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                                     b.optional(SEMICOLON)),
-                            b.sequence(SHARDED, TABLE, b.withContext(SHARDED_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
-                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, CREATE_TABLE_BODY)))
+                            b.sequence(SHARDED, TABLE, b.optional(IF, NOT, EXISTS), b.withContext(SHARDED_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
+                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, b.optional(IF, NOT, EXISTS), CREATE_TABLE_BODY)))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
             // nonexistent objects. Columns require table.column, optionally prefixed by a schema.
@@ -2996,7 +2996,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(DROP, b.next(PARTITION), TABLE_RELATIONAL_PROPERTIES))
 
             b.rule(ALTER_TABLE).define(
-                    ALTER, TABLE, UNIT_NAME,
+                    ALTER, TABLE, b.optional(IF, EXISTS), UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
                             renameConstraintClause(),

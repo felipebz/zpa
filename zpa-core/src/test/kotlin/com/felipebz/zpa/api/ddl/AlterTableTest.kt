@@ -22,6 +22,12 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesIfExists() {
+        assertThat(p).matches("alter table if exists tab read only;")
+        assertThat(p).notMatches("alter table if not exists tab read only;")
+    }
+
+    @Test
     fun matchesAlterTableWithOutOfLineConstraint() {
         assertThat(p).matches("alter table tab add constraint c_name foreign key (f_key) references tab.col (name);")
     }
