@@ -348,6 +348,16 @@ class SelectExpressionTest : RuleTest() {
     }
 
     @Test
+    fun matchesTableAliasedAsInner() {
+        assertThat(p).matches("select 1 from tab inner where inner.id = 1")
+    }
+
+    @Test
+    fun doesNotMatchInnerWithoutTheJoinedTable() {
+        assertThat(p).notMatches("select 1 from tab inner join")
+    }
+
+    @Test
     fun matchesRowLimitingFollowedByForUpdate() {
         assertThat(p).matches("select e from t fetch first 3 rows only for update")
         assertThat(p).matches("select e from t fetch first 3 rows only with target accuracy 90 for update")
