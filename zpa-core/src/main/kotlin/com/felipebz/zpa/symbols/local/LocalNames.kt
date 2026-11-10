@@ -232,7 +232,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
     }
 
-    private fun declaration(id: LocalDeclarationId): NameDeclaration {
+    fun declaration(id: LocalDeclarationId): NameDeclaration {
         val declaration = model.declaration(id)
         return NameDeclaration(kind(declaration.kind), declaration.nameRange.startLine, declaration.nameRange.startColumn)
     }

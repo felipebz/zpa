@@ -174,6 +174,34 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         localSemanticFacts?.names?.typeBinding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
     /**
+     * What the file's local analysis decided for the call whose name is [name], computed for every call of the file
+     * before any visitor runs: this is a lookup, nothing is resolved again.
+     *
+     * [name] is the `VARIABLE_NAME`, or for a qualified name the `MEMBER_EXPRESSION` (`pkg.p`, `schema.pkg.p`), that
+     * names the callee:
+     * - of a call statement, with or without arguments (`p;`, `pkg.p(1);`);
+     * - of a call in a PL/SQL expression, the first child of its `METHOD_CALL` (`f(x)`, `pkg.f(x)`, the `f` of
+     *   `f(1)(2)`); the same written form is also an element access (`v(1)`) or a constructor (`t(1)`);
+     * - of a function named without parentheses, read as a value: a function of the file, or a qualified name the
+     *   project knows as a function and not as a package variable (`pkg.f`).
+     *
+     * A name of the file's own subprograms gives [CallBinding.Local], with the subprogram the call binds or the reason
+     * it is undecided. A name whose first segment no declaration of the file takes gives [CallBinding.Project], the
+     * project's resolution narrowed by the types of the actuals. Any other call keeps [CallBinding.KeptLocal] with the
+     * reason. [CallBinding.Unavailable] answers:
+     * - a call written inside SQL (`select f(x) from dual`, the `VALUES` of an `INSERT`), which the analysis does not
+     *   forward;
+     * - a method called after another call or an element (`f(1).m(x)`, `v(i).m(x)`), bound only while typing a value;
+     * - a node that names no call (a variable, a qualifier segment, a datatype), and a file that was not analyzed.
+     *
+     * A method called through a value (`o.m(x)`) is answered for the written name as it was decided, which binds no
+     * method: [CallBinding.KeptLocal] for a value of the file, the project's answer for the written name otherwise.
+     */
+    @ZpaExperimentalApi
+    fun callBinding(name: AstNode): CallBinding =
+        localSemanticFacts?.callBindings?.binding(name) ?: CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
      * Which field [segment] names: a segment written after a value, as the `IDENTIFIER_NAME` of a qualified name
      * (`code` of `g_rec.code`, `inner` and `code` of `l_out.inner.code`, `code` of `pkg.v.code`) or the `VARIABLE_NAME`
      * of a member written after an element or a call result (`code` of `f().code`, `items` of `g_rows(1).items`).

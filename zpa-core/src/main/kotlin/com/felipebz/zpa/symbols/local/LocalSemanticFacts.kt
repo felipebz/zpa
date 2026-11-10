@@ -49,6 +49,9 @@ internal class LocalSemanticFacts(
     /** What the plain names in expressions bind, computed when first asked. */
     val names: LocalNames by lazy { LocalNames(this) }
 
+    /** What the analysis decided for each call, by the name of the call, indexed when first asked. */
+    val callBindings: LocalCallBindings by lazy { LocalCallBindings(this) }
+
     /** The local resolution of the call whose name starts at line, column; null when the local side has none. */
     fun localCall(line: Int, column: Int): LocalCallResolution? =
         calls.singleOrNull { it.reference.range.startLine == line && it.reference.range.startColumn == column }?.local
