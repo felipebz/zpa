@@ -1683,8 +1683,19 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle accepts only a plain or quoted identifier here; any unquoted keyword needs quoting.
             val flashbackArchiveName = b.optional(b.next(IDENTIFIER), IDENTIFIER_NAME)
 
+            fun resultCacheClause(): Any {
+                val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
+                val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
+                return b.sequence(RESULT_CACHE, LPARENTHESIS, b.firstOf(
+                        b.sequence(resultCacheMode, b.optional(COMMA, resultCacheStandby)),
+                        b.sequence(resultCacheStandby, b.optional(COMMA, resultCacheMode))), RPARENTHESIS)
+            }
+
+
+
             b.rule(TABLE_BEHAVIOR_PROPERTY).define(b.firstOf(
                     CACHE, NOCACHE,
+                    resultCacheClause(),
                     b.sequence(
                             b.nextNot(b.requireContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true)),
                             b.firstOf(
@@ -2889,9 +2900,6 @@ enum class DdlGrammar : GrammarRuleKey {
             fun renameConstraintClause() = b.sequence(RENAME, CONSTRAINT, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
             fun renameTableClause() = b.sequence(RENAME, TO, IDENTIFIER_NAME)
 
-            val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
-            val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
-
             // Oracle 26 accepts these properties in any order, together with the READ ONLY, ROW ARCHIVAL,
             // FOR STAGING, DEFAULT COLLATION and annotation clauses that the SQLRF diagram lists separately,
             // and the immutable-table retention clauses. Repeated PARALLEL, LOGGING or CACHE options fail with
@@ -2905,9 +2913,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     INDEX_ALLOCATE_EXTENT_CLAUSE,
                     INDEX_DEALLOCATE_UNUSED_CLAUSE,
                     b.firstOf(CACHE, NOCACHE),
-                    b.sequence(RESULT_CACHE, LPARENTHESIS, b.firstOf(
-                            b.sequence(resultCacheMode, b.optional(COMMA, resultCacheStandby)),
-                            b.sequence(resultCacheStandby, b.optional(COMMA, resultCacheMode))), RPARENTHESIS),
+                    resultCacheClause(),
                     b.sequence(UPGRADE, b.optional(b.optional(NOT), INCLUDING, DATA)),
                     b.sequence(b.firstOf(MINIMIZE, NOMINIMIZE), RECORDS_PER_BLOCK),
                     INDEX_PARALLEL_CLAUSE,
