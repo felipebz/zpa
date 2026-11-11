@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.semantics.FieldBinding
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.PackageDeclaration
 import com.felipebz.zpa.project.ProjectAnalysisContext
@@ -319,7 +319,7 @@ internal class ProjectOverviewBuilder(
                     is FieldBinding.Unavailable -> Unit
                 }
             }
-            (astNode as? SemanticAstNode)?.projectSubprogramDeclaration?.let {
+            SemanticFileNode.of(root)?.projectSubprogramDeclaration(astNode)?.let {
                 bodySubprograms += astEntry("${it.kind} ${it.owner}.${it.name} (${it.role})", astNode)
             }
         }

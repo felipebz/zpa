@@ -7,7 +7,6 @@
 
 package com.felipebz.zpa.symbols
 
-import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectPackageTypeView
 import com.felipebz.zpa.api.project.ProjectTypeShape
@@ -15,6 +14,7 @@ import com.felipebz.zpa.api.semantics.RecordOrigin
 import com.felipebz.zpa.api.semantics.ScalarFamily
 import com.felipebz.zpa.api.semantics.ValueCategory
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.symbols.local.LocalFileAnalysis
 
@@ -43,15 +43,9 @@ internal object EffectiveSemanticTypeQuery {
             return EffectiveTypeCategory.Known(it, EffectiveTypeSource.LEGACY)
         }
 
-        val analysis = rootOf(node).localAnalysis ?: return EffectiveTypeCategory.Unknown
+        val analysis = SemanticFileNode.of(node)?.localAnalysis ?: return EffectiveTypeCategory.Unknown
         projectCategory(node, analysis)?.let { return it }
         return declaredRecord(node, analysis) ?: EffectiveTypeCategory.Unknown
-    }
-
-    private fun rootOf(node: SemanticAstNode): SemanticAstNode {
-        var root: AstNode = node
-        while (true) root = root.parentOrNull ?: break
-        return root as SemanticAstNode
     }
 
     /**

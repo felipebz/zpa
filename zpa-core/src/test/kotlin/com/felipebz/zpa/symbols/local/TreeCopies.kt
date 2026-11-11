@@ -7,6 +7,7 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 
 /**
  * A copy of this tree in which [target] has [children] instead of its own, to build trees the parser does not produce.
@@ -14,9 +15,7 @@ import com.felipebz.zpa.api.squid.SemanticAstNode
  * original tree must not be used afterwards.
  */
 internal fun AstNode.withChildren(target: AstNode, children: List<AstNode>): AstNode {
-    val copy = SemanticAstNode(type, name, tokenOrNull)
-    copy.fromIndex = fromIndex
-    copy.toIndex = toIndex
+    val copy = if (this is SemanticFileNode) SemanticFileNode(type, name, tokenOrNull) else SemanticAstNode(type, name, tokenOrNull)
     val newChildren = if (this === target) {
         children
     } else {

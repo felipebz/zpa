@@ -76,8 +76,6 @@ class IdentifierNameTest : RuleTest() {
         assertThatValue(identifier.type).isEqualTo(PlSqlGrammar.IDENTIFIER_NAME)
         assertThatValue(nonReservedKeyword.type).isEqualTo(PlSqlGrammar.NON_RESERVED_KEYWORD)
         assertThatValue(nonReservedKeyword.parent).isSameAs(identifier)
-        assertThatValue(nonReservedKeyword.fromIndex).isEqualTo(identifier.fromIndex)
-        assertThatValue(nonReservedKeyword.toIndex).isEqualTo(identifier.toIndex)
         assertThatValue(nonReservedKeyword.tokens.map { it.originalValue }).containsExactly("CuRsOr")
     }
     @Test
