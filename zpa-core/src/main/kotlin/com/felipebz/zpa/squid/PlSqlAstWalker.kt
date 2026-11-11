@@ -112,7 +112,9 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     private fun visitToken(ast: AstNode) {
         if (ast.hasToken() && lastVisitedToken !== ast.token) {
             lastVisitedToken = ast.token
-            for (callbackVisitor in callbackVisitors) {
+            val callbacks = callbackVisitors
+            for (i in 0 until callbacks.size) {
+                val callbackVisitor = callbacks[i]
                 if (callbackVisitor.visitsToken) {
                     callbackVisitor.visitor.visitToken(ast.token)
                 }
@@ -125,7 +127,9 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun visitComments(visitor: PlSqlVisitor, token: Token) {
-        for (trivia in token.trivia) {
+        val allTrivia = token.trivia
+        for (i in 0 until allTrivia.size) {
+            val trivia = allTrivia[i]
             // Only comments: conditional-compilation text is skipped-text trivia.
             if (!trivia.isComment) continue
             visitor.visitComment(trivia, PlSqlCommentAnalyzer.getContents(trivia.token.originalValue))
@@ -133,14 +137,14 @@ class PlSqlAstWalker(private val checks: Collection<PlSqlVisitor>) {
     }
 
     private fun visitNode(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
-        for (nodeVisitor in nodeVisitors) {
-            nodeVisitor.visitNode(ast)
+        for (i in 0 until nodeVisitors.size) {
+            nodeVisitors[i].visitNode(ast)
         }
     }
 
     private fun visitSyntaxViews(ast: AstNode, nodeVisitors: List<PlSqlVisitor>) {
-        for (nodeVisitor in nodeVisitors) {
-            nodeVisitor.dispatchSyntaxViews(ast)
+        for (i in 0 until nodeVisitors.size) {
+            nodeVisitors[i].dispatchSyntaxViews(ast)
         }
     }
 

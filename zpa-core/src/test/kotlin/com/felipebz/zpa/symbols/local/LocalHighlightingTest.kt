@@ -44,6 +44,19 @@ class LocalHighlightingTest {
     private fun pairs(source: String, prepared: Boolean = true) = pairs(mapOf("a.sql" to source), prepared = prepared)
 
     @Test
+    fun lineLengthsSplitLinesAsEachLineBreakEndsThem() {
+        val texts = listOf(
+            "", "abc", "a\nbc", "a\r\nbc", "a\rbc", "a\r\n\nb\rc\n\r\nd", "\r\r\n\n",
+            "ab\n", "ab\r\n", "ab\r", "a\n\r", "\n"
+        ) + listOf(15, 16, 17, 32, 33).flatMap { n -> listOf("a\n".repeat(n), "a\r\n".repeat(n) + "tail") }
+        for (text in texts) {
+            assertThat(LocalHighlighting.lineLengths(text))
+                .`as`(text.replace("\r", "\\r").replace("\n", "\\n"))
+                .containsExactly(*text.split("\r\n", "\n", "\r").map { it.length }.toIntArray())
+        }
+    }
+
+    @Test
     fun aScannerComputesThePairsOnlyWhenAskedFor() {
         val text = "declare\n  v_total number;\nbegin\n  v_total := v_total + 1;\nend;\n/\n"
         fun scan(asked: Boolean) = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, highlightingPairs = asked)
