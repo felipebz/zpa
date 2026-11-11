@@ -77,7 +77,7 @@ internal object LocalMemberCollector {
             val token = node.token
             val first = start
             out += LocalMember(
-                OracleIdentifier.fromSource(token.originalValue),
+                OracleIdentifier.fromToken(token.originalValue, token.value),
                 SourceRange(fileId, token.line, token.column, token.endLine, token.endColumn),
                 SourceRange(fileId, first.line, first.column, end.endLine, end.endColumn)
             )

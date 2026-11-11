@@ -76,7 +76,7 @@ internal object ProjectCallNarrower {
         if (retained.size < 2) return null
         val proven = retained.all { index ->
             evaluations[index].bindings.all {
-                it.outcome == Outcome.COMPATIBLE || it.unknownReason.orElse(null) == UnknownReason.ENVIRONMENT_DEPENDENT
+                it.outcome == Outcome.COMPATIBLE || it.unknownReasonOrNull == UnknownReason.ENVIRONMENT_DEPENDENT
             }
         }
         if (!proven) return null
@@ -120,7 +120,7 @@ internal object ProjectCallNarrower {
         ProjectArgumentType.Kind.UNKNOWN -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
         ProjectArgumentType.Kind.NULL_LITERAL -> Evidence(null, UnknownReason.NULL_LITERAL)
         else -> {
-            val family = type.family.orElse(null)
+            val family = type.familyOrNull
             val scope = type.shadowScope
             val name = type.shadowName
             when {

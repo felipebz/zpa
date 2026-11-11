@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -38,10 +39,10 @@ class ProjectNamedTypeResolution private constructor(
     val declaration: Optional<ProjectTypeDeclarationView> = Optional.ofNullable(declaration)
 
     /** Runtime-unmodifiable known matches in index order. */
-    val candidates: List<ProjectTypeDeclarationView> = Collections.unmodifiableList(ArrayList(candidates))
+    val candidates: List<ProjectTypeDeclarationView> = immutableList(candidates)
 
     /** Runtime-unmodifiable preparation failures; nonempty only for [Status.INCOMPLETE_INDEX]. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(ArrayList(failures))
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     init {
         when (status) {

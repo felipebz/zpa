@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -36,10 +37,10 @@ class ProjectSpecificationCorrelation private constructor(
     val specification: Optional<ProjectPackageSubprogramView> = Optional.ofNullable(specification)
 
     /** Runtime-unmodifiable matching specification occurrences in index order, never deduplicated. */
-    val candidates: List<ProjectPackageSubprogramView> = Collections.unmodifiableList(ArrayList(candidates))
+    val candidates: List<ProjectPackageSubprogramView> = immutableList(candidates)
 
     /** Runtime-unmodifiable preparation failures; nonempty only for [Status.INCOMPLETE]. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(ArrayList(failures))
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     init {
         when (status) {

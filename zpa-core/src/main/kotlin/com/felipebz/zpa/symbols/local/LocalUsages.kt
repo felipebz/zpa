@@ -31,7 +31,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
     private val unsupported = HashSet<Pair<LocalRegionId, String>>()
     /** Member names of qualified references whose qualifier conditional compilation leaves undecided, by enclosing region. */
     private val conditionalMembers = HashSet<Pair<LocalRegionId, String>>()
-    private val declarationsByName = model.declarations.associateBy { it.nameRange.startLine to it.nameRange.startColumn }
+    private val declarationsByName = declarationStarts(model)
     private val incompleteness: Map<LocalRegionId, Subtree> by lazy(::subtreeIncompleteness)
 
     init {
@@ -66,7 +66,9 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
     private fun declarationOf(node: AstNode): LocalDeclaration? {
         val kinds = COVERED[node.type] ?: return null
         val name = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
-        val declaration = declarationsByName[name.token.line to name.token.column] ?: return null
+        val index = declarationsByName[name.token.line, name.token.column]
+        if (index < 0) return null
+        val declaration = model.declarations[index]
         return declaration.takeIf { it.kind in kinds }
     }
 

@@ -16,7 +16,7 @@ import com.felipebz.zpa.project.ProjectTypeShape as FactShape
 internal object ProjectSnapshotDeclarations {
     @JvmSynthetic
     fun views(scope: ProjectSnapshotScope, occurrences: List<IndexedDeclaration>): List<ProjectDeclarationView> =
-        Collections.unmodifiableList(occurrences.map { view(scope, it) })
+        immutableList(occurrences.map { view(scope, it) })
 
     @JvmSynthetic
     fun occurrencesFor(index: ProjectSymbolIndex, fileId: String): List<IndexedDeclaration> =
@@ -87,7 +87,7 @@ internal object ProjectSnapshotDeclarations {
         override val shape: Optional<ProjectTypeShape> = fact.shape.toPublicShape()
         override val elementType: Optional<ProjectTypeReference> = fact.elementType.toPublicReference()
         override val attributes: List<ProjectRecordFieldView> =
-            Collections.unmodifiableList(fact.attributes.map { BackedRecordFieldView(it) })
+            immutableList(fact.attributes.map { BackedRecordFieldView(it) })
         override val attributesComplete: Boolean = fact.attributesComplete && !fact.conditional
     }
 
@@ -98,7 +98,7 @@ internal object ProjectSnapshotDeclarations {
         override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(typeFact.owner)
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(typeFact.name)
         override val recordFields: List<ProjectRecordFieldView> =
-            Collections.unmodifiableList(typeFact.recordFields.map { BackedRecordFieldView(it) })
+            immutableList(typeFact.recordFields.map { BackedRecordFieldView(it) })
     }
 
     private class BackedSubtypeView(id: ProjectDeclarationId, private val subtypeFact: PackageSubtypeDeclaration) :
@@ -162,7 +162,7 @@ internal object ProjectSnapshotDeclarations {
     }
 
     private fun List<ProjectParameter>.toParameterViews(): List<ProjectParameterView> =
-        Collections.unmodifiableList(map { BackedParameterView(it) })
+        immutableList(map { BackedParameterView(it) })
 
     private class BackedParameterView(private val parameter: ProjectParameter) : ProjectParameterView {
         override val name: ProjectIdentifier get() = ProjectIdentifier.wrap(parameter.name)

@@ -19,49 +19,46 @@ import java.util.*
  */
 internal class LocalNames(private val facts: LocalSemanticFacts) {
     private val model = facts.model
-    private val referencesByStart = facts.references.indices
-        .filter { facts.references[it].segments.isEmpty() && facts.references[it].context in CONTEXTS }
-        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
-    private val qualifiedByStart = facts.references.indices
-        .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].lastSegmentContext in CONTEXTS }
-        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val referencesByStart = referenceStarts(facts.references) { it.segments.isEmpty() && it.context in CONTEXTS }
+    private val qualifiedByStart = referenceStarts(facts.references) { it.segments.isNotEmpty() && it.lastSegmentContext in CONTEXTS }
 
     /** The qualified names whose segments are answered one by one: those of [CONTEXTS], and method call statements. */
-    private val chainIndices = facts.references.indices
-        .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].lastSegmentContext in CHAIN_CONTEXTS }
-    private val chainsByStart = chainIndices.associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val chainsByStart = referenceStarts(facts.references) { it.segments.isNotEmpty() && it.lastSegmentContext in CHAIN_CONTEXTS }
 
-    /** The segments after the first, by the start of their name: the reference and the segment's position in it (1 for the second). */
-    private val segmentsByStart = chainIndices.flatMap { index ->
-        facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
-    }.toMap()
+    /** The segments after the first of those chains, by the start of their name: the reference ([segmentPosition] tells which segment). */
+    private val segmentsByStart = segmentStarts(facts.references) { it.segments.isNotEmpty() && it.lastSegmentContext in CHAIN_CONTEXTS }
 
     /**
      * The names written with an argument list inside SQL (`v(1)`, `v(1).f`, `r.f(1)`, `o.m(x)`), by the start of their
      * first name: plain call names, and the first name of qualified call names.
      */
-    private val sqlCallsByStart = facts.references.indices
-        .filter {
-            val reference = facts.references[it]
-            reference.context == LocalReferenceContext.SQL_CALL ||
-                reference.context == LocalReferenceContext.QUALIFIER && reference.lastSegmentContext == LocalReferenceContext.SQL_CALL
-        }
-        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val sqlCallsByStart = referenceStarts(facts.references) { reference ->
+        reference.context == LocalReferenceContext.SQL_CALL ||
+            reference.context == LocalReferenceContext.QUALIFIER && reference.lastSegmentContext == LocalReferenceContext.SQL_CALL
+    }
 
     fun binding(name: AstNode): NameBinding = when (name.type) {
         PlSqlGrammar.MEMBER_EXPRESSION -> qualified(name)
         PlSqlGrammar.VARIABLE_NAME -> {
-            val start = name.token.line to name.token.column
-            val index = referencesByStart[start]
-            when {
-                index != null -> first(index, facts.resolutions[index].last())
-                else -> chainsByStart[start]?.let { first(it, facts.resolutions[it].first()) }
-                    ?: sqlCallsByStart[start]?.let(::sqlCall)
-                    ?: unavailable()
+            val line = name.token.line
+            val column = name.token.column
+            val index = referencesByStart[line, column]
+            if (index >= 0) {
+                first(index, facts.resolutions[index].last())
+            } else {
+                val chain = chainsByStart[line, column]
+                val sqlCallIndex = if (chain >= 0) -1 else sqlCallsByStart[line, column]
+                when {
+                    chain >= 0 -> first(chain, facts.resolutions[chain].first())
+                    sqlCallIndex >= 0 -> sqlCall(sqlCallIndex)
+                    else -> unavailable()
+                }
             }
         }
-        PlSqlGrammar.IDENTIFIER_NAME -> segmentsByStart[name.token.line to name.token.column]?.let { (index, position) -> segment(index, position) }
-            ?: unavailable()
+        PlSqlGrammar.IDENTIFIER_NAME -> {
+            val index = segmentsByStart[name.token.line, name.token.column]
+            if (index >= 0) segment(index, segmentPosition(facts.references[index], name.token.line, name.token.column)) else unavailable()
+        }
         else -> unavailable()
     }
 
@@ -149,7 +146,8 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
      * segment is not declared in the file, or Unknown (a record field or a member is not a declaration).
      */
     private fun qualified(name: AstNode): NameBinding {
-        val index = qualifiedByStart[name.token.line to name.token.column] ?: return unavailable()
+        val index = qualifiedByStart[name.token.line, name.token.column]
+        if (index < 0) return unavailable()
         val reference = facts.references[index]
         val written = name.children.count { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME } - 1
         if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return unavailable()
@@ -167,9 +165,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     }
 
     /** The datatype names (`l_x t_rec;`, `pkg.t_rec`) by the start of their first name. */
-    private val typesByStart = facts.references.indices
-        .filter { facts.references[it].lastSegmentContext == LocalReferenceContext.TYPE }
-        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val typesByStart = referenceStarts(facts.references) { it.lastSegmentContext == LocalReferenceContext.TYPE }
 
     /**
      * A datatype name, as written (a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as `pkg.t_rec`): the type declaration
@@ -177,7 +173,8 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
      */
     fun typeBinding(name: AstNode): NameBinding {
         if (name.type != PlSqlGrammar.VARIABLE_NAME && name.type != PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
-        val index = typesByStart[name.token.line to name.token.column] ?: return unavailable()
+        val index = typesByStart[name.token.line, name.token.column]
+        if (index < 0) return unavailable()
         val reference = facts.references[index]
         val written = if (name.type == PlSqlGrammar.MEMBER_EXPRESSION) {
             name.children.count { it.type === PlSqlGrammar.VARIABLE_NAME || it.type === PlSqlGrammar.IDENTIFIER_NAME } - 1

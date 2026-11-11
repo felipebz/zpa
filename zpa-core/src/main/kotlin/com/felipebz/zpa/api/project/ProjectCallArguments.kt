@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 import com.felipebz.zpa.project.ProjectCallArguments as InternalCallArguments
 
@@ -19,7 +20,7 @@ class ProjectCallArguments private constructor(arguments: List<ProjectCallArgume
     enum class Notation { VALID, POSITIONAL_AFTER_NAMED, DUPLICATE_LABEL }
 
     /** Runtime-unmodifiable copy, in written order. */
-    val arguments: List<ProjectCallArgument> = Collections.unmodifiableList(ArrayList(arguments))
+    val arguments: List<ProjectCallArgument> = immutableList(arguments)
 
     @get:JvmSynthetic
     internal val internal: InternalCallArguments = InternalCallArguments.of(this.arguments.map { it.internal })

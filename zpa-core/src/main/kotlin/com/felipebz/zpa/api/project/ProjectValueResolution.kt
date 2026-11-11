@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -50,10 +51,10 @@ class ProjectValueResolution private constructor(
     val value: Optional<ProjectPackageValueView> = Optional.ofNullable(value)
 
     /** Runtime-unmodifiable known declarations with the effective qualified name, in index order. */
-    val candidates: List<ProjectDeclarationView> = Collections.unmodifiableList(ArrayList(candidates))
+    val candidates: List<ProjectDeclarationView> = immutableList(candidates)
 
     /** Runtime-unmodifiable preparation failures; nonempty only for [Status.INCOMPLETE_INDEX]. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(ArrayList(failures))
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     init {
         val values = candidates.count { it is ProjectPackageValueView }

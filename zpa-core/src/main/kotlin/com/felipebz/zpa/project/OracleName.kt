@@ -23,11 +23,37 @@ class OracleIdentifier private constructor(
             }
         }
 
+        /**
+         * The identifier of a token: [lexerValue] is the token's value, which becomes the lookup name when it is
+         * exactly that text (the lexer's string is then shared instead of computing a new one); otherwise the lookup
+         * name is computed as in [fromSource].
+         */
         fun fromToken(originalSpelling: String, lexerValue: String): OracleIdentifier {
             require(originalSpelling.isNotEmpty()) { "An identifier cannot be empty" }
-            val quoted = originalSpelling.length >= 2 && originalSpelling.first() == '"' && originalSpelling.last() == '"'
-            val lookup = if (quoted) originalSpelling.substring(1, originalSpelling.length - 1) else originalSpelling.uppercase(Locale.ROOT)
+            val length = originalSpelling.length
+            val quoted = length >= 2 && originalSpelling.first() == '"' && originalSpelling.last() == '"'
+            val lookup = if (quoted) {
+                if (lexerValue.length == length - 2 && originalSpelling.regionMatches(1, lexerValue, 0, length - 2)) lexerValue
+                else originalSpelling.substring(1, length - 1)
+            } else {
+                if (isAsciiUppercaseOf(originalSpelling, lexerValue)) lexerValue else originalSpelling.uppercase(Locale.ROOT)
+            }
             return OracleIdentifier(originalSpelling, lookup, quoted)
+        }
+
+        /**
+         * Whether [value] is what `uppercase(Locale.ROOT)` gives for [spelling], proven without creating a string. The
+         * lexer uppercases with the default locale, so only ASCII is compared: there, both uppercase `a`-`z` alone.
+         */
+        private fun isAsciiUppercaseOf(spelling: String, value: String): Boolean {
+            if (spelling.length != value.length) return false
+            for (i in spelling.indices) {
+                val c = spelling[i]
+                if (c.code >= 0x80) return false
+                val upper = if (c in 'a'..'z') c - ('a' - 'A') else c
+                if (value[i] != upper) return false
+            }
+            return true
         }
     }
 

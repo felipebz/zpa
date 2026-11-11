@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 import com.felipebz.zpa.project.ProjectCallCandidate as InternalCallCandidate
 import com.felipebz.zpa.project.ProjectParameter as InternalParameter
@@ -31,13 +32,13 @@ class ProjectCallCandidate private constructor(
     }
 
     /** APPLICABLE only: one binding per actual, in written order. */
-    val bindings: List<ProjectArgumentBinding> = Collections.unmodifiableList(ArrayList(bindings))
+    val bindings: List<ProjectArgumentBinding> = immutableList(bindings)
 
     /** APPLICABLE only: default-present formals bound to no actual, in formal order. */
-    val omittedParameters: List<ProjectParameterView> = Collections.unmodifiableList(ArrayList(omittedParameters))
+    val omittedParameters: List<ProjectParameterView> = immutableList(omittedParameters)
 
     /** MISSING_REQUIRED only: formals without default and without actual, in formal order. */
-    val missingParameters: List<ProjectParameterView> = Collections.unmodifiableList(ArrayList(missingParameters))
+    val missingParameters: List<ProjectParameterView> = immutableList(missingParameters)
 
     /** TOO_MANY_ARGUMENTS, UNKNOWN_LABEL or DUPLICATE_BINDING only: the first offending actual, one-based. */
     val rejectedArgumentOrdinal: OptionalInt

@@ -7,6 +7,7 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.immutableList
 
 /** The syntactic position of a reference, which decides the declaration kinds it may bind. */
 internal enum class LocalReferenceContext {
@@ -85,7 +86,7 @@ internal class LocalReference(
     val context: LocalReferenceContext,
     val region: LocalRegionId,
     /** For a [LocalReferenceContext.QUALIFIER], the segments written after this one, in order; empty otherwise. */
-    val segments: List<LocalSegment>,
+    segments: List<LocalSegment>,
     /** The position of the whole name: [context] for a single segment, the qualified name's own position otherwise. */
     val lastSegmentContext: LocalReferenceContext,
     /** Written in the default expression of a subprogram or cursor parameter. */
@@ -100,6 +101,8 @@ internal class LocalReference(
      */
     val nameRange: SourceRange? = range
 ) {
+    val segments: List<LocalSegment> = immutableList(segments)
+
     val remainingSegments: Int get() = segments.size
 
     override fun toString() =

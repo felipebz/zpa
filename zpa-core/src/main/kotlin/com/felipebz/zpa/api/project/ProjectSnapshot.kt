@@ -20,15 +20,12 @@ import com.felipebz.zpa.project.ProjectCallKind as InternalCallKind
 class ProjectSnapshot private constructor(
     private val preparationResult: ProjectIndexPreparationResult,
     val preparationState: ProjectPreparationState,
-    // Both metadata lists are privately owned by the preparation adapter; wrap without copying.
+    // Copied once into exact-size immutable lists; a snapshot derived by [preferring] passes those copies, which are kept as they are.
     failures: List<ProjectPreparationFailure>,
     fileIds: List<String>,
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
     private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue()
 ) {
-    private val failureList = failures
-    private val fileIdList = fileIds
-
     /**
      * This snapshot as seen from a unit compiling in [schema]: every lookup of the returned snapshot reads an
      * unqualified name in that schema first, as Oracle and the analysis do. Among the declarations a lookup matches,
@@ -41,7 +38,7 @@ class ProjectSnapshot private constructor(
         if (schema == null) return this
         val index = preparationResult.index.preferring(schema.identifier)
         if (index === preparationResult.index) return this
-        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failureList, fileIdList, scope)
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope)
     }
 
     /**
@@ -59,13 +56,13 @@ class ProjectSnapshot private constructor(
     val successfulFileCount: Int get() = preparationResult.successfulFileCount
 
     /** Runtime-unmodifiable failure summaries in deterministic file-identity order. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(failures)
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     /**
      * All attempted source identities, including failed sources, in existing index order.
      * IDs are opaque; ordering is deterministic presentation order, not semantic ranking.
      */
-    val fileIds: List<String> = Collections.unmodifiableList(fileIds)
+    val fileIds: List<String> = immutableList(fileIds)
 
     /**
      * All known declaration occurrences in deterministic index order (file ID, then source

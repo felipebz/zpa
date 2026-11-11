@@ -6,6 +6,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.project.OracleIdentifier
+import com.felipebz.zpa.project.immutableList
 
 /**
  * Lookup tables derived from a [LocalSemanticModel]: the declarations of each region by name, and the unit forming each
@@ -13,7 +14,9 @@ import com.felipebz.zpa.project.OracleIdentifier
  */
 internal class LocalLookupIndex(model: LocalSemanticModel) {
     private val byName: Array<Map<OracleIdentifier, List<LocalDeclaration>>> = Array(model.regions.size) { index ->
-        model.region(LocalRegionId(index)).declarations.map(model::declaration).groupBy { it.name }
+        val declarations = model.region(LocalRegionId(index)).declarations
+        if (declarations.isEmpty()) emptyMap()
+        else declarations.map(model::declaration).groupBy { it.name }.mapValues { (_, named) -> immutableList(named) }
     }
 
     private val units: Array<LocalUnit?> = arrayOfNulls<LocalUnit>(model.regions.size).also { units ->

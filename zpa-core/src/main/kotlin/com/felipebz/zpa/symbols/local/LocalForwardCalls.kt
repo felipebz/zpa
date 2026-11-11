@@ -12,6 +12,7 @@ import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.immutableList
 import com.felipebz.zpa.symbols.local.LocalReferenceContext as Ctx
 
 /** One written actual with its datatype evidence. */
@@ -48,7 +49,7 @@ internal class LocalCallAnalysis(
     val firstSegment: LocalResolution,
     val outcome: LocalCallOutcome,
     /** Empty when the call form is not modeled. */
-    val actuals: List<LocalActualEvidence>,
+    actuals: List<LocalActualEvidence>,
     /** Present only for [LocalCallOutcome.PROJECT]. */
     val typed: ProjectTypedCallResolution?,
     /**
@@ -57,6 +58,8 @@ internal class LocalCallAnalysis(
      */
     val local: LocalCallResolution?
 ) {
+    val actuals: List<LocalActualEvidence> = immutableList(actuals)
+
     override fun toString() = "$kind $target: $outcome ($firstSegment) $actuals" + (local?.let { " -> $it" } ?: "")
 }
 
@@ -321,7 +324,7 @@ internal class LocalForwardCalls(
      * `-n` of a PLS_INTEGER, NUMBER for `-1.5`. Any other operand is not typed.
      */
     private fun signed(operand: LocalTypeEvidence): LocalTypeEvidence =
-        if (operand.argumentType.family.orElse(null) != ProjectDatatypeFamily.NUMERIC) LocalTypeEvidence.unknown("a signed operand that is not a number")
+        if (operand.argumentType.familyOrNull != ProjectDatatypeFamily.NUMERIC) LocalTypeEvidence.unknown("a signed operand that is not a number")
         else LocalTypeEvidence(operand.argumentType, operand.terminal, emptyList(), null, operand.description)
 
     /** The notation of a call's actuals, positional or named by [labels]. */
@@ -335,7 +338,7 @@ internal class LocalForwardCalls(
      * of no type, a BLOB, a RAW, an interval) is not typed.
      */
     private fun concatenation(operands: List<LocalTypeEvidence>): LocalTypeEvidence {
-        val families = operands.map { if (it.argumentType.kind == ProjectArgumentType.Kind.NULL_LITERAL) null else it.argumentType.family.orElse(null) ?: return LocalTypeEvidence.unknown("an operand of no type") }
+        val families = operands.map { if (it.argumentType.kind == ProjectArgumentType.Kind.NULL_LITERAL) null else it.argumentType.familyOrNull ?: return LocalTypeEvidence.unknown("an operand of no type") }
         val known = families.filterNotNull()
         return when {
             known.all { it in VARCHAR2_OPERANDS } -> builtIn("VARCHAR2")
