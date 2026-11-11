@@ -116,13 +116,15 @@ internal object LocalSyntax {
      */
     fun descendants(root: AstNode, vararg types: AstNodeType): List<AstNode> {
         val result = ArrayList<AstNode>()
-        for (child in root.children) collect(child, types, result)
+        val children = root.children
+        for (i in 0 until children.size) collect(children[i], types, result)
         return result
     }
 
     private fun collect(node: AstNode, types: Array<out AstNodeType>, result: MutableList<AstNode>) {
         for (type in types) if (node.type === type) result += node
-        for (child in node.children) collect(child, types, result)
+        val children = node.children
+        for (i in 0 until children.size) collect(children[i], types, result)
     }
 
     fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromToken(node.token.originalValue, node.token.value)

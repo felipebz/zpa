@@ -97,7 +97,8 @@ internal object LocalSemanticModelBuilder {
             declare(region, kind, LocalSyntax.identifier(nameNode), range(item), range(nameNode), type, isConstant, isNotNull, hasDefault, details)
 
         private fun walk(node: AstNode, region: RegionDraft) {
-            for (child in node.children) visit(child, region)
+            val children = node.children
+            for (i in 0 until children.size) visit(children[i], region)
         }
 
         private fun visit(node: AstNode, region: RegionDraft) {
@@ -123,9 +124,12 @@ internal object LocalSemanticModelBuilder {
                 PlSqlGrammar.ITERATOR -> iterator(node, region)
                 // A label of a statement that forms no region: a declaration of the region holding the statement.
                 PlSqlGrammar.LABEL -> declareLabel(node, region, null)
-                PlSqlGrammar.DECLARE_SECTION -> node.children.forEach { declarationItem(it, region) }
+                PlSqlGrammar.DECLARE_SECTION -> {
+                    val children = node.children
+                    for (i in 0 until children.size) declarationItem(children[i], region)
+                }
                 else -> {
-                    val with = node.children.firstOrNull { it.type === DmlGrammar.WITH_CLAUSE }
+                    val with = node.getFirstChildOrNull(DmlGrammar.WITH_CLAUSE)
                     if (with != null && with.children.any { it.type in SUBPROGRAMS }) sqlWith(node, with, region) else walk(node, region)
                 }
             }

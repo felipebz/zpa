@@ -388,7 +388,10 @@ internal class LocalCompletenessEvidence private constructor(
             val seen = Collections.newSetFromMap(IdentityHashMap<Token, Boolean>())
             // The root is not one of its own descendants: only the nodes below it are recovery candidates.
             if (!root.hasChildren()) root.tokenOrNull?.let { if (seen.add(it)) tokens += it }
-            else for (child in root.children) leafTokens(child, seen, tokens, recovery)
+            else {
+                val children = root.children
+                for (i in 0 until children.size) leafTokens(children[i], seen, tokens, recovery)
+            }
             return tokens
         }
 
@@ -402,7 +405,8 @@ internal class LocalCompletenessEvidence private constructor(
                 val token = node.tokenOrNull
                 if (token != null && seen.add(token)) tokens += token
             } else {
-                for (child in node.children) leafTokens(child, seen, tokens, recovery)
+                val children = node.children
+                for (i in 0 until children.size) leafTokens(children[i], seen, tokens, recovery)
             }
         }
 

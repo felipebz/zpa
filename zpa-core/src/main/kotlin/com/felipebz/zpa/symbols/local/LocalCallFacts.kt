@@ -140,7 +140,8 @@ internal object LocalCallCollector {
                 node.getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
                     ?.let { out += LocalCall(it.token.line, it.token.column, emptyList()) }
         }
-        node.children.forEach { visit(it, out) }
+        val children = node.children
+        for (i in 0 until children.size) visit(children[i], out)
     }
 
     private fun actual(argument: AstNode): LocalActual {

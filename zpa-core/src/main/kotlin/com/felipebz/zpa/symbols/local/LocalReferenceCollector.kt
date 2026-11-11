@@ -107,7 +107,10 @@ internal object LocalReferenceCollector {
                     type === DmlGrammar.INSERT_COLUMNS -> return
                 // Names after the first child (`a(i).f`, `a(i).m(j)`, `(x as t).m(j)`) are members, not lookups; arguments are.
                 type === PlSqlGrammar.OBJECT_REFERENCE -> {
-                    node.children.forEachIndexed { index, child -> if (index == 0) visit(child, state) else arguments(child, state) }
+                    val children = node.children
+                    for (index in 0 until children.size) {
+                        if (index == 0) visit(children[index], state) else arguments(children[index], state)
+                    }
                     return
                 }
                 type === PlSqlGrammar.GOTO_STATEMENT -> labelTarget(node, LocalReferenceContext.GOTO_TARGET, state)
@@ -115,8 +118,10 @@ internal object LocalReferenceCollector {
                     labelTarget(node, LocalReferenceContext.LOOP_TARGET, state)
             }
             val next = childState(node, state)
-            for ((index, child) in node.children.withIndex()) {
+            val children = node.children
+            for (index in 0 until children.size) {
                 if (index == 0 && type === DmlGrammar.UPDATE_COLUMN) continue
+                val child = children[index]
                 // Single-row VALUES have no column scope (the names are PL/SQL), but are still evaluated by SQL.
                 val values = type === DmlGrammar.SINGLE_TABLE_INSERT && child.type !in NOT_VALUES
                 visit(child, if (values) next.with(inSql = false, inValues = true, sql = null) else next)
@@ -141,7 +146,12 @@ internal object LocalReferenceCollector {
         }
 
         private fun arguments(node: AstNode, state: State) {
-            if (node.type === PlSqlGrammar.ARGUMENTS) visit(node, state) else node.children.forEach { arguments(it, state) }
+            if (node.type === PlSqlGrammar.ARGUMENTS) {
+                visit(node, state)
+                return
+            }
+            val children = node.children
+            for (i in 0 until children.size) arguments(children[i], state)
         }
 
         /**
