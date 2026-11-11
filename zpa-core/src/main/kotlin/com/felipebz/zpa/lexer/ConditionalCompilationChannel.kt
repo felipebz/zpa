@@ -83,11 +83,11 @@ class ConditionalCompilationChannel @JvmOverloads constructor(
         if (closes && closeBranch(code)) type = PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY
         val line = code.getLinePosition()
         val column = code.getColumnPosition()
-        val text = StringBuilder(end)
-        repeat(end) { text.appendCodePoint(code.pop()) }
+        val text = output.tokenText()
+        repeat(end) { text.append(code.pop().toChar()) }
         output.addTrivia(
             Trivia.createSkippedText(
-                Token.builder().setType(type).setValueAndOriginalValue(text.toString()).setLine(line).setColumn(column).build()
+                Token.builder().setType(type).setValueAndOriginalValue(output.sharedString(text)).setLine(line).setColumn(column).build()
             )
         )
         return true

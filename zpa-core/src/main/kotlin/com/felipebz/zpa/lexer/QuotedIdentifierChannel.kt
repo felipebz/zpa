@@ -24,14 +24,14 @@ class QuotedIdentifierChannel(quotedIdentifierRegexp: String, simpleIdentifierRe
             return false
         }
 
-        val tmpBuilder = StringBuilder()
+        val tmpBuilder = output.tokenText()
         val matcher = quotedPattern.matcher("")
 
         if (code.popTo(matcher, tmpBuilder) > 0) {
-            var word = tmpBuilder.toString()
+            var word = output.sharedString(tmpBuilder)
             val wordOriginal = word
             if (quotedSimplePattern.matcher(word).matches() && word == word.uppercase()) {
-                word = word.substring(1, word.length - 1)
+                word = output.sharedString(word.substring(1, word.length - 1))
             }
 
             val token = Token.builder()

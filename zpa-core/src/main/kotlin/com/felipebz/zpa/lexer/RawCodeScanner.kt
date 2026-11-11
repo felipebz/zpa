@@ -160,6 +160,13 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         return builder.toString()
     }
 
+    /** The text from [start] to [end], as the string the output shares for it. */
+    private fun sharedText(start: Int, end: Int): String {
+        val builder = output.tokenText()
+        for (i in start until end) builder.append(char(i).toChar())
+        return output.sharedString(builder)
+    }
+
     fun indexOf(needle: String, from: Int): Int {
         var position = from
         while (char(position) > 0) {
@@ -186,7 +193,7 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
             advanceTo(commentStart)
             val line = code.getLinePosition()
             val column = code.getColumnPosition()
-            val comment = text(0, commentEnd - commentStart)
+            val comment = sharedText(0, commentEnd - commentStart)
             advanceTo(commentEnd)
             output.addTrivia(Trivia.createComment(
                 Token.builder().setType(GenericTokenType.COMMENT).setValueAndOriginalValue(comment)
@@ -195,9 +202,13 @@ internal class RawCodeScanner(private val code: CodeReader, private val output: 
         advanceTo(start)
         val line = code.getLinePosition()
         val column = code.getColumnPosition()
-        val original = text(0, stop - start)
+        val original = sharedText(0, stop - start)
         advanceTo(stop)
-        val tokenValue = value ?: if (normalized) original.uppercase() else original
+        val tokenValue = when {
+            value != null -> output.sharedString(value)
+            normalized -> output.sharedString(original.uppercase())
+            else -> original
+        }
         output.addToken(
             Token.builder().setType(type).setValueAndOriginalValue(tokenValue, original)
                 .setLine(line).setColumn(column).build())
